@@ -35,20 +35,28 @@ Port 27705 on each `jonline` Deployment is **internal-only** -- it has no authen
 
 ## One-time setup: install the shared controller
 
+Pre-code Stalwart's initial admin credentials (skip this and it falls back to a random one-time password logged via `kubectl logs`, but `add_email_domain`/etc. below need to know the password, so set one):
+
+```bash
+ADMIN_PASSWORD=correct-horse-battery-staple make create_email_admin_secret
+```
+
+Then boot the controller itself:
+
 ```bash
 make create_email
 ```
 
 This installs Stalwart (`Deployment`, two `ClusterIP` Services, a `PersistentVolumeClaim`, and an `IngressRouteTCP` onto the shared Traefik controller) into its own `jonline-email` namespace -- see `k8s/stalwart.yaml`'s comments for what each piece is for, in particular:
 
-* The `stalwart-data` PVC holds **Stalwart's own configuration** (accepted domains, MTA Hook definitions, DKIM keys, TLS state) and its in-flight message queue -- not user mailboxes. Losing it means redoing a few minutes of admin-UI setup, not losing anyone's mail, since accepted messages are handed off immediately and never stored here.
+* The `stalwart-data` PVC holds **Stalwart's own configuration** (accepted domains, MTA Hook definitions, DKIM keys, TLS state) and its in-flight message queue -- not user mailboxes. Losing it means redoing a few minutes of setup, not losing anyone's mail, since accepted messages are handed off immediately and never stored here. If you'd rather this config lived in Postgres than the embedded RocksDB store, `make create_email_postgres` stands up a 1Gi Postgres instance in the same namespace -- see `k8s/k8s-stalwart-postgres-digitalocean.yaml`'s header comment; pick "PostgreSQL" in Stalwart's setup wizard and point it at `stalwart-postgres.jonline-email.svc.cluster.local:5432`.
 * Port 8080 (the admin UI / setup wizard) is deliberately `ClusterIP`-only, never a `LoadBalancer`. Reach it with:
 
   ```bash
   make deploy_email_admin_port_forward
   # then open http://localhost:8080
   ```
-* On a fresh volume, Stalwart boots into a setup wizard and logs a one-time random admin password to `kubectl logs -n jonline-email deployment/stalwart`. Walk through hostname/storage/directory choices there. (If you'd rather set a fixed initial password than go hunting through logs, uncomment the `STALWART_RECOVERY_ADMIN` env var in `k8s/stalwart.yaml`, ideally sourced from a `Secret` rather than a literal.)
+* On a fresh volume, Stalwart boots into a setup wizard -- log in with the credentials from `create_email_admin_secret` above (or the random one-time password from `kubectl logs -n jonline-email deployment/stalwart` if you skipped it) and walk through hostname/storage/directory choices.
 
 Get the shared ingress's external IP (what your MX records will point at -- Stalwart no longer has an IP of its own) with:
 
@@ -58,13 +66,14 @@ make deploy_email_get_ip
 
 ## Onboarding a domain
 
-Unlike `deploys/ingress`'s `add_ingress_domain`, this isn't a `kubectl apply` of generated YAML -- Stalwart keeps its accepted-domains list and MTA Hook definitions in its own database, configured through its admin UI (or REST Management API; see [stalw.art/docs/api/management](https://stalw.art/docs/api/management/overview/) if you want to script this later). Run:
+Unlike `deploys/ingress`'s `add_ingress_domain`, this isn't a `kubectl apply` of generated YAML -- Stalwart keeps its accepted-domains list and MTA Hook definitions in its own database. `add_email_domain`/`remove_email_domain`/`list_email_domains` script that database through Stalwart's REST Management API (its JMAP-based `x:Domain`/`x:MtaHook` extension objects; see [stalw.art/docs/api/management](https://stalw.art/docs/api/management/overview/)) instead of walking the admin UI by hand:
 
 ```bash
+make deploy_email_admin_port_forward &   # the API is ClusterIP-only, same as the admin UI
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com make add_email_domain
 ```
 
-which prints the concrete values for the three manual steps: adding the domain, adding a `data`-stage MTA Hook pointed at that namespace's `jonline` Service, and where to point DNS. **Verify the exact MTA Hook scoping options (matching a hook to one domain vs. all of them) against your running instance's admin UI** -- Stalwart's hook-matching expression syntax evolves between versions and isn't reproduced here to avoid shipping something that looks authoritative but might be stale by the time you read it.
+This adds `my.domain.example.com` as an accepted domain and a `data`-stage MTA Hook scoped to it (via an `enable` expression matching `rcpt_domain`), pointed at that namespace's `jonline` Service. **This has been checked against Stalwart's documented API shape but not exercised against a live instance** -- verify the domain actually shows up (`make list_email_domains`, or the admin UI) before pointing real DNS at it, and if it starts failing, recheck the Makefile's `add_email_domain`/`remove_email_domain` targets against your running version -- Stalwart's API evolves between releases and what's encoded there might be stale by the time you read this.
 
 The `X-Jonline-Email-Recipients` header the hook should send is the SMTP envelope's `RCPT TO` addresses, comma-separated -- this is deliberately the envelope, not the message's `To`/`Cc` headers, since that's the only place Bcc'd recipients show up at all (see `backend/src/web/email.rs`'s doc comment).
 

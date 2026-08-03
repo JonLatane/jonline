@@ -1,4 +1,5 @@
 .NOTPARALLEL:
+.PHONY: protos docs
 .DEFAULT_GOAL := default
 default: protos docs graphs
 
@@ -68,6 +69,8 @@ list_ingress_domains:
 
 # Manage the shared Stalwart mail server (lets Jonline instances receive mail at
 # <username>@yourdomain without each one speaking SMTP itself). See deploys/email/README.md.
+create_email_admin_secret:
+	cd deploys/email && $(MAKE) create_email_admin_secret
 create_email:
 	cd deploys/email && $(MAKE) create_email
 remove_email:
@@ -103,7 +106,6 @@ local_minio_delete:
 ############################################################################
 # FULLSTACK DEV/RELEASE-RELATED TARGETS: More in deploys/releases/Makefile
 ############################################################################
-.PHONY: protos docs
 
 # Update frontend protos and docs
 protos:

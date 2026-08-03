@@ -5,15 +5,59 @@
 # ../ingress/Makefile's INGRESS_NAMESPACE).
 EMAIL_NAMESPACE ?= jonline-email
 
+# Selects which provider-specific k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml manifest
+# create_email_postgres/etc. below use (mirrors ../Makefile's K8S_PROVIDER, which selects the
+# per-domain jonline-postgres equivalent).
+K8S_PROVIDER ?= digitalocean
+
 # create_email: boots the shared Stalwart controller (Namespace, PVC, Deployment, two ClusterIP
 # Services, and an IngressRouteTCP on the shared Traefik ingress's `smtp` entrypoint -- see
 # k8s/stalwart.yaml's comments). Requires deploys/ingress's shared controller to already be
 # installed (`make create_ingress`) -- Stalwart has no external IP of its own; port 25 reaches
 # it through Traefik, same LoadBalancer your other domains already share. Run once per cluster.
+#
+# Run create_email_admin_secret (below) FIRST if you want add_email_domain/etc. to work --
+# Stalwart's Deployment picks up STALWART_RECOVERY_ADMIN from that Secret on first boot only.
 create_email:
 	kubectl create -f k8s/stalwart.yaml --save-config
+update_email:
+	kubectl apply -f k8s/stalwart.yaml
 remove_email:
 	kubectl delete -f k8s/stalwart.yaml
+
+# Optional Postgres backend for Stalwart's OWN config (accepted domains, MTA hook definitions,
+# DKIM keys, TLS state) and queue, as an alternative to the embedded RocksDB store on
+# stalwart-data's PVC -- see k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml's header comment and
+# ../Makefile's equivalent create_backend_postgres for the per-domain jonline-postgres version
+# this mirrors. Run create_email first (it creates the jonline-email Namespace); then pick
+# "PostgreSQL" in Stalwart's setup wizard, pointed at
+# stalwart-postgres.jonline-email.svc.cluster.local:5432 with the credentials baked into the yaml.
+create_email_postgres:
+	cd .. && $(MAKE) deploy_ensure_storageclass_retain
+	kubectl create -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml --save-config
+update_email_postgres:
+	kubectl apply -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml
+delete_email_postgres:
+	- kubectl delete -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml
+restart_email_postgres:
+	kubectl rollout restart statefulset stalwart-postgres -n $(EMAIL_NAMESPACE)
+
+# create_email_admin_secret: pre-codes Stalwart's initial admin credentials into a Secret instead
+# of hunting a random one-time password out of `kubectl logs` (see k8s/stalwart.yaml's
+# STALWART_RECOVERY_ADMIN comment, `optional: true` so skipping this is still safe). Also doubles
+# as the credential add_email_domain/remove_email_domain/list_email_domains authenticate with
+# against Stalwart's Management API below -- same Secret, same "user:pass" value either way. Must
+# run BEFORE create_email: Stalwart only reads STALWART_RECOVERY_ADMIN on a totally empty
+# stalwart-data volume, not on every boot. No default ADMIN_PASSWORD on purpose (mirrors
+# NAMESPACE/DOMAIN elsewhere in this repo not defaulting) -- pick your own, don't silently reuse a
+# placeholder.
+ADMIN_USER ?= admin
+create_email_admin_secret:
+	@test -n "$(ADMIN_PASSWORD)" || (echo "ADMIN_PASSWORD is required, e.g. ADMIN_USER=admin ADMIN_PASSWORD=correct-horse-battery-staple make create_email_admin_secret" && exit 1)
+	kubectl create namespace $(EMAIL_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create secret generic stalwart-admin -n $(EMAIL_NAMESPACE) \
+	  --from-literal=credentials="$(ADMIN_USER):$(ADMIN_PASSWORD)" \
+	  --dry-run=client -o yaml | kubectl apply -f -
 
 deploy_email_get_ip:
 # Suppress echoing this so `make deploy_email_get_ip` is easily composable -- this is what your
@@ -31,22 +75,40 @@ deploy_email_monitor_rollout:
 deploy_email_admin_port_forward:
 	kubectl port-forward service/stalwart-admin -n $(EMAIL_NAMESPACE) 8080:8080
 
-# add_email_domain: NOT a `kubectl apply` of generated YAML, unlike ../ingress's
-# add_ingress_domain -- Stalwart keeps accepted domains and MTA hook definitions in its own
-# database, configured through its admin UI/REST API rather than static files. This target
-# can't safely do that for you sight-unseen (see ../README.md's "Onboarding a domain" section
-# for what to actually click/POST), so it just prints the concrete values you need on hand.
+# add_email_domain / remove_email_domain / list_email_domains: unlike ../ingress's
+# add_ingress_domain, these are NOT `kubectl apply` of generated YAML -- Stalwart keeps accepted
+# domains and MTA hook definitions in its own database, so instead these script Stalwart's HTTP
+# Management API (its JMAP-based `x:Domain`/`x:MtaHook` extension objects under `urn:stalwart:jmap`
+# -- see https://stalw.art/docs/ref/object/domain/ and .../mta-hook), authenticated with the
+# credentials from create_email_admin_secret above.
+#
+# CAVEAT: this talks to the same API the admin UI does, but has only been checked against
+# Stalwart's documented API shape, NOT exercised against a live instance (verify the domain shows
+# up correctly -- `make list_email_domains` or the admin UI -- before pointing real DNS at it, and
+# recheck this against your Stalwart version if it starts failing; see ../README.md's original
+# note on this API's syntax evolving between releases).
+#
+# Requires `make deploy_email_admin_port_forward` running in another terminal (Stalwart's admin
+# API is ClusterIP-only, per k8s/stalwart.yaml).
+STALWART_ADMIN_URL ?= http://localhost:8080/api
+stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n $(EMAIL_NAMESPACE) -o jsonpath='{.data.credentials}' | base64 -d)
+
 add_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
-	@echo "In the Stalwart admin UI (make deploy_email_admin_port_forward), under Settings:"
-	@echo "  1. Add '$(DOMAIN)' as an accepted/local domain."
-	@echo "  2. Add an MTA Hook (Settings > MTA > Filters > MTA Hooks) scoped to that domain, firing"
-	@echo "     at the 'data' stage, posting to:"
-	@echo "       http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"
-	@echo "     See ../README.md for the X-Jonline-Email-Recipients header contract this endpoint expects."
-	@echo "  3. Point '$(DOMAIN)'s MX record at this cluster's mail IP (make deploy_email_get_ip)."
+	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: ["data"], httpAuth: {"@type": "Unauthenticated"}, enable: {match: [{"if": $$expr, then: "true"}], "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
+	@echo "If that succeeded (check for \"notCreated\" errors above), point '$(DOMAIN)'s MX record at"
+	@echo "this cluster's mail IP (make deploy_email_get_ip); see ../README.md's DNS table for SPF/DMARC."
+
+remove_email_domain:
+	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make remove_email_domain" && exit 1)
+	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make remove_email_domain" && exit 1)
+	@resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
+	did="$$(echo "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id')"; \
+	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
+	hid="$$(echo "$$resp" | jq -r --arg u "$$hurl" '.methodResponses[1][1].list[] | select(.url==$$u) | .id')"; \
+	test -n "$$did" || (echo "No domain named '$(DOMAIN)' found via the API." && exit 1); \
+	jq -n --arg did "$$did" --arg hid "$$hid" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {destroy: [$$did]}, "c1"], ["x:MtaHook/set", {destroy: (if $$hid == "" then [] else [$$hid] end)}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
 
 list_email_domains:
-	@echo "Stalwart's accepted domains live in its own database, not this repo's files -- check"
-	@echo "Settings > MTA in the admin UI (make deploy_email_admin_port_forward)."
+	@jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq -r '.methodResponses[0][1].list[] | .name'
