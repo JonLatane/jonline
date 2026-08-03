@@ -163,7 +163,7 @@ async fn favicon_ico<'a>(
     match logo {
         None => {
             let media_type = ContentType(
-                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+                MediaType::from_str("image/x-icon").map_err(|_| Status::ExpectationFailed)?,
             );
             let favicon_file = match NamedFile::open("opt/tamagui_web/favicon.ico").await {
                 Ok(file) => file,
@@ -189,7 +189,7 @@ async fn favicon_ico<'a>(
                 state.tempdir.path().display()
             );
             let ico_content_type = &ContentType(
-                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+                MediaType::from_str("image/x-icon").map_err(|_| Status::ExpectationFailed)?,
             );
             // Convert PNG icons to ICO
             if content_type.to_string().ends_with("png") {

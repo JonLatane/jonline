@@ -86,7 +86,7 @@ pub fn index_summary(server_name: &str, server_logo: Option<String>) -> Option<J
     Some(JonlineSummary {
         title: Some(format!("Latest | {}", server_name)),
         description: Some("Posts and Events from a Jonline community".to_string()),
-        image: server_logo.or(Some("/favicon.ico".to_string())),
+        image: server_logo.or(Some("/favicon.png".to_string())),
     })
 }
 
@@ -172,13 +172,25 @@ pub async fn spa_web_path(
                 1,
             );
 
-            template.inner = template.inner.replacen(
-                "<meta property=\"og:image\" content=\"/favicon.ico\"/>",
-                summary.image.map_or("", |i| {
-                    String::leak(format!("<meta property=\"og:image\" content=\"{}\"/>", i))
-                }),
-                1,
-            );
+            let og_image_tag = summary.image.map(|i| {
+                String::leak(format!("<meta property=\"og:image\" content=\"{}\"/>", i)) as &str
+            });
+            // The Tamagui static export minifies its HTML (no space before
+            // "/>"), while the Elm SPA's index.html is hand-formatted (space
+            // before "/>") -- both variants must be matched here, or the
+            // placeholder silently survives unreplaced.
+            template.inner = template
+                .inner
+                .replacen(
+                    "<meta property=\"og:image\" content=\"/favicon.png\"/>",
+                    og_image_tag.unwrap_or(""),
+                    1,
+                )
+                .replacen(
+                    "<meta property=\"og:image\" content=\"/favicon.png\" />",
+                    og_image_tag.unwrap_or(""),
+                    1,
+                );
         }
         _ => (),
     };

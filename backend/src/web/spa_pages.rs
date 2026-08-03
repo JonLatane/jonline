@@ -158,7 +158,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("Posts | {}", server_name)),
             description: Some("Posts from a Jonline community".to_string()),
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -173,7 +173,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("Events | {}", server_name)),
             description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -188,7 +188,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("About Community | {}", server_name)),
             description: Some("Information a Jonline community".to_string()),
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -205,7 +205,7 @@ webui!(
             description: Some(
                 "Information about the Jonline federated social network stack".to_string(),
             ),
-            image: None, //server_logo.or(Some("/favicon.ico".to_string())),
+            image: None, //server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -273,7 +273,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("People | {}", server_name)),
             description: Some("User listings for a Jonline community".to_string()),
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -291,7 +291,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -310,7 +310,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Friends | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -329,7 +329,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Followers | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -348,7 +348,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Following | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -367,7 +367,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -386,7 +386,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Friends | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -405,7 +405,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Followers | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -424,7 +424,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Following | {}", username, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     },
     rank = 10
@@ -441,7 +441,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("Follow Requests | {}", server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -458,7 +458,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Latest | {}", group_name, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -475,7 +475,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Posts | {}", group_name, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -529,7 +529,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{}: Events | {}", group_name, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -573,7 +573,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("Members | {} | {}", group_name, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -590,7 +590,7 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("{} | Member Details | {}", group_name, server_name)),
             description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
+            image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -607,7 +607,7 @@ webui!(
         Some(JonlineSummary {
             title: Some("Jonline AI Event Importer".to_string()),
             description: Some("AI-powered bulk import of Events for Jonline".to_string()),
-            image: None, //server_logo.or(Some("/favicon.ico".to_string())),
+            image: None, //server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
@@ -689,7 +689,7 @@ fn post_summary(
     group_name: Option<String>,
     connection: &mut PgPooledConnection,
 ) -> Option<JonlineSummary> {
-    let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
+    let basic_logo = server_logo.or(Some("/favicon.png".to_string()));
     let server_and_group_name = match group_name {
         Some(group_name) => format!("{} | {}", group_name, server_name),
         None => server_name,

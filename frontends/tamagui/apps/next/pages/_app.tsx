@@ -54,7 +54,7 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
          * can override them with Post/Event titles, images, etc. */}
         <meta property="og:title" content="Jonline Social Link" />
         <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
-        <meta property="og:image" content="/favicon.ico" />
+        <meta property="og:image" content="/favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 
         <link rel="manifest" href="/manifest.json" />
