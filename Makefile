@@ -9,26 +9,44 @@ NAMESPACE ?= jonline
 # DEPLOYMENT-RELATED TARGETS: More in deploys/Makefile
 ############################################################################
 # Describe your BE deployment in the current namespace.
-deploy_get_all:
-	cd deploys && $(MAKE) deploy_get_all
+get_backend_all:
+	cd deploys && $(MAKE) get_backend_all
 
-# Manage your Load Balancer (WIP)
-deploy_lb_create_config:
-	cd deploys/jbl && $(MAKE) deploy_lb_create_config
-deploy_lb_delete_config:
-	cd deploys/jbl && $(MAKE) deploy_lb_delete_config
-deploy_lb_get_config:
-	cd deploys/jbl && $(MAKE) deploy_lb_get_config
-deploy_lb_link_service_account:
-	cd deploys/jbl && $(MAKE) deploy_lb_link_service_account
-deploy_lb_unlink_service_account:
-	cd deploys/jbl && $(MAKE) deploy_lb_unlink_service_account
-deploy_lb_create:
-	cd deploys/jbl && $(MAKE) deploy_lb_create
-deploy_lb_update:
-	cd deploys/jbl && $(MAKE) deploy_lb_update
-deploy_lb_restart:
-	cd deploys/jbl && $(MAKE) deploy_lb_restart
+# Targets for deploying Jonline to your K8s cluster.
+# Internal or external refers to whether the service is exposed to the internet.
+# External is the default, but internal is useful for testing, and could
+# save lots of money if you want to host many servers from a single LoadBalancer/IP.
+create_external_backend:
+	cd deploys && $(MAKE) create_external_backend
+create_internal_backend:
+	cd deploys && $(MAKE) create_internal_backend
+update_external_backend:
+	cd deploys && $(MAKE) update_external_backend
+update_internal_backend:
+	cd deploys && $(MAKE) update_internal_backend
+restart_backend:
+	cd deploys && $(MAKE) restart_backend
+delete_backend:
+	cd deploys && $(MAKE) delete_backend
+get_backend_version:
+	@cd deploys/releases && $(MAKE) get_backend_version
+
+# Targets for managing an existing deployment on your K8s cluster, so you can quickly setup DNS and setup an admin.
+backend_shell:
+	cd deploys && $(MAKE) backend_shell
+get_backend_external_ip:
+	cd deploys && $(MAKE) get_backend_external_ip
+monitor_backend_rollout:
+	cd deploys && $(MAKE) monitor_backend_rollout
+
+# General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
+create_backend_data:
+	cd deploys && $(MAKE) create_backend_data
+delete_backend_data:
+	cd deploys && $(MAKE) delete_backend_data
+update_backend_data:
+	cd deploys && $(MAKE) update_backend_data
+
 
 # Manage the shared Traefik ingress (lets many Jonline instances, each in
 # their own namespace/domain, share a single LoadBalancer/external IP instead
@@ -37,8 +55,8 @@ create_ingress:
 	cd deploys/ingress && $(MAKE) create_ingress
 remove_ingress:
 	cd deploys/ingress && $(MAKE) remove_ingress
-deploy_ingress_get_ip:
-	cd deploys/ingress && $(MAKE) deploy_ingress_get_ip
+get_ingress_external_ip:
+	cd deploys/ingress && $(MAKE) get_ingress_external_ip
 deploy_ingress_restart:
 	cd deploys/ingress && $(MAKE) deploy_ingress_restart
 add_ingress_domain:
@@ -64,41 +82,6 @@ add_email_domain:
 	cd deploys/email && $(MAKE) add_email_domain
 list_email_domains:
 	cd deploys/email && $(MAKE) list_email_domains
-
-# Targets for deploying Jonline to your K8s cluster.
-# Internal or external refers to whether the service is exposed to the internet.
-# External is the default, but internal is useful for testing, and could
-# save lots of money if you want to host many servers from a single LoadBalancer/IP.
-deploy_be_external_create:
-	cd deploys && $(MAKE) deploy_be_external_create
-deploy_be_internal_create:
-	cd deploys && $(MAKE) deploy_be_internal_create
-deploy_be_external_update:
-	cd deploys && $(MAKE) deploy_be_external_update
-deploy_be_internal_update:
-	cd deploys && $(MAKE) deploy_be_internal_update
-deploy_be_restart:
-	cd deploys && $(MAKE) deploy_be_restart
-deploy_be_delete:
-	cd deploys && $(MAKE) deploy_be_delete
-get_be_version:
-	@cd deploys/releases && $(MAKE) get_be_version
-
-# Targets for managing an existing deployment on your K8s cluster, so you can quickly setup DNS and setup an admin.
-deploy_be_shell:
-	cd deploys && $(MAKE) deploy_be_shell
-deploy_be_external_get_ip:
-	cd deploys && $(MAKE) deploy_be_external_get_ip
-deploy_be_monitor_rollout:
-	cd deploys && $(MAKE) deploy_be_monitor_rollout
-
-# General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
-deploy_data_create:
-	cd deploys && $(MAKE) deploy_data_create
-deploy_data_delete:
-	cd deploys && $(MAKE) deploy_data_delete
-deploy_data_update:
-	cd deploys && $(MAKE) deploy_data_update
 
 ############################################################################
 # BE/LOCAL TESTING/DEVOPS RESEARCH TARGETS
@@ -127,21 +110,6 @@ protos:
 # 	cd frontends/flutter && $(MAKE) protos
 	cd frontends/tamagui && yarn protos
 	cd frontends/elm-spa && $(MAKE) protos
-
-# Core release targets (for general use, CI/CD, etc.)
-release_ios:
-	cd deploys/releases && $(MAKE) release_ios
-release_be_cloud:
-	cd deploys/releases && $(MAKE) release_be_cloud
-_push_be_cloud_release:
-	cd deploys/releases && $(MAKE) _push_be_cloud_release
-# This target rebuilds the Flutter+React apps, but does not rebuild the Rust BE
-# before pushing the new image. The server Docker image is structured so that this will
-# result in a very small push of only it first layer. Useful for iteration (~55s to deploy
-# to two namespaces in my cluster from my old MBP), but note that
-# the BE GetServiceVersion call will not match the version of the Docker image.
-release_be_fe_only_cloud:
-	cd deploys/releases && $(MAKE) release_be_fe_only_cloud
 
 # Full-Stack dev targets
 # Excludes generated Dart and TypeScript Protobuf files we save in the repo.

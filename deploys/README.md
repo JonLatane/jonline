@@ -18,9 +18,9 @@
 Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment takes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
 
 * Clone this repo.
-* `cd deploys && make deploy_data_create deploy_be_create` to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
-    * This deploys Postgres, MinIO and Jonline to the namespace `jonline` in your cluster. You can `NAMESPACE=mynamespace make deploy_data_create deploy_be_create` to create your setup in `mynamespace`.
-    * For "production-ready" performance you can (and should) skip the `deploy_data_create` part and instead configure external, managed Postgres and/or MinIO/S3 servers.
+* `cd deploys && make create_backend_data deploy_be_create` to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
+    * This deploys Postgres, MinIO and Jonline to the namespace `jonline` in your cluster. You can `NAMESPACE=mynamespace make create_backend_data deploy_be_create` to create your setup in `mynamespace`.
+    * For "production-ready" performance you can (and should) skip the `create_backend_data` part and instead configure external, managed Postgres and/or MinIO/S3 servers.
 
 See [the Cert-Manager integration README](./generated_certs/README.md) for more info on generating certs. At a high level, for a K8s deploy, `generated_certs/Makefile` will simply generate Cert-Manager K8s YAML to `deploys/generated_certs/k8s/cert-manager.\[digitalocean\].\[my-domain.com\].generated.yaml`. Applying that YAML (also doable through the `Makefile`) sets up K8s/Cert-Manager to auto-generate the certs for your Jonline instance in its namespace where it will look for them.
 
@@ -64,23 +64,23 @@ Next, from the repo root, to create Postgres, Minio and two load-balanced Jonlin
 
 ```bash
 # THIS STEP WILL COST MONEY WITH MOST KUBERNETES PROVIDERS. ($12/mo. at DigitalOcean)
-# The deploy_be_external_create Make target, specifically, will create the Joline service as a K8s LoadBalancer.
+# The create_external_backend Make target, specifically, will create the Joline service as a K8s LoadBalancer.
 # Of course, it costs nothing to use Minikube.
-# To deploy for use with a different ingress (say, a shared nginx, or Jonline's pending internal LB), use deploy_be_internal_create or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
-make deploy_data_create deploy_be_external_create
+# To deploy for use with a different ingress (say, a shared nginx, or Jonline's pending internal LB), use create_internal_backend or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
+make create_backend_data create_external_backend
 ```
 
-That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make deploy_data_delete deploy_data_create_external deploy_be_restart` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make delete_backend_data create_backend_data_external restart_backend` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
 ### Deploying to namespaces other than `jonline`
-To deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_data_create deploy_be_external_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.
+To deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make create_backend_data create_external_backend` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.
 
 ## Validating your deployment
 ### Kubernetes service statuses
-To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run `make deploy_get_all`. It should look something like this (with fewer jobs after a fresh install, probably):
+To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run `make get_backend_all`. It should look something like this (with fewer jobs after a fresh install, probably):
 
 ```bash
-$ make deploy_get_all
+$ make get_backend_all
 kubectl get all -n jonline
 NAME                                                  READY   STATUS        RESTARTS   AGE
 pod/delete-expired-tokens-27742795--1-nlkh6           0/1     Completed     0          11m
@@ -150,10 +150,10 @@ job.batch/jonline-expired-token-cleanup-27742805   1/1           4s         113s
 ```
 
 #### External IP Management
-Use `make deploy_be_external_get_ip` to see what your service's external IP is (until set, it will return `<pending>`).
+Use `make get_backend_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
 
 ```bash
-$ make deploy_be_external_get_ip
+$ make get_backend_external_ip
 188.166.203.133
 ```
 
@@ -184,7 +184,7 @@ jonline.Jonline.AccessToken
 That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Get that thing secured before you go telling people to use it!
 
 ## Pointing a domain at your deployment
-Before you can secure with LetsEncrypt, you need to point a domain at your Jonline instance's IP. Again, you can get the IP with `make deploy_be_external_get_ip`, and create your DNS records with your DNS provider. If you're choosing a DNS provider, it's worth noting that [I recommend DigitalOcean DNS (sponsored link)](https://m.do.co/c/1eaa3f9e536c) and Jonline has scripts for it. However, any [Cert-Manager](http://cert-manager.io) supported DNS provider (for the LetsEncrypt dns01 challenge) should be pretty easy to set up.
+Before you can secure with LetsEncrypt, you need to point a domain at your Jonline instance's IP. Again, you can get the IP with `make get_backend_external_ip`, and create your DNS records with your DNS provider. If you're choosing a DNS provider, it's worth noting that [I recommend DigitalOcean DNS (sponsored link)](https://m.do.co/c/1eaa3f9e536c) and Jonline has scripts for it. However, any [Cert-Manager](http://cert-manager.io) supported DNS provider (for the LetsEncrypt dns01 challenge) should be pretty easy to set up.
 
 Continue to the next section for more info about setting up encryption and its relation to your DNS provider.
 
@@ -196,16 +196,16 @@ See [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/t
 See [`backend/README.md`](https://github.com/JonLatane/jonline/blob/main/backend/README.md) for more detailed descriptions of how the deployment and TLS system works.
 
 ## Deleting your deployment
-You can delete your Jonline deployment piece by piece with `make deploy_be_delete deploy_db_delete` or simply `kubectl delete namespace jonline` assuming you deployed to the default namespace `jonline`. Otherwise, assuming you deployed to `my_namespace`, run `NAMESPACE=my_namespace make deploy_be_delete deploy_db_delete` or simply `kubectl delete namespace my_namespace`.
+You can delete your Jonline deployment piece by piece with `make delete_backend delete_backend_postgres` or simply `kubectl delete namespace jonline` assuming you deployed to the default namespace `jonline`. Otherwise, assuming you deployed to `my_namespace`, run `NAMESPACE=my_namespace make delete_backend delete_backend_postgres` or simply `kubectl delete namespace my_namespace`.
 
 
 ## Multiple Deployments
-As mentioned in [Deploying to namespaces other than `jonline`](#deploying-to-namespaces-other-than-jonline): to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_data_create deploy_be_external_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.
+As mentioned in [Deploying to namespaces other than `jonline`](#deploying-to-namespaces-other-than-jonline): to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make create_backend_data create_external_backend` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.
 
-Note that multiple *external* deployments will each have a Kubernetes LoadBalancer. On many providers, this is relatively expensive (an external IP, $12/mo on DigitalOcean). Other Makefile targets include `deploy_be_internal_create` and `deploy_be_internal_insecure_create` (the latter of which will specifically ignore K8s-stored TLS certificates, to save CPU time by not encrypting interal services).
+Note that multiple *external* deployments will each have a Kubernetes LoadBalancer. On many providers, this is relatively expensive (an external IP, $12/mo on DigitalOcean). Other Makefile targets include `create_internal_backend` and `deploy_be_internal_insecure_create` (the latter of which will specifically ignore K8s-stored TLS certificates, to save CPU time by not encrypting interal services).
 
 ### Jonline Ingress: sharing one LoadBalancer across many domains (recommended)
-[`deploys/ingress/`](./ingress/README.md) sets up a single, shared [Traefik](https://traefik.io) ingress that lets any number of Jonline instances -- each still in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs -- share **one** external IP/LoadBalancer instead of one each. Each backend keeps terminating its own TLS exactly as it does today (`deploy_be_internal_create`/`deploy_be_internal_update`); the ingress only reads the plaintext SNI hostname from the TLS handshake to route the still-encrypted bytes to the right namespace, so no certs need to move, be duplicated, or change hands.
+[`deploys/ingress/`](./ingress/README.md) sets up a single, shared [Traefik](https://traefik.io) ingress that lets any number of Jonline instances -- each still in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs -- share **one** external IP/LoadBalancer instead of one each. Each backend keeps terminating its own TLS exactly as it does today (`create_internal_backend`/`update_internal_backend`); the ingress only reads the plaintext SNI hostname from the TLS handshake to route the still-encrypted bytes to the right namespace, so no certs need to move, be duplicated, or change hands.
 
 ```bash
 # Once per cluster:

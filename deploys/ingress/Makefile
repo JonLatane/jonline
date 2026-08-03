@@ -52,8 +52,8 @@ deploy_ingress_monitor_rollout:
 deploy_ingress_restart:
 	kubectl rollout restart deployment traefik -n $(INGRESS_NAMESPACE)
 
-deploy_ingress_get_ip:
-# Suppress echoing this so `make deploy_ingress_get_ip` is easily composable.
+get_ingress_external_ip:
+# Suppress echoing this so `make get_ingress_external_ip` is easily composable.
 	@kubectl get service traefik -n $(INGRESS_NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
 # Per-domain routes. NAMESPACE is the existing namespace your `jonline`
