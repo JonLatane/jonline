@@ -285,11 +285,13 @@ type alias Model =
     -- `frontendHost`, populated lazily by `ToggleRecommendedServersExpanded`
     -- (a fresh disconnected placeholder inserted immediately, replaced once
     -- `GotRecommendedServerConfig` resolves) rather than eagerly for every
-    -- federated server up front. Left in place (not cleared) once a host
-    -- stops being recommended (because it's just been added -- see
-    -- `RecommendedServerClicked`/`GotRecommendedServerAddResult`) or the
-    -- panel closes -- harmless, and means reopening the strip doesn't
-    -- re-fetch hosts it already has cached.
+    -- federated server up front. Cleared for a host once it stops being
+    -- recommended by getting added (`GotRecommendedServerAddResult`) or by
+    -- being removed again (`FinishRemoveServer`, which also immediately
+    -- refetches if the strip is still open) -- otherwise the host would
+    -- reappear in the strip still pointing at stale/placeholder branding.
+    -- Simply closing the panel leaves it in place -- harmless, and means
+    -- reopening the strip doesn't re-fetch hosts it already has cached.
     , recommendedServerConnections : Dict String Server
 
     -- Whether the "Add Account/Server" form (Server/Username/Password/etc.)
@@ -2108,13 +2110,50 @@ updateHelp req msg model =
 
         FinishRemoveServer frontendHost ->
             let
-                newModel =
+                removedModel =
                     { model
                         | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers
                         , serverAnimations = Dict.remove frontendHost model.serverAnimations
+
+                        -- Drop any stale branding cached from before this host was
+                        -- added (see `recommendedServerConnections`'s doc) -- otherwise
+                        -- it reappears in the recommended strip still pointing at the
+                        -- placeholder left behind by `GotRecommendedServerAddResult`'s
+                        -- `Dict.remove`, and never gets refetched.
+                        , recommendedServerConnections = Dict.remove frontendHost model.recommendedServerConnections
                     }
+
+                -- If the strip is open right now, the chip for this host is already
+                -- back on screen (it just became "recommended" again) -- refetch its
+                -- branding immediately instead of waiting on a collapse/re-expand,
+                -- mirroring `ToggleRecommendedServersExpanded`'s own fetch.
+                needsRefetch =
+                    removedModel.recommendedServersExpanded
+                        && List.any (\fs -> fs.host == frontendHost) (recommendedFederatedServers removedModel)
+
+                newModel =
+                    if needsRefetch then
+                        { removedModel
+                            | recommendedServerConnections =
+                                Dict.insert frontendHost
+                                    (disconnectedServer { frontendHost = frontendHost, enabled = False })
+                                    removedModel.recommendedServerConnections
+                        }
+
+                    else
+                        removedModel
             in
-            ( newModel, persist newModel )
+            ( newModel
+            , Cmd.batch
+                [ persist newModel
+                , if needsRefetch then
+                    negotiateServerConfig (isSecure req) frontendHost
+                        |> Task.attempt (GotRecommendedServerConfig frontendHost)
+
+                  else
+                    Cmd.none
+                ]
+            )
 
         ToggleAccountsPanel ->
             let
