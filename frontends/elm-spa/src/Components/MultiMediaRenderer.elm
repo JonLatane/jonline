@@ -62,8 +62,15 @@ case and every thumbnail in the scrolling strip. `onImageClicked` (fired with
 a tapped image's `media.id`, see `Components.MediaRenderer`) is threaded
 through unconditionally -- opening `Shared.MediaViewerPanel` on tap is the
 same behavior everywhere a `Post`'s media renders, single item or strip.
+
+The single-item case uses `MediaRenderer.ToWidthAndHeight` (the usual
+default), but the strip forces `MediaRenderer.ToWidth` instead -- every
+thumbnail in `.multi-media-strip` ends up the same width regardless of its
+own aspect ratio, rather than each capped independently and so varying in
+width across the strip.
+
 -}
-render : Maybe MediaRenderer.Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+render : Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 render previewSizing server maybeAccount onImageClicked media =
     let
         previewClasses =
@@ -87,7 +94,7 @@ render previewSizing server maybeAccount onImageClicked media =
         [ single ] ->
             div [ classes ("multi-media-single" :: previewClasses) ]
                 [ div [ class "multi-media-single-item" ]
-                    [ MediaRenderer.view singleSizing server maybeAccount onImageClicked single ]
+                    [ MediaRenderer.view singleSizing MediaRenderer.ToWidthAndHeight server maybeAccount onImageClicked single ]
                 ]
 
         _ ->
@@ -96,6 +103,6 @@ render previewSizing server maybeAccount onImageClicked media =
                     |> List.map
                         (\mediaRef ->
                             div [ class "multi-media-item" ]
-                                [ MediaRenderer.view stripSizing server maybeAccount onImageClicked mediaRef ]
+                                [ MediaRenderer.view stripSizing MediaRenderer.ToHeight server maybeAccount onImageClicked mediaRef ]
                         )
                 )

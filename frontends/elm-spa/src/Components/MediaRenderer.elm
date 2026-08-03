@@ -1,4 +1,4 @@
-module Components.MediaRenderer exposing (Sizing(..), view)
+module Components.MediaRenderer exposing (MediaSize(..), SizeConstraint(..), view)
 
 {-| Renders a single `Proto.Jonline.MediaReference` -- an image, a video, or
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
@@ -42,33 +42,58 @@ import Proto.Jonline exposing (MediaReference)
 import Shared.AccountsPanel as AccountsPanel
 
 
-type Sizing
+type MediaSize
     = Natural
     | Small
     | ExtraSmall
 
 
-sizingClass : Sizing -> String
-sizingClass sizing =
-    case sizing of
+{-| Which of an image/video's two dimensions (see `.media-renderer-to-*` in
+`media.css`) gets scaled to its `Sizing`'s bound, with the other left free to
+whatever its own aspect ratio calls for -- `ToWidthAndHeight` (the default
+everywhere except `Components.MultiMediaRenderer`'s scrolling strip) instead
+bounds both, same as before this type existed.
+-}
+type SizeConstraint
+    = ToHeight
+    | ToWidth
+    | ToWidthAndHeight
+
+
+mediaSizeClass : MediaSize -> String
+mediaSizeClass mediaSize =
+    case mediaSize of
         Natural ->
             "media-renderer-natural"
 
         Small ->
-            "media-renderer-compact"
+            "media-renderer-small"
 
         ExtraSmall ->
             "media-renderer-extra-small"
 
 
-view : Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
-view sizing server maybeAccount onImageClicked media =
+sizeConstraintClass : SizeConstraint -> String
+sizeConstraintClass sizeConstraint =
+    case sizeConstraint of
+        ToHeight ->
+            "media-renderer-to-height"
+
+        ToWidth ->
+            "media-renderer-to-width"
+
+        ToWidthAndHeight ->
+            "media-renderer-to-width-and-height"
+
+
+view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+view mediaSize sizeConstraint server maybeAccount onImageClicked media =
     let
         mediaUrl =
             url server maybeAccount media
 
         sizeClass =
-            sizingClass sizing
+            mediaSizeClass mediaSize ++ " " ++ sizeConstraintClass sizeConstraint
     in
     case String.split "/" media.contentType |> List.head |> Maybe.withDefault "" of
         "image" ->

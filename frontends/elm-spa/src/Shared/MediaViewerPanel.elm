@@ -361,7 +361,7 @@ view accountsPanelModel model =
                                 , preventDefaultOn "touchmove" (Decode.succeed ( TouchMove, model.touchStart /= Nothing ))
                                 , on "touchend" (touchPoint "changedTouches" TouchEnd)
                                 ]
-                                [ MediaRenderer.view MediaRenderer.Natural server maybeAccount SetCurrent media ]
+                                [ MediaRenderer.view MediaRenderer.Natural MediaRenderer.ToWidthAndHeight server maybeAccount SetCurrent media ]
                           )
                         ]
 

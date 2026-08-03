@@ -29,6 +29,7 @@ both share.
 
 import Components.Authors as Authors
 import Components.Markdown as Markdown
+import Components.MediaRenderer as MediaRenderer
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Gen.Route
@@ -313,6 +314,7 @@ Both `startsAt` and `endsAt` are normally set (a merged range, via
 `BrowserTimeZone.formatRange`); this falls back to just whichever one is set
 (via `BrowserTimeZone.formatMoment`, prefixed "Until " if only `endsAt` is,
 since that's the unusual case) or a placeholder if somehow neither is.
+
 -}
 instanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> String
 instanceWhenText now browserTimeZone instance =
@@ -508,6 +510,14 @@ doc). Renders neither the star button nor the comment count if
 `instance.post` is unset (shouldn't happen in practice, same as `event.post`
 above, but the field is optional on the wire).
 
+`mediaSizing` picks how big `eventPost.media` renders (see
+`Components.MediaRenderer.Sizing`) -- `ExtraSmall` renders via
+`MultiMediaRenderer.previewExtraSmall`, anything else via
+`MultiMediaRenderer.preview` (`Small` sizing). `Shared.StarredPanel` always
+passes `ExtraSmall` (its post rows are tight on vertical space);
+`Components.Pages.EventsPage` passes `ExtraSmall` only for its embedded copy,
+`Small` otherwise (see its own `eventCardView`).
+
 `current` mirrors `Components.Posts.postCard`'s own -- `True` swaps the card's
 background for `background-color-primary` (plus an `event-card-current`
 class, mirroring `post-card-current`) instead of the default
@@ -526,13 +536,14 @@ eventCard :
     -> Maybe AccountsPanel.Server
     -> Maybe AccountsPanel.Account
     -> (String -> msg)
+    -> MediaRenderer.MediaSize
     -> Bool
     -> Maybe msg
     -> Bool
     -> Event
     -> EventInstance
     -> Html msg
-eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked current event instance =
+eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
     case event.post of
         Nothing ->
             text ""
@@ -581,7 +592,12 @@ eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeSe
                         text ""
                 , case maybeServer of
                     Just server ->
-                        MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked eventPost.media
+                        case mediaSizing of
+                            MediaRenderer.ExtraSmall ->
+                                MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked eventPost.media
+
+                            _ ->
+                                MultiMediaRenderer.preview server maybeAccount onMediaClicked eventPost.media
 
                     Nothing ->
                         text ""
