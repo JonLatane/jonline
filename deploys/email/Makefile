@@ -1,10 +1,5 @@
 .NOTPARALLEL:
 
-# Namespace the shared Stalwart mail server runs in. There is normally only ever one of these
-# per cluster, regardless of how many domains you onboard for mail (mirrors
-# ../ingress/Makefile's INGRESS_NAMESPACE).
-EMAIL_NAMESPACE ?= jonline-email
-
 # Selects which provider-specific k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml manifest
 # create_email_postgres/etc. below use (mirrors ../Makefile's K8S_PROVIDER, which selects the
 # per-domain jonline-postgres equivalent).
@@ -19,11 +14,13 @@ K8S_PROVIDER ?= digitalocean
 # Run create_email_admin_secret (below) FIRST if you want add_email_domain/etc. to work --
 # Stalwart's Deployment picks up STALWART_RECOVERY_ADMIN from that Secret on first boot only.
 create_email:
-	kubectl create -f k8s/stalwart.yaml --save-config
+	kubectl create -f k8s/stalwart.yaml --save-config -n jonline-email
 update_email:
-	kubectl apply -f k8s/stalwart.yaml
+	kubectl apply -f k8s/stalwart.yaml -n jonline-email
+restart_email:
+	kubectl rollout restart deployment stalwart -n jonline-email
 remove_email:
-	kubectl delete -f k8s/stalwart.yaml
+	kubectl delete -f k8s/stalwart.yaml -n jonline-email
 
 # Optional Postgres backend for Stalwart's OWN config (accepted domains, MTA hook definitions,
 # DKIM keys, TLS state) and queue, as an alternative to the embedded RocksDB store on
@@ -34,13 +31,13 @@ remove_email:
 # stalwart-postgres.jonline-email.svc.cluster.local:5432 with the credentials baked into the yaml.
 create_email_postgres:
 	cd .. && $(MAKE) deploy_ensure_storageclass_retain
-	kubectl create -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml --save-config
+	kubectl create -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml --save-config -n jonline-email
 update_email_postgres:
-	kubectl apply -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml
+	kubectl apply -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml -n jonline-email
 delete_email_postgres:
-	- kubectl delete -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml
+	- kubectl delete -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml -n jonline-email
 restart_email_postgres:
-	kubectl rollout restart statefulset stalwart-postgres -n $(EMAIL_NAMESPACE)
+	kubectl rollout restart statefulset stalwart-postgres -n jonline-email
 
 # create_email_admin_secret: pre-codes Stalwart's initial admin credentials into a Secret instead
 # of hunting a random one-time password out of `kubectl logs` (see k8s/stalwart.yaml's
@@ -54,8 +51,8 @@ restart_email_postgres:
 ADMIN_USER ?= admin
 create_email_admin_secret:
 	@test -n "$(ADMIN_PASSWORD)" || (echo "ADMIN_PASSWORD is required, e.g. ADMIN_USER=admin ADMIN_PASSWORD=correct-horse-battery-staple make create_email_admin_secret" && exit 1)
-	kubectl create namespace $(EMAIL_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	kubectl create secret generic stalwart-admin -n $(EMAIL_NAMESPACE) \
+	kubectl create namespace jonline-email --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create secret generic stalwart-admin -n jonline-email \
 	  --from-literal=credentials="$(ADMIN_USER):$(ADMIN_PASSWORD)" \
 	  --dry-run=client -o yaml | kubectl apply -f -
 
@@ -66,14 +63,14 @@ deploy_email_get_ip:
 	@cd ../ingress && $(MAKE) get_ingress_external_ip
 
 deploy_email_restart:
-	kubectl rollout restart deployment stalwart -n $(EMAIL_NAMESPACE)
+	kubectl rollout restart deployment stalwart -n jonline-email
 deploy_email_monitor_rollout:
-	kubectl rollout status deployment/stalwart -n $(EMAIL_NAMESPACE) --timeout 2m
+	kubectl rollout status deployment/stalwart -n jonline-email --timeout 2m
 
 # Reaches the setup wizard / admin UI at http://localhost:8080 -- this is *never* exposed
 # publicly (see k8s/stalwart.yaml), so this is the only way in.
 deploy_email_admin_port_forward:
-	kubectl port-forward service/stalwart-admin -n $(EMAIL_NAMESPACE) 8080:8080
+	kubectl port-forward service/stalwart-admin -n jonline-email 8080:8080
 
 # add_email_domain / remove_email_domain / list_email_domains: unlike ../ingress's
 # add_ingress_domain, these are NOT `kubectl apply` of generated YAML -- Stalwart keeps accepted
@@ -91,7 +88,7 @@ deploy_email_admin_port_forward:
 # Requires `make deploy_email_admin_port_forward` running in another terminal (Stalwart's admin
 # API is ClusterIP-only, per k8s/stalwart.yaml).
 STALWART_ADMIN_URL ?= http://localhost:8080/api
-stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n $(EMAIL_NAMESPACE) -o jsonpath='{.data.credentials}' | base64 -d)
+stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n jonline-email -o jsonpath='{.data.credentials}' | base64 -d)
 
 add_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)

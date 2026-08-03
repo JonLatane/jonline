@@ -55,6 +55,9 @@ This installs Stalwart (`Deployment`, two `ClusterIP` Services, a `PersistentVol
   ```bash
   make deploy_email_admin_port_forward
   # then open http://localhost:8080
+
+  # The k8s postgres instance is at: 
+  # postgresql://admin:secure_password1@stalwart-postgres.jonline-email.svc.cluster.local/stalwart
   ```
 * On a fresh volume, Stalwart boots into a setup wizard -- log in with the credentials from `create_email_admin_secret` above (or the random one-time password from `kubectl logs -n jonline-email deployment/stalwart` if you skipped it) and walk through hostname/storage/directory choices.
 

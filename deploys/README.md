@@ -10,16 +10,16 @@
   - [Securing your deployment](#securing-your-deployment)
   - [Deleting your deployment](#deleting-your-deployment)
   - [Multiple Deployments](#multiple-deployments)
-    - [Jonline Balancer of Loads (JBL), a load balancer for Kubernetes](#jonline-balancer-of-loads-jbl-a-load-balancer-for-kubernetes)
+    - [Jonline Ingress: sharing one LoadBalancer across many domains (recommended)](#jonline-ingress-sharing-one-loadbalancer-across-many-domains-recommended)
     - [Example Kubernetes Cluster Setups](#example-kubernetes-cluster-setups)
-      - [K8s cluster with multiple Kubernetes LoadBalancers (without JBL)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-jbl)
-      - [K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-jbl-loadbalancer)
+      - [K8s cluster with multiple Kubernetes LoadBalancers (without a shared ingress)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-a-shared-ingress)
+      - [K8s cluster with multiple Jonline servers/deployments behind a single shared LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-shared-loadbalancer)
 
 Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment takes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
 
 * Clone this repo.
-* `cd deploys && make create_backend_data deploy_be_create` to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
-    * This deploys Postgres, MinIO and Jonline to the namespace `jonline` in your cluster. You can `NAMESPACE=mynamespace make create_backend_data deploy_be_create` to create your setup in `mynamespace`.
+* `cd deploys && make create_backend_data create_internal_backend([^_]) to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
+    * This deploys Postgres, MinIO and Jonline to the namespace `jonline` in your cluster. You can `NAMESPACE=mynamespace make create_backend_data create_internal_backend([^_]) to create your setup in `mynamespace`.
     * For "production-ready" performance you can (and should) skip the `create_backend_data` part and instead configure external, managed Postgres and/or MinIO/S3 servers.
 
 See [the Cert-Manager integration README](./generated_certs/README.md) for more info on generating certs. At a high level, for a K8s deploy, `generated_certs/Makefile` will simply generate Cert-Manager K8s YAML to `deploys/generated_certs/k8s/cert-manager.\[digitalocean\].\[my-domain.com\].generated.yaml`. Applying that YAML (also doable through the `Makefile`) sets up K8s/Cert-Manager to auto-generate the certs for your Jonline instance in its namespace where it will look for them.

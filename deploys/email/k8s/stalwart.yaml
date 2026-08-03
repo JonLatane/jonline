@@ -46,6 +46,12 @@ spec:
       labels:
         app: stalwart
     spec:
+      # The image runs as a non-root `stalwart` user (uid/gid 2000), but PVCs are typically
+      # provisioned root-owned -- without this, Stalwart can't write its own config/DKIM keys to
+      # stalwart-data and setup fails with e.g. "Local registry write error ... Permission denied
+      # (os error 13)". fsGroup makes the kubelet chown the mounted volume to gid 2000 on attach.
+      securityContext:
+        fsGroup: 2000
       containers:
         - name: stalwart
           # Pin to a specific v<major>.<minor> tag in production -- check

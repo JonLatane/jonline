@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/timestamp.proto";
+import "users.proto";
+
+// Jonline Email support is "low trust." You should not trust that people are who
+// they say they are, or ever exchange financial or private information with Jonline's
+// email features.
+//
+// That said, this "low trust email system" is the foundation for all of Jonline's messaging
+// features. It's meant to be *just enough* that strangers can find you on a Jonline instance,
+// like your posts, and send you a message via email (no account needed). From there, it needs
+// only give you the ability to exchange, say, Signal usernames or personal emails.
+// 
+// Any UI built on these APIs needs to reflect this.
+message GetEmailsRequest {
+  // Returns the single email with the given ID.
+  optional string email_id = 1;
+
+  // Full-text search query, matched against the sender's username/real name and the email's
+  // subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
+  optional string search_text = 7;
+
+  // Request to only return posts that were published or created before the given timestamp.
+  optional google.protobuf.Timestamp created_before = 8;
+}
+
+message GetEmailsRequest {
+}
+
+enum EmailListingType {
+  // Gets emails sent to the current user, and emails (purportedly) sent by the user.
+  PERSONAL_EMAILS = 0;
+  // Gets emails sent to the current user, and emails (purportedly) sent by the user, that match the given search text.
+  // Returns results in order of relevance to the search text.
+  PERSONAL_EMAILS_TEXT_SEARCH = 1;
+
+  // Gets all emails on the server (to a limit), including those sent to other users. Requires admin privileges.
+  ALL_SYSTEM_EMAILS = 10;
+  ALL_SYSTEM_EMAILS_TEXT_SEARCH = 11;
+}
+
+message Email {
+  // The sender of the email. Note that this is *purported* (we don't protect against spoofing).
+  optional Author sender = 1;
+  optional string from = 2;
+  optional string to = 3;
+  optional string cc = 4;
+  optional string bcc = 5;
+  optional string subject = 6;
+  optional string body_preview = 7;
+  optional string text_body = 8;
+  optional string html_body = 9;
+  
+  // The time the email was created.
+  google.protobuf.Timestamp created_at = 20;
+}
