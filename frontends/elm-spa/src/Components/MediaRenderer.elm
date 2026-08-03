@@ -55,7 +55,7 @@ sizingClass sizing =
             "media-renderer-natural"
 
         Small ->
-            "media-renderer-compact"
+            "media-renderer-small"
 
         ExtraSmall ->
             "media-renderer-extra-small"

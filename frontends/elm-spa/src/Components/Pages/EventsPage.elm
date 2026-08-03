@@ -41,6 +41,7 @@ import Animation
 import Browser.Dom as Dom
 import Browser.Navigation
 import Components.Events as Events
+import Components.MediaRenderer as MediaRenderer
 import Components.Users exposing (usernameHref)
 import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
@@ -1757,7 +1758,7 @@ eventsListView shared model =
     else
         Html.Keyed.node "div"
             [ class containerClass ]
-            (List.map (eventAnimationView shared axis) animations)
+            (List.map (eventAnimationView shared model.embeddedPage axis) animations)
 
 
 {-| Wraps `eventCardView` in a fading/scaling/collapsing animated `<div>`
@@ -1772,8 +1773,8 @@ The inner div's `event-card-move` class (see `events.css`) sets
 `transform-origin: top left` -- see `UI.Flip.startMoveScaled`'s own doc for
 why that's needed alongside a scale.
 -}
-eventAnimationView : Shared.Model -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
-eventAnimationView shared axis ( key, anim ) =
+eventAnimationView : Shared.Model -> Bool -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
+eventAnimationView shared embeddedPage axis ( key, anim ) =
     let
         pointerEventsAttr =
             if anim.flip.removing then
@@ -1785,7 +1786,7 @@ eventAnimationView shared axis ( key, anim ) =
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage ( anim.host, anim.event, anim.instance ) ]
         ]
     )
 
@@ -1799,8 +1800,8 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView shared embeddedPage ( host, event, instance ) =
     let
         maybeServer =
             AccountsPanel.serverForHost shared.accountsPanel.servers host
@@ -1836,6 +1837,13 @@ eventCardView shared ( host, event, instance ) =
             displayInstance.post
                 |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accountsPanel host)
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
+
+        mediaSizing =
+            if embeddedPage then
+                MediaRenderer.ExtraSmall
+
+            else
+                MediaRenderer.Small
     in
     Events.eventCard
         shared.now
@@ -1846,6 +1854,7 @@ eventCardView shared ( host, event, instance ) =
         maybeServer
         maybeAccount
         onMediaClicked
+        mediaSizing
         starred
         onStarClicked
         False

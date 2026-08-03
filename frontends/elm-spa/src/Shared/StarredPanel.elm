@@ -31,6 +31,7 @@ round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 import Animation
 import Browser.Dom as Dom
 import Components.Events as Events
+import Components.MediaRenderer as MediaRenderer
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
@@ -1343,7 +1344,7 @@ starredEventInstanceView now browserTimeZone basePath accountsPanelModel current
 
                     Nothing ->
                         text ""
-                , Events.eventCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked starred onStarClicked current event displayInstance
+                , Events.eventCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current event displayInstance
                 ]
 
         Just FetchingEvent ->

@@ -24,9 +24,14 @@
   color: var(--fg);
 }
 
+/* `flex-wrap: nowrap` + `overflow-x: auto` (rather than wrapping to a second
+   row) keeps this to one line at any width, scrolling horizontally instead
+   -- same reasoning as `.filter-tabs-bar` (see `ui/filter_bar.css`). */
 .server-details-tab-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   gap: 0.35rem;
   margin-bottom: 1rem;
   /* margin-top: 0.35rem; */
@@ -39,6 +44,7 @@
 }
 
 .server-details-tab {
+  flex-shrink: 0;
   padding: 0.3rem 0.8rem;
   border-radius: 999px;
   border: 1px solid var(--border);

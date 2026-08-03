@@ -41,8 +41,8 @@
    height -- narrower if portrait, shorter if landscape, never stretched or
    cropped to fill a fixed box. Used for every thumbnail (see
    Components.MultiMediaRenderer's scrolling strip and its `preview`). */
-.media-renderer-compact.media-renderer-image,
-.media-renderer-compact.media-renderer-video {
+.media-renderer-small.media-renderer-image,
+.media-renderer-small.media-renderer-video {
   display: block;
   width: auto;
   height: auto;
@@ -50,12 +50,12 @@
   max-height: 238px;
 }
 
-.media-renderer-compact.media-renderer-object {
+.media-renderer-small.media-renderer-object {
   width: 238px;
   height: 238px;
 }
 
-/* Same as .media-renderer-compact above, just capped to half the height --
+/* Same as .media-renderer-small above, just capped to half the height --
    for contexts even tighter on vertical space than an ordinary preview (see
    Components.MultiMediaRenderer's `previewExtraSmall`, used by
    Shared.StarredPanel's post rows). */
@@ -88,7 +88,7 @@
    so it's shown big at its own aspect ratio (see .media-renderer-natural
    above) rather than being squashed into a fixed box; multiple items
    instead fall back to a horizontally-scrolling strip of thumbnails (see
-   .media-renderer-compact), same pattern as the Accounts Panel's
+   .media-renderer-small), same pattern as the Accounts Panel's
    .servers-strip. Neither wrapper below sizes its media itself -- both just
    frame whatever size `Components.MediaRenderer` already settled on. */
 
