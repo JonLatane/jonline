@@ -70,7 +70,7 @@ own aspect ratio, rather than each capped independently and so varying in
 width across the strip.
 
 -}
-render : Maybe MediaRenderer.Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+render : Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 render previewSizing server maybeAccount onImageClicked media =
     let
         previewClasses =

@@ -314,6 +314,7 @@ Both `startsAt` and `endsAt` are normally set (a merged range, via
 `BrowserTimeZone.formatRange`); this falls back to just whichever one is set
 (via `BrowserTimeZone.formatMoment`, prefixed "Until " if only `endsAt` is,
 since that's the unusual case) or a placeholder if somehow neither is.
+
 -}
 instanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> String
 instanceWhenText now browserTimeZone instance =
@@ -535,7 +536,7 @@ eventCard :
     -> Maybe AccountsPanel.Server
     -> Maybe AccountsPanel.Account
     -> (String -> msg)
-    -> MediaRenderer.Sizing
+    -> MediaRenderer.MediaSize
     -> Bool
     -> Maybe msg
     -> Bool
