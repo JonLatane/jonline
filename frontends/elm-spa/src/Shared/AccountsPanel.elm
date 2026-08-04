@@ -1488,7 +1488,9 @@ updateHelp req msg model =
                                 | accounts =
                                     upsertAccount account model.accounts
                                         |> disableOtherAccountsOnServer (accountId account) account.server
-                                , servers = upsertServer (serverFrom connection True config) model.servers
+                                , servers =
+                                    upsertServer (serverFrom connection True config) model.servers
+                                        |> enableServerFor connection.frontendHost
                                 , accountForm =
                                     let
                                         form =
@@ -1526,6 +1528,7 @@ updateHelp req msg model =
                         | accounts =
                             upsertAccount enabledAccount model.accounts
                                 |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
+                        , servers = enableServerFor enabledAccount.server model.servers
                     }
 
                 -- The account's server may not be known (or may be known but
@@ -1782,22 +1785,10 @@ updateHelp req msg model =
                         Nothing ->
                             toggledAccounts
 
-                -- Re-enabling an account whose server is disabled would leave it
-                -- silently excluded from aggregated data anyway -- bring the
-                -- server along, the mirror of `ToggleServerEnabled` taking its
-                -- accounts along when the server itself is disabled.
                 newServers =
                     case justEnabledAccount of
                         Just account ->
-                            List.map
-                                (\server ->
-                                    if server.frontendHost == account.server then
-                                        { server | enabled = True }
-
-                                    else
-                                        server
-                                )
-                                model.servers
+                            enableServerFor account.server model.servers
 
                         Nothing ->
                             model.servers
@@ -2768,6 +2759,25 @@ disableOtherAccountsOnServer keepEnabledId server accounts =
                 a
         )
         accounts
+
+
+{-| Signing in/re-enabling an account whose server is still marked disabled
+would leave it silently excluded from aggregated data anyway -- bring the
+server along, mirroring what `ToggleServerEnabled` does for its accounts when
+the server itself is disabled. Used by every path that force-enables an
+account (`GotAuthResult`, `FederatedAccountReceived`, `ToggleAccountEnabled`).
+-}
+enableServerFor : String -> List Server -> List Server
+enableServerFor frontendHost servers =
+    List.map
+        (\server ->
+            if server.frontendHost == frontendHost then
+                { server | enabled = True }
+
+            else
+                server
+        )
+        servers
 
 
 upsertAccount : Account -> List Account -> List Account

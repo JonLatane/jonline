@@ -1562,7 +1562,7 @@ versionView status =
             text ""
 
         VersionLoaded version ->
-            p [ class "server-details-version" ] [ text ("Jonline " ++ version) ]
+            p [ class "server-details-version" ] [ text ("v" ++ version) ]
 
         VersionFailed ->
             text ""
