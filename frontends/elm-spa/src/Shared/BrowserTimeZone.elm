@@ -1,4 +1,4 @@
-module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateTime, formatDateTimeLocalInput, formatMoment, formatRange, posixFromDateTimeLocalInput)
+module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateRange, formatDateTime, formatDateTimeLocalInput, formatMoment, formatRange, posixFromDateTimeLocalInput)
 
 import Shared.Conversions as Conversions
 import Time
@@ -9,9 +9,13 @@ import Time
 Bundled together since every call site that needs one of these tends to need
 the others too -- see `Shared.Model.browserTimeZone`.
 
-`zone` is resolved via `Time.here` once `Shared.init`'s `Cmd` runs -- `Time.utc`
-until then (never visibly wrong for long: the `Task` resolves on the same
-frame the app first renders). `abbreviation`/`uses24Hour` both come from a
+`zone` is resolved via `Shared.getBrowserZone` once `Shared.init`'s `Cmd`
+runs -- `Time.utc` until then (never visibly wrong for long: the `Task`
+resolves on the same frame the app first renders). Unlike plain `Time.here`,
+`getBrowserZone` is DST-aware (backed by `justinmimbs/timezone-data`), so a
+timestamp far from "now" -- e.g. a recurring `EventInstance` on the other
+side of a DST transition -- still converts with the offset that actually
+applied on *its* date, not today's. `abbreviation`/`uses24Hour` both come from a
 different source: unlike `zone`, `elm/time` has no way to derive either (a
 `Time.Zone` is just a raw offset table, with no notion of a locale's
 formatting conventions), so both are read once at startup from the browser's
@@ -133,6 +137,32 @@ formatRange now browserTimeZone start end =
             ++ dateLabel browserTimeZone (Time.toYear zone now) end
             ++ ", "
             ++ timeOfDayLabel browserTimeZone end
+
+
+{-| Like `formatRange`, but omits the time-of-day entirely -- just the
+date(s), e.g. "August 1" (same day) or "June 1 - June 8" (different days).
+Used by `Components.Events.siblingInstanceWhenText` to drop a redundant time
+when a sibling `EventInstance` shares its current instance's own
+time-of-day (e.g. a weekly meetup that's always 6-7PM) -- only the date(s)
+then distinguish one instance from another.
+-}
+formatDateRange : Time.Posix -> BrowserTimeZone -> Time.Posix -> Time.Posix -> String
+formatDateRange now browserTimeZone start end =
+    let
+        zone =
+            browserTimeZone.zone
+
+        sameDay =
+            ( Time.toYear zone start, Time.toMonth zone start, Time.toDay zone start )
+                == ( Time.toYear zone end, Time.toMonth zone end, Time.toDay zone end )
+    in
+    if sameDay then
+        dateLabel browserTimeZone (Time.toYear zone now) start
+
+    else
+        dateLabel browserTimeZone (Time.toYear zone now) start
+            ++ " - "
+            ++ dateLabel browserTimeZone (Time.toYear zone now) end
 
 
 {-| "MonthName Day", e.g. "August 1" -- plus a trailing ", Year" whenever
