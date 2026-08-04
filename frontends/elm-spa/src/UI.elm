@@ -1602,10 +1602,12 @@ addAccountForm shared currentRoute =
             else
                 AccountsPanel.NoOp
 
-        -- `Nothing` at the Username-only step; set once the user's picked
-        -- "Log In" or "Create Account" (`AccountsPanel.ChooseLoginClicked`/
-        -- `ChooseCreateAccountClicked`), which is also when the Password field
-        -- first renders -- see `AccountsPanel.Model.newAccountType`.
+        -- `Nothing` at the Username-only step. Set the moment "Log In" is
+        -- picked (`AccountsPanel.ChooseLoginClicked`); for "Create Account"
+        -- (`ChooseCreateAccountClicked`), only once the policy confirmation
+        -- modal's been accepted (`AccountsPanel.ConfirmCreateAccountClicked`)
+        -- -- either way, this is also when the Password field first renders --
+        -- see `AccountsPanel.Model.newAccountType`.
         newAccountType =
             accountsPanelModel.newAccountType
 
@@ -1969,13 +1971,17 @@ createAccountConfirmationBackdrop shared =
         (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
 
 
-{-| The confirmation step shown after clicking "Create Account", before the
-account is actually created: the target server's identity (the same
+{-| The confirmation step shown after clicking "Create Account" at the
+Username-only step (`AccountsPanel.ChooseCreateAccountClicked`), before the
+Password field even renders: the target server's identity (the same
 glyph+name as `homeLinkContent`, per the "home button style" this was asked
 to reuse) plus its description/privacy policy/media policy from `ServerInfo`
 -- fields the Elm frontend otherwise never surfaces, despite being meant for
 exactly this per their proto doc comments -- so the user can see what
-they're signing up for before confirming.
+they're signing up for before entering a password at all. "Accept and
+Continue" (`AccountsPanel.ConfirmCreateAccountClicked`) doesn't create the
+account itself -- it just records acceptance and reveals the Password field;
+the actual `CreateAccount` RPC fires once that's submitted.
 
 A centered dialog (unlike the edge-anchored Accounts/Starred panels)
 since it interrupts a specific action rather than being an ambient panel.
@@ -1994,9 +2000,6 @@ createAccountConfirmationModal shared =
             let
                 info =
                     AccountsPanel.serverInfoOf pending.server
-
-                submitting =
-                    shared.accountsPanel.accountForm.status == AccountsPanel.Submitting
             in
             UI.Modal.view
                 { class = "create-account-modal"
@@ -2013,14 +2016,12 @@ createAccountConfirmationModal shared =
                     ]
                 , buttons =
                     [ button
-                        [ onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
-                        , disabled submitting
-                        ]
+                        [ onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked) ]
                         [ text "Cancel" ]
                     , button
                         [ onClick (Shared.AccountsPanelMsg AccountsPanel.ConfirmCreateAccountClicked)
-                        , disabled (submitting || not pending.reachedBottom)
-                        , classes [ pending.server.frontendHost, "background-color-primary" ]
+                        , disabled (not pending.reachedBottom)
+                        , classes [ hostnameToCSSClass pending.server.frontendHost, "background-color-primary" ]
                         , title
                             (if pending.reachedBottom then
                                 ""
@@ -2029,14 +2030,7 @@ createAccountConfirmationModal shared =
                                 "Please scroll down to read the rest first"
                             )
                         ]
-                        [ text
-                            (if submitting then
-                                "Creating…"
-
-                             else
-                                "Create Account"
-                            )
-                        ]
+                        [ text "Accept and Continue" ]
                     ]
                 }
 
