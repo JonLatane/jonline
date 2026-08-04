@@ -703,7 +703,8 @@ postDetailView shared model post =
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
     in
-    Posts.postDetail shared.browserTimeZone
+    Posts.postDetail shared.now
+        shared.browserTimeZone
         shared.basePath
         shared.accountsPanel.mainFrontendHost
         model.targetHost
