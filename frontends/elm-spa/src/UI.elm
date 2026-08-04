@@ -138,6 +138,7 @@ headerNav shared currentRoute =
                     , eventsLink shared currentRoute
                     , postsLink shared currentRoute
                     , peopleLink shared currentRoute
+                    , aboutLink shared currentRoute
                     ]
                 ]
             , div [ class "nav-right" ] [ accountsMenu shared currentRoute ]
@@ -509,22 +510,36 @@ serverName shared =
         |> Maybe.withDefault shared.accountsPanel.mainFrontendHost
 
 
-{-| The former "About" nav link, now a small circular "i" button stacked above
-the theme toggle at the Accounts Panel's top-right corner (see
-`accountsPanel`).
+{-| A circular icon nav link to the About page (`/about`), sitting alongside
+`peopleLink`/`eventsLink`/`postsLink` -- same styling/highlighting
+convention, just routed to `Route.About` with an "i" glyph. Keeps the
+`info-button` class (accounts\_panel.css) it had as the old `infoButton` for
+the same serif-italic "i" styling, layered on top of `nav-link`'s own sizing.
 -}
-infoButton : Shared.Model -> Html Shared.Msg
-infoButton shared =
+aboutLink : Shared.Model -> Route -> Html Shared.Msg
+aboutLink shared currentRoute =
+    let
+        isCurrent =
+            currentRoute == Route.About
+    in
     a
-        [ classes [ "panel-icon-button", "info-button" ]
-        , href (shared.basePath ++ Route.toHref Route.About)
-        , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        [ href (shared.basePath ++ Route.toHref Route.About)
+        , classes
+            ("nav-link"
+                :: "info-button"
+                :: (if isCurrent then
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+                    else
+                        []
+                   )
+            )
         , title "About"
         ]
         [ text "i" ]
 
 
-{-| `infoButton`'s counterpart for one `serverChip` -- links to
+{-| `aboutLink`'s counterpart for one `serverChip` -- links to
 `Pages.Server.ServerIdentifier_` for that specific server (rather than
 `Route.About`, which is always `mainFrontendHost`) so a chip for any known
 server can be inspected the same way.
@@ -816,8 +831,9 @@ accountsPanel shared currentRoute =
 
 
 {-| The tab bar itself: the "Accounts and Servers"/Settings/Admin tabs (see
-`accountsPanelTab`) on the left, the info/brightness buttons -- horizontal
-here, unlike their old stacked-in-the-corner layout -- on the right.
+`accountsPanelTab`) on the left, the brightness toggle -- now alone since the
+"About" info button moved out to the header nav (see `aboutLink`) -- on the
+right.
 -}
 accountsPanelTabBar : Shared.Model -> Html Shared.Msg
 accountsPanelTabBar shared =
@@ -837,7 +853,7 @@ accountsPanelTabBar shared =
                     Nothing
                 ]
             )
-        , div [ class "panel-icon-row" ] [ themeToggle shared, infoButton shared ]
+        , div [ class "panel-icon-row" ] [ themeToggle shared ]
         ]
 
 

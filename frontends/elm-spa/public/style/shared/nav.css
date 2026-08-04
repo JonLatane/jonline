@@ -133,11 +133,11 @@
   transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
 }
 
-/* .nav-link:hover {
-  opacity: 0.85;
-} */
+.nav-link.info-button {
+  font-size: 20px;
+}
 
-/* Events/Posts/People (everything in `.nav-links-scroll` except the
+/* Events/Posts/People/About (everything in `.nav-links-scroll` except the
    circular Starred toggle, which sizes itself via
    `.nav-menu-toggle.circular`) -- portrait-oriented rectangles, taller than
    they are wide, rather than the small horizontal pill this used to be:
@@ -147,8 +147,8 @@
    `.nav-link-home`'s 64px logo) so they read as tall buttons rather than
    small icons. `:not(.nav-link-home)` rather than a dedicated class, since
    every one of these is already just a plain `.nav-link` in `UI.elm`
-   (`eventsLink`/`postsLink`/`peopleLink`) with nothing else to hook a
-   selector onto. `flex-shrink: 0` keeps this fixed size no matter how
+   (`eventsLink`/`postsLink`/`peopleLink`/`aboutLink`) with nothing else to
+   hook a selector onto. `flex-shrink: 0` keeps this fixed size no matter how
    little room `.nav-links-scroll` (its shrinkable flex parent, above) ends
    up with -- without it, the flex algorithm would rather shrink these
    buttons down than let the container's own box go narrower than its

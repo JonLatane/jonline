@@ -18,8 +18,10 @@ exactly what makes the date-picker strip possible without a second request.
 
 import Animation
 import Browser.Dom as Dom
+import Components.Authors as Authors
 import Components.Events as Events
 import Components.Markdown as Markdown
+import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
@@ -28,7 +30,7 @@ import Effect exposing (Effect)
 import Gen.Params.Event.EventId_ exposing (Params)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, option, p, select, span, text)
+import Html exposing (Html, a, button, div, h1, h2, option, p, select, span, text)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
@@ -1021,19 +1023,10 @@ eventDetailView shared model event instance =
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
 
-        postSection =
-            Events.postSection
-                shared.browserTimeZone
-                shared.basePath
-                shared.accountsPanel.mainFrontendHost
-                model.targetHost
-                maybeServer
-                maybeAccount
-
-        -- Slotted into the primary (`Event`) `postSection` as its
-        -- `extraContent`, between the byline and the media display -- the
-        -- currently-viewed `EventInstance`'s own start/end/location, then
-        -- (below that) the date-picker strip to switch to a sibling one.
+        -- Slotted between the byline and the media display in the primary
+        -- (`Event`) post section below -- the currently-viewed
+        -- `EventInstance`'s own start/end/location, then (below that) the
+        -- date-picker strip to switch to a sibling one.
         instanceDetailAndStrip =
             div [ class "event-instance-detail-and-strip" ]
                 [ div [ class "event-instance-detail" ]
@@ -1052,16 +1045,27 @@ eventDetailView shared model event instance =
         [ case event.post of
             Just eventPost ->
                 div []
-                    [ postSection
-                        (MediaClicked eventPost)
-                        True
-                        (Just (titleView model.postFieldEdit maybeAccount eventPost))
-                        (Just (linkView model.postFieldEdit maybeAccount eventPost))
-                        (Just (contentDisplayView maybeAccount eventPost))
-                        (moderationView maybeAccount model.moderationEdit event eventPost)
-                        instanceDetailAndStrip
-                        eventPost
-                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                    [ div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-primary" ] ]
+                        [ h1 [ class "event-post-title" ] [ titleView model.postFieldEdit maybeAccount eventPost ]
+                        , linkView model.postFieldEdit maybeAccount eventPost
+                        , div [ class "event-post-meta" ]
+                            [ text "by "
+                            , Authors.link shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount eventPost.author
+                            , text (" · " ++ Posts.postVisibilityText eventPost)
+                            , moderationView maybeAccount model.moderationEdit event eventPost
+                            ]
+                        , instanceDetailAndStrip
+                        , case maybeServer of
+                            Just server ->
+                                div []
+                                    [ MultiMediaRenderer.view server maybeAccount (MediaClicked eventPost) eventPost.media
+                                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                                    ]
+
+                            Nothing ->
+                                text ""
+                        , contentDisplayView maybeAccount eventPost
+                        ]
                     , div [ class "post-detail-edit-row" ] [ deleteButtonView maybeAccount event eventPost ]
                     ]
 
@@ -1069,7 +1073,38 @@ eventDetailView shared model event instance =
                 text ""
         , case instance.post |> Maybe.andThen Events.meaningfulPost of
             Just instancePost ->
-                postSection (MediaClicked instancePost) False Nothing Nothing Nothing (text "") (text "") instancePost
+                div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-secondary" ] ]
+                    [ h2 [ class "event-post-title" ] [ text (Posts.postTitleText instancePost) ]
+                    , case Posts.postLinkText instancePost of
+                        Just link ->
+                            a
+                                [ href link
+                                , target "_blank"
+                                , rel "noopener noreferrer"
+                                , classes [ hostnameToCSSClass model.targetHost, "event-post-link" ]
+                                ]
+                                [ text link ]
+
+                        Nothing ->
+                            text ""
+                    , div [ class "event-post-meta" ]
+                        [ text "by "
+                        , Authors.link shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount instancePost.author
+                        , text (" · " ++ Posts.postVisibilityText instancePost)
+                        ]
+                    , case maybeServer of
+                        Just server ->
+                            MultiMediaRenderer.view server maybeAccount (MediaClicked instancePost) instancePost.media
+
+                        Nothing ->
+                            text ""
+                    , case instancePost.content of
+                        Just content ->
+                            Markdown.view [ class "event-post-content" ] content
+
+                        Nothing ->
+                            text ""
+                    ]
 
             Nothing ->
                 text ""
@@ -1078,15 +1113,16 @@ eventDetailView shared model event instance =
         ]
 
 
-{-| The title heading's own content, slotted into `postSection`'s
-`titleOverride` (see `eventDetailView`) -- always `Just`, even when nothing's
-being edited, since (per this feature's own request) there's no shared
-"edit row" collecting every field's edit button in one place; each field's
-own "Edit X" button (`postFieldEditButtonView`) sits right next to that
-field instead, so `postSection`'s own plain-title fallback (for a `Nothing`
-override) is never actually used here. Mirrors `linkView` exactly, just for
-the title (`contentDisplayView` is the odd one out among the three -- see
-its own doc for why it needs no analogous `contentView` wrapper).
+{-| The primary post section's `<h1>` content (see `eventDetailView`) --
+always rendered, even when nothing's being edited, since (per this feature's
+own request) there's no shared "edit row" collecting every field's edit
+button in one place; each field's own "Edit X" button
+(`postFieldEditButtonView`) sits right next to that field instead. Mirrors
+`linkView` exactly, just for the title (`contentDisplayView` is the odd one
+out among the three -- see its own doc for why it needs no analogous
+`contentView` wrapper). The secondary section (`instancePost`) has no
+editable fields, so it renders its title as plain text directly instead of
+going through this.
 -}
 titleView : Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
 titleView maybeEdit maybeAccount post =
@@ -1113,8 +1149,8 @@ titleDisplayView maybeAccount post =
         ]
 
 
-{-| The link line's own content, slotted into `postSection`'s `linkOverride`
-(see `eventDetailView`) -- mirrors `titleView` exactly, just for the link:
+{-| The primary post section's link-line content (see `eventDetailView`) --
+mirrors `titleView` exactly, just for the link:
 its own "Edit Link" button sits right after the link (or, if `post` has none
 set, right where the link would otherwise sit -- see `linkDisplayView`).
 -}
@@ -1157,7 +1193,7 @@ linkDisplayView maybeAccount post =
 
 
 {-| The rendered Markdown content (if `post` has any) plus its own
-"Edit Content" button, slotted into `postSection`'s `contentOverride` (see
+"Edit Content" button, rendered directly in the primary post section (see
 `eventDetailView`) -- unlike `titleView`/`linkView`, there's no in-progress
 `PostFieldEdit` case to branch on here: the button opens the shared
 `Shared.MarkdownPanel` (`EditContentClicked`) rather than an inline form, so
@@ -1284,8 +1320,9 @@ owner (per this feature's own scope -- unlike `postFieldEditButtonView`,
 not extended to Admins here) -- opens the shared "are you sure?" dialog via
 `DeleteClicked`/`Shared.ConfirmEventDelete`. Not tied to any one field (unlike
 title/link/content's own edit buttons), so it keeps its own
-`.post-detail-edit-row` below `postSection` (see `eventDetailView`) rather
-than sitting next to a field -- reuses that row's `.post-edit-button` class
+`.post-detail-edit-row` below the primary post section (see
+`eventDetailView`) rather than sitting next to a field -- reuses that row's
+`.post-edit-button` class
 rather than `postActionsView`'s `.post-delete-button` (which only resolves
 its own styling via the `.post-actions` parent postDetail wraps it in, and
 would look inconsistent here).
@@ -1304,8 +1341,8 @@ deleteButtonView maybeAccount event post =
             text ""
 
 
-{-| The moderation-status segment slotted into `postSection`'s byline (see
-its own `moderationView` param) -- shown only to an Admin or a
+{-| The moderation-status segment slotted into the primary post section's
+byline (see `eventDetailView`) -- shown only to an Admin or a
 `MODERATEEVENTS` holder, mirroring `Pages.Post.PostId_.visibilityView`'s
 display-vs-editing split, just for `Moderation` instead of `Visibility`, and
 its own "Edit" button reading "Moderate" instead (per this feature's own

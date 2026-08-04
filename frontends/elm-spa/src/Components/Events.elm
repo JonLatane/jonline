@@ -13,7 +13,6 @@ module Components.Events exposing
     , locationText
     , meaningfulPost
     , parseEventRouteId
-    , postSection
     , siblingInstanceWhenText
     )
 
@@ -35,7 +34,7 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, h2, span, text)
+import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
 import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
@@ -392,126 +391,11 @@ locationText location =
         Just trimmed
 
 
-{-| Renders one of an `Event`/`EventInstance`'s `Post`s -- title, link, a
-byline (author + visibility), `extraContent`, then media and content.
-`primary` picks an `h1` (for the `Event`'s own `Post`, the thing actually
-titling the page) vs. an `h2` (for an `EventInstance`'s own override `Post`,
-a secondary "about this date" block) -- unlike `Components.Posts.postDetail`,
-there's no title-vs-context-chip branching here: both an `Event`'s and an
-`EventInstance`'s `Post` carry a real name of their own (see `events.proto`'s
-doc on `EventInstance.post`), not a generic reply/thread entry, so both
-always get a real heading. Deliberately lighter than `postDetail` otherwise
-too -- no star/edit/reply affordances baked in here, since this was
-originally a read-only invitation-style view -- `moderationView` and the
-three `*Override`s are the exceptions (see their own docs just below).
-
-`titleOverride`/`linkOverride`/`contentOverride` each replace that one
-field's normal display when `Just`, so `Pages.Event.EventId_` can inline its
-own per-field display (plain text/link/Markdown plus its own "Edit X"
-button) or, while that field's being edited, its edit form -- right in
-place, without hiding the rest of the section the way swapping out this
-whole function's result would. `Nothing` (always, for the secondary
-`EventInstance` section, which isn't editable this way) falls back to the
-plain-text/link/Markdown rendering below.
-
-`moderationView` sits right after the visibility text in the byline --
-`Pages.Event.EventId_`'s moderation selector for the primary (`Event`)
-section, `text ""` for the secondary (`EventInstance`) section (mirrors
-`extraContent`'s own split just below).
-
-`extraContent` sits right after the byline and before media -- e.g.
-`Pages.Event.EventId_` slots the currently-viewed `EventInstance`'s own
-date/location and its date-picker strip in there for the primary (`Event`)
-section, `text ""` for the secondary (`EventInstance`) section, which has
-nothing of its own to add there.
-
--}
-postSection :
-    BrowserTimeZone
-    -> String
-    -> String
-    -> String
-    -> Maybe AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
-    -> (String -> msg)
-    -> Bool
-    -> Maybe (Html msg)
-    -> Maybe (Html msg)
-    -> Maybe (Html msg)
-    -> Html msg
-    -> Html msg
-    -> Post
-    -> Html msg
-postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary titleOverride linkOverride contentOverride moderationView extraContent post =
-    div
-        [ classes
-            [ "event-post-section"
-            , hostnameToCSSClass postServerHost
-            , if primary then
-                "event-post-primary"
-
-              else
-                "event-post-secondary"
-            ]
-        ]
-        [ let
-            titleContent =
-                Maybe.withDefault (text (Posts.postTitleText post)) titleOverride
-          in
-          if primary then
-            h1 [ class "event-post-title" ] [ titleContent ]
-
-          else
-            h2 [ class "event-post-title" ] [ titleContent ]
-        , case linkOverride of
-            Just override ->
-                override
-
-            Nothing ->
-                case Posts.postLinkText post of
-                    Just link ->
-                        a
-                            [ href link
-                            , target "_blank"
-                            , rel "noopener noreferrer"
-                            , classes [ hostnameToCSSClass postServerHost, "event-post-link" ]
-                            ]
-                            [ text link ]
-
-                    Nothing ->
-                        text ""
-        , div [ class "event-post-meta" ]
-            [ text "by "
-            , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-            , text (" · " ++ Posts.postVisibilityText post)
-            , moderationView
-            ]
-        , extraContent
-        , case maybeServer of
-            Just server ->
-                MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
-
-            Nothing ->
-                text ""
-        , case contentOverride of
-            Just override ->
-                override
-
-            Nothing ->
-                case post.content of
-                    Just content ->
-                        Markdown.view [ class "event-post-content" ] content
-
-                    Nothing ->
-                        text ""
-        ]
-
-
 {-| `post` itself, unless it has nothing an `EventInstance`'s own override
 `Post` would actually add over the parent `Event`'s -- no title, link,
 content, or media, just the empty shell every `EventInstance` carries whether
 or not its creator actually filled one in. `Pages.Event.EventId_.eventDetailView`
-uses this to skip its own secondary `postSection` entirely for one of these;
+uses this to skip its own secondary post section entirely for one of these;
 `eventCard` uses it the same way, to skip an instance-specific note line.
 -}
 meaningfulPost : Post -> Maybe Post
