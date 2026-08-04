@@ -159,7 +159,7 @@ type alias ModerationEdit =
 
 type alias Model =
     { targetHost : String
-    , eventId : String
+    , eventInstanceId : String
     , eventStatus : EventStatus
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
@@ -195,7 +195,7 @@ init shared params =
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
                 { targetHost = targetHost
-                , eventId = eventId
+                , eventInstanceId = eventId
                 , eventStatus = LoadingEvent
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
@@ -229,7 +229,7 @@ fetchIfReady shared model =
         case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True }
-                , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventId
+                , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
                     |> Task.attempt GotEvent
                     |> Effect.fromCmd
                 )
@@ -248,7 +248,7 @@ successful save to the Event's own primary `Post`'s content
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     ( model
-    , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventId
+    , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
         |> Task.attempt GotEvent
         |> Effect.fromCmd
     )
@@ -613,7 +613,7 @@ update shared req msg model =
                 newStatus =
                     case List.head response.events of
                         Just event ->
-                            case Events.findInstance model.eventId event of
+                            case Events.findInstance model.eventInstanceId event of
                                 Just instance ->
                                     EventLoaded event instance
 
@@ -638,7 +638,7 @@ update shared req msg model =
                 scrollEffect =
                     case newStatus of
                         EventLoaded _ _ ->
-                            scrollToInstance 300 model.eventId |> Effect.fromCmd
+                            scrollToInstance 300 model.eventInstanceId |> Effect.fromCmd
 
                         _ ->
                             Effect.none
@@ -837,11 +837,11 @@ update shared req msg model =
                 -- to animate (see `historyButtonView`'s highlighting) -- just
                 -- re-centers the strip on the current instance right away,
                 -- e.g. after the user's scrolled it away by hand.
-                ( model, scrollToInstance 0 model.eventId |> Effect.fromCmd )
+                ( model, scrollToInstance 0 model.eventInstanceId |> Effect.fromCmd )
 
             else
                 ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations shared.now
-                , scrollToInstance 1000 model.eventId |> Effect.fromCmd
+                , scrollToInstance 1000 model.eventInstanceId |> Effect.fromCmd
                 )
 
         InstanceLayoutChanged layout ->
@@ -973,10 +973,10 @@ titleFor shared model =
         subtitle =
             case model.eventStatus of
                 EventLoaded event _ ->
-                    event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.eventId)
+                    event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.eventInstanceId)
 
                 _ ->
-                    "Event " ++ model.eventId
+                    "Event " ++ model.eventInstanceId
     in
     UI.pageTitle shared [ subtitle ]
 
@@ -1000,7 +1000,7 @@ bodyView shared req model =
                     p [ class "event-error" ]
                         [ text
                             ("Couldn't load Event "
-                                ++ model.eventId
+                                ++ model.eventInstanceId
                                 ++ "@"
                                 ++ model.targetHost
                                 ++ ". Maybe it doesn't exist, or maybe you need to be logged in?"
@@ -1461,7 +1461,7 @@ instanceHistoryView shared model event instance =
                 (id instanceStripDomId :: instanceContainerAttributes model.instanceLayout)
                 (event.instances
                     |> List.filterMap (\eventInstance -> Dict.get eventInstance.id model.instanceAnimations)
-                    |> List.map (instanceChipView shared model)
+                    |> List.map (instanceChipView shared model instance)
                 )
             ]
 
@@ -1593,20 +1593,22 @@ historyButtons now event =
 
 {-| One date chip -- links to `anim.instance`'s own page (see
 `Components.Events.eventInstanceHref`), highlighted if it's the instance
-currently being viewed (`model.eventId`). Wrapped in `UI.Flip.itemAttributes`
-so it fades/collapses in and out as `model.instanceHistoryDisplay` changes
-which instances `instanceHistoryView` selects (see `syncInstanceAnimations`).
+currently being viewed (`model.eventId`). `currentInstance` is that
+currently-viewed instance (see `instanceHistoryView`'s own `instance`
+parameter) -- passed through to `Components.Events.siblingInstanceWhenText`
+so a sibling chip that shares `currentInstance`'s own time-of-day can drop
+its redundant time and show just the date(s). Wrapped in
+`UI.Flip.itemAttributes` so it fades/collapses in and out as
+`model.instanceHistoryDisplay` changes which instances `instanceHistoryView`
+selects (see `syncInstanceAnimations`).
 -}
-instanceChipView : Shared.Model -> Model -> InstanceAnimation -> Html Msg
-instanceChipView shared model anim =
+instanceChipView : Shared.Model -> Model -> EventInstance -> InstanceAnimation -> Html Msg
+instanceChipView shared model currentInstance { instance, flip } =
     let
-        instance =
-            anim.instance
-
         isCurrent =
-            instance.id == model.eventId
+            instance.id == model.eventInstanceId
     in
-    div (UI.Flip.itemAttributes UI.Flip.Horizontal anim.flip False)
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flip False)
         [ a
             [ href (Events.eventInstanceHref shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost instance)
             , id (instanceChipDomId instance.id)
@@ -1620,5 +1622,5 @@ instanceChipView shared model anim =
                        )
                 )
             ]
-            [ text (Events.instanceWhenText shared.now shared.browserTimeZone instance) ]
+            [ text (Events.siblingInstanceWhenText shared.now shared.browserTimeZone currentInstance instance) ]
         ]

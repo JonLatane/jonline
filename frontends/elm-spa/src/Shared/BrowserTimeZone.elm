@@ -1,4 +1,4 @@
-module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateTime, formatDateTimeLocalInput, formatMoment, formatRange, posixFromDateTimeLocalInput)
+module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateRange, formatDateTime, formatDateTimeLocalInput, formatMoment, formatRange, posixFromDateTimeLocalInput)
 
 import Shared.Conversions as Conversions
 import Time
@@ -9,9 +9,13 @@ import Time
 Bundled together since every call site that needs one of these tends to need
 the others too -- see `Shared.Model.browserTimeZone`.
 
-`zone` is resolved via `Time.here` once `Shared.init`'s `Cmd` runs -- `Time.utc`
-until then (never visibly wrong for long: the `Task` resolves on the same
-frame the app first renders). `abbreviation`/`uses24Hour` both come from a
+`zone` is resolved via `Shared.getBrowserZone` once `Shared.init`'s `Cmd`
+runs -- `Time.utc` until then (never visibly wrong for long: the `Task`
+resolves on the same frame the app first renders). Unlike plain `Time.here`,
+`getBrowserZone` is DST-aware (backed by `justinmimbs/timezone-data`), so a
+timestamp far from "now" -- e.g. a recurring `EventInstance` on the other
+side of a DST transition -- still converts with the offset that actually
+applied on *its* date, not today's. `abbreviation`/`uses24Hour` both come from a
 different source: unlike `zone`, `elm/time` has no way to derive either (a
 `Time.Zone` is just a raw offset table, with no notion of a locale's
 formatting conventions), so both are read once at startup from the browser's
@@ -57,8 +61,8 @@ formatDate zone time =
 {-| `formatDate` plus an `HH:mm` (24-hour) suffix, both in `browserTimeZone`'s
 `zone`, plus a trailing `abbreviation` (e.g. "EDT", `""` omits it) so the
 reader can tell which zone `HH:mm` is in without guessing -- for timestamps
-where the time of day actually matters (e.g.
-`Components.PostCard.timestampsText`'s created/updated/published times),
+where the time of day actually matters but a human-friendly `formatMoment`
+would be overkill (e.g. `Shared.EventSyncSourcesPanel`'s last-synced time),
 unlike a profile's plain "Joined" date.
 -}
 formatDateTime : BrowserTimeZone -> Time.Posix -> String
@@ -80,16 +84,18 @@ formatDateTime browserTimeZone time =
            )
 
 
-{-| A human-friendly single point in time, e.g. "August 1, 6PM" or (24-hour)
-"August 1, 18:00" -- `now` supplies the viewer's own "current year", so
-`dateLabel` can drop a redundant year (see its own doc). Used by
-`Components.Events.instanceWhenText` for an `EventInstance` with only a
-`startsAt` or only an `endsAt` (unusual -- normally both are set, see
-`formatRange`).
+{-| A human-friendly single point in time, e.g. "August 1, 6PM", "Today,
+August 1, 6PM" (see `dateLabel`), or (24-hour) "August 1, 18:00" -- `now`
+supplies the viewer's own "current year"/"current day", so `dateLabel` can
+drop a redundant year or add a "Today"/"Yesterday"/"Tomorrow" prefix (see
+its own doc). Used by `Components.Events.instanceWhenText` for an
+`EventInstance` with only a `startsAt` or only an `endsAt` (unusual --
+normally both are set, see `formatRange`), and by `Components.Posts.whenText`
+for a `Post`'s created/updated/published timestamps.
 -}
 formatMoment : Time.Posix -> BrowserTimeZone -> Time.Posix -> String
 formatMoment now browserTimeZone time =
-    dateLabel browserTimeZone (Time.toYear browserTimeZone.zone now) time
+    dateLabel browserTimeZone now time
         ++ ", "
         ++ timeOfDayLabel browserTimeZone time
 
@@ -98,10 +104,15 @@ formatMoment now browserTimeZone time =
 behind `Components.Events.instanceWhenText`'s "August 1, 6-7PM" /
 "June 1, 10PM - June 8, 3AM" / "December 31, 2025, 9PM - January 1, 2AM"
 formatting (see that function's own doc for the full set of examples this is
-designed against). `now` supplies the viewer's own "current year" so
-`dateLabel` can drop it on either side that's actually in it (e.g. a New
-Year's Eve party spanning into next year still shows the upcoming year's
-date bare, only the trailing year on the year that isn't the current one).
+designed against). `now` supplies the viewer's own "current year"/"current
+day" so `dateLabel` can drop a redundant year, or add a
+"Today"/"Yesterday"/"Tomorrow" prefix, on either side (see its own doc) --
+except when that would print both "Today" and "Yesterday", or both "Today"
+and "Tomorrow" (e.g. an overnight range from yesterday into today, or today
+into tomorrow): since `start` is never later than `end`, those are the only
+two relative-day pairings a two-sided range can ever produce, and stating
+both is redundant once one side is already anchored as "Today" -- so the
+non-"Today" side falls back to its plain `dateLabel` (see `rangeDateLabels`).
 
 Same calendar day (in `browserTimeZone.zone`): a single `dateLabel` followed
 by both times, merged onto one `-`-joined range (see `timeRangeLabel`) --
@@ -121,34 +132,119 @@ formatRange now browserTimeZone start end =
                 == ( Time.toYear zone end, Time.toMonth zone end, Time.toDay zone end )
     in
     if sameDay then
-        dateLabel browserTimeZone (Time.toYear zone now) start
+        dateLabel browserTimeZone now start
             ++ ", "
             ++ timeRangeLabel browserTimeZone start end
 
     else
-        dateLabel browserTimeZone (Time.toYear zone now) start
+        let
+            ( startLabel, endLabel ) =
+                rangeDateLabels browserTimeZone now start end
+        in
+        startLabel
             ++ ", "
             ++ timeOfDayLabel browserTimeZone start
             ++ " - "
-            ++ dateLabel browserTimeZone (Time.toYear zone now) end
+            ++ endLabel
             ++ ", "
             ++ timeOfDayLabel browserTimeZone end
 
 
-{-| "MonthName Day", e.g. "August 1" -- plus a trailing ", Year" whenever
-`time`'s own year (in `zone`) isn't `currentYear` (the viewer's own "now"),
-so a date within the viewer's current year never carries the visual noise of
-a year nobody needs telling, while one that isn't (a past event, or a New
-Year's Eve party's other end) still says so plainly.
+{-| Like `formatRange`, but omits the time-of-day entirely -- just the
+date(s), e.g. "August 1" (same day) or "June 1 - June 8" (different days).
+Used by `Components.Events.siblingInstanceWhenText` to drop a redundant time
+when a sibling `EventInstance` shares its current instance's own
+time-of-day (e.g. a weekly meetup that's always 6-7PM) -- only the date(s)
+then distinguish one instance from another. Same "Today"/"Yesterday"/"Tomorrow"
+handling (including the same-side suppression) as `formatRange` -- see its
+own doc.
 -}
-dateLabel : BrowserTimeZone -> Int -> Time.Posix -> String
-dateLabel browserTimeZone currentYear time =
+formatDateRange : Time.Posix -> BrowserTimeZone -> Time.Posix -> Time.Posix -> String
+formatDateRange now browserTimeZone start end =
+    let
+        zone =
+            browserTimeZone.zone
+
+        sameDay =
+            ( Time.toYear zone start, Time.toMonth zone start, Time.toDay zone start )
+                == ( Time.toYear zone end, Time.toMonth zone end, Time.toDay zone end )
+    in
+    if sameDay then
+        dateLabel browserTimeZone now start
+
+    else
+        let
+            ( startLabel, endLabel ) =
+                rangeDateLabels browserTimeZone now start end
+        in
+        startLabel ++ " - " ++ endLabel
+
+
+{-| `start`/`end`'s own `dateLabel`s, for `formatRange`/`formatDateRange`'s
+different-day branches -- normally just `dateLabel browserTimeZone now
+start`/`... end` each, except the "Today"+"Yesterday"/"Today"+"Tomorrow"
+suppression described on `formatRange`: since `start` never comes after
+`end`, "Yesterday" can only pair with a `start` that's "Today"'s eve (so
+`end` is "Today"), and "Tomorrow" can only pair with an `end` the day after
+a "Today" `start` -- no other combination collides, so every other pairing
+(including "Yesterday" and "Tomorrow" together, spanning today itself) keeps
+both sides' own relative-day prefix untouched.
+-}
+rangeDateLabels : BrowserTimeZone -> Time.Posix -> Time.Posix -> Time.Posix -> ( String, String )
+rangeDateLabels browserTimeZone now start end =
+    let
+        startRelativeDay =
+            relativeDay browserTimeZone now start
+
+        endRelativeDay =
+            relativeDay browserTimeZone now end
+
+        ( adjustedStartRelativeDay, adjustedEndRelativeDay ) =
+            case ( startRelativeDay, endRelativeDay ) of
+                ( Just Yesterday, Just Today ) ->
+                    ( Nothing, Just Today )
+
+                ( Just Today, Just Tomorrow ) ->
+                    ( Just Today, Nothing )
+
+                _ ->
+                    ( startRelativeDay, endRelativeDay )
+    in
+    ( withRelativeDayPrefix adjustedStartRelativeDay (dateLabelBase browserTimeZone now start)
+    , withRelativeDayPrefix adjustedEndRelativeDay (dateLabelBase browserTimeZone now end)
+    )
+
+
+{-| "MonthName Day", e.g. "August 1" -- plus a trailing ", Year" whenever
+`time`'s own year (in `zone`) isn't `now`'s (the viewer's own "current
+year"), so a date within the viewer's current year never carries the visual
+noise of a year nobody needs telling, while one that isn't (a past event, or
+a New Year's Eve party's other end) still says so plainly. Also prefixed
+"Today, "/"Yesterday, "/"Tomorrow, " (see `relativeDay`) whenever `time`
+falls on one of those three days relative to `now` -- purely additive, e.g.
+"Today, August 3, 2026" rather than replacing the date -- via
+`withRelativeDayPrefix`.
+-}
+dateLabel : BrowserTimeZone -> Time.Posix -> Time.Posix -> String
+dateLabel browserTimeZone now time =
+    withRelativeDayPrefix (relativeDay browserTimeZone now time) (dateLabelBase browserTimeZone now time)
+
+
+{-| `dateLabel` minus its "Today"/"Yesterday"/"Tomorrow" prefix -- split out
+so `rangeDateLabels` can attach its own (possibly suppressed) relative-day
+label instead of the one `time` would get on its own.
+-}
+dateLabelBase : BrowserTimeZone -> Time.Posix -> Time.Posix -> String
+dateLabelBase browserTimeZone now time =
     let
         zone =
             browserTimeZone.zone
 
         year =
             Time.toYear zone time
+
+        currentYear =
+            Time.toYear zone now
 
         base =
             monthName (Time.toMonth zone time) ++ " " ++ String.fromInt (Time.toDay zone time)
@@ -158,6 +254,79 @@ dateLabel browserTimeZone currentYear time =
 
     else
         base ++ ", " ++ String.fromInt year
+
+
+{-| "Today"/"Yesterday"/"Tomorrow" -- the three relative-day labels
+`dateLabel`/`rangeDateLabels` can prefix a date with.
+-}
+type RelativeDay
+    = Today
+    | Yesterday
+    | Tomorrow
+
+
+relativeDayText : RelativeDay -> String
+relativeDayText day =
+    case day of
+        Today ->
+            "Today"
+
+        Yesterday ->
+            "Yesterday"
+
+        Tomorrow ->
+            "Tomorrow"
+
+
+{-| `Just Today`/`Just Yesterday`/`Just Tomorrow` if `time`'s calendar date
+(in `browserTimeZone.zone`) is respectively the same as, one before, or one
+after `now`'s own calendar date -- `Nothing` otherwise (including whenever
+`now` itself hasn't resolved yet, i.e. everywhere still using the
+`Time.millisToPosix 0`/`Time.utc` placeholders from before `Shared.init`'s
+`Cmd`s resolve, since `now` and `time` would only spuriously agree there
+already). Compares whole calendar days via `Shared.Conversions.daysFromCivil`
+(a plain day-count) rather than subtracting `Time.posixToMillis`, since a
+`time` just under 24h from `now` can still be "Yesterday" (e.g. 11:58PM to
+12:02AM) while one just over 24h apart can still be "Today" (e.g. an
+all-nighter's 1AM to the next day's 11PM) -- only the calendar date matters,
+not elapsed duration.
+-}
+relativeDay : BrowserTimeZone -> Time.Posix -> Time.Posix -> Maybe RelativeDay
+relativeDay browserTimeZone now time =
+    let
+        zone =
+            browserTimeZone.zone
+
+        dayNumber t =
+            Conversions.daysFromCivil (Time.toYear zone t) (Conversions.monthToNumber (Time.toMonth zone t)) (Time.toDay zone t)
+
+        dayDiff =
+            dayNumber time - dayNumber now
+    in
+    if dayDiff == 0 then
+        Just Today
+
+    else if dayDiff == -1 then
+        Just Yesterday
+
+    else if dayDiff == 1 then
+        Just Tomorrow
+
+    else
+        Nothing
+
+
+{-| Prepends `"Today, "`/`"Yesterday, "`/`"Tomorrow, "` to `base` (a
+`dateLabelBase` result) for `Just` a `RelativeDay`, unchanged for `Nothing`.
+-}
+withRelativeDayPrefix : Maybe RelativeDay -> String -> String
+withRelativeDayPrefix maybeRelativeDay base =
+    case maybeRelativeDay of
+        Just day ->
+            relativeDayText day ++ ", " ++ base
+
+        Nothing ->
+            base
 
 
 {-| `start`/`end`'s time-of-day, same calendar day, merged onto one range --

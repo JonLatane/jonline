@@ -1240,7 +1240,7 @@ starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey c
 
                         Nothing ->
                             text ""
-                    , Posts.postCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
+                    , Posts.postCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
                     ]
 
         Just FetchingPost ->

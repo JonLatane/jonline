@@ -14,6 +14,7 @@ module Components.Events exposing
     , meaningfulPost
     , parseEventRouteId
     , postSection
+    , siblingInstanceWhenText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
@@ -330,6 +331,49 @@ instanceWhenText now browserTimeZone instance =
 
         ( Nothing, Nothing ) ->
             "Time TBD"
+
+
+{-| Like `instanceWhenText`, for a date-picker strip chip (see
+`Pages.Event.EventId_.instanceChipView`) offering `instance` as an
+alternative to `currentInstance` (the one the page is currently showing).
+Drops the time-of-day entirely -- e.g. "March 7" rather than "March 7,
+6-7PM" -- whenever `instance` starts and ends at the same time-of-day (in
+`browserTimeZone`) as `currentInstance` itself, since a recurring event's
+sibling instances usually share one time slot and repeating it on every
+chip is just noise; the date(s) alone already distinguish one chip from
+another. Falls back to the full `instanceWhenText` the moment either side
+lacks a full start/end pair, or their time-of-day actually differs (e.g. an
+irregular one-off that moved to a different hour).
+-}
+siblingInstanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> EventInstance -> String
+siblingInstanceWhenText now browserTimeZone currentInstance instance =
+    let
+        zone =
+            browserTimeZone.zone
+
+        sameTimeOfDay a b =
+            Time.toHour zone a == Time.toHour zone b && Time.toMinute zone a == Time.toMinute zone b
+
+        sharesCurrentTimeOfDay =
+            case ( currentInstance.startsAt, currentInstance.endsAt ) of
+                ( Just currentStartTs, Just currentEndTs ) ->
+                    case ( instance.startsAt, instance.endsAt ) of
+                        ( Just startTs, Just endTs ) ->
+                            sameTimeOfDay (timestampToPosix currentStartTs) (timestampToPosix startTs)
+                                && sameTimeOfDay (timestampToPosix currentEndTs) (timestampToPosix endTs)
+
+                        _ ->
+                            False
+
+                _ ->
+                    False
+    in
+    case ( sharesCurrentTimeOfDay, instance.startsAt, instance.endsAt ) of
+        ( True, Just startTs, Just endTs ) ->
+            BrowserTimeZone.formatDateRange now browserTimeZone (timestampToPosix startTs) (timestampToPosix endTs)
+
+        _ ->
+            instanceWhenText now browserTimeZone instance
 
 
 {-| `location.uniformlyFormattedAddress`, trimmed -- `Nothing` if blank, same

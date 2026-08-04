@@ -44,6 +44,7 @@ import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import Task
 import Time
+import TimeZone
 import UI.Responsive as Responsive
 import Url exposing (Url)
 
@@ -135,7 +136,7 @@ type alias Model =
     , browserTimeZone : BrowserTimeZone
 
     -- Captured once via `Time.now` in `init` (mirrors `browserTimeZone.zone`'s
-    -- own `Time.here` capture exactly, including the `Time.millisToPosix 0`
+    -- own `getBrowserZone` capture exactly, including the `Time.millisToPosix 0`
     -- placeholder until it resolves) -- the single app-wide "now" every page
     -- that used to capture its own (`Pages.Event.EventId_`'s date-picker
     -- strip categorizing `EventInstance`s as upcoming/past, `Components.Events.eventCard`/
@@ -387,7 +388,7 @@ init basePath req flags =
         -- place until then.
         , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
         , getInitialWindowSizeCmd
-        , Task.perform GotTimeZone Time.here
+        , Task.attempt (\result -> GotTimeZone (Result.withDefault Time.utc result)) getBrowserZone
         , Task.perform GotNow Time.now
         ]
     )
@@ -402,6 +403,28 @@ getInitialWindowSizeCmd =
     Task.perform
         (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
         Dom.getViewport
+
+
+{-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
+(which just snapshots `new Date().getTimezoneOffset()` for the *current*
+instant into a fixed-offset `Time.customZone` with no era table, so every
+other instant it's ever asked to convert -- e.g. an `EventInstance` months
+away, on the other side of a DST transition -- gets rendered with today's
+offset instead of its own). This instead reads the browser's actual IANA
+zone name (e.g. "America/New_York", via `elm/time`'s `Time.getZoneName`)
+and looks up its real transition history/future in
+`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
+`siblingInstanceWhenText` show a recurring weekly event's fixed local time
+(e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
+than drifting an hour. Falls back to plain `Time.here` if the zone name
+can't be read or isn't in `timezone-data` (e.g. an unusual environment
+`Intl` doesn't cover) -- never fails outright.
+-}
+getBrowserZone : Task.Task x Time.Zone
+getBrowserZone =
+    TimeZone.getZone
+        |> Task.map Tuple.second
+        |> Task.onError (\_ -> Time.here)
 
 
 {-| Wraps `updateImpl` to also call out to `Ports.setNavBarColor` whenever

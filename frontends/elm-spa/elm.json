@@ -21,6 +21,7 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "eriktim/elm-protocol-buffers": "1.2.0",
+            "justinmimbs/timezone-data": "11.1.0",
             "mdgriffith/elm-style-animation": "4.0.0",
             "ryan-haskell/elm-spa": "1.0.0"
         },
