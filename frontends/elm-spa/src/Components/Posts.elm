@@ -175,15 +175,6 @@ fetchReplies accountsPanelModel maybeAccountServer replyDepth postId =
         )
 
 
-{-| Whether `account` is `post`'s own author -- e.g. to show an Edit button
-only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
-no `author` at all (shouldn't normally happen, but `Post.author` is optional).
--}
-isAuthor : AccountsPanel.Account -> Post -> Bool
-isAuthor account post =
-    Maybe.map .userId post.author == Just account.userId
-
-
 {-| Walks `post`'s own `replyToPostId` chain all the way up to (and including)
 its root ancestor -- `Post` only carries its _children_ (`replies`), not its
 parent, so there's no way to get this in one request. Returned root-first,
@@ -294,291 +285,6 @@ deletePost accountsPanelModel maybeAccountServer postId =
         )
 
 
-
--- ROUTE / LINKS
-
-
-{-| The href for `post`, as seen from `viewingServerHost` (typically
-`shared.accounts.mainFrontendHost`) -- a post on that same server links
-as plain `/post/:id`; anything else includes its host, `/post/:id@host`, so
-`Pages.Post.PostId_` knows which server to fetch it from. `basePath` is
-`Shared.Model.basePath`, same as `UI.navLink`.
--}
-postHref : String -> String -> String -> Post -> String
-postHref basePath viewingServerHost postServerHost post =
-    let
-        postId =
-            if postServerHost == viewingServerHost then
-                post.id
-
-            else
-                post.id ++ "@" ++ postServerHost
-    in
-    basePath ++ Gen.Route.toHref (Gen.Route.Post__PostId_ { postId = postId })
-
-
-{-| The inverse of `postHref`: `rawPostId` is either a bare id (a post on
-`mainFrontendHost`) or `id@host` (a post on some other, federated server).
--}
-parsePostRouteId : String -> String -> ( String, String )
-parsePostRouteId mainFrontendHost rawPostId =
-    case String.split "@" rawPostId of
-        [ id, host ] ->
-            ( id, host )
-
-        _ ->
-            ( rawPostId, mainFrontendHost )
-
-
-
--- DISPLAY
-
-
-postTitleText : Post -> String
-postTitleText post =
-    case Maybe.map String.trim post.title of
-        Just title ->
-            if String.isEmpty title then
-                fallbackTitle post
-
-            else
-                title
-
-        Nothing ->
-            fallbackTitle post
-
-
-{-| The post's `link` field, trimmed -- `Nothing` if unset or blank, same
-convention as `postTitleText`'s own trimming (just without a fallback, since
-unlike a title, a post with no link simply shows no link row at all).
--}
-postLinkText : Post -> Maybe String
-postLinkText post =
-    post.link
-        |> Maybe.map String.trim
-        |> Maybe.andThen
-            (\link ->
-                if String.isEmpty link then
-                    Nothing
-
-                else
-                    Just link
-            )
-
-
-{-| `link` with a leading `http://`/`https://` dropped, for display only --
-callers still `href` the untouched `postLinkText` value, this is just to
-avoid stating the obvious (every post link is one or the other) and buy back
-a few more characters before `.post-card-link`/`.post-detail-link`'s
-`text-overflow: ellipsis` kicks in.
--}
-stripLinkScheme : String -> String
-stripLinkScheme link =
-    if String.startsWith "https://" link then
-        String.dropLeft 8 link
-
-    else if String.startsWith "http://" link then
-        String.dropLeft 7 link
-
-    else
-        link
-
-
-fallbackTitle : Post -> String
-fallbackTitle post =
-    post.content
-        |> Maybe.map (String.left 60)
-        |> Maybe.withDefault "Post"
-
-
-{-| A post's most relevant timestamp for "recency" sorting/display: when it
-was published, falling back to when it was created (drafts, or servers that
-don't distinguish the two).
--}
-postTimestamp : Post -> Time.Posix
-postTimestamp post =
-    case ( post.publishedAt, post.createdAt ) of
-        ( Just ts, _ ) ->
-            timestampToPosix ts
-
-        ( Nothing, Just ts ) ->
-            timestampToPosix ts
-
-        ( Nothing, Nothing ) ->
-            Time.millisToPosix 0
-
-
-{-| Display text for a post's visibility, e.g. for a "Public"/"Private"/etc.
-badge on its preview.
--}
-postVisibilityText : Post -> String
-postVisibilityText post =
-    visibilityText post.visibility
-
-
-{-| Display text for a bare `Visibility` value -- same mapping
-`postVisibilityText` uses for a `Post`'s own, but also needed on its own for
-`Pages.Post.PostId_`'s visibility-editing `<select>`, whose options are
-`allVisibilities` rather than any particular Post's current value.
--}
-visibilityText : Visibility -> String
-visibilityText visibility =
-    case visibility of
-        PRIVATE ->
-            "Private"
-
-        LIMITED ->
-            "Limited"
-
-        SERVERPUBLIC ->
-            "Server Public"
-
-        GLOBALPUBLIC ->
-            "Global Public"
-
-        DIRECT ->
-            "Direct"
-
-        VISIBILITYUNKNOWN ->
-            "Unknown"
-
-        VisibilityUnrecognized_ _ ->
-            "Unknown"
-
-
-{-| The visibility options offered by a visibility-editing `<select>` (see
-`Pages.Post.PostId_`) -- excludes `DIRECT`, which the proto itself marks
-`[TODO]`/unimplemented (see `protos/visibility_moderation.proto`), and
-`VISIBILITYUNKNOWN`, which is never a valid value to _set_. Order matches
-`visibilityText`/the proto's own declaration order.
--}
-allVisibilities : List Visibility
-allVisibilities =
-    [ PRIVATE, LIMITED, SERVERPUBLIC, GLOBALPUBLIC ]
-
-
-{-| The reverse of `visibilityText` -- looks up a `Visibility` by its display
-label, the same round-trip `Components.Users.permissionFromText` does for
-`Permission` -- needed because a plain HTML `<select>`'s value/`onInput` are
-just strings. `Nothing` for any text that isn't one of `allVisibilities`'
-labels (shouldn't happen, since the `<select>`'s own options are always built
-from `allVisibilities` in the first place).
--}
-visibilityFromText : String -> Maybe Visibility
-visibilityFromText text =
-    allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
-
-
-{-| The moderation-status options offered by a moderation-editing `<select>`
-(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
--- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
-the proto's own declaration order.
--}
-allModerations : List Moderation
-allModerations =
-    [ UNMODERATED, PENDING, APPROVED, REJECTED ]
-
-
-{-| The reverse of `Components.Users.moderationText` -- same `<select>`-value
-round-trip `visibilityFromText` does for `Visibility`.
--}
-moderationFromText : String -> Maybe Moderation
-moderationFromText text =
-    allModerations |> List.filter (\moderation -> Users.moderationText moderation == text) |> List.head
-
-
-{-| Which of `allVisibilities` `account` may pick for a Post/Event/etc. of
-`context` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own permission
-check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
-`PUBLISHPOSTSGLOBALLY` for a plain `POST`/`REPLY`, or `PUBLISHEVENTSLOCALLY`/
-`PUBLISHEVENTSGLOBALLY` for an `EVENT`/`EVENTINSTANCE` -- `ADMIN` always
-passes either. `currentVisibility` is always included even if it wouldn't
-otherwise be pickable, so an account whose permission was revoked after the
-post was already elevated still sees its own current value in the list
-(just can't newly pick it for some _other_ post) -- see
-`Pages.Post.PostId_`'s visibility editor, which seeds its pending value from
-the post's already-current one.
--}
-allowedVisibilities : List Permission -> PostContext -> Visibility -> List Visibility
-allowedVisibilities permissions context currentVisibility =
-    let
-        isEventContext =
-            context == EVENT || context == EVENTINSTANCE
-
-        has permission =
-            List.member permission permissions || List.member ADMIN permissions
-
-        canPublishLocally =
-            has
-                (if isEventContext then
-                    PUBLISHEVENTSLOCALLY
-
-                 else
-                    PUBLISHPOSTSLOCALLY
-                )
-
-        canPublishGlobally =
-            has
-                (if isEventContext then
-                    PUBLISHEVENTSGLOBALLY
-
-                 else
-                    PUBLISHPOSTSGLOBALLY
-                )
-    in
-    allVisibilities
-        |> List.filter
-            (\visibility ->
-                case visibility of
-                    SERVERPUBLIC ->
-                        canPublishLocally || visibility == currentVisibility
-
-                    GLOBALPUBLIC ->
-                        canPublishGlobally || visibility == currentVisibility
-
-                    _ ->
-                        True
-            )
-
-
-{-| A human-facing label for a Post's `context` when it's something other than
-a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
-plain `POST`, since that's the common case and doesn't need calling out
-wherever a Post is shown alongside its context (see
-`Shared.StarredPanel`'s panel view).
--}
-postContextLabel : PostContext -> Maybe String
-postContextLabel context =
-    case context of
-        POST ->
-            Nothing
-
-        REPLY ->
-            Just "Reply"
-
-        EVENT ->
-            Just "Event"
-
-        EVENTINSTANCE ->
-            Nothing
-
-        FEDERATEDREPLY ->
-            Just "Federated Reply"
-
-        PostContextUnrecognized_ _ ->
-            Nothing
-
-
-{-| A post's star count -- `unauthenticatedStarCount` is a protobuf `int64`,
-which `protoc-gen-elm` represents as `Protobuf.Types.Int64.Int64` rather than
-plain `Int` since it may exceed JS's safe integer range in general; star
-counts never will, so this is a safe, simple conversion for display.
--}
-postStarCount : Post -> Int
-postStarCount post =
-    int64ToInt post.unauthenticatedStarCount
-
-
 {-| The "★ N" star button of a post's meta line -- clickable (unless
 `onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
 the post (see `Shared.StarredPanel`), filling with `postServerHost`'s
@@ -609,30 +315,6 @@ starButton postServerHost starred onStarClicked post =
                )
         )
         [ text ("★ " ++ String.fromInt (postStarCount post)) ]
-
-
-{-| A post's reply-count display: just `responseCount` when `replyCount`
-(direct replies only) and `responseCount` (all nested replies) agree -- the
-common case, a post with no replies-to-replies -- otherwise
-`"replyCount/responseCount"` (e.g. `"20/25"`) so a thread with actual
-sub-discussion shows both numbers at a glance. Shared by `commentCountText`
-(below, for `postCard`/`postDetail`) and `replyCard`, so a reply card's own
-count matches a post card's exactly.
--}
-repliesCountText : Post -> String
-repliesCountText post =
-    if post.replyCount == post.responseCount then
-        String.fromInt post.responseCount
-
-    else
-        String.fromInt post.replyCount ++ "/" ++ String.fromInt post.responseCount
-
-
-{-| "· 💬 12"-style suffix for a post's meta line, following `starButton`.
--}
-commentCountText : Post -> String
-commentCountText post =
-    " · 💬 " ++ repliesCountText post
 
 
 {-| A single `Post` timestamp, formatted the same way
@@ -829,17 +511,6 @@ postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount
 
     else
         postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
-
-
-{-| Below this many characters of raw Markdown, a content preview (this
-module's own `postCardView`, and `Components.Events.eventCard`, which reuses
-it) shows the whole (short) message without fading its bottom edge -- the
-fade exists to signal "there's more below the cutoff", which would be
-misleading to show over a preview that isn't actually being truncated.
--}
-contentPreviewFadeThreshold : Int
-contentPreviewFadeThreshold =
-    220
 
 
 {-| The plain (non-`REPLY`) rendering `postCard` falls back to -- see its own
@@ -1157,3 +828,332 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
                 text ""
         , div [ class "post-detail-edit-row" ] [ editContentButton maybeAccount onEditClicked post ]
         ]
+
+
+
+-- ROUTE / LINKS
+
+
+{-| The href for `post`, as seen from `viewingServerHost` (typically
+`shared.accounts.mainFrontendHost`) -- a post on that same server links
+as plain `/post/:id`; anything else includes its host, `/post/:id@host`, so
+`Pages.Post.PostId_` knows which server to fetch it from. `basePath` is
+`Shared.Model.basePath`, same as `UI.navLink`.
+-}
+postHref : String -> String -> String -> Post -> String
+postHref basePath viewingServerHost postServerHost post =
+    let
+        postId =
+            if postServerHost == viewingServerHost then
+                post.id
+
+            else
+                post.id ++ "@" ++ postServerHost
+    in
+    basePath ++ Gen.Route.toHref (Gen.Route.Post__PostId_ { postId = postId })
+
+
+
+-- DISPLAY
+
+
+postTitleText : Post -> String
+postTitleText post =
+    case Maybe.map String.trim post.title of
+        Just title ->
+            if String.isEmpty title then
+                fallbackTitle post
+
+            else
+                title
+
+        Nothing ->
+            fallbackTitle post
+
+
+{-| The post's `link` field, trimmed -- `Nothing` if unset or blank, same
+convention as `postTitleText`'s own trimming (just without a fallback, since
+unlike a title, a post with no link simply shows no link row at all).
+-}
+postLinkText : Post -> Maybe String
+postLinkText post =
+    post.link
+        |> Maybe.map String.trim
+        |> Maybe.andThen
+            (\link ->
+                if String.isEmpty link then
+                    Nothing
+
+                else
+                    Just link
+            )
+
+
+{-| `link` with a leading `http://`/`https://` dropped, for display only --
+callers still `href` the untouched `postLinkText` value, this is just to
+avoid stating the obvious (every post link is one or the other) and buy back
+a few more characters before `.post-card-link`/`.post-detail-link`'s
+`text-overflow: ellipsis` kicks in.
+-}
+stripLinkScheme : String -> String
+stripLinkScheme link =
+    if String.startsWith "https://" link then
+        String.dropLeft 8 link
+
+    else if String.startsWith "http://" link then
+        String.dropLeft 7 link
+
+    else
+        link
+
+
+fallbackTitle : Post -> String
+fallbackTitle post =
+    post.content
+        |> Maybe.map (String.left 60)
+        |> Maybe.withDefault "Post"
+
+
+{-| Display text for a post's visibility, e.g. for a "Public"/"Private"/etc.
+badge on its preview.
+-}
+postVisibilityText : Post -> String
+postVisibilityText post =
+    visibilityText post.visibility
+
+
+{-| Display text for a bare `Visibility` value -- same mapping
+`postVisibilityText` uses for a `Post`'s own, but also needed on its own for
+`Pages.Post.PostId_`'s visibility-editing `<select>`, whose options are
+`allVisibilities` rather than any particular Post's current value.
+-}
+visibilityText : Visibility -> String
+visibilityText visibility =
+    case visibility of
+        PRIVATE ->
+            "Private"
+
+        LIMITED ->
+            "Limited"
+
+        SERVERPUBLIC ->
+            "Server Public"
+
+        GLOBALPUBLIC ->
+            "Global Public"
+
+        DIRECT ->
+            "Direct"
+
+        VISIBILITYUNKNOWN ->
+            "Unknown"
+
+        VisibilityUnrecognized_ _ ->
+            "Unknown"
+
+
+{-| A human-facing label for a Post's `context` when it's something other than
+a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
+plain `POST`, since that's the common case and doesn't need calling out
+wherever a Post is shown alongside its context (see
+`Shared.StarredPanel`'s panel view).
+-}
+postContextLabel : PostContext -> Maybe String
+postContextLabel context =
+    case context of
+        POST ->
+            Nothing
+
+        REPLY ->
+            Just "Reply"
+
+        EVENT ->
+            Just "Event"
+
+        EVENTINSTANCE ->
+            Nothing
+
+        FEDERATEDREPLY ->
+            Just "Federated Reply"
+
+        PostContextUnrecognized_ _ ->
+            Nothing
+
+
+{-| A post's reply-count display: just `responseCount` when `replyCount`
+(direct replies only) and `responseCount` (all nested replies) agree -- the
+common case, a post with no replies-to-replies -- otherwise
+`"replyCount/responseCount"` (e.g. `"20/25"`) so a thread with actual
+sub-discussion shows both numbers at a glance. Shared by `commentCountText`
+(below, for `postCard`/`postDetail`) and `replyCard`, so a reply card's own
+count matches a post card's exactly.
+-}
+repliesCountText : Post -> String
+repliesCountText post =
+    if post.replyCount == post.responseCount then
+        String.fromInt post.responseCount
+
+    else
+        String.fromInt post.replyCount ++ "/" ++ String.fromInt post.responseCount
+
+
+{-| "· 💬 12"-style suffix for a post's meta line, following `starButton`.
+-}
+commentCountText : Post -> String
+commentCountText post =
+    " · 💬 " ++ repliesCountText post
+
+
+{-| Whether `account` is `post`'s own author -- e.g. to show an Edit button
+only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
+no `author` at all (shouldn't normally happen, but `Post.author` is optional).
+-}
+isAuthor : AccountsPanel.Account -> Post -> Bool
+isAuthor account post =
+    Maybe.map .userId post.author == Just account.userId
+
+
+{-| The inverse of `postHref`: `rawPostId` is either a bare id (a post on
+`mainFrontendHost`) or `id@host` (a post on some other, federated server).
+-}
+parsePostRouteId : String -> String -> ( String, String )
+parsePostRouteId mainFrontendHost rawPostId =
+    case String.split "@" rawPostId of
+        [ id, host ] ->
+            ( id, host )
+
+        _ ->
+            ( rawPostId, mainFrontendHost )
+
+
+{-| A post's most relevant timestamp for "recency" sorting/display: when it
+was published, falling back to when it was created (drafts, or servers that
+don't distinguish the two).
+-}
+postTimestamp : Post -> Time.Posix
+postTimestamp post =
+    case ( post.publishedAt, post.createdAt ) of
+        ( Just ts, _ ) ->
+            timestampToPosix ts
+
+        ( Nothing, Just ts ) ->
+            timestampToPosix ts
+
+        ( Nothing, Nothing ) ->
+            Time.millisToPosix 0
+
+
+{-| The visibility options offered by a visibility-editing `<select>` (see
+`Pages.Post.PostId_`) -- excludes `DIRECT`, which the proto itself marks
+`[TODO]`/unimplemented (see `protos/visibility_moderation.proto`), and
+`VISIBILITYUNKNOWN`, which is never a valid value to _set_. Order matches
+`visibilityText`/the proto's own declaration order.
+-}
+allVisibilities : List Visibility
+allVisibilities =
+    [ PRIVATE, LIMITED, SERVERPUBLIC, GLOBALPUBLIC ]
+
+
+{-| The reverse of `visibilityText` -- looks up a `Visibility` by its display
+label, the same round-trip `Components.Users.permissionFromText` does for
+`Permission` -- needed because a plain HTML `<select>`'s value/`onInput` are
+just strings. `Nothing` for any text that isn't one of `allVisibilities`'
+labels (shouldn't happen, since the `<select>`'s own options are always built
+from `allVisibilities` in the first place).
+-}
+visibilityFromText : String -> Maybe Visibility
+visibilityFromText text =
+    allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
+
+
+{-| The moderation-status options offered by a moderation-editing `<select>`
+(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
+-- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
+the proto's own declaration order.
+-}
+allModerations : List Moderation
+allModerations =
+    [ UNMODERATED, PENDING, APPROVED, REJECTED ]
+
+
+{-| The reverse of `Components.Users.moderationText` -- same `<select>`-value
+round-trip `visibilityFromText` does for `Visibility`.
+-}
+moderationFromText : String -> Maybe Moderation
+moderationFromText text =
+    allModerations |> List.filter (\moderation -> Users.moderationText moderation == text) |> List.head
+
+
+{-| Which of `allVisibilities` `account` may pick for a Post/Event/etc. of
+`context` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own permission
+check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
+`PUBLISHPOSTSGLOBALLY` for a plain `POST`/`REPLY`, or `PUBLISHEVENTSLOCALLY`/
+`PUBLISHEVENTSGLOBALLY` for an `EVENT`/`EVENTINSTANCE` -- `ADMIN` always
+passes either. `currentVisibility` is always included even if it wouldn't
+otherwise be pickable, so an account whose permission was revoked after the
+post was already elevated still sees its own current value in the list
+(just can't newly pick it for some _other_ post) -- see
+`Pages.Post.PostId_`'s visibility editor, which seeds its pending value from
+the post's already-current one.
+-}
+allowedVisibilities : List Permission -> PostContext -> Visibility -> List Visibility
+allowedVisibilities permissions context currentVisibility =
+    let
+        isEventContext =
+            context == EVENT || context == EVENTINSTANCE
+
+        has permission =
+            List.member permission permissions || List.member ADMIN permissions
+
+        canPublishLocally =
+            has
+                (if isEventContext then
+                    PUBLISHEVENTSLOCALLY
+
+                 else
+                    PUBLISHPOSTSLOCALLY
+                )
+
+        canPublishGlobally =
+            has
+                (if isEventContext then
+                    PUBLISHEVENTSGLOBALLY
+
+                 else
+                    PUBLISHPOSTSGLOBALLY
+                )
+    in
+    allVisibilities
+        |> List.filter
+            (\visibility ->
+                case visibility of
+                    SERVERPUBLIC ->
+                        canPublishLocally || visibility == currentVisibility
+
+                    GLOBALPUBLIC ->
+                        canPublishGlobally || visibility == currentVisibility
+
+                    _ ->
+                        True
+            )
+
+
+{-| A post's star count -- `unauthenticatedStarCount` is a protobuf `int64`,
+which `protoc-gen-elm` represents as `Protobuf.Types.Int64.Int64` rather than
+plain `Int` since it may exceed JS's safe integer range in general; star
+counts never will, so this is a safe, simple conversion for display.
+-}
+postStarCount : Post -> Int
+postStarCount post =
+    int64ToInt post.unauthenticatedStarCount
+
+
+{-| Below this many characters of raw Markdown, a content preview (this
+module's own `postCardView`, and `Components.Events.eventCard`, which reuses
+it) shows the whole (short) message without fading its bottom edge -- the
+fade exists to signal "there's more below the cutoff", which would be
+misleading to show over a preview that isn't actually being truncated.
+-}
+contentPreviewFadeThreshold : Int
+contentPreviewFadeThreshold =
+    220

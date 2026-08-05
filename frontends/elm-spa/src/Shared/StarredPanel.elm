@@ -55,34 +55,6 @@ import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClo
 import UI.Flip
 
 
-{-| The fetch state of one starred post, keyed by its `starKey` -- see
-`kickOffFetches`. `ServerUnavailable` (its server isn't currently connected)
-is kept distinct from `Failed` (the fetch itself came back an error, e.g. the
-post is private and we're not signed in) so polling only keeps retrying the
-former -- a server reconnecting is worth another try; a request that already
-failed against a reachable server generally won't succeed just by asking
-again.
--}
-type PostFetchStatus
-    = FetchingPost
-    | PostFetchLoaded String Post
-    | PostFetchFailed
-    | ServerUnavailable
-
-
-{-| The fetch state of one starred post's owning `Event`/`EventInstance` --
-only ever populated for a starred post whose `PostFetchStatus` is
-`PostFetchLoaded` with `context == EVENTINSTANCE` (see `kickOffEventFetches`),
-keyed the same (`starKey`/`rawKey`) as `posts` itself. A plain `POST`/`REPLY`
-starred post never gets an entry here at all -- `starredPostView` only reads
-this dict once it already knows (from `posts`) that the entry needs it.
--}
-type EventFetchStatus
-    = FetchingEvent
-    | EventFetchLoaded Event EventInstance
-    | EventFetchFailed
-
-
 type alias Model =
     { starredPostIds : Set String
 
@@ -125,21 +97,6 @@ type alias Model =
     -- round trip is in flight -- see `GroupMeasurementPhase`'s own doc.
     , groupMeasurementPhase : GroupMeasurementPhase
     }
-
-
-{-| Which half of `OrganizeStarred`'s FLIP measurement round-trip (if any)
-`GotMeasuredGroupRects` is currently waiting on -- a port's incoming `Sub` is
-a single, untargeted `Msg`, so there's nothing to pattern match on except
-state carried in the `Model`, same reasoning as
-`Components.Pages.EventsPage.MeasurementPhase` (which this mirrors).
-`AwaitingOldGroupRects` carries the reorder to apply once those rects are in
-hand; `AwaitingNewGroupRects` carries the old rects to diff the eventual new
-ones against.
--}
-type GroupMeasurementPhase
-    = NotMeasuringGroup
-    | AwaitingOldGroupRects (List String)
-    | AwaitingNewGroupRects (Dict String UI.Flip.Rect)
 
 
 type Msg
@@ -191,6 +148,49 @@ type Msg
     | PostUpdated String Post
 
 
+{-| The fetch state of one starred post, keyed by its `starKey` -- see
+`kickOffFetches`. `ServerUnavailable` (its server isn't currently connected)
+is kept distinct from `Failed` (the fetch itself came back an error, e.g. the
+post is private and we're not signed in) so polling only keeps retrying the
+former -- a server reconnecting is worth another try; a request that already
+failed against a reachable server generally won't succeed just by asking
+again.
+-}
+type PostFetchStatus
+    = FetchingPost
+    | PostFetchLoaded String Post
+    | PostFetchFailed
+    | ServerUnavailable
+
+
+{-| The fetch state of one starred post's owning `Event`/`EventInstance` --
+only ever populated for a starred post whose `PostFetchStatus` is
+`PostFetchLoaded` with `context == EVENTINSTANCE` (see `kickOffEventFetches`),
+keyed the same (`starKey`/`rawKey`) as `posts` itself. A plain `POST`/`REPLY`
+starred post never gets an entry here at all -- `starredPostView` only reads
+this dict once it already knows (from `posts`) that the entry needs it.
+-}
+type EventFetchStatus
+    = FetchingEvent
+    | EventFetchLoaded Event EventInstance
+    | EventFetchFailed
+
+
+{-| Which half of `OrganizeStarred`'s FLIP measurement round-trip (if any)
+`GotMeasuredGroupRects` is currently waiting on -- a port's incoming `Sub` is
+a single, untargeted `Msg`, so there's nothing to pattern match on except
+state carried in the `Model`, same reasoning as
+`Components.Pages.EventsPage.MeasurementPhase` (which this mirrors).
+`AwaitingOldGroupRects` carries the reorder to apply once those rects are in
+hand; `AwaitingNewGroupRects` carries the old rects to diff the eventual new
+ones against.
+-}
+type GroupMeasurementPhase
+    = NotMeasuringGroup
+    | AwaitingOldGroupRects (List String)
+    | AwaitingNewGroupRects (Dict String UI.Flip.Rect)
+
+
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
 handed down from `Shared.init`, un-decoded -- same convention as
 `AccountsPanel.init`'s `flags` argument.
@@ -218,58 +218,37 @@ init flags =
     }
 
 
-{-| The persisted key for a Post on `frontendHost`. Always includes the host
-explicitly -- unlike `Components.Posts.postHref`'s "bare id implies
-mainFrontendHost" convention -- since `mainFrontendHost` can change later
-(`AccountsPanel.ResetMainFrontendHost`) and a starred post needs to keep
-pointing at the server it actually came from regardless.
+{-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
+-- only while the panel's actually open, same reasoning as `Shared.subscriptions`'
+own poll for this module.
 -}
-starKey : String -> Post -> String
-starKey frontendHost post =
-    post.id ++ "@" ++ frontendHost
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ if model.showStarredPanel then
+            UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
 
+          else
+            Sub.none
 
-{-| The DOM `id` a starred post's entry is rendered with (see
-`starredPostEntry`) -- purely so `MoveStarUpClicked`/`MoveStarDownClicked` can
-measure its position before/after a reorder (`Browser.Dom.getElement`) to
-drive its `UI.Flip` slide.
--}
-starEntryDomId : String -> String
-starEntryDomId key =
-    "starred-post-entry-" ++ escapeCSSClass key
+        -- `OrganizeStarred`'s own FLIP round trip (see `GroupMeasurementPhase`)
+        -- -- like `AnimateMove` above, only dispatchable from the open panel
+        -- (`OrganizeStarred`'s button only renders there), so gated the same
+        -- way.
+        , if model.showStarredPanel then
+            Ports.elementsMeasured GotMeasuredGroupRects
 
+          else
+            Sub.none
 
-isStarred : String -> Post -> Model -> Bool
-isStarred frontendHost post model =
-    Set.member (starKey frontendHost post) model.starredPostIds
-
-
-{-| The freshest known version of `post` -- if it's ever been starred/unstarred
-this session (see `ToggleStar`), `model.posts` holds either the optimistic
-snapshot from that click or (once the RPC replies) the server's actual updated
-`Post`, complete with its current star count. Falls back to `post` itself
-(whatever the caller fetched it as) if it's never been touched.
-
-Because this always wins over whatever `Post` a page fetched for itself, a
-page that edits and re-saves a `Post` (e.g. `Pages.Post.PostId_`'s visibility/
-content editors) must also feed its freshly-saved copy back in here (see
-`PostUpdated`), or this cache entry goes stale and `freshestPost` keeps
-serving the old one right back to it.
-
--}
-freshestPost : String -> Post -> Model -> Post
-freshestPost frontendHost post model =
-    case Dict.get (starKey frontendHost post) model.posts of
-        Just (PostFetchLoaded _ freshPost) ->
-            freshPost
-
-        _ ->
-            post
-
-
-persistCmd : List String -> Cmd Msg
-persistCmd starOrder =
-    Ports.persistStarredPosts (Encode.list Encode.string starOrder)
+        -- Unlike the reorder-only `AnimateMove` above, this can't be gated on
+        -- the panel being open -- `ToggleStar` (and so a pending `FinishUnstar`)
+        -- can be triggered from anywhere a post card renders (Home, Post
+        -- detail, ...), not just from here, so this needs to keep ticking
+        -- regardless in order to ever actually fire.
+        , UI.Flip.subscription AnimateItemFlip (Dict.values model.starAnimations)
+        , Ports.starredPostsUpdated StarredPostsBroadcastReceived
+        ]
 
 
 {-| `update` also needs `AccountsPanel.Model` (to resolve starred posts' hosts
@@ -748,39 +727,6 @@ updateHelp accountsPanelModel msg model =
                     ( fetchedModel, cmd, Nothing )
 
 
-{-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
--- only while the panel's actually open, same reasoning as `Shared.subscriptions`'
-own poll for this module.
--}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ if model.showStarredPanel then
-            UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
-
-          else
-            Sub.none
-
-        -- `OrganizeStarred`'s own FLIP round trip (see `GroupMeasurementPhase`)
-        -- -- like `AnimateMove` above, only dispatchable from the open panel
-        -- (`OrganizeStarred`'s button only renders there), so gated the same
-        -- way.
-        , if model.showStarredPanel then
-            Ports.elementsMeasured GotMeasuredGroupRects
-
-          else
-            Sub.none
-
-        -- Unlike the reorder-only `AnimateMove` above, this can't be gated on
-        -- the panel being open -- `ToggleStar` (and so a pending `FinishUnstar`)
-        -- can be triggered from anywhere a post card renders (Home, Post
-        -- detail, ...), not just from here, so this needs to keep ticking
-        -- regardless in order to ever actually fire.
-        , UI.Flip.subscription AnimateItemFlip (Dict.values model.starAnimations)
-        , Ports.starredPostsUpdated StarredPostsBroadcastReceived
-        ]
-
-
 {-| Fetches every starred post that isn't already loaded, in flight, or
 permanently failed (see `PostFetchStatus`) -- grouped by host first, so each
 server's connected `Server`/signed-in `Account` (from `AccountsPanel.Model`,
@@ -882,6 +828,36 @@ refreshHosts accountsPanelModel hosts model =
         kickOffFetches accountsPanelModel { model | posts = clearedPosts, events = clearedEvents }
 
 
+{-| `GotMeasuredGroupRects`'s fallback for a payload that failed to decode
+(should never actually happen -- `Ports.measureElements`'s JS side always
+sends a well-formed array -- but mirrors
+`Components.Pages.EventsPage.applyMeasurementFailure`'s "give up silently"
+convention regardless): still applies a pending reorder if
+`model.groupMeasurementPhase` had one in flight, just with no slide
+animation, rather than leaving the click seemingly do nothing.
+-}
+applyGroupMeasurementFailure : Model -> ( Model, Cmd Msg )
+applyGroupMeasurementFailure model =
+    case model.groupMeasurementPhase of
+        NotMeasuringGroup ->
+            ( model, Cmd.none )
+
+        AwaitingOldGroupRects newOrder ->
+            let
+                newModel =
+                    { model | starOrder = newOrder, groupMeasurementPhase = NotMeasuringGroup }
+            in
+            ( newModel, persistCmd newOrder )
+
+        AwaitingNewGroupRects _ ->
+            ( { model | groupMeasurementPhase = NotMeasuringGroup }, Cmd.none )
+
+
+persistCmd : List String -> Cmd Msg
+persistCmd starOrder =
+    Ports.persistStarredPosts (Encode.list Encode.string starOrder)
+
+
 {-| `ServerDependentView.availableServer` -- not the raw
 `AccountsPanel.serverForHost` -- so a starred post whose server is known but
 disabled (see `Shared.AccountsPanel`'s `Server.enabled`) is treated the same
@@ -944,158 +920,6 @@ fetchEventGroup accountsPanelModel ( host, postIds ) ( events, cmds ) =
     ( List.foldl (\postId -> Dict.insert (rawKey postId host) FetchingEvent) events postIds
     , fetchCmd :: cmds
     )
-
-
-groupByHost : List ( String, String ) -> List ( String, List String )
-groupByHost pairs =
-    pairs
-        |> List.foldl
-            (\( postId, host ) -> Dict.update host (\existing -> Just (postId :: Maybe.withDefault [] existing)))
-            Dict.empty
-        |> Dict.toList
-
-
-needsFetch : Dict String PostFetchStatus -> String -> Bool
-needsFetch posts key =
-    case Dict.get key posts of
-        Just (PostFetchLoaded _ _) ->
-            False
-
-        Just FetchingPost ->
-            False
-
-        Just PostFetchFailed ->
-            False
-
-        Just ServerUnavailable ->
-            True
-
-        Nothing ->
-            True
-
-
-{-| `needsFetch`'s counterpart for `events` -- simpler than `needsFetch`
-itself since there's no `ServerUnavailable` state to retry here (see
-`kickOffEventFetches`'s own doc: a starred post already `PostFetchLoaded`
-already proves its server is reachable, so nothing here ever needs that
-retry path).
--}
-needsEventFetch : Dict String EventFetchStatus -> String -> Bool
-needsEventFetch events key =
-    case Dict.get key events of
-        Just (EventFetchLoaded _ _) ->
-            False
-
-        Just FetchingEvent ->
-            False
-
-        Just EventFetchFailed ->
-            False
-
-        Nothing ->
-            True
-
-
-{-| The inverse of `starKey ++ "@" ++ host` -- a starred post's id and the
-host it was starred from.
--}
-parseStarKey : String -> Maybe ( String, String )
-parseStarKey key =
-    case String.split "@" key of
-        [ postId, host ] ->
-            Just ( postId, host )
-
-        _ ->
-            Nothing
-
-
-rawKey : String -> String -> String
-rawKey postId host =
-    postId ++ "@" ++ host
-
-
-{-| `ToggleStar`, if `host` currently resolves to a connected `Server` --
-`Nothing` if it doesn't (nothing to star it against). Shared by every page
-that renders a `postCard`/`postDetail` (`Pages.Home_`, `Pages.Post.PostId_`,
-and this module's own `starredPostView`) so each doesn't re-derive the same
-"look up the server, then wrap `ToggleStar`" logic.
--}
-toggleStarMsg : AccountsPanel.Model -> String -> Post -> Maybe Msg
-toggleStarMsg accountsPanelModel host post =
-    AccountsPanel.serverForHost accountsPanelModel.servers host
-        |> Maybe.map (\server -> ToggleStar server post)
-
-
-{-| Whether the starred entry `key` is a starred Event (i.e. its fetched
-`Post`'s `context` is `EVENTINSTANCE` -- see `starredEventInstanceView`).
-An entry that's still loading, failed, or unavailable is treated as not an
-Event -- its actual context isn't known yet, and `groupStarredOrder` needs
-_some_ answer for every key in `starOrder`.
--}
-isEventKey : Model -> String -> Bool
-isEventKey model key =
-    case Dict.get key model.posts of
-        Just (PostFetchLoaded _ post) ->
-            post.context == EVENTINSTANCE
-
-        _ ->
-            False
-
-
-{-| Whether the "Organize" button (`OrganizeStarred`) should show at all -- only
-worth offering when `starOrder` actually mixes both kinds, per `isEventKey`.
--}
-starredPanelHasBothGroups : Model -> Bool
-starredPanelHasBothGroups model =
-    List.any (isEventKey model) model.starOrder && List.any (not << isEventKey model) model.starOrder
-
-
-{-| `OrganizeStarred`'s reorder: partitions `starOrder` into Events and Posts,
-each keeping its original relative order (`List.partition` is stable) --
-then, if `starOrder` isn't already exactly "all Events, then all Posts",
-returns that arrangement. If it already is (i.e. this is a second click),
-flips to "all Posts, then all Events" instead, so the button toggles between
-the two groupings rather than being a no-op once already grouped.
--}
-groupStarredOrder : Model -> List String
-groupStarredOrder model =
-    let
-        ( events, posts ) =
-            List.partition (isEventKey model) model.starOrder
-
-        eventsFirst =
-            events ++ posts
-    in
-    if model.starOrder == eventsFirst then
-        posts ++ events
-
-    else
-        eventsFirst
-
-
-{-| `GotMeasuredGroupRects`'s fallback for a payload that failed to decode
-(should never actually happen -- `Ports.measureElements`'s JS side always
-sends a well-formed array -- but mirrors
-`Components.Pages.EventsPage.applyMeasurementFailure`'s "give up silently"
-convention regardless): still applies a pending reorder if
-`model.groupMeasurementPhase` had one in flight, just with no slide
-animation, rather than leaving the click seemingly do nothing.
--}
-applyGroupMeasurementFailure : Model -> ( Model, Cmd Msg )
-applyGroupMeasurementFailure model =
-    case model.groupMeasurementPhase of
-        NotMeasuringGroup ->
-            ( model, Cmd.none )
-
-        AwaitingOldGroupRects newOrder ->
-            let
-                newModel =
-                    { model | starOrder = newOrder, groupMeasurementPhase = NotMeasuringGroup }
-            in
-            ( newModel, persistCmd newOrder )
-
-        AwaitingNewGroupRects _ ->
-            ( { model | groupMeasurementPhase = NotMeasuringGroup }, Cmd.none )
 
 
 
@@ -1358,3 +1182,179 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
 
         Nothing ->
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
+
+
+{-| The persisted key for a Post on `frontendHost`. Always includes the host
+explicitly -- unlike `Components.Posts.postHref`'s "bare id implies
+mainFrontendHost" convention -- since `mainFrontendHost` can change later
+(`AccountsPanel.ResetMainFrontendHost`) and a starred post needs to keep
+pointing at the server it actually came from regardless.
+-}
+starKey : String -> Post -> String
+starKey frontendHost post =
+    post.id ++ "@" ++ frontendHost
+
+
+{-| The DOM `id` a starred post's entry is rendered with (see
+`starredPostEntry`) -- purely so `MoveStarUpClicked`/`MoveStarDownClicked` can
+measure its position before/after a reorder (`Browser.Dom.getElement`) to
+drive its `UI.Flip` slide.
+-}
+starEntryDomId : String -> String
+starEntryDomId key =
+    "starred-post-entry-" ++ escapeCSSClass key
+
+
+rawKey : String -> String -> String
+rawKey postId host =
+    postId ++ "@" ++ host
+
+
+isStarred : String -> Post -> Model -> Bool
+isStarred frontendHost post model =
+    Set.member (starKey frontendHost post) model.starredPostIds
+
+
+{-| The freshest known version of `post` -- if it's ever been starred/unstarred
+this session (see `ToggleStar`), `model.posts` holds either the optimistic
+snapshot from that click or (once the RPC replies) the server's actual updated
+`Post`, complete with its current star count. Falls back to `post` itself
+(whatever the caller fetched it as) if it's never been touched.
+
+Because this always wins over whatever `Post` a page fetched for itself, a
+page that edits and re-saves a `Post` (e.g. `Pages.Post.PostId_`'s visibility/
+content editors) must also feed its freshly-saved copy back in here (see
+`PostUpdated`), or this cache entry goes stale and `freshestPost` keeps
+serving the old one right back to it.
+
+-}
+freshestPost : String -> Post -> Model -> Post
+freshestPost frontendHost post model =
+    case Dict.get (starKey frontendHost post) model.posts of
+        Just (PostFetchLoaded _ freshPost) ->
+            freshPost
+
+        _ ->
+            post
+
+
+groupByHost : List ( String, String ) -> List ( String, List String )
+groupByHost pairs =
+    pairs
+        |> List.foldl
+            (\( postId, host ) -> Dict.update host (\existing -> Just (postId :: Maybe.withDefault [] existing)))
+            Dict.empty
+        |> Dict.toList
+
+
+needsFetch : Dict String PostFetchStatus -> String -> Bool
+needsFetch posts key =
+    case Dict.get key posts of
+        Just (PostFetchLoaded _ _) ->
+            False
+
+        Just FetchingPost ->
+            False
+
+        Just PostFetchFailed ->
+            False
+
+        Just ServerUnavailable ->
+            True
+
+        Nothing ->
+            True
+
+
+{-| `needsFetch`'s counterpart for `events` -- simpler than `needsFetch`
+itself since there's no `ServerUnavailable` state to retry here (see
+`kickOffEventFetches`'s own doc: a starred post already `PostFetchLoaded`
+already proves its server is reachable, so nothing here ever needs that
+retry path).
+-}
+needsEventFetch : Dict String EventFetchStatus -> String -> Bool
+needsEventFetch events key =
+    case Dict.get key events of
+        Just (EventFetchLoaded _ _) ->
+            False
+
+        Just FetchingEvent ->
+            False
+
+        Just EventFetchFailed ->
+            False
+
+        Nothing ->
+            True
+
+
+{-| The inverse of `starKey ++ "@" ++ host` -- a starred post's id and the
+host it was starred from.
+-}
+parseStarKey : String -> Maybe ( String, String )
+parseStarKey key =
+    case String.split "@" key of
+        [ postId, host ] ->
+            Just ( postId, host )
+
+        _ ->
+            Nothing
+
+
+{-| `ToggleStar`, if `host` currently resolves to a connected `Server` --
+`Nothing` if it doesn't (nothing to star it against). Shared by every page
+that renders a `postCard`/`postDetail` (`Pages.Home_`, `Pages.Post.PostId_`,
+and this module's own `starredPostView`) so each doesn't re-derive the same
+"look up the server, then wrap `ToggleStar`" logic.
+-}
+toggleStarMsg : AccountsPanel.Model -> String -> Post -> Maybe Msg
+toggleStarMsg accountsPanelModel host post =
+    AccountsPanel.serverForHost accountsPanelModel.servers host
+        |> Maybe.map (\server -> ToggleStar server post)
+
+
+{-| Whether the starred entry `key` is a starred Event (i.e. its fetched
+`Post`'s `context` is `EVENTINSTANCE` -- see `starredEventInstanceView`).
+An entry that's still loading, failed, or unavailable is treated as not an
+Event -- its actual context isn't known yet, and `groupStarredOrder` needs
+_some_ answer for every key in `starOrder`.
+-}
+isEventKey : Model -> String -> Bool
+isEventKey model key =
+    case Dict.get key model.posts of
+        Just (PostFetchLoaded _ post) ->
+            post.context == EVENTINSTANCE
+
+        _ ->
+            False
+
+
+{-| Whether the "Organize" button (`OrganizeStarred`) should show at all -- only
+worth offering when `starOrder` actually mixes both kinds, per `isEventKey`.
+-}
+starredPanelHasBothGroups : Model -> Bool
+starredPanelHasBothGroups model =
+    List.any (isEventKey model) model.starOrder && List.any (not << isEventKey model) model.starOrder
+
+
+{-| `OrganizeStarred`'s reorder: partitions `starOrder` into Events and Posts,
+each keeping its original relative order (`List.partition` is stable) --
+then, if `starOrder` isn't already exactly "all Events, then all Posts",
+returns that arrangement. If it already is (i.e. this is a second click),
+flips to "all Posts, then all Events" instead, so the button toggles between
+the two groupings rather than being a no-op once already grouped.
+-}
+groupStarredOrder : Model -> List String
+groupStarredOrder model =
+    let
+        ( events, posts ) =
+            List.partition (isEventKey model) model.starOrder
+
+        eventsFirst =
+            events ++ posts
+    in
+    if model.starOrder == eventsFirst then
+        posts ++ events
+
+    else
+        eventsFirst

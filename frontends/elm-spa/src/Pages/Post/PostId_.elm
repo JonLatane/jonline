@@ -46,44 +46,6 @@ page shared req =
 -- MODEL
 
 
-type PostStatus
-    = LoadingPost
-    | PostLoaded Post
-    | PostFailed
-
-
-{-| Mirrors `Components.UserProfilePage.SubmitStatus` -- kept separate since
-this page's visibility edit is local to it rather than routed through
-`Shared.MarkdownPanel`.
--}
-type SubmitStatus
-    = Idle
-    | Submitting
-    | SubmitFailed String
-
-
-{-| Live only while the visibility picker (see `Model.visibilityEdit`) is
-being edited by the post's own author -- `pending` is the in-progress
-`<select>` value, independent of the loaded Post's own `visibility` until
-`VisibilitySaveClicked` succeeds. Mirrors `Components.UserProfilePage`'s
-`RealNameEdit`.
--}
-type alias VisibilityEdit =
-    { pending : Visibility
-    , status : SubmitStatus
-    }
-
-
-{-| Live only while the moderation-status picker (see `Model.moderationEdit`)
-is being edited by an Admin/`MODERATEPOSTS` holder -- mirrors
-`VisibilityEdit` exactly, just for `Moderation` instead of `Visibility`.
--}
-type alias ModerationEdit =
-    { pending : Moderation
-    , status : SubmitStatus
-    }
-
-
 type alias Model =
     { targetHost : String
     , postId : String
@@ -114,126 +76,6 @@ type alias Model =
     -- mistaken for this page's own.
     , mediaEditActive : Bool
     }
-
-
-init : Shared.Model -> Params -> ( Model, Effect Msg )
-init shared params =
-    let
-        ( postId, targetHost ) =
-            Posts.parsePostRouteId shared.accounts.mainFrontendHost params.postId
-
-        ( fetchedModel, fetchEffect ) =
-            fetchIfReady shared
-                { targetHost = targetHost
-                , postId = postId
-                , postStatus = LoadingPost
-                , repliesModel = Nothing
-                , connectStatus = ServerDependentView.NotConnected
-                , fetchStarted = False
-                , fetchedAccountId = Nothing
-                , visibilityEdit = Nothing
-                , moderationEdit = Nothing
-                , mediaEditActive = False
-                }
-    in
-    ( fetchedModel
-      -- Clears any breadcrumb trail left over from whichever Post was
-      -- viewed before this one -- `GotPost` below repopulates it once this
-      -- Post's own data (and, if it's a reply, its ancestor chain) is back,
-      -- so there's no stale trail shown in the meantime.
-    , Effect.batch [ fetchEffect, Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear) ]
-    )
-
-
-{-| Kicks off the actual `GetPosts` fetch the first time `targetHost` is a
-known, connected server -- whether that was already true at `init`, or only
-became true later because the user connected it (`ConnectClicked`) or it
-auto-reconnected in the background.
-
-This is event-driven -- any `AccountsPanel` message passing through `update`'s
-`SharedMsg` branch triggers a call, since that covers a server
-connecting/being added, including reconnecting persisted servers on app
-startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
-messages into whichever page is active). `subscriptions`' poll is just a
-distrustful fallback in case some future state change doesn't route through
-`SharedMsg`, so it can be slow.
-
--}
-fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
-fetchIfReady shared model =
-    if model.fetchStarted then
-        ( model, Effect.none )
-
-    else
-        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
-            Just _ ->
-                ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
-                , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
-                    |> Task.attempt GotPost
-                    |> Effect.fromCmd
-                )
-
-            Nothing ->
-                ( model, Effect.none )
-
-
-{-| `model.targetHost` paired with whatever account (if any) is currently
-signed in on it -- what `Components.PostCard`/`Components.PostReplies`'
-`Model`/`Msg`-free fetch helpers need instead of a live `Server`/`Account`.
--}
-maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
-maybeAccountServerFor shared model =
-    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
-    , model.targetHost
-    )
-
-
-{-| The `AccountsPanel.accountId` of whichever account is currently signed in
-on `model.targetHost` (the Post's own server), if any -- compared against
-`model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
-`AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
-signed in here (i.e. logging in/out of that account on that server), and
-`refetch` accordingly.
--}
-currentAccountId : Shared.Model -> Model -> Maybe String
-currentAccountId shared model =
-    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
-        |> Maybe.map AccountsPanel.accountId
-
-
-{-| Re-fetches the post unconditionally (unlike `fetchIfReady`, not gated on
-`fetchStarted`, which is already `True` by the time this is ever called) --
-for `update`'s `SharedMsg` branch to call once the Markdown panel (see
-`Shared.MarkdownPanel`) reports a successful save: either this post's content
-just changed (`MarkdownPanel.PostContent`) or a new reply to it was just
-posted (`MarkdownPanel.NewReply`) -- either way, `GotPost`'s own handler
-re-syncs `repliesModel` too (via `PostReplies.refresh`, since it's already
-`Just` by the time any save could have happened), so there's nothing else to
-trigger here.
--}
-refetch : Shared.Model -> Model -> ( Model, Effect Msg )
-refetch shared model =
-    case AccountsPanel.serverForHost shared.accounts.servers model.targetHost of
-        Just _ ->
-            ( { model | fetchedAccountId = currentAccountId shared model }
-            , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
-                |> Task.attempt GotPost
-                |> Effect.fromCmd
-            )
-
-        Nothing ->
-            ( model, Effect.none )
-
-
-{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
-both exist -- what `VisibilitySaveClicked` needs to actually submit its
-`Posts.updatePost` task. Mirrors `Components.UserProfilePage.serverAndAccount`.
--}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
-serverAndAccount shared model =
-    Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
 
 
 
@@ -276,48 +118,85 @@ type Msg
     | SharedMsg Shared.Msg
 
 
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
-exposing the `SharedMsg` constructor itself (and thus every other constructor
-of this otherwise-opaque `Msg`) outside this module.
+type PostStatus
+    = LoadingPost
+    | PostLoaded Post
+    | PostFailed
+
+
+{-| Mirrors `Components.UserProfilePage.SubmitStatus` -- kept separate since
+this page's visibility edit is local to it rather than routed through
+`Shared.MarkdownPanel`.
 -}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
 
 
-{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `Components.PostCard`/
-`Components.PostReplies`' requests, if a token refresh happened) into an
-`Effect` to forward it, `Effect.none` otherwise.
+{-| Live only while the visibility picker (see `Model.visibilityEdit`) is
+being edited by the post's own author -- `pending` is the in-progress
+`<select>` value, independent of the loaded Post's own `visibility` until
+`VisibilitySaveClicked` succeeds. Mirrors `Components.UserProfilePage`'s
+`RealNameEdit`.
 -}
-accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
-accountsPanelEffect maybeAccountsPanelMsg =
-    maybeAccountsPanelMsg
-        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-        |> Maybe.withDefault Effect.none
+type alias VisibilityEdit =
+    { pending : Visibility
+    , status : SubmitStatus
+    }
 
 
-{-| Fully applies a just-fetched/-saved `post` to this page -- the one place
-any save (or refetch) completion should route through so the page's own
-`postDetailView` reflects it immediately rather than only after a reload.
-Handles both halves of that: sets `model.postStatus` itself, _and_ pushes
-`post` into `Shared.StarredPanel`'s cache (see its `PostUpdated`/
-`freshestPost`) so that cache -- which `postDetailView` prefers over
-whatever's passed to it whenever this Post has ever been starred -- can't go
-on serving a stale copy back out from under this update.
-
-Used by both `GotPost` (the initial load, and content-edit saves via
-`refetch`) and `GotVisibilitySaveResult`; any future per-field edit on this
-page (mirroring `VisibilitySaveClicked`'s `Posts.updatePost` pattern) should
-route its own successful save through this too rather than hand-rolling the
-same two updates again.
-
+{-| Live only while the moderation-status picker (see `Model.moderationEdit`)
+is being edited by an Admin/`MODERATEPOSTS` holder -- mirrors
+`VisibilityEdit` exactly, just for `Moderation` instead of `Visibility`.
 -}
-applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
-applyUpdatedPost model post =
-    ( { model | postStatus = PostLoaded post }
-    , Effect.fromShared (Shared.StarredPanelMsg (StarredPanel.PostUpdated model.targetHost post))
+type alias ModerationEdit =
+    { pending : Moderation
+    , status : SubmitStatus
+    }
+
+
+init : Shared.Model -> Params -> ( Model, Effect Msg )
+init shared params =
+    let
+        ( postId, targetHost ) =
+            Posts.parsePostRouteId shared.accounts.mainFrontendHost params.postId
+
+        ( fetchedModel, fetchEffect ) =
+            fetchIfReady shared
+                { targetHost = targetHost
+                , postId = postId
+                , postStatus = LoadingPost
+                , repliesModel = Nothing
+                , connectStatus = ServerDependentView.NotConnected
+                , fetchStarted = False
+                , fetchedAccountId = Nothing
+                , visibilityEdit = Nothing
+                , moderationEdit = Nothing
+                , mediaEditActive = False
+                }
+    in
+    ( fetchedModel
+      -- Clears any breadcrumb trail left over from whichever Post was
+      -- viewed before this one -- `GotPost` below repopulates it once this
+      -- Post's own data (and, if it's a reply, its ancestor chain) is back,
+      -- so there's no stale trail shown in the meantime.
+    , Effect.batch [ fetchEffect, Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear) ]
     )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ if model.fetchStarted then
+            Sub.none
+
+          else
+            Time.every 30000 (\_ -> Poll)
+        , model.repliesModel
+            |> Maybe.map (PostReplies.subscriptions >> Sub.map PostRepliesMsg)
+            |> Maybe.withDefault Sub.none
+        ]
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -649,18 +528,94 @@ update shared req msg model =
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ if model.fetchStarted then
-            Sub.none
+{-| Kicks off the actual `GetPosts` fetch the first time `targetHost` is a
+known, connected server -- whether that was already true at `init`, or only
+became true later because the user connected it (`ConnectClicked`) or it
+auto-reconnected in the background.
 
-          else
-            Time.every 30000 (\_ -> Poll)
-        , model.repliesModel
-            |> Maybe.map (PostReplies.subscriptions >> Sub.map PostRepliesMsg)
-            |> Maybe.withDefault Sub.none
-        ]
+This is event-driven -- any `AccountsPanel` message passing through `update`'s
+`SharedMsg` branch triggers a call, since that covers a server
+connecting/being added, including reconnecting persisted servers on app
+startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
+messages into whichever page is active). `subscriptions`' poll is just a
+distrustful fallback in case some future state change doesn't route through
+`SharedMsg`, so it can be slow.
+
+-}
+fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
+fetchIfReady shared model =
+    if model.fetchStarted then
+        ( model, Effect.none )
+
+    else
+        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
+            Just _ ->
+                ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
+                , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
+                    |> Task.attempt GotPost
+                    |> Effect.fromCmd
+                )
+
+            Nothing ->
+                ( model, Effect.none )
+
+
+{-| Re-fetches the post unconditionally (unlike `fetchIfReady`, not gated on
+`fetchStarted`, which is already `True` by the time this is ever called) --
+for `update`'s `SharedMsg` branch to call once the Markdown panel (see
+`Shared.MarkdownPanel`) reports a successful save: either this post's content
+just changed (`MarkdownPanel.PostContent`) or a new reply to it was just
+posted (`MarkdownPanel.NewReply`) -- either way, `GotPost`'s own handler
+re-syncs `repliesModel` too (via `PostReplies.refresh`, since it's already
+`Just` by the time any save could have happened), so there's nothing else to
+trigger here.
+-}
+refetch : Shared.Model -> Model -> ( Model, Effect Msg )
+refetch shared model =
+    case AccountsPanel.serverForHost shared.accounts.servers model.targetHost of
+        Just _ ->
+            ( { model | fetchedAccountId = currentAccountId shared model }
+            , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
+                |> Task.attempt GotPost
+                |> Effect.fromCmd
+            )
+
+        Nothing ->
+            ( model, Effect.none )
+
+
+{-| Fully applies a just-fetched/-saved `post` to this page -- the one place
+any save (or refetch) completion should route through so the page's own
+`postDetailView` reflects it immediately rather than only after a reload.
+Handles both halves of that: sets `model.postStatus` itself, _and_ pushes
+`post` into `Shared.StarredPanel`'s cache (see its `PostUpdated`/
+`freshestPost`) so that cache -- which `postDetailView` prefers over
+whatever's passed to it whenever this Post has ever been starred -- can't go
+on serving a stale copy back out from under this update.
+
+Used by both `GotPost` (the initial load, and content-edit saves via
+`refetch`) and `GotVisibilitySaveResult`; any future per-field edit on this
+page (mirroring `VisibilitySaveClicked`'s `Posts.updatePost` pattern) should
+route its own successful save through this too rather than hand-rolling the
+same two updates again.
+
+-}
+applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
+applyUpdatedPost model post =
+    ( { model | postStatus = PostLoaded post }
+    , Effect.fromShared (Shared.StarredPanelMsg (StarredPanel.PostUpdated model.targetHost post))
+    )
+
+
+{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `Components.PostCard`/
+`Components.PostReplies`' requests, if a token refresh happened) into an
+`Effect` to forward it, `Effect.none` otherwise.
+-}
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
 
 
 
@@ -672,20 +627,6 @@ view shared req model =
     { title = titleFor shared model
     , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
     }
-
-
-titleFor : Shared.Model -> Model -> String
-titleFor shared model =
-    let
-        subtitle =
-            case model.postStatus of
-                PostLoaded post ->
-                    Posts.postTitleText post
-
-                _ ->
-                    "Post " ++ model.postId
-    in
-    UI.pageTitle shared [ subtitle ]
 
 
 bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
@@ -752,18 +693,6 @@ postDetailView shared model post =
         (visibilityView maybeAccount model.visibilityEdit displayPost)
         (moderationView maybeAccount model.moderationEdit displayPost)
         displayPost
-
-
-{-| Whether saving `pending` for `post` would permanently set its
-`publishedAt` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own check,
-which fills in `published_at` (once, irreversibly) the first time a post
-becomes `SERVERPUBLIC`/`GLOBALPUBLIC` while it's still unset.
--}
-setsPublishedAtPermanently : Post -> Visibility -> Bool
-setsPublishedAtPermanently post pending =
-    post.publishedAt
-        == Nothing
-        && (pending == SERVERPUBLIC || pending == GLOBALPUBLIC)
 
 
 {-| The visibility segment of `postDetail`'s meta line (see `postDetail`'s own
@@ -1013,3 +942,74 @@ reactLinkView shared req =
                 "View from the React app"
             ]
         ]
+
+
+titleFor : Shared.Model -> Model -> String
+titleFor shared model =
+    let
+        subtitle =
+            case model.postStatus of
+                PostLoaded post ->
+                    Posts.postTitleText post
+
+                _ ->
+                    "Post " ++ model.postId
+    in
+    UI.pageTitle shared [ subtitle ]
+
+
+{-| `model.targetHost` paired with whatever account (if any) is currently
+signed in on it -- what `Components.PostCard`/`Components.PostReplies`'
+`Model`/`Msg`-free fetch helpers need instead of a live `Server`/`Account`.
+-}
+maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
+maybeAccountServerFor shared model =
+    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+    , model.targetHost
+    )
+
+
+{-| The `AccountsPanel.accountId` of whichever account is currently signed in
+on `model.targetHost` (the Post's own server), if any -- compared against
+`model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
+`AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
+signed in here (i.e. logging in/out of that account on that server), and
+`refetch` accordingly.
+-}
+currentAccountId : Shared.Model -> Model -> Maybe String
+currentAccountId shared model =
+    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.map AccountsPanel.accountId
+
+
+{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
+both exist -- what `VisibilitySaveClicked` needs to actually submit its
+`Posts.updatePost` task. Mirrors `Components.UserProfilePage.serverAndAccount`.
+-}
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount shared model =
+    Maybe.map2 Tuple.pair
+        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
+exposing the `SharedMsg` constructor itself (and thus every other constructor
+of this otherwise-opaque `Msg`) outside this module.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
+
+
+{-| Whether saving `pending` for `post` would permanently set its
+`publishedAt` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own check,
+which fills in `published_at` (once, irreversibly) the first time a post
+becomes `SERVERPUBLIC`/`GLOBALPUBLIC` while it's still unset.
+-}
+setsPublishedAtPermanently : Post -> Visibility -> Bool
+setsPublishedAtPermanently post pending =
+    post.publishedAt
+        == Nothing
+        && (pending == SERVERPUBLIC || pending == GLOBALPUBLIC)

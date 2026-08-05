@@ -46,12 +46,6 @@ import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
-type BreadcrumbRoot
-    = FromPost Post
-    | FromServerHost String
-    | FromUser User
-
-
 type alias Model =
     { root : Maybe BreadcrumbRoot
 
@@ -75,6 +69,21 @@ type alias Model =
     }
 
 
+type Msg
+    = SetRoot BreadcrumbRoot String (List Post)
+    | Clear
+    | SegmentClicked String
+    | ViewHost
+    | CloseViewer
+    | NoOp
+
+
+type BreadcrumbRoot
+    = FromPost Post
+    | FromServerHost String
+    | FromUser User
+
+
 init : Model
 init =
     { root = Nothing
@@ -83,15 +92,6 @@ init =
     , viewingPost = Nothing
     , viewingHost = False
     }
-
-
-type Msg
-    = SetRoot BreadcrumbRoot String (List Post)
-    | Clear
-    | SegmentClicked String
-    | ViewHost
-    | CloseViewer
-    | NoOp
 
 
 update : Msg -> Model -> Model
@@ -125,26 +125,6 @@ update msg model =
 
         NoOp ->
             model
-
-
-{-| Every Post a segment currently renders for -- `root` (if it's a `FromPost`)
-followed by `replies` -- used both to render the trail itself and to look up
-`viewing`'s Post for `replyPanel`.
--}
-segments : Model -> List Post
-segments model =
-    case model.root of
-        Just (FromPost post) ->
-            post :: model.replies
-
-        _ ->
-            model.replies
-
-
-postFor : Model -> Maybe String -> Maybe Post
-postFor model maybePostId =
-    maybePostId
-        |> Maybe.andThen (\postId -> segments model |> List.filter (\post -> post.id == postId) |> List.head)
 
 
 
@@ -344,25 +324,6 @@ replySegment accountsPanelModel model post =
         ]
 
 
-{-| The classes for a segment button: always `"breadcrumb-segment"` plus its
-own kind (`"breadcrumb-root"`/`"breadcrumb-reply"`); additionally
-`[ hostnameToCSSClass model.host, "background-color-primary" ]` (see
-`UI.EmittedStylesheet`) when this segment's Post is the one `replyPanel`
-currently has open, tinting it with that server's own primary color to mark
-it as the open one.
--}
-segmentClasses : Model -> String -> String -> List String
-segmentClasses model kindClass postId =
-    "breadcrumb-segment"
-        :: kindClass
-        :: (if model.viewingPost == Just postId then
-                [ hostnameToCSSClass model.host, "background-color-nav" ]
-
-            else
-                []
-           )
-
-
 {-| Mirrors `Components.PostCard.authorAvatar`/`UI.imageOrInitial` -- not
 reused directly (importing either would cycle: `Components.PostCard` doesn't
 import `Shared.Breadcrumbs`, but `UI` does, and `UI` is what `imageOrInitial`
@@ -470,21 +431,6 @@ serverOverviewInfoButton basePath server =
         [ text "i" ]
 
 
-{-| Whether `post` is `model`'s own root (as opposed to one of its `replies`)
--- the root is the only segment with a real title shown on its `replyCardView`;
-a reply never has one worth showing on its own card, same as
-`Components.PostReplies` never shows one for its own cards.
--}
-isRoot : Model -> Post -> Bool
-isRoot model post =
-    case model.root of
-        Just (FromPost rootPost) ->
-            rootPost.id == post.id
-
-        _ ->
-            False
-
-
 replyCardView : String -> AccountsPanel.Model -> Model -> Post -> Html Msg
 replyCardView basePath accountsPanelModel model post =
     let
@@ -521,3 +467,57 @@ replyCardView basePath accountsPanelModel model post =
             Nothing ->
                 text ""
         ]
+
+
+{-| Every Post a segment currently renders for -- `root` (if it's a `FromPost`)
+followed by `replies` -- used both to render the trail itself and to look up
+`viewing`'s Post for `replyPanel`.
+-}
+segments : Model -> List Post
+segments model =
+    case model.root of
+        Just (FromPost post) ->
+            post :: model.replies
+
+        _ ->
+            model.replies
+
+
+postFor : Model -> Maybe String -> Maybe Post
+postFor model maybePostId =
+    maybePostId
+        |> Maybe.andThen (\postId -> segments model |> List.filter (\post -> post.id == postId) |> List.head)
+
+
+{-| The classes for a segment button: always `"breadcrumb-segment"` plus its
+own kind (`"breadcrumb-root"`/`"breadcrumb-reply"`); additionally
+`[ hostnameToCSSClass model.host, "background-color-primary" ]` (see
+`UI.EmittedStylesheet`) when this segment's Post is the one `replyPanel`
+currently has open, tinting it with that server's own primary color to mark
+it as the open one.
+-}
+segmentClasses : Model -> String -> String -> List String
+segmentClasses model kindClass postId =
+    "breadcrumb-segment"
+        :: kindClass
+        :: (if model.viewingPost == Just postId then
+                [ hostnameToCSSClass model.host, "background-color-nav" ]
+
+            else
+                []
+           )
+
+
+{-| Whether `post` is `model`'s own root (as opposed to one of its `replies`)
+-- the root is the only segment with a real title shown on its `replyCardView`;
+a reply never has one worth showing on its own card, same as
+`Components.PostReplies` never shows one for its own cards.
+-}
+isRoot : Model -> Post -> Bool
+isRoot model post =
+    case model.root of
+        Just (FromPost rootPost) ->
+            rootPost.id == post.id
+
+        _ ->
+            False

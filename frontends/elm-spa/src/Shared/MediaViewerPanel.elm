@@ -60,6 +60,17 @@ type alias Model =
     }
 
 
+type Msg
+    = Open Post String String
+    | SetCurrent String
+    | Next
+    | Prev
+    | CloseClicked
+    | TouchStart Float Float
+    | TouchMove
+    | TouchEnd Float Float
+
+
 {-| See `Model.direction`'s doc.
 -}
 type Direction
@@ -73,37 +84,17 @@ init =
     { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering, touchStart = Nothing }
 
 
-type Msg
-    = Open Post String String
-    | SetCurrent String
-    | Next
-    | Prev
-    | CloseClicked
-    | TouchStart Float Float
-    | TouchMove
-    | TouchEnd Float Float
-
-
-{-| Whether the panel is currently open -- driving `openClosedClass` and
-`UI.elm`'s `sharedBackdrop`, same as `MarkdownPanel`'s `target /= Nothing`.
+{-| Left/right arrow keys page `Prev`/`Next`, same as the toolbar's `‹`/`›`
+buttons -- only while the panel's actually open, so the keys behave normally
+(e.g. scrolling a `<select>`) everywhere else in the app.
 -}
-isOpen : Model -> Bool
-isOpen model =
-    model.currentMediaReference /= Nothing
-
-
-{-| A `MediaReference.id` from `media`, if it's actually in `media` -- refuses
-any id that isn't, so `currentMediaReference` can never point at an item the
-panel wasn't given (a stale id left over from `SetCurrent`, or a caller
-passing the wrong list/id pair to `Open`).
--}
-validCurrent : List MediaReference -> String -> Maybe String
-validCurrent media id =
-    if List.any (\m -> m.id == id) media then
-        Just id
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if isOpen model then
+        Browser.Events.onKeyDown keyDecoder
 
     else
-        Nothing
+        Sub.none
 
 
 update : Msg -> Model -> Model
@@ -164,14 +155,6 @@ update msg model =
                     model
 
 
-{-| Below this many pixels of travel on both axes, a completed touch is just
-a tap (left to `MediaRenderer`'s own `onClick`/`SetCurrent`), not a swipe.
--}
-swipeThreshold : Float
-swipeThreshold =
-    50
-
-
 {-| What a completed swipe gesture (see `TouchStart`/`TouchEnd`) amounts to,
 based on whichever axis moved further between the touch's start and end
 points -- horizontal swipes page `Next`/`Prev` (left mirrors the toolbar's
@@ -203,79 +186,6 @@ applySwipe ( startX, startY ) ( endX, endY ) model =
 
     else
         model
-
-
-indexOf : String -> List MediaReference -> Maybe Int
-indexOf id media =
-    media
-        |> List.indexedMap Tuple.pair
-        |> List.filter (\( _, m ) -> m.id == id)
-        |> List.head
-        |> Maybe.map Tuple.first
-
-
-getAt : Int -> List MediaReference -> Maybe MediaReference
-getAt index media =
-    media |> List.drop index |> List.head
-
-
-{-| Left/right arrow keys page `Prev`/`Next`, same as the toolbar's `‹`/`›`
-buttons -- only while the panel's actually open, so the keys behave normally
-(e.g. scrolling a `<select>`) everywhere else in the app.
--}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    if isOpen model then
-        Browser.Events.onKeyDown keyDecoder
-
-    else
-        Sub.none
-
-
-keyDecoder : Decode.Decoder Msg
-keyDecoder =
-    Decode.field "key" Decode.string
-        |> Decode.andThen
-            (\key ->
-                case key of
-                    "ArrowLeft" ->
-                        Decode.succeed Prev
-
-                    "ArrowRight" ->
-                        Decode.succeed Next
-
-                    _ ->
-                        Decode.fail "not an arrow key"
-            )
-
-
-{-| Whether `media` is an image, by its MIME type's top-level part -- mirrors
-`Components.MediaRenderer.view`'s own `contentType` branch. Used by `view` to
-decide whether tapping the media itself should close the panel (images have
-no in-place interaction to preserve) or not (videos need the tap to reach
-their native `controls`, same as before this behavior existed).
--}
-isImage : MediaReference -> Bool
-isImage media =
-    (String.split "/" media.contentType |> List.head) == Just "image"
-
-
-{-| The item before/after the current one in `media`, wrapping around --
-`Nothing` if `media` has one item or fewer (nothing to page to).
--}
-adjacent : Int -> Model -> Maybe MediaReference
-adjacent offset model =
-    let
-        count =
-            List.length model.media
-    in
-    if count < 2 then
-        Nothing
-
-    else
-        model.currentMediaReference
-            |> Maybe.andThen (\id -> indexOf id model.media)
-            |> Maybe.andThen (\index -> getAt (modBy count (index + offset)) model.media)
 
 
 view : AccountsPanel.Model -> Model -> Html Msg
@@ -404,3 +314,93 @@ directionClass direction =
 
         Backward ->
             "media-viewer-panel-media-backward"
+
+
+{-| Whether the panel is currently open -- driving `openClosedClass` and
+`UI.elm`'s `sharedBackdrop`, same as `MarkdownPanel`'s `target /= Nothing`.
+-}
+isOpen : Model -> Bool
+isOpen model =
+    model.currentMediaReference /= Nothing
+
+
+{-| A `MediaReference.id` from `media`, if it's actually in `media` -- refuses
+any id that isn't, so `currentMediaReference` can never point at an item the
+panel wasn't given (a stale id left over from `SetCurrent`, or a caller
+passing the wrong list/id pair to `Open`).
+-}
+validCurrent : List MediaReference -> String -> Maybe String
+validCurrent media id =
+    if List.any (\m -> m.id == id) media then
+        Just id
+
+    else
+        Nothing
+
+
+{-| Below this many pixels of travel on both axes, a completed touch is just
+a tap (left to `MediaRenderer`'s own `onClick`/`SetCurrent`), not a swipe.
+-}
+swipeThreshold : Float
+swipeThreshold =
+    50
+
+
+indexOf : String -> List MediaReference -> Maybe Int
+indexOf id media =
+    media
+        |> List.indexedMap Tuple.pair
+        |> List.filter (\( _, m ) -> m.id == id)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+getAt : Int -> List MediaReference -> Maybe MediaReference
+getAt index media =
+    media |> List.drop index |> List.head
+
+
+keyDecoder : Decode.Decoder Msg
+keyDecoder =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\key ->
+                case key of
+                    "ArrowLeft" ->
+                        Decode.succeed Prev
+
+                    "ArrowRight" ->
+                        Decode.succeed Next
+
+                    _ ->
+                        Decode.fail "not an arrow key"
+            )
+
+
+{-| Whether `media` is an image, by its MIME type's top-level part -- mirrors
+`Components.MediaRenderer.view`'s own `contentType` branch. Used by `view` to
+decide whether tapping the media itself should close the panel (images have
+no in-place interaction to preserve) or not (videos need the tap to reach
+their native `controls`, same as before this behavior existed).
+-}
+isImage : MediaReference -> Bool
+isImage media =
+    (String.split "/" media.contentType |> List.head) == Just "image"
+
+
+{-| The item before/after the current one in `media`, wrapping around --
+`Nothing` if `media` has one item or fewer (nothing to page to).
+-}
+adjacent : Int -> Model -> Maybe MediaReference
+adjacent offset model =
+    let
+        count =
+            List.length model.media
+    in
+    if count < 2 then
+        Nothing
+
+    else
+        model.currentMediaReference
+            |> Maybe.andThen (\id -> indexOf id model.media)
+            |> Maybe.andThen (\index -> getAt (modBy count (index + offset)) model.media)

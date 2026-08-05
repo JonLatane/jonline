@@ -23,6 +23,43 @@ import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
+{-| "N events" alone when every event has exactly one instance (the common
+non-recurring case, where naming both is redundant) -- otherwise "N events
+and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
+"delete along with its events" button) and `UI`'s shared delete-confirmation
+dialog for the same source, so it lives here rather than on either caller.
+-}
+syncedCountsLabel : EventSyncSource -> String
+syncedCountsLabel source =
+    let
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        instanceCount =
+            Conversions.int64ToInt source.eventInstanceCount
+    in
+    if eventCount == instanceCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount instanceCount "instance"
+
+
+pluralCount : Int -> String -> String
+pluralCount count noun =
+    String.fromInt count
+        ++ " "
+        ++ noun
+        ++ (if count == 1 then
+                ""
+
+            else
+                "s"
+           )
+
+
 {-| `targetUserId = ""` asks the backend for the caller's own sources (see
 `backend/src/rpcs/event_sync_sources/get_event_sync_sources.rs`); any other
 id asks for that user's sources instead, which only succeeds for an Admin
@@ -117,40 +154,3 @@ intervalOptions =
     , ( 28800, "8 hours" )
     , ( 86400, "1 day" )
     ]
-
-
-{-| "N events" alone when every event has exactly one instance (the common
-non-recurring case, where naming both is redundant) -- otherwise "N events
-and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
-"delete along with its events" button) and `UI`'s shared delete-confirmation
-dialog for the same source, so it lives here rather than on either caller.
--}
-syncedCountsLabel : EventSyncSource -> String
-syncedCountsLabel source =
-    let
-        eventCount =
-            Conversions.int64ToInt source.eventCount
-
-        instanceCount =
-            Conversions.int64ToInt source.eventInstanceCount
-    in
-    if eventCount == instanceCount then
-        pluralCount eventCount "event"
-
-    else
-        pluralCount eventCount "event"
-            ++ " and "
-            ++ pluralCount instanceCount "instance"
-
-
-pluralCount : Int -> String -> String
-pluralCount count noun =
-    String.fromInt count
-        ++ " "
-        ++ noun
-        ++ (if count == 1 then
-                ""
-
-            else
-                "s"
-           )

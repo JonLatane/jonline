@@ -44,23 +44,8 @@ import Task
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
-type SubmitStatus
-    = Idle
-    | Submitting
-    | SubmitFailed String
-
-
 type alias Model =
     { status : SubmitStatus }
-
-
-init : Model
-init =
-    { status = Idle }
-
-
-
--- UPDATE
 
 
 type Msg
@@ -73,20 +58,19 @@ type Msg
     | GotModerationResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Follow ))
 
 
-{-| `account`'s own `Follow` of `user` -- the relationship the viewer
-themself controls the existence (but not the moderation) of.
--}
-currentUserFollowOf : AccountsPanel.Account -> User -> Follow
-currentUserFollowOf account user =
-    { defaultFollow | userId = account.userId, targetUserId = user.id }
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
 
 
-{-| `user`'s `Follow` of `account` -- the relationship the viewer controls
-the moderation (but not the existence) of.
--}
-targetCurrentUserFollowOf : AccountsPanel.Account -> User -> Follow
-targetCurrentUserFollowOf account user =
-    { defaultFollow | userId = user.id, targetUserId = account.userId }
+init : Model
+init =
+    { status = Idle }
+
+
+
+-- UPDATE
 
 
 {-| Handles every click here -- `server`/`account` are the viewer's own
@@ -308,15 +292,6 @@ viewFor model user =
         ]
 
 
-followButtonText : Bool -> String
-followButtonText requiresApproval =
-    if requiresApproval then
-        "Request Follow"
-
-    else
-        "Follow"
-
-
 {-| `stopPropagation`/`preventDefault` (rather than a plain `onClick`) so a
 click here doesn't also follow an enclosing link -- this view is embedded not
 just in `Components.Pages.UserProfilePage` (no enclosing link) but also in
@@ -332,3 +307,28 @@ followActionButton status clickMsg buttonClass label =
         , disabled (status == Submitting)
         ]
         [ text label ]
+
+
+followButtonText : Bool -> String
+followButtonText requiresApproval =
+    if requiresApproval then
+        "Request Follow"
+
+    else
+        "Follow"
+
+
+{-| `account`'s own `Follow` of `user` -- the relationship the viewer
+themself controls the existence (but not the moderation) of.
+-}
+currentUserFollowOf : AccountsPanel.Account -> User -> Follow
+currentUserFollowOf account user =
+    { defaultFollow | userId = account.userId, targetUserId = user.id }
+
+
+{-| `user`'s `Follow` of `account` -- the relationship the viewer controls
+the moderation (but not the existence) of.
+-}
+targetCurrentUserFollowOf : AccountsPanel.Account -> User -> Follow
+targetCurrentUserFollowOf account user =
+    { defaultFollow | userId = user.id, targetUserId = account.userId }

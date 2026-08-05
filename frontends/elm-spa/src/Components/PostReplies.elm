@@ -40,12 +40,21 @@ import Task
 import UI.Flip as Flip
 
 
-{-| How deep `init` loads the reply tree in one shot when `root` shows up
-without any `replies` of its own already attached.
--}
-initialReplyDepth : Int
-initialReplyDepth =
-    3
+type alias Model =
+    { root : Post
+    , host : String
+    , statuses : Dict String ReplyLoadStatus
+    , replyAnimations : Dict String ReplyAnimation
+    , collapsedReplies : Set String
+    }
+
+
+type Msg
+    = LoadRepliesClicked String
+    | GotReplies String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
+    | Animate Animation.Msg
+    | RemoveReply String
+    | ToggleCollapsed String
 
 
 {-| Per-node (keyed by Post id) reply-loading state -- `ReplyLoaded` suppresses
@@ -68,15 +77,6 @@ type alias ReplyAnimation =
     { post : Post
     , depth : Int
     , flip : Flip.State Msg
-    }
-
-
-type alias Model =
-    { root : Post
-    , host : String
-    , statuses : Dict String ReplyLoadStatus
-    , replyAnimations : Dict String ReplyAnimation
-    , collapsedReplies : Set String
     }
 
 
@@ -105,35 +105,9 @@ init accountsPanelModel maybeUserId host post =
         ( model, Effect.none )
 
 
-{-| Re-fetches `root`'s own direct replies (unconditionally, `initialReplyDepth`
-deep again) -- for `Pages.Post.PostId_` to call once the Markdown panel reports
-a successful save: either `root`'s content just changed, or (more relevantly
-here) a brand new reply to it was just posted, and needs to show up. Any
-deeper subtree a user had individually expanded past `initialReplyDepth` (via
-`LoadRepliesClicked`) gets collapsed back down by this, same trade-off
-`PostId_`'s old flat `refetch` already made for the (until now, single-level)
-replies list.
--}
-refresh : AccountsPanel.Model -> Maybe String -> Post -> Model -> ( Model, Effect Msg )
-refresh accountsPanelModel maybeUserId post model =
-    loadReplies accountsPanelModel maybeUserId initialReplyDepth post.id { model | root = post }
-
-
-type Msg
-    = LoadRepliesClicked String
-    | GotReplies String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
-    | Animate Animation.Msg
-    | RemoveReply String
-    | ToggleCollapsed String
-
-
-loadReplies : AccountsPanel.Model -> Maybe String -> Int -> String -> Model -> ( Model, Effect Msg )
-loadReplies accountsPanelModel maybeUserId depth postId model =
-    ( { model | statuses = Dict.insert postId ReplyLoading model.statuses }
-    , Posts.fetchReplies accountsPanelModel ( maybeUserId, model.host ) depth postId
-        |> Task.attempt (GotReplies postId)
-        |> Effect.fromCmd
-    )
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Flip.subscription Animate (List.map .flip (Dict.values model.replyAnimations))
 
 
 update : AccountsPanel.Model -> Maybe String -> Msg -> Model -> ( Model, Effect Msg )
@@ -190,58 +164,27 @@ update accountsPanelModel maybeUserId msg model =
             ( syncAnimations { model | collapsedReplies = collapsedReplies }, Effect.none )
 
 
-{-| Replaces the node matching `targetId` anywhere in `post`'s own tree with
-`newReplies` as its `replies` -- used to merge a `GetPosts` response for one
-particular reply (or `root` itself) back into the tree it came from, without
-disturbing any of that node's siblings/ancestors/already-loaded cousins.
+{-| Re-fetches `root`'s own direct replies (unconditionally, `initialReplyDepth`
+deep again) -- for `Pages.Post.PostId_` to call once the Markdown panel reports
+a successful save: either `root`'s content just changed, or (more relevantly
+here) a brand new reply to it was just posted, and needs to show up. Any
+deeper subtree a user had individually expanded past `initialReplyDepth` (via
+`LoadRepliesClicked`) gets collapsed back down by this, same trade-off
+`PostId_`'s old flat `refetch` already made for the (until now, single-level)
+replies list.
 -}
-setRepliesAt : String -> List Post -> Post -> Post
-setRepliesAt targetId newReplies post =
-    if post.id == targetId then
-        { post | replies = List.map wrapPost newReplies }
-
-    else
-        { post
-            | replies =
-                List.map
-                    (\wrapped -> wrapPost (setRepliesAt targetId newReplies (unwrapPost wrapped)))
-                    post.replies
-        }
+refresh : AccountsPanel.Model -> Maybe String -> Post -> Model -> ( Model, Effect Msg )
+refresh accountsPanelModel maybeUserId post model =
+    loadReplies accountsPanelModel maybeUserId initialReplyDepth post.id { model | root = post }
 
 
-{-| Depth-first, pre-order flattening of `post`'s own reply tree (not
-including `post` itself -- the page already shows that via its own
-`postDetail`) -- direct replies at depth 1, their own replies at depth 2, etc.
-This (not `Dict` iteration order, which is alphabetical by id) is what decides
-the on-screen order every list/animation below actually renders in.
-
-A reply whose id is in `collapsedReplies` (see `Model.collapsedReplies`,
-toggled by its own `replyStatusButton`) still appears itself, but its
-descendants are skipped -- `syncAnimations` then sees them drop out of the
-flattened tree and fades them out via `Flip.remove` exactly like it would for
-a reply that stopped coming back from the server, giving the collapse/expand
-toggle its animation for free.
-
--}
-flattenReplies : Set String -> Post -> List ( Int, Post )
-flattenReplies collapsedReplies post =
-    flattenAt 1 collapsedReplies post
-
-
-flattenAt : Int -> Set String -> Post -> List ( Int, Post )
-flattenAt depth collapsedReplies post =
-    post.replies
-        |> List.map unwrapPost
-        |> List.concatMap
-            (\reply ->
-                ( depth, reply )
-                    :: (if Set.member reply.id collapsedReplies then
-                            []
-
-                        else
-                            flattenAt (depth + 1) collapsedReplies reply
-                       )
-            )
+loadReplies : AccountsPanel.Model -> Maybe String -> Int -> String -> Model -> ( Model, Effect Msg )
+loadReplies accountsPanelModel maybeUserId depth postId model =
+    ( { model | statuses = Dict.insert postId ReplyLoading model.statuses }
+    , Posts.fetchReplies accountsPanelModel ( maybeUserId, model.host ) depth postId
+        |> Task.attempt (GotReplies postId)
+        |> Effect.fromCmd
+    )
 
 
 {-| Reconciles `replyAnimations` with `model.root`'s current flattened tree --
@@ -284,11 +227,6 @@ syncAnimations model =
                 Dict.insert key { anim | flip = Flip.remove (RemoveReply key) anim.flip } animations
     in
     { model | replyAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Flip.subscription Animate (List.map .flip (Dict.values model.replyAnimations))
 
 
 
@@ -396,3 +334,65 @@ replyAnimationView config model ( depth, post, flip ) =
             ]
         ]
     )
+
+
+{-| How deep `init` loads the reply tree in one shot when `root` shows up
+without any `replies` of its own already attached.
+-}
+initialReplyDepth : Int
+initialReplyDepth =
+    3
+
+
+{-| Replaces the node matching `targetId` anywhere in `post`'s own tree with
+`newReplies` as its `replies` -- used to merge a `GetPosts` response for one
+particular reply (or `root` itself) back into the tree it came from, without
+disturbing any of that node's siblings/ancestors/already-loaded cousins.
+-}
+setRepliesAt : String -> List Post -> Post -> Post
+setRepliesAt targetId newReplies post =
+    if post.id == targetId then
+        { post | replies = List.map wrapPost newReplies }
+
+    else
+        { post
+            | replies =
+                List.map
+                    (\wrapped -> wrapPost (setRepliesAt targetId newReplies (unwrapPost wrapped)))
+                    post.replies
+        }
+
+
+{-| Depth-first, pre-order flattening of `post`'s own reply tree (not
+including `post` itself -- the page already shows that via its own
+`postDetail`) -- direct replies at depth 1, their own replies at depth 2, etc.
+This (not `Dict` iteration order, which is alphabetical by id) is what decides
+the on-screen order every list/animation below actually renders in.
+
+A reply whose id is in `collapsedReplies` (see `Model.collapsedReplies`,
+toggled by its own `replyStatusButton`) still appears itself, but its
+descendants are skipped -- `syncAnimations` then sees them drop out of the
+flattened tree and fades them out via `Flip.remove` exactly like it would for
+a reply that stopped coming back from the server, giving the collapse/expand
+toggle its animation for free.
+
+-}
+flattenReplies : Set String -> Post -> List ( Int, Post )
+flattenReplies collapsedReplies post =
+    flattenAt 1 collapsedReplies post
+
+
+flattenAt : Int -> Set String -> Post -> List ( Int, Post )
+flattenAt depth collapsedReplies post =
+    post.replies
+        |> List.map unwrapPost
+        |> List.concatMap
+            (\reply ->
+                ( depth, reply )
+                    :: (if Set.member reply.id collapsedReplies then
+                            []
+
+                        else
+                            flattenAt (depth + 1) collapsedReplies reply
+                       )
+            )

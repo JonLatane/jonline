@@ -31,12 +31,6 @@ panels are open.
 import Set exposing (Set)
 
 
-type AccountsPanelTab
-    = AccountsAndServersTab
-    | SettingsTab
-    | AdminTab
-
-
 type alias Model =
     { activeTab : AccountsPanelTab
     , allowMainServerSwitch : Bool
@@ -54,6 +48,12 @@ type Msg
     | ToggleAccountPanel String
 
 
+type AccountsPanelTab
+    = AccountsAndServersTab
+    | SettingsTab
+    | AdminTab
+
+
 init : Model
 init =
     { activeTab = AccountsAndServersTab
@@ -62,11 +62,6 @@ init =
     , showAllEventLayouts = False
     , openAccountPanels = Set.empty
     }
-
-
-isAccountPanelOpen : String -> Model -> Bool
-isAccountPanelOpen id model =
-    Set.member id model.openAccountPanels
 
 
 update : Msg -> Model -> Model
@@ -93,3 +88,8 @@ update msg model =
                     else
                         Set.insert id model.openAccountPanels
             }
+
+
+isAccountPanelOpen : String -> Model -> Bool
+isAccountPanelOpen id model =
+    Set.member id model.openAccountPanels

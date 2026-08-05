@@ -84,6 +84,15 @@ type alias BrowserTimeZone =
     }
 
 
+{-| "Today"/"Yesterday"/"Tomorrow" -- the three relative-day labels
+`dateLabel`/`rangeDateLabels` can prefix a date with.
+-}
+type RelativeDay
+    = Today
+    | Yesterday
+    | Tomorrow
+
+
 {-| A plain `YYYY-MM-DD` rendering of a timestamp in `zone` -- e.g. a
 profile's "Joined" date. No existing date-formatting helper/locale
 infrastructure exists in this app yet, so this keeps things simple rather
@@ -227,41 +236,6 @@ formatDateRange time start end =
         startLabel ++ " - " ++ endLabel
 
 
-{-| `start`/`end`'s own `dateLabel`s, for `formatRange`/`formatDateRange`'s
-different-day branches -- normally just `dateLabel time start`/`... end`
-each, except the "Today"+"Yesterday"/"Today"+"Tomorrow" suppression
-described on `formatRange`: since `start` never comes after `end`,
-"Yesterday" can only pair with a `start` that's "Today"'s eve (so `end` is
-"Today"), and "Tomorrow" can only pair with an `end` the day after a "Today"
-`start` -- no other combination collides, so every other pairing (including
-"Yesterday" and "Tomorrow" together, spanning today itself) keeps both
-sides' own relative-day prefix untouched.
--}
-rangeDateLabels : Model -> Time.Posix -> Time.Posix -> ( String, String )
-rangeDateLabels time start end =
-    let
-        startRelativeDay =
-            relativeDay time start
-
-        endRelativeDay =
-            relativeDay time end
-
-        ( adjustedStartRelativeDay, adjustedEndRelativeDay ) =
-            case ( startRelativeDay, endRelativeDay ) of
-                ( Just Yesterday, Just Today ) ->
-                    ( Nothing, Just Today )
-
-                ( Just Today, Just Tomorrow ) ->
-                    ( Just Today, Nothing )
-
-                _ ->
-                    ( startRelativeDay, endRelativeDay )
-    in
-    ( withRelativeDayPrefix adjustedStartRelativeDay (dateLabelBase time start)
-    , withRelativeDayPrefix adjustedEndRelativeDay (dateLabelBase time end)
-    )
-
-
 {-| "MonthName Day", e.g. "August 1" -- plus a trailing ", Year" whenever
 `moment`'s own year (in `time.browserTimeZone.zone`) isn't `time.now`'s (the
 viewer's own "current year"), so a date within the viewer's current year
@@ -303,15 +277,6 @@ dateLabelBase time moment =
         base ++ ", " ++ String.fromInt year
 
 
-{-| "Today"/"Yesterday"/"Tomorrow" -- the three relative-day labels
-`dateLabel`/`rangeDateLabels` can prefix a date with.
--}
-type RelativeDay
-    = Today
-    | Yesterday
-    | Tomorrow
-
-
 relativeDayText : RelativeDay -> String
 relativeDayText day =
     case day of
@@ -323,44 +288,6 @@ relativeDayText day =
 
         Tomorrow ->
             "Tomorrow"
-
-
-{-| `Just Today`/`Just Yesterday`/`Just Tomorrow` if `moment`'s calendar date
-(in `time.browserTimeZone.zone`) is respectively the same as, one before, or
-one after `time.now`'s own calendar date -- `Nothing` otherwise (including
-whenever `now` itself hasn't resolved yet, i.e. everywhere still using the
-`Time.millisToPosix 0`/`Time.utc` placeholders from before `Shared.init`'s
-`Cmd`s resolve, since `now` and `moment` would only spuriously agree there
-already). Compares whole calendar days via `Shared.Conversions.daysFromCivil`
-(a plain day-count) rather than subtracting `Time.posixToMillis`, since a
-`moment` just under 24h from `now` can still be "Yesterday" (e.g. 11:58PM to
-12:02AM) while one just over 24h apart can still be "Today" (e.g. an
-all-nighter's 1AM to the next day's 11PM) -- only the calendar date matters,
-not elapsed duration.
--}
-relativeDay : Model -> Time.Posix -> Maybe RelativeDay
-relativeDay time moment =
-    let
-        zone =
-            time.browserTimeZone.zone
-
-        dayNumber t =
-            Conversions.daysFromCivil (Time.toYear zone t) (Conversions.monthToNumber (Time.toMonth zone t)) (Time.toDay zone t)
-
-        dayDiff =
-            dayNumber moment - dayNumber time.now
-    in
-    if dayDiff == 0 then
-        Just Today
-
-    else if dayDiff == -1 then
-        Just Yesterday
-
-    else if dayDiff == 1 then
-        Just Tomorrow
-
-    else
-        Nothing
 
 
 {-| Prepends `"Today, "`/`"Yesterday, "`/`"Tomorrow, "` to `base` (a
@@ -428,19 +355,6 @@ period hour =
 
     else
         "PM"
-
-
-{-| A 24-hour `hour` (`0`-`23`) as its 12-hour clock face number (`1`-`12`) --
-`0` and `12` both read as `12` (midnight/noon), same as any analog clock.
--}
-hour12 : Int -> Int
-hour12 hour =
-    case modBy 12 hour of
-        0 ->
-            12
-
-        h ->
-            h
 
 
 {-| `time`'s time-of-day, 12-hour, with no AM/PM suffix and no leading zero
@@ -524,6 +438,112 @@ monthName month =
             "December"
 
 
+{-| `YYYY-MM-DDTHH:mm` in `zone` -- the exact format an `<input
+type="datetime-local">` element's `value` attribute expects, so a date/time
+picker (e.g. `Components.Pages.EventsPage`'s "Events After <date>" tab)
+can be a plain controlled input: this formats a `Time.Posix` to populate it,
+and `posixFromDateTimeLocalInput` parses back whatever the user (or the
+browser's own native picker widget) sets it to.
+-}
+formatDateTimeLocalInput : Time.Zone -> Time.Posix -> String
+formatDateTimeLocalInput zone time =
+    let
+        pad2 n =
+            String.padLeft 2 '0' (String.fromInt n)
+    in
+    formatDate zone time
+        ++ "T"
+        ++ pad2 (Time.toHour zone time)
+        ++ ":"
+        ++ pad2 (Time.toMinute zone time)
+
+
+{-| `start`/`end`'s own `dateLabel`s, for `formatRange`/`formatDateRange`'s
+different-day branches -- normally just `dateLabel time start`/`... end`
+each, except the "Today"+"Yesterday"/"Today"+"Tomorrow" suppression
+described on `formatRange`: since `start` never comes after `end`,
+"Yesterday" can only pair with a `start` that's "Today"'s eve (so `end` is
+"Today"), and "Tomorrow" can only pair with an `end` the day after a "Today"
+`start` -- no other combination collides, so every other pairing (including
+"Yesterday" and "Tomorrow" together, spanning today itself) keeps both
+sides' own relative-day prefix untouched.
+-}
+rangeDateLabels : Model -> Time.Posix -> Time.Posix -> ( String, String )
+rangeDateLabels time start end =
+    let
+        startRelativeDay =
+            relativeDay time start
+
+        endRelativeDay =
+            relativeDay time end
+
+        ( adjustedStartRelativeDay, adjustedEndRelativeDay ) =
+            case ( startRelativeDay, endRelativeDay ) of
+                ( Just Yesterday, Just Today ) ->
+                    ( Nothing, Just Today )
+
+                ( Just Today, Just Tomorrow ) ->
+                    ( Just Today, Nothing )
+
+                _ ->
+                    ( startRelativeDay, endRelativeDay )
+    in
+    ( withRelativeDayPrefix adjustedStartRelativeDay (dateLabelBase time start)
+    , withRelativeDayPrefix adjustedEndRelativeDay (dateLabelBase time end)
+    )
+
+
+{-| `Just Today`/`Just Yesterday`/`Just Tomorrow` if `moment`'s calendar date
+(in `time.browserTimeZone.zone`) is respectively the same as, one before, or
+one after `time.now`'s own calendar date -- `Nothing` otherwise (including
+whenever `now` itself hasn't resolved yet, i.e. everywhere still using the
+`Time.millisToPosix 0`/`Time.utc` placeholders from before `Shared.init`'s
+`Cmd`s resolve, since `now` and `moment` would only spuriously agree there
+already). Compares whole calendar days via `Shared.Conversions.daysFromCivil`
+(a plain day-count) rather than subtracting `Time.posixToMillis`, since a
+`moment` just under 24h from `now` can still be "Yesterday" (e.g. 11:58PM to
+12:02AM) while one just over 24h apart can still be "Today" (e.g. an
+all-nighter's 1AM to the next day's 11PM) -- only the calendar date matters,
+not elapsed duration.
+-}
+relativeDay : Model -> Time.Posix -> Maybe RelativeDay
+relativeDay time moment =
+    let
+        zone =
+            time.browserTimeZone.zone
+
+        dayNumber t =
+            Conversions.daysFromCivil (Time.toYear zone t) (Conversions.monthToNumber (Time.toMonth zone t)) (Time.toDay zone t)
+
+        dayDiff =
+            dayNumber moment - dayNumber time.now
+    in
+    if dayDiff == 0 then
+        Just Today
+
+    else if dayDiff == -1 then
+        Just Yesterday
+
+    else if dayDiff == 1 then
+        Just Tomorrow
+
+    else
+        Nothing
+
+
+{-| A 24-hour `hour` (`0`-`23`) as its 12-hour clock face number (`1`-`12`) --
+`0` and `12` both read as `12` (midnight/noon), same as any analog clock.
+-}
+hour12 : Int -> Int
+hour12 hour =
+    case modBy 12 hour of
+        0 ->
+            12
+
+        h ->
+            h
+
+
 {-| `Time.Month` as its zero-padded numeric position (`1`-`12`), for
 `formatDate`'s `YYYY-MM-DD` rendering.
 -}
@@ -565,26 +585,6 @@ monthNumber month =
 
         Time.Dec ->
             12
-
-
-{-| `YYYY-MM-DDTHH:mm` in `zone` -- the exact format an `<input
-type="datetime-local">` element's `value` attribute expects, so a date/time
-picker (e.g. `Components.Pages.EventsPage`'s "Events After <date>" tab)
-can be a plain controlled input: this formats a `Time.Posix` to populate it,
-and `posixFromDateTimeLocalInput` parses back whatever the user (or the
-browser's own native picker widget) sets it to.
--}
-formatDateTimeLocalInput : Time.Zone -> Time.Posix -> String
-formatDateTimeLocalInput zone time =
-    let
-        pad2 n =
-            String.padLeft 2 '0' (String.fromInt n)
-    in
-    formatDate zone time
-        ++ "T"
-        ++ pad2 (Time.toHour zone time)
-        ++ ":"
-        ++ pad2 (Time.toMinute zone time)
 
 
 {-| The inverse of `formatDateTimeLocalInput` -- parses an `<input

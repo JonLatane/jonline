@@ -91,6 +91,18 @@ type alias Model =
     }
 
 
+type Msg
+    = UsernameChanged String
+    | PasswordChanged String
+    | UsernameButtonClicked String
+    | AlsoSignInHereToggled
+    | SignInClicked
+    | GotLoginResult (Result Grpc.Error ( Maybe Account, FederatedAuth.PublicKey ))
+    | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
+    | GotEncryptResult Encode.Value
+    | SharedMsg Shared.Msg
+
+
 {-| `rawKey` is `PUBLIC_KEY_URLSTRING@requestingHost` -- always both parts,
 unlike `Components.PostCard.parsePostRouteId`'s `id[@host]`, since this route
 has no "current server" to fall back to.
@@ -137,20 +149,13 @@ init shared req =
     )
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Ports.federatedAuthEncrypted GotEncryptResult
+
+
 
 -- UPDATE
-
-
-type Msg
-    = UsernameChanged String
-    | PasswordChanged String
-    | UsernameButtonClicked String
-    | AlsoSignInHereToggled
-    | SignInClicked
-    | GotLoginResult (Result Grpc.Error ( Maybe Account, FederatedAuth.PublicKey ))
-    | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
-    | GotEncryptResult Encode.Value
-    | SharedMsg Shared.Msg
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -269,35 +274,6 @@ update shared msg model =
             ( model, Effect.fromShared subMsg )
 
 
-{-| The username this page's Login RPC(s) actually authenticate as: the
-signed-in account's own, if `browsingHost` has one, otherwise whatever's
-typed into `usernameField`. Shared between `signInView` (for the submit
-button's disabled state) and `update` (for the RPC(s) themselves) so the two
-never disagree.
--}
-effectiveUsername : Shared.Model -> Model -> String
-effectiveUsername shared model =
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
-        Just account ->
-            account.username
-
-        Nothing ->
-            model.username
-
-
-{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
--- `loginTask` needs a live connection, so a known-but-disconnected server
-(`serverForHost` matches those too) counts the same as not being signed in.
--}
-ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
-ifConnected server =
-    if server.connected == Nothing then
-        Nothing
-
-    else
-        Just server
-
-
 loginTask : AccountsPanel.Server -> String -> String -> Task Grpc.Error RefreshTokenResponse
 loginTask server username password =
     case AccountsPanel.connectionOf server of
@@ -322,37 +298,6 @@ encryptAndSendEffect : FederatedAuth.PublicKey -> Account -> Effect Msg
 encryptAndSendEffect publicKey account =
     FederatedAuth.encrypt publicKey (Encode.encode 0 (AccountsPanel.encodeAccount account))
         |> Effect.fromCmd
-
-
-{-| Mirrors `Shared.AccountsPanel.updateHelp`'s `GotAuthResult` account
-construction -- `Nothing` if the response is missing user/token data (an
-`update` branch above turns that into the same `Errored` state `GotAuthResult`
-would).
--}
-accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
-accountFromLogin server resp =
-    case ( resp.user, resp.refreshToken, resp.accessToken ) of
-        ( Just user, Just refreshToken, Just accessToken ) ->
-            Just
-                { server = server
-                , userId = user.id
-                , username = user.username
-                , refreshToken = tokenFromExpirable refreshToken
-                , accessToken = tokenFromExpirable accessToken
-                , enabled = True
-                , avatarMediaId = Maybe.map .id user.avatar
-                , permissions = user.permissions
-                , realName = user.realName
-                , needsPassword = False
-                }
-
-        _ ->
-            Nothing
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Ports.federatedAuthEncrypted GotEncryptResult
 
 
 
@@ -542,6 +487,61 @@ alsoSignInCheckbox isChecked accountForUsername submitting =
                     "Sign back in here"
             )
         ]
+
+
+{-| The username this page's Login RPC(s) actually authenticate as: the
+signed-in account's own, if `browsingHost` has one, otherwise whatever's
+typed into `usernameField`. Shared between `signInView` (for the submit
+button's disabled state) and `update` (for the RPC(s) themselves) so the two
+never disagree.
+-}
+effectiveUsername : Shared.Model -> Model -> String
+effectiveUsername shared model =
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
+        Just account ->
+            account.username
+
+        Nothing ->
+            model.username
+
+
+{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
+-- `loginTask` needs a live connection, so a known-but-disconnected server
+(`serverForHost` matches those too) counts the same as not being signed in.
+-}
+ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
+ifConnected server =
+    if server.connected == Nothing then
+        Nothing
+
+    else
+        Just server
+
+
+{-| Mirrors `Shared.AccountsPanel.updateHelp`'s `GotAuthResult` account
+construction -- `Nothing` if the response is missing user/token data (an
+`update` branch above turns that into the same `Errored` state `GotAuthResult`
+would).
+-}
+accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
+accountFromLogin server resp =
+    case ( resp.user, resp.refreshToken, resp.accessToken ) of
+        ( Just user, Just refreshToken, Just accessToken ) ->
+            Just
+                { server = server
+                , userId = user.id
+                , username = user.username
+                , refreshToken = tokenFromExpirable refreshToken
+                , accessToken = tokenFromExpirable accessToken
+                , enabled = True
+                , avatarMediaId = Maybe.map .id user.avatar
+                , permissions = user.permissions
+                , realName = user.realName
+                , needsPassword = False
+                }
+
+        _ ->
+            Nothing
 
 
 tokenFromExpirable : ExpirableToken -> Token
