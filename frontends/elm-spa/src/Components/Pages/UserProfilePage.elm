@@ -52,10 +52,10 @@ import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions exposing (timestampToPosix)
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.Time as SharedTime
 import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -341,10 +341,10 @@ fetchEventSyncSources shared host targetUserId model =
         es =
             model.eventSyncSources
     in
-    case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host of
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
         Just account ->
             ( { model | eventSyncSources = { es | status = EventSyncSourcesFetching, sources = [], rowEdits = Dict.empty } }
-            , EventSyncSources.getEventSyncSources shared.accountsPanel ( Just account.userId, host ) targetUserId
+            , EventSyncSources.getEventSyncSources shared.accounts ( Just account.userId, host ) targetUserId
                 |> Task.attempt GotEventSyncSourcesFetchResult
                 |> Effect.fromCmd
             )
@@ -370,7 +370,7 @@ performForOwner :
     -> (AccountsPanel.MaybeAccountServer -> Task.Task Grpc.Error a)
     -> Task.Task Grpc.Error a
 performForOwner shared model req =
-    case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.resolver.targetHost of
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts model.resolver.targetHost of
         Just account ->
             req ( Just account.userId, model.resolver.targetHost )
 
@@ -546,7 +546,7 @@ updateInner shared msg model =
                         -- firing a request every other visitor's just going
                         -- to get a `PermissionDenied` back from.
                         maybeAccount =
-                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts newResolver.targetHost
+                            AccountsPanel.enabledAccountForServer shared.accounts.accounts newResolver.targetHost
 
                         ( eventSyncFetchedModel, eventSyncFetchEffect ) =
                             if canEditProfile maybeAccount user then
@@ -798,7 +798,7 @@ updateInner shared msg model =
             case ( model.resolver.status, model.realNameEdit, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | realNameEdit = Just { edit | status = Submitting } }
-                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | realName = edit.input })
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | realName = edit.input })
                         |> Task.attempt GotRealNameSaveResult
                         |> Effect.fromCmd
                     )
@@ -862,7 +862,7 @@ updateInner shared msg model =
             case ( model.resolver.status, model.avatarEdit, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | avatarEdit = Just { edit | status = Submitting } }
-                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (applyAvatarChoice edit.choice)
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (applyAvatarChoice edit.choice)
                         |> Task.attempt GotAvatarSaveResult
                         |> Effect.fromCmd
                     )
@@ -951,7 +951,7 @@ updateInner shared msg model =
             case ( model.resolver.status, model.permissionsEdit, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | permissionsEdit = Just { edit | status = Submitting } }
-                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | permissions = edit.pending })
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | permissions = edit.pending })
                         |> Task.attempt GotPermissionsSaveResult
                         |> Effect.fromCmd
                     )
@@ -1006,7 +1006,7 @@ updateInner shared msg model =
                     case edit.addSelection of
                         Just selected ->
                             ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
-                            , Users.federateProfile shared.accountsPanel ( Just account.userId, server.frontendHost ) { host = selected.server, userId = selected.userId }
+                            , Users.federateProfile shared.accounts ( Just account.userId, server.frontendHost ) { host = selected.server, userId = selected.userId }
                                 |> Task.attempt GotFederatedProfileAddResult
                                 |> Effect.fromCmd
                             )
@@ -1048,7 +1048,7 @@ updateInner shared msg model =
             case ( model.federatedProfilesEdit, serverAndAccount shared model ) of
                 ( Just edit, Just ( server, signedInAccount ) ) ->
                     ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
-                    , Users.defederateProfile shared.accountsPanel ( Just signedInAccount.userId, server.frontendHost ) account
+                    , Users.defederateProfile shared.accounts ( Just signedInAccount.userId, server.frontendHost ) account
                         |> Task.attempt (GotFederatedProfileRemoveResult account)
                         |> Effect.fromCmd
                     )
@@ -1165,7 +1165,7 @@ updateInner shared msg model =
                     }
             in
             ( { model | eventSyncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
-            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accountsPanel accountServer updated)
+            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accounts accountServer updated)
                 |> Task.attempt (GotEventSyncSourceRowSaveResult source.id)
                 |> Effect.fromCmd
             )
@@ -1184,7 +1184,7 @@ updateInner shared msg model =
                                 es.rowEdits
                     }
               }
-            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accountsPanel accountServer source)
+            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accounts accountServer source)
                 |> Task.attempt (GotEventSyncSourceRowSaveResult source.id)
                 |> Effect.fromCmd
             )
@@ -1229,7 +1229,7 @@ updateInner shared msg model =
                     }
             in
             ( { model | eventSyncSources = mapEventSyncAddForm (\f -> { f | status = Submitting }) es }
-            , performForOwner shared model (\accountServer -> EventSyncSources.createEventSyncSource shared.accountsPanel accountServer newSource)
+            , performForOwner shared model (\accountServer -> EventSyncSources.createEventSyncSource shared.accounts accountServer newSource)
                 |> Task.attempt GotEventSyncSourceAddResult
                 |> Effect.fromCmd
             )
@@ -1260,7 +1260,7 @@ updateInner shared msg model =
             )
 
         GotFederatedServer account (Ok server) ->
-            -- Registers the federated user's server into `shared.accountsPanel.servers`
+            -- Registers the federated user's server into `shared.accounts.servers`
             -- (same as `ConnectClicked`'s own `GotConnectResult` does for
             -- `targetHost`) -- needed so `UI.EmittedStylesheet` actually emits
             -- this host's `background-color-primary` rule for `federatedProfileLink`.
@@ -1302,8 +1302,8 @@ actually submit their `Users.updateUser` task.
 serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accountsPanel.servers model.resolver.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.resolver.targetHost)
+        (AccountsPanel.serverForHost shared.accounts.servers model.resolver.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.resolver.targetHost)
 
 
 {-| Starts a `PermissionsEdit` off `currentPermissions` (the user's own, as
@@ -1374,7 +1374,7 @@ app's `federableAccounts` computation in
 -}
 federableAccounts : Shared.Model -> AccountsPanel.Server -> User -> List AccountsPanel.Account
 federableAccounts shared server user =
-    shared.accountsPanel.accounts
+    shared.accounts.accounts
         |> List.filter
             (\account ->
                 not (account.userId == user.id && account.server == server.frontendHost)
@@ -1469,7 +1469,7 @@ fetchFederated shared pageIsSecure account ( statuses, effects ) =
         newStatuses =
             Dict.insert (federatedKey account) FederatedProfileLoading statuses
     in
-    case AccountsPanel.serverForHost shared.accountsPanel.servers account.host of
+    case AccountsPanel.serverForHost shared.accounts.servers account.host of
         Just server ->
             ( newStatuses, effects ++ [ fetchFederatedUserEffect shared server account ] )
 
@@ -1486,8 +1486,8 @@ fetchFederated shared pageIsSecure account ( statuses, effects ) =
 fetchFederatedUserEffect : Shared.Model -> AccountsPanel.Server -> FederatedAccount -> Effect Msg
 fetchFederatedUserEffect shared _ account =
     Users.fetchUserById
-        shared.accountsPanel
-        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts account.host |> Maybe.map .userId
+        shared.accounts
+        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts account.host |> Maybe.map .userId
         , account.host
         )
         account.userId
@@ -1554,8 +1554,8 @@ view : Shared.Model -> Model -> Html Msg
 view shared model =
     ServerDependentView.view
         { hostname = model.resolver.targetHost
-        , servers = shared.accountsPanel.servers
-        , accounts = shared.accountsPanel.accounts
+        , servers = shared.accounts.servers
+        , accounts = shared.accounts.accounts
         , connectStatus = model.connectStatus
         , onConnectClicked = ConnectClicked
         , onEnableClicked = EnableClicked
@@ -1584,7 +1584,7 @@ profileDetail shared model server maybeAccount user =
 
         baseHref =
             Users.profileHref shared.basePath
-                shared.accountsPanel.mainFrontendHost
+                shared.accounts.mainFrontendHost
                 server.frontendHost
                 { userId = user.id, username = user.username }
 
@@ -1626,7 +1626,7 @@ profileDetail shared model server maybeAccount user =
                     ++ " · "
                     ++ Users.moderationText user.moderation
                     ++ (user.createdAt
-                            |> Maybe.map (\ts -> " · Joined " ++ BrowserTimeZone.formatDate shared.browserTimeZone.zone (timestampToPosix ts))
+                            |> Maybe.map (\ts -> " · Joined " ++ SharedTime.formatDate shared.time.browserTimeZone.zone (timestampToPosix ts))
                             |> Maybe.withDefault ""
                        )
                 )
@@ -1709,7 +1709,7 @@ that button's nav-specific enlarging CSS.
 -}
 otherServerIndicator : Shared.Model -> AccountsPanel.Server -> Html msg
 otherServerIndicator shared server =
-    if server.frontendHost == shared.accountsPanel.mainFrontendHost then
+    if server.frontendHost == shared.accounts.mainFrontendHost then
         text ""
 
     else
@@ -2123,7 +2123,7 @@ federatedProfileLink : Shared.Model -> Model -> AccountsPanel.Server -> User -> 
 federatedProfileLink shared model server user account =
     let
         maybeFederatedServer =
-            AccountsPanel.serverForHost shared.accountsPanel.servers account.host
+            AccountsPanel.serverForHost shared.accounts.servers account.host
 
         colorClasses =
             case maybeFederatedServer of
@@ -2137,7 +2137,7 @@ federatedProfileLink shared model server user account =
         [ classes ("profile-federated-link" :: colorClasses)
         , href
             (Users.userIdHref shared.basePath
-                shared.accountsPanel.mainFrontendHost
+                shared.accounts.mainFrontendHost
                 account.host
                 account.userId
             )
@@ -2147,7 +2147,7 @@ federatedProfileLink shared model server user account =
                 [ UI.imageOrInitial [ "profile-federated-avatar" ]
                     federatedUser.username
                     (Users.avatarUrl federatedServer
-                        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts account.host)
+                        (AccountsPanel.enabledAccountForServer shared.accounts.accounts account.host)
                         federatedUser
                     )
                 , div [ class "profile-federated-names" ]
@@ -2261,7 +2261,7 @@ eventSyncSourcesSection shared model canManage canAdd =
     else
         div [ class "event-sync-sources-section" ]
             ([ h2 [ class "section-title" ] [ text "Event Sync Sources" ]
-             , div [ class "event-sync-sources-list" ] (eventSyncSourcesContentView model.resolver.targetHost shared.browserTimeZone model.eventSyncSources)
+             , div [ class "event-sync-sources-list" ] (eventSyncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.eventSyncSources)
              ]
                 ++ (if canAdd then
                         [ eventSyncSourceAddRowView model.resolver.targetHost model.eventSyncSources.addForm ]
@@ -2272,7 +2272,7 @@ eventSyncSourcesSection shared model canManage canAdd =
             )
 
 
-eventSyncSourcesContentView : String -> BrowserTimeZone.BrowserTimeZone -> EventSyncSourcesState -> List (Html Msg)
+eventSyncSourcesContentView : String -> SharedTime.BrowserTimeZone -> EventSyncSourcesState -> List (Html Msg)
 eventSyncSourcesContentView targetHost browserTimeZone es =
     if not (List.isEmpty es.sources) then
         List.map (eventSyncSourceRowView targetHost browserTimeZone es) es.sources
@@ -2292,7 +2292,7 @@ eventSyncSourcesContentView targetHost browserTimeZone es =
                 [ div [ class "event-sync-sources-message" ] [ text "No event sync sources yet." ] ]
 
 
-eventSyncSourceRowView : String -> BrowserTimeZone.BrowserTimeZone -> EventSyncSourcesState -> EventSyncSource -> Html Msg
+eventSyncSourceRowView : String -> SharedTime.BrowserTimeZone -> EventSyncSourcesState -> EventSyncSource -> Html Msg
 eventSyncSourceRowView targetHost browserTimeZone es source =
     let
         edit =
@@ -2307,7 +2307,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
         lastSyncedText =
             case source.lastSyncedAt of
                 Just ts ->
-                    BrowserTimeZone.formatDateTime browserTimeZone (Conversions.timestampToPosix ts)
+                    SharedTime.formatDateTime browserTimeZone (Conversions.timestampToPosix ts)
 
                 Nothing ->
                     "Never"

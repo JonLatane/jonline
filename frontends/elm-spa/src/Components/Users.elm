@@ -92,6 +92,7 @@ convention as `Components.Posts.fetchPosts`), switches `listingType` to its
 `textSearchListingType` counterpart and sends it as `search_text` --
 otherwise this is the plain (unscoped-by-search) listing `listingType` itself
 already was.
+
 -}
 fetchUserListing :
     AccountsPanel.Model
@@ -334,7 +335,7 @@ isReservedUsername username =
 
 
 {-| The `/user/:id[@host]` href for a user, as seen from `viewingServerHost`
-(typically `shared.accountsPanel.mainFrontendHost`) -- mirrors
+(typically `shared.accounts.mainFrontendHost`) -- mirrors
 `Components.Posts.postHref`.
 -}
 userIdHref : String -> String -> String -> String -> String

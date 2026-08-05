@@ -84,7 +84,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (markdownPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
-    , div [ classes [ "container", hostnameToCSSClass shared.accountsPanel.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
+    , div [ classes [ "container", hostnameToCSSClass shared.accounts.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
 
 
@@ -118,19 +118,19 @@ here instead.
 headerNav : Shared.Model -> Route -> Html Shared.Msg
 headerNav shared currentRoute =
     header
-        [ classes [ "navbar", hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-primary" ]
+        [ classes [ "navbar", hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-primary" ]
         , onClick Shared.ScrollToTop
         ]
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
                 , div [ class "nav-links-scroll", on "scroll" navLinksScrollDecoder ]
-                    [ if Set.isEmpty shared.starredPanel.starredPostIds then
+                    [ if Set.isEmpty shared.panels.starredPanel.starredPostIds then
                         text ""
 
                       else
                         starredPostsToggle shared
-                    , if CreateNewPanel.hasEligibleAccount shared.accountsPanel then
+                    , if CreateNewPanel.hasEligibleAccount shared.accounts then
                         newPostToggle shared
 
                       else
@@ -156,7 +156,7 @@ headerNav shared currentRoute =
         -- *positioned* ancestor, not the immediate parent) so taps inside the
         -- open panel don't also bubble up to this `Shared.ScrollToTop`
         -- tap-anywhere handler.
-        , if Set.isEmpty shared.starredPanel.starredPostIds then
+        , if Set.isEmpty shared.panels.starredPanel.starredPostIds then
             text ""
 
           else
@@ -252,11 +252,11 @@ sharedBackdrop shared =
     let
         panels : List BackdropPanel
         panels =
-            [ { isOpen = MyMediaPanel.isOpen shared.myMediaPanel
+            [ { isOpen = MyMediaPanel.isOpen shared.panels.myMediaPanel
               , closeMsg = Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked
               , blurs = True
               }
-            , { isOpen = shared.markdownPanel.target /= Nothing
+            , { isOpen = shared.panels.markdownPanel.target /= Nothing
               , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
               , blurs = True
               }
@@ -267,15 +267,15 @@ sharedBackdrop shared =
             -- are (see create_new_panel.css's own z-index comment), so a
             -- background tap while either's open should close that one
             -- first, not this one underneath it.
-            , { isOpen = CreateNewPanel.isOpen shared.createNewPanel
+            , { isOpen = CreateNewPanel.isOpen shared.panels.createNewPanel
               , closeMsg = Shared.CreateNewPanelMsg CreateNewPanel.CloseClicked
               , blurs = True
               }
-            , { isOpen = shared.starredPanel.showStarredPanel
+            , { isOpen = shared.panels.starredPanel.showStarredPanel
               , closeMsg = Shared.StarredPanelMsg StarredPanel.ToggleStarredPanel
               , blurs = False
               }
-            , { isOpen = shared.accountsPanel.showAccountsPanel
+            , { isOpen = shared.accounts.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
               , blurs = True
               }
@@ -371,7 +371,7 @@ navLink shared currentRoute content linkRoute =
                         []
                    )
                 ++ (if isCurrent then
-                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -433,7 +433,7 @@ peopleLink shared currentRoute =
         , classes
             ("nav-link"
                 :: (if isCurrent then
-                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -459,7 +459,7 @@ eventsLink shared currentRoute =
         , classes
             ("nav-link"
                 :: (if isCurrent then
-                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -485,7 +485,7 @@ postsLink shared currentRoute =
         , classes
             ("nav-link"
                 :: (if isCurrent then
-                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -502,12 +502,12 @@ in scope rather than the bare `List AccountsPanel.Server`.
 -}
 findServer : Shared.Model -> String -> Maybe AccountsPanel.Server
 findServer shared frontendHost =
-    AccountsPanel.serverForHost shared.accountsPanel.servers frontendHost
+    AccountsPanel.serverForHost shared.accounts.servers frontendHost
 
 
 mainServer : Shared.Model -> Maybe AccountsPanel.Server
 mainServer shared =
-    findServer shared shared.accountsPanel.mainFrontendHost
+    findServer shared shared.accounts.mainFrontendHost
 
 
 {-| Every page's browser tab title, built from `segments` (most-specific
@@ -533,7 +533,7 @@ serverName : Shared.Model -> String
 serverName shared =
     mainServer shared
         |> Maybe.map (AccountsPanel.brandingOf >> .name)
-        |> Maybe.withDefault shared.accountsPanel.mainFrontendHost
+        |> Maybe.withDefault shared.accounts.mainFrontendHost
 
 
 {-| A circular icon nav link to the About page (`/about`), sitting alongside
@@ -554,7 +554,7 @@ aboutLink shared currentRoute =
             ("nav-link"
                 :: "info-button"
                 :: (if isCurrent then
-                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accounts.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -600,7 +600,7 @@ themeToggle : Shared.Model -> Html Shared.Msg
 themeToggle shared =
     let
         icon =
-            case shared.themePreference of
+            case shared.theme.preference of
                 Shared.ThemeAuto ->
                     "🌓"
 
@@ -613,7 +613,7 @@ themeToggle shared =
     button
         [ classes [ "panel-icon-button", "theme-toggle" ]
         , onClick Shared.ThemePreferenceClicked
-        , title ("Appearance: " ++ Shared.themePreferenceLabel shared.themePreference ++ " (click to change)")
+        , title ("Appearance: " ++ Shared.themePreferenceLabel shared.theme.preference ++ " (click to change)")
         ]
         [ text icon ]
 
@@ -626,7 +626,7 @@ accountsMenu : Shared.Model -> Route -> Html Shared.Msg
 accountsMenu shared currentRoute =
     let
         enabledAccounts =
-            AccountsPanel.enabledAccounts shared.accountsPanel
+            AccountsPanel.enabledAccounts shared.accounts
 
         -- Signed into exactly one account on exactly one enabled server --
         -- since only one account per server can be enabled at a time (see
@@ -635,7 +635,7 @@ accountsMenu shared currentRoute =
         -- a subtitle, so the toggle becomes one larger avatar circle instead
         -- of the usual pill (see `.accounts-menu-toggle.single-avatar`).
         singleAccountSingleServer =
-            case ( AccountsPanel.enabledServers shared.accountsPanel, enabledAccounts ) of
+            case ( AccountsPanel.enabledServers shared.accounts, enabledAccounts ) of
                 ( [ _ ], [ _ ] ) ->
                     True
 
@@ -644,7 +644,7 @@ accountsMenu shared currentRoute =
 
         toggleClasses =
             "accounts-menu-toggle"
-                :: openClosedClass shared.accountsPanel.showAccountsPanel
+                :: openClosedClass shared.accounts.showAccountsPanel
                 :: (if List.isEmpty enabledAccounts then
                         []
 
@@ -676,7 +676,7 @@ accountsMenu shared currentRoute =
 
                  else
                     [ accountsMenuButtonContent shared enabledAccounts
-                    , accountsMenuServerSummary shared.accountsPanel
+                    , accountsMenuServerSummary shared.accounts
                     ]
                 )
             , hostMismatchWarning shared
@@ -766,7 +766,7 @@ accountsMenuAvatar : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 accountsMenuAvatar shared account =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
 
         avatarClasses =
             "accounts-menu-avatar"
@@ -796,7 +796,7 @@ hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
     in
     if hostMismatch shared then
         span
@@ -823,7 +823,7 @@ hostMismatchWarning shared =
 -}
 hostMismatch : Shared.Model -> Bool
 hostMismatch shared =
-    shared.accountsPanel.browsingHost /= shared.accountsPanel.mainFrontendHost
+    shared.accounts.browsingHost /= shared.accounts.mainFrontendHost
 
 
 {-| Servers scroll horizontally in a short strip (there are usually few, and it
@@ -840,7 +840,7 @@ accountsPanel : Shared.Model -> Route -> Html Shared.Msg
 accountsPanel shared currentRoute =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
     in
     div [ classes [ "accounts-panel", "nav-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ accountsPanelTabBar shared
@@ -872,7 +872,7 @@ accountsPanelTabBar shared =
 
                   else
                     Nothing
-                , if AccountsPanel.hasAdminAccount shared.accountsPanel then
+                , if AccountsPanel.hasAdminAccount shared.accounts then
                     Just (accountsPanelTab shared AdminPanel.AdminTab "🛡️" True)
 
                   else
@@ -914,14 +914,14 @@ settings later without changing how its visibility is decided.
 -}
 settingsCount : Shared.Model -> Int
 settingsCount shared =
-    if AccountsPanel.hasAdminAccount shared.accountsPanel then
+    if AccountsPanel.hasAdminAccount shared.accounts then
         3
 
     else
         0
 
 
-{-| `shared.adminPanel.activeTab`, falling back to `AccountsAndServersTab`
+{-| `shared.panels.adminPanel.activeTab`, falling back to `AccountsAndServersTab`
 whenever the selected tab isn't actually visible right now (e.g. the signed-in
 admin account was just removed while the Admin tab was showing) -- so the
 panel never ends up rendering a tab's content with no matching tab button
@@ -929,7 +929,7 @@ selected.
 -}
 activeTab : Shared.Model -> AdminPanel.AccountsPanelTab
 activeTab shared =
-    case shared.adminPanel.activeTab of
+    case shared.panels.adminPanel.activeTab of
         AdminPanel.SettingsTab ->
             if settingsCount shared > 0 then
                 AdminPanel.SettingsTab
@@ -938,7 +938,7 @@ activeTab shared =
                 AdminPanel.AccountsAndServersTab
 
         AdminPanel.AdminTab ->
-            if AccountsPanel.hasAdminAccount shared.accountsPanel then
+            if AccountsPanel.hasAdminAccount shared.accounts then
                 AdminPanel.AdminTab
 
             else
@@ -974,15 +974,15 @@ settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
     div [ class "accounts-panel-tab-content" ]
         [ label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            [ switchInput shared.panels.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            [ switchInput shared.panels.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
             , span [] [ text "Sign into other hosts with username/password" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.showAllEventLayouts False (Shared.AdminPanelMsg AdminPanel.ToggleShowAllEventLayouts)
+            [ switchInput shared.panels.adminPanel.showAllEventLayouts False (Shared.AdminPanelMsg AdminPanel.ToggleShowAllEventLayouts)
             , span [] [ text "Show all event layouts" ]
             ]
         ]
@@ -995,7 +995,7 @@ adminTab : Shared.Model -> Html Shared.Msg
 adminTab shared =
     let
         adminAccounts =
-            List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
+            List.filter AccountsPanel.isAdmin shared.accounts.accounts
     in
     div [ class "accounts-panel-tab-content" ]
         [ if List.isEmpty adminAccounts then
@@ -1014,7 +1014,7 @@ serversStrip : Shared.Model -> Html Shared.Msg
 serversStrip shared =
     let
         servers =
-            shared.accountsPanel.servers
+            shared.accounts.servers
 
         count =
             List.length servers
@@ -1038,11 +1038,11 @@ serverChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shar
 serverChipFlip shared count index server =
     let
         flipState =
-            Dict.get server.frontendHost shared.accountsPanel.serverAnimations
+            Dict.get server.frontendHost shared.accounts.serverAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
         isMoving =
-            Dict.get server.frontendHost shared.accountsPanel.serverMoveAnimations
+            Dict.get server.frontendHost shared.accounts.serverMoveAnimations
                 |> Maybe.map .moving
                 |> Maybe.withDefault False
 
@@ -1077,7 +1077,7 @@ serverChip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.M
 serverChip shared count index server =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
 
         isMainServer =
             server.frontendHost == accountsPanelModel.mainFrontendHost
@@ -1092,7 +1092,7 @@ serverChip shared count index server =
             not hasAccounts && not isMainServer
 
         canSelectMain =
-            shared.adminPanel.allowMainServerSwitch
+            shared.panels.adminPanel.allowMainServerSwitch
 
         topClasses =
             [ "server-chip-top", "selectable", hostnameToCSSClass server.frontendHost, "background-color-primary" ]
@@ -1255,7 +1255,7 @@ unreachableServersWarning : Shared.Model -> Html msg
 unreachableServersWarning shared =
     let
         hosts =
-            AccountsPanel.unreachableAccountHosts shared.accountsPanel
+            AccountsPanel.unreachableAccountHosts shared.accounts
     in
     if List.isEmpty hosts then
         text ""
@@ -1281,7 +1281,7 @@ recommendedServersStrip : Shared.Model -> Html Shared.Msg
 recommendedServersStrip shared =
     let
         recommended =
-            AccountsPanel.recommendedFederatedServers shared.accountsPanel
+            AccountsPanel.recommendedFederatedServers shared.accounts
     in
     if List.isEmpty recommended then
         text ""
@@ -1289,7 +1289,7 @@ recommendedServersStrip shared =
     else
         div [ class "recommended-servers-section" ]
             [ div [ class "panel-divider" ] []
-            , if not shared.accountsPanel.recommendedServersExpanded then
+            , if not shared.accounts.recommendedServersExpanded then
                 button
                     [ class "recommended-servers-toggle"
                     , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleRecommendedServersExpanded)
@@ -1319,7 +1319,7 @@ recommendedServerChip shared federatedServer =
             federatedServer.host
 
         server =
-            Dict.get host shared.accountsPanel.recommendedServerConnections
+            Dict.get host shared.accounts.recommendedServerConnections
                 |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
 
         isDisconnected =
@@ -1347,7 +1347,7 @@ accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
     let
         accounts =
-            shared.accountsPanel.accounts
+            shared.accounts.accounts
 
         count =
             List.length accounts
@@ -1358,7 +1358,7 @@ accountsList shared =
         -- hide any arrow that would cross that group boundary.
         mainCount =
             accounts
-                |> List.filter (\a -> a.server == shared.accountsPanel.mainFrontendHost)
+                |> List.filter (\a -> a.server == shared.accounts.mainFrontendHost)
                 |> List.length
     in
     if List.isEmpty accounts then
@@ -1386,11 +1386,11 @@ accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> H
 accountRowFlip shared count mainCount index account =
     let
         flipState =
-            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.accountAnimations
+            Dict.get (AccountsPanel.accountId account) shared.accounts.accountAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
         isMoving =
-            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.moveAnimations
+            Dict.get (AccountsPanel.accountId account) shared.accounts.moveAnimations
                 |> Maybe.map .moving
                 |> Maybe.withDefault False
 
@@ -1431,16 +1431,16 @@ accountRow shared count mainCount index account =
             AccountsPanel.accountId account
 
         branding =
-            AccountsPanel.brandingFor shared.accountsPanel.servers account.server
+            AccountsPanel.brandingFor shared.accounts.servers account.server
 
         moveAttrs =
-            shared.accountsPanel.moveAnimations
+            shared.accounts.moveAnimations
                 |> Dict.get accId
                 |> Maybe.map UI.Flip.moveAttributes
                 |> Maybe.withDefault []
 
         isMainServerAccount =
-            account.server == shared.accountsPanel.mainFrontendHost
+            account.server == shared.accounts.mainFrontendHost
 
         canMoveUp =
             if isMainServerAccount then
@@ -1469,7 +1469,7 @@ accountRow shared count mainCount index account =
         -- through `PasswordNeededClicked`, but the wording makes clear it's
         -- logging back into a different server, not this one.
         needsPasswordLabel =
-            if account.server /= shared.accountsPanel.browsingHost then
+            if account.server /= shared.accounts.browsingHost then
                 "Reauthentication Required"
 
             else
@@ -1483,7 +1483,7 @@ accountRow shared count mainCount index account =
         [ switchInput account.enabled account.needsPassword (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
         , a
             [ class "account-row-profile-link"
-            , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
+            , href (Users.profileHref shared.basePath shared.accounts.mainFrontendHost account.server { userId = account.userId, username = account.username })
             , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
             ]
             [ button
@@ -1494,7 +1494,7 @@ accountRow shared count mainCount index account =
                   else
                     stopPropagationAndPreventDefaultOnClick (Shared.MyMediaPanelOpenForAccount account)
                 ]
-                [ avatarOrPlaceholder shared.accountsPanel.servers account ]
+                [ avatarOrPlaceholder shared.accounts.servers account ]
             , div [ class "account-row-label" ]
                 [ div [ class "account-row-username" ]
                     [ text (AccountsPanel.displayName account)
@@ -1567,13 +1567,13 @@ Enter, type a password" flow.
 -}
 formView : Shared.Model -> Route -> Html Shared.Msg
 formView shared currentRoute =
-    if AccountsPanel.shouldShowAddAccountForm shared.accountsPanel then
+    if AccountsPanel.shouldShowAddAccountForm shared.accounts then
         addAccountForm shared currentRoute
 
     else
         div [ class "account-form" ]
             [ button
-                [ classes [ "show-add-account-form-button", hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                [ classes [ "show-add-account-form-button", hostnameToCSSClass <| formThemeHost shared.accounts, "background-color-primary" ]
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
                 ]
                 [ text "Add Account/Server..." ]
@@ -1603,7 +1603,7 @@ addAccountForm : Shared.Model -> Route -> Html Shared.Msg
 addAccountForm shared currentRoute =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
 
         form =
             accountsPanelModel.accountForm
@@ -1632,7 +1632,7 @@ addAccountForm shared currentRoute =
         -- `AccountsPanel.isMainServer`.
         showUsernamePasswordFields =
             AccountsPanel.isMainServer accountsPanelModel form.server
-                || shared.adminPanel.allowUsernamePasswordForOtherHosts
+                || shared.panels.adminPanel.allowUsernamePasswordForOtherHosts
 
         serverEnterMsg =
             if not knownServer then
@@ -1851,14 +1851,14 @@ addAccountForm shared currentRoute =
                             [ type_ "button"
                             , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
                             , disabled accountFieldsDisabled
-                            , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                            , classes [ hostnameToCSSClass <| formThemeHost shared.accounts, "background-color-primary" ]
                             ]
                             [ text "Login" ]
                         , button
                             [ type_ "button"
                             , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseCreateAccountClicked)
                             , disabled accountFieldsDisabled
-                            , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
+                            , classes [ hostnameToCSSClass <| formThemeHost shared.accounts, "background-color-nav" ]
                             ]
                             [ text "Create Account" ]
                         ]
@@ -1891,7 +1891,7 @@ addAccountForm shared currentRoute =
                               type_ "submit"
                             , disabled accountFieldsDisabled
                             , classes
-                                [ hostnameToCSSClass <| formThemeHost shared.accountsPanel
+                                [ hostnameToCSSClass <| formThemeHost shared.accounts
                                 , if accountType == AccountsPanel.CreateNewAccount then
                                     "background-color-nav"
 
@@ -1967,12 +1967,12 @@ signInFromButton : Shared.Model -> Route -> Bool -> Html Shared.Msg
 signInFromButton shared currentRoute accountFieldsDisabled =
     let
         accountsPanelModel =
-            shared.accountsPanel
+            shared.accounts
 
         server =
             String.trim accountsPanelModel.accountForm.server
     in
-    case ( shared.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
+    case ( shared.panels.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
         ( Just publicKey, True ) ->
             button
                 [ type_ "button"
@@ -2009,7 +2009,7 @@ rendered, like the other backdrops, so opening/closing is a CSS transition.
 createAccountConfirmationBackdrop : Shared.Model -> Html Shared.Msg
 createAccountConfirmationBackdrop shared =
     UI.Modal.backdrop
-        (shared.accountsPanel.createAccountConfirmation /= Nothing)
+        (shared.accounts.createAccountConfirmation /= Nothing)
         (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
 
 
@@ -2033,7 +2033,7 @@ the dialog itself just popping in/out.
 -}
 createAccountConfirmationModal : Shared.Model -> Html Shared.Msg
 createAccountConfirmationModal shared =
-    case shared.accountsPanel.createAccountConfirmation of
+    case shared.accounts.createAccountConfirmation of
         Nothing ->
             UI.Modal.view
                 { class = "create-account-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
@@ -2088,7 +2088,7 @@ such step in flight).
 -}
 deleteConfirmationBackdrop : Shared.Model -> Html Shared.Msg
 deleteConfirmationBackdrop shared =
-    UI.Modal.backdrop (shared.confirmingDeleteFor /= Nothing) Shared.CancelDelete
+    UI.Modal.backdrop (shared.panels.confirmingDeleteFor /= Nothing) Shared.CancelDelete
 
 
 {-| The shared "are you sure you want to delete this?" dialog for every kind
@@ -2099,7 +2099,7 @@ a new `DeleteConfirmation` constructor and a case here, not a whole new dialog.
 -}
 deleteConfirmationModal : Shared.Model -> Html Shared.Msg
 deleteConfirmationModal shared =
-    case shared.confirmingDeleteFor of
+    case shared.panels.confirmingDeleteFor of
         Nothing ->
             UI.Modal.view
                 { class = "confirm-delete-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
@@ -2241,7 +2241,7 @@ page link. `stopPropagationOn`, not plain `onClick`, for the same reason
 newPostToggle : Shared.Model -> Html Shared.Msg
 newPostToggle shared =
     button
-        [ classes [ "nav-menu-toggle", "circular", openClosedClass (CreateNewPanel.isOpen shared.createNewPanel) ]
+        [ classes [ "nav-menu-toggle", "circular", openClosedClass (CreateNewPanel.isOpen shared.panels.createNewPanel) ]
         , stopPropagationOn "click" (Decode.succeed ( Shared.CreateNewPanelMsg CreateNewPanel.ToggleOpen, True ))
         , title "Create New"
         ]
@@ -2265,7 +2265,7 @@ starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "starred-menu" ]
         [ button
-            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPanel.showStarredPanel ]
+            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.panels.starredPanel.showStarredPanel ]
             , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPanelMsg StarredPanel.ToggleStarredPanel, True ))
             , title "Starred"
             ]
@@ -2273,12 +2273,12 @@ starredPostsToggle shared =
             , span
                 [ classes
                     [ "starred-count-badge"
-                    , hostnameToCSSClass shared.accountsPanel.mainFrontendHost
+                    , hostnameToCSSClass shared.accounts.mainFrontendHost
                     , "background-color-nav"
                     , "border-color-primary-text"
                     ]
                 ]
-                [ text (String.fromInt (Set.size shared.starredPanel.starredPostIds)) ]
+                [ text (String.fromInt (Set.size shared.panels.starredPanel.starredPostIds)) ]
             ]
         ]
 
@@ -2295,13 +2295,12 @@ starredPanel : Shared.Model -> Route -> Html Shared.Msg
 starredPanel shared currentRoute =
     Html.map Shared.StarredPanelMsg
         (StarredPanel.view
-            shared.now
-            shared.browserTimeZone
+            shared.time
             shared.basePath
-            shared.accountsPanel
+            shared.accounts
             (currentStarredPostKey shared currentRoute)
             (currentStarredEventInstanceKey shared currentRoute)
-            shared.starredPanel
+            shared.panels.starredPanel
         )
 
 
@@ -2317,7 +2316,7 @@ currentStarredPostKey shared currentRoute =
         Route.Post__PostId_ params ->
             let
                 ( postId, host ) =
-                    Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
+                    Posts.parsePostRouteId shared.accounts.mainFrontendHost params.postId
             in
             Just (StarredPanel.rawKey postId host)
 
@@ -2338,7 +2337,7 @@ currentStarredEventInstanceKey shared currentRoute =
         Route.Event__EventId_ params ->
             let
                 ( instanceId, _ ) =
-                    Events.parseEventRouteId shared.accountsPanel.mainFrontendHost params.eventId
+                    Events.parseEventRouteId shared.accounts.mainFrontendHost params.eventId
             in
             Just instanceId
 
@@ -2361,7 +2360,7 @@ adminAccountPanel shared account =
             AccountsPanel.accountId account
 
         isOpen =
-            AdminPanel.isAccountPanelOpen id shared.adminPanel
+            AdminPanel.isAccountPanelOpen id shared.panels.adminPanel
 
         adminServer =
             findServer shared account.server
@@ -2438,7 +2437,7 @@ it (see `create_new_panel.css`'s own z-index comment).
 -}
 createNewPanel : Shared.Model -> Html Shared.Msg
 createNewPanel shared =
-    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.browserTimeZone.zone shared.accountsPanel shared.createNewPanel)
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time.browserTimeZone.zone shared.accounts shared.panels.createNewPanel)
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
@@ -2455,7 +2454,7 @@ behind it.
 -}
 markdownPanel : Shared.Model -> Html Shared.Msg
 markdownPanel shared =
-    Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+    Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accounts shared.panels.markdownPanel)
 
 
 {-| The "My Media" panel (see `Shared.MyMediaPanel`) -- opened from a
@@ -2470,7 +2469,7 @@ though.
 -}
 myMediaPanel : Shared.Model -> Html Shared.Msg
 myMediaPanel shared =
-    Html.map Shared.MyMediaPanelMsg (MyMediaPanel.view shared.accountsPanel shared.myMediaPanel)
+    Html.map Shared.MyMediaPanelMsg (MyMediaPanel.view shared.accounts shared.panels.myMediaPanel)
 
 
 {-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`
@@ -2481,7 +2480,7 @@ renders whatever's currently there (empty if nothing is).
 -}
 breadcrumbsBar : Shared.Model -> Html Shared.Msg
 breadcrumbsBar shared =
-    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.bar shared.accountsPanel shared.breadcrumbs)
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.bar shared.accounts shared.breadcrumbs)
 
 
 {-| The popup opened by tapping a breadcrumb segment (see
@@ -2492,7 +2491,7 @@ see nav.css) resolves against `.navbar` itself.
 -}
 breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
 breadcrumbsReplyPanel shared =
-    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.previewPanel shared.basePath shared.accountsPanel shared.breadcrumbs)
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.previewPanel shared.basePath shared.accounts shared.breadcrumbs)
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
@@ -2506,7 +2505,7 @@ nav's own dropdowns are then opened over it.
 -}
 mediaViewerPanel : Shared.Model -> Html Shared.Msg
 mediaViewerPanel shared =
-    Html.map Shared.MediaViewerPanelMsg (MediaViewerPanel.view shared.accountsPanel shared.mediaViewerPanel)
+    Html.map Shared.MediaViewerPanelMsg (MediaViewerPanel.view shared.accounts shared.panels.mediaViewerPanel)
 
 
 {-| Flutter is included for parity with the other two, but permanently

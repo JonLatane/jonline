@@ -13,7 +13,7 @@ token pair is transferred), then encrypts the resulting `Account` to
 `Pages.Auth.From.EncodedAccount_`.
 
 Optionally (`alsoSignInHere`), that same username/password is also used for a
-*second*, independent Login RPC (see `GotLoginResult`/`GotLocalSignInResult`)
+_second_, independent Login RPC (see `GotLoginResult`/`GotLocalSignInResult`)
 whose fresh token pair is fed into this browser's own `Shared.AccountsPanel`
 instead of being sent anywhere -- so the transfer to `requestingHost` and
 this browser's own sign-in on `browsingHost` never share a token pair.
@@ -107,17 +107,17 @@ init shared req =
                     ( Nothing, "" )
 
         browsingHost =
-            shared.accountsPanel.browsingHost
+            shared.accounts.browsingHost
 
         -- Pre-filled only when there's exactly one candidate to guess --
         -- see `usernameField`'s quick-fill buttons for the ambiguous case.
         defaultUsername =
-            case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts browsingHost of
+            case AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost of
                 Just _ ->
                     ""
 
                 Nothing ->
-                    case List.filter (\a -> a.server == browsingHost) shared.accountsPanel.accounts of
+                    case List.filter (\a -> a.server == browsingHost) shared.accounts.accounts of
                         [ onlyAccount ] ->
                             onlyAccount.username
 
@@ -171,9 +171,9 @@ update shared msg model =
         SignInClicked ->
             let
                 browsingHost =
-                    shared.accountsPanel.browsingHost
+                    shared.accounts.browsingHost
             in
-            case ( AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
+            case ( AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
                 ( Just server, Just publicKey ) ->
                     ( { model | status = Submitting }
                     , loginTask server (effectiveUsername shared model) model.password
@@ -191,9 +191,9 @@ update shared msg model =
             if model.alsoSignInHere then
                 let
                     browsingHost =
-                        shared.accountsPanel.browsingHost
+                        shared.accounts.browsingHost
                 in
-                case AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected of
+                case AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected of
                     Just server ->
                         ( { model | pendingTransferAccount = Just ( account, publicKey ) }
                         , loginTask server (effectiveUsername shared model) model.password
@@ -277,7 +277,7 @@ never disagree.
 -}
 effectiveUsername : Shared.Model -> Model -> String
 effectiveUsername shared model =
-    case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts shared.accountsPanel.browsingHost of
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
         Just account ->
             account.username
 
@@ -382,13 +382,13 @@ signInView shared model =
         ( Just _, False ) ->
             let
                 browsingHost =
-                    shared.accountsPanel.browsingHost
+                    shared.accounts.browsingHost
 
                 signedInAccount =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts browsingHost
+                    AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost
 
                 accountsOnHost =
-                    List.filter (\a -> a.server == browsingHost) shared.accountsPanel.accounts
+                    List.filter (\a -> a.server == browsingHost) shared.accounts.accounts
 
                 username =
                     effectiveUsername shared model
@@ -449,7 +449,7 @@ currentAccountBadge : Shared.Model -> Account -> Html Msg
 currentAccountBadge shared account =
     let
         avatarUrl =
-            AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account
+            AccountsPanel.accountAvatarUrl shared.accounts.servers account
 
         nameAndHost =
             account.username
@@ -486,7 +486,7 @@ usernameField shared model accountsOnHost submitting =
             , attribute "autocapitalize" "none"
             , attribute "autocorrect" "off"
             , spellcheck False
-            , placeholder ("Username on " ++ shared.accountsPanel.browsingHost)
+            , placeholder ("Username on " ++ shared.accounts.browsingHost)
             , value model.username
             , onInput UsernameChanged
             , disabled submitting
@@ -511,7 +511,7 @@ usernameButton shared submitting account =
         , onClick (UsernameButtonClicked account.username)
         , disabled submitting
         ]
-        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account)
+        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (AccountsPanel.accountAvatarUrl shared.accounts.servers account)
         , span [] [ text account.username ]
         ]
 

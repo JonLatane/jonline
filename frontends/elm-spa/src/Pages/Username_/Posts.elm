@@ -52,7 +52,7 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( username, targetHost ) =
-            Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.username
+            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.username
     in
     if Users.isReservedUsername username then
         ( Reserved username, Effect.none )

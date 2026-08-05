@@ -23,11 +23,12 @@ its own (that's `Shared.Components.ServerDependentView`'s job, driven by
 `UserProfilePage`'s own `connectStatus`); until then (or after a failure),
 `Poll`/an `AccountsPanelMsg` passing through `SharedMsg` just keeps retrying,
 same event-driven-plus-slow-poll approach as `Components.Pages.PostsPage`.
+
 -}
 
+import Components.Users as Users
 import Effect exposing (Effect)
 import Grpc
-import Components.Users as Users
 import Proto.Jonline
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -68,21 +69,21 @@ Name/bio/permissions save succeeds).
 -}
 fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
 fetchTask shared model =
-    AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost
+    AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost
         |> Maybe.map
             (\_ ->
                 let
                     maybeAccountServer =
-                        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+                        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
                         , model.targetHost
                         )
                 in
                 case model.lookup of
                     ById userId ->
-                        Users.fetchUserById shared.accountsPanel maybeAccountServer userId
+                        Users.fetchUserById shared.accounts maybeAccountServer userId
 
                     ByUsername username ->
-                        Users.fetchUserByUsername shared.accountsPanel maybeAccountServer username
+                        Users.fetchUserByUsername shared.accounts maybeAccountServer username
             )
 
 

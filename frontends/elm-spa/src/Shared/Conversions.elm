@@ -60,7 +60,7 @@ int64ToInt value =
 1-12, day)` -- Howard Hinnant's well-known `days_from_civil` algorithm,
 correct (including negative/BC years and leap years) without needing a full
 calendar library. The building block both `isoUtcString`'s inverse
-(`posixFromIsoUtcString`) and `Shared.BrowserTimeZone.posixFromDateTimeLocalInput`
+(`posixFromIsoUtcString`) and `Shared.Time.posixFromDateTimeLocalInput`
 need: `elm/time` only goes the other direction (a `Posix` instant to its
 calendar components, via `Time.toYear`/etc.), with no built-in inverse.
 -}
@@ -147,7 +147,7 @@ monthToNumber month =
 
 
 {-| `( year, month 1-12, day )`, from a `"YYYY-MM-DD"` string -- shared by
-`posixFromIsoUtcString` and `Shared.BrowserTimeZone.posixFromDateTimeLocalInput`,
+`posixFromIsoUtcString` and `Shared.Time.posixFromDateTimeLocalInput`,
 both of which only differ in what follows the `"T"`.
 -}
 parseDateParts : String -> Maybe ( Int, Int, Int )
@@ -178,7 +178,7 @@ parseTimeParts timePart =
 
 {-| `YYYY-MM-DDTHH:mm:ssZ`, always UTC -- the URL-safe, timezone-independent
 "standard ISO date" `Components.Pages.EventsPage`'s `ends_after` query param
-uses (unlike `Shared.BrowserTimeZone`'s local-datetime-input helpers, this
+uses (unlike `Shared.Time`'s local-datetime-input helpers, this
 never needs a `Time.Zone` at all, since UTC's own offset is always zero, so
 `daysFromCivil`'s result needs no correction).
 -}

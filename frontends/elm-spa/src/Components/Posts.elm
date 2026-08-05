@@ -59,8 +59,8 @@ import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.PostListingType exposing (PostListingType(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
-import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
+import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -304,7 +304,7 @@ deletePost accountsPanelModel maybeAccountServer postId =
 
 
 {-| The href for `post`, as seen from `viewingServerHost` (typically
-`shared.accountsPanel.mainFrontendHost`) -- a post on that same server links
+`shared.accounts.mainFrontendHost`) -- a post on that same server links
 as plain `/post/:id`; anything else includes its host, `/post/:id@host`, so
 `Pages.Post.PostId_` knows which server to fetch it from. `basePath` is
 `Shared.Model.basePath`, same as `UI.navLink`.
@@ -650,15 +650,15 @@ commentCountText post =
 
 {-| A single `Post` timestamp, formatted the same way
 `Components.Events.instanceWhenText` formats an `EventInstance` moment (e.g.
-"August 1, 6PM", or "Today, August 1, 6PM" -- see `BrowserTimeZone.formatMoment`/
+"August 1, 6PM", or "Today, August 1, 6PM" -- see `SharedTime.formatMoment`/
 `dateLabel`) rather than a range, since a bare timestamp (created/updated/
 published) is always a single point in time. `timestampsText`'s own sibling
 -- used for its created/updated/published times, so a post's timestamps read
 the same as an event's own "when" line.
 -}
-whenText : Time.Posix -> BrowserTimeZone -> Time.Posix -> String
-whenText now browserTimeZone time =
-    BrowserTimeZone.formatMoment now browserTimeZone time
+whenText : SharedTime.Model -> Time.Posix -> String
+whenText time moment =
+    SharedTime.formatMoment time moment
 
 
 {-| A post's created/updated/published times, as tersely as the data allows --
@@ -668,21 +668,21 @@ have only this, `Updated`), with a trailing `*` plus a tooltip (native `title`)
 covering the other one(s) whenever there's a genuinely _different_ edit
 time to call out. Redundant fields (e.g. `publishedAt` equal to `createdAt`,
 the common case for a post that was published immediately) are dropped
-entirely rather than stated twice. All times shown in `browserTimeZone` via
-`whenText` (e.g. "August 1, 6PM"), `now` supplying its own "current
-year"/"current day" (see `BrowserTimeZone.dateLabel`).
+entirely rather than stated twice. All times shown in `time.browserTimeZone`
+via `whenText` (e.g. "August 1, 6PM"), `time.now` supplying its own "current
+year"/"current day".
 -}
-timestampsText : Time.Posix -> BrowserTimeZone -> Post -> Html msg
-timestampsText now browserTimeZone post =
+timestampsText : SharedTime.Model -> Post -> Html msg
+timestampsText time post =
     let
         createdText =
-            Maybe.map (timestampToPosix >> whenText now browserTimeZone) post.createdAt
+            Maybe.map (timestampToPosix >> whenText time) post.createdAt
 
         updatedText =
-            Maybe.map (timestampToPosix >> whenText now browserTimeZone) post.updatedAt
+            Maybe.map (timestampToPosix >> whenText time) post.updatedAt
 
         publishedText =
-            Maybe.map (timestampToPosix >> whenText now browserTimeZone) post.publishedAt
+            Maybe.map (timestampToPosix >> whenText time) post.publishedAt
 
         createdEqualsPublished =
             createdText /= Nothing && createdText == publishedText
@@ -835,13 +835,13 @@ post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
 -}
-postCard : Time.Posix -> BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard now browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     if post.context == REPLY then
         replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked 0 True False False Nothing Nothing Nothing post
 
     else
-        postCardView now browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
+        postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
 
 
 {-| Below this many characters of raw Markdown, a content preview (this
@@ -859,8 +859,8 @@ contentPreviewFadeThreshold =
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
 -}
-postCardView : Time.Posix -> BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCardView now browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -931,7 +931,7 @@ postCardView now browserTimeZone basePath viewingServerHost postServerHost maybe
                     )
                 ]
             , span [ class "post-meta-right" ]
-                [ timestampsText now browserTimeZone post
+                [ timestampsText time post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
@@ -1112,8 +1112,8 @@ idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
 moderation-status segment.
 
 -}
-postDetail : Time.Posix -> BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
-postDetail now browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView moderationView post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView moderationView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1157,7 +1157,7 @@ postDetail now browserTimeZone basePath viewingServerHost postServerHost maybeSe
                 , moderationView
                 ]
             , span [ class "post-meta-right" ]
-                [ timestampsText now browserTimeZone post
+                [ timestampsText time post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]

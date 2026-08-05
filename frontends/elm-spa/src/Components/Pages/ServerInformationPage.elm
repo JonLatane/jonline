@@ -357,7 +357,7 @@ reach.
 -}
 knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
 knownConnectedServer shared targetHost =
-    AccountsPanel.knownConnectedServer shared.accountsPanel.servers targetHost
+    AccountsPanel.knownConnectedServer shared.accounts.servers targetHost
 
 
 {-| The `Server` to actually show details for -- whichever the app already
@@ -464,7 +464,7 @@ already known (see the module doc), so this only ever matches once
 -}
 adminAccountFor : Shared.Model -> Model -> Maybe AccountsPanel.Account
 adminAccountFor shared model =
-    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
         |> Maybe.andThen
             (\account ->
                 if AccountsPanel.isAdmin account then
@@ -918,7 +918,7 @@ updateInner shared msg model =
             case ( permissionsEditFor set model, adminAccountFor shared model ) of
                 ( Just edit, Just account ) ->
                     ( setPermissionsEditFor set (Just { edit | status = AccountsPanel.Submitting }) model
-                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyPermissionsFor set edit.pending)
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyPermissionsFor set edit.pending)
                         |> Task.attempt (GotPermissionsSaveResult set)
                         |> Effect.fromCmd
                     )
@@ -986,7 +986,7 @@ updateInner shared msg model =
             case ( model.logoEdit, adminAccountFor shared model ) of
                 ( Just edit, Just account ) ->
                     ( { model | logoEdit = Just { edit | status = AccountsPanel.Submitting } }
-                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyLogoChoice edit.choice)
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyLogoChoice edit.choice)
                         |> Task.attempt GotLogoSaveResult
                         |> Effect.fromCmd
                     )
@@ -1032,7 +1032,7 @@ updateInner shared msg model =
             case ( colorEditFor field model, adminAccountFor shared model ) of
                 ( Just edit, Just account ) ->
                     ( setColorEditFor field (Just { edit | status = AccountsPanel.Submitting }) model
-                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyColorFor field (ServerTheme.argbFromHex edit.pending))
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyColorFor field (ServerTheme.argbFromHex edit.pending))
                         |> Task.attempt (GotColorSaveResult field)
                         |> Effect.fromCmd
                     )
@@ -1086,7 +1086,7 @@ updateInner shared msg model =
             case ( model.federationEdit, adminAccountFor shared model ) of
                 ( Just edit, Just account ) ->
                     ( { model | federationEdit = Just { edit | status = AccountsPanel.Submitting } }
-                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyFederatedServers edit.pending)
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyFederatedServers edit.pending)
                         |> Task.attempt GotFederationSaveResult
                         |> Effect.fromCmd
                     )
@@ -1599,9 +1599,9 @@ per-card `FollowStatusAndButton.Model` state to back one.
 adminCardView : Shared.Model -> AccountsPanel.Server -> User -> Html Msg
 adminCardView shared server user =
     Users.userCard shared.basePath
-        shared.accountsPanel.mainFrontendHost
+        shared.accounts.mainFrontendHost
         server
-        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost)
+        (AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost)
         (text "")
         user
 
@@ -1937,7 +1937,7 @@ yet.
 -}
 federatedServerFor : Shared.Model -> String -> AccountsPanel.Server
 federatedServerFor shared host =
-    AccountsPanel.serverForHost shared.accountsPanel.servers host
+    AccountsPanel.serverForHost shared.accounts.servers host
         |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
 
 

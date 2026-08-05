@@ -37,13 +37,13 @@ import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import TimeZone
@@ -53,6 +53,18 @@ import Url exposing (Url)
 
 type alias Flags =
     Decode.Value
+
+
+{-| The app-wide appearance (dark/light/auto) setting -- see `Model.theme`.
+Bundled into one type since `effectiveDarkMode` always needs both together:
+`preference` alone doesn't say whether `Auto` currently means dark or
+light, and `systemPrefersDark` alone doesn't say whether the user has
+overridden it.
+-}
+type alias Theme =
+    { preference : ThemePreference
+    , systemPrefersDark : Bool
+    }
 
 
 {-| The user's chosen appearance. `Auto` follows `systemPrefersDark`; `Light`/
@@ -108,6 +120,27 @@ type DeleteConfirmation
     | ConfirmEventDelete Event String
 
 
+{-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
+for why that one stays its own top-level field) -- bundled together purely to
+keep `Model` from being one flat list of 20-ish fields; nothing here actually
+needs to reach across into a sibling panel's state (each `update` branch in
+`updateImpl` still dispatches on exactly one of these at a time). See each
+field's own module for what it holds. `confirmingDeleteFor` is included since
+it's "effectively a Panel" from the UI's point of view -- see
+`DeleteConfirmation`.
+-}
+type alias Panels =
+    { adminPanel : AdminPanel.Model
+    , federatedAuth : FederatedAuth.Model
+    , starredPanel : StarredPanel.Model
+    , markdownPanel : MarkdownPanel.Model
+    , mediaViewerPanel : MediaViewerPanel.Model
+    , myMediaPanel : MyMediaPanel.Model
+    , createNewPanel : CreateNewPanel.Model
+    , confirmingDeleteFor : Maybe DeleteConfirmation
+    }
+
+
 {-| The live scroll metrics of `.nav-links-scroll` (see `UI.headerNav`),
 read off its `scroll` event (`UI.navLinksScrollDecoder`) -- drives the Home
 link's (`.nav-link-home`, `UI.navLink`) scroll-triggered shrink animation.
@@ -137,6 +170,7 @@ only lightly scrolled, then visibly shrinks the rest of the way to a bare
 `.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
 `scrollLeft` is `0` in that case regardless, so `fraction` still comes out
 `0`.
+
 -}
 navLinkHomeMaxWidth : NavAnimationState -> String
 navLinkHomeMaxWidth state =
@@ -157,22 +191,18 @@ navLinkHomeMaxWidth state =
 
 
 type alias Model =
-    { accountsPanel : AccountsPanel.Model
-    , adminPanel : AdminPanel.Model
-    , federatedAuth : FederatedAuth.Model
-    , starredPanel : StarredPanel.Model
-    , markdownPanel : MarkdownPanel.Model
-    , mediaViewerPanel : MediaViewerPanel.Model
-    , myMediaPanel : MyMediaPanel.Model
-    , createNewPanel : CreateNewPanel.Model
+    -- Known servers, signed-into accounts, login/add-server forms -- kept as
+    -- its own top-level field (rather than folded into `panels`) since it's
+    -- read from all over the app (view code on nearly every page), not just
+    -- panel-adjacent code.
+    { accounts : AccountsPanel.Model
 
-    -- Effectively a "Panel" from the UI's point of view.
-    -- Shows a delete confirmation modal while `UI.deleteConfirmationModal` is up,
-    -- `Nothing` the rest of the time -- see `DeleteConfirmation`.
-    , confirmingDeleteFor : Maybe DeleteConfirmation
+    -- See `Panels` for the rest of the app-wide panels.
+    , panels : Panels
     , breadcrumbs : Breadcrumbs.Model
-    , themePreference : ThemePreference
-    , systemPrefersDark : Bool
+
+    -- See `Theme` for `preference`/`systemPrefersDark` themselves.
+    , theme : Theme
 
     -- The path prefix the app is being served under -- "" from `/`, "/elm"
     -- from `/elm` (see `backend/src/web/elm_web.rs`) -- immutable for the
@@ -207,29 +237,10 @@ type alias Model =
     -- and CSS alone can't reach into another panel's state.
     , windowSize : Responsive.WindowSize
 
-    -- See `Shared.BrowserTimeZone`. Used everywhere a `Post`/`User` timestamp
-    -- is displayed (see `Shared.BrowserTimeZone.formatDate`/`formatDateTime`)
-    -- so those render in the viewer's own local time rather than the
-    -- server's UTC.
-    , browserTimeZone : BrowserTimeZone
-
-    -- Captured once via `Time.now` in `init` (mirrors `browserTimeZone.zone`'s
-    -- own `getBrowserZone` capture exactly, including the `Time.millisToPosix 0`
-    -- placeholder until it resolves) -- the single app-wide "now" every page
-    -- that used to capture its own (`Pages.Event.EventId_`'s date-picker
-    -- strip categorizing `EventInstance`s as upcoming/past, `Components.Events.eventCard`/
-    -- `instanceWhenText`'s "is this date in the viewer's current year"
-    -- check) reads instead, rather than each independently re-running
-    -- `Task.perform ... Time.now`. Deliberately *not* kept live via a
-    -- `Time.every` tick -- every current use only needs "roughly what day/year
-    -- is it" for the length of a single page view, not a ticking clock, the
-    -- same tolerance `Pages.Event.EventId_.Model.now`'s own doc already
-    -- accepted before this moved here. `Components.Pages.EventsPage.Model.endsAfter`/
-    -- `Components.Pages.PostsPage.Model.publishedBefore` are deliberately
-    -- untouched by this -- those are live request cursors (polled and
-    -- user-editable), not a display "what time is it", and already document
-    -- why they're their own thing.
-    , now : Time.Posix
+    -- See `Shared.Time` for `browserTimeZone`/`now` themselves -- bundled
+    -- into one type alias since every call site that needs one of these
+    -- tends to need the other too (see its own doc).
+    , time : SharedTime.Model
     }
 
 
@@ -280,9 +291,9 @@ against the last-known system preference.
 -}
 effectiveDarkMode : Model -> Bool
 effectiveDarkMode model =
-    case model.themePreference of
+    case model.theme.preference of
         ThemeAuto ->
-            model.systemPrefersDark
+            model.theme.systemPrefersDark
 
         ThemeLight ->
             False
@@ -426,19 +437,20 @@ init basePath req flags =
             FederatedAuth.init federatedAuthFlags
 
         model =
-            { accountsPanel = accountsPanelModel
-            , adminPanel = AdminPanel.init
-            , federatedAuth = federatedAuthModel
-            , starredPanel = StarredPanel.init starredPostsFlags
-            , markdownPanel = MarkdownPanel.init
-            , mediaViewerPanel = MediaViewerPanel.init
-            , myMediaPanel = MyMediaPanel.init
-            , createNewPanel = CreateNewPanel.init
+            { accounts = accountsPanelModel
+            , panels =
+                { adminPanel = AdminPanel.init
+                , federatedAuth = federatedAuthModel
+                , starredPanel = StarredPanel.init starredPostsFlags
+                , markdownPanel = MarkdownPanel.init
+                , mediaViewerPanel = MediaViewerPanel.init
+                , myMediaPanel = MyMediaPanel.init
+                , createNewPanel = CreateNewPanel.init
+                , confirmingDeleteFor = Nothing
+                }
             , breadcrumbs = Breadcrumbs.init
-            , themePreference = themePreference
-            , systemPrefersDark = systemPrefersDark
+            , theme = { preference = themePreference, systemPrefersDark = systemPrefersDark }
             , basePath = basePath
-            , confirmingDeleteFor = Nothing
             , scrollPreserverVisible = False
             , navAnimationState =
                 { scrollLeft = 0
@@ -451,12 +463,13 @@ init basePath req flags =
             -- panels start closed) so it doesn't matter what it is.
             , windowSize = { width = 0, height = 0 }
 
-            -- `zone` is corrected as soon as `Time.here`, below, resolves.
-            , browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
-
-            -- Corrected as soon as `Task.perform GotNow Time.now`, below,
-            -- resolves -- see `Model.now`'s own doc.
-            , now = Time.millisToPosix 0
+            -- `browserTimeZone.zone` is corrected as soon as `getBrowserZone`,
+            -- below, resolves; `now` as soon as `Task.perform GotNow Time.now`
+            -- does -- see `SharedTime.Model`'s own doc.
+            , time =
+                { browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
+                , now = Time.millisToPosix 0
+                }
             }
     in
     ( model
@@ -471,7 +484,7 @@ init basePath req flags =
         -- calls once real branding loads via `navBarColorCmd`, rather than
         -- leaving the static light/dark `<meta>` values from `index.html` in
         -- place until then.
-        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
+        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accounts).primaryColor
         , getInitialWindowSizeCmd
         , Task.attempt (\result -> GotTimeZone (Result.withDefault Time.utc result)) getBrowserZone
         , Task.perform GotNow Time.now
@@ -540,7 +553,7 @@ navBarColorCmd : Model -> Model -> Cmd Msg
 navBarColorCmd before after =
     let
         colorOf model_ =
-            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accountsPanel).primaryColor
+            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accounts).primaryColor
     in
     if colorOf before /= colorOf after then
         Ports.setNavBarColor (colorOf after)
@@ -554,14 +567,17 @@ updateImpl req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd ) =
-                    AccountsPanel.update req subMsg model.accountsPanel
+                    AccountsPanel.update req subMsg model.accounts
 
                 changedHosts =
-                    starredPostsRefreshHosts model.accountsPanel subModel
+                    starredPostsRefreshHosts model.accounts subModel
 
                 ( refreshedStarredPanel, refreshCmd ) =
-                    StarredPanel.refreshHosts subModel changedHosts model.starredPanel
+                    StarredPanel.refreshHosts subModel changedHosts panels.starredPanel
 
                 -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
@@ -604,14 +620,14 @@ updateImpl req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.browserTimeZone.zone subModel CreateNewPanel.CloseClicked model.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone subModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.createNewPanel, Cmd.none )
+                        ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel }
+            ( { model | accounts = subModel, panels = { panels | starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel } }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPanelMsg refreshCmd
@@ -621,35 +637,45 @@ updateImpl req msg model =
             )
 
         AdminPanelMsg subMsg ->
-            ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | adminPanel = AdminPanel.update subMsg panels.adminPanel } }, Cmd.none )
 
         FederatedAuthMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd ) =
-                    FederatedAuth.update subMsg model.federatedAuth
+                    FederatedAuth.update subMsg panels.federatedAuth
             in
-            ( { model | federatedAuth = subModel }, Cmd.map FederatedAuthMsg subCmd )
+            ( { model | panels = { panels | federatedAuth = subModel } }, Cmd.map FederatedAuthMsg subCmd )
 
         StarredPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
-                    StarredPanel.update model.accountsPanel subMsg model.starredPanel
+                    StarredPanel.update model.accounts subMsg panels.starredPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 mediaViewerPanelModel =
                     case maybeMediaViewerPanelMsg of
                         Just mediaViewerPanelMsg ->
-                            MediaViewerPanel.update mediaViewerPanelMsg model.mediaViewerPanel
+                            MediaViewerPanel.update mediaViewerPanelMsg panels.mediaViewerPanel
 
                         Nothing ->
-                            model.mediaViewerPanel
+                            panels.mediaViewerPanel
 
                 -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
                 -- branch, above -- see `UI.Responsive`.
@@ -686,18 +712,21 @@ updateImpl req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.createNewPanel, Cmd.none )
+                        ( panels.createNewPanel, Cmd.none )
             in
             ( { model
-                | starredPanel = subModel
-                , accountsPanel = closedAccountsPanelModel
-                , mediaViewerPanel = mediaViewerPanelModel
-                , createNewPanel = closedCreateNewPanelModel
+                | accounts = closedAccountsPanelModel
+                , panels =
+                    { panels
+                        | starredPanel = subModel
+                        , mediaViewerPanel = mediaViewerPanelModel
+                        , createNewPanel = closedCreateNewPanelModel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map StarredPanelMsg subCmd
@@ -708,7 +737,11 @@ updateImpl req msg model =
             )
 
         MediaViewerPanelMsg subMsg ->
-            ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | mediaViewerPanel = MediaViewerPanel.update subMsg panels.mediaViewerPanel } }, Cmd.none )
 
         BreadcrumbsMsg subMsg ->
             let
@@ -724,32 +757,35 @@ updateImpl req msg model =
 
         MarkdownPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 -- `Shared.CreateNewPanel`'s own draft content, if this exact
                 -- `SaveClicked` is the one closing out its
                 -- `MarkdownPanel.NewPostContent` edit -- read off
-                -- `model.markdownPanel.content` *before* `MarkdownPanel.update`
+                -- `panels.markdownPanel.content` *before* `MarkdownPanel.update`
                 -- (below) resets it back to `init`, since `MarkdownPanel`
                 -- itself has no Post to save this to (see `TargetType`'s own
                 -- doc on `NewPostContent`) and so never hands it back on its
                 -- own `Msg`.
                 savedNewPostContent =
-                    case ( subMsg, model.markdownPanel.target ) of
+                    case ( subMsg, panels.markdownPanel.target ) of
                         ( MarkdownPanel.SaveClicked, Just (MarkdownPanel.NewPostContent _) ) ->
-                            Just model.markdownPanel.content
+                            Just panels.markdownPanel.content
 
                         _ ->
                             Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
-                    MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
+                    MarkdownPanel.update model.accounts subMsg panels.markdownPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 scrollPreserverCmd =
                     if showScrollPreserver then
@@ -763,14 +799,14 @@ updateImpl req msg model =
                         Just content ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.createNewPanel, Cmd.none )
+                            ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel, createNewPanel = createNewPanelModel }
+            ( { model | accounts = accountsPanelModel, panels = { panels | markdownPanel = subModel, createNewPanel = createNewPanelModel } }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -781,6 +817,9 @@ updateImpl req msg model =
 
         MyMediaPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 -- `Shared.CreateNewPanel`'s own picked media, if this exact
                 -- `SaveMediaClicked` is the one closing out the `MultiSelect`
                 -- it opened (`EditMediaClicked`) -- gated on it currently
@@ -791,7 +830,7 @@ updateImpl req msg model =
                 savedMedia =
                     case subMsg of
                         MyMediaPanel.SaveMediaClicked media ->
-                            if CreateNewPanel.isOpen model.createNewPanel then
+                            if CreateNewPanel.isOpen panels.createNewPanel then
                                 Just media
 
                             else
@@ -801,15 +840,15 @@ updateImpl req msg model =
                             Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
-                    MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
+                    MyMediaPanel.update model.accounts subMsg panels.myMediaPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 -- `MyMediaPanel.DeleteClicked`'s own request (see its doc) to
                 -- open the shared "are you sure?" dialog -- same
@@ -823,21 +862,24 @@ updateImpl req msg model =
                             Just (ConfirmMediaDelete media)
 
                         Nothing ->
-                            model.confirmingDeleteFor
+                            panels.confirmingDeleteFor
 
                 ( createNewPanelModel, createNewPanelCmd ) =
                     case savedMedia of
                         Just media ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.createNewPanel, Cmd.none )
+                            ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
+            ( { model
+                | accounts = accountsPanelModel
+                , panels = { panels | myMediaPanel = subModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
+              }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -847,16 +889,19 @@ updateImpl req msg model =
 
         CreateNewPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
-                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel subMsg model.createNewPanel
+                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts subMsg panels.createNewPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 -- `CreateNewPanel.EditContentClicked`/`EditMediaClicked`'s own
                 -- request (see its module doc) to actually open
@@ -868,24 +913,24 @@ updateImpl req msg model =
                         Just markdownPanelMsg ->
                             let
                                 ( m, cmd, _ ) =
-                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg model.markdownPanel
+                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg panels.markdownPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.markdownPanel, Cmd.none )
+                            ( panels.markdownPanel, Cmd.none )
 
                 ( myMediaPanelModel, myMediaPanelCmd ) =
                     case maybeMyMediaPanelMsg of
                         Just myMediaPanelMsg ->
                             let
                                 ( m, cmd, _ ) =
-                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg model.myMediaPanel
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg panels.myMediaPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.myMediaPanel, Cmd.none )
+                            ( panels.myMediaPanel, Cmd.none )
 
                 -- Mirrors `StarredPanelMsg`'s own
                 -- `shouldCloseCreateNewPanel`, in the other direction --
@@ -902,12 +947,12 @@ updateImpl req msg model =
                     if shouldCloseStarredPanel then
                         let
                             ( m, cmd, _ ) =
-                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel model.starredPanel
+                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel panels.starredPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.starredPanel, Cmd.none )
+                        ( panels.starredPanel, Cmd.none )
 
                 -- Mirrors `AccountsPanelMsg`'s own `shouldCloseCreateNewPanel`,
                 -- in the other direction -- see its own doc.
@@ -927,11 +972,14 @@ updateImpl req msg model =
                         ( accountsPanelModel, Cmd.none )
             in
             ( { model
-                | createNewPanel = subModel
-                , accountsPanel = closedAccountsPanelModel
-                , markdownPanel = markdownPanelModel
-                , myMediaPanel = myMediaPanelModel
-                , starredPanel = closedStarredPanelModel
+                | accounts = closedAccountsPanelModel
+                , panels =
+                    { panels
+                        | createNewPanel = subModel
+                        , markdownPanel = markdownPanelModel
+                        , myMediaPanel = myMediaPanelModel
+                        , starredPanel = closedStarredPanelModel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map CreateNewPanelMsg subCmd
@@ -982,10 +1030,13 @@ updateImpl req msg model =
 
         ThemePreferenceClicked ->
             let
+                theme =
+                    model.theme
+
                 newPreference =
-                    nextThemePreference model.themePreference
+                    nextThemePreference theme.preference
             in
-            ( { model | themePreference = newPreference }
+            ( { model | theme = { theme | preference = newPreference } }
             , Cmd.batch
                 [ Ports.setTheme (themePreferenceToString newPreference)
                 , Ports.persistThemePreference (themePreferenceToString newPreference)
@@ -993,16 +1044,32 @@ updateImpl req msg model =
             )
 
         SystemPrefersDarkChanged prefersDark ->
-            ( { model | systemPrefersDark = prefersDark }, Cmd.none )
+            let
+                theme =
+                    model.theme
+            in
+            ( { model | theme = { theme | systemPrefersDark = prefersDark } }, Cmd.none )
 
         RequestDelete confirmation ->
-            ( { model | confirmingDeleteFor = Just confirmation }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | confirmingDeleteFor = Just confirmation } }, Cmd.none )
 
         CancelDelete ->
-            ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | confirmingDeleteFor = Nothing } }, Cmd.none )
 
         ConfirmDelete ->
-            case model.confirmingDeleteFor of
+            let
+                panels =
+                    model.panels
+            in
+            case panels.confirmingDeleteFor of
                 -- These two route straight into `AccountsPanel.update`
                 -- rather than resolving through `Task.attempt` + a
                 -- `GotXDeleteResult` here, unlike every branch below. That's
@@ -1015,18 +1082,18 @@ updateImpl req msg model =
                 Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accounts
                     in
-                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    ( { model | accounts = subModel, panels = { panels | confirmingDeleteFor = Nothing } }
                     , Cmd.map AccountsPanelMsg subCmd
                     )
 
                 Just (ConfirmServerDelete server) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accounts
                     in
-                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    ( { model | accounts = subModel, panels = { panels | confirmingDeleteFor = Nothing } }
                     , Cmd.map AccountsPanelMsg subCmd
                     )
 
@@ -1040,17 +1107,20 @@ updateImpl req msg model =
                 Just (ConfirmMediaDelete media) ->
                     let
                         ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            MyMediaPanel.update model.accountsPanel (MyMediaPanel.DeleteConfirmed media) model.myMediaPanel
+                            MyMediaPanel.update model.accounts (MyMediaPanel.DeleteConfirmed media) panels.myMediaPanel
 
                         ( accountsPanelModel, accountsPanelCmd ) =
                             case maybeAccountsPanelMsg of
                                 Just accountsPanelMsg ->
-                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                                    AccountsPanel.update req accountsPanelMsg model.accounts
 
                                 Nothing ->
-                                    ( model.accountsPanel, Cmd.none )
+                                    ( model.accounts, Cmd.none )
                     in
-                    ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
+                    ( { model
+                        | accounts = accountsPanelModel
+                        , panels = { panels | myMediaPanel = subModel, confirmingDeleteFor = Nothing }
+                      }
                     , Cmd.batch
                         [ Cmd.map MyMediaPanelMsg subCmd
                         , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -1068,29 +1138,29 @@ updateImpl req msg model =
                 -- this is the shape new page-owned deletable lists should
                 -- follow.
                 Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents host) ->
-                    ( { model | confirmingDeleteFor = Nothing }
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , EventSyncSources.deleteEventSyncSource
-                        model.accountsPanel
-                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         source
                         deleteSyncedEvents
                         |> Task.attempt (GotEventSyncSourceDeleteResult source.id)
                     )
 
                 Just (ConfirmPostDelete post host) ->
-                    ( { model | confirmingDeleteFor = Nothing }
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Posts.deletePost
-                        model.accountsPanel
-                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         post.id
                         |> Task.attempt GotPostDeleteResult
                     )
 
                 Just (ConfirmEventDelete event host) ->
-                    ( { model | confirmingDeleteFor = Nothing }
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteEvent
-                        model.accountsPanel
-                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         event.id
                         |> Task.attempt GotEventDeleteResult
                     )
@@ -1103,12 +1173,12 @@ updateImpl req msg model =
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
             in
-            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventSyncSourceDeleteResult _ (Err _) ->
             ( model, Cmd.none )
@@ -1118,12 +1188,12 @@ updateImpl req msg model =
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
             in
-            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotPostDeleteResult (Err _) ->
             ( model, Cmd.none )
@@ -1133,12 +1203,12 @@ updateImpl req msg model =
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
             in
-            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventDeleteResult (Err _) ->
             ( model, Cmd.none )
@@ -1183,13 +1253,20 @@ updateImpl req msg model =
 
         GotTimeZone zone ->
             let
+                time =
+                    model.time
+
                 browserTimeZone =
-                    model.browserTimeZone
+                    time.browserTimeZone
             in
-            ( { model | browserTimeZone = { browserTimeZone | zone = zone } }, Cmd.none )
+            ( { model | time = { time | browserTimeZone = { browserTimeZone | zone = zone } } }, Cmd.none )
 
         GotNow now ->
-            ( { model | now = now }, Cmd.none )
+            let
+                time =
+                    model.time
+            in
+            ( { model | time = { time | now = now } }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -1249,12 +1326,12 @@ subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
         , Browser.Events.onResize WindowResized
-        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
+        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accounts)
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
-        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.starredPanel)
-        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
-        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
-        , if model.starredPanel.showStarredPanel then
+        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.panels.starredPanel)
+        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.panels.mediaViewerPanel)
+        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
+        , if model.panels.starredPanel.showStarredPanel then
             Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
 
           else

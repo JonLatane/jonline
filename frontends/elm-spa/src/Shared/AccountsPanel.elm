@@ -1,6 +1,6 @@
 module Shared.AccountsPanel exposing
-    ( Account
-    , AcceptedCreateAccount
+    ( AcceptedCreateAccount
+    , Account
     , AccountForm
     , AddServerForm
     , Branding
@@ -228,7 +228,7 @@ so the modal (and the `AcceptedCreateAccount` it produces) always names the
 username that was on screen at the moment "Create Account" was clicked, even
 if the form's fields somehow changed while the confirmation step
 (`UI.createAccountConfirmationModal`) was up. There's no password here yet --
-this step happens *before* the Password field even renders (see
+this step happens _before_ the Password field even renders (see
 `Model.newAccountType`).
 -}
 type alias PendingCreateAccount =
@@ -255,6 +255,7 @@ from here rather than `accountForm`, same reasoning as `PendingCreateAccount`.
 `Time.now` (see `GotCreateAccountAcceptedTime`) -- not yet sent with the
 `CreateAccount` RPC (the API has no field for it), but kept on hand ready for
 when it does.
+
 -}
 type alias AcceptedCreateAccount =
     { server : Server

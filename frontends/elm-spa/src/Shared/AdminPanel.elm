@@ -25,6 +25,7 @@ Settings tab doc in `UI.elm` notes this too).
 The actual "set web UI" action lives in `Shared.AccountsPanel` (it needs that
 module's `Account`/`Server`/RPC machinery); this module only tracks which
 panels are open.
+
 -}
 
 import Set exposing (Set)

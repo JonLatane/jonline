@@ -108,21 +108,21 @@ update shared server account user msg model =
     case msg of
         FollowClicked ->
             ( { model | status = Submitting }
-            , Users.createFollow shared.accountsPanel maybeAccountServer (currentUserFollowOf account user)
+            , Users.createFollow shared.accounts maybeAccountServer (currentUserFollowOf account user)
                 |> Task.attempt GotFollowResult
                 |> Effect.fromCmd
             )
 
         UnfollowClicked ->
             ( { model | status = Submitting }
-            , Users.deleteFollow shared.accountsPanel maybeAccountServer (currentUserFollowOf account user)
+            , Users.deleteFollow shared.accounts maybeAccountServer (currentUserFollowOf account user)
                 |> Task.attempt GotUnfollowResult
                 |> Effect.fromCmd
             )
 
         RejectFollowerClicked ->
             ( { model | status = Submitting }
-            , Users.updateFollow shared.accountsPanel
+            , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
                     follow =
@@ -136,7 +136,7 @@ update shared server account user msg model =
 
         UnrejectFollowerClicked ->
             ( { model | status = Submitting }
-            , Users.updateFollow shared.accountsPanel
+            , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
                     follow =

@@ -48,8 +48,8 @@ import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
-import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
@@ -1111,8 +1111,8 @@ directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPanel`, so the reverse import would be a cycle).
 -}
-view : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
-view now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model =
+view : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
+view time basePath accountsPanelModel currentPostKey currentInstanceId model =
     let
         stateClass =
             openClosedClass model.showStarredPanel
@@ -1145,7 +1145,7 @@ view now browserTimeZone basePath accountsPanelModel currentPostKey currentInsta
                     [ Html.Keyed.node "div"
                         [ classes [ "starred-panel-list", "flip-animated-column" ] ]
                         (List.indexedMap
-                            (\index key -> ( key, starredPostRowFlip now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ))
+                            (\index key -> ( key, starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstanceId model count index key ))
                             model.starOrder
                         )
                     ]
@@ -1158,8 +1158,8 @@ view now browserTimeZone basePath accountsPanelModel currentPostKey currentInsta
 `starAnimations`/`UI.Flip`), same two-layer reasoning as `UI.accountRowFlip`
 (fade/collapse here vs. `starredPostRow`'s own, independent reorder-slide).
 -}
-starredPostRowFlip : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRowFlip now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRowFlip : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
         flipState =
             Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
@@ -1175,15 +1175,15 @@ starredPostRowFlip now browserTimeZone basePath accountsPanelModel currentPostKe
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
-        [ div pointerEventsAttr [ starredPostRow now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ] ]
+        [ div pointerEventsAttr [ starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId model count index key ] ]
 
 
 {-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder
 transform and the up/down reorder buttons -- mirrors `UI.accountRow`'s
 equivalent for Accounts.
 -}
-starredPostRow : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRow now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRow : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
         moveAttrs =
             model.moveAnimations
@@ -1202,16 +1202,16 @@ starredPostRow now browserTimeZone basePath accountsPanelModel currentPostKey cu
             , canMoveUp = index > 0
             , canMoveDown = index < count - 1
             }
-        , starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key
+        , starredPostView time basePath accountsPanelModel currentPostKey currentInstanceId model key
         ]
 
 
-starredPostView : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> String -> Html Msg
-starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key =
+starredPostView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> String -> Html Msg
+starredPostView time basePath accountsPanelModel currentPostKey currentInstanceId model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             if post.context == EVENTINSTANCE then
-                starredEventInstanceView now browserTimeZone basePath accountsPanelModel currentInstanceId model key host post
+                starredEventInstanceView time basePath accountsPanelModel currentInstanceId model key host post
 
             else
                 let
@@ -1240,7 +1240,7 @@ starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey c
 
                         Nothing ->
                             text ""
-                    , Posts.postCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
+                    , Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
                     ]
 
         Just FetchingPost ->
@@ -1306,8 +1306,8 @@ which updates `model.posts` directly) shows immediately without waiting on a
 whole fresh `GetEvents` round-trip, mirroring
 `Components.Pages.EventsPage.eventCardView`'s own `displayInstance` swap.
 -}
-starredEventInstanceView : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
-starredEventInstanceView now browserTimeZone basePath accountsPanelModel currentInstanceId model key host post =
+starredEventInstanceView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
+starredEventInstanceView time basePath accountsPanelModel currentInstanceId model key host post =
     case Dict.get key model.events of
         Just (EventFetchLoaded event instance) ->
             let
@@ -1344,7 +1344,7 @@ starredEventInstanceView now browserTimeZone basePath accountsPanelModel current
 
                     Nothing ->
                         text ""
-                , Events.eventCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current event displayInstance
+                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current event displayInstance
                 ]
 
         Just FetchingEvent ->

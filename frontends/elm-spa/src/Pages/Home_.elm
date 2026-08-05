@@ -108,7 +108,7 @@ setBreadcrumbsHost : Shared.Model -> Effect Msg
 setBreadcrumbsHost shared =
     let
         host =
-            shared.accountsPanel.mainFrontendHost
+            shared.accounts.mainFrontendHost
     in
     if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
         Effect.none

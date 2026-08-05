@@ -120,7 +120,7 @@ init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     let
         ( postId, targetHost ) =
-            Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
+            Posts.parsePostRouteId shared.accounts.mainFrontendHost params.postId
 
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
@@ -165,10 +165,10 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
+        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
-                , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
+                , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
                     |> Task.attempt GotPost
                     |> Effect.fromCmd
                 )
@@ -183,7 +183,7 @@ signed in on it -- what `Components.PostCard`/`Components.PostReplies`'
 -}
 maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
 maybeAccountServerFor shared model =
-    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
     , model.targetHost
     )
 
@@ -197,7 +197,7 @@ signed in here (i.e. logging in/out of that account on that server), and
 -}
 currentAccountId : Shared.Model -> Model -> Maybe String
 currentAccountId shared model =
-    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
         |> Maybe.map AccountsPanel.accountId
 
 
@@ -213,10 +213,10 @@ trigger here.
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
-    case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
+    case AccountsPanel.serverForHost shared.accounts.servers model.targetHost of
         Just _ ->
             ( { model | fetchedAccountId = currentAccountId shared model }
-            , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
+            , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
                 |> Task.attempt GotPost
                 |> Effect.fromCmd
             )
@@ -232,8 +232,8 @@ both exist -- what `VisibilitySaveClicked` needs to actually submit its
 serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
 
 
 
@@ -329,17 +329,17 @@ update shared req msg model =
                     accountsPanelEffect maybeAccountsPanelMsg
 
                 maybeUserId =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+                    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
                 ( repliesModel, repliesEffect ) =
                     case ( List.head response.posts, model.repliesModel ) of
                         ( Just post, Nothing ) ->
-                            PostReplies.init shared.accountsPanel maybeUserId model.targetHost post
+                            PostReplies.init shared.accounts maybeUserId model.targetHost post
                                 |> Tuple.mapFirst Just
                                 |> Tuple.mapSecond (Effect.map PostRepliesMsg)
 
                         ( Just post, Just existing ) ->
-                            PostReplies.refresh shared.accountsPanel maybeUserId post existing
+                            PostReplies.refresh shared.accounts maybeUserId post existing
                                 |> Tuple.mapFirst Just
                                 |> Tuple.mapSecond (Effect.map PostRepliesMsg)
 
@@ -359,7 +359,7 @@ update shared req msg model =
                     case List.head response.posts of
                         Just post ->
                             if post.context == REPLY then
-                                Posts.fetchAncestors shared.accountsPanel (maybeAccountServerFor shared model) post
+                                Posts.fetchAncestors shared.accounts (maybeAccountServerFor shared model) post
                                     |> Task.attempt (GotBreadcrumbAncestors post)
                                     |> Effect.fromCmd
 
@@ -420,10 +420,10 @@ update shared req msg model =
                 Just repliesModel ->
                     let
                         maybeUserId =
-                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+                            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
                         ( newRepliesModel, effect ) =
-                            PostReplies.update shared.accountsPanel maybeUserId subMsg repliesModel
+                            PostReplies.update shared.accounts maybeUserId subMsg repliesModel
                     in
                     ( { model | repliesModel = Just newRepliesModel }, Effect.map PostRepliesMsg effect )
 
@@ -480,7 +480,7 @@ update shared req msg model =
             case ( model.visibilityEdit, serverAndAccount shared model ) of
                 ( Just edit, Just ( server, account ) ) ->
                     ( { model | visibilityEdit = Just { edit | status = Submitting } }
-                    , Posts.updatePost shared.accountsPanel ( Just account.userId, server.frontendHost ) post.id (\freshPost -> { freshPost | visibility = edit.pending })
+                    , Posts.updatePost shared.accounts ( Just account.userId, server.frontendHost ) post.id (\freshPost -> { freshPost | visibility = edit.pending })
                         |> Task.attempt GotVisibilitySaveResult
                         |> Effect.fromCmd
                     )
@@ -525,7 +525,7 @@ update shared req msg model =
                 ( Just edit, Just ( server, account ) ) ->
                     ( { model | moderationEdit = Just { edit | status = Submitting } }
                     , Posts.updatePost
-                        shared.accountsPanel
+                        shared.accounts
                         ( Just account.userId, server.frontendHost )
                         post.id
                         (\freshPost -> { freshPost | moderation = edit.pending })
@@ -619,7 +619,7 @@ update shared req msg model =
                                     Just ( server, account ) ->
                                         ( { model | mediaEditActive = False }
                                         , Posts.updatePost
-                                            shared.accountsPanel
+                                            shared.accounts
                                             ( Just account.userId, server.frontendHost )
                                             model.postId
                                             (\freshPost -> { freshPost | media = mediaRefs })
@@ -692,8 +692,8 @@ bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
 bodyView shared req model =
     ServerDependentView.view
         { hostname = model.targetHost
-        , servers = shared.accountsPanel.servers
-        , accounts = shared.accountsPanel.accounts
+        , servers = shared.accounts.servers
+        , accounts = shared.accounts.accounts
         , connectStatus = model.connectStatus
         , onConnectClicked = ConnectClicked
         , onEnableClicked = EnableClicked
@@ -720,28 +720,27 @@ postDetailView : Shared.Model -> Model -> Post -> Html Msg
 postDetailView shared model post =
     let
         displayPost =
-            StarredPanel.freshestPost model.targetHost post shared.starredPanel
+            StarredPanel.freshestPost model.targetHost post shared.panels.starredPanel
 
         starred =
-            StarredPanel.isStarred model.targetHost displayPost shared.starredPanel
+            StarredPanel.isStarred model.targetHost displayPost shared.panels.starredPanel
 
         onStarClicked =
-            StarredPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
+            StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         maybeServer =
-            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+            AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
 
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
     in
-    Posts.postDetail shared.now
-        shared.browserTimeZone
+    Posts.postDetail shared.time
         shared.basePath
-        shared.accountsPanel.mainFrontendHost
+        shared.accounts.mainFrontendHost
         model.targetHost
         maybeServer
         maybeAccount
@@ -924,7 +923,7 @@ Markdown editor panel (see `Shared.MarkdownPanel`), targeting this Post
 -}
 postActionsView : Shared.Model -> Model -> Post -> Html Msg
 postActionsView shared model post =
-    case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost of
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost of
         Just account ->
             div [ class "post-actions" ]
                 [ if List.member REPLYTOPOSTS account.permissions then
@@ -953,10 +952,10 @@ repliesView shared model =
         Just repliesModel ->
             PostReplies.view
                 { basePath = shared.basePath
-                , viewingServerHost = shared.accountsPanel.mainFrontendHost
+                , viewingServerHost = shared.accounts.mainFrontendHost
                 , postServerHost = model.targetHost
-                , maybeServer = AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
-                , maybeAccount = AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                , maybeServer = AccountsPanel.serverForHost shared.accounts.servers model.targetHost
+                , maybeAccount = AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
                 , onMediaClicked = MediaClicked
                 , onReplyClicked = ReplyClicked
                 , toMsg = PostRepliesMsg
@@ -1003,7 +1002,7 @@ reactLinkView shared req =
 
         reactCommentsHref =
             scheme
-                ++ shared.accountsPanel.browsingHost
+                ++ shared.accounts.browsingHost
                 ++ portSuffix
                 ++ "/tamagui/post/"
                 ++ req.params.postId

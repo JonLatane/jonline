@@ -59,10 +59,10 @@ import Proto.Jonline exposing (Event, EventInstance, User)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -312,12 +312,12 @@ relevantServers : Shared.Model -> Model -> List AccountsPanel.Server
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
+            AccountsPanel.serverForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
         Nothing ->
-            AccountsPanel.enabledServers shared.accountsPanel
+            AccountsPanel.enabledServers shared.accounts
 
 
 {-| The `GetEvents` fetch (as an `Effect`, ready to batch/return directly)
@@ -330,8 +330,8 @@ every relevant server's fetch off again once a real cutoff lands.
 fetchServerEffect : Shared.Model -> Model -> Time.Posix -> AccountsPanel.Server -> Effect Msg
 fetchServerEffect shared model endsAfter server =
     Events.fetchEvents
-        shared.accountsPanel
-        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+        shared.accounts
+        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
         , server.frontendHost
         )
         (model.author |> Maybe.map (Tuple.second >> .id))
@@ -371,7 +371,7 @@ refetchServers shared model serversToFetch =
                     relevantServers shared model
 
                 currentAccountId server =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                    AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                         |> Maybe.map AccountsPanel.accountId
 
                 prunedEventsByServer =
@@ -431,7 +431,7 @@ fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
         serversToFetch =
@@ -466,7 +466,7 @@ setBreadcrumbsRoot shared model =
                         ( Breadcrumbs.FromUser user, authorHost )
 
                     Nothing ->
-                        ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+                        ( Breadcrumbs.FromServerHost shared.accounts.mainFrontendHost, shared.accounts.mainFrontendHost )
         in
         if shared.breadcrumbs.root == Just root then
             Effect.none
@@ -756,7 +756,7 @@ type Msg
       -- persists the URL directly. See `tabsView`.
     | TabChanged EventsTab
       -- The `EventsAfterDate` tab's `<input type="datetime-local">` firing
-      -- -- parsed via `Shared.BrowserTimeZone.posixFromDateTimeLocalInput`;
+      -- -- parsed via `Shared.Time.posixFromDateTimeLocalInput`;
       -- an unparseable (e.g. momentarily incomplete while typing) value is
       -- just ignored, same "give up silently" convention as everywhere
       -- else in this module. A valid one switches to that tab too (even if
@@ -1022,7 +1022,7 @@ updateInner shared msg model =
                 ( newModel, pushUrl newModel )
 
         EndsAfterInputChanged raw ->
-            case BrowserTimeZone.posixFromDateTimeLocalInput shared.browserTimeZone.zone raw of
+            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
                 Nothing ->
                     ( model, Effect.none )
 
@@ -1297,7 +1297,7 @@ pushUrl model =
 {-| `model.embeddedPage` (`True` only for `Pages.Home_`'s and
 `Components.Pages.UserProfilePage`'s own copies of this view, fixed to
 `HorizontalList`/"Row" -- see `Model.embeddedPage`) together with
-`shared.adminPanel.showAllEventLayouts` decides which (if any) of
+`shared.panels.adminPanel.showAllEventLayouts` decides which (if any) of
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
 
@@ -1317,6 +1317,7 @@ area" `PostsPage.view`/`UsersPage.view` also use (`ui/filter_bar.css`): row 1
 is `tabsView`'s own `.filter-tabs-bar`, row 2 is `.filter-controls-row`
 holding `searchRowView` plus `.filter-controls-trailing` (the layout-switch
 and export buttons).
+
 -}
 view : Shared.Model -> Bool -> Model -> Html Msg
 view shared showAuthorHeading model =
@@ -1369,14 +1370,14 @@ authorHeadingView shared maybeAuthor =
         Just ( host, author ) ->
             let
                 profileUrl =
-                    usernameHref "" shared.accountsPanel.mainFrontendHost host author.username
+                    usernameHref "" shared.accounts.mainFrontendHost host author.username
             in
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text "Events" ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) author
 
                         Nothing ->
                             ProfileHeading.usernameHeading author
@@ -1486,8 +1487,8 @@ tabsView shared model =
                     [ type_ "datetime-local"
                     , class "filter-tab-date-input"
                     , value
-                        (BrowserTimeZone.formatDateTimeLocalInput
-                            shared.browserTimeZone.zone
+                        (SharedTime.formatDateTimeLocalInput
+                            shared.time.browserTimeZone.zone
                             (Maybe.withDefault (Time.millisToPosix 0) model.endsAfter)
                         )
                     , onInput EndsAfterInputChanged
@@ -1567,7 +1568,7 @@ of control sharing one row) for `current`, and pushed to the row's right edge
 
 Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
 see `view`'s own doc) and the "Show all event layouts" admin setting
-(`shared.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
+(`shared.panels.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
 
   - The setting on: all 3, everywhere -- the same as this used to always
     render, before `embeddedPage`/the setting existed.
@@ -1584,7 +1585,7 @@ modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
 modeButtonsView shared embeddedPage current =
     let
         visibleModes =
-            if shared.adminPanel.showAllEventLayouts then
+            if shared.panels.adminPanel.showAllEventLayouts then
                 [ VerticalList, Grid, HorizontalList ]
 
             else if embeddedPage then
@@ -1635,7 +1636,7 @@ modeLabel mode =
 (`GET /calendar.ics`, `GET /calendar.ics?user_id={id}` -- see
 `backend/src/web/ical_subscription.rs`) for whatever this listing is
 currently showing: `model.author`'s own host + that user's id when this is a
-per-user feed, or `shared.accountsPanel.mainFrontendHost` (no `user_id`) for
+per-user feed, or `shared.accounts.mainFrontendHost` (no `user_id`) for
 the unfiltered feed -- mirrors `UI.elm`'s own `"https://" ++ server.frontendHost`
 convention for linking to a Jonline server's own pages.
 -}
@@ -1646,7 +1647,7 @@ icsUrl shared model =
             "https://" ++ host ++ "/calendar.ics" ++ Url.Builder.toQuery [ Url.Builder.string "user_id" user.id ]
 
         Nothing ->
-            "https://" ++ shared.accountsPanel.mainFrontendHost ++ "/calendar.ics"
+            "https://" ++ shared.accounts.mainFrontendHost ++ "/calendar.ics"
 
 
 {-| The "Export" icon button always shown at the end of `.filter-controls-trailing`
@@ -1804,10 +1805,10 @@ eventCardView : Shared.Model -> Bool -> ( String, Event, EventInstance ) -> Html
 eventCardView shared embeddedPage ( host, event, instance ) =
     let
         maybeServer =
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
+            AccountsPanel.serverForHost shared.accounts.servers host
 
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 
         onMediaClicked mediaId =
             case event.post of
@@ -1820,7 +1821,7 @@ eventCardView shared embeddedPage ( host, event, instance ) =
         displayInstance =
             case instance.post of
                 Just instancePost ->
-                    { instance | post = Just (StarredPanel.freshestPost host instancePost shared.starredPanel) }
+                    { instance | post = Just (StarredPanel.freshestPost host instancePost shared.panels.starredPanel) }
 
                 Nothing ->
                     instance
@@ -1828,14 +1829,14 @@ eventCardView shared embeddedPage ( host, event, instance ) =
         starred =
             case displayInstance.post of
                 Just instancePost ->
-                    StarredPanel.isStarred host instancePost shared.starredPanel
+                    StarredPanel.isStarred host instancePost shared.panels.starredPanel
 
                 Nothing ->
                     False
 
         onStarClicked =
             displayInstance.post
-                |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accountsPanel host)
+                |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accounts host)
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         mediaSizing =
@@ -1846,10 +1847,9 @@ eventCardView shared embeddedPage ( host, event, instance ) =
                 MediaRenderer.Small
     in
     Events.eventCard
-        shared.now
-        shared.browserTimeZone
+        shared.time
         shared.basePath
-        shared.accountsPanel.mainFrontendHost
+        shared.accounts.mainFrontendHost
         host
         maybeServer
         maybeAccount
