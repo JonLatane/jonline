@@ -51,145 +51,6 @@ import UI.Responsive as Responsive
 import Url exposing (Url)
 
 
-type alias Flags =
-    Decode.Value
-
-
-{-| The app-wide appearance (dark/light/auto) setting -- see `Model.theme`.
-Bundled into one type since `effectiveDarkMode` always needs both together:
-`preference` alone doesn't say whether `Auto` currently means dark or
-light, and `systemPrefersDark` alone doesn't say whether the user has
-overridden it.
--}
-type alias Theme =
-    { preference : ThemePreference
-    , systemPrefersDark : Bool
-    }
-
-
-{-| The user's chosen appearance. `Auto` follows `systemPrefersDark`; `Light`/
-`Dark` force it regardless of the system.
--}
-type ThemePreference
-    = ThemeAuto
-    | ThemeLight
-    | ThemeDark
-
-
-{-| Something the user has clicked "delete" on, awaiting confirmation --
-`UI.deleteConfirmationModal` is one shared dialog for all of these, rather
-than each having its own bespoke confirmation step (compare
-`AccountsPanel.PendingCreateAccount`, which stays separate since Create
-Account's confirmation isn't a plain "are you sure you want to delete this"
-prompt). More constructors (e.g. for Posts) can be added here as that need
-comes up.
-
-`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete` delegate
-their actual delete into a Shared-owned submodel's own `DeleteConfirmed`
-(`AccountsPanel`/`MyMediaPanel`) once confirmed, since those submodels
-(unlike a page's own `Model`) are reachable from here. `ConfirmMediaDelete`
-could in principle follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
-`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`
-_requires_ living in `Shared.Model`, it's just simpler to route through since
-it's already there (it _is_ a real global panel, opened from several pages,
-unlike the old `Shared.EventSyncSourcesPanel` used to be). `ConfirmServerDelete`/
-`ConfirmAccountDelete` genuinely can't switch: removing a `Server`/`Account`
-has to mutate `AccountsPanel.Model` itself, which only exists here.
-
--}
-type DeleteConfirmation
-    = ConfirmServerDelete AccountsPanel.Server
-    | ConfirmAccountDelete AccountsPanel.Account
-    | ConfirmMediaDelete Media
-      -- The trailing `String` on each of these three is the acting
-      -- `targetHost` (the source/Post/Event isn't itself paired with one) --
-      -- resolved back to a signed-in `Account` (if any) in `ConfirmDelete`'s
-      -- own handling. Unlike every `DeleteConfirmation` above, none of these
-      -- three are owned by a Shared-owned panel to delegate a
-      -- `DeleteConfirmed` into -- each is a plain list rendered by exactly
-      -- one page (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
-      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
-      -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
-      -- `GotPostDeleteResult`/`GotEventDeleteResult`) is forwarded on to
-      -- whichever page is active the same as any other `Shared.Msg`, for
-      -- that page's own `Model` to apply. This is the shape any *new*
-      -- "list of deletable things shown on one page" should follow -- don't
-      -- give the list itself a Shared-owned home just to reach this dialog.
-    | ConfirmEventSyncSourceDelete EventSyncSource Bool String
-    | ConfirmPostDelete Post String
-    | ConfirmEventDelete Event String
-
-
-{-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
-for why that one stays its own top-level field) -- bundled together purely to
-keep `Model` from being one flat list of 20-ish fields; nothing here actually
-needs to reach across into a sibling panel's state (each `update` branch in
-`updateImpl` still dispatches on exactly one of these at a time). See each
-field's own module for what it holds. `confirmingDeleteFor` is included since
-it's "effectively a Panel" from the UI's point of view -- see
-`DeleteConfirmation`.
--}
-type alias Panels =
-    { adminPanel : AdminPanel.Model
-    , federatedAuth : FederatedAuth.Model
-    , starredPanel : StarredPanel.Model
-    , markdownPanel : MarkdownPanel.Model
-    , mediaViewerPanel : MediaViewerPanel.Model
-    , myMediaPanel : MyMediaPanel.Model
-    , createNewPanel : CreateNewPanel.Model
-    , confirmingDeleteFor : Maybe DeleteConfirmation
-    }
-
-
-{-| The live scroll metrics of `.nav-links-scroll` (see `UI.headerNav`),
-read off its `scroll` event (`UI.navLinksScrollDecoder`) -- drives the Home
-link's (`.nav-link-home`, `UI.navLink`) scroll-triggered shrink animation.
-See `navLinkHomeMaxWidth`, its one consumer.
--}
-type alias NavAnimationState =
-    { scrollLeft : Float
-    , scrollWidth : Float
-    , clientWidth : Float
-    }
-
-
-{-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
-inline (rather than via a CSS class swap) so nav.css's own `transition` on
-that property is what animates it; nav.css no longer sets `max-width`
-itself, since this always overrides it.
-
-A continuous function of how far right `.nav-links-scroll` is scrolled:
-`upperBound` slides from `220` (unscrolled) down to `64` (scrolled all the
-way right, i.e. `scrollLeft == scrollWidth - clientWidth`) in direct
-proportion to that scroll fraction; `lowerBound` tracks `150` until
-`upperBound` itself drops below that, then tracks `upperBound` down the rest
-of the way -- so the button holds around its `150`-`220` resting size while
-only lightly scrolled, then visibly shrinks the rest of the way to a bare
-`64px` glyph as scrolling continues to the end. `maxScroll` is floored at
-`1` (rather than `0`) purely to keep the division defined when
-`.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
-`scrollLeft` is `0` in that case regardless, so `fraction` still comes out
-`0`.
-
--}
-navLinkHomeMaxWidth : NavAnimationState -> String
-navLinkHomeMaxWidth state =
-    let
-        maxScroll =
-            max 1 (state.scrollWidth - state.clientWidth)
-
-        fraction =
-            clamp 0 1 (state.scrollLeft / maxScroll)
-
-        upperBound =
-            round (220 - fraction * (220 - 64))
-
-        lowerBound =
-            min 150 upperBound
-    in
-    "calc(min(max(" ++ String.fromInt lowerBound ++ "px, 25vw), " ++ String.fromInt upperBound ++ "px))"
-
-
 type alias Model =
     -- Known servers, signed-into accounts, login/add-server forms -- kept as
     -- its own top-level field (rather than folded into `panels`) since it's
@@ -286,107 +147,106 @@ type Msg
     | NoOp
 
 
-{-| Whether the app should currently render in dark mode, resolving `Auto`
-against the last-known system preference.
+type alias Flags =
+    Decode.Value
+
+
+{-| The app-wide appearance (dark/light/auto) setting -- see `Model.theme`.
+Bundled into one type since `effectiveDarkMode` always needs both together:
+`preference` alone doesn't say whether `Auto` currently means dark or
+light, and `systemPrefersDark` alone doesn't say whether the user has
+overridden it.
 -}
-effectiveDarkMode : Model -> Bool
-effectiveDarkMode model =
-    case model.theme.preference of
-        ThemeAuto ->
-            model.theme.systemPrefersDark
-
-        ThemeLight ->
-            False
-
-        ThemeDark ->
-            True
+type alias Theme =
+    { preference : ThemePreference
+    , systemPrefersDark : Bool
+    }
 
 
-themePreferenceLabel : ThemePreference -> String
-themePreferenceLabel pref =
-    case pref of
-        ThemeAuto ->
-            "Auto"
-
-        ThemeLight ->
-            "Light"
-
-        ThemeDark ->
-            "Dark"
-
-
-themePreferenceToString : ThemePreference -> String
-themePreferenceToString pref =
-    case pref of
-        ThemeAuto ->
-            "auto"
-
-        ThemeLight ->
-            "light"
-
-        ThemeDark ->
-            "dark"
-
-
-themePreferenceFromString : String -> ThemePreference
-themePreferenceFromString s =
-    case s of
-        "light" ->
-            ThemeLight
-
-        "dark" ->
-            ThemeDark
-
-        _ ->
-            ThemeAuto
-
-
-nextThemePreference : ThemePreference -> ThemePreference
-nextThemePreference pref =
-    case pref of
-        ThemeAuto ->
-            ThemeLight
-
-        ThemeLight ->
-            ThemeDark
-
-        ThemeDark ->
-            ThemeAuto
-
-
-{-| The `/elm`-or-`/`-style mount prefix for a raw (un-normalized) URL path --
-see `Model`'s `basePath` field. Only ever `""` or `"/elm"` today (the only two
-hosts `backend/src/web/elm_web.rs`/`main_index.rs` serve this app from), found
-by checking whether `path` is exactly `/elm` or starts with `/elm/` -- "elm" is
-a reserved username (see `validate_username`), so this can never collide with
-a real in-app route or federated-user path.
+{-| The user's chosen appearance. `Auto` follows `systemPrefersDark`; `Light`/
+`Dark` force it regardless of the system.
 -}
-basePathFromPath : String -> String
-basePathFromPath path =
-    if path == "/elm" || String.startsWith "/elm/" path then
-        "/elm"
-
-    else
-        ""
+type ThemePreference
+    = ThemeAuto
+    | ThemeLight
+    | ThemeDark
 
 
-{-| Strips `basePath` off `url.path`, so `Gen.Route.fromUrl` can parse it as
-if the app were served from `/` -- see `Main.elm`, which calls this on every
-`Url` before it touches routing.
+{-| Something the user has clicked "delete" on, awaiting confirmation --
+`UI.deleteConfirmationModal` is one shared dialog for all of these, rather
+than each having its own bespoke confirmation step (compare
+`AccountsPanel.PendingCreateAccount`, which stays separate since Create
+Account's confirmation isn't a plain "are you sure you want to delete this"
+prompt). More constructors (e.g. for Posts) can be added here as that need
+comes up.
+
+`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete` delegate
+their actual delete into a Shared-owned submodel's own `DeleteConfirmed`
+(`AccountsPanel`/`MyMediaPanel`) once confirmed, since those submodels
+(unlike a page's own `Model`) are reachable from here. `ConfirmMediaDelete`
+could in principle follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
+`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`
+_requires_ living in `Shared.Model`, it's just simpler to route through since
+it's already there (it _is_ a real global panel, opened from several pages,
+unlike the old `Shared.EventSyncSourcesPanel` used to be). `ConfirmServerDelete`/
+`ConfirmAccountDelete` genuinely can't switch: removing a `Server`/`Account`
+has to mutate `AccountsPanel.Model` itself, which only exists here.
+
 -}
-normalizeUrl : String -> Url -> Url
-normalizeUrl basePath url =
-    if basePath == "" then
-        url
+type DeleteConfirmation
+    = ConfirmServerDelete AccountsPanel.Server
+    | ConfirmAccountDelete AccountsPanel.Account
+    | ConfirmMediaDelete Media
+      -- The trailing `String` on each of these three is the acting
+      -- `targetHost` (the source/Post/Event isn't itself paired with one) --
+      -- resolved back to a signed-in `Account` (if any) in `ConfirmDelete`'s
+      -- own handling. Unlike every `DeleteConfirmation` above, none of these
+      -- three are owned by a Shared-owned panel to delegate a
+      -- `DeleteConfirmed` into -- each is a plain list rendered by exactly
+      -- one page (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
+      -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
+      -- `GotPostDeleteResult`/`GotEventDeleteResult`) is forwarded on to
+      -- whichever page is active the same as any other `Shared.Msg`, for
+      -- that page's own `Model` to apply. This is the shape any *new*
+      -- "list of deletable things shown on one page" should follow -- don't
+      -- give the list itself a Shared-owned home just to reach this dialog.
+    | ConfirmEventSyncSourceDelete EventSyncSource Bool String
+    | ConfirmPostDelete Post String
+    | ConfirmEventDelete Event String
 
-    else if url.path == basePath then
-        { url | path = "/" }
 
-    else if String.startsWith (basePath ++ "/") url.path then
-        { url | path = String.dropLeft (String.length basePath) url.path }
+{-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
+for why that one stays its own top-level field) -- bundled together purely to
+keep `Model` from being one flat list of 20-ish fields; nothing here actually
+needs to reach across into a sibling panel's state (each `update` branch in
+`sharedUpdate` still dispatches on exactly one of these at a time). See each
+field's own module for what it holds. `confirmingDeleteFor` is included since
+it's "effectively a Panel" from the UI's point of view -- see
+`DeleteConfirmation`.
+-}
+type alias Panels =
+    { adminPanel : AdminPanel.Model
+    , federatedAuth : FederatedAuth.Model
+    , starredPanel : StarredPanel.Model
+    , markdownPanel : MarkdownPanel.Model
+    , mediaViewerPanel : MediaViewerPanel.Model
+    , myMediaPanel : MyMediaPanel.Model
+    , createNewPanel : CreateNewPanel.Model
+    , confirmingDeleteFor : Maybe DeleteConfirmation
+    }
 
-    else
-        url
+
+{-| The live scroll metrics of `.nav-links-scroll` (see `UI.headerNav`),
+read off its `scroll` event (`UI.navLinksScrollDecoder`) -- drives the Home
+link's (`.nav-link-home`, `UI.navLink`) scroll-triggered shrink animation.
+See `navLinkHomeMaxWidth`, its one consumer.
+-}
+type alias NavAnimationState =
+    { scrollLeft : Float
+    , scrollWidth : Float
+    , clientWidth : Float
+    }
 
 
 {-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation, uses24HourTime }`
@@ -480,7 +340,7 @@ init basePath req flags =
 
         -- `mainFrontendHost`'s branding isn't fetched yet at this point, so
         -- this is only ever the neutral placeholder (see
-        -- `UI.ServerTheme.neutralColorMeta`) -- matches `updateImpl`'s later
+        -- `UI.ServerTheme.neutralColorMeta`) -- matches `sharedUpdate`'s later
         -- calls once real branding loads via `navBarColorCmd`, rather than
         -- leaving the static light/dark `<meta>` values from `index.html` in
         -- place until then.
@@ -492,40 +352,29 @@ init basePath req flags =
     )
 
 
-{-| The window size isn't known until the DOM actually exists to measure --
-`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
-changes, so this is what gets `Model.windowSize` its real initial value.
+{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
+only while the panel's actually open -- there's nothing to show for it
+otherwise, so no reason to keep hitting servers in the background.
 -}
-getInitialWindowSizeCmd : Cmd Msg
-getInitialWindowSizeCmd =
-    Task.perform
-        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
-        Dom.getViewport
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Browser.Events.onResize WindowResized
+        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accounts)
+        , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
+        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.panels.starredPanel)
+        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.panels.mediaViewerPanel)
+        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
+        , if model.panels.starredPanel.showStarredPanel then
+            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
+
+          else
+            Sub.none
+        ]
 
 
-{-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
-(which just snapshots `new Date().getTimezoneOffset()` for the _current_
-instant into a fixed-offset `Time.customZone` with no era table, so every
-other instant it's ever asked to convert -- e.g. an `EventInstance` months
-away, on the other side of a DST transition -- gets rendered with today's
-offset instead of its own). This instead reads the browser's actual IANA
-zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
-and looks up its real transition history/future in
-`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
-`siblingInstanceWhenText` show a recurring weekly event's fixed local time
-(e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
-than drifting an hour. Falls back to plain `Time.here` if the zone name
-can't be read or isn't in `timezone-data` (e.g. an unusual environment
-`Intl` doesn't cover) -- never fails outright.
--}
-getBrowserZone : Task.Task x Time.Zone
-getBrowserZone =
-    TimeZone.getZone
-        |> Task.map Tuple.second
-        |> Task.onError (\_ -> Time.here)
-
-
-{-| Wraps `updateImpl` to also call out to `Ports.setNavBarColor` whenever
+{-| Wraps `sharedUpdate` to also call out to `Ports.setNavBarColor` whenever
 `mainFrontendHost`'s theme actually changes as a result of the message --
 either `mainFrontendHost` itself changing (e.g. `AccountsPanel.SetMainFrontendHost`)
 or its `Server`'s cached branding being (re)populated (e.g. after a
@@ -538,32 +387,13 @@ update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
     let
         ( newModel, cmd ) =
-            updateImpl req msg model
+            sharedUpdate req msg model
     in
     ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel ] )
 
 
-{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
-`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
-`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
-vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
-`SystemPrefersDarkChanged` alone.
--}
-navBarColorCmd : Model -> Model -> Cmd Msg
-navBarColorCmd before after =
-    let
-        colorOf model_ =
-            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accounts).primaryColor
-    in
-    if colorOf before /= colorOf after then
-        Ports.setNavBarColor (colorOf after)
-
-    else
-        Cmd.none
-
-
-updateImpl : Request -> Msg -> Model -> ( Model, Cmd Msg )
-updateImpl req msg model =
+sharedUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
+sharedUpdate req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
@@ -750,7 +580,7 @@ updateImpl req msg model =
             in
             case subMsg of
                 Breadcrumbs.SetRoot _ _ _ ->
-                    updateImpl req CloseAllPanels breadcrumbsModel
+                    sharedUpdate req CloseAllPanels breadcrumbsModel
 
                 _ ->
                     ( breadcrumbsModel, Cmd.none )
@@ -994,7 +824,7 @@ updateImpl req msg model =
         MyMediaPanelOpenForAccount account ->
             -- The media button on an Account chip (`UI.accountRow`) opens this
             -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
-            -- multi-panel composition via `updateImpl`. The chip is clickable for
+            -- multi-panel composition via `sharedUpdate`. The chip is clickable for
             -- disabled (signed-out-of-aggregation) accounts too, so bring the
             -- account along into `enabled` here, the same as clicking its switch
             -- (`AccountsPanel.ToggleAccountEnabled`), rather than silently
@@ -1008,23 +838,23 @@ updateImpl req msg model =
                         ( model, Cmd.none )
 
                     else
-                        updateImpl req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
+                        sharedUpdate req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
 
                 ( openedModel, openCmd ) =
-                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
+                    sharedUpdate req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
             in
             ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
 
         CloseAllPanels ->
             let
                 ( closedAccountsModel, closeAccountsCmd ) =
-                    updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
+                    sharedUpdate req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
 
                 ( closedStarredModel, closeStarredCmd ) =
-                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
+                    sharedUpdate req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
 
                 ( closedCreateNewModel, closeCreateNewCmd ) =
-                    updateImpl req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
+                    sharedUpdate req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
             in
             ( closedCreateNewModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd ] )
 
@@ -1224,7 +1054,7 @@ updateImpl req msg model =
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
+                    sharedUpdate req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -1232,7 +1062,7 @@ updateImpl req msg model =
                 -- Home" hook (see `UI.navLink`), hence scrolling to top here.
                 ( scrolledModel, scrollCmd ) =
                     if alreadyHome then
-                        updateImpl req ScrollToTop closedModel
+                        sharedUpdate req ScrollToTop closedModel
 
                     else
                         ( closedModel, Cmd.none )
@@ -1270,6 +1100,198 @@ updateImpl req msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+{-| The window size isn't known until the DOM actually exists to measure --
+`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
+changes, so this is what gets `Model.windowSize` its real initial value.
+-}
+getInitialWindowSizeCmd : Cmd Msg
+getInitialWindowSizeCmd =
+    Task.perform
+        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
+        Dom.getViewport
+
+
+{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
+`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
+`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
+vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
+`SystemPrefersDarkChanged` alone.
+-}
+navBarColorCmd : Model -> Model -> Cmd Msg
+navBarColorCmd before after =
+    let
+        colorOf model_ =
+            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accounts).primaryColor
+    in
+    if colorOf before /= colorOf after then
+        Ports.setNavBarColor (colorOf after)
+
+    else
+        Cmd.none
+
+
+themePreferenceLabel : ThemePreference -> String
+themePreferenceLabel pref =
+    case pref of
+        ThemeAuto ->
+            "Auto"
+
+        ThemeLight ->
+            "Light"
+
+        ThemeDark ->
+            "Dark"
+
+
+themePreferenceToString : ThemePreference -> String
+themePreferenceToString pref =
+    case pref of
+        ThemeAuto ->
+            "auto"
+
+        ThemeLight ->
+            "light"
+
+        ThemeDark ->
+            "dark"
+
+
+{-| The `/elm`-or-`/`-style mount prefix for a raw (un-normalized) URL path --
+see `Model`'s `basePath` field. Only ever `""` or `"/elm"` today (the only two
+hosts `backend/src/web/elm_web.rs`/`main_index.rs` serve this app from), found
+by checking whether `path` is exactly `/elm` or starts with `/elm/` -- "elm" is
+a reserved username (see `validate_username`), so this can never collide with
+a real in-app route or federated-user path.
+-}
+basePathFromPath : String -> String
+basePathFromPath path =
+    if path == "/elm" || String.startsWith "/elm/" path then
+        "/elm"
+
+    else
+        ""
+
+
+{-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
+inline (rather than via a CSS class swap) so nav.css's own `transition` on
+that property is what animates it; nav.css no longer sets `max-width`
+itself, since this always overrides it.
+
+A continuous function of how far right `.nav-links-scroll` is scrolled:
+`upperBound` slides from `220` (unscrolled) down to `64` (scrolled all the
+way right, i.e. `scrollLeft == scrollWidth - clientWidth`) in direct
+proportion to that scroll fraction; `lowerBound` tracks `150` until
+`upperBound` itself drops below that, then tracks `upperBound` down the rest
+of the way -- so the button holds around its `150`-`220` resting size while
+only lightly scrolled, then visibly shrinks the rest of the way to a bare
+`64px` glyph as scrolling continues to the end. `maxScroll` is floored at
+`1` (rather than `0`) purely to keep the division defined when
+`.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
+`scrollLeft` is `0` in that case regardless, so `fraction` still comes out
+`0`.
+
+-}
+navLinkHomeMaxWidth : NavAnimationState -> String
+navLinkHomeMaxWidth state =
+    let
+        maxScroll =
+            max 1 (state.scrollWidth - state.clientWidth)
+
+        fraction =
+            clamp 0 1 (state.scrollLeft / maxScroll)
+
+        upperBound =
+            round (220 - fraction * (220 - 64))
+
+        lowerBound =
+            min 150 upperBound
+    in
+    "calc(min(max(" ++ String.fromInt lowerBound ++ "px, 25vw), " ++ String.fromInt upperBound ++ "px))"
+
+
+{-| Whether the app should currently render in dark mode, resolving `Auto`
+against the last-known system preference.
+-}
+effectiveDarkMode : Model -> Bool
+effectiveDarkMode model =
+    case model.theme.preference of
+        ThemeAuto ->
+            model.theme.systemPrefersDark
+
+        ThemeLight ->
+            False
+
+        ThemeDark ->
+            True
+
+
+themePreferenceFromString : String -> ThemePreference
+themePreferenceFromString s =
+    case s of
+        "light" ->
+            ThemeLight
+
+        "dark" ->
+            ThemeDark
+
+        _ ->
+            ThemeAuto
+
+
+nextThemePreference : ThemePreference -> ThemePreference
+nextThemePreference pref =
+    case pref of
+        ThemeAuto ->
+            ThemeLight
+
+        ThemeLight ->
+            ThemeDark
+
+        ThemeDark ->
+            ThemeAuto
+
+
+{-| Strips `basePath` off `url.path`, so `Gen.Route.fromUrl` can parse it as
+if the app were served from `/` -- see `Main.elm`, which calls this on every
+`Url` before it touches routing.
+-}
+normalizeUrl : String -> Url -> Url
+normalizeUrl basePath url =
+    if basePath == "" then
+        url
+
+    else if url.path == basePath then
+        { url | path = "/" }
+
+    else if String.startsWith (basePath ++ "/") url.path then
+        { url | path = String.dropLeft (String.length basePath) url.path }
+
+    else
+        url
+
+
+{-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
+(which just snapshots `new Date().getTimezoneOffset()` for the _current_
+instant into a fixed-offset `Time.customZone` with no era table, so every
+other instant it's ever asked to convert -- e.g. an `EventInstance` months
+away, on the other side of a DST transition -- gets rendered with today's
+offset instead of its own). This instead reads the browser's actual IANA
+zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
+and looks up its real transition history/future in
+`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
+`siblingInstanceWhenText` show a recurring weekly event's fixed local time
+(e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
+than drifting an hour. Falls back to plain `Time.here` if the zone name
+can't be read or isn't in `timezone-data` (e.g. an unusual environment
+`Intl` doesn't cover) -- never fails outright.
+-}
+getBrowserZone : Task.Task x Time.Zone
+getBrowserZone =
+    TimeZone.getZone
+        |> Task.map Tuple.second
+        |> Task.onError (\_ -> Time.here)
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`
@@ -1315,25 +1337,3 @@ starredPostsRefreshHosts before after =
             )
     in
     hosts |> List.filter (\host -> identity before host /= identity after host)
-
-
-{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
-only while the panel's actually open -- there's nothing to show for it
-otherwise, so no reason to keep hitting servers in the background.
--}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
-        , Browser.Events.onResize WindowResized
-        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accounts)
-        , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
-        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.panels.starredPanel)
-        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.panels.mediaViewerPanel)
-        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
-        , if model.panels.starredPanel.showStarredPanel then
-            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
-
-          else
-            Sub.none
-        ]
