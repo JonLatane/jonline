@@ -197,8 +197,12 @@
      above -- `.nav-links-scroll` (its flex sibling, left fully shrinkable)
      is what absorbs space pressure beyond this floor instead. */
   min-width: 64px;
-  max-width: calc(min(max(150px, 25vw), 200px));
-  /* calc(min(max(200px, 25vw), 200px));*/
+  /* `max-width` itself is no longer set here -- `UI.navLink` now always
+     applies it as an inline style instead (`Shared.navLinkHomeMaxWidth`),
+     shrinking it in steps as `.nav-links-scroll` (its flex sibling) scrolls
+     right, and back as it scrolls left. This `transition` is what animates
+     those inline changes. */
+  transition: max-width 0.3s ease;
   flex-shrink: 0;
 }
 

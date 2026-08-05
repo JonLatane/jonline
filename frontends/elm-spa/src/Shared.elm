@@ -3,10 +3,12 @@ module Shared exposing
     , Flags
     , Model
     , Msg(..)
+    , NavAnimationState
     , ThemePreference(..)
     , basePathFromPath
     , effectiveDarkMode
     , init
+    , navLinkHomeMaxWidth
     , normalizeUrl
     , subscriptions
     , themePreferenceLabel
@@ -84,6 +86,54 @@ type DeleteConfirmation
     | ConfirmEventDelete Event String
 
 
+{-| Everything driving the Home link's (`.nav-link-home`, `UI.navLink`)
+scroll-triggered shrink animation, all bundled into one type since none of
+it means anything on its own -- see each field's own comment, and
+`navLinkHomeMaxWidth`, its one consumer.
+-}
+type alias NavAnimationState =
+    { -- The live scroll metrics of `.nav-links-scroll` (see
+      -- `UI.headerNav`), read off its `scroll` event
+      -- (`UI.navLinksScrollDecoder`) -- currently only `scrollLeft` is
+      -- consulted (below), but `scrollWidth`/`clientWidth` are kept too so
+      -- they're there to reach for if the collapse condition needs to
+      -- depend on them again later.
+      scrollLeft : Float
+    , scrollWidth : Float
+    , clientWidth : Float
+
+    -- The debounced on/off state `navLinkHomeMaxWidth` actually renders --
+    -- `True` once `scrollLeft` goes positive, `False` once it's back to 0.
+    -- Kept separate from the raw scroll position above because flipping
+    -- `True` (big -> small) also sets `collapseLocked` for 1s (see that
+    -- field), during which this doesn't itself flip again even if the raw
+    -- scroll position would otherwise call for it -- rapid back-and-forth
+    -- scrolling near the edge would otherwise flicker `.nav-link-home`'s
+    -- width right as its own CSS transition is still running.
+    , collapsed : Bool
+
+    -- `True` for 1s after `collapsed` flips `False -> True`
+    -- (`Process.sleep 1000` in `update`'s `NavLinksScrolled` branch,
+    -- cleared by `NavLinkHomeCollapseLockExpired`) -- see `collapsed`.
+    , collapseLocked : Bool
+    }
+
+
+{-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
+inline (rather than via a CSS class swap) so nav.css's own `transition` on
+that property is what animates it; nav.css no longer sets `max-width`
+itself, since this always overrides it. Just the two states, driven by
+`NavAnimationState.collapsed` (already debounced by the time it gets here).
+-}
+navLinkHomeMaxWidth : NavAnimationState -> String
+navLinkHomeMaxWidth state =
+    if state.collapsed then
+        "calc(min(max(64px, 25vw), 64px))"
+
+    else
+        "calc(min(max(150px, 25vw), 220px))"
+
+
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
@@ -94,6 +144,10 @@ type alias Model =
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
     , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
+
+    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
+    -- the time -- see `DeleteConfirmation`.
+    , confirmingDeleteFor : Maybe DeleteConfirmation
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
@@ -108,10 +162,6 @@ type alias Model =
     -- right mount.
     , basePath : String
 
-    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
-    -- the time -- see `DeleteConfirmation`.
-    , confirmingDeleteFor : Maybe DeleteConfirmation
-
     -- Drives `UI.scrollPreserver`: a tall spacer at the bottom of `main_`,
     -- shown for the first 2s after navigating *back* to a page (never a
     -- fresh link click) so its restored-but-possibly-still-loading content
@@ -119,6 +169,12 @@ type alias Model =
     -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
     -- navigations it recognizes as the browser's back button.
     , scrollPreserverVisible : Bool
+
+    -- Drives the Home link's scroll-triggered shrink animation -- kept in
+    -- sync via `.nav-links-scroll`'s `scroll` event
+    -- (`UI.navLinksScrollDecoder` -> `NavLinksScrolled`). See
+    -- `NavAnimationState`.
+    , navAnimationState : NavAnimationState
 
     -- The browser's current window size, kept live via `Browser.Events.onResize`
     -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
@@ -187,6 +243,8 @@ type Msg
     | HideScrollPreserver
     | HomeLinkClicked Bool
     | ScrollToTop
+    | NavLinksScrolled { scrollLeft : Float, scrollWidth : Float, clientWidth : Float }
+    | NavLinkHomeCollapseLockExpired
     | NavigateExternal String
     | WindowResized Int Int
     | GotTimeZone Time.Zone
@@ -360,6 +418,13 @@ init basePath req flags =
             , basePath = basePath
             , confirmingDeleteFor = Nothing
             , scrollPreserverVisible = False
+            , navAnimationState =
+                { scrollLeft = 0
+                , scrollWidth = 0
+                , clientWidth = 0
+                , collapsed = False
+                , collapseLocked = False
+                }
 
             -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
             -- -- arbitrary until then, but never consulted before that (both
@@ -406,12 +471,12 @@ getInitialWindowSizeCmd =
 
 
 {-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
-(which just snapshots `new Date().getTimezoneOffset()` for the *current*
+(which just snapshots `new Date().getTimezoneOffset()` for the _current_
 instant into a fixed-offset `Time.customZone` with no era table, so every
 other instant it's ever asked to convert -- e.g. an `EventInstance` months
 away, on the other side of a DST transition -- gets rendered with today's
 offset instead of its own). This instead reads the browser's actual IANA
-zone name (e.g. "America/New_York", via `elm/time`'s `Time.getZoneName`)
+zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
 and looks up its real transition history/future in
 `justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
 `siblingInstanceWhenText` show a recurring weekly event's fixed local time
@@ -1101,6 +1166,47 @@ updateImpl req msg model =
 
         ScrollToTop ->
             ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
+
+        NavLinksScrolled position ->
+            let
+                state =
+                    model.navAnimationState
+
+                positionedState =
+                    { state
+                        | scrollLeft = position.scrollLeft
+                        , scrollWidth = position.scrollWidth
+                        , clientWidth = position.clientWidth
+                    }
+
+                desiredCollapsed =
+                    position.scrollLeft > 0
+            in
+            if state.collapseLocked || desiredCollapsed == state.collapsed then
+                ( { model | navAnimationState = positionedState }, Cmd.none )
+
+            else if desiredCollapsed then
+                ( { model | navAnimationState = { positionedState | collapsed = True, collapseLocked = True } }
+                , Process.sleep 1000 |> Task.perform (\() -> NavLinkHomeCollapseLockExpired)
+                )
+
+            else
+                ( { model | navAnimationState = { positionedState | collapsed = False } }, Cmd.none )
+
+        NavLinkHomeCollapseLockExpired ->
+            let
+                state =
+                    model.navAnimationState
+            in
+            ( { model
+                | navAnimationState =
+                    { state
+                        | collapseLocked = False
+                        , collapsed = state.scrollLeft > 0
+                    }
+              }
+            , Cmd.none
+            )
 
         NavigateExternal url ->
             ( model, Nav.load url )

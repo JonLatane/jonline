@@ -124,7 +124,7 @@ headerNav shared currentRoute =
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
-                , div [ class "nav-links-scroll" ]
+                , div [ class "nav-links-scroll", on "scroll" navLinksScrollDecoder ]
                     [ if Set.isEmpty shared.starredPanel.starredPostIds then
                         text ""
 
@@ -174,6 +174,20 @@ headerNav shared currentRoute =
         -- element's. See `breadcrumbsReplyPanel`.
         , breadcrumbsReplyPanel shared
         ]
+
+
+{-| Reads `.nav-links-scroll`'s `scrollLeft`/`scrollWidth`/`clientWidth` off
+its own `scroll` event target, fired into `Shared.NavLinksScrolled` -- see
+`Shared.NavAnimationState`'s own doc, and `navLink`/`Shared.navLinkHomeMaxWidth`,
+its consumer.
+-}
+navLinksScrollDecoder : Decode.Decoder Shared.Msg
+navLinksScrollDecoder =
+    Decode.map3 (\scrollLeft scrollWidth clientWidth -> { scrollLeft = scrollLeft, scrollWidth = scrollWidth, clientWidth = clientWidth })
+        (Decode.at [ "target", "scrollLeft" ] Decode.float)
+        (Decode.at [ "target", "scrollWidth" ] Decode.float)
+        (Decode.at [ "target", "clientWidth" ] Decode.float)
+        |> Decode.map Shared.NavLinksScrolled
 
 
 {-| One entry in `sharedBackdrop`'s priority list: whether this panel is
@@ -342,12 +356,15 @@ navLink shared currentRoute content linkRoute =
 
         isHome =
             linkRoute == Route.Home_
+
+        isHomeWithLogo =
+            isHome && mainServer shared /= Nothing
     in
     a
         ([ href (shared.basePath ++ Route.toHref linkRoute)
          , classes
             ("nav-link"
-                :: (if isHome && mainServer shared /= Nothing then
+                :: (if isHomeWithLogo then
                         [ "nav-link-home" ]
 
                     else
@@ -361,6 +378,15 @@ navLink shared currentRoute content linkRoute =
                    )
             )
          ]
+            -- Directly overrides nav.css's own (transitioned) `max-width` on
+            -- `.nav-link-home` as `.nav-links-scroll` scrolls -- see
+            -- `Shared.navLinkHomeMaxWidth`.
+            ++ (if isHomeWithLogo then
+                    [ style "max-width" (Shared.navLinkHomeMaxWidth shared.navAnimationState) ]
+
+                else
+                    []
+               )
             ++ (if isHome then
                     [ stopPropagationOn "click" (Decode.succeed ( Shared.HomeLinkClicked isCurrent, True )) ]
 
