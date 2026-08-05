@@ -1,4 +1,4 @@
-module UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOn, stopPropagationAndPreventDefaultOnClick)
+module UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 {-| Just `stopPropagationAndPreventDefaultOn(Click)`, split into its own leaf
 module so `Components.Posts`/`Components.Users.FollowStatusAndButton` can use

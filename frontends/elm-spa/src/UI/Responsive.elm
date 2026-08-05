@@ -1,4 +1,4 @@
-module UI.Responsive exposing (WindowSize, isNarrow, narrowBreakpoint)
+module UI.Responsive exposing (WindowSize, isNarrow)
 
 {-| Shared breakpoint(s) for layout decisions that need to be made from
 `update` rather than pure CSS -- e.g. the Accounts Panel and Starred

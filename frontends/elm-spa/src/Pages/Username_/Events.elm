@@ -36,21 +36,22 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type Model
     = Reserved String
     | Resolving Resolver.Model
     | Events EventsPage.Model
 
 
+type Msg
+    = ResolverMsg Resolver.Msg
+    | EventsMsg EventsPage.Msg
+
+
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( username, targetHost ) =
-            Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.username
+            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.username
     in
     if Users.isReservedUsername username then
         ( Reserved username, Effect.none )
@@ -61,21 +62,17 @@ init shared req =
             |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        Resolving resolverModel ->
+            Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
 
--- UPDATE
+        Events eventsModel ->
+            Sub.map EventsMsg (EventsPage.subscriptions eventsModel)
 
-
-type Msg
-    = ResolverMsg Resolver.Msg
-    | EventsMsg EventsPage.Msg
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Users.Resolver.fromShared`/`Components.Pages.EventsPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared sharedMsg =
-    ResolverMsg (Resolver.fromShared sharedMsg)
+        Reserved _ ->
+            Sub.none
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -120,23 +117,6 @@ update shared req msg model =
             ( model, Effect.none )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model of
-        Resolving resolverModel ->
-            Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
-
-        Events eventsModel ->
-            Sub.map EventsMsg (EventsPage.subscriptions eventsModel)
-
-        Reserved _ ->
-            Sub.none
-
-
-
--- VIEW
-
-
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = UI.pageTitle shared []
@@ -155,3 +135,11 @@ view shared req model =
                     Html.map EventsMsg (EventsPage.view shared True eventsModel)
             ]
     }
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Users.Resolver.fromShared`/`Components.Pages.EventsPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared sharedMsg =
+    ResolverMsg (Resolver.fromShared sharedMsg)

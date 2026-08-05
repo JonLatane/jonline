@@ -56,34 +56,7 @@ bounds both, same as before this type existed.
 -}
 type SizeConstraint
     = ToHeight
-    | ToWidth
     | ToWidthAndHeight
-
-
-mediaSizeClass : MediaSize -> String
-mediaSizeClass mediaSize =
-    case mediaSize of
-        Natural ->
-            "media-renderer-natural"
-
-        Small ->
-            "media-renderer-small"
-
-        ExtraSmall ->
-            "media-renderer-extra-small"
-
-
-sizeConstraintClass : SizeConstraint -> String
-sizeConstraintClass sizeConstraint =
-    case sizeConstraint of
-        ToHeight ->
-            "media-renderer-to-height"
-
-        ToWidth ->
-            "media-renderer-to-width"
-
-        ToWidthAndHeight ->
-            "media-renderer-to-width-and-height"
 
 
 view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
@@ -122,6 +95,29 @@ view mediaSize sizeConstraint server maybeAccount onImageClicked media =
                     , a [ href mediaUrl, target "_blank" ] [ text "Download it instead." ]
                     ]
                 ]
+
+
+mediaSizeClass : MediaSize -> String
+mediaSizeClass mediaSize =
+    case mediaSize of
+        Natural ->
+            "media-renderer-natural"
+
+        Small ->
+            "media-renderer-small"
+
+        ExtraSmall ->
+            "media-renderer-extra-small"
+
+
+sizeConstraintClass : SizeConstraint -> String
+sizeConstraintClass sizeConstraint =
+    case sizeConstraint of
+        ToHeight ->
+            "media-renderer-to-height"
+
+        ToWidthAndHeight ->
+            "media-renderer-to-width-and-height"
 
 
 {-| A Media Fragments URI (`#t=<seconds>`) selecting the timestamp a `<video>` should show as its

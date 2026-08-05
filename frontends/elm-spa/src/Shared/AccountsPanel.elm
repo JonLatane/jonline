@@ -1,5 +1,6 @@
 module Shared.AccountsPanel exposing
-    ( Account
+    ( AcceptedCreateAccount
+    , Account
     , AccountForm
     , AddServerForm
     , Branding
@@ -49,7 +50,6 @@ module Shared.AccountsPanel exposing
     , serverHasAccounts
     , serverInfoOf
     , serverNameAndLogo
-    , serverThemeFor
     , serverThemeOf
     , serverUrl
     , shouldShowAddAccountForm
@@ -68,7 +68,6 @@ working connection.
 
 import Animation
 import Browser.Dom as Dom
-import Char
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, img, text)
@@ -220,25 +219,46 @@ type alias AccountForm =
     }
 
 
-{-| Everything needed to actually create the account once the user confirms,
-captured when `CreateAccountClicked` first resolves the server (see
+{-| The policy confirmation modal's own pending state, captured when
+`ChooseCreateAccountClicked` first resolves the server (see
 `GotCreateAccountServerInfo`) rather than re-read from `accountForm` later --
-so a confirmed submission always uses the username/password that were on
-screen at the moment "Create Account" was clicked, even if the form's fields
-somehow changed while the confirmation step (`UI.createAccountConfirmationModal`)
-was up.
+so the modal (and the `AcceptedCreateAccount` it produces) always names the
+username that was on screen at the moment "Create Account" was clicked, even
+if the form's fields somehow changed while the confirmation step
+(`UI.createAccountConfirmationModal`) was up. There's no password here yet --
+this step happens _before_ the Password field even renders (see
+`Model.newAccountType`).
 -}
 type alias PendingCreateAccount =
     { server : Server
     , username : String
-    , password : String
 
     -- Whether the user has scrolled the confirmation modal's policy text
     -- (see `UI.createAccountConfirmationModal`) to its bottom -- or it never
     -- needed scrolling in the first place, per `GotCreateAccountModalViewport`
-    -- -- gating the modal's own "Create Account" button so it can't be
+    -- -- gating the modal's own "Accept and Continue" button so it can't be
     -- clicked past unread policy text.
     , reachedBottom : Bool
+    }
+
+
+{-| What's kept around once the user's actually accepted the policies
+(`ConfirmCreateAccountClicked`, "Accept and Continue") -- from then on, until
+the real `CreateAccount` RPC fires (`CreateAccountClicked`, now the Password
+field's own submit) or the flow's abandoned (`NewAccountBackClicked`,
+`setServerField`, a successful `GotAuthResult`), `server`/`username` are read
+from here rather than `accountForm`, same reasoning as `PendingCreateAccount`.
+
+`acceptedAt` is the click time of "Accept and Continue" itself, captured via
+`Time.now` (see `GotCreateAccountAcceptedTime`) -- not yet sent with the
+`CreateAccount` RPC (the API has no field for it), but kept on hand ready for
+when it does.
+
+-}
+type alias AcceptedCreateAccount =
+    { server : Server
+    , username : String
+    , acceptedAt : Maybe Time.Posix
     }
 
 
@@ -303,21 +323,35 @@ type alias Model =
     -- Once the Username field names a known server, whether (and which of)
     -- "Log In"/"Create Account" has been picked -- see `ChooseLoginClicked`/
     -- `ChooseCreateAccountClicked`. `Nothing` while still at the
-    -- Username-only step, before either's been clicked: the Password field
+    -- Username-only step, before either's been picked: the Password field
     -- (see `UI.addAccountForm`) only renders once this is `Just _`, so its
     -- `autocomplete`/`name` can be set to "new-password" or "current-password"
     -- up front, rather than the field existing from the start with an
-    -- autocomplete hint that's only a guess. Once set, the same button
-    -- (now alongside a "<- Back" button, `NewAccountBackClicked`) actually
-    -- submits via `LoginClicked`/`CreateAccountClicked`. Reset to `Nothing`
-    -- by `NewAccountBackClicked`, a successful `GotAuthResult`, or the
-    -- Server field changing (`setServerField`).
+    -- autocomplete hint that's only a guess. For Log In, set the moment
+    -- "Log In" is clicked; for Create Account, only once the policy
+    -- confirmation modal's been accepted (`ConfirmCreateAccountClicked`) --
+    -- see `acceptedCreateAccount`. Once set, the same button (now alongside a
+    -- "<- Back" button, `NewAccountBackClicked`) actually submits via
+    -- `LoginClicked`/`CreateAccountClicked`. Reset to `Nothing` by
+    -- `NewAccountBackClicked`, a successful `GotAuthResult`, or the Server
+    -- field changing (`setServerField`).
     , newAccountType : Maybe NewAccountType
 
-    -- Set once `CreateAccountClicked` has resolved the target server's
-    -- configuration, until the user confirms or cancels -- see
-    -- `UI.createAccountConfirmationModal`. `Nothing` the rest of the time.
+    -- Set once `ChooseCreateAccountClicked` (the Username-step "Create
+    -- Account" button) has resolved the target server's configuration, until
+    -- the user accepts or cancels -- see `UI.createAccountConfirmationModal`.
+    -- `Nothing` the rest of the time. Accepting moves the target
+    -- server/username into `acceptedCreateAccount` and reveals the Password
+    -- field; nothing here carries a password -- it doesn't exist yet.
     , createAccountConfirmation : Maybe PendingCreateAccount
+
+    -- Set once the policy confirmation modal's been accepted
+    -- (`ConfirmCreateAccountClicked`, "Accept and Continue") -- from then on,
+    -- until the real `CreateAccount` RPC fires (`CreateAccountClicked`, now
+    -- the Password field's own submit) or the flow's abandoned, this is what
+    -- that RPC reads its server/username from (see `AcceptedCreateAccount`).
+    -- `Nothing` the rest of the time.
+    , acceptedCreateAccount : Maybe AcceptedCreateAccount
 
     -- The host this app is actually being viewed from (immutable for the
     -- session -- it's a plain SPA reload to change it).
@@ -408,6 +442,7 @@ type Msg
     | AccessTokenResponseReceived Account AccessTokenResponse
     | CreateAccountModalScrolled Bool
     | ConfirmCreateAccountClicked
+    | GotCreateAccountAcceptedTime Time.Posix
     | CancelCreateAccountClicked
     | GotAuthResult (Result Grpc.Error ( Connection, ServerConfiguration, RefreshTokenResponse ))
     | FederatedAccountReceived Account
@@ -819,8 +854,7 @@ spare than the nav bar but where a centered stack still reads oddly, e.g.
 `Shared.Breadcrumbs`' server overview panel.
 -}
 type ServerLogoSize
-    = CompactServerLogo
-    | RegularServerLogo
+    = RegularServerLogo
     | HorizontalServerLogo
 
 
@@ -833,14 +867,6 @@ serverNameAndLogo server size =
         ( namePrefix, emoji, nameSuffix ) =
             splitOnFirstEmoji True branding.name
 
-        hasEmoji =
-            case emoji of
-                Just e ->
-                    e /= "" && e /= "|"
-
-                Nothing ->
-                    False
-
         largeName =
             String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
 
@@ -850,6 +876,15 @@ serverNameAndLogo server size =
                     img [ class "server-logo-image", src url, alt branding.name ] []
 
                 Nothing ->
+                    let
+                        hasEmoji =
+                            case emoji of
+                                Just e ->
+                                    e /= "" && e /= "|"
+
+                                Nothing ->
+                                    False
+                    in
                     if hasEmoji then
                         div [ class "server-logo-emoji" ] [ text (Maybe.withDefault "" emoji) ]
 
@@ -871,7 +906,7 @@ serverNameAndLogo server size =
         -- they differ only in layout (stacked+centered vs. row+left-aligned,
         -- both via `sizeClass` below), not sizing.
         isBig =
-            size /= CompactServerLogo
+            True
 
         primaryClasses =
             "server-name-primary"
@@ -896,9 +931,6 @@ serverNameAndLogo server size =
 
         sizeClass =
             case size of
-                CompactServerLogo ->
-                    "compact"
-
                 RegularServerLogo ->
                     "regular"
 
@@ -1159,6 +1191,7 @@ init req flags =
       , addAccountFormExpanded = False
       , newAccountType = Nothing
       , createAccountConfirmation = Nothing
+      , acceptedCreateAccount = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
       , moveAnimations = Dict.empty
@@ -1209,7 +1242,7 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations`,
+{-| `sendUpdate`'s actual per-`Msg` logic, plus `syncItemAnimations`,
 `sortMainServerFirst`, and `sortMainServerAccountsFirst` run unconditionally
 afterward -- so every code path that can add an account/server, or change
 `mainFrontendHost`, gets its enter animation/correct ordering for free,
@@ -1218,7 +1251,7 @@ small) to run after every single message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
-    updateHelp req msg model
+    sendUpdate req msg model
         |> Tuple.mapFirst syncItemAnimations
         |> Tuple.mapFirst sortMainServerFirst
         |> Tuple.mapFirst sortMainServerAccountsFirst
@@ -1236,8 +1269,8 @@ syncItemAnimations model =
     }
 
 
-updateHelp : Request -> Msg -> Model -> ( Model, Cmd Msg )
-updateHelp req msg model =
+sendUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
+sendUpdate req msg model =
     case msg of
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
@@ -1266,12 +1299,19 @@ updateHelp req msg model =
             )
 
         ChooseCreateAccountClicked ->
-            ( { model | newAccountType = Just CreateNewAccount }
-            , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")
+            let
+                form =
+                    model.accountForm
+            in
+            ( model
+                |> updateForm (\f -> { f | status = Submitting })
+                |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
+            , resolveHost (isSecure req) model.servers (String.trim form.server)
+                |> Task.attempt GotCreateAccountServerInfo
             )
 
         NewAccountBackClicked ->
-            ( { model | newAccountType = Nothing }
+            ( { model | newAccountType = Nothing, acceptedCreateAccount = Nothing }
                 |> updateForm (\f -> { f | password = "", showPasswordAsText = False })
             , Cmd.none
             )
@@ -1305,16 +1345,42 @@ updateHelp req msg model =
             )
 
         CreateAccountClicked ->
-            let
-                form =
-                    model.accountForm
-            in
-            ( model
-                |> updateForm (\f -> { f | status = Submitting })
-                |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
-            , resolveHost (isSecure req) model.servers (String.trim form.server)
-                |> Task.attempt GotCreateAccountServerInfo
-            )
+            case model.acceptedCreateAccount of
+                Nothing ->
+                    -- The submit button only renders once `newAccountType`
+                    -- is `Just CreateNewAccount`, which only happens once
+                    -- `acceptedCreateAccount` is set (`ConfirmCreateAccountClicked`)
+                    -- -- unreachable in practice.
+                    ( model, Cmd.none )
+
+                Just accepted ->
+                    case ( connectionOf accepted.server, accepted.server.connected ) of
+                        ( Just connection, Just { configuration } ) ->
+                            let
+                                form =
+                                    model.accountForm
+                            in
+                            ( model
+                                |> updateForm (\f -> { f | status = Submitting })
+                            , Grpc.new Jonline.createAccount
+                                { username = accepted.username
+                                , password = form.password
+                                , email = Nothing
+                                , phone = Nothing
+                                , expiresAt = Nothing
+                                , deviceName = Nothing
+                                }
+                                |> Grpc.setHost (connectionUrl connection)
+                                |> Grpc.toTask
+                                |> Task.map (\resp -> ( connection, configuration, resp ))
+                                |> Task.attempt GotAuthResult
+                            )
+
+                        -- `accepted.server` was built by `serverFrom` (see
+                        -- `GotCreateAccountServerInfo`), which is always connected --
+                        -- unreachable in practice.
+                        _ ->
+                            ( model, Cmd.none )
 
         GotCreateAccountServerInfo (Ok ( connection, config )) ->
             let
@@ -1327,7 +1393,6 @@ updateHelp req msg model =
                             Just
                                 { server = serverFrom connection True config
                                 , username = form.username
-                                , password = form.password
                                 , reachedBottom = False
                                 }
                     }
@@ -1373,29 +1438,29 @@ updateHelp req msg model =
                     ( model, Cmd.none )
 
                 Just pending ->
-                    case ( connectionOf pending.server, pending.server.connected ) of
-                        ( Just connection, Just { configuration } ) ->
-                            ( { model | createAccountConfirmation = Nothing }
-                                |> updateForm (\f -> { f | status = Submitting })
-                            , Grpc.new Jonline.createAccount
-                                { username = pending.username
-                                , password = pending.password
-                                , email = Nothing
-                                , phone = Nothing
-                                , expiresAt = Nothing
-                                , deviceName = Nothing
+                    ( { model
+                        | createAccountConfirmation = Nothing
+                        , acceptedCreateAccount =
+                            Just
+                                { server = pending.server
+                                , username = pending.username
+                                , acceptedAt = Nothing
                                 }
-                                |> Grpc.setHost (connectionUrl connection)
-                                |> Grpc.toTask
-                                |> Task.map (\resp -> ( connection, configuration, resp ))
-                                |> Task.attempt GotAuthResult
-                            )
+                        , newAccountType = Just CreateNewAccount
+                      }
+                    , Cmd.batch
+                        [ Task.perform GotCreateAccountAcceptedTime Time.now
+                        , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")
+                        ]
+                    )
 
-                        -- `pending.server` was built by `serverFrom` (see
-                        -- `GotCreateAccountServerInfo`), which is always connected --
-                        -- unreachable in practice.
-                        _ ->
-                            ( { model | createAccountConfirmation = Nothing }, Cmd.none )
+        GotCreateAccountAcceptedTime time ->
+            ( { model
+                | acceptedCreateAccount =
+                    Maybe.map (\accepted -> { accepted | acceptedAt = Just time }) model.acceptedCreateAccount
+              }
+            , Cmd.none
+            )
 
         GotAuthResult (Ok ( connection, config, resp )) ->
             case ( resp.user, resp.refreshToken, resp.accessToken ) of
@@ -1419,7 +1484,9 @@ updateHelp req msg model =
                                 | accounts =
                                     upsertAccount account model.accounts
                                         |> disableOtherAccountsOnServer (accountId account) account.server
-                                , servers = upsertServer (serverFrom connection True config) model.servers
+                                , servers =
+                                    upsertServer (serverFrom connection True config) model.servers
+                                        |> enableServerFor connection.frontendHost
                                 , accountForm =
                                     let
                                         form =
@@ -1427,6 +1494,7 @@ updateHelp req msg model =
                                     in
                                     { form | password = "", showPasswordAsText = False, status = Idle }
                                 , newAccountType = Nothing
+                                , acceptedCreateAccount = Nothing
                             }
                     in
                     ( newModel, persist newModel )
@@ -1456,6 +1524,7 @@ updateHelp req msg model =
                         | accounts =
                             upsertAccount enabledAccount model.accounts
                                 |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
+                        , servers = enableServerFor enabledAccount.server model.servers
                     }
 
                 -- The account's server may not be known (or may be known but
@@ -1712,22 +1781,10 @@ updateHelp req msg model =
                         Nothing ->
                             toggledAccounts
 
-                -- Re-enabling an account whose server is disabled would leave it
-                -- silently excluded from aggregated data anyway -- bring the
-                -- server along, the mirror of `ToggleServerEnabled` taking its
-                -- accounts along when the server itself is disabled.
                 newServers =
                     case justEnabledAccount of
                         Just account ->
-                            List.map
-                                (\server ->
-                                    if server.frontendHost == account.server then
-                                        { server | enabled = True }
-
-                                    else
-                                        server
-                                )
-                                model.servers
+                            enableServerFor account.server model.servers
 
                         Nothing ->
                             model.servers
@@ -2173,7 +2230,7 @@ updateHelp req msg model =
 
         CloseAccountsPanel ->
             ( collapseAddAccountFormIfIdle
-                { model | showAccountsPanel = False, createAccountConfirmation = Nothing, recommendedServersExpanded = False }
+                { model | showAccountsPanel = False, createAccountConfirmation = Nothing, acceptedCreateAccount = Nothing, recommendedServersExpanded = False }
             , Cmd.none
             )
 
@@ -2360,7 +2417,7 @@ updateHelp req msg model =
         ClearFieldClicked domId clearMsg ->
             let
                 ( clearedModel, clearCmd ) =
-                    updateHelp req clearMsg model
+                    sendUpdate req clearMsg model
             in
             ( clearedModel, Cmd.batch [ clearCmd, Task.attempt (\_ -> NoOp) (Dom.focus domId) ] )
 
@@ -2656,12 +2713,14 @@ error (a failed login, "That server is already in your list.", etc.) needs
 clearing whenever the field changes for _any_ reason: typing
 (`ServerChanged`), tapping a known server's chip (`ServerChipClicked`), or
 picking a new main server (`MainServerSelected`). Also resets
-`newAccountType` back to the Username-only step -- a Login/Create Account
-choice made for whatever server was previously named no longer applies.
+`newAccountType`/`createAccountConfirmation`/`acceptedCreateAccount` back to
+the Username-only step -- a Login/Create Account choice (or policy
+confirmation) made for whatever server was previously named no longer
+applies.
 -}
 setServerField : String -> Model -> Model
 setServerField server model =
-    { model | newAccountType = Nothing }
+    { model | newAccountType = Nothing, createAccountConfirmation = Nothing, acceptedCreateAccount = Nothing }
         |> updateForm (\form -> { form | server = server, status = clearErrored form.status })
         |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
 
@@ -2698,6 +2757,25 @@ disableOtherAccountsOnServer keepEnabledId server accounts =
         accounts
 
 
+{-| Signing in/re-enabling an account whose server is still marked disabled
+would leave it silently excluded from aggregated data anyway -- bring the
+server along, mirroring what `ToggleServerEnabled` does for its accounts when
+the server itself is disabled. Used by every path that force-enables an
+account (`GotAuthResult`, `FederatedAccountReceived`, `ToggleAccountEnabled`).
+-}
+enableServerFor : String -> List Server -> List Server
+enableServerFor frontendHost servers =
+    List.map
+        (\server ->
+            if server.frontendHost == frontendHost then
+                { server | enabled = True }
+
+            else
+                server
+        )
+        servers
+
+
 upsertAccount : Account -> List Account -> List Account
 upsertAccount account accounts =
     if List.any (\a -> accountId a == accountId account) accounts then
@@ -2716,35 +2794,6 @@ upsertAccount account accounts =
         -- newly-added account is visible without scrolling, to see its FLIP
         -- entrance animation -- revisit ordering later.
         account :: accounts
-
-
-{-| Inserts a newly-seen account (fresh login/create-account) directly after
-the last existing account on the same server, rather than always at the very
-end of the whole list -- so a server's accounts stay grouped together in the
-persisted list (and the flat accounts-list UI) even when other servers'
-accounts are interleaved. Falls back to appending at the end when this is the
-first account on that server.
--}
-insertAfterSameServer : Account -> List Account -> List Account
-insertAfterSameServer account accounts =
-    let
-        ( result, inserted ) =
-            List.foldr
-                (\a ( acc, alreadyInserted ) ->
-                    if not alreadyInserted && a.server == account.server then
-                        ( a :: account :: acc, True )
-
-                    else
-                        ( a :: acc, alreadyInserted )
-                )
-                ( [], False )
-                accounts
-    in
-    if inserted then
-        result
-
-    else
-        accounts ++ [ account ]
 
 
 serverFrom : Connection -> Bool -> ServerConfiguration -> Server
@@ -3148,14 +3197,15 @@ candidatePorts pageIsSecure =
     let
         secure =
             [ ( 27707, True ), ( 443, True ) ]
-
-        insecure =
-            [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
     in
     if pageIsSecure then
         secure
 
     else
+        let
+            insecure =
+                [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
+        in
         secure ++ insecure
 
 

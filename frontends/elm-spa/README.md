@@ -146,6 +146,34 @@ The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simpl
 - `Proto/` — generated gRPC/protobuf bindings (`protoc --elm_out=./src -I../../protos
   ../../protos/*.proto`, via `make protos`) — never hand-edited.
 
+## File organization
+
+Every module's top-level declarations follow the same order, so the shape of
+a file tells you where to look before you've read a line of it:
+
+1. `main` (only relevant in `Main.elm`)
+2. `Model`
+3. `Msg`
+4. Every other type/type alias declared in the file (in whatever order makes
+   sense together — see `Shared.elm`'s `Flags`/`Theme`/`ThemePreference`/
+   `DeleteConfirmation`/`Panels`/`NavAnimationState` block)
+5. `init`
+6. `subscriptions`
+7. `update`
+8. Methods returning and/or touching *another module's* `Model`
+9. Methods returning a `Model` (or a tuple/wrapper containing one, like
+   `Shared.elm`'s `sharedUpdate`)
+10. Methods returning or touching a `Cmd`
+11. Methods returning or touching an `Effect`
+12. Methods returning `Html`
+13. Methods returning `String`
+14. Everything else
+
+Within a bucket, keep functions next to the other functions they're most
+related to (a helper stays near its one caller) rather than alphabetizing.
+`Shared.elm` is the reference example for a large file that follows this
+shape end to end.
+
 ## Emitted Styles
 
 Since Elm's `Html.Attributes.style` can't set CSS custom properties, per-server

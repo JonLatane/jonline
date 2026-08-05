@@ -7,7 +7,6 @@ needs `Components.Posts` (`postCard`) for its own panel view, and that would
 otherwise be a cycle.
 -}
 
-import Char
 import Html exposing (Attribute)
 import Html.Attributes exposing (class)
 

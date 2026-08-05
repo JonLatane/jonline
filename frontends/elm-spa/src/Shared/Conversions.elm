@@ -1,4 +1,4 @@
-module Shared.Conversions exposing (..)
+module Shared.Conversions exposing (daysFromCivil, int64FromInt, int64ToInt, isoUtcString, monthToNumber, parseDateParts, parseTimeParts, posixFromIsoUtcString, posixToTimestamp, timestampToPosix)
 
 import Protobuf.Types.Int64 as Int64
 import Time
@@ -26,7 +26,7 @@ posixToTimestamp posix =
 
 {-| The inverse of `int64ToInt` -- safe for any value that fits in a plain
 `Int` (which is all this app ever builds one from, e.g.
-`Shared.EventSyncSourcesPanel`'s `syncIntervalSeconds`, capped at 1 day in
+`Components.Pages.UserProfilePage`'s Event Sync Source `syncIntervalSeconds`, capped at 1 day in
 seconds), same 32-bit-until-2038 caveat `posixToTimestamp` already documents
 for the same reason (`Int64.fromInts` splits a value across two 32-bit
 halves, and this always passes `0` for the high half).
@@ -60,7 +60,7 @@ int64ToInt value =
 1-12, day)` -- Howard Hinnant's well-known `days_from_civil` algorithm,
 correct (including negative/BC years and leap years) without needing a full
 calendar library. The building block both `isoUtcString`'s inverse
-(`posixFromIsoUtcString`) and `Shared.BrowserTimeZone.posixFromDateTimeLocalInput`
+(`posixFromIsoUtcString`) and `Shared.Time.posixFromDateTimeLocalInput`
 need: `elm/time` only goes the other direction (a `Posix` instant to its
 calendar components, via `Time.toYear`/etc.), with no built-in inverse.
 -}
@@ -147,7 +147,7 @@ monthToNumber month =
 
 
 {-| `( year, month 1-12, day )`, from a `"YYYY-MM-DD"` string -- shared by
-`posixFromIsoUtcString` and `Shared.BrowserTimeZone.posixFromDateTimeLocalInput`,
+`posixFromIsoUtcString` and `Shared.Time.posixFromDateTimeLocalInput`,
 both of which only differ in what follows the `"T"`.
 -}
 parseDateParts : String -> Maybe ( Int, Int, Int )
@@ -178,7 +178,7 @@ parseTimeParts timePart =
 
 {-| `YYYY-MM-DDTHH:mm:ssZ`, always UTC -- the URL-safe, timezone-independent
 "standard ISO date" `Components.Pages.EventsPage`'s `ends_after` query param
-uses (unlike `Shared.BrowserTimeZone`'s local-datetime-input helpers, this
+uses (unlike `Shared.Time`'s local-datetime-input helpers, this
 never needs a `Time.Zone` at all, since UTC's own offset is always zero, so
 `daysFromCivil`'s result needs no correction).
 -}

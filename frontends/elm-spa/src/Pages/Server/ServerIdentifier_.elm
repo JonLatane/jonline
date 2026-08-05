@@ -21,7 +21,6 @@ import Html.Attributes exposing (class)
 import Page
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
 import UI
 import View exposing (View)
 
@@ -36,10 +35,6 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 {-| `Invalid` short-circuits straight to an error message, without ever
 constructing a `ServerInformationPage.Model` (and thus without ever
 attempting a connection) -- see the module doc.
@@ -49,22 +44,8 @@ type Model
     | Info ServerInformationPage.Model
 
 
-{-| Parses a `/server/:serverIdentifier` route segment like "<http:localhost">
-or "<https:jonline.io"> -- `Nothing` if it isn't exactly `[http|https]:host`
-(no slashes, no port -- `AccountsPanel.connectToServer` discovers the actual
-port/backend host itself).
--}
-parseServerIdentifier : String -> Maybe { isSecure : Bool, host : String }
-parseServerIdentifier identifier =
-    case String.split ":" identifier of
-        [ "http", host ] ->
-            Just { isSecure = False, host = host }
-
-        [ "https", host ] ->
-            Just { isSecure = True, host = host }
-
-        _ ->
-            Nothing
+type Msg
+    = InfoMsg ServerInformationPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -81,12 +62,14 @@ init shared req =
                 |> Tuple.mapSecond (Effect.map InfoMsg)
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        Info subModel ->
+            Sub.map InfoMsg (ServerInformationPage.subscriptions subModel)
 
--- UPDATE
-
-
-type Msg
-    = InfoMsg ServerInformationPage.Msg
+        Invalid _ ->
+            Sub.none
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -99,38 +82,6 @@ update shared (InfoMsg subMsg) model =
 
         Invalid _ ->
             ( model, Effect.none )
-
-
-{-| See `Components.Pages.ServerInformationPage.fromShared` -- a no-op for an
-`Invalid` page, which never fetches anything to begin with.
--}
-fromShared : Shared.Msg -> Msg
-fromShared sharedMsg =
-    InfoMsg (ServerInformationPage.fromShared sharedMsg)
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model of
-        Info subModel ->
-            Sub.map InfoMsg (ServerInformationPage.subscriptions subModel)
-
-        Invalid _ ->
-            Sub.none
-
-
-
--- VIEW
-
-
-titleFor : Shared.Model -> Model -> String
-titleFor shared model =
-    case model of
-        Info subModel ->
-            ServerInformationPage.titleFor shared subModel
-
-        Invalid identifier ->
-            identifier
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -151,3 +102,39 @@ view shared req model =
                         ]
             ]
     }
+
+
+titleFor : Shared.Model -> Model -> String
+titleFor shared model =
+    case model of
+        Info subModel ->
+            ServerInformationPage.titleFor shared subModel
+
+        Invalid identifier ->
+            identifier
+
+
+{-| Parses a `/server/:serverIdentifier` route segment like "<http:localhost">
+or "<https:jonline.io"> -- `Nothing` if it isn't exactly `[http|https]:host`
+(no slashes, no port -- `AccountsPanel.connectToServer` discovers the actual
+port/backend host itself).
+-}
+parseServerIdentifier : String -> Maybe { isSecure : Bool, host : String }
+parseServerIdentifier identifier =
+    case String.split ":" identifier of
+        [ "http", host ] ->
+            Just { isSecure = False, host = host }
+
+        [ "https", host ] ->
+            Just { isSecure = True, host = host }
+
+        _ ->
+            Nothing
+
+
+{-| See `Components.Pages.ServerInformationPage.fromShared` -- a no-op for an
+`Invalid` page, which never fetches anything to begin with.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared sharedMsg =
+    InfoMsg (ServerInformationPage.fromShared sharedMsg)

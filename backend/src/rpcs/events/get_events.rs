@@ -21,7 +21,8 @@ use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::*;
 use prost_wkt_types::Timestamp;
 
-const PAGE_SIZE: i64 = 80;
+const LISTING_EVENT_INSTANCE_LIMIT: i64 = 80;
+const SINGLE_EVENT_INSTANCE_LIMIT: i64 = 1000;
 
 type EventLoadData = (
     models::EventInstance,
@@ -241,7 +242,10 @@ fn attach_event_instance_attendances(
 }
 
 macro_rules! query_visible_events {
-    ($user:expr, $timefilter:expr) => {{
+    ($user:expr, $timefilter:expr) => {
+        query_visible_events!($user, $timefilter, LISTING_EVENT_INSTANCE_LIMIT)
+    };
+    ($user:expr, $timefilter:expr, $event_instance_limit:expr) => {{
         let instance_posts = alias!(posts as instance_posts);
         let instance_users = alias!(users as instance_users);
 
@@ -331,7 +335,7 @@ macro_rules! query_visible_events {
             .filter(event_instances::ends_at.gt(ends_after))
             .order(event_instances::starts_at)
             .distinct()
-            .limit(PAGE_SIZE)
+            .limit($event_instance_limit)
     }};
 }
 
@@ -482,7 +486,7 @@ fn get_search_events(
         // get_search_posts's own recency fallback.
         .order(ts_rank_cd(event_instances::search_text, rank_query).desc())
         .then_order_by(event_instances::starts_at.desc())
-        .limit(PAGE_SIZE)
+        .limit(LISTING_EVENT_INSTANCE_LIMIT)
         .load::<EventLoadData>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_events"))?;
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
@@ -581,7 +585,8 @@ fn get_event_by_id(
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
     info!("get_event_by_id event_db_id: {}", event_db_id);
-    let query = query_visible_events!(user, None::<TimeFilter>).filter(events::id.eq(event_db_id));
+    let query = query_visible_events!(user, None::<TimeFilter>, SINGLE_EVENT_INSTANCE_LIMIT)
+        .filter(events::id.eq(event_db_id));
     let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
     info!("get_event_by_id event_data: {:?}", event_data);

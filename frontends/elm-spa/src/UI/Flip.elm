@@ -154,6 +154,7 @@ switched to sorting by `Media.createdAt`) needs to track its own explicit
 order list instead of rederiving one fresh as "current fetch order, plus
 whichever removing ids the fetch no longer mentions, tacked on the end" --
 that tacking-on is exactly the relocate-on-remove this note warns about.
+
 -}
 remove : msg -> State msg -> State msg
 remove onRemoved state =
@@ -289,6 +290,7 @@ cancel its CSS collapse transition; a stable per-item sort key (as
 `PostsPage`/`UsersPage`/`MyMediaPanel` all use) or a caller-owned order list
 (as `AccountsPanel`/`StarredPanel` effectively do, by never moving a
 still-present item at all) is still the caller's own job.
+
 -}
 syncAnimations :
     (String -> msg)
@@ -688,7 +690,7 @@ of each is derivable analytically from just their pre-swap rects
 than two items changing position at once) has no such shortcut: it needs a
 real "measure before, apply the reorder, measure after" round trip. And that
 round trip can't go through `Browser.Dom.getElement` either -- elm/browser's
-kernel wraps *every single call* in its own `requestAnimationFrame`, and
+kernel wraps _every single call_ in its own `requestAnimationFrame`, and
 `Task`s compose strictly sequentially, so measuring N elements via
 `Task.sequence` over N separate `Dom.getElement` calls costs N whole
 animation frames (a highly visible multi-hundred-millisecond gap, confirmed
@@ -700,12 +702,13 @@ how many ids are given.
 Callers still owe one deliberate `requestAnimationFrame` wait (e.g. a
 throwaway `Task.attempt (\\_ -> ...) Browser.Dom.getViewport`) between
 applying the reorder and firing the second `measureElementsCmd` -- Elm's own
-`Browser.application` runtime defers painting a model change to the *next*
+`Browser.application` runtime defers painting a model change to the _next_
 rAF rather than doing it synchronously when `update` returns, so measuring
 immediately would race ahead of the DOM actually reflecting the new order
-yet, silently measuring the *old* layout twice and animating a zero delta.
+yet, silently measuring the _old_ layout twice and animating a zero delta.
 See `Components.Pages.EventsPage`'s `DisplayModeChanged`/`GotMeasuredRects`/
 `ReadyToMeasureNew` for the full recipe this mirrors.
+
 -}
 measureElementsCmd : (String -> String) -> List String -> Cmd msg
 measureElementsCmd domId keys =

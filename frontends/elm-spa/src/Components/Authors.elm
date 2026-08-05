@@ -1,4 +1,4 @@
-module Components.Authors exposing (avatar, avatarUrl, badges, compactBadges, href, link, name)
+module Components.Authors exposing (avatarUrl, badges, link, name)
 
 {-| Everything about displaying a `Proto.Jonline.Author` -- the
 post/authorship-centric, cacheable-in-the-UI sibling of `User` embedded
@@ -51,11 +51,6 @@ import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 
 
-hasPermission : Permission -> { a | permissions : List Permission } -> Bool
-hasPermission permission entity =
-    List.member permission entity.permissions
-
-
 badges : { a | permissions : List Permission } -> List (Html msg)
 badges entity =
     (if hasPermission ADMIN entity then
@@ -98,47 +93,6 @@ compactBadges entity =
             else
                 []
            )
-
-
-{-| An author's display name -- "unknown" if `maybeAuthor` is `Nothing`
-(shouldn't normally happen, but `Post.author` is optional) or has no
-`username` set.
--}
-name : Maybe Author -> String
-name maybeAuthor =
-    maybeAuthor
-        |> Maybe.andThen .username
-        |> Maybe.withDefault "unknown"
-
-
-{-| An author's profile link -- `Nothing` if `maybeAuthor` is `Nothing`. The
-author is always on `hostServerHost` (the same server as the post it came
-from; `Author` has no host of its own to look elsewhere) -- see
-`Components.Users.profileHref`, which already falls back to `/user/:id` if
-the username isn't routable.
--}
-href : String -> String -> String -> Maybe Author -> Maybe String
-href basePath viewingServerHost hostServerHost maybeAuthor =
-    maybeAuthor
-        |> Maybe.map
-            (\author ->
-                Users.profileHref basePath
-                    viewingServerHost
-                    hostServerHost
-                    { userId = author.userId, username = Maybe.withDefault "" author.username }
-            )
-
-
-{-| An author's avatar URL -- `Nothing` if `maybeAuthor` is `Nothing`, `server`
-isn't resolved yet (e.g. still connecting), or the author just has no avatar
-set. `server` needs to be the actual resolved `Shared.AccountsPanel.Server` --
-building a media URL needs its connection details, not just its hostname (see
-`Shared.AccountsPanel.mediaUrl`).
--}
-avatarUrl : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Author -> Maybe String
-avatarUrl maybeServer maybeAccount maybeAuthor =
-    Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer maybeAuthor
-        |> Maybe.andThen identity
 
 
 {-| A small avatar/placeholder for an author, matching the size of the
@@ -184,3 +138,49 @@ link basePath viewingServerHost hostServerHost maybeServer maybeAccount maybeAut
 
         Nothing ->
             span [ class "post-author-link" ] content
+
+
+{-| An author's display name -- "unknown" if `maybeAuthor` is `Nothing`
+(shouldn't normally happen, but `Post.author` is optional) or has no
+`username` set.
+-}
+name : Maybe Author -> String
+name maybeAuthor =
+    maybeAuthor
+        |> Maybe.andThen .username
+        |> Maybe.withDefault "unknown"
+
+
+hasPermission : Permission -> { a | permissions : List Permission } -> Bool
+hasPermission permission entity =
+    List.member permission entity.permissions
+
+
+{-| An author's profile link -- `Nothing` if `maybeAuthor` is `Nothing`. The
+author is always on `hostServerHost` (the same server as the post it came
+from; `Author` has no host of its own to look elsewhere) -- see
+`Components.Users.profileHref`, which already falls back to `/user/:id` if
+the username isn't routable.
+-}
+href : String -> String -> String -> Maybe Author -> Maybe String
+href basePath viewingServerHost hostServerHost maybeAuthor =
+    maybeAuthor
+        |> Maybe.map
+            (\author ->
+                Users.profileHref basePath
+                    viewingServerHost
+                    hostServerHost
+                    { userId = author.userId, username = Maybe.withDefault "" author.username }
+            )
+
+
+{-| An author's avatar URL -- `Nothing` if `maybeAuthor` is `Nothing`, `server`
+isn't resolved yet (e.g. still connecting), or the author just has no avatar
+set. `server` needs to be the actual resolved `Shared.AccountsPanel.Server` --
+building a media URL needs its connection details, not just its hostname (see
+`Shared.AccountsPanel.mediaUrl`).
+-}
+avatarUrl : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Author -> Maybe String
+avatarUrl maybeServer maybeAccount maybeAuthor =
+    Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer maybeAuthor
+        |> Maybe.andThen identity

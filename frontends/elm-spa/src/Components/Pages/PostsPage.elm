@@ -42,10 +42,10 @@ import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -243,12 +243,12 @@ relevantServers : Shared.Model -> Model -> List AccountsPanel.Server
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
+            AccountsPanel.serverForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
         Nothing ->
-            AccountsPanel.enabledServers shared.accountsPanel
+            AccountsPanel.enabledServers shared.accounts
 
 
 {-| Fetches `serversToFetch` using the current `model.searchText`/
@@ -292,7 +292,7 @@ refetchServers shared model serversToFetch =
                 relevantServers shared model
 
             currentAccountId server =
-                AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                     |> Maybe.map AccountsPanel.accountId
 
             cutoff =
@@ -304,8 +304,8 @@ refetchServers shared model serversToFetch =
 
             fetchEffect server =
                 Posts.fetchPosts
-                    shared.accountsPanel
-                    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+                    shared.accounts
+                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
                     , server.frontendHost
                     )
                     (model.author |> Maybe.map (Tuple.second >> .id))
@@ -367,7 +367,7 @@ fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
         serversToFetch =
@@ -432,7 +432,7 @@ setBreadcrumbsRoot shared model =
                         ( Breadcrumbs.FromUser user, authorHost )
 
                     Nothing ->
-                        ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+                        ( Breadcrumbs.FromServerHost shared.accounts.mainFrontendHost, shared.accounts.mainFrontendHost )
         in
         if shared.breadcrumbs.root == Just root then
             Effect.none
@@ -799,7 +799,7 @@ updateInner shared msg model =
                         ( newModel, Effect.none )
 
         PublishedBeforeInputChanged raw ->
-            case BrowserTimeZone.posixFromDateTimeLocalInput shared.browserTimeZone.zone raw of
+            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
                 Nothing ->
                     ( model, Effect.none )
 
@@ -926,8 +926,8 @@ recentPostsTabsView shared model =
                     [ type_ "datetime-local"
                     , class "filter-tab-date-input"
                     , value
-                        (BrowserTimeZone.formatDateTimeLocalInput
-                            shared.browserTimeZone.zone
+                        (SharedTime.formatDateTimeLocalInput
+                            shared.time.browserTimeZone.zone
                             (Maybe.withDefault (Time.millisToPosix 0) model.publishedBefore)
                         )
                     , onInput PublishedBeforeInputChanged
@@ -1062,7 +1062,7 @@ authorHeadingView shared maybeAuthor context =
         Just ( host, author ) ->
             let
                 profileUrl =
-                    usernameHref "" shared.accountsPanel.mainFrontendHost host author.username
+                    usernameHref "" shared.accounts.mainFrontendHost host author.username
 
                 headingText =
                     case context of
@@ -1075,9 +1075,9 @@ authorHeadingView shared maybeAuthor context =
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text headingText ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) author
 
                         Nothing ->
                             ProfileHeading.usernameHeading author
@@ -1095,16 +1095,6 @@ recency here would throw that ranking away. Mirrors
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
     let
-        sortedAnimations =
-            model.postAnimations
-                |> Dict.toList
-                |> (if String.isEmpty (String.trim model.searchText) then
-                        List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
-
-                    else
-                        identity
-                   )
-
         postsWord =
             case model.context of
                 REPLY ->
@@ -1116,13 +1106,25 @@ postsListView shared model =
     if Dict.isEmpty model.postsByServer then
         p [ class "posts-empty" ] [ text <| "Connect to a server to see recent " ++ postsWord ++ "." ]
 
-    else if List.isEmpty sortedAnimations then
-        p [ class "posts-empty" ] [ text <| "No " ++ postsWord ++ " yet." ]
-
     else
-        Html.Keyed.node "div"
-            [ class "posts-list flip-animated-column" ]
-            (List.map (postAnimationView shared) sortedAnimations)
+        let
+            sortedAnimations =
+                model.postAnimations
+                    |> Dict.toList
+                    |> (if String.isEmpty (String.trim model.searchText) then
+                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+
+                        else
+                            identity
+                       )
+        in
+        if List.isEmpty sortedAnimations then
+            p [ class "posts-empty" ] [ text <| "No " ++ postsWord ++ " yet." ]
+
+        else
+            Html.Keyed.node "div"
+                [ class "posts-list flip-animated-column" ]
+                (List.map (postAnimationView shared) sortedAnimations)
 
 
 {-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`
@@ -1158,22 +1160,22 @@ postCardView : Shared.Model -> ( String, Post ) -> Html Msg
 postCardView shared ( host, post ) =
     let
         displayPost =
-            StarredPanel.freshestPost host post shared.starredPanel
+            StarredPanel.freshestPost host post shared.panels.starredPanel
 
         starred =
-            StarredPanel.isStarred host displayPost shared.starredPanel
+            StarredPanel.isStarred host displayPost shared.panels.starredPanel
 
         onStarClicked =
-            StarredPanel.toggleStarMsg shared.accountsPanel host displayPost
+            StarredPanel.toggleStarMsg shared.accounts host displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         maybeServer =
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
+            AccountsPanel.serverForHost shared.accounts.servers host
 
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 
         onMediaClicked mediaId =
             SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
     in
-    Posts.postCard shared.browserTimeZone shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost
+    Posts.postCard shared.time shared.basePath shared.accounts.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost

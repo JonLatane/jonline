@@ -44,23 +44,8 @@ import Task
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
-type SubmitStatus
-    = Idle
-    | Submitting
-    | SubmitFailed String
-
-
 type alias Model =
     { status : SubmitStatus }
-
-
-init : Model
-init =
-    { status = Idle }
-
-
-
--- UPDATE
 
 
 type Msg
@@ -73,20 +58,19 @@ type Msg
     | GotModerationResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Follow ))
 
 
-{-| `account`'s own `Follow` of `user` -- the relationship the viewer
-themself controls the existence (but not the moderation) of.
--}
-currentUserFollowOf : AccountsPanel.Account -> User -> Follow
-currentUserFollowOf account user =
-    { defaultFollow | userId = account.userId, targetUserId = user.id }
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
 
 
-{-| `user`'s `Follow` of `account` -- the relationship the viewer controls
-the moderation (but not the existence) of.
--}
-targetCurrentUserFollowOf : AccountsPanel.Account -> User -> Follow
-targetCurrentUserFollowOf account user =
-    { defaultFollow | userId = user.id, targetUserId = account.userId }
+init : Model
+init =
+    { status = Idle }
+
+
+
+-- UPDATE
 
 
 {-| Handles every click here -- `server`/`account` are the viewer's own
@@ -108,21 +92,21 @@ update shared server account user msg model =
     case msg of
         FollowClicked ->
             ( { model | status = Submitting }
-            , Users.createFollow shared.accountsPanel maybeAccountServer (currentUserFollowOf account user)
+            , Users.createFollow shared.accounts maybeAccountServer (currentUserFollowOf account user)
                 |> Task.attempt GotFollowResult
                 |> Effect.fromCmd
             )
 
         UnfollowClicked ->
             ( { model | status = Submitting }
-            , Users.deleteFollow shared.accountsPanel maybeAccountServer (currentUserFollowOf account user)
+            , Users.deleteFollow shared.accounts maybeAccountServer (currentUserFollowOf account user)
                 |> Task.attempt GotUnfollowResult
                 |> Effect.fromCmd
             )
 
         RejectFollowerClicked ->
             ( { model | status = Submitting }
-            , Users.updateFollow shared.accountsPanel
+            , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
                     follow =
@@ -136,7 +120,7 @@ update shared server account user msg model =
 
         UnrejectFollowerClicked ->
             ( { model | status = Submitting }
-            , Users.updateFollow shared.accountsPanel
+            , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
                     follow =
@@ -213,33 +197,32 @@ viewFor model user =
         followedByPasses =
             Maybe.map Users.moderationPasses targetCurrentUserFollowModeration |> Maybe.withDefault False
 
-        followedByPending =
-            Maybe.map Users.moderationPending targetCurrentUserFollowModeration |> Maybe.withDefault False
-
         statusText =
             if following && followedByPasses then
                 "Friends"
 
-            else if followingPending && followedByPending then
-                "Mutual Follow Requests"
-
-            else if followedByPending then
-                "Wants to follow you"
-
-            else if followedByPasses then
-                "Follows you"
-
-            else if following then
-                "Following"
-
-            else if followingPending then
-                "Follow requested"
-
             else
-                ""
+                let
+                    followedByPending =
+                        Maybe.map Users.moderationPending targetCurrentUserFollowModeration |> Maybe.withDefault False
+                in
+                if followingPending && followedByPending then
+                    "Mutual Follow Requests"
 
-        requiresApproval =
-            Users.moderationPending user.defaultFollowModeration
+                else if followedByPending then
+                    "Wants to follow you"
+
+                else if followedByPasses then
+                    "Follows you"
+
+                else if following then
+                    "Following"
+
+                else if followingPending then
+                    "Follow requested"
+
+                else
+                    ""
 
         showFollow =
             not following && not followingPending
@@ -259,6 +242,10 @@ viewFor model user =
         buttons =
             List.concat
                 [ if showFollow then
+                    let
+                        requiresApproval =
+                            Users.moderationPending user.defaultFollowModeration
+                    in
                     [ followActionButton model.status FollowClicked "follow-status-follow" (followButtonText requiresApproval) ]
 
                   else
@@ -305,15 +292,6 @@ viewFor model user =
         ]
 
 
-followButtonText : Bool -> String
-followButtonText requiresApproval =
-    if requiresApproval then
-        "Request Follow"
-
-    else
-        "Follow"
-
-
 {-| `stopPropagation`/`preventDefault` (rather than a plain `onClick`) so a
 click here doesn't also follow an enclosing link -- this view is embedded not
 just in `Components.Pages.UserProfilePage` (no enclosing link) but also in
@@ -329,3 +307,28 @@ followActionButton status clickMsg buttonClass label =
         , disabled (status == Submitting)
         ]
         [ text label ]
+
+
+followButtonText : Bool -> String
+followButtonText requiresApproval =
+    if requiresApproval then
+        "Request Follow"
+
+    else
+        "Follow"
+
+
+{-| `account`'s own `Follow` of `user` -- the relationship the viewer
+themself controls the existence (but not the moderation) of.
+-}
+currentUserFollowOf : AccountsPanel.Account -> User -> Follow
+currentUserFollowOf account user =
+    { defaultFollow | userId = account.userId, targetUserId = user.id }
+
+
+{-| `user`'s `Follow` of `account` -- the relationship the viewer controls
+the moderation (but not the existence) of.
+-}
+targetCurrentUserFollowOf : AccountsPanel.Account -> User -> Follow
+targetCurrentUserFollowOf account user =
+    { defaultFollow | userId = user.id, targetUserId = account.userId }

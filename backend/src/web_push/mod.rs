@@ -22,7 +22,7 @@ pub async fn initialize_push_service() -> Result<(), WebPushError> {
     //     base64::Engine,
     // )
     // .unwrap();
-    let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info)?.build()?;
+    let sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info)?.build()?;
 
     //Now add payload and encrypt.
     let mut builder = WebPushMessageBuilder::new(&subscription_info);

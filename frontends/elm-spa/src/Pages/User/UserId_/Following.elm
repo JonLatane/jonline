@@ -45,7 +45,7 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( userId, targetHost ) =
-            Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.userId
+            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.userId
     in
     Resolver.init shared targetHost (Resolver.ById userId)
         |> Tuple.mapFirst Resolving

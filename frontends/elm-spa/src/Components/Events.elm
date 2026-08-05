@@ -13,7 +13,7 @@ module Components.Events exposing
     , locationText
     , meaningfulPost
     , parseEventRouteId
-    , postSection
+    , siblingInstanceWhenText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
@@ -34,14 +34,14 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, h2, span, text)
+import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
 import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
-import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
+import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -303,33 +303,76 @@ instanceStartsOrEndsAt instance =
 used identically by `eventCard`'s own "when" line, `Pages.Event.EventId_`'s
 detail view (the currently-viewed instance's own when line), and that same
 page's date-picker strip chips (see `instanceHistoryView`), so every place an
-`EventInstance`'s date/time shows reads the same way. `now` supplies "the
-viewer's own current year" (see `Shared.Model.now`), which
-`BrowserTimeZone.formatRange`/`formatMoment` use to drop a redundant year --
+`EventInstance`'s date/time shows reads the same way. `time.now` supplies
+"the viewer's own current year" (see `Shared.Time.Model.now`), which
+`SharedTime.formatRange`/`formatMoment` use to drop a redundant year --
 see their own docs for the full set of examples this is designed against
 (same-day ranges, cross-day ranges, and ranges crossing into a different
 year on either side).
 
 Both `startsAt` and `endsAt` are normally set (a merged range, via
-`BrowserTimeZone.formatRange`); this falls back to just whichever one is set
-(via `BrowserTimeZone.formatMoment`, prefixed "Until " if only `endsAt` is,
+`SharedTime.formatRange`); this falls back to just whichever one is set
+(via `SharedTime.formatMoment`, prefixed "Until " if only `endsAt` is,
 since that's the unusual case) or a placeholder if somehow neither is.
 
 -}
-instanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> String
-instanceWhenText now browserTimeZone instance =
+instanceWhenText : SharedTime.Model -> EventInstance -> String
+instanceWhenText time instance =
     case ( instance.startsAt, instance.endsAt ) of
         ( Just startTs, Just endTs ) ->
-            BrowserTimeZone.formatRange now browserTimeZone (timestampToPosix startTs) (timestampToPosix endTs)
+            SharedTime.formatRange time (timestampToPosix startTs) (timestampToPosix endTs)
 
         ( Just startTs, Nothing ) ->
-            BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix startTs)
+            SharedTime.formatMoment time (timestampToPosix startTs)
 
         ( Nothing, Just endTs ) ->
-            "Until " ++ BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix endTs)
+            "Until " ++ SharedTime.formatMoment time (timestampToPosix endTs)
 
         ( Nothing, Nothing ) ->
             "Time TBD"
+
+
+{-| Like `instanceWhenText`, for a date-picker strip chip (see
+`Pages.Event.EventId_.instanceChipView`) offering `instance` as an
+alternative to `currentInstance` (the one the page is currently showing).
+Drops the time-of-day entirely -- e.g. "March 7" rather than "March 7,
+6-7PM" -- whenever `instance` starts and ends at the same time-of-day (in
+`browserTimeZone`) as `currentInstance` itself, since a recurring event's
+sibling instances usually share one time slot and repeating it on every
+chip is just noise; the date(s) alone already distinguish one chip from
+another. Falls back to the full `instanceWhenText` the moment either side
+lacks a full start/end pair, or their time-of-day actually differs (e.g. an
+irregular one-off that moved to a different hour).
+-}
+siblingInstanceWhenText : SharedTime.Model -> EventInstance -> EventInstance -> String
+siblingInstanceWhenText time currentInstance instance =
+    let
+        zone =
+            time.browserTimeZone.zone
+
+        sameTimeOfDay a b =
+            Time.toHour zone a == Time.toHour zone b && Time.toMinute zone a == Time.toMinute zone b
+
+        sharesCurrentTimeOfDay =
+            case ( currentInstance.startsAt, currentInstance.endsAt ) of
+                ( Just currentStartTs, Just currentEndTs ) ->
+                    case ( instance.startsAt, instance.endsAt ) of
+                        ( Just startTs, Just endTs ) ->
+                            sameTimeOfDay (timestampToPosix currentStartTs) (timestampToPosix startTs)
+                                && sameTimeOfDay (timestampToPosix currentEndTs) (timestampToPosix endTs)
+
+                        _ ->
+                            False
+
+                _ ->
+                    False
+    in
+    case ( sharesCurrentTimeOfDay, instance.startsAt, instance.endsAt ) of
+        ( True, Just startTs, Just endTs ) ->
+            SharedTime.formatDateRange time (timestampToPosix startTs) (timestampToPosix endTs)
+
+        _ ->
+            instanceWhenText time instance
 
 
 {-| `location.uniformlyFormattedAddress`, trimmed -- `Nothing` if blank, same
@@ -348,126 +391,11 @@ locationText location =
         Just trimmed
 
 
-{-| Renders one of an `Event`/`EventInstance`'s `Post`s -- title, link, a
-byline (author + visibility), `extraContent`, then media and content.
-`primary` picks an `h1` (for the `Event`'s own `Post`, the thing actually
-titling the page) vs. an `h2` (for an `EventInstance`'s own override `Post`,
-a secondary "about this date" block) -- unlike `Components.Posts.postDetail`,
-there's no title-vs-context-chip branching here: both an `Event`'s and an
-`EventInstance`'s `Post` carry a real name of their own (see `events.proto`'s
-doc on `EventInstance.post`), not a generic reply/thread entry, so both
-always get a real heading. Deliberately lighter than `postDetail` otherwise
-too -- no star/edit/reply affordances baked in here, since this was
-originally a read-only invitation-style view -- `moderationView` and the
-three `*Override`s are the exceptions (see their own docs just below).
-
-`titleOverride`/`linkOverride`/`contentOverride` each replace that one
-field's normal display when `Just`, so `Pages.Event.EventId_` can inline its
-own per-field display (plain text/link/Markdown plus its own "Edit X"
-button) or, while that field's being edited, its edit form -- right in
-place, without hiding the rest of the section the way swapping out this
-whole function's result would. `Nothing` (always, for the secondary
-`EventInstance` section, which isn't editable this way) falls back to the
-plain-text/link/Markdown rendering below.
-
-`moderationView` sits right after the visibility text in the byline --
-`Pages.Event.EventId_`'s moderation selector for the primary (`Event`)
-section, `text ""` for the secondary (`EventInstance`) section (mirrors
-`extraContent`'s own split just below).
-
-`extraContent` sits right after the byline and before media -- e.g.
-`Pages.Event.EventId_` slots the currently-viewed `EventInstance`'s own
-date/location and its date-picker strip in there for the primary (`Event`)
-section, `text ""` for the secondary (`EventInstance`) section, which has
-nothing of its own to add there.
-
--}
-postSection :
-    BrowserTimeZone
-    -> String
-    -> String
-    -> String
-    -> Maybe AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
-    -> (String -> msg)
-    -> Bool
-    -> Maybe (Html msg)
-    -> Maybe (Html msg)
-    -> Maybe (Html msg)
-    -> Html msg
-    -> Html msg
-    -> Post
-    -> Html msg
-postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary titleOverride linkOverride contentOverride moderationView extraContent post =
-    div
-        [ classes
-            [ "event-post-section"
-            , hostnameToCSSClass postServerHost
-            , if primary then
-                "event-post-primary"
-
-              else
-                "event-post-secondary"
-            ]
-        ]
-        [ let
-            titleContent =
-                Maybe.withDefault (text (Posts.postTitleText post)) titleOverride
-          in
-          if primary then
-            h1 [ class "event-post-title" ] [ titleContent ]
-
-          else
-            h2 [ class "event-post-title" ] [ titleContent ]
-        , case linkOverride of
-            Just override ->
-                override
-
-            Nothing ->
-                case Posts.postLinkText post of
-                    Just link ->
-                        a
-                            [ href link
-                            , target "_blank"
-                            , rel "noopener noreferrer"
-                            , classes [ hostnameToCSSClass postServerHost, "event-post-link" ]
-                            ]
-                            [ text link ]
-
-                    Nothing ->
-                        text ""
-        , div [ class "event-post-meta" ]
-            [ text "by "
-            , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-            , text (" · " ++ Posts.postVisibilityText post)
-            , moderationView
-            ]
-        , extraContent
-        , case maybeServer of
-            Just server ->
-                MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
-
-            Nothing ->
-                text ""
-        , case contentOverride of
-            Just override ->
-                override
-
-            Nothing ->
-                case post.content of
-                    Just content ->
-                        Markdown.view [ class "event-post-content" ] content
-
-                    Nothing ->
-                        text ""
-        ]
-
-
 {-| `post` itself, unless it has nothing an `EventInstance`'s own override
 `Post` would actually add over the parent `Event`'s -- no title, link,
 content, or media, just the empty shell every `EventInstance` carries whether
 or not its creator actually filled one in. `Pages.Event.EventId_.eventDetailView`
-uses this to skip its own secondary `postSection` entirely for one of these;
+uses this to skip its own secondary post section entirely for one of these;
 `eventCard` uses it the same way, to skip an instance-specific note line.
 -}
 meaningfulPost : Post -> Maybe Post
@@ -528,8 +456,7 @@ caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 
 -}
 eventCard :
-    Time.Posix
-    -> BrowserTimeZone
+    SharedTime.Model
     -> String
     -> String
     -> String
@@ -543,7 +470,7 @@ eventCard :
     -> Event
     -> EventInstance
     -> Html msg
-eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
+eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
     case event.post of
         Nothing ->
             text ""
@@ -583,7 +510,7 @@ eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeSe
 
                     Nothing ->
                         text ""
-                , div [ class "event-card-when" ] [ text "📅 ", span [ class "event-instance-time" ] [ text (instanceWhenText now browserTimeZone instance) ] ]
+                , div [ class "event-card-when" ] [ text "📅 ", span [ class "event-instance-time" ] [ text (instanceWhenText time instance) ] ]
                 , case instance.location |> Maybe.andThen locationText of
                     Just locationLine ->
                         div [ class "event-card-where" ] [ text "📍 ", text locationLine ]
