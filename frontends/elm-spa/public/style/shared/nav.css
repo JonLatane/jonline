@@ -186,7 +186,7 @@
   /* No top/bottom/left padding -- the logo (see below) sits flush against
      those three edges, flush enough that it'd otherwise poke past the
      button's own rounded corners, hence `overflow: hidden` here too. */
-  padding: 0 0.6rem 0 0;
+  padding: 0 0.3rem 0 0;
   overflow: hidden;
   /* A floor, not a full `min-width: 0` -- large enough to always fit the
      glyph (64px, flex-shrink: 0 below) plus its right padding and gap, with
@@ -196,13 +196,15 @@
      itself would run out of room and get clipped by `overflow: hidden`
      above -- `.nav-links-scroll` (its flex sibling, left fully shrinkable)
      is what absorbs space pressure beyond this floor instead. */
-  min-width: 142px;
+  min-width: 64px;
+  max-width: calc(min(max(150px, 25vw), 300px));
+  flex-shrink: 0;
 }
 
 .nav-link-home .server-name-and-logo.regular {
   flex-direction: row;
   align-items: stretch;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-logo-image,
@@ -231,6 +233,7 @@
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
   border-radius: 0;
+  flex-shrink: 0;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-logo-emoji {
@@ -244,6 +247,7 @@
 .nav-link-home .server-name-and-logo.regular .server-name-breakdown {
   align-items: flex-start;
   justify-content: center;
+  flex-shrink: 1;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-name-primary,

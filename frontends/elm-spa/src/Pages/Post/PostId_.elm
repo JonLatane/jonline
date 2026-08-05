@@ -91,6 +91,16 @@ type alias Model =
     , repliesModel : Maybe PostReplies.Model
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
+
+    -- The `AccountsPanel.accountId` of whichever account was signed in on
+    -- `targetHost` (the Post's own server) when the currently-held
+    -- `postStatus` was last fetched, if any -- what `update`'s `SharedMsg`
+    -- branch compares `currentAccountId` against to notice an
+    -- `AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed
+    -- who's signed in here, and `refetch` accordingly, so the Post (and any
+    -- author-only fields on it) stays in sync with the credentials it's
+    -- fetched with.
+    , fetchedAccountId : Maybe String
     , visibilityEdit : Maybe VisibilityEdit
     , moderationEdit : Maybe ModerationEdit
 
@@ -120,6 +130,7 @@ init shared params =
                 , repliesModel = Nothing
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
+                , fetchedAccountId = Nothing
                 , visibilityEdit = Nothing
                 , moderationEdit = Nothing
                 , mediaEditActive = False
@@ -156,7 +167,7 @@ fetchIfReady shared model =
     else
         case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
             Just _ ->
-                ( { model | fetchStarted = True }
+                ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
                     |> Task.attempt GotPost
                     |> Effect.fromCmd
@@ -177,6 +188,19 @@ maybeAccountServerFor shared model =
     )
 
 
+{-| The `AccountsPanel.accountId` of whichever account is currently signed in
+on `model.targetHost` (the Post's own server), if any -- compared against
+`model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
+`AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
+signed in here (i.e. logging in/out of that account on that server), and
+`refetch` accordingly.
+-}
+currentAccountId : Shared.Model -> Model -> Maybe String
+currentAccountId shared model =
+    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+        |> Maybe.map AccountsPanel.accountId
+
+
 {-| Re-fetches the post unconditionally (unlike `fetchIfReady`, not gated on
 `fetchStarted`, which is already `True` by the time this is ever called) --
 for `update`'s `SharedMsg` branch to call once the Markdown panel (see
@@ -191,7 +215,7 @@ refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
         Just _ ->
-            ( model
+            ( { model | fetchedAccountId = currentAccountId shared model }
             , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
                 |> Task.attempt GotPost
                 |> Effect.fromCmd
@@ -566,8 +590,19 @@ update shared req msg model =
             let
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
+                        -- Also covers logging in/out of an Account for this
+                        -- Post's own server (`AccountsPanel.
+                        -- ToggleAccountEnabled`/`ToggleServerEnabled`) --
+                        -- when that changes who's signed in on `targetHost`,
+                        -- `refetch` so the Post reflects the new (or
+                        -- withdrawn) credentials, rather than `fetchIfReady`,
+                        -- which no-ops once `fetchStarted` is already `True`.
                         Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared model
+                            if model.fetchStarted && currentAccountId shared model /= model.fetchedAccountId then
+                                refetch shared model
+
+                            else
+                                fetchIfReady shared model
 
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
                             refetch shared model

@@ -165,6 +165,12 @@ type alias Model =
     , eventStatus : EventStatus
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
+
+    -- Mirrors `Pages.Post.PostId_.Model.fetchedAccountId` exactly -- the
+    -- `AccountsPanel.accountId` of whichever account was signed in on
+    -- `targetHost` (the Event's own server) when the currently-held
+    -- `eventStatus` was last fetched, if any.
+    , fetchedAccountId : Maybe String
     , instanceHistoryDisplay : InstanceHistoryDisplay
     , instanceLayout : InstanceLayout
     , instanceAnimations : Dict String InstanceAnimation
@@ -201,6 +207,7 @@ init shared params =
                 , eventStatus = LoadingEvent
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
+                , fetchedAccountId = Nothing
                 , instanceHistoryDisplay = OnlyFuture
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
@@ -230,7 +237,7 @@ fetchIfReady shared model =
     else
         case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
             Just _ ->
-                ( { model | fetchStarted = True }
+                ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
                     |> Task.attempt GotEvent
                     |> Effect.fromCmd
@@ -249,7 +256,7 @@ successful save to the Event's own primary `Post`'s content
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
-    ( model
+    ( { model | fetchedAccountId = currentAccountId shared model }
     , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
         |> Task.attempt GotEvent
         |> Effect.fromCmd
@@ -261,6 +268,19 @@ maybeAccountServerFor shared model =
     ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
     , model.targetHost
     )
+
+
+{-| Mirrors `Pages.Post.PostId_.currentAccountId` exactly -- the
+`AccountsPanel.accountId` of whichever account is currently signed in on
+`model.targetHost` (the Event's own server), if any -- compared against
+`model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
+`AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
+signed in here, and `refetch` accordingly.
+-}
+currentAccountId : Shared.Model -> Model -> Maybe String
+currentAccountId shared model =
+    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+        |> Maybe.map AccountsPanel.accountId
 
 
 {-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
@@ -887,8 +907,19 @@ update shared req msg model =
             let
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
+                        -- Also covers logging in/out of an Account for this
+                        -- Event's own server (`AccountsPanel.
+                        -- ToggleAccountEnabled`/`ToggleServerEnabled`) --
+                        -- mirrors `Pages.Post.PostId_`'s identical branch,
+                        -- see its own doc for why `refetch` (rather than
+                        -- `fetchIfReady`, which no-ops once `fetchStarted` is
+                        -- already `True`) is needed here.
                         Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared model
+                            if model.fetchStarted && currentAccountId shared model /= model.fetchedAccountId then
+                                refetch shared model
+
+                            else
+                                fetchIfReady shared model
 
                         -- `EditContentClicked`'s own Markdown panel save
                         -- succeeding -- mirrors `Pages.Post.PostId_`'s
