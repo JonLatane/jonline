@@ -62,7 +62,7 @@ formatDate zone time =
 `zone`, plus a trailing `abbreviation` (e.g. "EDT", `""` omits it) so the
 reader can tell which zone `HH:mm` is in without guessing -- for timestamps
 where the time of day actually matters but a human-friendly `formatMoment`
-would be overkill (e.g. `Shared.EventSyncSourcesPanel`'s last-synced time),
+would be overkill (e.g. `Components.Pages.UserProfilePage`'s Event Sync Source last-synced time),
 unlike a profile's plain "Joined" date.
 -}
 formatDateTime : BrowserTimeZone -> Time.Posix -> String

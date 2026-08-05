@@ -26,7 +26,7 @@ posixToTimestamp posix =
 
 {-| The inverse of `int64ToInt` -- safe for any value that fits in a plain
 `Int` (which is all this app ever builds one from, e.g.
-`Shared.EventSyncSourcesPanel`'s `syncIntervalSeconds`, capped at 1 day in
+`Components.Pages.UserProfilePage`'s Event Sync Source `syncIntervalSeconds`, capped at 1 day in
 seconds), same 32-bit-until-2038 caveat `posixToTimestamp` already documents
 for the same reason (`Int64.fromInts` splits a value across two 32-bit
 halves, and this always passes `0` for the high half).

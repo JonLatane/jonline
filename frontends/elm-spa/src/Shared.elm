@@ -24,6 +24,7 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
+import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
 import Components.Posts as Posts
 import Grpc
@@ -38,7 +39,6 @@ import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.CreateNewPanel as CreateNewPanel
-import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -71,17 +71,39 @@ than each having its own bespoke confirmation step (compare
 Account's confirmation isn't a plain "are you sure you want to delete this"
 prompt). More constructors (e.g. for Posts) can be added here as that need
 comes up.
+
+`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete` delegate
+their actual delete into a Shared-owned submodel's own `DeleteConfirmed`
+(`AccountsPanel`/`MyMediaPanel`) once confirmed, since those submodels
+(unlike a page's own `Model`) are reachable from here. `ConfirmMediaDelete`
+could in principle follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
+`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`
+_requires_ living in `Shared.Model`, it's just simpler to route through since
+it's already there (it _is_ a real global panel, opened from several pages,
+unlike the old `Shared.EventSyncSourcesPanel` used to be). `ConfirmServerDelete`/
+`ConfirmAccountDelete` genuinely can't switch: removing a `Server`/`Account`
+has to mutate `AccountsPanel.Model` itself, which only exists here.
+
 -}
 type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
-    | ConfirmEventSyncSourceDelete EventSyncSource Bool
-      -- The trailing `String` is the acting `targetHost` (the Post/Event
-      -- isn't itself paired with one) -- resolved back to a signed-in
-      -- `Account` (if any) in `ConfirmDelete`'s own handling, the same way
-      -- `EventSyncSourcesPanel.performForOwner` resolves one from a bare
-      -- host.
+      -- The trailing `String` on each of these three is the acting
+      -- `targetHost` (the source/Post/Event isn't itself paired with one) --
+      -- resolved back to a signed-in `Account` (if any) in `ConfirmDelete`'s
+      -- own handling. Unlike every `DeleteConfirmation` above, none of these
+      -- three are owned by a Shared-owned panel to delegate a
+      -- `DeleteConfirmed` into -- each is a plain list rendered by exactly
+      -- one page (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
+      -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
+      -- `GotPostDeleteResult`/`GotEventDeleteResult`) is forwarded on to
+      -- whichever page is active the same as any other `Shared.Msg`, for
+      -- that page's own `Model` to apply. This is the shape any *new*
+      -- "list of deletable things shown on one page" should follow -- don't
+      -- give the list itself a Shared-owned home just to reach this dialog.
+    | ConfirmEventSyncSourceDelete EventSyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
 
@@ -143,10 +165,10 @@ type alias Model =
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
-    , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
 
-    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
-    -- the time -- see `DeleteConfirmation`.
+    -- Effectively a "Panel" from the UI's point of view.
+    -- Shows a delete confirmation modal while `UI.deleteConfirmationModal` is up,
+    -- `Nothing` the rest of the time -- see `DeleteConfirmation`.
     , confirmingDeleteFor : Maybe DeleteConfirmation
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
@@ -221,7 +243,6 @@ type Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
     | CreateNewPanelMsg CreateNewPanel.Msg
-    | EventSyncSourcesPanelMsg EventSyncSourcesPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
@@ -229,14 +250,17 @@ type Msg
     | RequestDelete DeleteConfirmation
     | CancelDelete
     | ConfirmDelete
-      -- `ConfirmDelete`'s own handling of `ConfirmPostDelete`/
-      -- `ConfirmEventDelete` fires the `DeletePost`/`DeleteEvent` RPC
-      -- directly (unlike every other `DeleteConfirmation`, a Post/Event
-      -- delete isn't owned by any Shared-owned panel `Shared.update` could
-      -- delegate to) -- this is its result. Forwarded, like every
-      -- `Shared.Msg`, into whichever page is active (`Main.notifyPageOfSharedMsg`),
-      -- so `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own `SharedMsg`
-      -- handling can navigate away on success.
+      -- `ConfirmDelete`'s own handling of `ConfirmEventSyncSourceDelete`/
+      -- `ConfirmPostDelete`/`ConfirmEventDelete` fires the
+      -- `DeleteEventSyncSource`/`DeletePost`/`DeleteEvent` RPC directly
+      -- (unlike every other `DeleteConfirmation`, none of these three is
+      -- owned by any Shared-owned panel `Shared.update` could delegate to)
+      -- -- these are their results. Forwarded, like every `Shared.Msg`, into
+      -- whichever page is active (`Main.notifyPageOfSharedMsg`), so
+      -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
+      -- own list/navigate away on success.
+    | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
     | ShowScrollPreserver
@@ -411,7 +435,6 @@ init basePath req flags =
             , mediaViewerPanel = MediaViewerPanel.init
             , myMediaPanel = MyMediaPanel.init
             , createNewPanel = CreateNewPanel.init
-            , eventSyncSourcesPanel = EventSyncSourcesPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
             , systemPrefersDark = systemPrefersDark
@@ -923,37 +946,6 @@ updateImpl req msg model =
                 ]
             )
 
-        EventSyncSourcesPanelMsg subMsg ->
-            let
-                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
-                    EventSyncSourcesPanel.update model.accountsPanel subMsg model.eventSyncSourcesPanel
-
-                ( accountsPanelModel, accountsPanelCmd ) =
-                    case maybeAccountsPanelMsg of
-                        Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
-
-                        Nothing ->
-                            ( model.accountsPanel, Cmd.none )
-
-                -- `EventSyncSourcesPanel.DeleteClicked`'s own request to open
-                -- the shared "are you sure?" dialog -- same pattern as
-                -- `MyMediaPanelMsg`'s own `confirmingDeleteFor` above.
-                confirmingDeleteFor =
-                    case maybeDeleteRequest of
-                        Just ( source, deleteSyncedEvents ) ->
-                            Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents)
-
-                        Nothing ->
-                            model.confirmingDeleteFor
-            in
-            ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
-            , Cmd.batch
-                [ Cmd.map EventSyncSourcesPanelMsg subCmd
-                , Cmd.map AccountsPanelMsg accountsPanelCmd
-                ]
-            )
-
         MyMediaPanelOpenForAccount account ->
             -- The media button on an Account chip (`UI.accountRow`) opens this
             -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
@@ -1014,6 +1006,15 @@ updateImpl req msg model =
 
         ConfirmDelete ->
             case model.confirmingDeleteFor of
+                -- These two route straight into `AccountsPanel.update`
+                -- rather than resolving through `Task.attempt` + a
+                -- `GotXDeleteResult` here, unlike every branch below. That's
+                -- fine *only* because `AccountsPanel.Model` already lives on
+                -- `Shared.Model` for unrelated reasons (it's real global
+                -- state -- known servers, signed-in accounts -- read from
+                -- all over the app); it's not a reason to give some other
+                -- page-local delete a Shared-owned home just to reach this
+                -- `case`. See `DeleteConfirmation`'s own doc.
                 Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
@@ -1059,34 +1060,26 @@ updateImpl req msg model =
                         ]
                     )
 
-                -- Same shape as `ConfirmMediaDelete` just above.
-                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents) ->
-                    let
-                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source deleteSyncedEvents) model.eventSyncSourcesPanel
-
-                        ( accountsPanelModel, accountsPanelCmd ) =
-                            case maybeAccountsPanelMsg of
-                                Just accountsPanelMsg ->
-                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
-
-                                Nothing ->
-                                    ( model.accountsPanel, Cmd.none )
-                    in
-                    ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
-                    , Cmd.batch
-                        [ Cmd.map EventSyncSourcesPanelMsg subCmd
-                        , Cmd.map AccountsPanelMsg accountsPanelCmd
-                        ]
+                -- Unlike every branch above, none of these three is owned by
+                -- any Shared-owned panel to delegate a `DeleteConfirmed`
+                -- into -- each fires its delete RPC directly instead,
+                -- resolving the acting account from the carried `targetHost`.
+                -- Each result (`GotEventSyncSourceDeleteResult`/
+                -- `GotPostDeleteResult`/`GotEventDeleteResult`) is picked up
+                -- by whichever page is active, same as any other
+                -- `Shared.Msg` -- see `DeleteConfirmation`'s own doc for why
+                -- this is the shape new page-owned deletable lists should
+                -- follow.
+                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents host) ->
+                    ( { model | confirmingDeleteFor = Nothing }
+                    , EventSyncSources.deleteEventSyncSource
+                        model.accountsPanel
+                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        source
+                        deleteSyncedEvents
+                        |> Task.attempt (GotEventSyncSourceDeleteResult source.id)
                     )
 
-                -- Unlike every branch above, a Post/Event delete isn't owned
-                -- by any Shared-owned panel to delegate a `DeleteConfirmed`
-                -- into -- fires the RPC directly instead, resolving the
-                -- acting account from the carried `targetHost` the same way
-                -- `EventSyncSourcesPanel.performForOwner` does from a bare
-                -- host. Its result (`GotPostDeleteResult`) is picked up by
-                -- whichever page is active, same as any other `Shared.Msg`.
                 Just (ConfirmPostDelete post host) ->
                     ( { model | confirmingDeleteFor = Nothing }
                     , Posts.deletePost
@@ -1107,6 +1100,21 @@ updateImpl req msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        GotEventSyncSourceDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventSyncSourceDeleteResult _ (Err _) ->
+            ( model, Cmd.none )
 
         GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let

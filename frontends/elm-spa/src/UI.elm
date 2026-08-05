@@ -1,5 +1,6 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle, webUiToggleRow)
 
+import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
 import Components.Markdown as Markdown
 import Components.Posts as Posts
@@ -23,7 +24,6 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
-import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -2127,7 +2127,7 @@ deleteConfirmationModal shared =
                             , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
                             )
 
-                        Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents ->
+                        Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
                             let
                                 sourceLabel =
                                     case source.configuration of
@@ -2142,14 +2142,14 @@ deleteConfirmationModal shared =
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ ", deleting the "
-                                    ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                    ++ EventSyncSources.syncedCountsLabel source
                                     ++ " it synced? This can't be undone."
 
                               else
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ "? This will leave the "
-                                    ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                    ++ EventSyncSources.syncedCountsLabel source
                                     ++ " it synced on your profile, no longer associated with a source."
                             )
 

@@ -4,6 +4,7 @@ module Components.EventSyncSources exposing
     , getEventSyncSources
     , intervalOptions
     , intervalText
+    , syncedCountsLabel
     , updateEventSyncSource
     )
 
@@ -20,6 +21,7 @@ import Proto.Google.Protobuf
 import Proto.Jonline exposing (DeleteEventSyncSourceRequest, EventSyncSource, GetEventSyncSourcesResponse, User, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
@@ -130,3 +132,40 @@ intervalText seconds =
         |> List.head
         |> Maybe.map Tuple.second
         |> Maybe.withDefault (String.fromInt seconds ++ " seconds")
+
+
+{-| "N events" alone when every event has exactly one instance (the common
+non-recurring case, where naming both is redundant) -- otherwise "N events
+and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
+"delete along with its events" button) and `UI`'s shared delete-confirmation
+dialog for the same source, so it lives here rather than on either caller.
+-}
+syncedCountsLabel : EventSyncSource -> String
+syncedCountsLabel source =
+    let
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        instanceCount =
+            Conversions.int64ToInt source.eventInstanceCount
+    in
+    if eventCount == instanceCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount instanceCount "instance"
+
+
+pluralCount : Int -> String -> String
+pluralCount count noun =
+    String.fromInt count
+        ++ " "
+        ++ noun
+        ++ (if count == 1 then
+                ""
+
+            else
+                "s"
+           )

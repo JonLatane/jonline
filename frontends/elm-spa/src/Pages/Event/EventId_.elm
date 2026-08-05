@@ -1478,7 +1478,7 @@ instanceMetaView shared model instance =
 
 {-| One small-text, clipped-not-wrapped line at the bottom of the event
 detail view, crediting the ICS feed this `Event` was pulled in from (see
-`Shared.EventSyncSourcesPanel`) -- renders nothing for a normal, non-synced
+`Components.Pages.UserProfilePage`) -- renders nothing for a normal, non-synced
 event.
 -}
 syncedFromView : Event -> Html Msg
