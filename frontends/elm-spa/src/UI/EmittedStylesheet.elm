@@ -88,7 +88,7 @@ mainFrontendServerRules theme accountsPanel =
         [ "a { color: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
-        , ".nav-link:hover { background-color:" ++ theme.navColor ++ "BB; }\n"
+        , ".nav-link:hover { background-color:" ++ theme.navColor ++ "88; }\n"
         ]
 
 
