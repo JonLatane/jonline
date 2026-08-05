@@ -197,7 +197,8 @@
      above -- `.nav-links-scroll` (its flex sibling, left fully shrinkable)
      is what absorbs space pressure beyond this floor instead. */
   min-width: 64px;
-  max-width: calc(min(max(150px, 25vw), 300px));
+  max-width: calc(min(max(150px, 25vw), 200px));
+  /* calc(min(max(200px, 25vw), 200px));*/
   flex-shrink: 0;
 }
 
