@@ -80,24 +80,26 @@ render previewSizing server maybeAccount onImageClicked media =
 
                 Nothing ->
                     []
-
-        singleSizing =
-            Maybe.withDefault MediaRenderer.Natural previewSizing
-
-        stripSizing =
-            Maybe.withDefault MediaRenderer.Small previewSizing
     in
     case media of
         [] ->
             text ""
 
         [ single ] ->
+            let
+                singleSizing =
+                    Maybe.withDefault MediaRenderer.Natural previewSizing
+            in
             div [ classes ("multi-media-single" :: previewClasses) ]
                 [ div [ class "multi-media-single-item" ]
                     [ MediaRenderer.view singleSizing MediaRenderer.ToWidthAndHeight server maybeAccount onImageClicked single ]
                 ]
 
         _ ->
+            let
+                stripSizing =
+                    Maybe.withDefault MediaRenderer.Small previewSizing
+            in
             div [ classes ("multi-media-strip" :: previewClasses) ]
                 (media
                     |> List.map

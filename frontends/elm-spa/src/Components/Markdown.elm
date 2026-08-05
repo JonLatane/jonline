@@ -8,7 +8,7 @@ federated servers, so it's untrusted -- and highlight.js highlights fenced
 code blocks).
 
 Elm's virtual DOM has no way to render a raw HTML string itself, so this
-hands the Markdown source to the custom element as a JS *property* (not an
+hands the Markdown source to the custom element as a JS _property_ (not an
 attribute -- properties aren't limited to strings and don't round-trip
 through `attributeChangedCallback`), the pattern from
 <https://guide.elm-lang.org/interop/custom_elements.html>. The element

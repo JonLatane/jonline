@@ -39,14 +39,6 @@ import Json.Encode as Encode
 import Ports
 
 
-type PublicKey
-    = PublicKey String
-
-
-type PrivateKey
-    = PrivateKey String
-
-
 type alias Model =
     { publicKey : Maybe PublicKey
     , privateKey : Maybe PrivateKey
@@ -56,6 +48,14 @@ type alias Model =
 type Msg
     = GotKeyPair Decode.Value
     | Discarded
+
+
+type PublicKey
+    = PublicKey String
+
+
+type PrivateKey
+    = PrivateKey String
 
 
 {-| Loads a keypair persisted from a previous session (`flags` is whatever
@@ -72,11 +72,9 @@ init flags =
             ( { publicKey = Nothing, privateKey = Nothing }, Ports.federatedAuthGenerateKeyPair Encode.null )
 
 
-keyPairDecoder : Decoder Model
-keyPairDecoder =
-    Decode.map2 (\publicKey privateKey -> { publicKey = Just (PublicKey publicKey), privateKey = Just (PrivateKey privateKey) })
-        (Decode.field "publicKey" Decode.string)
-        (Decode.field "privateKey" Decode.string)
+subscriptions : Sub Msg
+subscriptions =
+    Ports.federatedAuthKeyPairGenerated GotKeyPair
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -96,9 +94,33 @@ update msg model =
             )
 
 
-subscriptions : Sub Msg
-subscriptions =
-    Ports.federatedAuthKeyPairGenerated GotKeyPair
+
+-- ENCRYPT / DECRYPT
+-- These are one-shot, page-local request/response cycles (unlike keypair
+-- generation, which is app-wide) -- callers fire `encrypt`/`decrypt`, then
+-- subscribe to `Ports.federatedAuthEncrypted`/`federatedAuthDecrypted`
+-- directly in their own `subscriptions`, decoding results with
+-- `encryptResult`/`decryptResult`.
+
+
+encrypt : PublicKey -> String -> Cmd msg
+encrypt (PublicKey publicKey) plaintext =
+    Ports.federatedAuthEncrypt
+        (Encode.object
+            [ ( "publicKey", Encode.string publicKey )
+            , ( "plaintext", Encode.string plaintext )
+            ]
+        )
+
+
+decrypt : PrivateKey -> String -> Cmd msg
+decrypt (PrivateKey privateKey) encoded =
+    Ports.federatedAuthDecrypt
+        (Encode.object
+            [ ( "privateKey", Encode.string privateKey )
+            , ( "encoded", Encode.string encoded )
+            ]
+        )
 
 
 
@@ -131,33 +153,11 @@ isBase64UrlChar c =
     Char.isAlphaNum c || c == '-' || c == '_'
 
 
-
--- ENCRYPT / DECRYPT
--- These are one-shot, page-local request/response cycles (unlike keypair
--- generation, which is app-wide) -- callers fire `encrypt`/`decrypt`, then
--- subscribe to `Ports.federatedAuthEncrypted`/`federatedAuthDecrypted`
--- directly in their own `subscriptions`, decoding results with
--- `encryptResult`/`decryptResult`.
-
-
-encrypt : PublicKey -> String -> Cmd msg
-encrypt (PublicKey publicKey) plaintext =
-    Ports.federatedAuthEncrypt
-        (Encode.object
-            [ ( "publicKey", Encode.string publicKey )
-            , ( "plaintext", Encode.string plaintext )
-            ]
-        )
-
-
-decrypt : PrivateKey -> String -> Cmd msg
-decrypt (PrivateKey privateKey) encoded =
-    Ports.federatedAuthDecrypt
-        (Encode.object
-            [ ( "privateKey", Encode.string privateKey )
-            , ( "encoded", Encode.string encoded )
-            ]
-        )
+keyPairDecoder : Decoder Model
+keyPairDecoder =
+    Decode.map2 (\publicKey privateKey -> { publicKey = Just (PublicKey publicKey), privateKey = Just (PrivateKey privateKey) })
+        (Decode.field "publicKey" Decode.string)
+        (Decode.field "privateKey" Decode.string)
 
 
 {-| Decodes a `federatedAuthEncrypted` payload (`{ ok : Bool, value : String }`)

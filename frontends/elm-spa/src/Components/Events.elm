@@ -40,8 +40,8 @@ import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
-import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
+import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -303,30 +303,30 @@ instanceStartsOrEndsAt instance =
 used identically by `eventCard`'s own "when" line, `Pages.Event.EventId_`'s
 detail view (the currently-viewed instance's own when line), and that same
 page's date-picker strip chips (see `instanceHistoryView`), so every place an
-`EventInstance`'s date/time shows reads the same way. `now` supplies "the
-viewer's own current year" (see `Shared.Model.now`), which
-`BrowserTimeZone.formatRange`/`formatMoment` use to drop a redundant year --
+`EventInstance`'s date/time shows reads the same way. `time.now` supplies
+"the viewer's own current year" (see `Shared.Time.Model.now`), which
+`SharedTime.formatRange`/`formatMoment` use to drop a redundant year --
 see their own docs for the full set of examples this is designed against
 (same-day ranges, cross-day ranges, and ranges crossing into a different
 year on either side).
 
 Both `startsAt` and `endsAt` are normally set (a merged range, via
-`BrowserTimeZone.formatRange`); this falls back to just whichever one is set
-(via `BrowserTimeZone.formatMoment`, prefixed "Until " if only `endsAt` is,
+`SharedTime.formatRange`); this falls back to just whichever one is set
+(via `SharedTime.formatMoment`, prefixed "Until " if only `endsAt` is,
 since that's the unusual case) or a placeholder if somehow neither is.
 
 -}
-instanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> String
-instanceWhenText now browserTimeZone instance =
+instanceWhenText : SharedTime.Model -> EventInstance -> String
+instanceWhenText time instance =
     case ( instance.startsAt, instance.endsAt ) of
         ( Just startTs, Just endTs ) ->
-            BrowserTimeZone.formatRange now browserTimeZone (timestampToPosix startTs) (timestampToPosix endTs)
+            SharedTime.formatRange time (timestampToPosix startTs) (timestampToPosix endTs)
 
         ( Just startTs, Nothing ) ->
-            BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix startTs)
+            SharedTime.formatMoment time (timestampToPosix startTs)
 
         ( Nothing, Just endTs ) ->
-            "Until " ++ BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix endTs)
+            "Until " ++ SharedTime.formatMoment time (timestampToPosix endTs)
 
         ( Nothing, Nothing ) ->
             "Time TBD"
@@ -344,11 +344,11 @@ another. Falls back to the full `instanceWhenText` the moment either side
 lacks a full start/end pair, or their time-of-day actually differs (e.g. an
 irregular one-off that moved to a different hour).
 -}
-siblingInstanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> EventInstance -> String
-siblingInstanceWhenText now browserTimeZone currentInstance instance =
+siblingInstanceWhenText : SharedTime.Model -> EventInstance -> EventInstance -> String
+siblingInstanceWhenText time currentInstance instance =
     let
         zone =
-            browserTimeZone.zone
+            time.browserTimeZone.zone
 
         sameTimeOfDay a b =
             Time.toHour zone a == Time.toHour zone b && Time.toMinute zone a == Time.toMinute zone b
@@ -369,10 +369,10 @@ siblingInstanceWhenText now browserTimeZone currentInstance instance =
     in
     case ( sharesCurrentTimeOfDay, instance.startsAt, instance.endsAt ) of
         ( True, Just startTs, Just endTs ) ->
-            BrowserTimeZone.formatDateRange now browserTimeZone (timestampToPosix startTs) (timestampToPosix endTs)
+            SharedTime.formatDateRange time (timestampToPosix startTs) (timestampToPosix endTs)
 
         _ ->
-            instanceWhenText now browserTimeZone instance
+            instanceWhenText time instance
 
 
 {-| `location.uniformlyFormattedAddress`, trimmed -- `Nothing` if blank, same
@@ -456,8 +456,7 @@ caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 
 -}
 eventCard :
-    Time.Posix
-    -> BrowserTimeZone
+    SharedTime.Model
     -> String
     -> String
     -> String
@@ -471,7 +470,7 @@ eventCard :
     -> Event
     -> EventInstance
     -> Html msg
-eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
+eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
     case event.post of
         Nothing ->
             text ""
@@ -511,7 +510,7 @@ eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeSe
 
                     Nothing ->
                         text ""
-                , div [ class "event-card-when" ] [ text "📅 ", span [ class "event-instance-time" ] [ text (instanceWhenText now browserTimeZone instance) ] ]
+                , div [ class "event-card-when" ] [ text "📅 ", span [ class "event-instance-time" ] [ text (instanceWhenText time instance) ] ]
                 , case instance.location |> Maybe.andThen locationText of
                     Just locationLine ->
                         div [ class "event-card-where" ] [ text "📍 ", text locationLine ]

@@ -6,7 +6,6 @@ module Components.Users exposing
     , createFollow
     , defederateProfile
     , deleteFollow
-    , displayName
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
@@ -21,7 +20,6 @@ module Components.Users exposing
     , permissionFromText
     , permissionText
     , profileHref
-    , textSearchListingType
     , titleName
     , updateFollow
     , updateUser
@@ -92,6 +90,7 @@ convention as `Components.Posts.fetchPosts`), switches `listingType` to its
 `textSearchListingType` counterpart and sends it as `search_text` --
 otherwise this is the plain (unscoped-by-search) listing `listingType` itself
 already was.
+
 -}
 fetchUserListing :
     AccountsPanel.Model
@@ -142,9 +141,6 @@ textSearchListingType listingType =
 
         FRIENDS ->
             FRIENDSTEXTSEARCH
-
-        FOLLOWREQUESTS ->
-            FOLLOWREQUESTSTEXTSEARCH
 
         other ->
             other
@@ -334,7 +330,7 @@ isReservedUsername username =
 
 
 {-| The `/user/:id[@host]` href for a user, as seen from `viewingServerHost`
-(typically `shared.accountsPanel.mainFrontendHost`) -- mirrors
+(typically `shared.accounts.mainFrontendHost`) -- mirrors
 `Components.Posts.postHref`.
 -}
 userIdHref : String -> String -> String -> String -> String

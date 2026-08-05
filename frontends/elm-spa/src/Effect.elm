@@ -92,6 +92,7 @@ into every keystroke (the Accounts Panel's login form, which lives in
 once with the stale pre-keystroke model -- snapping a mid-edit cursor to the
 end of the old text -- and then again with the correct one, snapping it again.
 Applying the `Shared.Msg` synchronously avoids that extra render entirely.
+
 -}
 partitionShared : Effect msg -> ( List Shared.Msg, Effect msg )
 partitionShared effect =

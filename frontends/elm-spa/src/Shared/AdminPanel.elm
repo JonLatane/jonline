@@ -25,15 +25,10 @@ Settings tab doc in `UI.elm` notes this too).
 The actual "set web UI" action lives in `Shared.AccountsPanel` (it needs that
 module's `Account`/`Server`/RPC machinery); this module only tracks which
 panels are open.
+
 -}
 
 import Set exposing (Set)
-
-
-type AccountsPanelTab
-    = AccountsAndServersTab
-    | SettingsTab
-    | AdminTab
 
 
 type alias Model =
@@ -53,6 +48,12 @@ type Msg
     | ToggleAccountPanel String
 
 
+type AccountsPanelTab
+    = AccountsAndServersTab
+    | SettingsTab
+    | AdminTab
+
+
 init : Model
 init =
     { activeTab = AccountsAndServersTab
@@ -61,11 +62,6 @@ init =
     , showAllEventLayouts = False
     , openAccountPanels = Set.empty
     }
-
-
-isAccountPanelOpen : String -> Model -> Bool
-isAccountPanelOpen id model =
-    Set.member id model.openAccountPanels
 
 
 update : Msg -> Model -> Model
@@ -92,3 +88,8 @@ update msg model =
                     else
                         Set.insert id model.openAccountPanels
             }
+
+
+isAccountPanelOpen : String -> Model -> Bool
+isAccountPanelOpen id model =
+    Set.member id model.openAccountPanels

@@ -1,6 +1,6 @@
 module Shared.AccountsPanel exposing
-    ( Account
-    , AcceptedCreateAccount
+    ( AcceptedCreateAccount
+    , Account
     , AccountForm
     , AddServerForm
     , Branding
@@ -50,7 +50,6 @@ module Shared.AccountsPanel exposing
     , serverHasAccounts
     , serverInfoOf
     , serverNameAndLogo
-    , serverThemeFor
     , serverThemeOf
     , serverUrl
     , shouldShowAddAccountForm
@@ -69,7 +68,6 @@ working connection.
 
 import Animation
 import Browser.Dom as Dom
-import Char
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, img, text)
@@ -228,7 +226,7 @@ so the modal (and the `AcceptedCreateAccount` it produces) always names the
 username that was on screen at the moment "Create Account" was clicked, even
 if the form's fields somehow changed while the confirmation step
 (`UI.createAccountConfirmationModal`) was up. There's no password here yet --
-this step happens *before* the Password field even renders (see
+this step happens _before_ the Password field even renders (see
 `Model.newAccountType`).
 -}
 type alias PendingCreateAccount =
@@ -255,6 +253,7 @@ from here rather than `accountForm`, same reasoning as `PendingCreateAccount`.
 `Time.now` (see `GotCreateAccountAcceptedTime`) -- not yet sent with the
 `CreateAccount` RPC (the API has no field for it), but kept on hand ready for
 when it does.
+
 -}
 type alias AcceptedCreateAccount =
     { server : Server
@@ -855,8 +854,7 @@ spare than the nav bar but where a centered stack still reads oddly, e.g.
 `Shared.Breadcrumbs`' server overview panel.
 -}
 type ServerLogoSize
-    = CompactServerLogo
-    | RegularServerLogo
+    = RegularServerLogo
     | HorizontalServerLogo
 
 
@@ -869,14 +867,6 @@ serverNameAndLogo server size =
         ( namePrefix, emoji, nameSuffix ) =
             splitOnFirstEmoji True branding.name
 
-        hasEmoji =
-            case emoji of
-                Just e ->
-                    e /= "" && e /= "|"
-
-                Nothing ->
-                    False
-
         largeName =
             String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
 
@@ -886,6 +876,15 @@ serverNameAndLogo server size =
                     img [ class "server-logo-image", src url, alt branding.name ] []
 
                 Nothing ->
+                    let
+                        hasEmoji =
+                            case emoji of
+                                Just e ->
+                                    e /= "" && e /= "|"
+
+                                Nothing ->
+                                    False
+                    in
                     if hasEmoji then
                         div [ class "server-logo-emoji" ] [ text (Maybe.withDefault "" emoji) ]
 
@@ -907,7 +906,7 @@ serverNameAndLogo server size =
         -- they differ only in layout (stacked+centered vs. row+left-aligned,
         -- both via `sizeClass` below), not sizing.
         isBig =
-            size /= CompactServerLogo
+            True
 
         primaryClasses =
             "server-name-primary"
@@ -932,9 +931,6 @@ serverNameAndLogo server size =
 
         sizeClass =
             case size of
-                CompactServerLogo ->
-                    "compact"
-
                 RegularServerLogo ->
                     "regular"
 
@@ -1246,7 +1242,7 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations`,
+{-| `sendUpdate`'s actual per-`Msg` logic, plus `syncItemAnimations`,
 `sortMainServerFirst`, and `sortMainServerAccountsFirst` run unconditionally
 afterward -- so every code path that can add an account/server, or change
 `mainFrontendHost`, gets its enter animation/correct ordering for free,
@@ -1255,7 +1251,7 @@ small) to run after every single message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
-    updateHelp req msg model
+    sendUpdate req msg model
         |> Tuple.mapFirst syncItemAnimations
         |> Tuple.mapFirst sortMainServerFirst
         |> Tuple.mapFirst sortMainServerAccountsFirst
@@ -1273,8 +1269,8 @@ syncItemAnimations model =
     }
 
 
-updateHelp : Request -> Msg -> Model -> ( Model, Cmd Msg )
-updateHelp req msg model =
+sendUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
+sendUpdate req msg model =
     case msg of
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
@@ -2421,7 +2417,7 @@ updateHelp req msg model =
         ClearFieldClicked domId clearMsg ->
             let
                 ( clearedModel, clearCmd ) =
-                    updateHelp req clearMsg model
+                    sendUpdate req clearMsg model
             in
             ( clearedModel, Cmd.batch [ clearCmd, Task.attempt (\_ -> NoOp) (Dom.focus domId) ] )
 
@@ -2798,35 +2794,6 @@ upsertAccount account accounts =
         -- newly-added account is visible without scrolling, to see its FLIP
         -- entrance animation -- revisit ordering later.
         account :: accounts
-
-
-{-| Inserts a newly-seen account (fresh login/create-account) directly after
-the last existing account on the same server, rather than always at the very
-end of the whole list -- so a server's accounts stay grouped together in the
-persisted list (and the flat accounts-list UI) even when other servers'
-accounts are interleaved. Falls back to appending at the end when this is the
-first account on that server.
--}
-insertAfterSameServer : Account -> List Account -> List Account
-insertAfterSameServer account accounts =
-    let
-        ( result, inserted ) =
-            List.foldr
-                (\a ( acc, alreadyInserted ) ->
-                    if not alreadyInserted && a.server == account.server then
-                        ( a :: account :: acc, True )
-
-                    else
-                        ( a :: acc, alreadyInserted )
-                )
-                ( [], False )
-                accounts
-    in
-    if inserted then
-        result
-
-    else
-        accounts ++ [ account ]
 
 
 serverFrom : Connection -> Bool -> ServerConfiguration -> Server
@@ -3230,14 +3197,15 @@ candidatePorts pageIsSecure =
     let
         secure =
             [ ( 27707, True ), ( 443, True ) ]
-
-        insecure =
-            [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
     in
     if pageIsSecure then
         secure
 
     else
+        let
+            insecure =
+                [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
+        in
         secure ++ insecure
 
 

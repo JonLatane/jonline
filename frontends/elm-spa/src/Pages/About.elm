@@ -13,7 +13,7 @@ needed here.
 import Components.Pages.ServerInformationPage as ServerInformationPage
 import Effect exposing (Effect)
 import Gen.Params.About exposing (Params)
-import Html exposing (a, div, h2, p, pre, span, text)
+import Html exposing (a, div, h2, p, pre, text)
 import Html.Attributes exposing (class, href, target)
 import Page
 import Request
@@ -43,7 +43,7 @@ type alias Model =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accountsPanel.mainFrontendHost req.key req.url.path req.query
+    ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
 
 
 

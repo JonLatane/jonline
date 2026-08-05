@@ -39,7 +39,7 @@ import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
-import Proto.Jonline.Moderation exposing (Moderation(..))
+import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Request
 import Shared
@@ -165,6 +165,12 @@ type alias Model =
     , eventStatus : EventStatus
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
+
+    -- Mirrors `Pages.Post.PostId_.Model.fetchedAccountId` exactly -- the
+    -- `AccountsPanel.accountId` of whichever account was signed in on
+    -- `targetHost` (the Event's own server) when the currently-held
+    -- `eventStatus` was last fetched, if any.
+    , fetchedAccountId : Maybe String
     , instanceHistoryDisplay : InstanceHistoryDisplay
     , instanceLayout : InstanceLayout
     , instanceAnimations : Dict String InstanceAnimation
@@ -192,7 +198,7 @@ init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     let
         ( eventId, targetHost ) =
-            Events.parseEventRouteId shared.accountsPanel.mainFrontendHost params.eventId
+            Events.parseEventRouteId shared.accounts.mainFrontendHost params.eventId
 
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
@@ -201,6 +207,7 @@ init shared params =
                 , eventStatus = LoadingEvent
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
+                , fetchedAccountId = Nothing
                 , instanceHistoryDisplay = OnlyFuture
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
@@ -228,10 +235,10 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
+        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
             Just _ ->
-                ( { model | fetchStarted = True }
-                , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
+                ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
+                , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.eventInstanceId
                     |> Task.attempt GotEvent
                     |> Effect.fromCmd
                 )
@@ -249,8 +256,8 @@ successful save to the Event's own primary `Post`'s content
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
-    ( model
-    , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventInstanceId
+    ( { model | fetchedAccountId = currentAccountId shared model }
+    , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.eventInstanceId
         |> Task.attempt GotEvent
         |> Effect.fromCmd
     )
@@ -258,9 +265,22 @@ refetch shared model =
 
 maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
 maybeAccountServerFor shared model =
-    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
     , model.targetHost
     )
+
+
+{-| Mirrors `Pages.Post.PostId_.currentAccountId` exactly -- the
+`AccountsPanel.accountId` of whichever account is currently signed in on
+`model.targetHost` (the Event's own server), if any -- compared against
+`model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
+`AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
+signed in here, and `refetch` accordingly.
+-}
+currentAccountId : Shared.Model -> Model -> Maybe String
+currentAccountId shared model =
+    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.map AccountsPanel.accountId
 
 
 {-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
@@ -271,8 +291,8 @@ Mirrors `Pages.Post.PostId_.serverAndAccount`.
 serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
 
 
 {-| Applies a just-saved `updatedPost` to the currently-loaded `Event`'s own
@@ -481,7 +501,7 @@ this is what actually picks this page's initial mode: `init` always starts
 `model.instanceHistoryDisplay` at `OnlyFuture` (the most restrictive
 possible value) before the `Event` is known, so the first call once it
 lands is the one that raises it to wherever the currently-viewed `instance`
-actually needs. `now` is `Shared.Model.now` -- see its own doc.
+actually needs. `now` is `Shared.Model.time.now` -- see its own doc.
 -}
 clampHistoryDisplay : Time.Posix -> EventInstance -> Model -> Model
 clampHistoryDisplay now instance model =
@@ -504,7 +524,7 @@ vanishing, and the ones staying visible are left alone. A no-op while the
 `Event` itself hasn't loaded yet. Mirrors
 `Shared.MyMediaPanel.syncMediaAnimations` -- see its own doc; called from
 every `update` branch that can change either input: `GotEvent` and
-`HistoryDisplayChanged`. `now` is `Shared.Model.now` -- see its own doc.
+`HistoryDisplayChanged`. `now` is `Shared.Model.time.now` -- see its own doc.
 -}
 syncInstanceAnimations : Time.Posix -> Model -> Model
 syncInstanceAnimations now model =
@@ -651,12 +671,12 @@ update shared req msg model =
                 clampedModel =
                     case newStatus of
                         EventLoaded _ loadedInstance ->
-                            clampHistoryDisplay shared.now loadedInstance modelWithNewStatus
+                            clampHistoryDisplay shared.time.now loadedInstance modelWithNewStatus
 
                         _ ->
                             modelWithNewStatus
             in
-            ( clampedModel |> syncInstanceAnimations shared.now
+            ( clampedModel |> syncInstanceAnimations shared.time.now
             , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect ]
             )
 
@@ -712,7 +732,7 @@ update shared req msg model =
                 ( Just edit, Just ( server, account ) ) ->
                     ( { model | postFieldEdit = Just { edit | status = Submitting } }
                     , Posts.updatePost
-                        shared.accountsPanel
+                        shared.accounts
                         ( Just account.userId, server.frontendHost )
                         post.id
                         (\freshPost ->
@@ -775,7 +795,7 @@ update shared req msg model =
                 ( Just edit, Just post, Just ( server, account ) ) ->
                     ( { model | moderationEdit = Just { edit | status = Submitting } }
                     , Posts.updatePost
-                        shared.accountsPanel
+                        shared.accounts
                         ( Just account.userId, server.frontendHost )
                         post.id
                         (\freshPost -> { freshPost | moderation = edit.pending })
@@ -842,7 +862,7 @@ update shared req msg model =
                 ( model, scrollToInstance 0 model.eventInstanceId |> Effect.fromCmd )
 
             else
-                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations shared.now
+                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations shared.time.now
                 , scrollToInstance 1000 model.eventInstanceId |> Effect.fromCmd
                 )
 
@@ -887,8 +907,19 @@ update shared req msg model =
             let
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
+                        -- Also covers logging in/out of an Account for this
+                        -- Event's own server (`AccountsPanel.
+                        -- ToggleAccountEnabled`/`ToggleServerEnabled`) --
+                        -- mirrors `Pages.Post.PostId_`'s identical branch,
+                        -- see its own doc for why `refetch` (rather than
+                        -- `fetchIfReady`, which no-ops once `fetchStarted` is
+                        -- already `True`) is needed here.
                         Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared model
+                            if model.fetchStarted && currentAccountId shared model /= model.fetchedAccountId then
+                                refetch shared model
+
+                            else
+                                fetchIfReady shared model
 
                         -- `EditContentClicked`'s own Markdown panel save
                         -- succeeding -- mirrors `Pages.Post.PostId_`'s
@@ -913,7 +944,7 @@ update shared req msg model =
                                             Just eventPost ->
                                                 ( { model | mediaEditActive = False }
                                                 , Posts.updatePost
-                                                    shared.accountsPanel
+                                                    shared.accounts
                                                     ( Just account.userId, server.frontendHost )
                                                     eventPost.id
                                                     (\freshPost -> { freshPost | media = mediaRefs })
@@ -965,7 +996,7 @@ subscriptions model =
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = titleFor shared model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
+    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
     }
 
 
@@ -983,12 +1014,12 @@ titleFor shared model =
     UI.pageTitle shared [ subtitle ]
 
 
-bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
-bodyView shared req model =
+bodyView : Shared.Model -> Model -> Html Msg
+bodyView shared model =
     ServerDependentView.view
         { hostname = model.targetHost
-        , servers = shared.accountsPanel.servers
-        , accounts = shared.accountsPanel.accounts
+        , servers = shared.accounts.servers
+        , accounts = shared.accounts.accounts
         , connectStatus = model.connectStatus
         , onConnectClicked = ConnectClicked
         , onEnableClicked = EnableClicked
@@ -1018,39 +1049,40 @@ eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
 eventDetailView shared model event instance =
     let
         maybeServer =
-            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+            AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
-
-        -- Slotted between the byline and the media display in the primary
-        -- (`Event`) post section below -- the currently-viewed
-        -- `EventInstance`'s own start/end/location, then (below that) the
-        -- date-picker strip to switch to a sibling one.
-        instanceDetailAndStrip =
-            div [ class "event-instance-detail-and-strip" ]
-                [ div [ class "event-instance-detail" ]
-                    [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.now shared.browserTimeZone instance) ]
-                    , case instance.location |> Maybe.andThen Events.locationText of
-                        Just locationLine ->
-                            div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
-
-                        Nothing ->
-                            text ""
-                    ]
-                , instanceHistoryView shared model event instance
-                ]
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
     in
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
             Just eventPost ->
+                let
+                    -- Slotted between the byline and the media display in the primary
+                    -- (`Event`) post section below -- the currently-viewed
+                    -- `EventInstance`'s own start/end/location, then (below that) the
+                    -- date-picker strip to switch to a sibling one.
+                    instanceDetailAndStrip =
+                        div [ class "event-instance-detail-and-strip" ]
+                            [ div [ class "event-instance-detail" ]
+                                [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.time instance) ]
+                                , case instance.location |> Maybe.andThen Events.locationText of
+                                    Just locationLine ->
+                                        div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
+
+                                    Nothing ->
+                                        text ""
+                                ]
+                            , instanceHistoryView shared model event instance
+                            ]
+                in
                 div []
                     [ div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-primary" ] ]
                         [ h1 [ class "event-post-title" ] [ titleView model.postFieldEdit maybeAccount eventPost ]
                         , linkView model.postFieldEdit maybeAccount eventPost
                         , div [ class "event-post-meta" ]
                             [ text "by "
-                            , Authors.link shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount eventPost.author
+                            , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount eventPost.author
                             , text (" · " ++ Posts.postVisibilityText eventPost)
                             , moderationView maybeAccount model.moderationEdit event eventPost
                             ]
@@ -1089,7 +1121,7 @@ eventDetailView shared model event instance =
                             text ""
                     , div [ class "event-post-meta" ]
                         [ text "by "
-                        , Authors.link shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount instancePost.author
+                        , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount instancePost.author
                         , text (" · " ++ Posts.postVisibilityText instancePost)
                         ]
                     , case maybeServer of
@@ -1425,13 +1457,13 @@ instanceMetaView shared model instance =
         Just instancePost ->
             let
                 displayPost =
-                    StarredPanel.freshestPost model.targetHost instancePost shared.starredPanel
+                    StarredPanel.freshestPost model.targetHost instancePost shared.panels.starredPanel
 
                 starred =
-                    StarredPanel.isStarred model.targetHost displayPost shared.starredPanel
+                    StarredPanel.isStarred model.targetHost displayPost shared.panels.starredPanel
 
                 onStarClicked =
-                    StarredPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
+                    StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                         |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
             in
             div [ class "event-detail-meta" ]
@@ -1447,7 +1479,7 @@ instanceMetaView shared model instance =
 
 {-| One small-text, clipped-not-wrapped line at the bottom of the event
 detail view, crediting the ICS feed this `Event` was pulled in from (see
-`Shared.EventSyncSourcesPanel`) -- renders nothing for a normal, non-synced
+`Components.Pages.UserProfilePage`) -- renders nothing for a normal, non-synced
 event.
 -}
 syncedFromView : Event -> Html Msg
@@ -1479,14 +1511,14 @@ instanceHistoryView shared model event instance =
     else
         let
             minimumRank =
-                historyDisplayRank (minimumHistoryDisplayFor shared.now instance)
+                historyDisplayRank (minimumHistoryDisplayFor shared.time.now instance)
 
             showLayoutToggle =
                 List.length event.instances > 3
         in
         div [ class "event-instance-history" ]
             [ div [ class "event-instance-history-buttons" ]
-                (List.map (historyButtonView model minimumRank) (historyButtons shared.now event)
+                (List.map (historyButtonView model minimumRank) (historyButtons shared.time.now event)
                     ++ (if showLayoutToggle then
                             [ instanceLayoutButtonView model.instanceLayout ]
 
@@ -1615,7 +1647,7 @@ historyButtonLabel mode count =
 `historyButtonView` for how the current one is highlighted instead of
 omitted, and how one more restrictive than `minimumHistoryDisplayFor now
 instance` -- which would hide `instance`, the very one this page is showing
--- is disabled instead of hidden). `now` is `Shared.Model.now` -- see its
+-- is disabled instead of hidden). `now` is `Shared.Model.time.now` -- see its
 own doc.
 -}
 historyButtons : Time.Posix -> Event -> List ( InstanceHistoryDisplay, Int )
@@ -1647,7 +1679,7 @@ instanceChipView shared model currentInstance { instance, flip } =
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flip False)
         [ a
-            [ href (Events.eventInstanceHref shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost instance)
+            [ href (Events.eventInstanceHref shared.basePath shared.accounts.mainFrontendHost model.targetHost instance)
             , id (instanceChipDomId instance.id)
             , classes
                 ([ "event-instance-chip", hostnameToCSSClass model.targetHost ]
@@ -1659,5 +1691,5 @@ instanceChipView shared model currentInstance { instance, flip } =
                        )
                 )
             ]
-            [ text (Events.siblingInstanceWhenText shared.now shared.browserTimeZone currentInstance instance) ]
+            [ text (Events.siblingInstanceWhenText shared.time currentInstance instance) ]
         ]

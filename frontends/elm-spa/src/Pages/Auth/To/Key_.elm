@@ -13,7 +13,7 @@ token pair is transferred), then encrypts the resulting `Account` to
 `Pages.Auth.From.EncodedAccount_`.
 
 Optionally (`alsoSignInHere`), that same username/password is also used for a
-*second*, independent Login RPC (see `GotLoginResult`/`GotLocalSignInResult`)
+_second_, independent Login RPC (see `GotLoginResult`/`GotLocalSignInResult`)
 whose fresh token pair is fed into this browser's own `Shared.AccountsPanel`
 instead of being sent anywhere -- so the transfer to `requestingHost` and
 this browser's own sign-in on `browsingHost` never share a token pair.
@@ -91,6 +91,18 @@ type alias Model =
     }
 
 
+type Msg
+    = UsernameChanged String
+    | PasswordChanged String
+    | UsernameButtonClicked String
+    | AlsoSignInHereToggled
+    | SignInClicked
+    | GotLoginResult (Result Grpc.Error ( Maybe Account, FederatedAuth.PublicKey ))
+    | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
+    | GotEncryptResult Encode.Value
+    | SharedMsg Shared.Msg
+
+
 {-| `rawKey` is `PUBLIC_KEY_URLSTRING@requestingHost` -- always both parts,
 unlike `Components.PostCard.parsePostRouteId`'s `id[@host]`, since this route
 has no "current server" to fall back to.
@@ -107,17 +119,17 @@ init shared req =
                     ( Nothing, "" )
 
         browsingHost =
-            shared.accountsPanel.browsingHost
+            shared.accounts.browsingHost
 
         -- Pre-filled only when there's exactly one candidate to guess --
         -- see `usernameField`'s quick-fill buttons for the ambiguous case.
         defaultUsername =
-            case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts browsingHost of
+            case AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost of
                 Just _ ->
                     ""
 
                 Nothing ->
-                    case List.filter (\a -> a.server == browsingHost) shared.accountsPanel.accounts of
+                    case List.filter (\a -> a.server == browsingHost) shared.accounts.accounts of
                         [ onlyAccount ] ->
                             onlyAccount.username
 
@@ -137,20 +149,13 @@ init shared req =
     )
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Ports.federatedAuthEncrypted GotEncryptResult
+
+
 
 -- UPDATE
-
-
-type Msg
-    = UsernameChanged String
-    | PasswordChanged String
-    | UsernameButtonClicked String
-    | AlsoSignInHereToggled
-    | SignInClicked
-    | GotLoginResult (Result Grpc.Error ( Maybe Account, FederatedAuth.PublicKey ))
-    | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
-    | GotEncryptResult Encode.Value
-    | SharedMsg Shared.Msg
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -171,9 +176,9 @@ update shared msg model =
         SignInClicked ->
             let
                 browsingHost =
-                    shared.accountsPanel.browsingHost
+                    shared.accounts.browsingHost
             in
-            case ( AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
+            case ( AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
                 ( Just server, Just publicKey ) ->
                     ( { model | status = Submitting }
                     , loginTask server (effectiveUsername shared model) model.password
@@ -191,9 +196,9 @@ update shared msg model =
             if model.alsoSignInHere then
                 let
                     browsingHost =
-                        shared.accountsPanel.browsingHost
+                        shared.accounts.browsingHost
                 in
-                case AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected of
+                case AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected of
                     Just server ->
                         ( { model | pendingTransferAccount = Just ( account, publicKey ) }
                         , loginTask server (effectiveUsername shared model) model.password
@@ -269,35 +274,6 @@ update shared msg model =
             ( model, Effect.fromShared subMsg )
 
 
-{-| The username this page's Login RPC(s) actually authenticate as: the
-signed-in account's own, if `browsingHost` has one, otherwise whatever's
-typed into `usernameField`. Shared between `signInView` (for the submit
-button's disabled state) and `update` (for the RPC(s) themselves) so the two
-never disagree.
--}
-effectiveUsername : Shared.Model -> Model -> String
-effectiveUsername shared model =
-    case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts shared.accountsPanel.browsingHost of
-        Just account ->
-            account.username
-
-        Nothing ->
-            model.username
-
-
-{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
--- `loginTask` needs a live connection, so a known-but-disconnected server
-(`serverForHost` matches those too) counts the same as not being signed in.
--}
-ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
-ifConnected server =
-    if server.connected == Nothing then
-        Nothing
-
-    else
-        Just server
-
-
 loginTask : AccountsPanel.Server -> String -> String -> Task Grpc.Error RefreshTokenResponse
 loginTask server username password =
     case AccountsPanel.connectionOf server of
@@ -322,37 +298,6 @@ encryptAndSendEffect : FederatedAuth.PublicKey -> Account -> Effect Msg
 encryptAndSendEffect publicKey account =
     FederatedAuth.encrypt publicKey (Encode.encode 0 (AccountsPanel.encodeAccount account))
         |> Effect.fromCmd
-
-
-{-| Mirrors `Shared.AccountsPanel.updateHelp`'s `GotAuthResult` account
-construction -- `Nothing` if the response is missing user/token data (an
-`update` branch above turns that into the same `Errored` state `GotAuthResult`
-would).
--}
-accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
-accountFromLogin server resp =
-    case ( resp.user, resp.refreshToken, resp.accessToken ) of
-        ( Just user, Just refreshToken, Just accessToken ) ->
-            Just
-                { server = server
-                , userId = user.id
-                , username = user.username
-                , refreshToken = tokenFromExpirable refreshToken
-                , accessToken = tokenFromExpirable accessToken
-                , enabled = True
-                , avatarMediaId = Maybe.map .id user.avatar
-                , permissions = user.permissions
-                , realName = user.realName
-                , needsPassword = False
-                }
-
-        _ ->
-            Nothing
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Ports.federatedAuthEncrypted GotEncryptResult
 
 
 
@@ -382,13 +327,13 @@ signInView shared model =
         ( Just _, False ) ->
             let
                 browsingHost =
-                    shared.accountsPanel.browsingHost
+                    shared.accounts.browsingHost
 
                 signedInAccount =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts browsingHost
+                    AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost
 
                 accountsOnHost =
-                    List.filter (\a -> a.server == browsingHost) shared.accountsPanel.accounts
+                    List.filter (\a -> a.server == browsingHost) shared.accounts.accounts
 
                 username =
                     effectiveUsername shared model
@@ -449,7 +394,7 @@ currentAccountBadge : Shared.Model -> Account -> Html Msg
 currentAccountBadge shared account =
     let
         avatarUrl =
-            AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account
+            AccountsPanel.accountAvatarUrl shared.accounts.servers account
 
         nameAndHost =
             account.username
@@ -486,7 +431,7 @@ usernameField shared model accountsOnHost submitting =
             , attribute "autocapitalize" "none"
             , attribute "autocorrect" "off"
             , spellcheck False
-            , placeholder ("Username on " ++ shared.accountsPanel.browsingHost)
+            , placeholder ("Username on " ++ shared.accounts.browsingHost)
             , value model.username
             , onInput UsernameChanged
             , disabled submitting
@@ -511,7 +456,7 @@ usernameButton shared submitting account =
         , onClick (UsernameButtonClicked account.username)
         , disabled submitting
         ]
-        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account)
+        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (AccountsPanel.accountAvatarUrl shared.accounts.servers account)
         , span [] [ text account.username ]
         ]
 
@@ -542,6 +487,61 @@ alsoSignInCheckbox isChecked accountForUsername submitting =
                     "Sign back in here"
             )
         ]
+
+
+{-| The username this page's Login RPC(s) actually authenticate as: the
+signed-in account's own, if `browsingHost` has one, otherwise whatever's
+typed into `usernameField`. Shared between `signInView` (for the submit
+button's disabled state) and `update` (for the RPC(s) themselves) so the two
+never disagree.
+-}
+effectiveUsername : Shared.Model -> Model -> String
+effectiveUsername shared model =
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
+        Just account ->
+            account.username
+
+        Nothing ->
+            model.username
+
+
+{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
+-- `loginTask` needs a live connection, so a known-but-disconnected server
+(`serverForHost` matches those too) counts the same as not being signed in.
+-}
+ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
+ifConnected server =
+    if server.connected == Nothing then
+        Nothing
+
+    else
+        Just server
+
+
+{-| Mirrors `Shared.AccountsPanel.sendUpdate`'s `GotAuthResult` account
+construction -- `Nothing` if the response is missing user/token data (an
+`update` branch above turns that into the same `Errored` state `GotAuthResult`
+would).
+-}
+accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
+accountFromLogin server resp =
+    case ( resp.user, resp.refreshToken, resp.accessToken ) of
+        ( Just user, Just refreshToken, Just accessToken ) ->
+            Just
+                { server = server
+                , userId = user.id
+                , username = user.username
+                , refreshToken = tokenFromExpirable refreshToken
+                , accessToken = tokenFromExpirable accessToken
+                , enabled = True
+                , avatarMediaId = Maybe.map .id user.avatar
+                , permissions = user.permissions
+                , realName = user.realName
+                , needsPassword = False
+                }
+
+        _ ->
+            Nothing
 
 
 tokenFromExpirable : ExpirableToken -> Token

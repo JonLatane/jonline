@@ -3,7 +3,7 @@ module Components.EventSyncSources exposing
     , deleteEventSyncSource
     , getEventSyncSources
     , intervalOptions
-    , intervalText
+    , syncedCountsLabel
     , updateEventSyncSource
     )
 
@@ -16,11 +16,48 @@ token refresh mid-request can still be forwarded on by the caller (see
 -}
 
 import Grpc
-import Proto.Google.Protobuf
-import Proto.Jonline exposing (DeleteEventSyncSourceRequest, EventSyncSource, GetEventSyncSourcesResponse, User, defaultUser)
+import Proto.Jonline exposing (EventSyncSource, GetEventSyncSourcesResponse, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.Conversions as Conversions
 import Task exposing (Task)
+
+
+{-| "N events" alone when every event has exactly one instance (the common
+non-recurring case, where naming both is redundant) -- otherwise "N events
+and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
+"delete along with its events" button) and `UI`'s shared delete-confirmation
+dialog for the same source, so it lives here rather than on either caller.
+-}
+syncedCountsLabel : EventSyncSource -> String
+syncedCountsLabel source =
+    let
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        instanceCount =
+            Conversions.int64ToInt source.eventInstanceCount
+    in
+    if eventCount == instanceCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount instanceCount "instance"
+
+
+pluralCount : Int -> String -> String
+pluralCount count noun =
+    String.fromInt count
+        ++ " "
+        ++ noun
+        ++ (if count == 1 then
+                ""
+
+            else
+                "s"
+           )
 
 
 {-| `targetUserId = ""` asks the backend for the caller's own sources (see
@@ -117,16 +154,3 @@ intervalOptions =
     , ( 28800, "8 hours" )
     , ( 86400, "1 day" )
     ]
-
-
-{-| Label for a `sync_interval_seconds` value -- falls back to a plain
-"`N` seconds" for anything outside `intervalOptions` (e.g. a value set by
-some other client), rather than showing nothing.
--}
-intervalText : Int -> String
-intervalText seconds =
-    intervalOptions
-        |> List.filter (\( s, _ ) -> s == seconds)
-        |> List.head
-        |> Maybe.map Tuple.second
-        |> Maybe.withDefault (String.fromInt seconds ++ " seconds")

@@ -3,10 +3,12 @@ module Shared exposing
     , Flags
     , Model
     , Msg(..)
+    , NavAnimationState
     , ThemePreference(..)
     , basePathFromPath
     , effectiveDarkMode
     , init
+    , navLinkHomeMaxWidth
     , normalizeUrl
     , subscriptions
     , themePreferenceLabel
@@ -22,6 +24,7 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
+import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
 import Components.Posts as Posts
 import Grpc
@@ -34,14 +37,13 @@ import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.CreateNewPanel as CreateNewPanel
-import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import TimeZone
@@ -49,8 +51,117 @@ import UI.Responsive as Responsive
 import Url exposing (Url)
 
 
+type alias Model =
+    -- Known servers, signed-into accounts, login/add-server forms -- kept as
+    -- its own top-level field (rather than folded into `panels`) since it's
+    -- read from all over the app (view code on nearly every page), not just
+    -- panel-adjacent code.
+    { accounts : AccountsPanel.Model
+
+    -- See `Panels` for the rest of the app-wide panels.
+    , panels : Panels
+    , breadcrumbs : Breadcrumbs.Model
+
+    -- See `Theme` for `preference`/`systemPrefersDark` themselves.
+    , theme : Theme
+
+    -- The path prefix the app is being served under -- "" from `/`, "/elm"
+    -- from `/elm` (see `backend/src/web/elm_web.rs`) -- immutable for the
+    -- session, same as `AccountsPanel.Model`'s `browsingHost`. `Main.elm`
+    -- strips this from every `Url` before routing (see `normalizeUrl`) so
+    -- `Gen.Route.fromUrl` always sees app-relative paths regardless of which
+    -- host route served it; view code (see `UI.navLink`) prepends it back
+    -- onto any `Gen.Route.toHref` output so links/history stay under the
+    -- right mount.
+    , basePath : String
+
+    -- Drives `UI.scrollPreserver`: a tall spacer at the bottom of `main_`,
+    -- shown for the first 2s after navigating *back* to a page (never a
+    -- fresh link click) so its restored-but-possibly-still-loading content
+    -- can't yank the scroll position around while it fills back in. See
+    -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
+    -- navigations it recognizes as the browser's back button.
+    , scrollPreserverVisible : Bool
+
+    -- Drives the Home link's scroll-triggered shrink animation -- kept in
+    -- sync via `.nav-links-scroll`'s `scroll` event
+    -- (`UI.navLinksScrollDecoder` -> `NavLinksScrolled`). See
+    -- `NavAnimationState`.
+    , navAnimationState : NavAnimationState
+
+    -- The browser's current window size, kept live via `Browser.Events.onResize`
+    -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
+    -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
+    -- the Accounts Panel and Starred Panel should close one another when
+    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPanelMsg`
+    -- branches), since both are full-width slide-out panels on narrow screens
+    -- and CSS alone can't reach into another panel's state.
+    , windowSize : Responsive.WindowSize
+
+    -- See `Shared.Time` for `browserTimeZone`/`now` themselves -- bundled
+    -- into one type alias since every call site that needs one of these
+    -- tends to need the other too (see its own doc).
+    , time : SharedTime.Model
+    }
+
+
+type Msg
+    = AccountsPanelMsg AccountsPanel.Msg
+    | AdminPanelMsg AdminPanel.Msg
+    | FederatedAuthMsg FederatedAuth.Msg
+    | StarredPanelMsg StarredPanel.Msg
+    | MarkdownPanelMsg MarkdownPanel.Msg
+    | MediaViewerPanelMsg MediaViewerPanel.Msg
+    | MyMediaPanelMsg MyMediaPanel.Msg
+    | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | CreateNewPanelMsg CreateNewPanel.Msg
+    | CloseAllPanels
+    | BreadcrumbsMsg Breadcrumbs.Msg
+    | ThemePreferenceClicked
+    | SystemPrefersDarkChanged Bool
+    | RequestDelete DeleteConfirmation
+    | CancelDelete
+    | ConfirmDelete
+      -- `ConfirmDelete`'s own handling of `ConfirmEventSyncSourceDelete`/
+      -- `ConfirmPostDelete`/`ConfirmEventDelete` fires the
+      -- `DeleteEventSyncSource`/`DeletePost`/`DeleteEvent` RPC directly
+      -- (unlike every other `DeleteConfirmation`, none of these three is
+      -- owned by any Shared-owned panel `Shared.update` could delegate to)
+      -- -- these are their results. Forwarded, like every `Shared.Msg`, into
+      -- whichever page is active (`Main.notifyPageOfSharedMsg`), so
+      -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
+      -- own list/navigate away on success.
+    | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+    | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+    | ShowScrollPreserver
+    | HideScrollPreserver
+    | UncollapseHome
+    | HomeLinkClicked Bool
+    | ScrollToTop
+    | NavLinksScrolled { scrollLeft : Float, scrollWidth : Float, clientWidth : Float }
+    | NavigateExternal String
+    | WindowResized Int Int
+    | GotTimeZone Time.Zone
+    | GotNow Time.Posix
+    | NoOp
+
+
 type alias Flags =
     Decode.Value
+
+
+{-| The app-wide appearance (dark/light/auto) setting -- see `Model.theme`.
+Bundled into one type since `effectiveDarkMode` always needs both together:
+`preference` alone doesn't say whether `Auto` currently means dark or
+light, and `systemPrefersDark` alone doesn't say whether the user has
+overridden it.
+-}
+type alias Theme =
+    { preference : ThemePreference
+    , systemPrefersDark : Bool
+    }
 
 
 {-| The user's chosen appearance. `Auto` follows `systemPrefersDark`; `Light`/
@@ -69,232 +180,75 @@ than each having its own bespoke confirmation step (compare
 Account's confirmation isn't a plain "are you sure you want to delete this"
 prompt). More constructors (e.g. for Posts) can be added here as that need
 comes up.
+
+`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete` delegate
+their actual delete into a Shared-owned submodel's own `DeleteConfirmed`
+(`AccountsPanel`/`MyMediaPanel`) once confirmed, since those submodels
+(unlike a page's own `Model`) are reachable from here. `ConfirmMediaDelete`
+could in principle follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
+`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`
+_requires_ living in `Shared.Model`, it's just simpler to route through since
+it's already there (it _is_ a real global panel, opened from several pages,
+unlike the old `Shared.EventSyncSourcesPanel` used to be). `ConfirmServerDelete`/
+`ConfirmAccountDelete` genuinely can't switch: removing a `Server`/`Account`
+has to mutate `AccountsPanel.Model` itself, which only exists here.
+
 -}
 type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
-    | ConfirmEventSyncSourceDelete EventSyncSource Bool
-      -- The trailing `String` is the acting `targetHost` (the Post/Event
-      -- isn't itself paired with one) -- resolved back to a signed-in
-      -- `Account` (if any) in `ConfirmDelete`'s own handling, the same way
-      -- `EventSyncSourcesPanel.performForOwner` resolves one from a bare
-      -- host.
+      -- The trailing `String` on each of these three is the acting
+      -- `targetHost` (the source/Post/Event isn't itself paired with one) --
+      -- resolved back to a signed-in `Account` (if any) in `ConfirmDelete`'s
+      -- own handling. Unlike every `DeleteConfirmation` above, none of these
+      -- three are owned by a Shared-owned panel to delegate a
+      -- `DeleteConfirmed` into -- each is a plain list rendered by exactly
+      -- one page (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
+      -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
+      -- `GotPostDeleteResult`/`GotEventDeleteResult`) is forwarded on to
+      -- whichever page is active the same as any other `Shared.Msg`, for
+      -- that page's own `Model` to apply. This is the shape any *new*
+      -- "list of deletable things shown on one page" should follow -- don't
+      -- give the list itself a Shared-owned home just to reach this dialog.
+    | ConfirmEventSyncSourceDelete EventSyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
 
 
-type alias Model =
-    { accountsPanel : AccountsPanel.Model
-    , adminPanel : AdminPanel.Model
+{-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
+for why that one stays its own top-level field) -- bundled together purely to
+keep `Model` from being one flat list of 20-ish fields; nothing here actually
+needs to reach across into a sibling panel's state (each `update` branch in
+`sharedUpdate` still dispatches on exactly one of these at a time). See each
+field's own module for what it holds. `confirmingDeleteFor` is included since
+it's "effectively a Panel" from the UI's point of view -- see
+`DeleteConfirmation`.
+-}
+type alias Panels =
+    { adminPanel : AdminPanel.Model
     , federatedAuth : FederatedAuth.Model
     , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
-    , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
-    , breadcrumbs : Breadcrumbs.Model
-    , themePreference : ThemePreference
-    , systemPrefersDark : Bool
-
-    -- The path prefix the app is being served under -- "" from `/`, "/elm"
-    -- from `/elm` (see `backend/src/web/elm_web.rs`) -- immutable for the
-    -- session, same as `AccountsPanel.Model`'s `browsingHost`. `Main.elm`
-    -- strips this from every `Url` before routing (see `normalizeUrl`) so
-    -- `Gen.Route.fromUrl` always sees app-relative paths regardless of which
-    -- host route served it; view code (see `UI.navLink`) prepends it back
-    -- onto any `Gen.Route.toHref` output so links/history stay under the
-    -- right mount.
-    , basePath : String
-
-    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
-    -- the time -- see `DeleteConfirmation`.
     , confirmingDeleteFor : Maybe DeleteConfirmation
-
-    -- Drives `UI.scrollPreserver`: a tall spacer at the bottom of `main_`,
-    -- shown for the first 2s after navigating *back* to a page (never a
-    -- fresh link click) so its restored-but-possibly-still-loading content
-    -- can't yank the scroll position around while it fills back in. See
-    -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
-    -- navigations it recognizes as the browser's back button.
-    , scrollPreserverVisible : Bool
-
-    -- The browser's current window size, kept live via `Browser.Events.onResize`
-    -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
-    -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
-    -- the Accounts Panel and Starred Panel should close one another when
-    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPanelMsg`
-    -- branches), since both are full-width slide-out panels on narrow screens
-    -- and CSS alone can't reach into another panel's state.
-    , windowSize : Responsive.WindowSize
-
-    -- See `Shared.BrowserTimeZone`. Used everywhere a `Post`/`User` timestamp
-    -- is displayed (see `Shared.BrowserTimeZone.formatDate`/`formatDateTime`)
-    -- so those render in the viewer's own local time rather than the
-    -- server's UTC.
-    , browserTimeZone : BrowserTimeZone
-
-    -- Captured once via `Time.now` in `init` (mirrors `browserTimeZone.zone`'s
-    -- own `getBrowserZone` capture exactly, including the `Time.millisToPosix 0`
-    -- placeholder until it resolves) -- the single app-wide "now" every page
-    -- that used to capture its own (`Pages.Event.EventId_`'s date-picker
-    -- strip categorizing `EventInstance`s as upcoming/past, `Components.Events.eventCard`/
-    -- `instanceWhenText`'s "is this date in the viewer's current year"
-    -- check) reads instead, rather than each independently re-running
-    -- `Task.perform ... Time.now`. Deliberately *not* kept live via a
-    -- `Time.every` tick -- every current use only needs "roughly what day/year
-    -- is it" for the length of a single page view, not a ticking clock, the
-    -- same tolerance `Pages.Event.EventId_.Model.now`'s own doc already
-    -- accepted before this moved here. `Components.Pages.EventsPage.Model.endsAfter`/
-    -- `Components.Pages.PostsPage.Model.publishedBefore` are deliberately
-    -- untouched by this -- those are live request cursors (polled and
-    -- user-editable), not a display "what time is it", and already document
-    -- why they're their own thing.
-    , now : Time.Posix
     }
 
 
-type Msg
-    = AccountsPanelMsg AccountsPanel.Msg
-    | AdminPanelMsg AdminPanel.Msg
-    | FederatedAuthMsg FederatedAuth.Msg
-    | StarredPanelMsg StarredPanel.Msg
-    | MarkdownPanelMsg MarkdownPanel.Msg
-    | MediaViewerPanelMsg MediaViewerPanel.Msg
-    | MyMediaPanelMsg MyMediaPanel.Msg
-    | MyMediaPanelOpenForAccount AccountsPanel.Account
-    | CreateNewPanelMsg CreateNewPanel.Msg
-    | EventSyncSourcesPanelMsg EventSyncSourcesPanel.Msg
-    | CloseAllPanels
-    | BreadcrumbsMsg Breadcrumbs.Msg
-    | ThemePreferenceClicked
-    | SystemPrefersDarkChanged Bool
-    | RequestDelete DeleteConfirmation
-    | CancelDelete
-    | ConfirmDelete
-      -- `ConfirmDelete`'s own handling of `ConfirmPostDelete`/
-      -- `ConfirmEventDelete` fires the `DeletePost`/`DeleteEvent` RPC
-      -- directly (unlike every other `DeleteConfirmation`, a Post/Event
-      -- delete isn't owned by any Shared-owned panel `Shared.update` could
-      -- delegate to) -- this is its result. Forwarded, like every
-      -- `Shared.Msg`, into whichever page is active (`Main.notifyPageOfSharedMsg`),
-      -- so `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own `SharedMsg`
-      -- handling can navigate away on success.
-    | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
-    | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
-    | ShowScrollPreserver
-    | HideScrollPreserver
-    | HomeLinkClicked Bool
-    | ScrollToTop
-    | NavigateExternal String
-    | WindowResized Int Int
-    | GotTimeZone Time.Zone
-    | GotNow Time.Posix
-    | NoOp
-
-
-{-| Whether the app should currently render in dark mode, resolving `Auto`
-against the last-known system preference.
+{-| The live scroll metrics of `.nav-links-scroll` (see `UI.headerNav`),
+read off its `scroll` event (`UI.navLinksScrollDecoder`) -- drives the Home
+link's (`.nav-link-home`, `UI.navLink`) scroll-triggered shrink animation.
+See `navLinkHomeMaxWidth`, its one consumer.
 -}
-effectiveDarkMode : Model -> Bool
-effectiveDarkMode model =
-    case model.themePreference of
-        ThemeAuto ->
-            model.systemPrefersDark
-
-        ThemeLight ->
-            False
-
-        ThemeDark ->
-            True
-
-
-themePreferenceLabel : ThemePreference -> String
-themePreferenceLabel pref =
-    case pref of
-        ThemeAuto ->
-            "Auto"
-
-        ThemeLight ->
-            "Light"
-
-        ThemeDark ->
-            "Dark"
-
-
-themePreferenceToString : ThemePreference -> String
-themePreferenceToString pref =
-    case pref of
-        ThemeAuto ->
-            "auto"
-
-        ThemeLight ->
-            "light"
-
-        ThemeDark ->
-            "dark"
-
-
-themePreferenceFromString : String -> ThemePreference
-themePreferenceFromString s =
-    case s of
-        "light" ->
-            ThemeLight
-
-        "dark" ->
-            ThemeDark
-
-        _ ->
-            ThemeAuto
-
-
-nextThemePreference : ThemePreference -> ThemePreference
-nextThemePreference pref =
-    case pref of
-        ThemeAuto ->
-            ThemeLight
-
-        ThemeLight ->
-            ThemeDark
-
-        ThemeDark ->
-            ThemeAuto
-
-
-{-| The `/elm`-or-`/`-style mount prefix for a raw (un-normalized) URL path --
-see `Model`'s `basePath` field. Only ever `""` or `"/elm"` today (the only two
-hosts `backend/src/web/elm_web.rs`/`main_index.rs` serve this app from), found
-by checking whether `path` is exactly `/elm` or starts with `/elm/` -- "elm" is
-a reserved username (see `validate_username`), so this can never collide with
-a real in-app route or federated-user path.
--}
-basePathFromPath : String -> String
-basePathFromPath path =
-    if path == "/elm" || String.startsWith "/elm/" path then
-        "/elm"
-
-    else
-        ""
-
-
-{-| Strips `basePath` off `url.path`, so `Gen.Route.fromUrl` can parse it as
-if the app were served from `/` -- see `Main.elm`, which calls this on every
-`Url` before it touches routing.
--}
-normalizeUrl : String -> Url -> Url
-normalizeUrl basePath url =
-    if basePath == "" then
-        url
-
-    else if url.path == basePath then
-        { url | path = "/" }
-
-    else if String.startsWith (basePath ++ "/") url.path then
-        { url | path = String.dropLeft (String.length basePath) url.path }
-
-    else
-        url
+type alias NavAnimationState =
+    { scrollLeft : Float
+    , scrollWidth : Float
+    , clientWidth : Float
+    , homeCollapsed : Bool
+    }
 
 
 {-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation, uses24HourTime }`
@@ -345,33 +299,40 @@ init basePath req flags =
             FederatedAuth.init federatedAuthFlags
 
         model =
-            { accountsPanel = accountsPanelModel
-            , adminPanel = AdminPanel.init
-            , federatedAuth = federatedAuthModel
-            , starredPanel = StarredPanel.init starredPostsFlags
-            , markdownPanel = MarkdownPanel.init
-            , mediaViewerPanel = MediaViewerPanel.init
-            , myMediaPanel = MyMediaPanel.init
-            , createNewPanel = CreateNewPanel.init
-            , eventSyncSourcesPanel = EventSyncSourcesPanel.init
+            { accounts = accountsPanelModel
+            , panels =
+                { adminPanel = AdminPanel.init
+                , federatedAuth = federatedAuthModel
+                , starredPanel = StarredPanel.init starredPostsFlags
+                , markdownPanel = MarkdownPanel.init
+                , mediaViewerPanel = MediaViewerPanel.init
+                , myMediaPanel = MyMediaPanel.init
+                , createNewPanel = CreateNewPanel.init
+                , confirmingDeleteFor = Nothing
+                }
             , breadcrumbs = Breadcrumbs.init
-            , themePreference = themePreference
-            , systemPrefersDark = systemPrefersDark
+            , theme = { preference = themePreference, systemPrefersDark = systemPrefersDark }
             , basePath = basePath
-            , confirmingDeleteFor = Nothing
             , scrollPreserverVisible = False
+            , navAnimationState =
+                { scrollLeft = 0
+                , scrollWidth = 0
+                , clientWidth = 0
+                , homeCollapsed = False
+                }
 
             -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
             -- -- arbitrary until then, but never consulted before that (both
             -- panels start closed) so it doesn't matter what it is.
             , windowSize = { width = 0, height = 0 }
 
-            -- `zone` is corrected as soon as `Time.here`, below, resolves.
-            , browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
-
-            -- Corrected as soon as `Task.perform GotNow Time.now`, below,
-            -- resolves -- see `Model.now`'s own doc.
-            , now = Time.millisToPosix 0
+            -- `browserTimeZone.zone` is corrected as soon as `getBrowserZone`,
+            -- below, resolves; `now` as soon as `Task.perform GotNow Time.now`
+            -- does -- see `SharedTime.Model`'s own doc.
+            , time =
+                { browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
+                , now = Time.millisToPosix 0
+                }
             }
     in
     ( model
@@ -382,11 +343,11 @@ init basePath req flags =
 
         -- `mainFrontendHost`'s branding isn't fetched yet at this point, so
         -- this is only ever the neutral placeholder (see
-        -- `UI.ServerTheme.neutralColorMeta`) -- matches `updateImpl`'s later
+        -- `UI.ServerTheme.neutralColorMeta`) -- matches `sharedUpdate`'s later
         -- calls once real branding loads via `navBarColorCmd`, rather than
         -- leaving the static light/dark `<meta>` values from `index.html` in
         -- place until then.
-        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
+        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accounts).primaryColor
         , getInitialWindowSizeCmd
         , Task.attempt (\result -> GotTimeZone (Result.withDefault Time.utc result)) getBrowserZone
         , Task.perform GotNow Time.now
@@ -394,40 +355,29 @@ init basePath req flags =
     )
 
 
-{-| The window size isn't known until the DOM actually exists to measure --
-`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
-changes, so this is what gets `Model.windowSize` its real initial value.
+{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
+only while the panel's actually open -- there's nothing to show for it
+otherwise, so no reason to keep hitting servers in the background.
 -}
-getInitialWindowSizeCmd : Cmd Msg
-getInitialWindowSizeCmd =
-    Task.perform
-        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
-        Dom.getViewport
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Browser.Events.onResize WindowResized
+        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accounts)
+        , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
+        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.panels.starredPanel)
+        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.panels.mediaViewerPanel)
+        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
+        , if model.panels.starredPanel.showStarredPanel then
+            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
+
+          else
+            Sub.none
+        ]
 
 
-{-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
-(which just snapshots `new Date().getTimezoneOffset()` for the *current*
-instant into a fixed-offset `Time.customZone` with no era table, so every
-other instant it's ever asked to convert -- e.g. an `EventInstance` months
-away, on the other side of a DST transition -- gets rendered with today's
-offset instead of its own). This instead reads the browser's actual IANA
-zone name (e.g. "America/New_York", via `elm/time`'s `Time.getZoneName`)
-and looks up its real transition history/future in
-`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
-`siblingInstanceWhenText` show a recurring weekly event's fixed local time
-(e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
-than drifting an hour. Falls back to plain `Time.here` if the zone name
-can't be read or isn't in `timezone-data` (e.g. an unusual environment
-`Intl` doesn't cover) -- never fails outright.
--}
-getBrowserZone : Task.Task x Time.Zone
-getBrowserZone =
-    TimeZone.getZone
-        |> Task.map Tuple.second
-        |> Task.onError (\_ -> Time.here)
-
-
-{-| Wraps `updateImpl` to also call out to `Ports.setNavBarColor` whenever
+{-| Wraps `sharedUpdate` to also call out to `Ports.setNavBarColor` whenever
 `mainFrontendHost`'s theme actually changes as a result of the message --
 either `mainFrontendHost` itself changing (e.g. `AccountsPanel.SetMainFrontendHost`)
 or its `Server`'s cached branding being (re)populated (e.g. after a
@@ -440,43 +390,27 @@ update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
     let
         ( newModel, cmd ) =
-            updateImpl req msg model
+            sharedUpdate req msg model
     in
     ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel ] )
 
 
-{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
-`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
-`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
-vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
-`SystemPrefersDarkChanged` alone.
--}
-navBarColorCmd : Model -> Model -> Cmd Msg
-navBarColorCmd before after =
-    let
-        colorOf model_ =
-            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accountsPanel).primaryColor
-    in
-    if colorOf before /= colorOf after then
-        Ports.setNavBarColor (colorOf after)
-
-    else
-        Cmd.none
-
-
-updateImpl : Request -> Msg -> Model -> ( Model, Cmd Msg )
-updateImpl req msg model =
+sharedUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
+sharedUpdate req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd ) =
-                    AccountsPanel.update req subMsg model.accountsPanel
+                    AccountsPanel.update req subMsg model.accounts
 
                 changedHosts =
-                    starredPostsRefreshHosts model.accountsPanel subModel
+                    starredPostsRefreshHosts model.accounts subModel
 
                 ( refreshedStarredPanel, refreshCmd ) =
-                    StarredPanel.refreshHosts subModel changedHosts model.starredPanel
+                    StarredPanel.refreshHosts subModel changedHosts panels.starredPanel
 
                 -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
@@ -519,14 +453,14 @@ updateImpl req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.browserTimeZone.zone subModel CreateNewPanel.CloseClicked model.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone subModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.createNewPanel, Cmd.none )
+                        ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel }
+            ( { model | accounts = subModel, panels = { panels | starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel } }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPanelMsg refreshCmd
@@ -536,35 +470,45 @@ updateImpl req msg model =
             )
 
         AdminPanelMsg subMsg ->
-            ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | adminPanel = AdminPanel.update subMsg panels.adminPanel } }, Cmd.none )
 
         FederatedAuthMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd ) =
-                    FederatedAuth.update subMsg model.federatedAuth
+                    FederatedAuth.update subMsg panels.federatedAuth
             in
-            ( { model | federatedAuth = subModel }, Cmd.map FederatedAuthMsg subCmd )
+            ( { model | panels = { panels | federatedAuth = subModel } }, Cmd.map FederatedAuthMsg subCmd )
 
         StarredPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
-                    StarredPanel.update model.accountsPanel subMsg model.starredPanel
+                    StarredPanel.update model.accounts subMsg panels.starredPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 mediaViewerPanelModel =
                     case maybeMediaViewerPanelMsg of
                         Just mediaViewerPanelMsg ->
-                            MediaViewerPanel.update mediaViewerPanelMsg model.mediaViewerPanel
+                            MediaViewerPanel.update mediaViewerPanelMsg panels.mediaViewerPanel
 
                         Nothing ->
-                            model.mediaViewerPanel
+                            panels.mediaViewerPanel
 
                 -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
                 -- branch, above -- see `UI.Responsive`.
@@ -601,18 +545,21 @@ updateImpl req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.createNewPanel, Cmd.none )
+                        ( panels.createNewPanel, Cmd.none )
             in
             ( { model
-                | starredPanel = subModel
-                , accountsPanel = closedAccountsPanelModel
-                , mediaViewerPanel = mediaViewerPanelModel
-                , createNewPanel = closedCreateNewPanelModel
+                | accounts = closedAccountsPanelModel
+                , panels =
+                    { panels
+                        | starredPanel = subModel
+                        , mediaViewerPanel = mediaViewerPanelModel
+                        , createNewPanel = closedCreateNewPanelModel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map StarredPanelMsg subCmd
@@ -623,7 +570,11 @@ updateImpl req msg model =
             )
 
         MediaViewerPanelMsg subMsg ->
-            ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | mediaViewerPanel = MediaViewerPanel.update subMsg panels.mediaViewerPanel } }, Cmd.none )
 
         BreadcrumbsMsg subMsg ->
             let
@@ -632,39 +583,42 @@ updateImpl req msg model =
             in
             case subMsg of
                 Breadcrumbs.SetRoot _ _ _ ->
-                    updateImpl req CloseAllPanels breadcrumbsModel
+                    sharedUpdate req CloseAllPanels breadcrumbsModel
 
                 _ ->
                     ( breadcrumbsModel, Cmd.none )
 
         MarkdownPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 -- `Shared.CreateNewPanel`'s own draft content, if this exact
                 -- `SaveClicked` is the one closing out its
                 -- `MarkdownPanel.NewPostContent` edit -- read off
-                -- `model.markdownPanel.content` *before* `MarkdownPanel.update`
+                -- `panels.markdownPanel.content` *before* `MarkdownPanel.update`
                 -- (below) resets it back to `init`, since `MarkdownPanel`
                 -- itself has no Post to save this to (see `TargetType`'s own
                 -- doc on `NewPostContent`) and so never hands it back on its
                 -- own `Msg`.
                 savedNewPostContent =
-                    case ( subMsg, model.markdownPanel.target ) of
+                    case ( subMsg, panels.markdownPanel.target ) of
                         ( MarkdownPanel.SaveClicked, Just (MarkdownPanel.NewPostContent _) ) ->
-                            Just model.markdownPanel.content
+                            Just panels.markdownPanel.content
 
                         _ ->
                             Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
-                    MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
+                    MarkdownPanel.update model.accounts subMsg panels.markdownPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 scrollPreserverCmd =
                     if showScrollPreserver then
@@ -678,14 +632,14 @@ updateImpl req msg model =
                         Just content ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.createNewPanel, Cmd.none )
+                            ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel, createNewPanel = createNewPanelModel }
+            ( { model | accounts = accountsPanelModel, panels = { panels | markdownPanel = subModel, createNewPanel = createNewPanelModel } }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -696,6 +650,9 @@ updateImpl req msg model =
 
         MyMediaPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 -- `Shared.CreateNewPanel`'s own picked media, if this exact
                 -- `SaveMediaClicked` is the one closing out the `MultiSelect`
                 -- it opened (`EditMediaClicked`) -- gated on it currently
@@ -706,7 +663,7 @@ updateImpl req msg model =
                 savedMedia =
                     case subMsg of
                         MyMediaPanel.SaveMediaClicked media ->
-                            if CreateNewPanel.isOpen model.createNewPanel then
+                            if CreateNewPanel.isOpen panels.createNewPanel then
                                 Just media
 
                             else
@@ -716,15 +673,15 @@ updateImpl req msg model =
                             Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
-                    MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
+                    MyMediaPanel.update model.accounts subMsg panels.myMediaPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 -- `MyMediaPanel.DeleteClicked`'s own request (see its doc) to
                 -- open the shared "are you sure?" dialog -- same
@@ -738,21 +695,24 @@ updateImpl req msg model =
                             Just (ConfirmMediaDelete media)
 
                         Nothing ->
-                            model.confirmingDeleteFor
+                            panels.confirmingDeleteFor
 
                 ( createNewPanelModel, createNewPanelCmd ) =
                     case savedMedia of
                         Just media ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.createNewPanel, Cmd.none )
+                            ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
+            ( { model
+                | accounts = accountsPanelModel
+                , panels = { panels | myMediaPanel = subModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
+              }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -762,16 +722,19 @@ updateImpl req msg model =
 
         CreateNewPanelMsg subMsg ->
             let
+                panels =
+                    model.panels
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
-                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel subMsg model.createNewPanel
+                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts subMsg panels.createNewPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
 
                 -- `CreateNewPanel.EditContentClicked`/`EditMediaClicked`'s own
                 -- request (see its module doc) to actually open
@@ -783,24 +746,24 @@ updateImpl req msg model =
                         Just markdownPanelMsg ->
                             let
                                 ( m, cmd, _ ) =
-                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg model.markdownPanel
+                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg panels.markdownPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.markdownPanel, Cmd.none )
+                            ( panels.markdownPanel, Cmd.none )
 
                 ( myMediaPanelModel, myMediaPanelCmd ) =
                     case maybeMyMediaPanelMsg of
                         Just myMediaPanelMsg ->
                             let
                                 ( m, cmd, _ ) =
-                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg model.myMediaPanel
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg panels.myMediaPanel
                             in
                             ( m, cmd )
 
                         Nothing ->
-                            ( model.myMediaPanel, Cmd.none )
+                            ( panels.myMediaPanel, Cmd.none )
 
                 -- Mirrors `StarredPanelMsg`'s own
                 -- `shouldCloseCreateNewPanel`, in the other direction --
@@ -817,12 +780,12 @@ updateImpl req msg model =
                     if shouldCloseStarredPanel then
                         let
                             ( m, cmd, _ ) =
-                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel model.starredPanel
+                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel panels.starredPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.starredPanel, Cmd.none )
+                        ( panels.starredPanel, Cmd.none )
 
                 -- Mirrors `AccountsPanelMsg`'s own `shouldCloseCreateNewPanel`,
                 -- in the other direction -- see its own doc.
@@ -842,11 +805,14 @@ updateImpl req msg model =
                         ( accountsPanelModel, Cmd.none )
             in
             ( { model
-                | createNewPanel = subModel
-                , accountsPanel = closedAccountsPanelModel
-                , markdownPanel = markdownPanelModel
-                , myMediaPanel = myMediaPanelModel
-                , starredPanel = closedStarredPanelModel
+                | accounts = closedAccountsPanelModel
+                , panels =
+                    { panels
+                        | createNewPanel = subModel
+                        , markdownPanel = markdownPanelModel
+                        , myMediaPanel = myMediaPanelModel
+                        , starredPanel = closedStarredPanelModel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map CreateNewPanelMsg subCmd
@@ -858,41 +824,10 @@ updateImpl req msg model =
                 ]
             )
 
-        EventSyncSourcesPanelMsg subMsg ->
-            let
-                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
-                    EventSyncSourcesPanel.update model.accountsPanel subMsg model.eventSyncSourcesPanel
-
-                ( accountsPanelModel, accountsPanelCmd ) =
-                    case maybeAccountsPanelMsg of
-                        Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
-
-                        Nothing ->
-                            ( model.accountsPanel, Cmd.none )
-
-                -- `EventSyncSourcesPanel.DeleteClicked`'s own request to open
-                -- the shared "are you sure?" dialog -- same pattern as
-                -- `MyMediaPanelMsg`'s own `confirmingDeleteFor` above.
-                confirmingDeleteFor =
-                    case maybeDeleteRequest of
-                        Just ( source, deleteSyncedEvents ) ->
-                            Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents)
-
-                        Nothing ->
-                            model.confirmingDeleteFor
-            in
-            ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
-            , Cmd.batch
-                [ Cmd.map EventSyncSourcesPanelMsg subCmd
-                , Cmd.map AccountsPanelMsg accountsPanelCmd
-                ]
-            )
-
         MyMediaPanelOpenForAccount account ->
             -- The media button on an Account chip (`UI.accountRow`) opens this
             -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
-            -- multi-panel composition via `updateImpl`. The chip is clickable for
+            -- multi-panel composition via `sharedUpdate`. The chip is clickable for
             -- disabled (signed-out-of-aggregation) accounts too, so bring the
             -- account along into `enabled` here, the same as clicking its switch
             -- (`AccountsPanel.ToggleAccountEnabled`), rather than silently
@@ -906,32 +841,35 @@ updateImpl req msg model =
                         ( model, Cmd.none )
 
                     else
-                        updateImpl req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
+                        sharedUpdate req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
 
                 ( openedModel, openCmd ) =
-                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
+                    sharedUpdate req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
             in
             ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
 
         CloseAllPanels ->
             let
                 ( closedAccountsModel, closeAccountsCmd ) =
-                    updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
+                    sharedUpdate req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
 
                 ( closedStarredModel, closeStarredCmd ) =
-                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
+                    sharedUpdate req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
 
                 ( closedCreateNewModel, closeCreateNewCmd ) =
-                    updateImpl req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
+                    sharedUpdate req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
             in
             ( closedCreateNewModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd ] )
 
         ThemePreferenceClicked ->
             let
+                theme =
+                    model.theme
+
                 newPreference =
-                    nextThemePreference model.themePreference
+                    nextThemePreference theme.preference
             in
-            ( { model | themePreference = newPreference }
+            ( { model | theme = { theme | preference = newPreference } }
             , Cmd.batch
                 [ Ports.setTheme (themePreferenceToString newPreference)
                 , Ports.persistThemePreference (themePreferenceToString newPreference)
@@ -939,31 +877,56 @@ updateImpl req msg model =
             )
 
         SystemPrefersDarkChanged prefersDark ->
-            ( { model | systemPrefersDark = prefersDark }, Cmd.none )
+            let
+                theme =
+                    model.theme
+            in
+            ( { model | theme = { theme | systemPrefersDark = prefersDark } }, Cmd.none )
 
         RequestDelete confirmation ->
-            ( { model | confirmingDeleteFor = Just confirmation }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | confirmingDeleteFor = Just confirmation } }, Cmd.none )
 
         CancelDelete ->
-            ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
+            let
+                panels =
+                    model.panels
+            in
+            ( { model | panels = { panels | confirmingDeleteFor = Nothing } }, Cmd.none )
 
         ConfirmDelete ->
-            case model.confirmingDeleteFor of
+            let
+                panels =
+                    model.panels
+            in
+            case panels.confirmingDeleteFor of
+                -- These two route straight into `AccountsPanel.update`
+                -- rather than resolving through `Task.attempt` + a
+                -- `GotXDeleteResult` here, unlike every branch below. That's
+                -- fine *only* because `AccountsPanel.Model` already lives on
+                -- `Shared.Model` for unrelated reasons (it's real global
+                -- state -- known servers, signed-in accounts -- read from
+                -- all over the app); it's not a reason to give some other
+                -- page-local delete a Shared-owned home just to reach this
+                -- `case`. See `DeleteConfirmation`'s own doc.
                 Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accounts
                     in
-                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    ( { model | accounts = subModel, panels = { panels | confirmingDeleteFor = Nothing } }
                     , Cmd.map AccountsPanelMsg subCmd
                     )
 
                 Just (ConfirmServerDelete server) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accounts
                     in
-                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    ( { model | accounts = subModel, panels = { panels | confirmingDeleteFor = Nothing } }
                     , Cmd.map AccountsPanelMsg subCmd
                     )
 
@@ -977,65 +940,60 @@ updateImpl req msg model =
                 Just (ConfirmMediaDelete media) ->
                     let
                         ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            MyMediaPanel.update model.accountsPanel (MyMediaPanel.DeleteConfirmed media) model.myMediaPanel
+                            MyMediaPanel.update model.accounts (MyMediaPanel.DeleteConfirmed media) panels.myMediaPanel
 
                         ( accountsPanelModel, accountsPanelCmd ) =
                             case maybeAccountsPanelMsg of
                                 Just accountsPanelMsg ->
-                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                                    AccountsPanel.update req accountsPanelMsg model.accounts
 
                                 Nothing ->
-                                    ( model.accountsPanel, Cmd.none )
+                                    ( model.accounts, Cmd.none )
                     in
-                    ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
+                    ( { model
+                        | accounts = accountsPanelModel
+                        , panels = { panels | myMediaPanel = subModel, confirmingDeleteFor = Nothing }
+                      }
                     , Cmd.batch
                         [ Cmd.map MyMediaPanelMsg subCmd
                         , Cmd.map AccountsPanelMsg accountsPanelCmd
                         ]
                     )
 
-                -- Same shape as `ConfirmMediaDelete` just above.
-                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents) ->
-                    let
-                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source deleteSyncedEvents) model.eventSyncSourcesPanel
-
-                        ( accountsPanelModel, accountsPanelCmd ) =
-                            case maybeAccountsPanelMsg of
-                                Just accountsPanelMsg ->
-                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
-
-                                Nothing ->
-                                    ( model.accountsPanel, Cmd.none )
-                    in
-                    ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
-                    , Cmd.batch
-                        [ Cmd.map EventSyncSourcesPanelMsg subCmd
-                        , Cmd.map AccountsPanelMsg accountsPanelCmd
-                        ]
+                -- Unlike every branch above, none of these three is owned by
+                -- any Shared-owned panel to delegate a `DeleteConfirmed`
+                -- into -- each fires its delete RPC directly instead,
+                -- resolving the acting account from the carried `targetHost`.
+                -- Each result (`GotEventSyncSourceDeleteResult`/
+                -- `GotPostDeleteResult`/`GotEventDeleteResult`) is picked up
+                -- by whichever page is active, same as any other
+                -- `Shared.Msg` -- see `DeleteConfirmation`'s own doc for why
+                -- this is the shape new page-owned deletable lists should
+                -- follow.
+                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents host) ->
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
+                    , EventSyncSources.deleteEventSyncSource
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        source
+                        deleteSyncedEvents
+                        |> Task.attempt (GotEventSyncSourceDeleteResult source.id)
                     )
 
-                -- Unlike every branch above, a Post/Event delete isn't owned
-                -- by any Shared-owned panel to delegate a `DeleteConfirmed`
-                -- into -- fires the RPC directly instead, resolving the
-                -- acting account from the carried `targetHost` the same way
-                -- `EventSyncSourcesPanel.performForOwner` does from a bare
-                -- host. Its result (`GotPostDeleteResult`) is picked up by
-                -- whichever page is active, same as any other `Shared.Msg`.
                 Just (ConfirmPostDelete post host) ->
-                    ( { model | confirmingDeleteFor = Nothing }
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Posts.deletePost
-                        model.accountsPanel
-                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         post.id
                         |> Task.attempt GotPostDeleteResult
                     )
 
                 Just (ConfirmEventDelete event host) ->
-                    ( { model | confirmingDeleteFor = Nothing }
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteEvent
-                        model.accountsPanel
-                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         event.id
                         |> Task.attempt GotEventDeleteResult
                     )
@@ -1043,17 +1001,32 @@ updateImpl req msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        GotEventSyncSourceDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+            in
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventSyncSourceDeleteResult _ (Err _) ->
+            ( model, Cmd.none )
+
         GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
             in
-            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotPostDeleteResult (Err _) ->
             ( model, Cmd.none )
@@ -1063,12 +1036,12 @@ updateImpl req msg model =
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
                         Just accountsPanelMsg ->
-                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+                            AccountsPanel.update req accountsPanelMsg model.accounts
 
                         Nothing ->
-                            ( model.accountsPanel, Cmd.none )
+                            ( model.accounts, Cmd.none )
             in
-            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventDeleteResult (Err _) ->
             ( model, Cmd.none )
@@ -1081,10 +1054,17 @@ updateImpl req msg model =
         HideScrollPreserver ->
             ( { model | scrollPreserverVisible = False }, Cmd.none )
 
+        UncollapseHome ->
+            let
+                navAnimationState =
+                    model.navAnimationState
+            in
+            ( { model | navAnimationState = { navAnimationState | homeCollapsed = False } }, Cmd.none )
+
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
+                    sharedUpdate req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -1092,15 +1072,36 @@ updateImpl req msg model =
                 -- Home" hook (see `UI.navLink`), hence scrolling to top here.
                 ( scrolledModel, scrollCmd ) =
                     if alreadyHome then
-                        updateImpl req ScrollToTop closedModel
+                        sharedUpdate req ScrollToTop closedModel
 
                     else
                         ( closedModel, Cmd.none )
+
+                navAnimationState =
+                    scrolledModel.navAnimationState
+
+                uncollapsedHomeModel =
+                    { scrolledModel
+                        | navAnimationState =
+                            { navAnimationState | homeCollapsed = False }
+                    }
             in
-            ( scrolledModel, Cmd.batch [ closeCmd, scrollCmd ] )
+            ( uncollapsedHomeModel, Cmd.batch [ closeCmd, scrollCmd ] )
 
         ScrollToTop ->
             ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
+
+        NavLinksScrolled position ->
+            ( { model
+                | navAnimationState =
+                    { homeCollapsed = model.navAnimationState.homeCollapsed || position.scrollLeft > 5
+                    , scrollLeft = position.scrollLeft
+                    , scrollWidth = position.scrollWidth
+                    , clientWidth = position.clientWidth
+                    }
+              }
+            , Cmd.none
+            )
 
         NavigateExternal url ->
             ( model, Nav.load url )
@@ -1110,16 +1111,218 @@ updateImpl req msg model =
 
         GotTimeZone zone ->
             let
+                time =
+                    model.time
+
                 browserTimeZone =
-                    model.browserTimeZone
+                    time.browserTimeZone
             in
-            ( { model | browserTimeZone = { browserTimeZone | zone = zone } }, Cmd.none )
+            ( { model | time = { time | browserTimeZone = { browserTimeZone | zone = zone } } }, Cmd.none )
 
         GotNow now ->
-            ( { model | now = now }, Cmd.none )
+            let
+                time =
+                    model.time
+            in
+            ( { model | time = { time | now = now } }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
+
+
+{-| The window size isn't known until the DOM actually exists to measure --
+`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
+changes, so this is what gets `Model.windowSize` its real initial value.
+-}
+getInitialWindowSizeCmd : Cmd Msg
+getInitialWindowSizeCmd =
+    Task.perform
+        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
+        Dom.getViewport
+
+
+{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
+`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
+`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
+vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
+`SystemPrefersDarkChanged` alone.
+-}
+navBarColorCmd : Model -> Model -> Cmd Msg
+navBarColorCmd before after =
+    let
+        colorOf model_ =
+            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accounts).primaryColor
+    in
+    if colorOf before /= colorOf after then
+        Ports.setNavBarColor (colorOf after)
+
+    else
+        Cmd.none
+
+
+themePreferenceLabel : ThemePreference -> String
+themePreferenceLabel pref =
+    case pref of
+        ThemeAuto ->
+            "Auto"
+
+        ThemeLight ->
+            "Light"
+
+        ThemeDark ->
+            "Dark"
+
+
+themePreferenceToString : ThemePreference -> String
+themePreferenceToString pref =
+    case pref of
+        ThemeAuto ->
+            "auto"
+
+        ThemeLight ->
+            "light"
+
+        ThemeDark ->
+            "dark"
+
+
+{-| The `/elm`-or-`/`-style mount prefix for a raw (un-normalized) URL path --
+see `Model`'s `basePath` field. Only ever `""` or `"/elm"` today (the only two
+hosts `backend/src/web/elm_web.rs`/`main_index.rs` serve this app from), found
+by checking whether `path` is exactly `/elm` or starts with `/elm/` -- "elm" is
+a reserved username (see `validate_username`), so this can never collide with
+a real in-app route or federated-user path.
+-}
+basePathFromPath : String -> String
+basePathFromPath path =
+    if path == "/elm" || String.startsWith "/elm/" path then
+        "/elm"
+
+    else
+        ""
+
+
+{-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
+inline (rather than via a CSS class swap) so nav.css's own `transition` on
+that property is what animates it; nav.css no longer sets `max-width`
+itself, since this always overrides it.
+
+A continuous function of how far right `.nav-links-scroll` is scrolled:
+`upperBound` slides from `220` (unscrolled) down to `64` (scrolled all the
+way right, i.e. `scrollLeft == scrollWidth - clientWidth`) in direct
+proportion to that scroll fraction; `lowerBound` tracks `150` until
+`upperBound` itself drops below that, then tracks `upperBound` down the rest
+of the way -- so the button holds around its `150`-`220` resting size while
+only lightly scrolled, then visibly shrinks the rest of the way to a bare
+`64px` glyph as scrolling continues to the end. `maxScroll` is floored at
+`1` (rather than `0`) purely to keep the division defined when
+`.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
+`scrollLeft` is `0` in that case regardless, so `fraction` still comes out
+`0`.
+
+-}
+navLinkHomeMaxWidth : NavAnimationState -> String
+navLinkHomeMaxWidth state =
+    let
+        -- maxScroll =
+        --     max 1 (state.scrollWidth - state.clientWidth)
+        -- fraction =
+        --     clamp 0 1 (state.scrollLeft / maxScroll)
+        upperBound =
+            if state.homeCollapsed then
+                64
+
+            else
+                220
+
+        -- round (220 - fraction * (220 - 64))
+        lowerBound =
+            min 150 upperBound
+    in
+    "calc(min(max(" ++ String.fromInt lowerBound ++ "px, 25vw), " ++ String.fromInt upperBound ++ "px))"
+
+
+{-| Whether the app should currently render in dark mode, resolving `Auto`
+against the last-known system preference.
+-}
+effectiveDarkMode : Model -> Bool
+effectiveDarkMode model =
+    case model.theme.preference of
+        ThemeAuto ->
+            model.theme.systemPrefersDark
+
+        ThemeLight ->
+            False
+
+        ThemeDark ->
+            True
+
+
+themePreferenceFromString : String -> ThemePreference
+themePreferenceFromString s =
+    case s of
+        "light" ->
+            ThemeLight
+
+        "dark" ->
+            ThemeDark
+
+        _ ->
+            ThemeAuto
+
+
+nextThemePreference : ThemePreference -> ThemePreference
+nextThemePreference pref =
+    case pref of
+        ThemeAuto ->
+            ThemeLight
+
+        ThemeLight ->
+            ThemeDark
+
+        ThemeDark ->
+            ThemeAuto
+
+
+{-| Strips `basePath` off `url.path`, so `Gen.Route.fromUrl` can parse it as
+if the app were served from `/` -- see `Main.elm`, which calls this on every
+`Url` before it touches routing.
+-}
+normalizeUrl : String -> Url -> Url
+normalizeUrl basePath url =
+    if basePath == "" then
+        url
+
+    else if url.path == basePath then
+        { url | path = "/" }
+
+    else if String.startsWith (basePath ++ "/") url.path then
+        { url | path = String.dropLeft (String.length basePath) url.path }
+
+    else
+        url
+
+
+{-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
+(which just snapshots `new Date().getTimezoneOffset()` for the _current_
+instant into a fixed-offset `Time.customZone` with no era table, so every
+other instant it's ever asked to convert -- e.g. an `EventInstance` months
+away, on the other side of a DST transition -- gets rendered with today's
+offset instead of its own). This instead reads the browser's actual IANA
+zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
+and looks up its real transition history/future in
+`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
+`siblingInstanceWhenText` show a recurring weekly event's fixed local time
+(e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
+than drifting an hour. Falls back to plain `Time.here` if the zone name
+can't be read or isn't in `timezone-data` (e.g. an unusual environment
+`Intl` doesn't cover) -- never fails outright.
+-}
+getBrowserZone : Task.Task x Time.Zone
+getBrowserZone =
+    TimeZone.getZone
+        |> Task.map Tuple.second
+        |> Task.onError (\_ -> Time.here)
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`
@@ -1165,25 +1368,3 @@ starredPostsRefreshHosts before after =
             )
     in
     hosts |> List.filter (\host -> identity before host /= identity after host)
-
-
-{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
-only while the panel's actually open -- there's nothing to show for it
-otherwise, so no reason to keep hitting servers in the background.
--}
-subscriptions : Request -> Model -> Sub Msg
-subscriptions _ model =
-    Sub.batch
-        [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
-        , Browser.Events.onResize WindowResized
-        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
-        , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
-        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.starredPanel)
-        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
-        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
-        , if model.starredPanel.showStarredPanel then
-            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
-
-          else
-            Sub.none
-        ]

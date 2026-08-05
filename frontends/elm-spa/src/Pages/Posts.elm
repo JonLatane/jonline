@@ -20,7 +20,6 @@ import Gen.Params.Posts exposing (Params)
 import Page
 import Request
 import Shared
-import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import View exposing (View)
 

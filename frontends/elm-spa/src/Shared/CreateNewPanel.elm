@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (Mode(..), Model, Msg(..), eligibleAccounts, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (Mode, Model, Msg(..), hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -57,10 +57,10 @@ import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
-import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -159,11 +159,12 @@ noForward =
 every other panel here) but also a possible `MarkdownPanel.Msg`/
 `MyMediaPanel.Msg` for `Shared.update` to dispatch on this panel's behalf.
 
-Takes the viewer's own `Time.Zone` (`Shared.Model.browserTimeZone.zone`)
+Takes the viewer's own `Time.Zone` (`Shared.Model.time.browserTimeZone.zone`)
 purely to parse `StartsAtChanged`/`EndsAtChanged`'s raw `<input
 type="datetime-local">` strings (always local wall-clock time, no timezone of
 their own) back into absolute `Time.Posix` -- see
-`Shared.BrowserTimeZone.posixFromDateTimeLocalInput`.
+`Shared.Time.posixFromDateTimeLocalInput`.
+
 -}
 update : Time.Zone -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
 update zone accountsPanelModel msg model =
@@ -189,7 +190,7 @@ update zone accountsPanelModel msg model =
         StartsAtChanged raw ->
             let
                 newStartsAt =
-                    BrowserTimeZone.posixFromDateTimeLocalInput zone raw
+                    SharedTime.posixFromDateTimeLocalInput zone raw
 
                 -- Keeps `endsAt` sane relative to the new `startsAt`: if
                 -- there was already a valid start/end pair, shift `endsAt` by
@@ -214,7 +215,7 @@ update zone accountsPanelModel msg model =
         EndsAtChanged raw ->
             let
                 newEndsAt =
-                    BrowserTimeZone.posixFromDateTimeLocalInput zone raw
+                    SharedTime.posixFromDateTimeLocalInput zone raw
 
                 -- Enforces `endsAt` is always at least a minute after
                 -- `startsAt` (when one's set) -- clamps rather than rejecting
@@ -724,7 +725,7 @@ dateField zone labelText posix toMsg =
         , input
             [ type_ "datetime-local"
             , class "create-new-panel-date-input"
-            , value (posix |> Maybe.map (BrowserTimeZone.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
+            , value (posix |> Maybe.map (SharedTime.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
             , onInput toMsg
             ]
             []

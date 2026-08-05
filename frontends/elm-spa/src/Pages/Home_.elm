@@ -46,7 +46,7 @@ import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
-import Html exposing (h2, h3, text)
+import Html exposing (h3, text)
 import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
@@ -86,7 +86,7 @@ init shared req =
             EventsPage.init shared Nothing req.key req.url.path req.query True
     in
     ( { posts = postsModel, events = eventsModel }
-    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared ]
+    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared, Effect.fromShared Shared.UncollapseHome ]
     )
 
 
@@ -108,7 +108,7 @@ setBreadcrumbsHost : Shared.Model -> Effect Msg
 setBreadcrumbsHost shared =
     let
         host =
-            shared.accountsPanel.mainFrontendHost
+            shared.accounts.mainFrontendHost
     in
     if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
         Effect.none

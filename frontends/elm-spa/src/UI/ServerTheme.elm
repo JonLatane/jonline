@@ -22,7 +22,6 @@ dark/light mode) and is fine to call per-render.
 -}
 
 import Bitwise
-import Char
 
 
 {-| Everything about a color needed to use it consistently: the color itself

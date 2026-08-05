@@ -66,7 +66,7 @@ init shared req =
         startPath =
             Dict.get "start_path" req.query
     in
-    case shared.federatedAuth.privateKey of
+    case shared.panels.federatedAuth.privateKey of
         Nothing ->
             ( { status = DecryptFailed "No pending sign-in was started from this browser.", startPath = startPath }, Effect.none )
 
@@ -171,10 +171,10 @@ statusView shared model =
         Decrypted account ->
             let
                 avatarUrl =
-                    AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account
+                    AccountsPanel.accountAvatarUrl shared.accounts.servers account
 
                 branding =
-                    AccountsPanel.brandingFor shared.accountsPanel.servers account.server
+                    AccountsPanel.brandingFor shared.accounts.servers account.server
 
                 nameAndHost =
                     account.username

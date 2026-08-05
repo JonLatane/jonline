@@ -52,7 +52,7 @@ Four changes from the default:
 
 import Browser
 import Browser.Navigation as Nav exposing (Key)
-import Effect exposing (Effect)
+import Effect
 import Gen.Model
 import Gen.Msg
 import Gen.Pages as Pages
@@ -95,10 +95,6 @@ main =
         }
 
 
-
--- INIT
-
-
 type alias Model =
     { url : Url
     , key : Key
@@ -112,6 +108,17 @@ type alias Model =
     -- first -- see change 4 in the module doc.
     , backStack : List Url
     }
+
+
+type Msg
+    = ChangedUrl Url
+    | ClickedLink Browser.UrlRequest
+    | Shared Shared.Msg
+    | Page Pages.Msg
+
+
+
+-- INIT
 
 
 init : Shared.Flags -> Url -> Key -> ( Model, Cmd Msg )
@@ -138,14 +145,19 @@ init flags url key =
 
 
 
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Pages.subscriptions model.page model.shared model.url model.key |> Sub.map Page
+        , Shared.subscriptions model.shared |> Sub.map Shared
+        ]
+
+
+
 -- UPDATE
-
-
-type Msg
-    = ChangedUrl Url
-    | ClickedLink Browser.UrlRequest
-    | Shared Shared.Msg
-    | Page Pages.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -378,15 +390,3 @@ view model =
     Pages.view model.page model.shared model.url model.key
         |> View.map Page
         |> View.toBrowserDocument
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Pages.subscriptions model.page model.shared model.url model.key |> Sub.map Page
-        , Shared.subscriptions (Request.create () model.url model.key) model.shared |> Sub.map Shared
-        ]

@@ -1,4 +1,4 @@
-module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode(..), init, update, view)
+module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode, init, update, view)
 
 {-| A single, app-wide Markdown editor: a plain monospace `<textarea>` and a
 live `Components.Markdown.view` preview of the same text, with "Save"/
@@ -32,6 +32,34 @@ import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+
+
+type alias Model =
+    { target : Maybe TargetType
+
+    -- The `frontendHost` of the server `target`'s Post lives on -- needed to
+    -- resolve the `AccountsPanel.Server`/signed-in `Account` to submit as,
+    -- and to verify (see `resolve`) that server's still enabled and that
+    -- account still has the relevant permission, right before submitting.
+    , targetHost : String
+    , content : String
+    , status : SubmitStatus
+
+    -- Deliberately *not* reset back to `Split` by `CancelClicked`/a
+    -- successful save (see `update`) -- it's a standing display preference,
+    -- not part of the in-progress edit, so it should carry over the next
+    -- time this panel's opened.
+    , viewMode : ViewMode
+    }
+
+
+type Msg
+    = Open TargetType String
+    | ContentChanged String
+    | ViewModeSelected ViewMode
+    | CancelClicked
+    | SaveClicked
+    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
 
 
 {-| What a save should do once the user's done editing: `PostContent post`
@@ -76,22 +104,9 @@ type ViewMode
     | MarkdownOnly
 
 
-type alias Model =
-    { target : Maybe TargetType
-
-    -- The `frontendHost` of the server `target`'s Post lives on -- needed to
-    -- resolve the `AccountsPanel.Server`/signed-in `Account` to submit as,
-    -- and to verify (see `resolve`) that server's still enabled and that
-    -- account still has the relevant permission, right before submitting.
-    , targetHost : String
-    , content : String
-    , status : SubmitStatus
-
-    -- Deliberately *not* reset back to `Split` by `CancelClicked`/a
-    -- successful save (see `update`) -- it's a standing display preference,
-    -- not part of the in-progress edit, so it should carry over the next
-    -- time this panel's opened.
-    , viewMode : ViewMode
+type alias Resolved =
+    { server : AccountsPanel.Server
+    , account : AccountsPanel.Account
     }
 
 
@@ -103,15 +118,6 @@ init =
     , status = Idle
     , viewMode = Split
     }
-
-
-type Msg
-    = Open TargetType String
-    | ContentChanged String
-    | ViewModeSelected ViewMode
-    | CancelClicked
-    | SaveClicked
-    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
@@ -183,6 +189,172 @@ update accountsPanelModel msg model =
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False ) )
 
 
+{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
+panels, so opening/closing is a plain CSS transition -- see `openClosedClass`.
+Needs `AccountsPanel.Model` for the same reason `update` does -- resolving
+`targetHost` to show who's actually about to post/edit (`accountRow`), and any
+problem with that (`resolve`) inline, before the user even taps Save.
+-}
+
+
+
+-- VIEW
+
+
+view : AccountsPanel.Model -> Model -> Html Msg
+view accountsPanelModel model =
+    let
+        resolution =
+            model.target |> Maybe.map (\target -> resolve accountsPanelModel target model.targetHost)
+
+        canSave =
+            case resolution of
+                Just (Ok _) ->
+                    True
+
+                _ ->
+                    False
+
+        errorMessage =
+            case model.status of
+                SubmitFailed err ->
+                    Just err
+
+                _ ->
+                    case resolution of
+                        Just (Err err) ->
+                            Just err
+
+                        _ ->
+                            Nothing
+    in
+    div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ] ]
+        [ div [ class "markdown-panel-header" ]
+            [ modeSlider model.targetHost model.viewMode
+            , accountRow accountsPanelModel model
+            ]
+        , div [ classes [ "markdown-panel-split", viewModeClass model.viewMode ] ]
+            (case model.viewMode of
+                TextOnly ->
+                    [ editorView model ]
+
+                Split ->
+                    [ editorView model, previewView model ]
+
+                MarkdownOnly ->
+                    [ previewView model ]
+            )
+        , case errorMessage of
+            Just err ->
+                div [ class "markdown-panel-error" ] [ text err ]
+
+            Nothing ->
+                text ""
+        , div [ class "markdown-panel-actions" ]
+            [ button
+                [ class "markdown-panel-cancel"
+                , onClick CancelClicked
+                , disabled (model.status == Submitting)
+                ]
+                [ text "Cancel" ]
+            , button
+                [ classes [ "markdown-panel-save", model.targetHost, "background-color-primary" ]
+                , onClick SaveClicked
+                , disabled (model.status == Submitting || not canSave)
+                ]
+                [ text
+                    (if model.status == Submitting then
+                        "Saving…"
+
+                     else
+                        "Save"
+                    )
+                ]
+            ]
+        ]
+
+
+editorView : Model -> Html Msg
+editorView model =
+    textarea
+        [ class "markdown-panel-editor"
+        , value model.content
+        , onInput ContentChanged
+        , spellcheck False
+        , placeholder "Write some Markdown…"
+        ]
+        []
+
+
+previewView : Model -> Html Msg
+previewView model =
+    Markdown.view [ class "markdown-panel-preview" ] model.content
+
+
+{-| A single sliding 3-position control -- Text / Split / Markdown -- rather
+than three separate buttons, so the "which one's active" state reads as one
+moving thumb (`markdown-panel-mode-thumb`, positioned purely in CSS off
+`viewModeClass`) instead of three independently-highlighted pills. Small
+enough to sit centered under the title/account row on a phone-width screen
+(see markdown\_panel.css).
+-}
+modeSlider : String -> ViewMode -> Html Msg
+modeSlider targetHost mode =
+    div [ classes [ "markdown-panel-mode-slider", viewModeClass mode ] ]
+        [ div [ classes [ "markdown-panel-mode-thumb", targetHost, "background-color-primary" ] ] []
+        , modeOption mode TextOnly "Text"
+        , modeOption mode Split "Split"
+        , modeOption mode MarkdownOnly "Preview"
+        ]
+
+
+modeOption : ViewMode -> ViewMode -> String -> Html Msg
+modeOption current target label =
+    button
+        [ classes
+            ("markdown-panel-mode-option"
+                :: (if current == target then
+                        [ "selected" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick (ViewModeSelected target)
+        ]
+        [ text label ]
+
+
+{-| "Editing as <avatar> username" / "Posting as <avatar> username" -- no
+link, just enough to make clear which signed-in account (of possibly several
+on this server) is about to make the edit/reply. Blank if `targetHost` has no
+signed-in account at all -- `resolve`'s own "You're not signed in on that
+server" error (see `errorMessage`) already covers that case.
+-}
+accountRow : AccountsPanel.Model -> Model -> Html Msg
+accountRow accountsPanelModel model =
+    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost of
+        Just account ->
+            div [ class "markdown-panel-account" ]
+                [ text (verbFor model.target)
+                , accountAvatar accountsPanelModel.servers account
+                , span [ class "markdown-panel-account-name" ] [ text account.username ]
+                ]
+
+        Nothing ->
+            text ""
+
+
+accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
+accountAvatar servers account =
+    case AccountsPanel.accountAvatarUrl servers account of
+        Just url ->
+            img [ class "markdown-panel-account-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
+
+        Nothing ->
+            div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
+
+
 initialContent : TargetType -> String
 initialContent target =
     case target of
@@ -208,10 +380,30 @@ initialContent target =
             Maybe.withDefault "" (AccountsPanel.serverInfoOf server).mediaPolicy
 
 
-type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
-    }
+viewModeClass : ViewMode -> String
+viewModeClass mode =
+    case mode of
+        TextOnly ->
+            "mode-text"
+
+        Split ->
+            "mode-split"
+
+        MarkdownOnly ->
+            "mode-markdown"
+
+
+verbFor : Maybe TargetType -> String
+verbFor target =
+    case target of
+        Just (NewReply _) ->
+            "Posting as "
+
+        Just (NewPostContent _) ->
+            "Writing as "
+
+        _ ->
+            "Editing as "
 
 
 {-| Verifies `host`/`target` are actually usable right now, right before a
@@ -415,193 +607,3 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
                     )
         )
         |> Task.map (\( _, newConfig ) -> Just (AccountsPanel.GotServerConfigSaveResult server.frontendHost newConfig))
-
-
-
--- VIEW
-
-
-{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
-panels, so opening/closing is a plain CSS transition -- see `openClosedClass`.
-Needs `AccountsPanel.Model` for the same reason `update` does -- resolving
-`targetHost` to show who's actually about to post/edit (`accountRow`), and any
-problem with that (`resolve`) inline, before the user even taps Save.
--}
-view : AccountsPanel.Model -> Model -> Html Msg
-view accountsPanelModel model =
-    let
-        resolution =
-            model.target |> Maybe.map (\target -> resolve accountsPanelModel target model.targetHost)
-
-        canSave =
-            case resolution of
-                Just (Ok _) ->
-                    True
-
-                _ ->
-                    False
-
-        errorMessage =
-            case model.status of
-                SubmitFailed err ->
-                    Just err
-
-                _ ->
-                    case resolution of
-                        Just (Err err) ->
-                            Just err
-
-                        _ ->
-                            Nothing
-    in
-    div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ] ]
-        [ div [ class "markdown-panel-header" ]
-            [ modeSlider model.targetHost model.viewMode
-            , accountRow accountsPanelModel model
-            ]
-        , div [ classes [ "markdown-panel-split", viewModeClass model.viewMode ] ]
-            (case model.viewMode of
-                TextOnly ->
-                    [ editorView model ]
-
-                Split ->
-                    [ editorView model, previewView model ]
-
-                MarkdownOnly ->
-                    [ previewView model ]
-            )
-        , case errorMessage of
-            Just err ->
-                div [ class "markdown-panel-error" ] [ text err ]
-
-            Nothing ->
-                text ""
-        , div [ class "markdown-panel-actions" ]
-            [ button
-                [ class "markdown-panel-cancel"
-                , onClick CancelClicked
-                , disabled (model.status == Submitting)
-                ]
-                [ text "Cancel" ]
-            , button
-                [ classes [ "markdown-panel-save", model.targetHost, "background-color-primary" ]
-                , onClick SaveClicked
-                , disabled (model.status == Submitting || not canSave)
-                ]
-                [ text
-                    (if model.status == Submitting then
-                        "Saving…"
-
-                     else
-                        "Save"
-                    )
-                ]
-            ]
-        ]
-
-
-editorView : Model -> Html Msg
-editorView model =
-    textarea
-        [ class "markdown-panel-editor"
-        , value model.content
-        , onInput ContentChanged
-        , spellcheck False
-        , placeholder "Write some Markdown…"
-        ]
-        []
-
-
-previewView : Model -> Html Msg
-previewView model =
-    Markdown.view [ class "markdown-panel-preview" ] model.content
-
-
-viewModeClass : ViewMode -> String
-viewModeClass mode =
-    case mode of
-        TextOnly ->
-            "mode-text"
-
-        Split ->
-            "mode-split"
-
-        MarkdownOnly ->
-            "mode-markdown"
-
-
-{-| A single sliding 3-position control -- Text / Split / Markdown -- rather
-than three separate buttons, so the "which one's active" state reads as one
-moving thumb (`markdown-panel-mode-thumb`, positioned purely in CSS off
-`viewModeClass`) instead of three independently-highlighted pills. Small
-enough to sit centered under the title/account row on a phone-width screen
-(see markdown\_panel.css).
--}
-modeSlider : String -> ViewMode -> Html Msg
-modeSlider targetHost mode =
-    div [ classes [ "markdown-panel-mode-slider", viewModeClass mode ] ]
-        [ div [ classes [ "markdown-panel-mode-thumb", targetHost, "background-color-primary" ] ] []
-        , modeOption mode TextOnly "Text"
-        , modeOption mode Split "Split"
-        , modeOption mode MarkdownOnly "Preview"
-        ]
-
-
-modeOption : ViewMode -> ViewMode -> String -> Html Msg
-modeOption current target label =
-    button
-        [ classes
-            ("markdown-panel-mode-option"
-                :: (if current == target then
-                        [ "selected" ]
-
-                    else
-                        []
-                   )
-            )
-        , onClick (ViewModeSelected target)
-        ]
-        [ text label ]
-
-
-{-| "Editing as <avatar> username" / "Posting as <avatar> username" -- no
-link, just enough to make clear which signed-in account (of possibly several
-on this server) is about to make the edit/reply. Blank if `targetHost` has no
-signed-in account at all -- `resolve`'s own "You're not signed in on that
-server" error (see `errorMessage`) already covers that case.
--}
-accountRow : AccountsPanel.Model -> Model -> Html Msg
-accountRow accountsPanelModel model =
-    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost of
-        Just account ->
-            div [ class "markdown-panel-account" ]
-                [ text (verbFor model.target)
-                , accountAvatar accountsPanelModel.servers account
-                , span [ class "markdown-panel-account-name" ] [ text account.username ]
-                ]
-
-        Nothing ->
-            text ""
-
-
-verbFor : Maybe TargetType -> String
-verbFor target =
-    case target of
-        Just (NewReply _) ->
-            "Posting as "
-
-        Just (NewPostContent _) ->
-            "Writing as "
-
-        _ ->
-            "Editing as "
-
-
-accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
-accountAvatar servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
-        Just url ->
-            img [ class "markdown-panel-account-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
-
-        Nothing ->
-            div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]

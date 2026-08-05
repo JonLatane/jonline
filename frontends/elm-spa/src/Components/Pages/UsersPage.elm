@@ -163,10 +163,10 @@ candidateServers : Shared.Model -> Model -> List AccountsPanel.Server
 candidateServers shared model =
     case model.target of
         Nothing ->
-            AccountsPanel.enabledServers shared.accountsPanel
+            AccountsPanel.enabledServers shared.accounts
 
         Just ( host, _, _ ) ->
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
+            AccountsPanel.serverForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
@@ -180,8 +180,8 @@ action against one of its listed users succeeds).
 fetchServerEffect : Shared.Model -> Model -> AccountsPanel.Server -> Effect Msg
 fetchServerEffect shared model server =
     Users.fetchUserListing
-        shared.accountsPanel
-        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+        shared.accounts
+        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
         , server.frontendHost
         )
         (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
@@ -210,7 +210,7 @@ refetchServers shared model serversToFetch =
             candidateServers shared model
 
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
         fetchEffect server =
@@ -260,7 +260,7 @@ fetchNewServers shared model =
             candidateServers shared model
 
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
         serversToFetch =
@@ -312,7 +312,7 @@ setBreadcrumbsRoot shared model =
                     ( Breadcrumbs.FromUser user, targetHost )
 
                 Nothing ->
-                    ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+                    ( Breadcrumbs.FromServerHost shared.accounts.mainFrontendHost, shared.accounts.mainFrontendHost )
     in
     if shared.breadcrumbs.root == Just root then
         Effect.none
@@ -631,14 +631,14 @@ targetHeadingView shared maybeTarget =
         Just ( host, targetUser, listingType ) ->
             let
                 profileUrl =
-                    Users.usernameHref "" shared.accountsPanel.mainFrontendHost host targetUser.username
+                    Users.usernameHref "" shared.accounts.mainFrontendHost host targetUser.username
             in
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text (listingTypeHeading listingType) ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) targetUser
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) targetUser
 
                         Nothing ->
                             ProfileHeading.usernameHeading targetUser
@@ -664,22 +664,23 @@ listingTypeHeading listingType =
 
 usersListView : Shared.Model -> Model -> Html Msg
 usersListView shared model =
-    let
-        sortedAnimations =
-            model.userAnimations
-                |> Dict.toList
-                |> List.sortBy (\( _, anim ) -> String.toLower anim.user.username)
-    in
     if Dict.isEmpty model.usersByServer then
         p [ class "posts-empty" ] [ text "Connect to a server to see people." ]
 
-    else if List.isEmpty sortedAnimations then
-        p [ class "posts-empty" ] [ text "No people yet." ]
-
     else
-        Html.Keyed.node "div"
-            [ class "users-list flip-animated-column" ]
-            (List.map (userAnimationView shared model) sortedAnimations)
+        let
+            sortedAnimations =
+                model.userAnimations
+                    |> Dict.toList
+                    |> List.sortBy (\( _, anim ) -> String.toLower anim.user.username)
+        in
+        if List.isEmpty sortedAnimations then
+            p [ class "posts-empty" ] [ text "No people yet." ]
+
+        else
+            Html.Keyed.node "div"
+                [ class "users-list flip-animated-column" ]
+                (List.map (userAnimationView shared model) sortedAnimations)
 
 
 {-| Wraps `userCardView` in a fading/scaling/collapsing animated `<div>` (see
@@ -706,7 +707,7 @@ userAnimationView shared model ( key, anim ) =
 
 userCardView : Shared.Model -> Model -> ( String, User ) -> Html Msg
 userCardView shared model ( host, user ) =
-    case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+    case AccountsPanel.serverForHost shared.accounts.servers host of
         Just server ->
             let
                 key =
@@ -716,10 +717,10 @@ userCardView shared model ( host, user ) =
                     Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init
 
                 maybeAccount =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+                    AccountsPanel.enabledAccountForServer shared.accounts.accounts host
             in
             Users.userCard shared.basePath
-                shared.accountsPanel.mainFrontendHost
+                shared.accounts.mainFrontendHost
                 server
                 maybeAccount
                 (Html.map (FollowStatusAndButtonMsg key) (FollowStatusAndButton.view followStatusAndButtonModel maybeAccount user))
@@ -765,6 +766,6 @@ findUserForKey shared model key =
         |> Maybe.andThen
             (\( host, user ) ->
                 Maybe.map2 (\server account -> ( server, account, user ))
-                    (AccountsPanel.serverForHost shared.accountsPanel.servers host)
-                    (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host)
+                    (AccountsPanel.serverForHost shared.accounts.servers host)
+                    (AccountsPanel.enabledAccountForServer shared.accounts.accounts host)
             )

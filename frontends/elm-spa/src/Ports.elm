@@ -97,7 +97,7 @@ up; `key` is the caller's own correlation id, echoed back verbatim in the
 result -- see `elementsMeasured`) via a single plain JS callback -- exists
 for exactly the reason `scrollElementLeft` does (see its own doc comment):
 `Browser.Dom.getElement` (elm/browser's kernel code, see `_Browser_withNode`)
-wraps *every single call* in its own `requestAnimationFrame`, and Elm's
+wraps _every single call_ in its own `requestAnimationFrame`, and Elm's
 `Task`s compose strictly sequentially (no real concurrency), so measuring N
 elements via `Task.sequence` over N separate `Dom.getElement` calls costs N
 whole animation frames, one after another. For
