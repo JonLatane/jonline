@@ -91,6 +91,7 @@
      full un-truncated name, blocking it from ever actually shrinking/
      ellipsizing under real space pressure. */
   min-width: 0;
+  width: 100%;
 }
 
 /* Everything in .nav-links except the Home link -- Starred, Events,
@@ -117,6 +118,18 @@
   margin: 0;
   overflow-x: auto;
   min-width: 0;
+  /* margin-left: auto;
+  margin-right: auto; */
+  width: 100%;
+}
+
+.nav-links-scroll> :not(.starred-menu, .nav-menu-toggle):first-of-type {
+  margin-left: auto;
+
+}
+
+.nav-links-scroll>*:last-child {
+  margin-right: auto;
 }
 
 /* Button-styled nav links. No background/text color of their own -- they
@@ -199,11 +212,9 @@
      above -- `.nav-links-scroll` (its flex sibling, left fully shrinkable)
      is what absorbs space pressure beyond this floor instead. */
   min-width: 64px;
-  /* `max-width` itself is no longer set here -- `UI.navLink` now always
-     applies it as an inline style instead (`Shared.navLinkHomeMaxWidth`),
-     shrinking it in steps as `.nav-links-scroll` (its flex sibling) scrolls
-     right, and back as it scrolls left. This `transition` is what animates
-     those inline changes. */
+
+  max-width: calc(min(max(150px, 25vw), 220px));
+
   transition: max-width 0.3s ease;
   flex-shrink: 0;
 }

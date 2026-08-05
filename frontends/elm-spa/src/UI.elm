@@ -356,8 +356,8 @@ navLink shared currentRoute content linkRoute =
             -- Directly overrides nav.css's own (transitioned) `max-width` on
             -- `.nav-link-home` as `.nav-links-scroll` scrolls -- see
             -- `Shared.navLinkHomeMaxWidth`.
-            ++ (if isHomeWithLogo then
-                    [ style "max-width" (Shared.navLinkHomeMaxWidth shared.navAnimationState) ]
+            ++ (if isHomeWithLogo && shared.navAnimationState.homeCollapsed then
+                    [ style "max-width" "64px" ]
 
                 else
                     []

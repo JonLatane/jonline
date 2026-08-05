@@ -86,7 +86,7 @@ init shared req =
             EventsPage.init shared Nothing req.key req.url.path req.query True
     in
     ( { posts = postsModel, events = eventsModel }
-    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared ]
+    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared, Effect.fromShared Shared.UncollapseHome ]
     )
 
 

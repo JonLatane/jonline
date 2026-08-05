@@ -137,6 +137,7 @@ type Msg
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
     | ShowScrollPreserver
     | HideScrollPreserver
+    | UncollapseHome
     | HomeLinkClicked Bool
     | ScrollToTop
     | NavLinksScrolled { scrollLeft : Float, scrollWidth : Float, clientWidth : Float }
@@ -246,6 +247,7 @@ type alias NavAnimationState =
     { scrollLeft : Float
     , scrollWidth : Float
     , clientWidth : Float
+    , homeCollapsed : Bool
     }
 
 
@@ -316,6 +318,7 @@ init basePath req flags =
                 { scrollLeft = 0
                 , scrollWidth = 0
                 , clientWidth = 0
+                , homeCollapsed = False
                 }
 
             -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
@@ -1051,6 +1054,13 @@ sharedUpdate req msg model =
         HideScrollPreserver ->
             ( { model | scrollPreserverVisible = False }, Cmd.none )
 
+        UncollapseHome ->
+            let
+                navAnimationState =
+                    model.navAnimationState
+            in
+            ( { model | navAnimationState = { navAnimationState | homeCollapsed = False } }, Cmd.none )
+
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
@@ -1066,14 +1076,32 @@ sharedUpdate req msg model =
 
                     else
                         ( closedModel, Cmd.none )
+
+                navAnimationState =
+                    scrolledModel.navAnimationState
+
+                uncollapsedHomeModel =
+                    { scrolledModel
+                        | navAnimationState =
+                            { navAnimationState | homeCollapsed = False }
+                    }
             in
-            ( scrolledModel, Cmd.batch [ closeCmd, scrollCmd ] )
+            ( uncollapsedHomeModel, Cmd.batch [ closeCmd, scrollCmd ] )
 
         ScrollToTop ->
             ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
 
         NavLinksScrolled position ->
-            ( { model | navAnimationState = position }, Cmd.none )
+            ( { model
+                | navAnimationState =
+                    { homeCollapsed = model.navAnimationState.homeCollapsed || position.scrollLeft > 5
+                    , scrollLeft = position.scrollLeft
+                    , scrollWidth = position.scrollWidth
+                    , clientWidth = position.clientWidth
+                    }
+              }
+            , Cmd.none
+            )
 
         NavigateExternal url ->
             ( model, Nav.load url )
@@ -1196,15 +1224,18 @@ only lightly scrolled, then visibly shrinks the rest of the way to a bare
 navLinkHomeMaxWidth : NavAnimationState -> String
 navLinkHomeMaxWidth state =
     let
-        maxScroll =
-            max 1 (state.scrollWidth - state.clientWidth)
-
-        fraction =
-            clamp 0 1 (state.scrollLeft / maxScroll)
-
+        -- maxScroll =
+        --     max 1 (state.scrollWidth - state.clientWidth)
+        -- fraction =
+        --     clamp 0 1 (state.scrollLeft / maxScroll)
         upperBound =
-            round (220 - fraction * (220 - 64))
+            if state.homeCollapsed then
+                64
 
+            else
+                220
+
+        -- round (220 - fraction * (220 - 64))
         lowerBound =
             min 150 upperBound
     in
