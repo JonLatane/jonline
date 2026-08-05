@@ -183,10 +183,12 @@
   /* A small inset from `.navbar-inner`'s own (now padding-less) edges --
      see `.navbar-inner`'s own comment. */
   margin: 2px;
+  margin-right: 0;
   /* No top/bottom/left padding -- the logo (see below) sits flush against
      those three edges, flush enough that it'd otherwise poke past the
      button's own rounded corners, hence `overflow: hidden` here too. */
-  padding: 0 0.3rem 0 0;
+  padding: 0;
+  padding-right: 0.3rem;
   overflow: hidden;
   /* A floor, not a full `min-width: 0` -- large enough to always fit the
      glyph (64px, flex-shrink: 0 below) plus its right padding and gap, with
