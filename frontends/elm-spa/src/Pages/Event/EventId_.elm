@@ -39,7 +39,7 @@ import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
-import Proto.Jonline.Moderation exposing (Moderation(..))
+import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Request
 import Shared
@@ -996,7 +996,7 @@ subscriptions model =
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = titleFor shared model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
+    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
     }
 
 
@@ -1014,8 +1014,8 @@ titleFor shared model =
     UI.pageTitle shared [ subtitle ]
 
 
-bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
-bodyView shared req model =
+bodyView : Shared.Model -> Model -> Html Msg
+bodyView shared model =
     ServerDependentView.view
         { hostname = model.targetHost
         , servers = shared.accounts.servers
@@ -1053,28 +1053,29 @@ eventDetailView shared model event instance =
 
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
-
-        -- Slotted between the byline and the media display in the primary
-        -- (`Event`) post section below -- the currently-viewed
-        -- `EventInstance`'s own start/end/location, then (below that) the
-        -- date-picker strip to switch to a sibling one.
-        instanceDetailAndStrip =
-            div [ class "event-instance-detail-and-strip" ]
-                [ div [ class "event-instance-detail" ]
-                    [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.time instance) ]
-                    , case instance.location |> Maybe.andThen Events.locationText of
-                        Just locationLine ->
-                            div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
-
-                        Nothing ->
-                            text ""
-                    ]
-                , instanceHistoryView shared model event instance
-                ]
     in
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
             Just eventPost ->
+                let
+                    -- Slotted between the byline and the media display in the primary
+                    -- (`Event`) post section below -- the currently-viewed
+                    -- `EventInstance`'s own start/end/location, then (below that) the
+                    -- date-picker strip to switch to a sibling one.
+                    instanceDetailAndStrip =
+                        div [ class "event-instance-detail-and-strip" ]
+                            [ div [ class "event-instance-detail" ]
+                                [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.time instance) ]
+                                , case instance.location |> Maybe.andThen Events.locationText of
+                                    Just locationLine ->
+                                        div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
+
+                                    Nothing ->
+                                        text ""
+                                ]
+                            , instanceHistoryView shared model event instance
+                            ]
+                in
                 div []
                     [ div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-primary" ] ]
                         [ h1 [ class "event-post-title" ] [ titleView model.postFieldEdit maybeAccount eventPost ]

@@ -1950,9 +1950,6 @@ federationTab shared model server =
     let
         maybeAdminAccount =
             adminAccountFor shared model
-
-        savedServers =
-            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
     in
     div [ class "server-details-tab-content server-details-federation" ]
         [ h3 [ class "section-title" ] [ text "Federated Servers" ]
@@ -1961,6 +1958,10 @@ federationTab shared model server =
                 federationEditorView shared edit
 
             Nothing ->
+                let
+                    savedServers =
+                        (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+                in
                 federationDisplayView shared savedServers
         , case ( model.federationEdit, maybeAdminAccount ) of
             ( Nothing, Just _ ) ->

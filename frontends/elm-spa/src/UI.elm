@@ -1,4 +1,4 @@
-module UI exposing (imageOrInitial, layout, page, pageTitle, webUiToggleRow)
+module UI exposing (imageOrInitial, layout, pageTitle, webUiToggleRow)
 
 import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
@@ -6,18 +6,15 @@ import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Components.Users as Users
 import Dict
-import Effect exposing (Effect)
-import Gen.Route as Route exposing (Route(..))
+import Gen.Route as Route exposing (Route)
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
 import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, novalidate, placeholder, spellcheck, src, style, target, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Page
 import Proto.Jonline exposing (FederatedServer)
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
-import Request
 import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -35,28 +32,6 @@ import UI.Flip
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 import UI.Modal
 import Url
-import View exposing (View)
-
-
-{-| Builds a page that has no state of its own beyond the shared auth/account
-state, rendered inside the common `layout`. Every page that only needs the nav
-and login form (i.e. doesn't need its own Model/Msg) should be built with this.
-
-Closes the Accounts Panel on `init` -- relying on the navigating link's own
-`onClick` to close the panel would race against the browser's separate
-click-to-navigation handling, with no guaranteed order. Closing here instead
-is deterministic: it always runs once the destination page actually loads,
-regardless of how the panel got left open.
-
--}
-page : Shared.Model -> Request.With params -> View Shared.Msg -> Page.With () Shared.Msg
-page shared req body =
-    Page.advanced
-        { init = ( (), Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel) )
-        , update = \msg () -> ( (), Effect.fromShared msg )
-        , view = \() -> { title = body.title, body = layout shared req.route identity body.body }
-        , subscriptions = \() -> Sub.none
-        }
 
 
 {-| The nav (`header`) is a full-width, sticky band tinted with
@@ -746,7 +721,7 @@ accountsMenuServerSummary accountsPanelModel =
             div [ class "accounts-menu-server-summary" ] [ text "No servers ⚠️" ]
 
         [ singleServer ] ->
-            if hasUnreachableServers || not (singleServer.frontendHost == accountsPanelModel.mainFrontendHost) then
+            if hasUnreachableServers || (singleServer.frontendHost /= accountsPanelModel.mainFrontendHost) then
                 div [ class "accounts-menu-server-summary" ] [ text serversText ]
 
             else
@@ -794,11 +769,11 @@ itself as a tab, see `adminTab`), rather than being folded into it.
 -}
 hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
-    let
-        accountsPanelModel =
-            shared.accounts
-    in
     if hostMismatch shared then
+        let
+            accountsPanelModel =
+                shared.accounts
+        in
         span
             [ class "host-mismatch-warning"
             , onClick (Shared.AccountsPanelMsg AccountsPanel.ResetMainFrontendHost)
@@ -1222,11 +1197,6 @@ serverChip shared count index server =
         ]
 
 
-logoOrPlaceholder : AccountsPanel.Branding -> Html msg
-logoOrPlaceholder branding =
-    imageOrInitial [ "server-chip-logo" ] branding.name branding.logoUrl
-
-
 {-| An `img` if `maybeUrl` is present, otherwise a `div` showing the first
 letter of `name`, upper-cased (via `AccountsPanel.initialLetter`) -- shared by
 every avatar/logo that falls back to an initial when there's no image: account
@@ -1348,23 +1318,24 @@ accountsList shared =
     let
         accounts =
             shared.accounts.accounts
-
-        count =
-            List.length accounts
-
-        -- Accounts on the main server always sort to the front (see
-        -- `AccountsPanel.sortMainServerAccountsFirst`), so they're exactly
-        -- the leading `mainCount` accounts here -- `accountRow` uses this to
-        -- hide any arrow that would cross that group boundary.
-        mainCount =
-            accounts
-                |> List.filter (\a -> a.server == shared.accounts.mainFrontendHost)
-                |> List.length
     in
     if List.isEmpty accounts then
         div [ class "accounts-empty" ] [ text "No accounts yet." ]
 
     else
+        let
+            count =
+                List.length accounts
+
+            -- Accounts on the main server always sort to the front (see
+            -- `AccountsPanel.sortMainServerAccountsFirst`), so they're exactly
+            -- the leading `mainCount` accounts here -- `accountRow` uses this to
+            -- hide any arrow that would cross that group boundary.
+            mainCount =
+                accounts
+                    |> List.filter (\a -> a.server == shared.accounts.mainFrontendHost)
+                    |> List.length
+        in
         Html.Keyed.node "div"
             [ classes [ "accounts-list", "flip-animated-column" ] ]
             (List.indexedMap
@@ -1463,17 +1434,6 @@ accountRow shared count mainCount index account =
                 , canMoveBackward = canMoveUp
                 , canMoveForward = canMoveDown
                 }
-
-        -- "reauthentication" (not "password") when this account isn't on the
-        -- server we're actually browsing from -- clicking it still routes
-        -- through `PasswordNeededClicked`, but the wording makes clear it's
-        -- logging back into a different server, not this one.
-        needsPasswordLabel =
-            if account.server /= shared.accounts.browsingHost then
-                "Reauthentication Required"
-
-            else
-                "Password Required"
     in
     div
         (id (AccountsPanel.accountRowDomId accId)
@@ -1507,6 +1467,18 @@ accountRow shared count mainCount index account =
                 , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                     [ text (account.server ++ " | " ++ branding.name) ]
                 , if account.needsPassword then
+                    let
+                        -- "reauthentication" (not "password") when this account isn't on the
+                        -- server we're actually browsing from -- clicking it still routes
+                        -- through `PasswordNeededClicked`, but the wording makes clear it's
+                        -- logging back into a different server, not this one.
+                        needsPasswordLabel =
+                            if account.server /= shared.accounts.browsingHost then
+                                "Reauthentication Required"
+
+                            else
+                                "Password Required"
+                    in
                     button
                         [ type_ "button"
                         , class "account-needs-password"
@@ -1617,14 +1589,8 @@ addAccountForm shared currentRoute =
         submitting =
             form.status == AccountsPanel.Submitting
 
-        addingServer =
-            addForm.status == AccountsPanel.Submitting
-
         accountFieldsDisabled =
             not knownServer || submitting
-
-        themeHost =
-            formThemeHost accountsPanelModel
 
         -- Username/password auth is only ever offered for our own main
         -- server, unless an admin has flipped
@@ -1724,6 +1690,10 @@ addAccountForm shared currentRoute =
             text ""
 
           else
+            let
+                addingServer =
+                    addForm.status == AccountsPanel.Submitting
+            in
             button
                 [ type_ "button"
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
@@ -2365,12 +2335,6 @@ adminAccountPanel shared account =
         adminServer =
             findServer shared account.server
 
-        currentUi =
-            adminServer
-                |> Maybe.map AccountsPanel.serverInfoOf
-                |> Maybe.andThen .webUserInterface
-                |> Maybe.withDefault REACTTAMAGUI
-
         adminServerName =
             adminServer
                 |> Maybe.map (AccountsPanel.brandingOf >> .name)
@@ -2418,6 +2382,13 @@ adminAccountPanel shared account =
                 [ text "▾" ]
             ]
         , if isOpen then
+            let
+                currentUi =
+                    adminServer
+                        |> Maybe.map AccountsPanel.serverInfoOf
+                        |> Maybe.andThen .webUserInterface
+                        |> Maybe.withDefault REACTTAMAGUI
+            in
             webUiToggleRow id account.server currentUi
 
           else

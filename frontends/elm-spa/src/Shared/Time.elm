@@ -387,21 +387,23 @@ timeRangeLabel browserTimeZone start end =
     let
         zone =
             browserTimeZone.zone
-
-        startHour =
-            Time.toHour zone start
-
-        endHour =
-            Time.toHour zone end
     in
     if browserTimeZone.uses24Hour then
         time24 zone start ++ "-" ++ time24 zone end
 
-    else if period startHour == period endHour then
-        bareTime12 zone start ++ "-" ++ timeWithPeriod zone end
-
     else
-        timeWithPeriod zone start ++ "-" ++ timeWithPeriod zone end
+        let
+            startHour =
+                Time.toHour zone start
+
+            endHour =
+                Time.toHour zone end
+        in
+        if period startHour == period endHour then
+            bareTime12 zone start ++ "-" ++ timeWithPeriod zone end
+
+        else
+            timeWithPeriod zone start ++ "-" ++ timeWithPeriod zone end
 
 
 {-| A single point in time's time-of-day only, honoring `uses24Hour` -- e.g.

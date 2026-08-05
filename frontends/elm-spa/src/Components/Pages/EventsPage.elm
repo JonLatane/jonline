@@ -1,5 +1,5 @@
 module Components.Pages.EventsPage exposing
-    ( EventsDisplayMode(..)
+    ( EventsDisplayMode
     , Model
     , Msg
     , fromShared
@@ -1725,41 +1725,43 @@ own doc for how this was diagnosed.
 -}
 eventsListView : Shared.Model -> Model -> Html Msg
 eventsListView shared model =
-    let
-        animations =
-            visibleAnimations model
-
-        transitioning =
-            List.any (\( _, anim ) -> anim.move.moving) animations
-
-        ( modeClass, axis ) =
-            case model.mode of
-                VerticalList ->
-                    ( "events-list flip-animated-column", UI.Flip.Vertical )
-
-                Grid ->
-                    ( "events-grid flip-animated-grid", UI.Flip.Horizontal )
-
-                HorizontalList ->
-                    ( "events-strip flip-animated-row", UI.Flip.Horizontal )
-
-        containerClass =
-            if transitioning then
-                modeClass ++ " events-mode-transitioning"
-
-            else
-                modeClass
-    in
     if Dict.isEmpty model.eventsByServer then
         p [ class "posts-empty" ] [ text "Connect to a server to see upcoming events." ]
 
-    else if List.isEmpty animations then
-        p [ class "posts-empty" ] [ text "No upcoming events." ]
-
     else
-        Html.Keyed.node "div"
-            [ class containerClass ]
-            (List.map (eventAnimationView shared model.embeddedPage axis) animations)
+        let
+            animations =
+                visibleAnimations model
+        in
+        if List.isEmpty animations then
+            p [ class "posts-empty" ] [ text "No upcoming events." ]
+
+        else
+            let
+                transitioning =
+                    List.any (\( _, anim ) -> anim.move.moving) animations
+
+                ( modeClass, axis ) =
+                    case model.mode of
+                        VerticalList ->
+                            ( "events-list flip-animated-column", UI.Flip.Vertical )
+
+                        Grid ->
+                            ( "events-grid flip-animated-grid", UI.Flip.Horizontal )
+
+                        HorizontalList ->
+                            ( "events-strip flip-animated-row", UI.Flip.Horizontal )
+
+                containerClass =
+                    if transitioning then
+                        modeClass ++ " events-mode-transitioning"
+
+                    else
+                        modeClass
+            in
+            Html.Keyed.node "div"
+                [ class containerClass ]
+                (List.map (eventAnimationView shared model.embeddedPage axis) animations)
 
 
 {-| Wraps `eventCardView` in a fading/scaling/collapsing animated `<div>`

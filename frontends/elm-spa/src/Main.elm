@@ -52,7 +52,7 @@ Four changes from the default:
 
 import Browser
 import Browser.Navigation as Nav exposing (Key)
-import Effect exposing (Effect)
+import Effect
 import Gen.Model
 import Gen.Msg
 import Gen.Pages as Pages
@@ -388,5 +388,5 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Pages.subscriptions model.page model.shared model.url model.key |> Sub.map Page
-        , Shared.subscriptions (Request.create () model.url model.key) model.shared |> Sub.map Shared
+        , Shared.subscriptions model.shared |> Sub.map Shared
         ]

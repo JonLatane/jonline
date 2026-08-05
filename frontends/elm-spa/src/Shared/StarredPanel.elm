@@ -1,4 +1,4 @@
-module Shared.StarredPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, starKey, subscriptions, toggleStarMsg, update, view)
+module Shared.StarredPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, subscriptions, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -51,7 +51,6 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.Time as SharedTime
 import Task
-import Time
 import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 
@@ -1116,9 +1115,6 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
     let
         stateClass =
             openClosedClass model.showStarredPanel
-
-        count =
-            List.length model.starOrder
     in
     div [ classes [ "starred-panel", "nav-panel", stateClass ] ]
         (div [ class "starred-panel-header" ]
@@ -1139,6 +1135,10 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
                     [ div [ class "starred-panel-empty" ] [ text "No starred posts yet." ] ]
 
                 else
+                    let
+                        count =
+                            List.length model.starOrder
+                    in
                     -- `starOrder` starts newest-star-first (see `Model`), but the user
                     -- can then drag it around from there via `MoveStarUpClicked`/
                     -- `MoveStarDownClicked`.

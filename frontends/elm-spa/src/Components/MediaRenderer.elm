@@ -56,7 +56,6 @@ bounds both, same as before this type existed.
 -}
 type SizeConstraint
     = ToHeight
-    | ToWidth
     | ToWidthAndHeight
 
 
@@ -78,9 +77,6 @@ sizeConstraintClass sizeConstraint =
     case sizeConstraint of
         ToHeight ->
             "media-renderer-to-height"
-
-        ToWidth ->
-            "media-renderer-to-width"
 
         ToWidthAndHeight ->
             "media-renderer-to-width-and-height"

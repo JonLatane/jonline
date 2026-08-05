@@ -117,24 +117,25 @@ serverRules darkMode mainTheme mainFrontendHost server =
             else
                 mainTheme.primaryLightColor
 
-        -- Same idea for an account row's switch, keyed off this server's
-        -- primaryColor lightness (what `account-row` is tinted with) instead
-        -- of navColor. Skipped for mainFrontendHost -- its account rows are
-        -- already handled by `mainFrontendServerRules`' own `.account-row`
-        -- override, which uses navAnchorColor rather than this
-        -- light/dark-of-primaryColor logic.
-        accountSwitchOnColor =
-            if branding.primary.isDark then
-                mainTheme.primaryDarkColor
-
-            else
-                mainTheme.primaryLightColor
-
         accountRowSwitchRule =
             if server.frontendHost == mainFrontendHost then
                 ""
 
             else
+                let
+                    -- Same idea for an account row's switch, keyed off this server's
+                    -- primaryColor lightness (what `account-row` is tinted with) instead
+                    -- of navColor. Skipped for mainFrontendHost -- its account rows are
+                    -- already handled by `mainFrontendServerRules`' own `.account-row`
+                    -- override, which uses navAnchorColor rather than this
+                    -- light/dark-of-primaryColor logic.
+                    accountSwitchOnColor =
+                        if branding.primary.isDark then
+                            mainTheme.primaryDarkColor
+
+                        else
+                            mainTheme.primaryLightColor
+                in
                 ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
 
         listItemColorRule =

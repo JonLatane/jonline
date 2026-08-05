@@ -13,7 +13,7 @@ import Html.Attributes exposing (class, disabled, href, selected, target, value)
 import Html.Events exposing (onClick, onInput)
 import Page
 import Proto.Jonline exposing (Post)
-import Proto.Jonline.Moderation exposing (Moderation(..))
+import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))

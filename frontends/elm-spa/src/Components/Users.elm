@@ -6,7 +6,6 @@ module Components.Users exposing
     , createFollow
     , defederateProfile
     , deleteFollow
-    , displayName
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
@@ -21,7 +20,6 @@ module Components.Users exposing
     , permissionFromText
     , permissionText
     , profileHref
-    , textSearchListingType
     , titleName
     , updateFollow
     , updateUser
@@ -143,9 +141,6 @@ textSearchListingType listingType =
 
         FRIENDS ->
             FRIENDSTEXTSEARCH
-
-        FOLLOWREQUESTS ->
-            FOLLOWREQUESTSTEXTSEARCH
 
         other ->
             other

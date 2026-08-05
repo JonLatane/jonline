@@ -46,7 +46,7 @@ import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
-import Html exposing (h2, h3, text)
+import Html exposing (h3, text)
 import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request

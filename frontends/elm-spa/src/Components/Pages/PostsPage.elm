@@ -1095,16 +1095,6 @@ recency here would throw that ranking away. Mirrors
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
     let
-        sortedAnimations =
-            model.postAnimations
-                |> Dict.toList
-                |> (if String.isEmpty (String.trim model.searchText) then
-                        List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
-
-                    else
-                        identity
-                   )
-
         postsWord =
             case model.context of
                 REPLY ->
@@ -1116,13 +1106,25 @@ postsListView shared model =
     if Dict.isEmpty model.postsByServer then
         p [ class "posts-empty" ] [ text <| "Connect to a server to see recent " ++ postsWord ++ "." ]
 
-    else if List.isEmpty sortedAnimations then
-        p [ class "posts-empty" ] [ text <| "No " ++ postsWord ++ " yet." ]
-
     else
-        Html.Keyed.node "div"
-            [ class "posts-list flip-animated-column" ]
-            (List.map (postAnimationView shared) sortedAnimations)
+        let
+            sortedAnimations =
+                model.postAnimations
+                    |> Dict.toList
+                    |> (if String.isEmpty (String.trim model.searchText) then
+                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+
+                        else
+                            identity
+                       )
+        in
+        if List.isEmpty sortedAnimations then
+            p [ class "posts-empty" ] [ text <| "No " ++ postsWord ++ " yet." ]
+
+        else
+            Html.Keyed.node "div"
+                [ class "posts-list flip-animated-column" ]
+                (List.map (postAnimationView shared) sortedAnimations)
 
 
 {-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`

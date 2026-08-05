@@ -40,7 +40,7 @@ import Gen.Route as Route
 import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, class, href, src, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Event, EventInstance, Post, User)
+import Proto.Jonline exposing (Post, User)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
@@ -48,7 +48,6 @@ import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 type BreadcrumbRoot
     = FromPost Post
-    | FromEvent Event EventInstance
     | FromServerHost String
     | FromUser User
 
@@ -233,17 +232,10 @@ rootSegment accountsPanelModel model root =
                 ]
                 [ span [ class "breadcrumb-root-title" ] [ text (Posts.postTitleText post) ] ]
 
-        FromEvent _ _ ->
-            div [ classes [ "breadcrumb-segment", "breadcrumb-root" ] ]
-                [ text "TODO: Event Breadcrumb Rendering" ]
-
         FromUser user ->
             let
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers model.host
-
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
 
                 name =
                     if String.isEmpty user.realName then
@@ -256,7 +248,17 @@ rootSegment accountsPanelModel model root =
                 [ classes [ "breadcrumb-segment", "breadcrumb-root" ]
                 , href <| "/" ++ user.username
                 ]
-                [ segmentAvatar name (Maybe.andThen (\server -> Users.avatarUrl server maybeAccount user) maybeServer)
+                [ segmentAvatar name
+                    (Maybe.andThen
+                        (\server ->
+                            let
+                                maybeAccount =
+                                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
+                            in
+                            Users.avatarUrl server maybeAccount user
+                        )
+                        maybeServer
+                    )
                 , span [ class "breadcrumb-root-title" ] [ text name ]
                 ]
 

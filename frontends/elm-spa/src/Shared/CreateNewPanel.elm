@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (Mode(..), Model, Msg(..), eligibleAccounts, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (Mode, Model, Msg(..), hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via

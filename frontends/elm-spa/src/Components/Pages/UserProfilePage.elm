@@ -1267,7 +1267,7 @@ updateInner shared msg model =
             ( model
             , Effect.batch
                 [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ServerConnected server))
-                , fetchFederatedUserEffect shared server account
+                , fetchFederatedUserEffect shared account
                 ]
             )
 
@@ -1470,8 +1470,8 @@ fetchFederated shared pageIsSecure account ( statuses, effects ) =
             Dict.insert (federatedKey account) FederatedProfileLoading statuses
     in
     case AccountsPanel.serverForHost shared.accounts.servers account.host of
-        Just server ->
-            ( newStatuses, effects ++ [ fetchFederatedUserEffect shared server account ] )
+        Just _ ->
+            ( newStatuses, effects ++ [ fetchFederatedUserEffect shared account ] )
 
         Nothing ->
             ( newStatuses
@@ -1483,8 +1483,8 @@ fetchFederated shared pageIsSecure account ( statuses, effects ) =
             )
 
 
-fetchFederatedUserEffect : Shared.Model -> AccountsPanel.Server -> FederatedAccount -> Effect Msg
-fetchFederatedUserEffect shared _ account =
+fetchFederatedUserEffect : Shared.Model -> FederatedAccount -> Effect Msg
+fetchFederatedUserEffect shared account =
     Users.fetchUserById
         shared.accounts
         ( AccountsPanel.enabledAccountForServer shared.accounts.accounts account.host |> Maybe.map .userId
@@ -1698,27 +1698,6 @@ isAdminAccount maybeAccount =
             False
 
 
-{-| "@ <server logo/name>", shown to the right of the username/real
-name/badges whenever this profile's own server (`server`, i.e. the target
-host actually serving the profile) isn't `mainFrontendHost` -- lets a viewer
-browsing a federated/other-server profile tell at a glance which server it
-actually lives on. The "@" is its own muted, slightly-smaller-than-the-username
-span; the logo/name reuses `AccountsPanel.serverNameAndLogo`'s `RegularServerLogo`
-style, the same one `UI.homeLinkContent` uses for the Home button, just without
-that button's nav-specific enlarging CSS.
--}
-otherServerIndicator : Shared.Model -> AccountsPanel.Server -> Html msg
-otherServerIndicator shared server =
-    if server.frontendHost == shared.accounts.mainFrontendHost then
-        text ""
-
-    else
-        div [ class "profile-other-server" ]
-            [ span [ class "profile-other-server-at" ] [ text "@" ]
-            , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
-            ]
-
-
 {-| The avatar, plus (only for `canEdit`) its editing affordance below it: an
 "Edit" button when `model.avatarEdit == Nothing`, or -- while editing -- a "✕"
 button over the avatar's top-right corner (`AvatarRemoveClicked`, clears the
@@ -1741,7 +1720,7 @@ avatarView canEdit server maybeAccount maybeEdit user =
             [ div
                 (case maybeEdit of
                     Just _ ->
-                        classes [ "profile-avatar-frame", "editable" ] :: [ onClick AvatarEditClicked, title "Change avatar" ]
+                        [ classes [ "profile-avatar-frame", "editable" ], onClick AvatarEditClicked, title "Change avatar" ]
 
                     Nothing ->
                         [ classes [ "profile-avatar-frame" ] ]

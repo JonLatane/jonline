@@ -1321,8 +1321,8 @@ starredPostsRefreshHosts before after =
 only while the panel's actually open -- there's nothing to show for it
 otherwise, so no reason to keep hitting servers in the background.
 -}
-subscriptions : Request -> Model -> Sub Msg
-subscriptions _ model =
+subscriptions : Model -> Sub Msg
+subscriptions model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
         , Browser.Events.onResize WindowResized

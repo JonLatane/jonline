@@ -213,33 +213,32 @@ viewFor model user =
         followedByPasses =
             Maybe.map Users.moderationPasses targetCurrentUserFollowModeration |> Maybe.withDefault False
 
-        followedByPending =
-            Maybe.map Users.moderationPending targetCurrentUserFollowModeration |> Maybe.withDefault False
-
         statusText =
             if following && followedByPasses then
                 "Friends"
 
-            else if followingPending && followedByPending then
-                "Mutual Follow Requests"
-
-            else if followedByPending then
-                "Wants to follow you"
-
-            else if followedByPasses then
-                "Follows you"
-
-            else if following then
-                "Following"
-
-            else if followingPending then
-                "Follow requested"
-
             else
-                ""
+                let
+                    followedByPending =
+                        Maybe.map Users.moderationPending targetCurrentUserFollowModeration |> Maybe.withDefault False
+                in
+                if followingPending && followedByPending then
+                    "Mutual Follow Requests"
 
-        requiresApproval =
-            Users.moderationPending user.defaultFollowModeration
+                else if followedByPending then
+                    "Wants to follow you"
+
+                else if followedByPasses then
+                    "Follows you"
+
+                else if following then
+                    "Following"
+
+                else if followingPending then
+                    "Follow requested"
+
+                else
+                    ""
 
         showFollow =
             not following && not followingPending
@@ -259,6 +258,10 @@ viewFor model user =
         buttons =
             List.concat
                 [ if showFollow then
+                    let
+                        requiresApproval =
+                            Users.moderationPending user.defaultFollowModeration
+                    in
                     [ followActionButton model.status FollowClicked "follow-status-follow" (followButtonText requiresApproval) ]
 
                   else

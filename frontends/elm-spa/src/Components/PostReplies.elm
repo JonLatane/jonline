@@ -1,4 +1,4 @@
-module Components.PostReplies exposing (Model, Msg, ReplyLoadStatus(..), init, refresh, subscriptions, update, view)
+module Components.PostReplies exposing (Model, Msg, ReplyLoadStatus, init, refresh, subscriptions, update, view)
 
 {-| Threaded replies for a single Post (see `Pages.Post.PostId_`) -- the
 `Post` proto is itself recursive/graph-shaped via its own `replies` field (see

@@ -1,6 +1,5 @@
 module Components.Posts exposing
     ( allModerations
-    , allVisibilities
     , allowedVisibilities
     , commentCountText
     , contentPreviewFadeThreshold
@@ -14,7 +13,6 @@ module Components.Posts exposing
     , moderationFromText
     , parsePostRouteId
     , postCard
-    , postCommentCount
     , postContextLabel
     , postDetail
     , postHref
@@ -22,15 +20,12 @@ module Components.Posts exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
-    , repliesCountText
     , replyCard
     , starButton
     , stripLinkScheme
-    , timestampsText
     , updatePost
     , visibilityFromText
     , visibilityText
-    , whenText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Post`s -- the compact
@@ -582,14 +577,6 @@ counts never will, so this is a safe, simple conversion for display.
 postStarCount : Post -> Int
 postStarCount post =
     int64ToInt post.unauthenticatedStarCount
-
-
-{-| A post's comment count -- `responseCount` (replies _and_ replies to
-replies, etc.), matching the Tamagui app's "N comments" label.
--}
-postCommentCount : Post -> Int
-postCommentCount post =
-    post.responseCount
 
 
 {-| The "★ N" star button of a post's meta line -- clickable (unless

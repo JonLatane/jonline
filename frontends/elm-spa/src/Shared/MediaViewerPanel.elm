@@ -1,4 +1,4 @@
-module Shared.MediaViewerPanel exposing (Model, Msg(..), init, isOpen, subscriptions, update, view)
+module Shared.MediaViewerPanel exposing (Model, Msg(..), init, subscriptions, update, view)
 
 {-| A single, app-wide fullscreen image/video viewer -- an alternate,
 "big"/fullscreen rendering of a `Post`'s `media` (compare
@@ -288,9 +288,6 @@ view accountsPanelModel model =
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost
 
-        maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
-
         indexLabel =
             case ( model.currentMediaReference |> Maybe.andThen (\id -> indexOf id model.media), List.length model.media ) of
                 ( Just index, count ) ->
@@ -332,6 +329,10 @@ view accountsPanelModel model =
         , div [ class "media-viewer-panel-content" ]
             [ case ( currentMedia, maybeServer ) of
                 ( Just media, Just server ) ->
+                    let
+                        maybeAccount =
+                            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+                    in
                     -- Keyed on `media.id` so paging to a different item swaps
                     -- in a brand-new DOM node rather than patching the old
                     -- `<img>`/`<video>`'s attributes in place -- that fresh

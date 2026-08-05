@@ -1,4 +1,4 @@
-module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode(..), init, update, view)
+module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode, init, update, view)
 
 {-| A single, app-wide Markdown editor: a plain monospace `<textarea>` and a
 live `Components.Markdown.view` preview of the same text, with "Save"/

@@ -3,7 +3,6 @@ module Components.EventSyncSources exposing
     , deleteEventSyncSource
     , getEventSyncSources
     , intervalOptions
-    , intervalText
     , syncedCountsLabel
     , updateEventSyncSource
     )
@@ -17,8 +16,7 @@ token refresh mid-request can still be forwarded on by the caller (see
 -}
 
 import Grpc
-import Proto.Google.Protobuf
-import Proto.Jonline exposing (DeleteEventSyncSourceRequest, EventSyncSource, GetEventSyncSourcesResponse, User, defaultUser)
+import Proto.Jonline exposing (EventSyncSource, GetEventSyncSourcesResponse, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions as Conversions
@@ -119,19 +117,6 @@ intervalOptions =
     , ( 28800, "8 hours" )
     , ( 86400, "1 day" )
     ]
-
-
-{-| Label for a `sync_interval_seconds` value -- falls back to a plain
-"`N` seconds" for anything outside `intervalOptions` (e.g. a value set by
-some other client), rather than showing nothing.
--}
-intervalText : Int -> String
-intervalText seconds =
-    intervalOptions
-        |> List.filter (\( s, _ ) -> s == seconds)
-        |> List.head
-        |> Maybe.map Tuple.second
-        |> Maybe.withDefault (String.fromInt seconds ++ " seconds")
 
 
 {-| "N events" alone when every event has exactly one instance (the common

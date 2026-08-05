@@ -50,7 +50,6 @@ module Shared.AccountsPanel exposing
     , serverHasAccounts
     , serverInfoOf
     , serverNameAndLogo
-    , serverThemeFor
     , serverThemeOf
     , serverUrl
     , shouldShowAddAccountForm
@@ -69,7 +68,6 @@ working connection.
 
 import Animation
 import Browser.Dom as Dom
-import Char
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, img, text)
@@ -856,8 +854,7 @@ spare than the nav bar but where a centered stack still reads oddly, e.g.
 `Shared.Breadcrumbs`' server overview panel.
 -}
 type ServerLogoSize
-    = CompactServerLogo
-    | RegularServerLogo
+    = RegularServerLogo
     | HorizontalServerLogo
 
 
@@ -870,14 +867,6 @@ serverNameAndLogo server size =
         ( namePrefix, emoji, nameSuffix ) =
             splitOnFirstEmoji True branding.name
 
-        hasEmoji =
-            case emoji of
-                Just e ->
-                    e /= "" && e /= "|"
-
-                Nothing ->
-                    False
-
         largeName =
             String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
 
@@ -887,6 +876,15 @@ serverNameAndLogo server size =
                     img [ class "server-logo-image", src url, alt branding.name ] []
 
                 Nothing ->
+                    let
+                        hasEmoji =
+                            case emoji of
+                                Just e ->
+                                    e /= "" && e /= "|"
+
+                                Nothing ->
+                                    False
+                    in
                     if hasEmoji then
                         div [ class "server-logo-emoji" ] [ text (Maybe.withDefault "" emoji) ]
 
@@ -908,7 +906,7 @@ serverNameAndLogo server size =
         -- they differ only in layout (stacked+centered vs. row+left-aligned,
         -- both via `sizeClass` below), not sizing.
         isBig =
-            size /= CompactServerLogo
+            True
 
         primaryClasses =
             "server-name-primary"
@@ -933,9 +931,6 @@ serverNameAndLogo server size =
 
         sizeClass =
             case size of
-                CompactServerLogo ->
-                    "compact"
-
                 RegularServerLogo ->
                     "regular"
 
@@ -2801,35 +2796,6 @@ upsertAccount account accounts =
         account :: accounts
 
 
-{-| Inserts a newly-seen account (fresh login/create-account) directly after
-the last existing account on the same server, rather than always at the very
-end of the whole list -- so a server's accounts stay grouped together in the
-persisted list (and the flat accounts-list UI) even when other servers'
-accounts are interleaved. Falls back to appending at the end when this is the
-first account on that server.
--}
-insertAfterSameServer : Account -> List Account -> List Account
-insertAfterSameServer account accounts =
-    let
-        ( result, inserted ) =
-            List.foldr
-                (\a ( acc, alreadyInserted ) ->
-                    if not alreadyInserted && a.server == account.server then
-                        ( a :: account :: acc, True )
-
-                    else
-                        ( a :: acc, alreadyInserted )
-                )
-                ( [], False )
-                accounts
-    in
-    if inserted then
-        result
-
-    else
-        accounts ++ [ account ]
-
-
 serverFrom : Connection -> Bool -> ServerConfiguration -> Server
 serverFrom connection enabled config =
     { frontendHost = connection.frontendHost
@@ -3231,14 +3197,15 @@ candidatePorts pageIsSecure =
     let
         secure =
             [ ( 27707, True ), ( 443, True ) ]
-
-        insecure =
-            [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
     in
     if pageIsSecure then
         secure
 
     else
+        let
+            insecure =
+                [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
+        in
         secure ++ insecure
 
 

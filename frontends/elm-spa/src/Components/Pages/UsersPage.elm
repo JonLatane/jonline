@@ -664,22 +664,23 @@ listingTypeHeading listingType =
 
 usersListView : Shared.Model -> Model -> Html Msg
 usersListView shared model =
-    let
-        sortedAnimations =
-            model.userAnimations
-                |> Dict.toList
-                |> List.sortBy (\( _, anim ) -> String.toLower anim.user.username)
-    in
     if Dict.isEmpty model.usersByServer then
         p [ class "posts-empty" ] [ text "Connect to a server to see people." ]
 
-    else if List.isEmpty sortedAnimations then
-        p [ class "posts-empty" ] [ text "No people yet." ]
-
     else
-        Html.Keyed.node "div"
-            [ class "users-list flip-animated-column" ]
-            (List.map (userAnimationView shared model) sortedAnimations)
+        let
+            sortedAnimations =
+                model.userAnimations
+                    |> Dict.toList
+                    |> List.sortBy (\( _, anim ) -> String.toLower anim.user.username)
+        in
+        if List.isEmpty sortedAnimations then
+            p [ class "posts-empty" ] [ text "No people yet." ]
+
+        else
+            Html.Keyed.node "div"
+                [ class "users-list flip-animated-column" ]
+                (List.map (userAnimationView shared model) sortedAnimations)
 
 
 {-| Wraps `userCardView` in a fading/scaling/collapsing animated `<div>` (see
