@@ -108,59 +108,52 @@ type DeleteConfirmation
     | ConfirmEventDelete Event String
 
 
-{-| Everything driving the Home link's (`.nav-link-home`, `UI.navLink`)
-scroll-triggered shrink animation, all bundled into one type since none of
-it means anything on its own -- see each field's own comment, and
-`navLinkHomeMaxWidth`, its one consumer.
+{-| The live scroll metrics of `.nav-links-scroll` (see `UI.headerNav`),
+read off its `scroll` event (`UI.navLinksScrollDecoder`) -- drives the Home
+link's (`.nav-link-home`, `UI.navLink`) scroll-triggered shrink animation.
+See `navLinkHomeMaxWidth`, its one consumer.
 -}
 type alias NavAnimationState =
-    { -- The live scroll metrics of `.nav-links-scroll` (see
-      -- `UI.headerNav`), read off its `scroll` event
-      -- (`UI.navLinksScrollDecoder`) -- currently only `scrollLeft` is
-      -- consulted (below), but `scrollWidth`/`clientWidth` are kept too so
-      -- they're there to reach for if the collapse condition needs to
-      -- depend on them again later.
-      scrollLeft : Float
+    { scrollLeft : Float
     , scrollWidth : Float
     , clientWidth : Float
-
-    -- The debounced on/off state `navLinkHomeMaxWidth` actually renders --
-    -- `True` once `scrollLeft` goes positive, `False` once it's back to 0.
-    -- Kept separate from the raw scroll position above because flipping
-    -- `True` (big -> small) also sets `collapseLocked` for 1s (see that
-    -- field), during which this doesn't itself flip again even if the raw
-    -- scroll position would otherwise call for it -- rapid back-and-forth
-    -- scrolling near the edge would otherwise flicker `.nav-link-home`'s
-    -- width right as its own CSS transition is still running.
-    , collapsed : Bool
-
-    -- `True` for 1s after `collapsed` flips `False -> True`
-    -- (`Process.sleep 700` in `update`'s `NavLinksScrolled` branch,
-    -- cleared by `NavLinkHomeCollapseLockExpired`) -- see `collapsed`.
-    , collapseLocked : Bool
     }
 
 
 {-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
 inline (rather than via a CSS class swap) so nav.css's own `transition` on
 that property is what animates it; nav.css no longer sets `max-width`
-itself, since this always overrides it. Just the two states, driven by
-`NavAnimationState.collapsed` (already debounced by the time it gets here).
+itself, since this always overrides it.
+
+A continuous function of how far right `.nav-links-scroll` is scrolled:
+`upperBound` slides from `220` (unscrolled) down to `64` (scrolled all the
+way right, i.e. `scrollLeft == scrollWidth - clientWidth`) in direct
+proportion to that scroll fraction; `lowerBound` tracks `150` until
+`upperBound` itself drops below that, then tracks `upperBound` down the rest
+of the way -- so the button holds around its `150`-`220` resting size while
+only lightly scrolled, then visibly shrinks the rest of the way to a bare
+`64px` glyph as scrolling continues to the end. `maxScroll` is floored at
+`1` (rather than `0`) purely to keep the division defined when
+`.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
+`scrollLeft` is `0` in that case regardless, so `fraction` still comes out
+`0`.
 -}
 navLinkHomeMaxWidth : NavAnimationState -> String
 navLinkHomeMaxWidth state =
-    -- let
-    --      upperBound: Int
-    --      upperBound = <calculate from scrollLeft, scrollWidth, clientWidth. Always between 64-220.>
-    --      lowerBound: Int
-    --      lowerBound = min(150, upperBound)
-    --  in
-    --
-    if state.collapsed then
-        "calc(min(max(64px, 25vw), 64px))"
+    let
+        maxScroll =
+            max 1 (state.scrollWidth - state.clientWidth)
 
-    else
-        "calc(min(max(150px, 25vw), 220px))"
+        fraction =
+            clamp 0 1 (state.scrollLeft / maxScroll)
+
+        upperBound =
+            round (220 - fraction * (220 - 64))
+
+        lowerBound =
+            min 150 upperBound
+    in
+    "calc(min(max(" ++ String.fromInt lowerBound ++ "px, 25vw), " ++ String.fromInt upperBound ++ "px))"
 
 
 type alias Model =
@@ -275,7 +268,6 @@ type Msg
     | HomeLinkClicked Bool
     | ScrollToTop
     | NavLinksScrolled { scrollLeft : Float, scrollWidth : Float, clientWidth : Float }
-    | NavLinkHomeCollapseLockExpired
     | NavigateExternal String
     | WindowResized Int Int
     | GotTimeZone Time.Zone
@@ -452,8 +444,6 @@ init basePath req flags =
                 { scrollLeft = 0
                 , scrollWidth = 0
                 , clientWidth = 0
-                , collapsed = False
-                , collapseLocked = False
                 }
 
             -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
@@ -1183,46 +1173,7 @@ updateImpl req msg model =
             ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
 
         NavLinksScrolled position ->
-            let
-                state =
-                    model.navAnimationState
-
-                positionedState =
-                    { state
-                        | scrollLeft = position.scrollLeft
-                        , scrollWidth = position.scrollWidth
-                        , clientWidth = position.clientWidth
-                    }
-
-                desiredCollapsed =
-                    position.scrollLeft > 0
-            in
-            if state.collapseLocked || desiredCollapsed == state.collapsed then
-                ( { model | navAnimationState = positionedState }, Cmd.none )
-
-            else if desiredCollapsed then
-                ( { model | navAnimationState = { positionedState | collapsed = True, collapseLocked = True } }
-                , Process.sleep 700 |> Task.perform (\() -> NavLinkHomeCollapseLockExpired)
-                )
-
-            else
-                ( { model | navAnimationState = { positionedState | collapsed = False } }, Cmd.none )
-
-        NavLinkHomeCollapseLockExpired ->
-            let
-                state =
-                    model.navAnimationState
-            in
-            ( { model
-                | navAnimationState =
-                    { state
-                        | collapseLocked = False
-
-                        -- , collapsed = state.scrollLeft > 0
-                    }
-              }
-            , Cmd.none
-            )
+            ( { model | navAnimationState = position }, Cmd.none )
 
         NavigateExternal url ->
             ( model, Nav.load url )
