@@ -1,6 +1,7 @@
 .NOTPARALLEL:
 # .DEFAULT_GOAL := default
 # default: protos docs graphs
+.PHONY: server stop_background_servers build review review_fix setup_proto_build protos
 
 run: server
 

@@ -160,13 +160,14 @@ a file tells you where to look before you've read a line of it:
 5. `init`
 6. `subscriptions`
 7. `update`
-8. Methods returning a `Model` (or a tuple/wrapper containing one, like
+8. Methods returning and/or touching *another module's* `Model`
+9. Methods returning a `Model` (or a tuple/wrapper containing one, like
    `Shared.elm`'s `sharedUpdate`)
-9. Methods returning or touching a `Cmd`
-10. Methods returning or touching an `Effect`
-11. Methods returning `Html`
-12. Methods returning `String`
-13. Everything else
+10. Methods returning or touching a `Cmd`
+11. Methods returning or touching an `Effect`
+12. Methods returning `Html`
+13. Methods returning `String`
+14. Everything else
 
 Within a bucket, keep functions next to the other functions they're most
 related to (a helper stays near its one caller) rather than alphabetizing.

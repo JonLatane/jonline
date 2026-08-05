@@ -267,10 +267,10 @@ Same reasoning covers the trailing `Maybe MediaViewerPanel.Msg` (paired with
 the `Maybe AccountsPanel.Msg` above -- Elm tuples top out at three items, so
 the two forwards share the last slot rather than this being a 4-tuple):
 `MediaClicked` (a starred post's media tapped, see `starredPostView`) doesn't
-change this module's own `Model` at all (see `updateHelp`'s no-op branch for
+change this module's own `Model` at all (see `sendUpdate`'s no-op branch for
 it) -- it just needs `Shared.update` to open `Shared.MediaViewerPanel` on its
 behalf, same forwarding convention as the `AccountsPanel.Msg` case, just
-computed directly from `msg` here rather than from `updateHelp`'s result,
+computed directly from `msg` here rather than from `sendUpdate`'s result,
 since there's no `Model` state involved.
 
 -}
@@ -278,7 +278,7 @@ update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe Accoun
 update accountsPanelModel msg model =
     let
         ( newModel, cmd, maybeAccountsPanelMsg ) =
-            updateHelp accountsPanelModel msg model
+            sendUpdate accountsPanelModel msg model
 
         maybeMediaViewerPanelMsg =
             case msg of
@@ -291,18 +291,8 @@ update accountsPanelModel msg model =
     ( syncItemAnimations newModel, cmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) )
 
 
-{-| Inserts a fresh `UI.Flip.enter` into `starAnimations` for any starred
-post that doesn't have an entry yet -- see that field's own doc, and
-`UI.Flip.syncEnter`. Run unconditionally after every message (see `update`),
-same reasoning as `AccountsPanel.syncItemAnimations`.
--}
-syncItemAnimations : Model -> Model
-syncItemAnimations model =
-    { model | starAnimations = UI.Flip.syncEnter identity model.starOrder model.starAnimations }
-
-
-updateHelp : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
-updateHelp accountsPanelModel msg model =
+sendUpdate : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+sendUpdate accountsPanelModel msg model =
     case msg of
         ToggleStar server post ->
             let
@@ -483,7 +473,7 @@ updateHelp accountsPanelModel msg model =
                     |> Maybe.andThen (\( postId, host ) -> toggleStarMsg accountsPanelModel host { defaultPost | id = postId })
             of
                 Just toggleMsg ->
-                    updateHelp accountsPanelModel toggleMsg model
+                    sendUpdate accountsPanelModel toggleMsg model
 
                 Nothing ->
                     ( model, Cmd.none, Nothing )
@@ -725,6 +715,16 @@ updateHelp accountsPanelModel msg model =
                                 }
                     in
                     ( fetchedModel, cmd, Nothing )
+
+
+{-| Inserts a fresh `UI.Flip.enter` into `starAnimations` for any starred
+post that doesn't have an entry yet -- see that field's own doc, and
+`UI.Flip.syncEnter`. Run unconditionally after every message (see `update`),
+same reasoning as `AccountsPanel.syncItemAnimations`.
+-}
+syncItemAnimations : Model -> Model
+syncItemAnimations model =
+    { model | starAnimations = UI.Flip.syncEnter identity model.starOrder model.starAnimations }
 
 
 {-| Fetches every starred post that isn't already loaded, in flight, or

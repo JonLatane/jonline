@@ -1242,7 +1242,7 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations`,
+{-| `sendUpdate`'s actual per-`Msg` logic, plus `syncItemAnimations`,
 `sortMainServerFirst`, and `sortMainServerAccountsFirst` run unconditionally
 afterward -- so every code path that can add an account/server, or change
 `mainFrontendHost`, gets its enter animation/correct ordering for free,
@@ -1251,7 +1251,7 @@ small) to run after every single message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
-    updateHelp req msg model
+    sendUpdate req msg model
         |> Tuple.mapFirst syncItemAnimations
         |> Tuple.mapFirst sortMainServerFirst
         |> Tuple.mapFirst sortMainServerAccountsFirst
@@ -1269,8 +1269,8 @@ syncItemAnimations model =
     }
 
 
-updateHelp : Request -> Msg -> Model -> ( Model, Cmd Msg )
-updateHelp req msg model =
+sendUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
+sendUpdate req msg model =
     case msg of
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
@@ -2417,7 +2417,7 @@ updateHelp req msg model =
         ClearFieldClicked domId clearMsg ->
             let
                 ( clearedModel, clearCmd ) =
-                    updateHelp req clearMsg model
+                    sendUpdate req clearMsg model
             in
             ( clearedModel, Cmd.batch [ clearCmd, Task.attempt (\_ -> NoOp) (Dom.focus domId) ] )
 

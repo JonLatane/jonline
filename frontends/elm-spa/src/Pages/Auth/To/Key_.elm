@@ -518,7 +518,7 @@ ifConnected server =
         Just server
 
 
-{-| Mirrors `Shared.AccountsPanel.updateHelp`'s `GotAuthResult` account
+{-| Mirrors `Shared.AccountsPanel.sendUpdate`'s `GotAuthResult` account
 construction -- `Nothing` if the response is missing user/token data (an
 `update` branch above turns that into the same `Errored` state `GotAuthResult`
 would).
