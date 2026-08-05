@@ -2312,7 +2312,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
                 Nothing ->
                     "Never"
     in
-    div [ classes [ "event-sync-source-row", hostnameToCSSClass targetHost, "border-left-thick-color-primary" ] ]
+    div [ classes [ "event-sync-source-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
         [ input
             [ class "event-sync-source-url"
             , type_ "text"
@@ -2339,7 +2339,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
 
               else
                 button
-                    [ classes [ "event-sync-source-refresh", "background-color-primary" ], onClick (EventSyncSourceRowRefreshClicked source), disabled submitting ]
+                    [ classes [ "event-sync-source-refresh", "background-color-nav" ], onClick (EventSyncSourceRowRefreshClicked source), disabled submitting ]
                     [ text
                         (if submitting then
                             "Refreshing…"
@@ -2366,7 +2366,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
 
 eventSyncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
 eventSyncSourceAddRowView targetHost addForm =
-    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost, "border-left-thick-color-primary" ] ]
+    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
         [ input
             [ class "event-sync-source-url"
             , type_ "text"

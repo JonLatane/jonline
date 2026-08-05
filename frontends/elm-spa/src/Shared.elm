@@ -135,7 +135,7 @@ type alias NavAnimationState =
     , collapsed : Bool
 
     -- `True` for 1s after `collapsed` flips `False -> True`
-    -- (`Process.sleep 1000` in `update`'s `NavLinksScrolled` branch,
+    -- (`Process.sleep 700` in `update`'s `NavLinksScrolled` branch,
     -- cleared by `NavLinkHomeCollapseLockExpired`) -- see `collapsed`.
     , collapseLocked : Bool
     }
@@ -149,6 +149,13 @@ itself, since this always overrides it. Just the two states, driven by
 -}
 navLinkHomeMaxWidth : NavAnimationState -> String
 navLinkHomeMaxWidth state =
+    -- let
+    --      upperBound: Int
+    --      upperBound = <calculate from scrollLeft, scrollWidth, clientWidth. Always between 64-220.>
+    --      lowerBound: Int
+    --      lowerBound = min(150, upperBound)
+    --  in
+    --
     if state.collapsed then
         "calc(min(max(64px, 25vw), 64px))"
 
@@ -1195,7 +1202,7 @@ updateImpl req msg model =
 
             else if desiredCollapsed then
                 ( { model | navAnimationState = { positionedState | collapsed = True, collapseLocked = True } }
-                , Process.sleep 1000 |> Task.perform (\() -> NavLinkHomeCollapseLockExpired)
+                , Process.sleep 700 |> Task.perform (\() -> NavLinkHomeCollapseLockExpired)
                 )
 
             else
@@ -1210,7 +1217,8 @@ updateImpl req msg model =
                 | navAnimationState =
                     { state
                         | collapseLocked = False
-                        , collapsed = state.scrollLeft > 0
+
+                        -- , collapsed = state.scrollLeft > 0
                     }
               }
             , Cmd.none

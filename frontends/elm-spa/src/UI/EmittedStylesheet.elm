@@ -20,6 +20,7 @@ server's `ServerTheme` threaded in as a view-function argument.
   - `<host> border-color-primary-anchor` -- `primaryAnchorColor` (border-color only; unused so far, but establishes the naming convention below)
   - `<host> border-color-primary-anchor-50` -- `primaryAnchorColor` at 50% opacity (border-color only)
   - `<host> hover-border-color-primary-anchor` -- `primaryAnchorColor` (border-color only), applied only on `:hover` -- pair with `border-color-primary-anchor-50` (or similar) for a border that "fills in" on hover; add `transition: border-color` yourself if you want that to animate, since this class alone is just the `:hover` color rule.
+  - `<host> list-item-bordered-color-primary` -- `primaryColor` (border-left + border-bottom + border-radius only), for a list item with a colored left stripe and bottom edge, but no background color (see `Components.Pages.UserProfilePage`'s `event-sync-source-row`).
   - `<host> border-left-thick-color-primary` -- `primaryColor`, but (unlike the plain `border-color-*` classes above, which only ever set `border-color` and rely on some other rule to have already given the element a border width+style to color) sets `border-left` itself (`4px solid`), so a plain element gets a colored left "stripe" just by adding this one class -- see `Components.Pages.UserProfilePage`'s `event-sync-source-row`.
   - `<host> post-star.starred` -- `primaryAnchorColor` (text color only), used by `Components.Posts`' star button to fill in once a Post is starred (see `Shared.StarredPanel`); `.post-star`'s own `transition` (in `posts.css`) is what animates it.
   - `<host> post-card-current .post-star` -- `backgroundColor` at 50% opacity (background-color only) -- backs the star button of a `Components.Posts.postCard` marked `current` (see `Shared.StarredPanel.view`) with the app's own light/dark background, since its usual `primaryAnchorColor` text doesn't reliably contrast against that same card's `primaryColor` fill; semi-transparent (same "-50" convention as `border-color-primary-anchor-50`) so it reads as a tint rather than a flat patch. The pill shape itself is `posts.css`'s `.post-card-current .post-star`.
@@ -135,6 +136,9 @@ serverRules darkMode mainTheme mainFrontendHost server =
 
             else
                 ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
+
+        listItemColorRule =
+            withDescendants selector ".list-item-bordered-color-primary" ++ " { border-left: 4px solid " ++ theme.primaryAnchorColor ++ "; border-bottom: 2px solid " ++ theme.primaryAnchorColor ++ "; border-radius: 4px; }\n"
     in
     String.concat
         [ colorRule (withDescendants selector ".background-color-primary") theme.primaryColor theme.primaryTextColor
@@ -156,6 +160,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
         , borderColorRule (withDescendants selector ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
         , borderColorRule (withDescendants selector ".border-color-nav-text") theme.navTextColor
         , borderColorRule (withDescendants selector ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
+        , listItemColorRule
         , borderLeftThickColorRule (withDescendants selector ".border-left-thick-color-primary") theme.primaryColor
         , textColorRule (selector ++ ".post-star.starred") theme.primaryAnchorColor
         , backgroundOnlyColorRule (selector ++ ".post-card-current .post-star") (theme.backgroundColor ++ "80")
