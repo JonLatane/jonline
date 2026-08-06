@@ -29,12 +29,12 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     EventsPage.Model
+
+
+type alias Msg =
+    EventsPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -42,29 +42,9 @@ init shared req =
     EventsPage.init shared Nothing req.key req.url.path req.query False
 
 
-
--- UPDATE
-
-
-type alias Msg =
-    EventsPage.Msg
-
-
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     EventsPage.update shared msg model
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Pages.EventsPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    EventsPage.fromShared
-
-
-
--- VIEW
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -76,3 +56,11 @@ view shared req model =
             fromShared
             [ EventsPage.view shared True model ]
     }
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Pages.EventsPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    EventsPage.fromShared

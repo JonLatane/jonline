@@ -151,23 +151,31 @@ The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simpl
 Every module's top-level declarations follow the same order, so the shape of
 a file tells you where to look before you've read a line of it:
 
-1. `main` (only relevant in `Main.elm`)
+1. `main` (only relevant in `Main.elm`) or `page` method (only relevant in `Pages` module), if present (in that order, if both happened to somehow be present, but there's really no reason to use either of these method names outside their respective contexts)
 2. `Model`
 3. `Msg`
 4. Every other type/type alias declared in the file (in whatever order makes
    sense together — see `Shared.elm`'s `Flags`/`Theme`/`ThemePreference`/
    `DeleteConfirmation`/`Panels`/`NavAnimationState` block)
-5. `init`
-6. `subscriptions`
-7. `update`
+5. `init` method
+6. `subscriptions` method
+7. `update` method
 8. Methods returning and/or touching *another module's* `Model`
+    - The intent here is that these are generally methods used in `update` logic.
 9. Methods returning a `Model` (or a tuple/wrapper containing one, like
-   `Shared.elm`'s `sharedUpdate`)
+   `Shared.elm`'s `sharedUpdate`).
+    - The intent here is that these are generally methods used in `update` logic.
 10. Methods returning or touching a `Cmd`
+    - The intent here is that these are generally methods used in `update` logic.
 11. Methods returning or touching an `Effect`
-12. Methods returning `Html`
-13. Methods returning `String`
-14. Everything else
+    - The intent here is that these are generally methods used in `update` logic.
+12. Any other methods that are related to `update`'s logic.
+13. `view`  methods, if present
+14. Methods returning `Html`
+    - The intent here is that these are generally methods used in `view` logic. Expose "top-level" views first.
+15. Methods returning `String`
+    - The intent here is that these are generally methods used in `view` logic. Expose "top-level" these first, then anything else returning `Strings`
+16. Everything else, with anything relevant to `view` logic first.
 
 Within a bucket, keep functions next to the other functions they're most
 related to (a helper stays near its one caller) rather than alphabetizing.

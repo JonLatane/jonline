@@ -36,18 +36,6 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
-type Status
-    = Decrypting
-    | DecryptFailed String
-    | Decrypted Account
-    | Accepted Account
-    | Cancelled
-
-
 type alias Model =
     { status : Status
 
@@ -58,6 +46,21 @@ type alias Model =
     -- to automatically.
     , startPath : Maybe String
     }
+
+
+type Msg
+    = GotDecryptResult Encode.Value
+    | ConfirmClicked
+    | CancelClicked
+    | SharedMsg Shared.Msg
+
+
+type Status
+    = Decrypting
+    | DecryptFailed String
+    | Decrypted Account
+    | Accepted Account
+    | Cancelled
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -76,15 +79,9 @@ init shared req =
             )
 
 
-
--- UPDATE
-
-
-type Msg
-    = GotDecryptResult Encode.Value
-    | ConfirmClicked
-    | CancelClicked
-    | SharedMsg Shared.Msg
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Ports.federatedAuthDecrypted GotDecryptResult
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -134,15 +131,6 @@ update shared req msg model =
 
         SharedMsg subMsg ->
             ( model, Effect.fromShared subMsg )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Ports.federatedAuthDecrypted GotDecryptResult
-
-
-
--- VIEW
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg

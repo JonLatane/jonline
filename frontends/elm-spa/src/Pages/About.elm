@@ -33,38 +33,17 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     ServerInformationPage.Model
-
-
-init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
-init shared req =
-    ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
-
-
-
--- UPDATE
 
 
 type alias Msg =
     ServerInformationPage.Msg
 
 
-{-| See `Components.Pages.ServerInformationPage.fromShared` -- lets `Main`
-notify this page of `Shared.Msg`s it didn't itself originate (e.g. the main
-server reconnecting at startup), same as `Pages.Post.PostId_.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    ServerInformationPage.fromShared
-
-
-
--- VIEW
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init shared req =
+    ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -89,3 +68,12 @@ aboutJonlineView =
         , p [] [ text "Its only external requirements are PostgreSQL and MinIO/S3. If you have ", pre [] [ text "docker" ], text " and Postgres's ", pre [] [ text "createdb" ], text " it takes about ", a [ href "https://github.com/JonLatane/jonline#2-minute-startup-with-homebrew" ] [ text "2 minutes to set up Jonline on macOS with Homebrew" ], text " or ", a [ href "https://github.com/JonLatane/jonline#3-minute-startup-on-linux" ] [ text "3 minutes to set up Jonline on Linux" ], text "." ]
         , p [] [ text "Feel free to ", a [ href "mailto:jonlatane@gmail.com" ] [ text "email me" ], text " if you have any questions or want to contribute." ]
         ]
+
+
+{-| See `Components.Pages.ServerInformationPage.fromShared` -- lets `Main`
+notify this page of `Shared.Msg`s it didn't itself originate (e.g. the main
+server reconnecting at startup), same as `Pages.Post.PostId_.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    ServerInformationPage.fromShared

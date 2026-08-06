@@ -57,37 +57,6 @@ import Url.Builder
 -- MODEL
 
 
-type ServerPosts
-    = Loading
-    | Loaded (List Post)
-    | Failed
-
-
-{-| `accountId` is the enabled account (if any) the posts were/are being
-fetched with, so a later account enable/disable on the same server can be
-detected as "the acting credential changed" and trigger a re-fetch.
--}
-type alias ServerFeed =
-    { status : ServerPosts
-    , accountId : Maybe String
-    }
-
-
-{-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
-so it survives independently of `postsByServer` -- see that dict's own doc
-comment for why: a server being disabled (or re-fetched under a different
-account) drops/replaces its posts in `postsByServer` immediately, but a
-`removing` `flip` entry here keeps rendering its last-known `post`/`host`
-until its fade-out finishes, instead of the post just vanishing. See
-`UI.Flip` for what `flip` itself drives.
--}
-type alias PostAnimation =
-    { host : String
-    , post : Post
-    , flip : UI.Flip.State Msg
-    }
-
-
 type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
@@ -125,6 +94,70 @@ type alias Model =
     -- `Components.Pages.EventsPage.Model.endsAfterInputGeneration` exactly,
     -- just for this page's own date input.
     , publishedBeforeInputGeneration : Int
+    }
+
+
+type Msg
+    = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
+    | Poll
+    | Animate Animation.Msg
+    | RemovePost String
+    | SharedMsg Shared.Msg
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ContextChanged String
+    | ClearSearchClicked
+      -- Switches `model.tab` -- a no-op if already active. Mirrors
+      -- `Components.Pages.EventsPage.TabChanged` in spirit: no shared
+      -- layout/animation to slide between, just a different fetch cutoff, so
+      -- this just updates `model.tab`/refetches/persists the URL directly --
+      -- except switching to `PostsBeforeDate` for the very first time (no
+      -- `model.publishedBefore` yet) instead seeds one via `GotNow` first.
+      -- See `recentPostsTabsView`.
+    | TabChanged PostsTab
+      -- `Task.perform GotNow Time.now`'s result, fired only when
+      -- `PostsBeforeDate` is selected with no `model.publishedBefore` yet
+      -- (see `TabChanged`) -- seeds it with the current time (a sensible
+      -- starting cutoff the user can then dial back) and fetches.
+    | GotNow Time.Posix
+      -- The `PostsBeforeDate` tab's `<input type="datetime-local">` firing --
+      -- mirrors `Components.Pages.EventsPage.EndsAfterInputChanged` exactly,
+      -- just against this page's own `publishedBefore`/`publishedBeforeInputGeneration`.
+    | PublishedBeforeInputChanged String
+      -- `PublishedBeforeInputChanged`'s debounce timer elapsing -- mirrors
+      -- `Components.Pages.EventsPage.EndsAfterDebounceElapsed`'s own stale-
+      -- generation guard.
+    | PublishedBeforeDebounceElapsed Int
+
+
+type ServerPosts
+    = Loading
+    | Loaded (List Post)
+    | Failed
+
+
+{-| `accountId` is the enabled account (if any) the posts were/are being
+fetched with, so a later account enable/disable on the same server can be
+detected as "the acting credential changed" and trigger a re-fetch.
+-}
+type alias ServerFeed =
+    { status : ServerPosts
+    , accountId : Maybe String
+    }
+
+
+{-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
+so it survives independently of `postsByServer` -- see that dict's own doc
+comment for why: a server being disabled (or re-fetched under a different
+account) drops/replaces its posts in `postsByServer` immediately, but a
+`removing` `flip` entry here keeps rendering its last-known `post`/`host`
+until its fade-out finishes, instead of the post just vanishing. See
+`UI.Flip` for what `flip` itself drives.
+-}
+type alias PostAnimation =
+    { host : String
+    , post : Post
+    , flip : UI.Flip.State Msg
     }
 
 
@@ -225,6 +258,225 @@ init shared author navKey path query embeddedPage =
         , Task.perform GotNow Time.now |> Effect.fromCmd
         ]
     )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Time.every 30000 (\_ -> Poll)
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.postAnimations))
+        ]
+
+
+
+-- UPDATE
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
+exposing the `SharedMsg` constructor itself (and thus every other constructor
+of this otherwise-opaque `Msg`) outside this module.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
+
+
+{-| Lets a sibling page (`Pages.Home_`, keeping its embedded `EventsPage`'s search box in sync
+with this module's own `model.searchText` behind the scenes -- see that module's own
+`searchTextChanged` and `Pages.Home_.update`'s cross-sync) feed a search-text change in from
+outside exactly as if the user had typed it into this module's own (on `Pages.Home_`, hidden --
+see `view`'s `showSearchRow`) search box -- same `SearchTextChanged`/`SearchDebounceElapsed`
+round-trip, same independent debounce timer, without exposing the `SearchTextChanged` constructor
+itself (and thus every other constructor of this otherwise-opaque `Msg`) outside this module.
+-}
+searchTextChanged : String -> Msg
+searchTextChanged =
+    SearchTextChanged
+
+
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
+    case msg of
+        GotServerPosts frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
+            let
+                accountEffect =
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+            in
+            ( { model
+                | postsByServer =
+                    Dict.update frontendHost
+                        (Maybe.map (\feed -> { feed | status = Loaded response.posts }))
+                        model.postsByServer
+              }
+                |> syncAnimations
+            , accountEffect
+            )
+
+        GotServerPosts frontendHost (Err _) ->
+            ( { model
+                | postsByServer =
+                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
+              }
+                |> syncAnimations
+            , Effect.none
+            )
+
+        Poll ->
+            fetchNewServers shared model
+
+        Animate animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.postAnimations
+            in
+            ( { model | postAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        RemovePost key ->
+            ( { model | postAnimations = Dict.remove key model.postAnimations }, Effect.none )
+
+        SharedMsg subMsg ->
+            let
+                ( fetchedModel, fetchEffect ) =
+                    case subMsg of
+                        Shared.AccountsPanelMsg _ ->
+                            fetchNewServers shared model
+
+                        _ ->
+                            ( model, Effect.none )
+            in
+            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 311
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked/ContextChanged) already
+                -- bumped searchGeneration past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ContextChanged param ->
+            case postContextFromParam param of
+                Just newContext ->
+                    applySearchChange shared { model | context = newContext, searchGeneration = model.searchGeneration + 1 }
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
+        TabChanged RecentPosts ->
+            if model.tab == RecentPosts then
+                ( model, Effect.none )
+
+            else
+                let
+                    ( refetchedModel, refetchEffect ) =
+                        refetchServers shared { model | tab = RecentPosts } (relevantServers shared model)
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+        TabChanged PostsBeforeDate ->
+            if model.tab == PostsBeforeDate then
+                ( model, Effect.none )
+
+            else
+                case model.publishedBefore of
+                    Just _ ->
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared { model | tab = PostsBeforeDate } (relevantServers shared model)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    Nothing ->
+                        ( { model | tab = PostsBeforeDate }, Task.perform GotNow Time.now |> Effect.fromCmd )
+
+        GotNow now ->
+            case model.publishedBefore of
+                Just _ ->
+                    -- Already seeded (a `?published_before=` query param on
+                    -- load, or an earlier `GotNow`) -- this one's redundant.
+                    ( model, Effect.none )
+
+                Nothing ->
+                    let
+                        newModel =
+                            { model | publishedBefore = Just now }
+                    in
+                    if newModel.tab == PostsBeforeDate then
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared newModel (relevantServers shared newModel)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    else
+                        -- `RecentPosts` doesn't use `publishedBefore` at all
+                        -- (see `refetchServers`'s own `cutoff`) -- just seed
+                        -- it quietly so it's ready the moment the user does
+                        -- switch tabs, no fetch/URL change needed yet.
+                        ( newModel, Effect.none )
+
+        PublishedBeforeInputChanged raw ->
+            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
+                Nothing ->
+                    ( model, Effect.none )
+
+                Just newPublishedBefore ->
+                    let
+                        generation =
+                            model.publishedBeforeInputGeneration + 1
+                    in
+                    ( { model | tab = PostsBeforeDate, publishedBefore = Just newPublishedBefore, publishedBeforeInputGeneration = generation }
+                    , Process.sleep 500
+                        |> Task.perform (\_ -> PublishedBeforeDebounceElapsed generation)
+                        |> Effect.fromCmd
+                    )
+
+        PublishedBeforeDebounceElapsed generation ->
+            if generation == model.publishedBeforeInputGeneration then
+                let
+                    ( refetchedModel, refetchEffect ) =
+                        refetchServers shared model (relevantServers shared model)
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+            else
+                -- A later edit already bumped `publishedBeforeInputGeneration`
+                -- past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
 
 
 {-| The servers this page should ever fetch from: every enabled server for an
@@ -582,258 +834,6 @@ syncAnimations model =
                 currentPosts
                 model.postAnimations
     }
-
-
-
--- UPDATE
-
-
-type Msg
-    = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
-    | Poll
-    | Animate Animation.Msg
-    | RemovePost String
-    | SharedMsg Shared.Msg
-    | SearchTextChanged String
-    | SearchDebounceElapsed Int
-    | ContextChanged String
-    | ClearSearchClicked
-      -- Switches `model.tab` -- a no-op if already active. Mirrors
-      -- `Components.Pages.EventsPage.TabChanged` in spirit: no shared
-      -- layout/animation to slide between, just a different fetch cutoff, so
-      -- this just updates `model.tab`/refetches/persists the URL directly --
-      -- except switching to `PostsBeforeDate` for the very first time (no
-      -- `model.publishedBefore` yet) instead seeds one via `GotNow` first.
-      -- See `recentPostsTabsView`.
-    | TabChanged PostsTab
-      -- `Task.perform GotNow Time.now`'s result, fired only when
-      -- `PostsBeforeDate` is selected with no `model.publishedBefore` yet
-      -- (see `TabChanged`) -- seeds it with the current time (a sensible
-      -- starting cutoff the user can then dial back) and fetches.
-    | GotNow Time.Posix
-      -- The `PostsBeforeDate` tab's `<input type="datetime-local">` firing --
-      -- mirrors `Components.Pages.EventsPage.EndsAfterInputChanged` exactly,
-      -- just against this page's own `publishedBefore`/`publishedBeforeInputGeneration`.
-    | PublishedBeforeInputChanged String
-      -- `PublishedBeforeInputChanged`'s debounce timer elapsing -- mirrors
-      -- `Components.Pages.EventsPage.EndsAfterDebounceElapsed`'s own stale-
-      -- generation guard.
-    | PublishedBeforeDebounceElapsed Int
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
-exposing the `SharedMsg` constructor itself (and thus every other constructor
-of this otherwise-opaque `Msg`) outside this module.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
-
-
-{-| Lets a sibling page (`Pages.Home_`, keeping its embedded `EventsPage`'s search box in sync
-with this module's own `model.searchText` behind the scenes -- see that module's own
-`searchTextChanged` and `Pages.Home_.update`'s cross-sync) feed a search-text change in from
-outside exactly as if the user had typed it into this module's own (on `Pages.Home_`, hidden --
-see `view`'s `showSearchRow`) search box -- same `SearchTextChanged`/`SearchDebounceElapsed`
-round-trip, same independent debounce timer, without exposing the `SearchTextChanged` constructor
-itself (and thus every other constructor of this otherwise-opaque `Msg`) outside this module.
--}
-searchTextChanged : String -> Msg
-searchTextChanged =
-    SearchTextChanged
-
-
-update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
-
-
-updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-updateInner shared msg model =
-    case msg of
-        GotServerPosts frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
-            let
-                accountEffect =
-                    maybeAccountsPanelMsg
-                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
-            in
-            ( { model
-                | postsByServer =
-                    Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded response.posts }))
-                        model.postsByServer
-              }
-                |> syncAnimations
-            , accountEffect
-            )
-
-        GotServerPosts frontendHost (Err _) ->
-            ( { model
-                | postsByServer =
-                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
-              }
-                |> syncAnimations
-            , Effect.none
-            )
-
-        Poll ->
-            fetchNewServers shared model
-
-        Animate animMsg ->
-            let
-                step key anim ( animations, accCmds ) =
-                    let
-                        ( newFlip, cmd ) =
-                            UI.Flip.animate animMsg anim.flip
-                    in
-                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
-
-                ( newAnimations, cmds ) =
-                    Dict.foldl step ( Dict.empty, [] ) model.postAnimations
-            in
-            ( { model | postAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
-
-        RemovePost key ->
-            ( { model | postAnimations = Dict.remove key model.postAnimations }, Effect.none )
-
-        SharedMsg subMsg ->
-            let
-                ( fetchedModel, fetchEffect ) =
-                    case subMsg of
-                        Shared.AccountsPanelMsg _ ->
-                            fetchNewServers shared model
-
-                        _ ->
-                            ( model, Effect.none )
-            in
-            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
-
-        SearchTextChanged text ->
-            let
-                generation =
-                    model.searchGeneration + 1
-            in
-            ( { model | searchText = text, searchGeneration = generation }
-            , Process.sleep 311
-                |> Task.perform (\_ -> SearchDebounceElapsed generation)
-                |> Effect.fromCmd
-            )
-
-        SearchDebounceElapsed generation ->
-            if generation == model.searchGeneration then
-                applySearchChange shared model
-
-            else
-                -- A later edit (or ClearSearchClicked/ContextChanged) already
-                -- bumped searchGeneration past this timer's -- it's stale, ignore it.
-                ( model, Effect.none )
-
-        ContextChanged param ->
-            case postContextFromParam param of
-                Just newContext ->
-                    applySearchChange shared { model | context = newContext, searchGeneration = model.searchGeneration + 1 }
-
-                Nothing ->
-                    ( model, Effect.none )
-
-        ClearSearchClicked ->
-            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
-
-        TabChanged RecentPosts ->
-            if model.tab == RecentPosts then
-                ( model, Effect.none )
-
-            else
-                let
-                    ( refetchedModel, refetchEffect ) =
-                        refetchServers shared { model | tab = RecentPosts } (relevantServers shared model)
-                in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
-
-        TabChanged PostsBeforeDate ->
-            if model.tab == PostsBeforeDate then
-                ( model, Effect.none )
-
-            else
-                case model.publishedBefore of
-                    Just _ ->
-                        let
-                            ( refetchedModel, refetchEffect ) =
-                                refetchServers shared { model | tab = PostsBeforeDate } (relevantServers shared model)
-                        in
-                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
-
-                    Nothing ->
-                        ( { model | tab = PostsBeforeDate }, Task.perform GotNow Time.now |> Effect.fromCmd )
-
-        GotNow now ->
-            case model.publishedBefore of
-                Just _ ->
-                    -- Already seeded (a `?published_before=` query param on
-                    -- load, or an earlier `GotNow`) -- this one's redundant.
-                    ( model, Effect.none )
-
-                Nothing ->
-                    let
-                        newModel =
-                            { model | publishedBefore = Just now }
-                    in
-                    if newModel.tab == PostsBeforeDate then
-                        let
-                            ( refetchedModel, refetchEffect ) =
-                                refetchServers shared newModel (relevantServers shared newModel)
-                        in
-                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
-
-                    else
-                        -- `RecentPosts` doesn't use `publishedBefore` at all
-                        -- (see `refetchServers`'s own `cutoff`) -- just seed
-                        -- it quietly so it's ready the moment the user does
-                        -- switch tabs, no fetch/URL change needed yet.
-                        ( newModel, Effect.none )
-
-        PublishedBeforeInputChanged raw ->
-            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
-                Nothing ->
-                    ( model, Effect.none )
-
-                Just newPublishedBefore ->
-                    let
-                        generation =
-                            model.publishedBeforeInputGeneration + 1
-                    in
-                    ( { model | tab = PostsBeforeDate, publishedBefore = Just newPublishedBefore, publishedBeforeInputGeneration = generation }
-                    , Process.sleep 500
-                        |> Task.perform (\_ -> PublishedBeforeDebounceElapsed generation)
-                        |> Effect.fromCmd
-                    )
-
-        PublishedBeforeDebounceElapsed generation ->
-            if generation == model.publishedBeforeInputGeneration then
-                let
-                    ( refetchedModel, refetchEffect ) =
-                        refetchServers shared model (relevantServers shared model)
-                in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
-
-            else
-                -- A later edit already bumped `publishedBeforeInputGeneration`
-                -- past this timer's -- it's stale, ignore it.
-                ( model, Effect.none )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Time.every 30000 (\_ -> Poll)
-        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.postAnimations))
-        ]
 
 
 
