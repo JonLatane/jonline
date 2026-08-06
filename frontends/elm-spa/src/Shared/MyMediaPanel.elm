@@ -301,6 +301,12 @@ type alias MediaAnimation =
     }
 
 
+type alias Resolved =
+    { server : AccountsPanel.Server
+    , account : AccountsPanel.Account
+    }
+
+
 init : Model
 init =
     { targetHost = ""
@@ -803,12 +809,6 @@ the React version).
 acceptedMimeTypes : List String
 acceptedMimeTypes =
     [ "image/jpeg", "image/png", "image/svg+xml", "image/webp", "image/gif", "application/pdf", "video/mp4", "video/quicktime", "video/webm", "audio/mpeg", "audio/ogg" ]
-
-
-type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
-    }
 
 
 {-| Verifies `host` is actually usable right now -- it resolves to a known,

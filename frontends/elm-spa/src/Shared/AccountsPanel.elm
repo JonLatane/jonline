@@ -492,6 +492,37 @@ type alias Token =
     }
 
 
+type alias Flags =
+    Decode.Value
+
+
+type alias PersistedServer =
+    { frontendHost : String
+    , enabled : Bool
+    }
+
+
+type alias PersistedState =
+    { accounts : List Account
+    , servers : List PersistedServer
+    }
+
+
+{-| Identifies "act as this account (if any) on this server" by identity --
+`( maybe userId, hostname )` -- rather than a live `Account`/`Server`
+snapshot: `( Nothing, host )` means anonymous on `host`; `( Just userId,
+host )` means that specific (must be enabled) account. Resolved fresh
+against the current `Model` inside `performWithAccountServer`/
+`performWithOptionalAccountServer`, so callers elsewhere in the app (see
+`Components.PostCard`, `Components.Users`, `Shared.MarkdownPanel`) can store
+just this pair -- e.g. across a page's own `Model` -- rather than a copy of
+`Account`/`Server` that can go stale, and never need to know how tokens get
+refreshed/persisted (`AccessTokenResponseReceived`) at all.
+-}
+type alias MaybeAccountServer =
+    ( Maybe String, String )
+
+
 {-| A stable identifier for an account: a user's id is only unique per-server.
 -}
 accountId : Account -> String
@@ -3463,10 +3494,6 @@ grpcErrorToString err =
 -- rather than trusted from a (possibly stale) previous one.
 
 
-type alias Flags =
-    Decode.Value
-
-
 {-| No-ops until `init`'s startup sweep has fully settled (see
 `accessTokenRefreshChecked`/`finishStartupUnit`) -- otherwise every
 individual reconnect/account-refresh that happens to land before then would
@@ -3572,18 +3599,6 @@ encodePersistedServer server =
         [ ( "frontendHost", Encode.string server.frontendHost )
         , ( "enabled", Encode.bool server.enabled )
         ]
-
-
-type alias PersistedServer =
-    { frontendHost : String
-    , enabled : Bool
-    }
-
-
-type alias PersistedState =
-    { accounts : List Account
-    , servers : List PersistedServer
-    }
 
 
 emptyPersistedState : PersistedState
@@ -3853,21 +3868,6 @@ performWithAccountNotifying connection account req =
                 req refreshedAccount.accessToken.token
                     |> Task.map (\result -> ( refreshedAccount, refreshResponse, result ))
             )
-
-
-{-| Identifies "act as this account (if any) on this server" by identity --
-`( maybe userId, hostname )` -- rather than a live `Account`/`Server`
-snapshot: `( Nothing, host )` means anonymous on `host`; `( Just userId,
-host )` means that specific (must be enabled) account. Resolved fresh
-against the current `Model` inside `performWithAccountServer`/
-`performWithOptionalAccountServer`, so callers elsewhere in the app (see
-`Components.PostCard`, `Components.Users`, `Shared.MarkdownPanel`) can store
-just this pair -- e.g. across a page's own `Model` -- rather than a copy of
-`Account`/`Server` that can go stale, and never need to know how tokens get
-refreshed/persisted (`AccessTokenResponseReceived`) at all.
--}
-type alias MaybeAccountServer =
-    ( Maybe String, String )
 
 
 resolveAccountServer : Model -> MaybeAccountServer -> Maybe ( Maybe Account, Server )

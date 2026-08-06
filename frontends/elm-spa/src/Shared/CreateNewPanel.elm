@@ -128,6 +128,12 @@ type Mode
     | EventMode
 
 
+type alias Resolved =
+    { server : AccountsPanel.Server
+    , account : AccountsPanel.Account
+    }
+
+
 init : Model
 init =
     { open = False
@@ -346,12 +352,6 @@ convention) if there's no eligible account at all.
 postingAsHost : AccountsPanel.Model -> Model -> String
 postingAsHost accountsPanelModel model =
     resolvedAccount accountsPanelModel model |> Maybe.map .server |> Maybe.withDefault ""
-
-
-type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
-    }
 
 
 {-| Verifies a `SaveClicked` is actually submittable right now: `title` isn't

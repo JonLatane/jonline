@@ -314,6 +314,23 @@ type MeasurementPhase
     | AwaitingNewRects EventsDisplayMode (Dict String Rect)
 
 
+{-| A card's measured position/size (page coordinates, matching
+`Browser.Dom.Element.element`'s own convention) -- the "First"/"Last"
+measurement step of FLIP, used both before and after `DisplayModeChanged`
+switches `model.mode` (see that branch's own doc for the full recipe).
+Deliberately not `Browser.Dom.Element` itself: that type carries `scene`/
+`viewport` fields this module never needs, and (more importantly) is what
+`Ports.measureElements` exists to avoid depending on `Browser.Dom.getElement`
+for at all -- see that port's own doc comment.
+-}
+type alias Rect =
+    { x : Float
+    , y : Float
+    , width : Float
+    , height : Float
+    }
+
+
 {-| `author`, if given, restricts the feed to that user's own events (see
 `Components.Events.fetchEvents`) and adds an "Events | <name>" heading
 (see `authorHeadingView`) -- `Pages.Events` passes `Nothing`,
@@ -1232,23 +1249,6 @@ visibleAnimations model =
                 identity
            )
         |> List.take (maxDisplayedEvents model)
-
-
-{-| A card's measured position/size (page coordinates, matching
-`Browser.Dom.Element.element`'s own convention) -- the "First"/"Last"
-measurement step of FLIP, used both before and after `DisplayModeChanged`
-switches `model.mode` (see that branch's own doc for the full recipe).
-Deliberately not `Browser.Dom.Element` itself: that type carries `scene`/
-`viewport` fields this module never needs, and (more importantly) is what
-`Ports.measureElements` exists to avoid depending on `Browser.Dom.getElement`
-for at all -- see that port's own doc comment.
--}
-type alias Rect =
-    { x : Float
-    , y : Float
-    , width : Float
-    , height : Float
-    }
 
 
 {-| Decodes `Ports.elementsMeasured`'s payload -- keyed by each entry's own
