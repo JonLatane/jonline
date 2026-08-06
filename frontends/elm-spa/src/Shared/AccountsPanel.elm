@@ -91,198 +91,6 @@ import UI.ServerTheme
 import Url
 
 
-{-| A signed-into account on a server (identified by its `frontendHost`, e.g.
-"jonline.io" -- see `Server`). `enabled` is a lightweight, non-destructive
-"signed in/out" toggle: disabling an account keeps its tokens around so it can
-be re-enabled without logging in again. Fully forgetting an account
-(`RemoveAccountClicked`) is the "traditional" sign out.
-
-`permissions` is refreshed via `GetCurrentUser` whenever the account's server
-reconnects (app startup/reload, or the account being re-enabled) -- see
-`refreshPermissions` -- so it's usually current, though it can still lag
-between those refreshes if permissions change server-side. That same refresh
-is what discovers a `refreshToken` no longer works (revoked, expired past its
-own grace period) -- see `GotPermissionsRefresh` -- setting `needsPassword`
-so the account shows as needing to be signed back into with a password rather
-than silently failing every request.
-
--}
-type alias Account =
-    { server : String
-    , userId : String
-    , username : String
-    , refreshToken : Token
-    , accessToken : Token
-    , enabled : Bool
-    , avatarMediaId : Maybe String
-    , permissions : List Permission
-    , realName : String
-    , needsPassword : Bool
-    }
-
-
-{-| A server the app knows about -- either from a persisted server list entry
-or an account signed into it. `frontendHost` is the server's public identity,
-e.g. "jonline.io" -- what a user types in and what accounts are keyed by.
-
-`enabled` controls whether the server's (eventually public) data is included
-when aggregating data across servers. It's tracked here (rather than only on
-`connected`) because it's meaningful -- and persisted (see
-`encodePersistedServer`) -- even while disconnected.
-
-`connected` is everything that's only known once we've actually negotiated
-with the server (see `negotiateServerConfig`): `Nothing` for a server that's
-currently unreachable (down, moved, or just not tried yet this session) --
-see `disconnectedServer`/`ReconnectServerClicked`. A server keeps its place in
-`Model.servers` (and so its position in the persisted list/UI) whether or not
-it's currently connected -- only `FinishRemoveServer` (an explicit user
-delete) removes an entry outright.
-
--}
-type alias Server =
-    { frontendHost : String
-    , enabled : Bool
-    , connected : Maybe ConnectedServer
-    }
-
-
-{-| Everything about a `Server` that's only known once we've actually
-connected to it: `backendHost`/`port_`/`tls` are the combination that's known
-to work (`backendHost` is where its gRPC API actually lives, e.g.
-"jonline.io.getj.online" behind a CDN -- discovered via
-`GET {frontendHost}/backend_host`, see `discoverBackendHost` -- often the same
-as `frontendHost`), and `configuration`/`branding` are real data, never a
-placeholder.
--}
-type alias ConnectedServer =
-    { backendHost : String
-    , port_ : Int
-    , tls : Bool
-    , configuration : ServerConfiguration
-    , branding : Branding
-    }
-
-
-{-| A server's user-facing identity: its name, square logo (if any), and its
-primary/nav brand colors -- decomposed into `UI.ServerTheme.ColorMeta` (text
-color, light/dark variants) once, when `configuration` first arrives (see
-`brandingFromConfig`), and cached here rather than recomputed on every
-render. Combine with the app's current dark/light mode via
-`serverThemeOf`/`serverThemeFor` to get the full `UI.ServerTheme.ServerTheme`.
--}
-type alias Branding =
-    { name : String
-    , logoUrl : Maybe String
-    , primary : UI.ServerTheme.ColorMeta
-    , nav : UI.ServerTheme.ColorMeta
-    }
-
-
-{-| Where a `Server` lives: enough to build a URL, before we know anything
-else about it.
--}
-type alias Connection =
-    { frontendHost : String
-    , backendHost : String
-    , port_ : Int
-    , tls : Bool
-    }
-
-
-type FormStatus
-    = Idle
-    | Submitting
-    | Errored String
-
-
-{-| Which of the two flows `Model.newAccountType` is mid-way through --
-picked by `ChooseLoginClicked`/`ChooseCreateAccountClicked` -- so the Password
-field (see `UI.addAccountForm`) knows whether to ask the browser for a
-"new-password" (with generation offered) or a "current-password" (with saved
-passwords offered) autofill.
--}
-type NewAccountType
-    = CreateNewAccount
-    | LoginToAccount
-
-
-type alias AccountForm =
-    { server : String
-    , username : String
-    , password : String
-    , status : FormStatus
-
-    -- Whether the password field (see `UI.addAccountForm`) is currently
-    -- rendered as plain text rather than masked -- toggled by its "show
-    -- password" button (`PasswordVisibilityToggled`).
-    , showPasswordAsText : Bool
-    }
-
-
-{-| The policy confirmation modal's own pending state, captured when
-`ChooseCreateAccountClicked` first resolves the server (see
-`GotCreateAccountServerInfo`) rather than re-read from `accountForm` later --
-so the modal (and the `AcceptedCreateAccount` it produces) always names the
-username that was on screen at the moment "Create Account" was clicked, even
-if the form's fields somehow changed while the confirmation step
-(`UI.createAccountConfirmationModal`) was up. There's no password here yet --
-this step happens _before_ the Password field even renders (see
-`Model.newAccountType`).
--}
-type alias PendingCreateAccount =
-    { server : Server
-    , username : String
-
-    -- Whether the user has scrolled the confirmation modal's policy text
-    -- (see `UI.createAccountConfirmationModal`) to its bottom -- or it never
-    -- needed scrolling in the first place, per `GotCreateAccountModalViewport`
-    -- -- gating the modal's own "Accept and Continue" button so it can't be
-    -- clicked past unread policy text.
-    , reachedBottom : Bool
-    }
-
-
-{-| What's kept around once the user's actually accepted the policies
-(`ConfirmCreateAccountClicked`, "Accept and Continue") -- from then on, until
-the real `CreateAccount` RPC fires (`CreateAccountClicked`, now the Password
-field's own submit) or the flow's abandoned (`NewAccountBackClicked`,
-`setServerField`, a successful `GotAuthResult`), `server`/`username` are read
-from here rather than `accountForm`, same reasoning as `PendingCreateAccount`.
-
-`acceptedAt` is the click time of "Accept and Continue" itself, captured via
-`Time.now` (see `GotCreateAccountAcceptedTime`) -- not yet sent with the
-`CreateAccount` RPC (the API has no field for it), but kept on hand ready for
-when it does.
-
--}
-type alias AcceptedCreateAccount =
-    { server : Server
-    , username : String
-    , acceptedAt : Maybe Time.Posix
-    }
-
-
-{-| The "Add Server" control's own status -- separate from `AccountForm`'s
-since adding a server (an unauthenticated `GetServerConfiguration` probe) and
-logging in are independent flows that can be in-flight/erroring independently.
-The host being added is `AccountForm.server` itself -- the Server field is
-shared between the two flows (see `AddServerClicked`).
--}
-type alias AddServerForm =
-    { status : FormStatus
-    }
-
-
-{-| Like `ExpirableToken`, but with a plain `Time.Posix` expiration instead of
-a protobuf `Timestamp` (whose seconds are an `Int64`) -- directly comparable
-to `Time.now`, and easy to persist as milliseconds.
--}
-type alias Token =
-    { token : String
-    , expiresAt : Maybe Time.Posix
-    }
-
-
 type alias Model =
     { accounts : List Account
     , servers : List Server
@@ -490,6 +298,198 @@ type Msg
     | FinishRemoveServer String
     | AnimateItemFlip Animation.Msg
     | NoOp
+
+
+{-| A signed-into account on a server (identified by its `frontendHost`, e.g.
+"jonline.io" -- see `Server`). `enabled` is a lightweight, non-destructive
+"signed in/out" toggle: disabling an account keeps its tokens around so it can
+be re-enabled without logging in again. Fully forgetting an account
+(`RemoveAccountClicked`) is the "traditional" sign out.
+
+`permissions` is refreshed via `GetCurrentUser` whenever the account's server
+reconnects (app startup/reload, or the account being re-enabled) -- see
+`refreshPermissions` -- so it's usually current, though it can still lag
+between those refreshes if permissions change server-side. That same refresh
+is what discovers a `refreshToken` no longer works (revoked, expired past its
+own grace period) -- see `GotPermissionsRefresh` -- setting `needsPassword`
+so the account shows as needing to be signed back into with a password rather
+than silently failing every request.
+
+-}
+type alias Account =
+    { server : String
+    , userId : String
+    , username : String
+    , refreshToken : Token
+    , accessToken : Token
+    , enabled : Bool
+    , avatarMediaId : Maybe String
+    , permissions : List Permission
+    , realName : String
+    , needsPassword : Bool
+    }
+
+
+{-| A server the app knows about -- either from a persisted server list entry
+or an account signed into it. `frontendHost` is the server's public identity,
+e.g. "jonline.io" -- what a user types in and what accounts are keyed by.
+
+`enabled` controls whether the server's (eventually public) data is included
+when aggregating data across servers. It's tracked here (rather than only on
+`connected`) because it's meaningful -- and persisted (see
+`encodePersistedServer`) -- even while disconnected.
+
+`connected` is everything that's only known once we've actually negotiated
+with the server (see `negotiateServerConfig`): `Nothing` for a server that's
+currently unreachable (down, moved, or just not tried yet this session) --
+see `disconnectedServer`/`ReconnectServerClicked`. A server keeps its place in
+`Model.servers` (and so its position in the persisted list/UI) whether or not
+it's currently connected -- only `FinishRemoveServer` (an explicit user
+delete) removes an entry outright.
+
+-}
+type alias Server =
+    { frontendHost : String
+    , enabled : Bool
+    , connected : Maybe ConnectedServer
+    }
+
+
+{-| Everything about a `Server` that's only known once we've actually
+connected to it: `backendHost`/`port_`/`tls` are the combination that's known
+to work (`backendHost` is where its gRPC API actually lives, e.g.
+"jonline.io.getj.online" behind a CDN -- discovered via
+`GET {frontendHost}/backend_host`, see `discoverBackendHost` -- often the same
+as `frontendHost`), and `configuration`/`branding` are real data, never a
+placeholder.
+-}
+type alias ConnectedServer =
+    { backendHost : String
+    , port_ : Int
+    , tls : Bool
+    , configuration : ServerConfiguration
+    , branding : Branding
+    }
+
+
+{-| A server's user-facing identity: its name, square logo (if any), and its
+primary/nav brand colors -- decomposed into `UI.ServerTheme.ColorMeta` (text
+color, light/dark variants) once, when `configuration` first arrives (see
+`brandingFromConfig`), and cached here rather than recomputed on every
+render. Combine with the app's current dark/light mode via
+`serverThemeOf`/`serverThemeFor` to get the full `UI.ServerTheme.ServerTheme`.
+-}
+type alias Branding =
+    { name : String
+    , logoUrl : Maybe String
+    , primary : UI.ServerTheme.ColorMeta
+    , nav : UI.ServerTheme.ColorMeta
+    }
+
+
+{-| Where a `Server` lives: enough to build a URL, before we know anything
+else about it.
+-}
+type alias Connection =
+    { frontendHost : String
+    , backendHost : String
+    , port_ : Int
+    , tls : Bool
+    }
+
+
+type FormStatus
+    = Idle
+    | Submitting
+    | Errored String
+
+
+{-| Which of the two flows `Model.newAccountType` is mid-way through --
+picked by `ChooseLoginClicked`/`ChooseCreateAccountClicked` -- so the Password
+field (see `UI.addAccountForm`) knows whether to ask the browser for a
+"new-password" (with generation offered) or a "current-password" (with saved
+passwords offered) autofill.
+-}
+type NewAccountType
+    = CreateNewAccount
+    | LoginToAccount
+
+
+type alias AccountForm =
+    { server : String
+    , username : String
+    , password : String
+    , status : FormStatus
+
+    -- Whether the password field (see `UI.addAccountForm`) is currently
+    -- rendered as plain text rather than masked -- toggled by its "show
+    -- password" button (`PasswordVisibilityToggled`).
+    , showPasswordAsText : Bool
+    }
+
+
+{-| The policy confirmation modal's own pending state, captured when
+`ChooseCreateAccountClicked` first resolves the server (see
+`GotCreateAccountServerInfo`) rather than re-read from `accountForm` later --
+so the modal (and the `AcceptedCreateAccount` it produces) always names the
+username that was on screen at the moment "Create Account" was clicked, even
+if the form's fields somehow changed while the confirmation step
+(`UI.createAccountConfirmationModal`) was up. There's no password here yet --
+this step happens _before_ the Password field even renders (see
+`Model.newAccountType`).
+-}
+type alias PendingCreateAccount =
+    { server : Server
+    , username : String
+
+    -- Whether the user has scrolled the confirmation modal's policy text
+    -- (see `UI.createAccountConfirmationModal`) to its bottom -- or it never
+    -- needed scrolling in the first place, per `GotCreateAccountModalViewport`
+    -- -- gating the modal's own "Accept and Continue" button so it can't be
+    -- clicked past unread policy text.
+    , reachedBottom : Bool
+    }
+
+
+{-| What's kept around once the user's actually accepted the policies
+(`ConfirmCreateAccountClicked`, "Accept and Continue") -- from then on, until
+the real `CreateAccount` RPC fires (`CreateAccountClicked`, now the Password
+field's own submit) or the flow's abandoned (`NewAccountBackClicked`,
+`setServerField`, a successful `GotAuthResult`), `server`/`username` are read
+from here rather than `accountForm`, same reasoning as `PendingCreateAccount`.
+
+`acceptedAt` is the click time of "Accept and Continue" itself, captured via
+`Time.now` (see `GotCreateAccountAcceptedTime`) -- not yet sent with the
+`CreateAccount` RPC (the API has no field for it), but kept on hand ready for
+when it does.
+
+-}
+type alias AcceptedCreateAccount =
+    { server : Server
+    , username : String
+    , acceptedAt : Maybe Time.Posix
+    }
+
+
+{-| The "Add Server" control's own status -- separate from `AccountForm`'s
+since adding a server (an unauthenticated `GetServerConfiguration` probe) and
+logging in are independent flows that can be in-flight/erroring independently.
+The host being added is `AccountForm.server` itself -- the Server field is
+shared between the two flows (see `AddServerClicked`).
+-}
+type alias AddServerForm =
+    { status : FormStatus
+    }
+
+
+{-| Like `ExpirableToken`, but with a plain `Time.Posix` expiration instead of
+a protobuf `Timestamp` (whose seconds are an `Int64`) -- directly comparable
+to `Time.now`, and easy to persist as milliseconds.
+-}
+type alias Token =
+    { token : String
+    , expiresAt : Maybe Time.Posix
+    }
 
 
 {-| A stable identifier for an account: a user's id is only unique per-server.
@@ -1212,34 +1212,18 @@ init req flags =
     )
 
 
-{-| Whether the page itself was loaded over TLS -- if so, we only ever try
-TLS candidates for a new host, since a secure page can't make plaintext
-requests (mixed content). Only an insecure (e.g. local dev) page falls back
-to trying plaintext ports too.
-
-Generic over `params` (rather than just this module's own `Request`) so any
-page can pass its own `Request.With Params` straight in -- see
-`connectToServer`.
-
+{-| Just the accounts' reorder-slide animations (see `moveAnimations`) --
+`Shared.subscriptions` batches this in with everything else.
 -}
-isSecure : Request.With params -> Bool
-isSecure req =
-    req.url.protocol == Url.Https
-
-
-emptyForm : AccountForm
-emptyForm =
-    { server = "localhost"
-    , username = ""
-    , password = ""
-    , status = Idle
-    , showPasswordAsText = False
-    }
-
-
-emptyAddServerForm : AddServerForm
-emptyAddServerForm =
-    { status = Idle }
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ UI.Flip.moveSubscription AnimateMove
+            (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
+        , UI.Flip.subscription AnimateItemFlip
+            (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
+        , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
+        ]
 
 
 {-| `sendUpdate`'s actual per-`Msg` logic, plus `syncItemAnimations`,
@@ -2436,18 +2420,34 @@ sendUpdate req msg model =
             ( model, Cmd.none )
 
 
-{-| Just the accounts' reorder-slide animations (see `moveAnimations`) --
-`Shared.subscriptions` batches this in with everything else.
+{-| Whether the page itself was loaded over TLS -- if so, we only ever try
+TLS candidates for a new host, since a secure page can't make plaintext
+requests (mixed content). Only an insecure (e.g. local dev) page falls back
+to trying plaintext ports too.
+
+Generic over `params` (rather than just this module's own `Request`) so any
+page can pass its own `Request.With Params` straight in -- see
+`connectToServer`.
+
 -}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ UI.Flip.moveSubscription AnimateMove
-            (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
-        , UI.Flip.subscription AnimateItemFlip
-            (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
-        , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
-        ]
+isSecure : Request.With params -> Bool
+isSecure req =
+    req.url.protocol == Url.Https
+
+
+emptyForm : AccountForm
+emptyForm =
+    { server = "localhost"
+    , username = ""
+    , password = ""
+    , status = Idle
+    , showPasswordAsText = False
+    }
+
+
+emptyAddServerForm : AddServerForm
+emptyAddServerForm =
+    { status = Idle }
 
 
 {-| A server that has any associated accounts can't be removed (only disabled),

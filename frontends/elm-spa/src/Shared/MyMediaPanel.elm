@@ -68,53 +68,6 @@ import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 
 
-{-| What a `Just` `Model.selectionType` turns this panel into -- see module
-doc. `SingleSelect`'s `imagesOnly` restricts the grid to image media only
-(hiding videos/PDFs/etc that couldn't be tapped-to-select anyway --
-`Components.MediaRenderer.view` only ever attaches `onImageClicked` for
-images in the first place, see its own doc) -- `False` for a future chooser
-that's fine picking any media type. Its `initialSelection` (e.g.
-`Components.Pages.UserProfilePage`'s `user.avatar`) seeds `Model.selectedMedia`
-(see `Open`) purely so the grid item it matches renders pre-highlighted (see
-`mediaItemView`'s `selected`) -- `SingleSelect` never adds to/reorders that
-list the way `MultiSelect` does, tapping a grid item still just closes the
-panel outright (see `MediaItemClicked`).
-
-`MultiSelect`'s own `initialSelection` seeds the same `Model.selectedMedia` --
-e.g. a `Post`'s current `media`, so re-opening the picker to edit an
-already-published post's media starts from what's already there rather than
-empty. Tapping a grid item while this is the active `selectionType` doesn't
-close the panel like `SingleSelect` does -- it prepends to `selectedMedia`
-instead (see `MediaItemClicked`), which the top "selected media" strip (see
-`selectedMediaStripView`) renders reorderably; `SaveMediaClicked`/`CloseClicked`
-are this mode's own Save/Cancel, at the bottom of `view`.
-
--}
-type SelectionType
-    = SingleSelect { imagesOnly : Bool, initialSelection : Maybe MediaReference }
-    | MultiSelect { initialSelection : List MediaReference }
-
-
-type FetchStatus
-    = NotFetched
-    | Fetching
-    | FetchFailed String
-    | Fetched (List Media)
-
-
-{-| What the "Add" button/drag-and-drop upload is currently doing -- separate
-from `FetchStatus` since browsing the existing grid and uploading a new item
-into it are independent (an upload failure shouldn't blank out an
-already-loaded grid, and vice versa). `File` is carried along in `Uploading`/
-`UploadFailed` purely so `view` can keep showing its name (`File.name`)
-without a separate field for it.
--}
-type UploadStatus
-    = NotUploading
-    | Uploading File
-    | UploadFailed File String
-
-
 type alias Model =
     { -- The `frontendHost` of the server this panel's browsing -- resolved
       -- fresh (see `resolve`) against `AccountsPanel.Model` whenever needed,
@@ -202,46 +155,6 @@ type alias Model =
     }
 
 
-{-| One grid tile's enter/leave fade state, paired with the `Media` it was
-last rendered with -- mirrors `Components.Pages.UsersPage.UserAnimation` (see
-its own doc): keeping `media` here, not just relying on `status`'s own
-`Fetched` list, lets a just-deleted tile keep rendering its last-known
-preview/name for the length of its fade-out, rather than needing to somehow
-survive in `Fetched` itself once it's gone from the server.
--}
-type alias MediaAnimation =
-    { media : Media
-    , flip : UI.Flip.State Msg
-    }
-
-
-init : Model
-init =
-    { targetHost = ""
-    , selectionType = Nothing
-    , status = NotFetched
-    , uploadStatus = NotUploading
-    , isDraggingOver = False
-    , deletingIds = Set.empty
-    , deleteError = Nothing
-    , zoom = 238
-    , mediaAnimations = Dict.empty
-    , selectedMedia = []
-    , selectedMediaAnimations = Dict.empty
-    , selectedMediaMoveAnimations = Dict.empty
-    , pendingUploadSelection = Nothing
-    }
-
-
-{-| Whether the panel is currently open -- drives `openClosedClass` and
-`UI.elm`'s `sharedBackdrop`, same `targetHost /= ""` convention
-`MarkdownPanel` uses via its own `target /= Nothing`.
--}
-isOpen : Model -> Bool
-isOpen model =
-    model.targetHost /= ""
-
-
 type Msg
     = Open (Maybe SelectionType) String
     | CloseClicked
@@ -326,6 +239,111 @@ type Msg
       -- item's image isn't a meaningful action here -- reordering/removing
       -- each have their own explicit button instead.
     | NoOp
+
+
+{-| What a `Just` `Model.selectionType` turns this panel into -- see module
+doc. `SingleSelect`'s `imagesOnly` restricts the grid to image media only
+(hiding videos/PDFs/etc that couldn't be tapped-to-select anyway --
+`Components.MediaRenderer.view` only ever attaches `onImageClicked` for
+images in the first place, see its own doc) -- `False` for a future chooser
+that's fine picking any media type. Its `initialSelection` (e.g.
+`Components.Pages.UserProfilePage`'s `user.avatar`) seeds `Model.selectedMedia`
+(see `Open`) purely so the grid item it matches renders pre-highlighted (see
+`mediaItemView`'s `selected`) -- `SingleSelect` never adds to/reorders that
+list the way `MultiSelect` does, tapping a grid item still just closes the
+panel outright (see `MediaItemClicked`).
+
+`MultiSelect`'s own `initialSelection` seeds the same `Model.selectedMedia` --
+e.g. a `Post`'s current `media`, so re-opening the picker to edit an
+already-published post's media starts from what's already there rather than
+empty. Tapping a grid item while this is the active `selectionType` doesn't
+close the panel like `SingleSelect` does -- it prepends to `selectedMedia`
+instead (see `MediaItemClicked`), which the top "selected media" strip (see
+`selectedMediaStripView`) renders reorderably; `SaveMediaClicked`/`CloseClicked`
+are this mode's own Save/Cancel, at the bottom of `view`.
+
+-}
+type SelectionType
+    = SingleSelect { imagesOnly : Bool, initialSelection : Maybe MediaReference }
+    | MultiSelect { initialSelection : List MediaReference }
+
+
+type FetchStatus
+    = NotFetched
+    | Fetching
+    | FetchFailed String
+    | Fetched (List Media)
+
+
+{-| What the "Add" button/drag-and-drop upload is currently doing -- separate
+from `FetchStatus` since browsing the existing grid and uploading a new item
+into it are independent (an upload failure shouldn't blank out an
+already-loaded grid, and vice versa). `File` is carried along in `Uploading`/
+`UploadFailed` purely so `view` can keep showing its name (`File.name`)
+without a separate field for it.
+-}
+type UploadStatus
+    = NotUploading
+    | Uploading File
+    | UploadFailed File String
+
+
+{-| One grid tile's enter/leave fade state, paired with the `Media` it was
+last rendered with -- mirrors `Components.Pages.UsersPage.UserAnimation` (see
+its own doc): keeping `media` here, not just relying on `status`'s own
+`Fetched` list, lets a just-deleted tile keep rendering its last-known
+preview/name for the length of its fade-out, rather than needing to somehow
+survive in `Fetched` itself once it's gone from the server.
+-}
+type alias MediaAnimation =
+    { media : Media
+    , flip : UI.Flip.State Msg
+    }
+
+
+init : Model
+init =
+    { targetHost = ""
+    , selectionType = Nothing
+    , status = NotFetched
+    , uploadStatus = NotUploading
+    , isDraggingOver = False
+    , deletingIds = Set.empty
+    , deleteError = Nothing
+    , zoom = 238
+    , mediaAnimations = Dict.empty
+    , selectedMedia = []
+    , selectedMediaAnimations = Dict.empty
+    , selectedMediaMoveAnimations = Dict.empty
+    , pendingUploadSelection = Nothing
+    }
+
+
+{-| Whether the panel is currently open -- drives `openClosedClass` and
+`UI.elm`'s `sharedBackdrop`, same `targetHost /= ""` convention
+`MarkdownPanel` uses via its own `target /= Nothing`.
+-}
+isOpen : Model -> Bool
+isOpen model =
+    model.targetHost /= ""
+
+
+{-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
+(unlike e.g. `Shared.StarredPanel.subscriptions`' own `AnimateItemFlip`
+sub, this panel's tiles only ever render while it's open, so nothing outside
+`view` could still be mid-animation once it's closed).
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if isOpen model then
+        Sub.batch
+            [ UI.Flip.subscription AnimateItemFlip
+                (List.map .flip (Dict.values model.mediaAnimations) ++ Dict.values model.selectedMediaAnimations)
+            , UI.Flip.moveSubscription AnimateSelectedMediaMove (Dict.values model.selectedMediaMoveAnimations)
+            ]
+
+    else
+        Sub.none
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
@@ -757,24 +775,6 @@ syncMediaAnimations model =
                 currentMedia
                 model.mediaAnimations
     }
-
-
-{-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
-(unlike e.g. `Shared.StarredPanel.subscriptions`' own `AnimateItemFlip`
-sub, this panel's tiles only ever render while it's open, so nothing outside
-`view` could still be mid-animation once it's closed).
--}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    if isOpen model then
-        Sub.batch
-            [ UI.Flip.subscription AnimateItemFlip
-                (List.map .flip (Dict.values model.mediaAnimations) ++ Dict.values model.selectedMediaAnimations)
-            , UI.Flip.moveSubscription AnimateSelectedMediaMove (Dict.values model.selectedMediaMoveAnimations)
-            ]
-
-    else
-        Sub.none
 
 
 {-| Shared by `GotFile`/`Drop` -- resolves `targetHost` again (same check

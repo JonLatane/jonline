@@ -66,14 +66,16 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     { posts : PostsPage.Model
     , events : EventsPage.Model
     }
+
+
+type Msg
+    = PostsMsg PostsPage.Msg
+    | EventsMsg EventsPage.Msg
+    | SharedMsg Shared.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -90,41 +92,12 @@ init shared req =
     )
 
 
-{-| Keeps `Shared.Breadcrumbs` pointed at `mainFrontendHost` -- this feed
-isn't scoped to any one server for a breadcrumb trail to identify the way a
-Post's own reply chain is. The one owner of `Shared.Breadcrumbs` for this
-page: the embedded `PostsPage`/`EventsPage` copies above both leave
-breadcrumbs alone entirely (`model.embeddedPage`, see their own
-`setBreadcrumbsRoot` docs) rather than each independently asserting a root of
-its own -- `Components.Pages.UserProfilePage` embeds the same two modules the
-same way, and used to let each of them (plus its own `setBreadcrumbsHost`)
-independently assert a root on every `update`, including every animation
-tick; whichever root won only lasted until the next tick reasserted the
-other, a continuous flicker between them. Mirrors
-`Components.Pages.UserProfilePage.setBreadcrumbsHost` exactly, reissued after
-every `update`, a no-op once already in sync via the same equality check.
--}
-setBreadcrumbsHost : Shared.Model -> Effect Msg
-setBreadcrumbsHost shared =
-    let
-        host =
-            shared.accounts.mainFrontendHost
-    in
-    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
-        Effect.none
-
-    else
-        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
-
-
-
--- UPDATE
-
-
-type Msg
-    = PostsMsg PostsPage.Msg
-    | EventsMsg EventsPage.Msg
-    | SharedMsg Shared.Msg
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Sub.map PostsMsg (PostsPage.subscriptions model.posts)
+        , Sub.map EventsMsg (EventsPage.subscriptions model.events)
+        ]
 
 
 {-| `updateInner`, plus reissuing `setBreadcrumbsHost` after every `update` --
@@ -208,25 +181,31 @@ updateInner shared msg model =
             )
 
 
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Pages.PostsPage.fromShared`/`Components.Pages.EventsPage.fromShared`,
-both of which `SharedMsg` forwards to above.
+{-| Keeps `Shared.Breadcrumbs` pointed at `mainFrontendHost` -- this feed
+isn't scoped to any one server for a breadcrumb trail to identify the way a
+Post's own reply chain is. The one owner of `Shared.Breadcrumbs` for this
+page: the embedded `PostsPage`/`EventsPage` copies above both leave
+breadcrumbs alone entirely (`model.embeddedPage`, see their own
+`setBreadcrumbsRoot` docs) rather than each independently asserting a root of
+its own -- `Components.Pages.UserProfilePage` embeds the same two modules the
+same way, and used to let each of them (plus its own `setBreadcrumbsHost`)
+independently assert a root on every `update`, including every animation
+tick; whichever root won only lasted until the next tick reasserted the
+other, a continuous flicker between them. Mirrors
+`Components.Pages.UserProfilePage.setBreadcrumbsHost` exactly, reissued after
+every `update`, a no-op once already in sync via the same equality check.
 -}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
+setBreadcrumbsHost : Shared.Model -> Effect Msg
+setBreadcrumbsHost shared =
+    let
+        host =
+            shared.accounts.mainFrontendHost
+    in
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
+        Effect.none
 
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Sub.map PostsMsg (PostsPage.subscriptions model.posts)
-        , Sub.map EventsMsg (EventsPage.subscriptions model.events)
-        ]
-
-
-
--- VIEW
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -256,3 +235,12 @@ heading context =
 
         _ ->
             "Recent Posts"
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Pages.PostsPage.fromShared`/`Components.Pages.EventsPage.fromShared`,
+both of which `SharedMsg` forwards to above.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg

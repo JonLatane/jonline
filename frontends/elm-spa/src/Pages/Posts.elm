@@ -34,12 +34,12 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     PostsPage.Model
+
+
+type alias Msg =
+    PostsPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -51,14 +51,6 @@ init shared req =
     ( model, Effect.batch [ effect ] )
 
 
-
--- UPDATE
-
-
-type alias Msg =
-    PostsPage.Msg
-
-
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     let
@@ -66,18 +58,6 @@ update shared msg model =
             PostsPage.update shared msg model
     in
     ( newModel, Effect.batch [ effect ] )
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Pages.PostsPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    PostsPage.fromShared
-
-
-
--- VIEW
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -90,3 +70,11 @@ view shared req model =
             [ PostsPage.view shared True True model
             ]
     }
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Pages.PostsPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    PostsPage.fromShared

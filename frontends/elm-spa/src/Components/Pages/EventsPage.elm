@@ -74,58 +74,6 @@ import Url.Builder
 -- MODEL
 
 
-{-| The three interchangeable layouts `eventsListView` can render its cards
-in -- `VerticalList` (the default, a single full-width column, mirroring
-`PostsPage.postsListView`'s `.flip-animated-column`), `Grid` (a wrapping
-fixed-tile-width grid, reusing `flip.css`'s existing `.flip-animated-grid`,
-built for `Shared.MyMediaPanel`'s media tiles), and `HorizontalList` (a
-single horizontally-scrolling row of that same fixed tile width, mirroring
-`Pages.Event.EventId_`'s own date-picker strip). `Grid`/`HorizontalList`
-share one card size, but `VerticalList`'s is genuinely different (full-width
-vs. a fixed tile), so switching to/from it is a position-_and_-resize FLIP,
-not just a reflow -- see `DisplayModeChanged`.
--}
-type EventsDisplayMode
-    = HorizontalList
-    | VerticalList
-    | Grid
-
-
-type ServerEvents
-    = Loading
-    | Loaded (List ( Event, EventInstance ))
-    | Failed
-
-
-{-| `accountId` is the enabled account (if any) the events were/are being
-fetched with, so a later account enable/disable on the same server can be
-detected as "the acting credential changed" and trigger a re-fetch -- mirrors
-`Components.Pages.PostsPage.ServerFeed` exactly.
--}
-type alias ServerFeed =
-    { status : ServerEvents
-    , accountId : Maybe String
-    }
-
-
-{-| One card's fade in/out state (`flip`, keyed in `eventAnimations` by
-`eventAnimationKey` so it survives independently of `eventsByServer` -- see
-`Components.Pages.PostsPage.PostAnimation` for why) plus its move-slide state
-(`move`) for `DisplayModeChanged`'s layout-switch animation -- kept as a
-_separate_ `UI.Flip.MoveState` (rather than folded into `flip`) so the two
-never fight over the same node's `transform` style: `flip`'s opacity/scale
-renders on this card's outer wrapper (see `eventAnimationView`), `move`'s
-translate renders on a nested inner one.
--}
-type alias EventAnimation =
-    { host : String
-    , event : Event
-    , instance : EventInstance
-    , flip : UI.Flip.State Msg
-    , move : UI.Flip.MoveState Msg
-    }
-
-
 type alias Model =
     { eventsByServer : Dict String ServerFeed
     , eventAnimations : Dict String EventAnimation
@@ -200,6 +148,141 @@ type alias Model =
     -- actually started (see `anyStartedEvents`/`view`) -- nothing to filter,
     -- nothing to show a toggle for.
     , hideStartedUpcomingEvents : Bool
+    }
+
+
+type Msg
+    = GotServerEvents String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
+    | GotNow Time.Posix
+    | Poll
+    | Animate Animation.Msg
+    | AnimateMove Animation.Msg
+    | RemoveEvent String
+    | MoveSettled String
+    | SharedMsg Shared.Msg
+      -- Switches `model.mode` -- see this branch's own handling below for
+      -- the FLIP "measure old positions, switch, measure new positions,
+      -- animate the difference away" recipe.
+    | DisplayModeChanged EventsDisplayMode
+      -- `Ports.elementsMeasured` firing -- which half of the FLIP round-trip
+      -- this is (if any) is read off `model.measurementPhase`, not this
+      -- `Msg`'s own (untargeted, port-delivered) payload. A payload that
+      -- fails to decode is treated the same as `measurementPhase` already
+      -- being `NotMeasuring` -- give up silently, same fallback
+      -- `EventId_.scrollToInstance` already relies on for its own
+      -- `Dom`-adjacent calls.
+    | GotMeasuredRects Decode.Value
+      -- One deliberate `requestAnimationFrame` wait (via a throwaway
+      -- `Browser.Dom.getViewport` task -- see this branch's own handling
+      -- below for why) between the mode switch actually landing in the
+      -- model and firing the *second* `measureElementsEffect` -- Elm's own
+      -- `Browser.application` runtime (`_Browser_makeAnimator` in the
+      -- compiled output) defers painting a model change to the *next* rAF
+      -- rather than doing it synchronously when `update` returns, so
+      -- measuring immediately (as a first cut of this port-based rewrite
+      -- did) could race ahead of the DOM actually having the new mode's
+      -- classes applied yet -- silently measuring the *old* layout twice
+      -- and animating a zero delta, which read as "no animation at all"
+      -- (confirmed live: barely any `AnimateMove` ticks, `MoveSettled`
+      -- firing almost immediately). This costs exactly one frame,
+      -- regardless of how many cards there are -- nothing like the
+      -- original N-frames-per-element `Browser.Dom.getElement` bug this
+      -- whole port replaced.
+    | ReadyToMeasureNew
+      -- Switches `model.tab` -- a no-op if already active. Mirrors
+      -- `DisplayModeChanged` in spirit but needs none of its FLIP
+      -- machinery: there's no shared layout to slide between, just a
+      -- different fetch cutoff, so this just updates `model.tab`/refetches/
+      -- persists the URL directly. See `tabsView`.
+    | TabChanged EventsTab
+      -- The `EventsAfterDate` tab's `<input type="datetime-local">` firing
+      -- -- parsed via `Shared.Time.posixFromDateTimeLocalInput`;
+      -- an unparseable (e.g. momentarily incomplete while typing) value is
+      -- just ignored, same "give up silently" convention as everywhere
+      -- else in this module. A valid one switches to that tab too (even if
+      -- `UpcomingEvents` was active), per `tabsView`'s own doc. Updates
+      -- `model.endsAfter` (so the input/tab reflect it immediately) but
+      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`.
+    | EndsAfterInputChanged String
+      -- `EndsAfterInputChanged`'s debounce timer elapsing -- mirrors
+      -- `PostsPage.SearchDebounceElapsed` exactly: a no-op if a later edit
+      -- already bumped `model.endsAfterInputGeneration` past this timer's
+      -- own (i.e. this one's stale).
+    | EndsAfterDebounceElapsed Int
+      -- The search box firing (see `searchRowView`) -- mirrors
+      -- `PostsPage.SearchTextChanged`/`SearchDebounceElapsed`/
+      -- `ClearSearchClicked` exactly, just against `Events.fetchEvents`'
+      -- `searchText` instead of `Posts.fetchPosts`'.
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ClearSearchClicked
+      -- The "hide started events" filter button (see `hideStartedButtonView`)
+      -- toggling `model.hideStartedUpcomingEvents` -- purely a local
+      -- filter over already-fetched data (see `hiddenAsStarted`/
+      -- `syncAnimations`), so there's nothing to fetch here.
+    | HideStartedEventsToggled
+      -- Opens/closes the "Export" button's ICS-subscription-link popover
+      -- (see `exportButtonView`).
+    | ExportClicked
+    | ExportPopoverClosed
+      -- Copies `icsUrl`'s link to the clipboard via `Ports.copyToClipboard`
+      -- and shows "Link Copied!" (`model.copyLinkCopied`) for 5s.
+    | CopyLinkClicked
+      -- That 5s elapsing -- mirrors `EndsAfterDebounceElapsed`'s own stale-
+      -- generation guard: a no-op if a later `CopyLinkClicked` already bumped
+      -- `copyLinkGeneration` past this timer's own.
+    | CopyLinkCopyTimeoutElapsed Int
+
+
+{-| The three interchangeable layouts `eventsListView` can render its cards
+in -- `VerticalList` (the default, a single full-width column, mirroring
+`PostsPage.postsListView`'s `.flip-animated-column`), `Grid` (a wrapping
+fixed-tile-width grid, reusing `flip.css`'s existing `.flip-animated-grid`,
+built for `Shared.MyMediaPanel`'s media tiles), and `HorizontalList` (a
+single horizontally-scrolling row of that same fixed tile width, mirroring
+`Pages.Event.EventId_`'s own date-picker strip). `Grid`/`HorizontalList`
+share one card size, but `VerticalList`'s is genuinely different (full-width
+vs. a fixed tile), so switching to/from it is a position-_and_-resize FLIP,
+not just a reflow -- see `DisplayModeChanged`.
+-}
+type EventsDisplayMode
+    = HorizontalList
+    | VerticalList
+    | Grid
+
+
+type ServerEvents
+    = Loading
+    | Loaded (List ( Event, EventInstance ))
+    | Failed
+
+
+{-| `accountId` is the enabled account (if any) the events were/are being
+fetched with, so a later account enable/disable on the same server can be
+detected as "the acting credential changed" and trigger a re-fetch -- mirrors
+`Components.Pages.PostsPage.ServerFeed` exactly.
+-}
+type alias ServerFeed =
+    { status : ServerEvents
+    , accountId : Maybe String
+    }
+
+
+{-| One card's fade in/out state (`flip`, keyed in `eventAnimations` by
+`eventAnimationKey` so it survives independently of `eventsByServer` -- see
+`Components.Pages.PostsPage.PostAnimation` for why) plus its move-slide state
+(`move`) for `DisplayModeChanged`'s layout-switch animation -- kept as a
+_separate_ `UI.Flip.MoveState` (rather than folded into `flip`) so the two
+never fight over the same node's `transform` style: `flip`'s opacity/scale
+renders on this card's outer wrapper (see `eventAnimationView`), `move`'s
+translate renders on a nested inner one.
+-}
+type alias EventAnimation =
+    { host : String
+    , event : Event
+    , instance : EventInstance
+    , flip : UI.Flip.State Msg
+    , move : UI.Flip.MoveState Msg
     }
 
 
@@ -301,6 +384,506 @@ init shared author navKey path query embeddedPage =
         , Task.perform GotNow Time.now |> Effect.fromCmd
         ]
     )
+
+
+{-| Unlike `Components.Pages.PostsPage.subscriptions`/`Components.Pages.UsersPage.subscriptions`
+(whose 30s `Poll` is just a distrustful account-change fallback, see
+`PostsPage.fetchNewServers`'s own doc -- normally a no-op), this page's `Poll`
+does real work every time on the default `UpcomingEvents` tab: it's what
+advances `model.endsAfter` to the live "now" (via `GotNow`) so the listing
+keeps dropping events as they pass, which also re-fetches every relevant
+server (see `GotNow`/`refetchServers`). 60s (rather than 30s) is deliberately
+slower here since that's a real, visible, unavoidable-per-tick network
+round-trip rather than a cheap local check -- see `refetchServers`'s own doc
+for how the same-account `status`-preserving departure it already has keeps
+even this from flickering the list.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Time.every 60000 (\_ -> Poll)
+        , Ports.elementsMeasured GotMeasuredRects
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations))
+        , UI.Flip.moveSubscription AnimateMove (List.map .move (Dict.values model.eventAnimations))
+        ]
+
+
+
+-- UPDATE
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch --
+mirrors `Components.Pages.PostsPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
+
+
+{-| Lets a sibling page (`Pages.Home_`, keeping this module's search box in sync with its embedded
+`PostsPage`'s own `model.searchText` behind the scenes) feed a search-text change in from outside
+exactly as if the user had typed it into this module's own search box -- same
+`SearchTextChanged`/`SearchDebounceElapsed` round-trip, same independent debounce timer -- mirrors
+`Components.Pages.PostsPage.searchTextChanged` exactly.
+-}
+searchTextChanged : String -> Msg
+searchTextChanged =
+    SearchTextChanged
+
+
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
+
+
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
+    case msg of
+        GotServerEvents frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
+            ( { model
+                | eventsByServer =
+                    Dict.update frontendHost
+                        (Maybe.map (\feed -> { feed | status = Loaded (Events.eventInstancePairs response) }))
+                        model.eventsByServer
+              }
+                |> syncAnimations
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotServerEvents frontendHost (Err _) ->
+            ( { model
+                | eventsByServer =
+                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.eventsByServer
+              }
+                |> syncAnimations
+            , Effect.none
+            )
+
+        GotNow now ->
+            -- Only `UpcomingEvents` ever wants the live clock -- a stale
+            -- `Task.perform GotNow Time.now` still in flight from before the
+            -- user switched to `EventsAfterDate` (or a fixed `?ends_after=`
+            -- on load) must not clobber their fixed cutoff.
+            if model.tab == UpcomingEvents then
+                refetchServers shared { model | endsAfter = Just now } (relevantServers shared model)
+
+            else
+                ( model, Effect.none )
+
+        Poll ->
+            if model.tab == UpcomingEvents then
+                -- Refreshes the live cutoff first (via `GotNow`, which
+                -- itself refetches) rather than just re-fetching with
+                -- whatever `endsAfter` was captured last -- otherwise
+                -- "upcoming" would silently stop advancing after the
+                -- initial load.
+                ( model, Task.perform GotNow Time.now |> Effect.fromCmd )
+
+            else
+                fetchNewServers shared model
+
+        Animate animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.eventAnimations
+            in
+            ( { model | eventAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        AnimateMove animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newMove, cmd ) =
+                            UI.Flip.moveAnimate animMsg anim.move
+                    in
+                    ( Dict.insert key { anim | move = newMove } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.eventAnimations
+            in
+            ( { model | eventAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        RemoveEvent key ->
+            ( { model | eventAnimations = Dict.remove key model.eventAnimations }, Effect.none )
+
+        MoveSettled key ->
+            let
+                newModel =
+                    { model
+                        | eventAnimations =
+                            Dict.update key (Maybe.map (\anim -> { anim | move = { moving = False, style = anim.move.style } })) model.eventAnimations
+                    }
+            in
+            ( newModel, pushUrlWhenIdle newModel )
+
+        SharedMsg subMsg ->
+            let
+                ( fetchedModel, fetchEffect ) =
+                    case subMsg of
+                        Shared.AccountsPanelMsg _ ->
+                            fetchNewServers shared model
+
+                        _ ->
+                            ( model, Effect.none )
+            in
+            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+        DisplayModeChanged newMode ->
+            if newMode == model.mode then
+                ( model, Effect.none )
+
+            else
+                ( { model | measurementPhase = AwaitingOldRects newMode }
+                , measureElementsEffect (List.map Tuple.first (visibleAnimations model))
+                )
+
+        GotMeasuredRects value ->
+            case Decode.decodeValue rectsDecoder value of
+                Err _ ->
+                    applyMeasurementFailure model
+
+                Ok rects ->
+                    case model.measurementPhase of
+                        NotMeasuring ->
+                            -- A stray/late result with nothing pending -- ignore.
+                            ( model, Effect.none )
+
+                        AwaitingOldRects newMode ->
+                            let
+                                newModel =
+                                    { model | mode = newMode, measurementPhase = AwaitingNewRects newMode rects }
+                            in
+                            ( newModel, Task.attempt (\_ -> ReadyToMeasureNew) Dom.getViewport |> Effect.fromCmd )
+
+                        AwaitingNewRects _ oldRects ->
+                            let
+                                startMoveFor key oldRect animations =
+                                    case ( Dict.get key rects, Dict.get key animations ) of
+                                        ( Just newRect, Just anim ) ->
+                                            let
+                                                delta =
+                                                    ( oldRect.x - newRect.x, oldRect.y - newRect.y )
+
+                                                scale =
+                                                    ( oldRect.width / newRect.width, oldRect.height / newRect.height )
+                                            in
+                                            Dict.insert key { anim | move = UI.Flip.startMoveScaled (MoveSettled key) delta scale anim.move } animations
+
+                                        _ ->
+                                            animations
+
+                                newModel =
+                                    { model
+                                        | eventAnimations = Dict.foldl startMoveFor model.eventAnimations oldRects
+                                        , measurementPhase = NotMeasuring
+                                    }
+                            in
+                            ( newModel, pushUrlWhenIdle newModel )
+
+        ReadyToMeasureNew ->
+            case model.measurementPhase of
+                AwaitingNewRects _ oldRects ->
+                    ( model, measureElementsEffect (Dict.keys oldRects) )
+
+                _ ->
+                    -- Nothing pending anymore (e.g. superseded by another
+                    -- `DisplayModeChanged` in the meantime) -- nothing to do.
+                    ( model, Effect.none )
+
+        TabChanged UpcomingEvents ->
+            if model.tab == UpcomingEvents then
+                ( model, Effect.none )
+
+            else
+                let
+                    newModel =
+                        { model | tab = UpcomingEvents }
+                in
+                ( newModel
+                , Effect.batch
+                    [ Task.perform GotNow Time.now |> Effect.fromCmd
+                    , pushUrl newModel
+                    ]
+                )
+
+        TabChanged EventsAfterDate ->
+            if model.tab == EventsAfterDate then
+                ( model, Effect.none )
+
+            else
+                -- `endsAfter` itself isn't changing (this just starts the
+                -- picker off wherever `UpcomingEvents`' live clock last left
+                -- it) so there's nothing to refetch, just the tab/URL.
+                let
+                    newModel =
+                        { model | tab = EventsAfterDate }
+                in
+                ( newModel, pushUrl newModel )
+
+        EndsAfterInputChanged raw ->
+            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
+                Nothing ->
+                    ( model, Effect.none )
+
+                Just newEndsAfter ->
+                    let
+                        generation =
+                            model.endsAfterInputGeneration + 1
+                    in
+                    ( { model | tab = EventsAfterDate, endsAfter = Just newEndsAfter, endsAfterInputGeneration = generation }
+                    , Process.sleep 500
+                        |> Task.perform (\_ -> EndsAfterDebounceElapsed generation)
+                        |> Effect.fromCmd
+                    )
+
+        EndsAfterDebounceElapsed generation ->
+            if generation == model.endsAfterInputGeneration then
+                let
+                    ( refetchedModel, refetchEffect ) =
+                        refetchServers shared model (relevantServers shared model)
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+            else
+                -- A later edit already bumped `endsAfterInputGeneration`
+                -- past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 311
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked) already bumped
+                -- searchGeneration past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
+        HideStartedEventsToggled ->
+            ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
+
+        ExportClicked ->
+            ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
+
+        ExportPopoverClosed ->
+            ( { model | exportPopoverOpen = False }, Effect.none )
+
+        CopyLinkClicked ->
+            let
+                generation =
+                    model.copyLinkGeneration + 1
+            in
+            ( { model | copyLinkCopied = True, copyLinkGeneration = generation }
+            , Effect.batch
+                [ Ports.copyToClipboard (icsUrl shared model) |> Effect.fromCmd
+                , Process.sleep 5000
+                    |> Task.perform (\_ -> CopyLinkCopyTimeoutElapsed generation)
+                    |> Effect.fromCmd
+                ]
+            )
+
+        CopyLinkCopyTimeoutElapsed generation ->
+            if generation == model.copyLinkGeneration then
+                ( { model | copyLinkCopied = False }, Effect.none )
+
+            else
+                ( model, Effect.none )
+
+
+{-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
+never actually happen -- `Ports.measureElements`'s JS side always sends a
+well-formed array -- but mirrors `EventId_.GotScrollTarget (Err _)`'s "give
+up silently" convention regardless): still applies a pending mode switch if
+`model.measurementPhase` had one in flight, just with no slide animation,
+rather than leaving the click seemingly do nothing.
+-}
+applyMeasurementFailure : Model -> ( Model, Effect Msg )
+applyMeasurementFailure model =
+    case model.measurementPhase of
+        NotMeasuring ->
+            ( model, Effect.none )
+
+        AwaitingOldRects newMode ->
+            let
+                newModel =
+                    { model | mode = newMode, measurementPhase = NotMeasuring }
+            in
+            ( newModel, pushUrlWhenIdle newModel )
+
+        AwaitingNewRects _ _ ->
+            let
+                newModel =
+                    { model | measurementPhase = NotMeasuring }
+            in
+            ( newModel, pushUrlWhenIdle newModel )
+
+
+
+-- URL PERSISTENCE
+
+
+{-| `grid`/`row`, sent/read as a `?display=` URL query param --
+`VerticalList` (the default) round-trips to/from its absence entirely,
+mirroring `PostsPage.postContextParam`'s own default-omission convention.
+-}
+displayModeParam : EventsDisplayMode -> String
+displayModeParam mode =
+    case mode of
+        Grid ->
+            "grid"
+
+        HorizontalList ->
+            "row"
+
+        VerticalList ->
+            "list"
+
+
+{-| Case-insensitive inverse of `displayModeParam` -- mirrors
+`PostsPage.postContextFromParam`.
+-}
+displayModeFromParam : String -> Maybe EventsDisplayMode
+displayModeFromParam param =
+    case String.toLower param of
+        "grid" ->
+            Just Grid
+
+        "row" ->
+            Just HorizontalList
+
+        "list" ->
+            Just VerticalList
+
+        _ ->
+            Nothing
+
+
+{-| The `EventsDisplayMode` an `embeddedPage` copy of this model defaults to
+absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
+embedded copy (`embeddedPage = True`), `VerticalList` everywhere else. Shared
+by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
+round-trips to/from absence entirely) so the two never drift apart.
+-}
+defaultMode : Bool -> EventsDisplayMode
+defaultMode embeddedPage =
+    if embeddedPage then
+        HorizontalList
+
+    else
+        VerticalList
+
+
+{-| Every query param this page persists, read fresh off `model` -- `display`
+(see `displayModeParam`; omitted while `model.mode` is whichever
+`EventsDisplayMode` `model.embeddedPage` makes _this_ copy's own default --
+`HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
+everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
+(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
+`ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
+`Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
+active tab; `UpcomingEvents` -- the default -- omits it entirely, same
+"round-trip to/from absence" convention `display` already uses for its own
+default). Built as one combined list (rather than each concern pushing its
+own `replaceUrl` independently) because
+`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
+query string -- independent single-param pushes would each silently wipe
+out whatever the others had just set.
+-}
+queryParams : Model -> List Url.Builder.QueryParameter
+queryParams model =
+    (if model.mode == defaultMode model.embeddedPage then
+        []
+
+     else
+        [ Url.Builder.string "display" (displayModeParam model.mode) ]
+    )
+        ++ (if String.isEmpty (String.trim model.searchText) then
+                []
+
+            else
+                [ Url.Builder.string "search_text" model.searchText ]
+           )
+        ++ (case ( model.tab, model.endsAfter ) of
+                ( EventsAfterDate, Just endsAfter ) ->
+                    [ Url.Builder.string "ends_after" (Conversions.isoUtcString endsAfter) ]
+
+                _ ->
+                    []
+           )
+
+
+{-| `pushUrl`, but only once every card has actually finished its
+`DisplayModeChanged` slide (`Effect.none` otherwise) -- deliberately _not_
+fired the instant `model.mode` itself changes (`GotPreModeMeasurements`'s
+`Ok` branch used to call this directly there), because that `replaceUrl`
+call triggers `Main.elm`'s own `ChangedUrl`, which -- even though it doesn't
+re-init this page for a query-only change -- still forces a full top-level
+`view`/diff/patch pass. Landing that extra render in the one genuinely
+vulnerable window this FLIP recipe has (after `model.mode` flips but before
+`GotPostModeMeasurements` has actually applied each card's invert transform,
+during which every card is still sitting at its plain, un-inverted resting
+position) gave the browser an extra chance to actually paint that
+in-between frame -- visible as the whole layout "glitching" to its final
+position before the slide-back-into-place ever played. Deferring the URL
+write until nothing is `moving` removes that extra render from the window
+entirely, rather than just narrowing it. Every branch that can leave
+`model.mode` changed with nothing left to animate (a failed measurement, or
+a mode switch with no cards to move at all) calls this too, so the URL
+still ends up correct even when there's no slide to wait on.
+
+Tab/`endsAfter` changes have no such animation to race, so `TabChanged`/
+`EndsAfterInputChanged` call `pushUrl` directly instead.
+
+-}
+pushUrlWhenIdle : Model -> Effect Msg
+pushUrlWhenIdle model =
+    if List.any (\anim -> anim.move.moving) (Dict.values model.eventAnimations) then
+        Effect.none
+
+    else
+        pushUrl model
+
+
+{-| Persists `queryParams model` to the URL via `replaceUrl` (not `pushUrl`
+the navigation function -- switching layouts/tabs/dates shouldn't spam
+browser history) -- mirrors `PostsPage.pushSearchUrl`.
+-}
+pushUrl : Model -> Effect Msg
+pushUrl model =
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (queryParams model))
+        |> Effect.fromCmd
 
 
 {-| Mirrors `Components.Pages.PostsPage.relevantServers` exactly: every
@@ -704,589 +1287,6 @@ measureElementsEffect keys =
                     ]
             )
         |> Ports.measureElements
-        |> Effect.fromCmd
-
-
-
--- UPDATE
-
-
-type Msg
-    = GotServerEvents String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
-    | GotNow Time.Posix
-    | Poll
-    | Animate Animation.Msg
-    | AnimateMove Animation.Msg
-    | RemoveEvent String
-    | MoveSettled String
-    | SharedMsg Shared.Msg
-      -- Switches `model.mode` -- see this branch's own handling below for
-      -- the FLIP "measure old positions, switch, measure new positions,
-      -- animate the difference away" recipe.
-    | DisplayModeChanged EventsDisplayMode
-      -- `Ports.elementsMeasured` firing -- which half of the FLIP round-trip
-      -- this is (if any) is read off `model.measurementPhase`, not this
-      -- `Msg`'s own (untargeted, port-delivered) payload. A payload that
-      -- fails to decode is treated the same as `measurementPhase` already
-      -- being `NotMeasuring` -- give up silently, same fallback
-      -- `EventId_.scrollToInstance` already relies on for its own
-      -- `Dom`-adjacent calls.
-    | GotMeasuredRects Decode.Value
-      -- One deliberate `requestAnimationFrame` wait (via a throwaway
-      -- `Browser.Dom.getViewport` task -- see this branch's own handling
-      -- below for why) between the mode switch actually landing in the
-      -- model and firing the *second* `measureElementsEffect` -- Elm's own
-      -- `Browser.application` runtime (`_Browser_makeAnimator` in the
-      -- compiled output) defers painting a model change to the *next* rAF
-      -- rather than doing it synchronously when `update` returns, so
-      -- measuring immediately (as a first cut of this port-based rewrite
-      -- did) could race ahead of the DOM actually having the new mode's
-      -- classes applied yet -- silently measuring the *old* layout twice
-      -- and animating a zero delta, which read as "no animation at all"
-      -- (confirmed live: barely any `AnimateMove` ticks, `MoveSettled`
-      -- firing almost immediately). This costs exactly one frame,
-      -- regardless of how many cards there are -- nothing like the
-      -- original N-frames-per-element `Browser.Dom.getElement` bug this
-      -- whole port replaced.
-    | ReadyToMeasureNew
-      -- Switches `model.tab` -- a no-op if already active. Mirrors
-      -- `DisplayModeChanged` in spirit but needs none of its FLIP
-      -- machinery: there's no shared layout to slide between, just a
-      -- different fetch cutoff, so this just updates `model.tab`/refetches/
-      -- persists the URL directly. See `tabsView`.
-    | TabChanged EventsTab
-      -- The `EventsAfterDate` tab's `<input type="datetime-local">` firing
-      -- -- parsed via `Shared.Time.posixFromDateTimeLocalInput`;
-      -- an unparseable (e.g. momentarily incomplete while typing) value is
-      -- just ignored, same "give up silently" convention as everywhere
-      -- else in this module. A valid one switches to that tab too (even if
-      -- `UpcomingEvents` was active), per `tabsView`'s own doc. Updates
-      -- `model.endsAfter` (so the input/tab reflect it immediately) but
-      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`.
-    | EndsAfterInputChanged String
-      -- `EndsAfterInputChanged`'s debounce timer elapsing -- mirrors
-      -- `PostsPage.SearchDebounceElapsed` exactly: a no-op if a later edit
-      -- already bumped `model.endsAfterInputGeneration` past this timer's
-      -- own (i.e. this one's stale).
-    | EndsAfterDebounceElapsed Int
-      -- The search box firing (see `searchRowView`) -- mirrors
-      -- `PostsPage.SearchTextChanged`/`SearchDebounceElapsed`/
-      -- `ClearSearchClicked` exactly, just against `Events.fetchEvents`'
-      -- `searchText` instead of `Posts.fetchPosts`'.
-    | SearchTextChanged String
-    | SearchDebounceElapsed Int
-    | ClearSearchClicked
-      -- The "hide started events" filter button (see `hideStartedButtonView`)
-      -- toggling `model.hideStartedUpcomingEvents` -- purely a local
-      -- filter over already-fetched data (see `hiddenAsStarted`/
-      -- `syncAnimations`), so there's nothing to fetch here.
-    | HideStartedEventsToggled
-      -- Opens/closes the "Export" button's ICS-subscription-link popover
-      -- (see `exportButtonView`).
-    | ExportClicked
-    | ExportPopoverClosed
-      -- Copies `icsUrl`'s link to the clipboard via `Ports.copyToClipboard`
-      -- and shows "Link Copied!" (`model.copyLinkCopied`) for 5s.
-    | CopyLinkClicked
-      -- That 5s elapsing -- mirrors `EndsAfterDebounceElapsed`'s own stale-
-      -- generation guard: a no-op if a later `CopyLinkClicked` already bumped
-      -- `copyLinkGeneration` past this timer's own.
-    | CopyLinkCopyTimeoutElapsed Int
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch --
-mirrors `Components.Pages.PostsPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
-
-
-{-| Lets a sibling page (`Pages.Home_`, keeping this module's search box in sync with its embedded
-`PostsPage`'s own `model.searchText` behind the scenes) feed a search-text change in from outside
-exactly as if the user had typed it into this module's own search box -- same
-`SearchTextChanged`/`SearchDebounceElapsed` round-trip, same independent debounce timer -- mirrors
-`Components.Pages.PostsPage.searchTextChanged` exactly.
--}
-searchTextChanged : String -> Msg
-searchTextChanged =
-    SearchTextChanged
-
-
-accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
-accountsPanelEffect maybeAccountsPanelMsg =
-    maybeAccountsPanelMsg
-        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-        |> Maybe.withDefault Effect.none
-
-
-update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
-
-
-updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-updateInner shared msg model =
-    case msg of
-        GotServerEvents frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
-            ( { model
-                | eventsByServer =
-                    Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded (Events.eventInstancePairs response) }))
-                        model.eventsByServer
-              }
-                |> syncAnimations
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
-
-        GotServerEvents frontendHost (Err _) ->
-            ( { model
-                | eventsByServer =
-                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.eventsByServer
-              }
-                |> syncAnimations
-            , Effect.none
-            )
-
-        GotNow now ->
-            -- Only `UpcomingEvents` ever wants the live clock -- a stale
-            -- `Task.perform GotNow Time.now` still in flight from before the
-            -- user switched to `EventsAfterDate` (or a fixed `?ends_after=`
-            -- on load) must not clobber their fixed cutoff.
-            if model.tab == UpcomingEvents then
-                refetchServers shared { model | endsAfter = Just now } (relevantServers shared model)
-
-            else
-                ( model, Effect.none )
-
-        Poll ->
-            if model.tab == UpcomingEvents then
-                -- Refreshes the live cutoff first (via `GotNow`, which
-                -- itself refetches) rather than just re-fetching with
-                -- whatever `endsAfter` was captured last -- otherwise
-                -- "upcoming" would silently stop advancing after the
-                -- initial load.
-                ( model, Task.perform GotNow Time.now |> Effect.fromCmd )
-
-            else
-                fetchNewServers shared model
-
-        Animate animMsg ->
-            let
-                step key anim ( animations, accCmds ) =
-                    let
-                        ( newFlip, cmd ) =
-                            UI.Flip.animate animMsg anim.flip
-                    in
-                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
-
-                ( newAnimations, cmds ) =
-                    Dict.foldl step ( Dict.empty, [] ) model.eventAnimations
-            in
-            ( { model | eventAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
-
-        AnimateMove animMsg ->
-            let
-                step key anim ( animations, accCmds ) =
-                    let
-                        ( newMove, cmd ) =
-                            UI.Flip.moveAnimate animMsg anim.move
-                    in
-                    ( Dict.insert key { anim | move = newMove } animations, cmd :: accCmds )
-
-                ( newAnimations, cmds ) =
-                    Dict.foldl step ( Dict.empty, [] ) model.eventAnimations
-            in
-            ( { model | eventAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
-
-        RemoveEvent key ->
-            ( { model | eventAnimations = Dict.remove key model.eventAnimations }, Effect.none )
-
-        MoveSettled key ->
-            let
-                newModel =
-                    { model
-                        | eventAnimations =
-                            Dict.update key (Maybe.map (\anim -> { anim | move = { moving = False, style = anim.move.style } })) model.eventAnimations
-                    }
-            in
-            ( newModel, pushUrlWhenIdle newModel )
-
-        SharedMsg subMsg ->
-            let
-                ( fetchedModel, fetchEffect ) =
-                    case subMsg of
-                        Shared.AccountsPanelMsg _ ->
-                            fetchNewServers shared model
-
-                        _ ->
-                            ( model, Effect.none )
-            in
-            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
-
-        DisplayModeChanged newMode ->
-            if newMode == model.mode then
-                ( model, Effect.none )
-
-            else
-                ( { model | measurementPhase = AwaitingOldRects newMode }
-                , measureElementsEffect (List.map Tuple.first (visibleAnimations model))
-                )
-
-        GotMeasuredRects value ->
-            case Decode.decodeValue rectsDecoder value of
-                Err _ ->
-                    applyMeasurementFailure model
-
-                Ok rects ->
-                    case model.measurementPhase of
-                        NotMeasuring ->
-                            -- A stray/late result with nothing pending -- ignore.
-                            ( model, Effect.none )
-
-                        AwaitingOldRects newMode ->
-                            let
-                                newModel =
-                                    { model | mode = newMode, measurementPhase = AwaitingNewRects newMode rects }
-                            in
-                            ( newModel, Task.attempt (\_ -> ReadyToMeasureNew) Dom.getViewport |> Effect.fromCmd )
-
-                        AwaitingNewRects _ oldRects ->
-                            let
-                                startMoveFor key oldRect animations =
-                                    case ( Dict.get key rects, Dict.get key animations ) of
-                                        ( Just newRect, Just anim ) ->
-                                            let
-                                                delta =
-                                                    ( oldRect.x - newRect.x, oldRect.y - newRect.y )
-
-                                                scale =
-                                                    ( oldRect.width / newRect.width, oldRect.height / newRect.height )
-                                            in
-                                            Dict.insert key { anim | move = UI.Flip.startMoveScaled (MoveSettled key) delta scale anim.move } animations
-
-                                        _ ->
-                                            animations
-
-                                newModel =
-                                    { model
-                                        | eventAnimations = Dict.foldl startMoveFor model.eventAnimations oldRects
-                                        , measurementPhase = NotMeasuring
-                                    }
-                            in
-                            ( newModel, pushUrlWhenIdle newModel )
-
-        ReadyToMeasureNew ->
-            case model.measurementPhase of
-                AwaitingNewRects _ oldRects ->
-                    ( model, measureElementsEffect (Dict.keys oldRects) )
-
-                _ ->
-                    -- Nothing pending anymore (e.g. superseded by another
-                    -- `DisplayModeChanged` in the meantime) -- nothing to do.
-                    ( model, Effect.none )
-
-        TabChanged UpcomingEvents ->
-            if model.tab == UpcomingEvents then
-                ( model, Effect.none )
-
-            else
-                let
-                    newModel =
-                        { model | tab = UpcomingEvents }
-                in
-                ( newModel
-                , Effect.batch
-                    [ Task.perform GotNow Time.now |> Effect.fromCmd
-                    , pushUrl newModel
-                    ]
-                )
-
-        TabChanged EventsAfterDate ->
-            if model.tab == EventsAfterDate then
-                ( model, Effect.none )
-
-            else
-                -- `endsAfter` itself isn't changing (this just starts the
-                -- picker off wherever `UpcomingEvents`' live clock last left
-                -- it) so there's nothing to refetch, just the tab/URL.
-                let
-                    newModel =
-                        { model | tab = EventsAfterDate }
-                in
-                ( newModel, pushUrl newModel )
-
-        EndsAfterInputChanged raw ->
-            case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
-                Nothing ->
-                    ( model, Effect.none )
-
-                Just newEndsAfter ->
-                    let
-                        generation =
-                            model.endsAfterInputGeneration + 1
-                    in
-                    ( { model | tab = EventsAfterDate, endsAfter = Just newEndsAfter, endsAfterInputGeneration = generation }
-                    , Process.sleep 500
-                        |> Task.perform (\_ -> EndsAfterDebounceElapsed generation)
-                        |> Effect.fromCmd
-                    )
-
-        EndsAfterDebounceElapsed generation ->
-            if generation == model.endsAfterInputGeneration then
-                let
-                    ( refetchedModel, refetchEffect ) =
-                        refetchServers shared model (relevantServers shared model)
-                in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
-
-            else
-                -- A later edit already bumped `endsAfterInputGeneration`
-                -- past this timer's -- it's stale, ignore it.
-                ( model, Effect.none )
-
-        SearchTextChanged text ->
-            let
-                generation =
-                    model.searchGeneration + 1
-            in
-            ( { model | searchText = text, searchGeneration = generation }
-            , Process.sleep 311
-                |> Task.perform (\_ -> SearchDebounceElapsed generation)
-                |> Effect.fromCmd
-            )
-
-        SearchDebounceElapsed generation ->
-            if generation == model.searchGeneration then
-                applySearchChange shared model
-
-            else
-                -- A later edit (or ClearSearchClicked) already bumped
-                -- searchGeneration past this timer's -- it's stale, ignore it.
-                ( model, Effect.none )
-
-        ClearSearchClicked ->
-            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
-
-        HideStartedEventsToggled ->
-            ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
-
-        ExportClicked ->
-            ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
-
-        ExportPopoverClosed ->
-            ( { model | exportPopoverOpen = False }, Effect.none )
-
-        CopyLinkClicked ->
-            let
-                generation =
-                    model.copyLinkGeneration + 1
-            in
-            ( { model | copyLinkCopied = True, copyLinkGeneration = generation }
-            , Effect.batch
-                [ Ports.copyToClipboard (icsUrl shared model) |> Effect.fromCmd
-                , Process.sleep 5000
-                    |> Task.perform (\_ -> CopyLinkCopyTimeoutElapsed generation)
-                    |> Effect.fromCmd
-                ]
-            )
-
-        CopyLinkCopyTimeoutElapsed generation ->
-            if generation == model.copyLinkGeneration then
-                ( { model | copyLinkCopied = False }, Effect.none )
-
-            else
-                ( model, Effect.none )
-
-
-{-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
-never actually happen -- `Ports.measureElements`'s JS side always sends a
-well-formed array -- but mirrors `EventId_.GotScrollTarget (Err _)`'s "give
-up silently" convention regardless): still applies a pending mode switch if
-`model.measurementPhase` had one in flight, just with no slide animation,
-rather than leaving the click seemingly do nothing.
--}
-applyMeasurementFailure : Model -> ( Model, Effect Msg )
-applyMeasurementFailure model =
-    case model.measurementPhase of
-        NotMeasuring ->
-            ( model, Effect.none )
-
-        AwaitingOldRects newMode ->
-            let
-                newModel =
-                    { model | mode = newMode, measurementPhase = NotMeasuring }
-            in
-            ( newModel, pushUrlWhenIdle newModel )
-
-        AwaitingNewRects _ _ ->
-            let
-                newModel =
-                    { model | measurementPhase = NotMeasuring }
-            in
-            ( newModel, pushUrlWhenIdle newModel )
-
-
-{-| Unlike `Components.Pages.PostsPage.subscriptions`/`Components.Pages.UsersPage.subscriptions`
-(whose 30s `Poll` is just a distrustful account-change fallback, see
-`PostsPage.fetchNewServers`'s own doc -- normally a no-op), this page's `Poll`
-does real work every time on the default `UpcomingEvents` tab: it's what
-advances `model.endsAfter` to the live "now" (via `GotNow`) so the listing
-keeps dropping events as they pass, which also re-fetches every relevant
-server (see `GotNow`/`refetchServers`). 60s (rather than 30s) is deliberately
-slower here since that's a real, visible, unavoidable-per-tick network
-round-trip rather than a cheap local check -- see `refetchServers`'s own doc
-for how the same-account `status`-preserving departure it already has keeps
-even this from flickering the list.
--}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Time.every 60000 (\_ -> Poll)
-        , Ports.elementsMeasured GotMeasuredRects
-        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations))
-        , UI.Flip.moveSubscription AnimateMove (List.map .move (Dict.values model.eventAnimations))
-        ]
-
-
-
--- URL PERSISTENCE
-
-
-{-| `grid`/`row`, sent/read as a `?display=` URL query param --
-`VerticalList` (the default) round-trips to/from its absence entirely,
-mirroring `PostsPage.postContextParam`'s own default-omission convention.
--}
-displayModeParam : EventsDisplayMode -> String
-displayModeParam mode =
-    case mode of
-        Grid ->
-            "grid"
-
-        HorizontalList ->
-            "row"
-
-        VerticalList ->
-            "list"
-
-
-{-| Case-insensitive inverse of `displayModeParam` -- mirrors
-`PostsPage.postContextFromParam`.
--}
-displayModeFromParam : String -> Maybe EventsDisplayMode
-displayModeFromParam param =
-    case String.toLower param of
-        "grid" ->
-            Just Grid
-
-        "row" ->
-            Just HorizontalList
-
-        "list" ->
-            Just VerticalList
-
-        _ ->
-            Nothing
-
-
-{-| The `EventsDisplayMode` an `embeddedPage` copy of this model defaults to
-absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
-embedded copy (`embeddedPage = True`), `VerticalList` everywhere else. Shared
-by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
-round-trips to/from absence entirely) so the two never drift apart.
--}
-defaultMode : Bool -> EventsDisplayMode
-defaultMode embeddedPage =
-    if embeddedPage then
-        HorizontalList
-
-    else
-        VerticalList
-
-
-{-| Every query param this page persists, read fresh off `model` -- `display`
-(see `displayModeParam`; omitted while `model.mode` is whichever
-`EventsDisplayMode` `model.embeddedPage` makes _this_ copy's own default --
-`HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
-everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
-(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
-`ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
-`Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
-active tab; `UpcomingEvents` -- the default -- omits it entirely, same
-"round-trip to/from absence" convention `display` already uses for its own
-default). Built as one combined list (rather than each concern pushing its
-own `replaceUrl` independently) because
-`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
-query string -- independent single-param pushes would each silently wipe
-out whatever the others had just set.
--}
-queryParams : Model -> List Url.Builder.QueryParameter
-queryParams model =
-    (if model.mode == defaultMode model.embeddedPage then
-        []
-
-     else
-        [ Url.Builder.string "display" (displayModeParam model.mode) ]
-    )
-        ++ (if String.isEmpty (String.trim model.searchText) then
-                []
-
-            else
-                [ Url.Builder.string "search_text" model.searchText ]
-           )
-        ++ (case ( model.tab, model.endsAfter ) of
-                ( EventsAfterDate, Just endsAfter ) ->
-                    [ Url.Builder.string "ends_after" (Conversions.isoUtcString endsAfter) ]
-
-                _ ->
-                    []
-           )
-
-
-{-| `pushUrl`, but only once every card has actually finished its
-`DisplayModeChanged` slide (`Effect.none` otherwise) -- deliberately _not_
-fired the instant `model.mode` itself changes (`GotPreModeMeasurements`'s
-`Ok` branch used to call this directly there), because that `replaceUrl`
-call triggers `Main.elm`'s own `ChangedUrl`, which -- even though it doesn't
-re-init this page for a query-only change -- still forces a full top-level
-`view`/diff/patch pass. Landing that extra render in the one genuinely
-vulnerable window this FLIP recipe has (after `model.mode` flips but before
-`GotPostModeMeasurements` has actually applied each card's invert transform,
-during which every card is still sitting at its plain, un-inverted resting
-position) gave the browser an extra chance to actually paint that
-in-between frame -- visible as the whole layout "glitching" to its final
-position before the slide-back-into-place ever played. Deferring the URL
-write until nothing is `moving` removes that extra render from the window
-entirely, rather than just narrowing it. Every branch that can leave
-`model.mode` changed with nothing left to animate (a failed measurement, or
-a mode switch with no cards to move at all) calls this too, so the URL
-still ends up correct even when there's no slide to wait on.
-
-Tab/`endsAfter` changes have no such animation to race, so `TabChanged`/
-`EndsAfterInputChanged` call `pushUrl` directly instead.
-
--}
-pushUrlWhenIdle : Model -> Effect Msg
-pushUrlWhenIdle model =
-    if List.any (\anim -> anim.move.moving) (Dict.values model.eventAnimations) then
-        Effect.none
-
-    else
-        pushUrl model
-
-
-{-| Persists `queryParams model` to the URL via `replaceUrl` (not `pushUrl`
-the navigation function -- switching layouts/tabs/dates shouldn't spam
-browser history) -- mirrors `PostsPage.pushSearchUrl`.
--}
-pushUrl : Model -> Effect Msg
-pushUrl model =
-    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (queryParams model))
         |> Effect.fromCmd
 
 

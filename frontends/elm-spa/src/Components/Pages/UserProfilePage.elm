@@ -62,6 +62,83 @@ import UI.Classes exposing (classes, hostnameToCSSClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
+type alias Model =
+    { resolver : Resolver.Model
+    , connectStatus : ServerDependentView.ConnectStatus
+    , pageIsSecure : Bool
+    , federatedProfiles : Dict String FederatedProfileStatus
+    , realNameEdit : Maybe RealNameEdit
+    , avatarEdit : Maybe AvatarEdit
+    , permissionsEdit : Maybe PermissionsEdit
+    , federatedProfilesEdit : Maybe FederatedProfilesEdit
+    , eventSyncSources : EventSyncSourcesState
+    , followStatusAndButton : FollowStatusAndButton.Model
+
+    -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
+    -- user's own events/posts, mirroring `Pages.Home_.Model`'s own `posts`/`events`
+    -- pair -- see `view`'s own doc. Both start `Nothing` (there's no resolved `User`
+    -- to filter by yet) and are only ever initialized once, the first time `resolver`
+    -- reports `Resolver.Loaded` (see `updateInner`'s `ResolverMsg` branch) -- a later
+    -- refetch (e.g. after a follow/unfollow) re-`Loaded`s `resolver` again, but must
+    -- *not* re-`init` either of these, which would wipe out their own in-progress
+    -- search text/scroll position for no reason.
+    , posts : Maybe PostsPage.Model
+    , events : Maybe EventsPage.Model
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , query : Dict String String
+    }
+
+
+type Msg
+    = ResolverMsg Resolver.Msg
+    | PostsMsg PostsPage.Msg
+    | EventsMsg EventsPage.Msg
+    | ConnectClicked
+    | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | EnableClicked
+    | SharedMsg Shared.Msg
+    | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
+    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
+    | RealNameEditClicked
+    | RealNameInputChanged String
+    | RealNameCancelClicked
+    | RealNameSaveClicked
+    | GotRealNameSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | AvatarEditClicked
+    | AvatarRemoveClicked
+    | AvatarCancelClicked
+    | AvatarSaveClicked
+    | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | BioEditClicked
+    | PermissionsEditClicked
+    | PermissionRemoveClicked Permission
+    | PermissionAddSelectionChanged String
+    | PermissionAddClicked
+    | PermissionsCancelClicked
+    | PermissionsSaveClicked
+    | GotPermissionsSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | FederatedProfilesEditClicked
+    | FederatedProfilesDoneClicked
+    | FederatedProfileAddSelectionChanged String
+    | FederatedProfileAddClicked
+    | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
+    | FederatedProfileRemoveClicked FederatedAccount
+    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
+    | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
+    | GotEventSyncSourcesFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncSourcesResponse ))
+    | EventSyncSourceRowUrlChanged EventSyncSource String
+    | EventSyncSourceRowIntervalChanged EventSyncSource Int
+    | EventSyncSourceRowSaveClicked EventSyncSource
+    | EventSyncSourceRowRefreshClicked EventSyncSource
+    | GotEventSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
+    | EventSyncSourceAddUrlChanged String
+    | EventSyncSourceAddIntervalChanged Int
+    | EventSyncSourceAddClicked
+    | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
+    | EventSyncSourceDeleteClicked EventSyncSource Bool
+
+
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
 by `federatedKey` -- mirrors `Shared.StarredPanel.PostFetchStatus`, minus
 that module's `ServerUnavailable`/poll-retry distinction, since an unreachable
@@ -219,34 +296,6 @@ initEventSyncSources =
     { status = EventSyncSourcesNotFetched, sources = [], rowEdits = Dict.empty, addForm = defaultEventSyncAddForm }
 
 
-type alias Model =
-    { resolver : Resolver.Model
-    , connectStatus : ServerDependentView.ConnectStatus
-    , pageIsSecure : Bool
-    , federatedProfiles : Dict String FederatedProfileStatus
-    , realNameEdit : Maybe RealNameEdit
-    , avatarEdit : Maybe AvatarEdit
-    , permissionsEdit : Maybe PermissionsEdit
-    , federatedProfilesEdit : Maybe FederatedProfilesEdit
-    , eventSyncSources : EventSyncSourcesState
-    , followStatusAndButton : FollowStatusAndButton.Model
-
-    -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
-    -- user's own events/posts, mirroring `Pages.Home_.Model`'s own `posts`/`events`
-    -- pair -- see `view`'s own doc. Both start `Nothing` (there's no resolved `User`
-    -- to filter by yet) and are only ever initialized once, the first time `resolver`
-    -- reports `Resolver.Loaded` (see `updateInner`'s `ResolverMsg` branch) -- a later
-    -- refetch (e.g. after a follow/unfollow) re-`Loaded`s `resolver` again, but must
-    -- *not* re-`init` either of these, which would wipe out their own in-progress
-    -- search text/scroll position for no reason.
-    , posts : Maybe PostsPage.Model
-    , events : Maybe EventsPage.Model
-    , navKey : Browser.Navigation.Key
-    , path : String
-    , query : Dict String String
-    }
-
-
 {-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` from the calling
 page's own `Request` -- needed for `ConnectClicked` (see `AccountsPanel.connectToServer`),
 but not otherwise derivable from `Shared.Model` alone. `navKey`/`path`/`query` are
@@ -293,172 +342,17 @@ init shared pageIsSecure targetHost lookup navKey path query =
     )
 
 
-{-| Re-fetches the user unconditionally -- called once the shared Markdown
-panel (see `Shared.MarkdownPanel`) reports a successful bio save, mirroring
-`Pages.Post.PostId_.refetch`.
--}
-refetch : Shared.Model -> Model -> ( Model, Effect Msg )
-refetch shared model =
-    Resolver.refetch shared model.resolver
-        |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
-        |> Tuple.mapSecond (Effect.map ResolverMsg)
-
-
-{-| Re-`init`s the embedded `EventsPage` copy against `model.resolver`'s
-already-loaded user -- called after a successful Event Sync Source
-sync/update/delete (see `GotEventSyncSourceRowSaveResult` and `SharedMsg`'s
-`Shared.GotEventSyncSourceDeleteResult` case), since a source's sync can
-create, update, or remove Events/EventInstances that the already-`init`ed
-`EventsPage.Model` has no way to know about on its own. Mirrors the
-resolver-loaded `init` branch's own `EventsPage.init` call. A no-op if the
-profile's own user hasn't loaded yet.
--}
-refetchEvents : Shared.Model -> Model -> ( Model, Effect Msg )
-refetchEvents shared model =
-    case model.resolver.status of
-        Resolver.Loaded user ->
-            let
-                ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
-            in
-            ( { model | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
-
-        _ ->
-            ( model, Effect.none )
-
-
-{-| Kicks off `GetEventSyncSources` for `targetUserId` (this profile's own
-`user.id`, or -- for an Admin viewing someone else's profile -- theirs) the
-moment its `User` resolves and the viewer's allowed to manage it (see
-`canEditProfile`, `updateInner`'s `ResolverMsg` branch) -- mirrors the old
-`Shared.EventSyncSourcesPanel.Fetch`'s handling, minus its staleness
-re-check on the result (see `EventSyncSourcesState`'s own doc for why that's
-no longer needed here).
--}
-fetchEventSyncSources : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
-fetchEventSyncSources shared host targetUserId model =
-    let
-        es =
-            model.eventSyncSources
-    in
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
-        Just account ->
-            ( { model | eventSyncSources = { es | status = EventSyncSourcesFetching, sources = [], rowEdits = Dict.empty } }
-            , EventSyncSources.getEventSyncSources shared.accounts ( Just account.userId, host ) targetUserId
-                |> Task.attempt GotEventSyncSourcesFetchResult
-                |> Effect.fromCmd
-            )
-
-        Nothing ->
-            ( { model | eventSyncSources = { es | status = EventSyncSourcesFetchFailed "You're not signed in on that server.", sources = [], rowEdits = Dict.empty } }
-            , Effect.none
-            )
-
-
-{-| The `EventSyncSourceRowSaveClicked`/`EventSyncSourceRowRefreshClicked`/
-`EventSyncSourceAddClicked` requests' shared "who's acting" resolution --
-mirrors the old `Shared.EventSyncSourcesPanel.performForOwner` exactly, just
-reading `model.resolver.targetHost` (this page's own target server) instead
-of a bare `targetHost` field. Its failure mode (not signed in on that server
-anymore) has no dedicated `SubmitFailed` slot to land in from here, so it's
-folded into a `Grpc.NetworkError` for the caller's own `Err` branch to
-render via `AccountsPanel.grpcErrorToString`, same as any other failed RPC.
--}
-performForOwner :
-    Shared.Model
-    -> Model
-    -> (AccountsPanel.MaybeAccountServer -> Task.Task Grpc.Error a)
-    -> Task.Task Grpc.Error a
-performForOwner shared model req =
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts model.resolver.targetHost of
-        Just account ->
-            req ( Just account.userId, model.resolver.targetHost )
-
-        Nothing ->
-            Task.fail Grpc.NetworkError
-
-
-{-| Optimistically applies a just-saved `User` (as returned by
-`Users.updateUser`) straight to `model.resolver.status`, without a round-trip
-refetch -- used by `GotRealNameSaveResult`/`GotPermissionsSaveResult`.
--}
-withResolvedUser : User -> Resolver.Model -> Resolver.Model
-withResolvedUser user resolver =
-    { resolver | status = Resolver.Loaded user }
-
-
-{-| `AvatarSaveClicked`'s transform, passed to `Users.updateUser` the same way
-`RealNameSaveClicked`'s inline lambda is -- applied to a freshly re-fetched
-`User`, not `model.resolver`'s own possibly-stale one (see `Users.updateUser`'s
-own doc). `AvatarChosen mediaId` only ever needs to set `avatar.id` --
-`backend/src/rpcs/users/update_user.rs`'s `update_user` reads nothing else off
-it -- so the rest of `MediaReference` is left at `defaultMediaReference`'s
-placeholders.
--}
-applyAvatarChoice : AvatarChoice -> User -> User
-applyAvatarChoice choice freshUser =
-    case choice of
-        AvatarUnchanged ->
-            freshUser
-
-        AvatarChosen mediaId ->
-            { freshUser | avatar = Just { defaultMediaReference | id = mediaId } }
-
-        AvatarRemoved ->
-            { freshUser | avatar = Nothing }
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
+        , model.posts |> Maybe.map (PostsPage.subscriptions >> Sub.map PostsMsg) |> Maybe.withDefault Sub.none
+        , model.events |> Maybe.map (EventsPage.subscriptions >> Sub.map EventsMsg) |> Maybe.withDefault Sub.none
+        ]
 
 
 
 -- UPDATE
-
-
-type Msg
-    = ResolverMsg Resolver.Msg
-    | PostsMsg PostsPage.Msg
-    | EventsMsg EventsPage.Msg
-    | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
-    | EnableClicked
-    | SharedMsg Shared.Msg
-    | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
-    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
-    | RealNameEditClicked
-    | RealNameInputChanged String
-    | RealNameCancelClicked
-    | RealNameSaveClicked
-    | GotRealNameSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
-    | AvatarEditClicked
-    | AvatarRemoveClicked
-    | AvatarCancelClicked
-    | AvatarSaveClicked
-    | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
-    | BioEditClicked
-    | PermissionsEditClicked
-    | PermissionRemoveClicked Permission
-    | PermissionAddSelectionChanged String
-    | PermissionAddClicked
-    | PermissionsCancelClicked
-    | PermissionsSaveClicked
-    | GotPermissionsSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
-    | FederatedProfilesEditClicked
-    | FederatedProfilesDoneClicked
-    | FederatedProfileAddSelectionChanged String
-    | FederatedProfileAddClicked
-    | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
-    | FederatedProfileRemoveClicked FederatedAccount
-    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
-    | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
-    | GotEventSyncSourcesFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncSourcesResponse ))
-    | EventSyncSourceRowUrlChanged EventSyncSource String
-    | EventSyncSourceRowIntervalChanged EventSyncSource Int
-    | EventSyncSourceRowSaveClicked EventSyncSource
-    | EventSyncSourceRowRefreshClicked EventSyncSource
-    | GotEventSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
-    | EventSyncSourceAddUrlChanged String
-    | EventSyncSourceAddIntervalChanged Int
-    | EventSyncSourceAddClicked
-    | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
-    | EventSyncSourceDeleteClicked EventSyncSource Bool
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -1503,13 +1397,119 @@ federatedKey account =
     account.userId ++ "@" ++ account.host
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
-        , model.posts |> Maybe.map (PostsPage.subscriptions >> Sub.map PostsMsg) |> Maybe.withDefault Sub.none
-        , model.events |> Maybe.map (EventsPage.subscriptions >> Sub.map EventsMsg) |> Maybe.withDefault Sub.none
-        ]
+{-| Re-fetches the user unconditionally -- called once the shared Markdown
+panel (see `Shared.MarkdownPanel`) reports a successful bio save, mirroring
+`Pages.Post.PostId_.refetch`.
+-}
+refetch : Shared.Model -> Model -> ( Model, Effect Msg )
+refetch shared model =
+    Resolver.refetch shared model.resolver
+        |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
+        |> Tuple.mapSecond (Effect.map ResolverMsg)
+
+
+{-| Re-`init`s the embedded `EventsPage` copy against `model.resolver`'s
+already-loaded user -- called after a successful Event Sync Source
+sync/update/delete (see `GotEventSyncSourceRowSaveResult` and `SharedMsg`'s
+`Shared.GotEventSyncSourceDeleteResult` case), since a source's sync can
+create, update, or remove Events/EventInstances that the already-`init`ed
+`EventsPage.Model` has no way to know about on its own. Mirrors the
+resolver-loaded `init` branch's own `EventsPage.init` call. A no-op if the
+profile's own user hasn't loaded yet.
+-}
+refetchEvents : Shared.Model -> Model -> ( Model, Effect Msg )
+refetchEvents shared model =
+    case model.resolver.status of
+        Resolver.Loaded user ->
+            let
+                ( eventsModel, eventsEffect ) =
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
+            in
+            ( { model | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+
+        _ ->
+            ( model, Effect.none )
+
+
+{-| Kicks off `GetEventSyncSources` for `targetUserId` (this profile's own
+`user.id`, or -- for an Admin viewing someone else's profile -- theirs) the
+moment its `User` resolves and the viewer's allowed to manage it (see
+`canEditProfile`, `updateInner`'s `ResolverMsg` branch) -- mirrors the old
+`Shared.EventSyncSourcesPanel.Fetch`'s handling, minus its staleness
+re-check on the result (see `EventSyncSourcesState`'s own doc for why that's
+no longer needed here).
+-}
+fetchEventSyncSources : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
+fetchEventSyncSources shared host targetUserId model =
+    let
+        es =
+            model.eventSyncSources
+    in
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
+        Just account ->
+            ( { model | eventSyncSources = { es | status = EventSyncSourcesFetching, sources = [], rowEdits = Dict.empty } }
+            , EventSyncSources.getEventSyncSources shared.accounts ( Just account.userId, host ) targetUserId
+                |> Task.attempt GotEventSyncSourcesFetchResult
+                |> Effect.fromCmd
+            )
+
+        Nothing ->
+            ( { model | eventSyncSources = { es | status = EventSyncSourcesFetchFailed "You're not signed in on that server.", sources = [], rowEdits = Dict.empty } }
+            , Effect.none
+            )
+
+
+{-| The `EventSyncSourceRowSaveClicked`/`EventSyncSourceRowRefreshClicked`/
+`EventSyncSourceAddClicked` requests' shared "who's acting" resolution --
+mirrors the old `Shared.EventSyncSourcesPanel.performForOwner` exactly, just
+reading `model.resolver.targetHost` (this page's own target server) instead
+of a bare `targetHost` field. Its failure mode (not signed in on that server
+anymore) has no dedicated `SubmitFailed` slot to land in from here, so it's
+folded into a `Grpc.NetworkError` for the caller's own `Err` branch to
+render via `AccountsPanel.grpcErrorToString`, same as any other failed RPC.
+-}
+performForOwner :
+    Shared.Model
+    -> Model
+    -> (AccountsPanel.MaybeAccountServer -> Task.Task Grpc.Error a)
+    -> Task.Task Grpc.Error a
+performForOwner shared model req =
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts model.resolver.targetHost of
+        Just account ->
+            req ( Just account.userId, model.resolver.targetHost )
+
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+
+{-| Optimistically applies a just-saved `User` (as returned by
+`Users.updateUser`) straight to `model.resolver.status`, without a round-trip
+refetch -- used by `GotRealNameSaveResult`/`GotPermissionsSaveResult`.
+-}
+withResolvedUser : User -> Resolver.Model -> Resolver.Model
+withResolvedUser user resolver =
+    { resolver | status = Resolver.Loaded user }
+
+
+{-| `AvatarSaveClicked`'s transform, passed to `Users.updateUser` the same way
+`RealNameSaveClicked`'s inline lambda is -- applied to a freshly re-fetched
+`User`, not `model.resolver`'s own possibly-stale one (see `Users.updateUser`'s
+own doc). `AvatarChosen mediaId` only ever needs to set `avatar.id` --
+`backend/src/rpcs/users/update_user.rs`'s `update_user` reads nothing else off
+it -- so the rest of `MediaReference` is left at `defaultMediaReference`'s
+placeholders.
+-}
+applyAvatarChoice : AvatarChoice -> User -> User
+applyAvatarChoice choice freshUser =
+    case choice of
+        AvatarUnchanged ->
+            freshUser
+
+        AvatarChosen mediaId ->
+            { freshUser | avatar = Just { defaultMediaReference | id = mediaId } }
+
+        AvatarRemoved ->
+            { freshUser | avatar = Nothing }
 
 
 

@@ -35,10 +35,6 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 {-| `Reserved` short-circuits straight to a "not a user" message, without ever
 constructing a `UserProfilePage.Model` (and thus without ever attempting a
 fetch) -- see the module doc.
@@ -46,6 +42,10 @@ fetch) -- see the module doc.
 type Model
     = Reserved String
     | Profile UserProfilePage.Model
+
+
+type Msg
+    = ProfileMsg UserProfilePage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -65,12 +65,14 @@ init shared req =
             |> Tuple.mapSecond (Effect.map ProfileMsg)
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        Profile subModel ->
+            Sub.map ProfileMsg (UserProfilePage.subscriptions subModel)
 
--- UPDATE
-
-
-type Msg
-    = ProfileMsg UserProfilePage.Msg
+        Reserved _ ->
+            Sub.none
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -83,38 +85,6 @@ update shared (ProfileMsg subMsg) model =
 
         Reserved _ ->
             ( model, Effect.none )
-
-
-{-| See `Components.UserProfilePage.fromShared` -- a no-op for a `Reserved`
-page, which never fetches anything to begin with.
--}
-fromShared : Shared.Msg -> Msg
-fromShared sharedMsg =
-    ProfileMsg (UserProfilePage.fromShared sharedMsg)
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model of
-        Profile subModel ->
-            Sub.map ProfileMsg (UserProfilePage.subscriptions subModel)
-
-        Reserved _ ->
-            Sub.none
-
-
-
--- VIEW
-
-
-titleFor : Model -> String
-titleFor model =
-    case model of
-        Profile subModel ->
-            UserProfilePage.titleFor subModel
-
-        Reserved _ ->
-            "Not Found"
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -132,3 +102,21 @@ view shared req model =
                     p [ class "profile-error" ] [ text ("\"" ++ username ++ "\" isn't a user.") ]
             ]
     }
+
+
+titleFor : Model -> String
+titleFor model =
+    case model of
+        Profile subModel ->
+            UserProfilePage.titleFor subModel
+
+        Reserved _ ->
+            "Not Found"
+
+
+{-| See `Components.UserProfilePage.fromShared` -- a no-op for a `Reserved`
+page, which never fetches anything to begin with.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared sharedMsg =
+    ProfileMsg (UserProfilePage.fromShared sharedMsg)

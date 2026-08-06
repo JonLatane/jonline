@@ -58,6 +58,38 @@ import Url.Builder
 -- MODEL
 
 
+type alias Model =
+    { usersByServer : Dict String ServerFeed
+    , userAnimations : Dict String UserAnimation
+
+    -- The user + host + listing type to restrict the listing to, if any --
+    -- `Nothing` for `Pages.People`'s unfiltered `EVERYONE` listing.
+    , target : Maybe ( String, User, UserListingType )
+
+    -- One `FollowStatusAndButton.Model` per card (see `followStatusAndButtonKey`)
+    -- -- missing entries (i.e. every card whose button hasn't been clicked
+    -- yet) are treated as `FollowStatusAndButton.init`, same "absent means
+    -- default" convention as `Components.Pages.PostsPage`'s per-post state.
+    , followStatusAndButtons : Dict String FollowStatusAndButton.Model
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , searchText : String
+    , searchGeneration : Int
+    }
+
+
+type Msg
+    = GotServerUsers String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse ))
+    | Poll
+    | Animate Animation.Msg
+    | RemoveUser String
+    | SharedMsg Shared.Msg
+    | FollowStatusAndButtonMsg String FollowStatusAndButton.Msg
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ClearSearchClicked
+
+
 type ServerUsers
     = Loading
     | Loaded (List User)
@@ -93,26 +125,6 @@ type alias UserAnimation =
     }
 
 
-type alias Model =
-    { usersByServer : Dict String ServerFeed
-    , userAnimations : Dict String UserAnimation
-
-    -- The user + host + listing type to restrict the listing to, if any --
-    -- `Nothing` for `Pages.People`'s unfiltered `EVERYONE` listing.
-    , target : Maybe ( String, User, UserListingType )
-
-    -- One `FollowStatusAndButton.Model` per card (see `followStatusAndButtonKey`)
-    -- -- missing entries (i.e. every card whose button hasn't been clicked
-    -- yet) are treated as `FollowStatusAndButton.init`, same "absent means
-    -- default" convention as `Components.Pages.PostsPage`'s per-post state.
-    , followStatusAndButtons : Dict String FollowStatusAndButton.Model
-    , navKey : Browser.Navigation.Key
-    , path : String
-    , searchText : String
-    , searchGeneration : Int
-    }
-
-
 {-| `navKey`/`path`, from the calling page's own `Request`, are what let
 `searchRowView`'s search box persist `search_text` as a URL query param (see
 `pushSearchUrl`) without this module needing to know which page-specific
@@ -142,6 +154,156 @@ init shared target navKey path query =
     -- close, see its doc comment for why `setBreadcrumbsRoot` alone isn't
     -- enough here.
     ( fetchedModel, Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsRoot shared fetchedModel ] )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Time.every 30000 (\_ -> Poll)
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.userAnimations))
+        ]
+
+
+
+-- UPDATE
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
+exposing the `SharedMsg` constructor itself -- mirrors
+`Components.Pages.PostsPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
+
+
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
+    case msg of
+        GotServerUsers frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
+            let
+                accountEffect =
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+            in
+            ( { model
+                | usersByServer =
+                    Dict.update frontendHost
+                        (Maybe.map (\feed -> { feed | status = Loaded response.users }))
+                        model.usersByServer
+              }
+                |> syncAnimations
+            , accountEffect
+            )
+
+        GotServerUsers frontendHost (Err _) ->
+            ( { model
+                | usersByServer =
+                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.usersByServer
+              }
+                |> syncAnimations
+            , Effect.none
+            )
+
+        Poll ->
+            fetchNewServers shared model
+
+        Animate animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.userAnimations
+            in
+            ( { model | userAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        RemoveUser key ->
+            ( { model | userAnimations = Dict.remove key model.userAnimations }, Effect.none )
+
+        SharedMsg subMsg ->
+            let
+                ( fetchedModel, fetchEffect ) =
+                    case subMsg of
+                        Shared.AccountsPanelMsg _ ->
+                            fetchNewServers shared model
+
+                        _ ->
+                            ( model, Effect.none )
+            in
+            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+        FollowStatusAndButtonMsg key subMsg ->
+            case findUserForKey shared model key of
+                Just ( server, account, user ) ->
+                    let
+                        ( newFollowStatusAndButton, followEffect ) =
+                            FollowStatusAndButton.update shared
+                                server
+                                account
+                                user
+                                subMsg
+                                (Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init)
+
+                        newModel =
+                            { model | followStatusAndButtons = Dict.insert key newFollowStatusAndButton model.followStatusAndButtons }
+
+                        mappedFollowEffect =
+                            Effect.map (FollowStatusAndButtonMsg key) followEffect
+                    in
+                    case subMsg of
+                        FollowStatusAndButton.GotFollowResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        FollowStatusAndButton.GotUnfollowResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        FollowStatusAndButton.GotModerationResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        _ ->
+                            ( newModel, mappedFollowEffect )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 311
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked) already bumped searchGeneration past this
+                -- timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
 
 {-| Which servers this listing should ever fetch from: every enabled server,
@@ -382,168 +544,6 @@ syncAnimations model =
                 currentUsers
                 model.userAnimations
     }
-
-
-
--- UPDATE
-
-
-type Msg
-    = GotServerUsers String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse ))
-    | Poll
-    | Animate Animation.Msg
-    | RemoveUser String
-    | SharedMsg Shared.Msg
-    | FollowStatusAndButtonMsg String FollowStatusAndButton.Msg
-    | SearchTextChanged String
-    | SearchDebounceElapsed Int
-    | ClearSearchClicked
-
-
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
-exposing the `SharedMsg` constructor itself -- mirrors
-`Components.Pages.PostsPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
-
-
-update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
-
-
-updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-updateInner shared msg model =
-    case msg of
-        GotServerUsers frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
-            let
-                accountEffect =
-                    maybeAccountsPanelMsg
-                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
-            in
-            ( { model
-                | usersByServer =
-                    Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded response.users }))
-                        model.usersByServer
-              }
-                |> syncAnimations
-            , accountEffect
-            )
-
-        GotServerUsers frontendHost (Err _) ->
-            ( { model
-                | usersByServer =
-                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.usersByServer
-              }
-                |> syncAnimations
-            , Effect.none
-            )
-
-        Poll ->
-            fetchNewServers shared model
-
-        Animate animMsg ->
-            let
-                step key anim ( animations, accCmds ) =
-                    let
-                        ( newFlip, cmd ) =
-                            UI.Flip.animate animMsg anim.flip
-                    in
-                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
-
-                ( newAnimations, cmds ) =
-                    Dict.foldl step ( Dict.empty, [] ) model.userAnimations
-            in
-            ( { model | userAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
-
-        RemoveUser key ->
-            ( { model | userAnimations = Dict.remove key model.userAnimations }, Effect.none )
-
-        SharedMsg subMsg ->
-            let
-                ( fetchedModel, fetchEffect ) =
-                    case subMsg of
-                        Shared.AccountsPanelMsg _ ->
-                            fetchNewServers shared model
-
-                        _ ->
-                            ( model, Effect.none )
-            in
-            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
-
-        FollowStatusAndButtonMsg key subMsg ->
-            case findUserForKey shared model key of
-                Just ( server, account, user ) ->
-                    let
-                        ( newFollowStatusAndButton, followEffect ) =
-                            FollowStatusAndButton.update shared
-                                server
-                                account
-                                user
-                                subMsg
-                                (Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init)
-
-                        newModel =
-                            { model | followStatusAndButtons = Dict.insert key newFollowStatusAndButton model.followStatusAndButtons }
-
-                        mappedFollowEffect =
-                            Effect.map (FollowStatusAndButtonMsg key) followEffect
-                    in
-                    case subMsg of
-                        FollowStatusAndButton.GotFollowResult (Ok _) ->
-                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
-
-                        FollowStatusAndButton.GotUnfollowResult (Ok _) ->
-                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
-
-                        FollowStatusAndButton.GotModerationResult (Ok _) ->
-                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
-
-                        _ ->
-                            ( newModel, mappedFollowEffect )
-
-                Nothing ->
-                    ( model, Effect.none )
-
-        SearchTextChanged text ->
-            let
-                generation =
-                    model.searchGeneration + 1
-            in
-            ( { model | searchText = text, searchGeneration = generation }
-            , Process.sleep 311
-                |> Task.perform (\_ -> SearchDebounceElapsed generation)
-                |> Effect.fromCmd
-            )
-
-        SearchDebounceElapsed generation ->
-            if generation == model.searchGeneration then
-                applySearchChange shared model
-
-            else
-                -- A later edit (or ClearSearchClicked) already bumped searchGeneration past this
-                -- timer's -- it's stale, ignore it.
-                ( model, Effect.none )
-
-        ClearSearchClicked ->
-            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Time.every 30000 (\_ -> Poll)
-        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.userAnimations))
-        ]
 
 
 

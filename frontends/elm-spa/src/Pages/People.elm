@@ -28,37 +28,17 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     UsersPage.Model
-
-
-init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
-init shared req =
-    UsersPage.init shared Nothing req.key req.url.path req.query
-
-
-
--- UPDATE
 
 
 type alias Msg =
     UsersPage.Msg
 
 
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Pages.UsersPage.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared =
-    UsersPage.fromShared
-
-
-
--- VIEW
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init shared req =
+    UsersPage.init shared Nothing req.key req.url.path req.query
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
@@ -72,3 +52,11 @@ view shared req model =
             , UsersPage.view shared model
             ]
     }
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Pages.UsersPage.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    UsersPage.fromShared
