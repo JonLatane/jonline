@@ -32,13 +32,14 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type Model
     = Resolving Resolver.Model
     | Events EventsPage.Model
+
+
+type Msg
+    = ResolverMsg Resolver.Msg
+    | EventsMsg EventsPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -52,22 +53,14 @@ init shared req =
         |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        Resolving resolverModel ->
+            Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
 
--- UPDATE
-
-
-type Msg
-    = ResolverMsg Resolver.Msg
-    | EventsMsg EventsPage.Msg
-
-
-{-| See `Components.Users.Resolver.fromShared`/`Components.Pages.EventsPage.fromShared`
--- lets `Main` notify this page of `Shared.Msg`s it didn't itself originate,
-same as `Pages.User.UserId_.Posts.fromShared`.
--}
-fromShared : Shared.Msg -> Msg
-fromShared sharedMsg =
-    ResolverMsg (Resolver.fromShared sharedMsg)
+        Events eventsModel ->
+            Sub.map EventsMsg (EventsPage.subscriptions eventsModel)
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -112,20 +105,6 @@ update shared req msg model =
             ( model, Effect.none )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model of
-        Resolving resolverModel ->
-            Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
-
-        Events eventsModel ->
-            Sub.map EventsMsg (EventsPage.subscriptions eventsModel)
-
-
-
--- VIEW
-
-
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = UI.pageTitle shared []
@@ -141,3 +120,12 @@ view shared req model =
                     Html.map EventsMsg (EventsPage.view shared True eventsModel)
             ]
     }
+
+
+{-| See `Components.Users.Resolver.fromShared`/`Components.Pages.EventsPage.fromShared`
+-- lets `Main` notify this page of `Shared.Msg`s it didn't itself originate,
+same as `Pages.User.UserId_.Posts.fromShared`.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared sharedMsg =
+    ResolverMsg (Resolver.fromShared sharedMsg)

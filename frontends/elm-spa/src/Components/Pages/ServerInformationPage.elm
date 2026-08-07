@@ -79,6 +79,76 @@ import Url.Builder
 -- MODEL
 
 
+type alias Model =
+    { targetHost : String
+    , isSecure : Bool
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , ownServerStatus : OwnServerStatus
+    , activeTab : Tab
+    , adminsStatus : AdminsStatus
+    , versionStatus : VersionStatus
+    , renameStatus : RenameStatus
+    , anonymousPermissionsEdit : Maybe PermissionsEdit
+    , defaultPermissionsEdit : Maybe PermissionsEdit
+    , basicPermissionsEdit : Maybe PermissionsEdit
+    , logoEdit : Maybe LogoEdit
+    , primaryColorEdit : Maybe ColorEdit
+    , navigationColorEdit : Maybe ColorEdit
+    , federationEdit : Maybe FederationEdit
+    }
+
+
+type Msg
+    = TabSelected Tab
+    | GotOwnServerResult (Result Grpc.Error AccountsPanel.Server)
+    | AddServerClicked AccountsPanel.Server
+    | GotAdmins (Result Grpc.Error GetUsersResponse)
+    | GotVersion (Result Grpc.Error GetServiceVersionResponse)
+    | RenameClicked String
+    | RenameChanged String
+    | RenameCancelClicked
+    | RenameSaveClicked
+    | EditDescriptionClicked AccountsPanel.Server
+    | EditPrivacyPolicyClicked AccountsPanel.Server
+    | EditMediaPolicyClicked AccountsPanel.Server
+    | PermissionsEditClicked ServerPermissionsSet
+    | PermissionRemoveClicked ServerPermissionsSet Permission
+    | PermissionAddSelectionChanged ServerPermissionsSet String
+    | PermissionAddClicked ServerPermissionsSet
+    | PermissionsCancelClicked ServerPermissionsSet
+    | PermissionsSaveClicked ServerPermissionsSet
+    | GotPermissionsSaveResult ServerPermissionsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | LogoEditClicked
+    | LogoRemoveClicked
+    | LogoCancelClicked
+    | LogoSaveClicked
+    | GotLogoSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | ColorEditClicked ServerColorField
+    | ColorChanged ServerColorField String
+    | ColorCancelClicked ServerColorField
+    | ColorSaveClicked ServerColorField
+    | GotColorSaveResult ServerColorField (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FederationEditClicked
+    | FederationCancelClicked
+    | FederationSaveClicked
+    | GotFederationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FederatedServerHostInputChanged String
+    | FederatedServerAddClicked
+    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.Server)
+    | FederatedServerRemoveClicked String
+    | FederatedServerRemoved String
+    | FederatedServerConfiguredByDefaultToggled String
+    | FederatedServerPinnedByDefaultToggled String
+    | MoveFederatedServerLeftClicked String
+    | MoveFederatedServerRightClicked String
+    | GotPreMoveFederatedServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | FederatedServerMoveSettled String
+    | AnimateFederatedServerFlip Animation.Msg
+    | AnimateFederatedServerMove Animation.Msg
+    | SharedMsg Shared.Msg
+
+
 type Tab
     = AboutTab
     | ThemeTab
@@ -270,26 +340,6 @@ type alias FederationEdit =
     }
 
 
-type alias Model =
-    { targetHost : String
-    , isSecure : Bool
-    , navKey : Browser.Navigation.Key
-    , path : String
-    , ownServerStatus : OwnServerStatus
-    , activeTab : Tab
-    , adminsStatus : AdminsStatus
-    , versionStatus : VersionStatus
-    , renameStatus : RenameStatus
-    , anonymousPermissionsEdit : Maybe PermissionsEdit
-    , defaultPermissionsEdit : Maybe PermissionsEdit
-    , basicPermissionsEdit : Maybe PermissionsEdit
-    , logoEdit : Maybe LogoEdit
-    , primaryColorEdit : Maybe ColorEdit
-    , navigationColorEdit : Maybe ColorEdit
-    , federationEdit : Maybe FederationEdit
-    }
-
-
 {-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` (`Pages.About`) or
 parsed straight out of the route (`Pages.Server.ServerIdentifier_`'s
 `[http|https]:hostname` segment) -- needed for the own-probe fallback (see
@@ -348,421 +398,21 @@ init shared pageIsSecure targetHost navKey path query =
     )
 
 
-{-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known
-_and_ actually connected (see `AccountsPanel.knownConnectedServer`) -- a
-known-but-disconnected entry is treated the same as not known at all, so this
-page falls back to its own probe (just like a never-added host) rather than
-trying to show configuration/admins/version for a server it can't currently
-reach.
--}
-knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
-knownConnectedServer shared targetHost =
-    AccountsPanel.knownConnectedServer shared.accounts.servers targetHost
-
-
-{-| The `Server` to actually show details for -- whichever the app already
-knows about and is connected to (from `Shared.AccountsPanel`, if this
-server's been added to Accounts & Servers already), falling back to this
-page's own probe (`ownServerStatus`) otherwise.
--}
-effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.Server
-effectiveServer shared model =
-    case knownConnectedServer shared model.targetHost of
-        Just server ->
-            Just server
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.federationEdit of
+        Just edit ->
+            Sub.batch
+                [ UI.Flip.subscription AnimateFederatedServerFlip (Dict.values edit.itemAnimations)
+                , UI.Flip.moveSubscription AnimateFederatedServerMove (Dict.values edit.moveAnimations)
+                ]
 
         Nothing ->
-            case model.ownServerStatus of
-                OwnServerLoaded server ->
-                    Just server
-
-                _ ->
-                    Nothing
-
-
-isKnownServer : Shared.Model -> Model -> Bool
-isKnownServer shared model =
-    knownConnectedServer shared model.targetHost /= Nothing
-
-
-{-| `model.targetHost`/`isSecure` reassembled into the `[http|https]:hostname`
-form `Pages.Server.ServerIdentifier_`'s route uses -- just for error messages
-here (see `view`'s `OwnServerFailed` branch); this module has no route of its
-own to round-trip through.
--}
-identifierText : Model -> String
-identifierText model =
-    (if model.isSecure then
-        "https:"
-
-     else
-        "http:"
-    )
-        ++ model.targetHost
-
-
-{-| Keeps `Shared.Breadcrumbs` pointed at this page's own
-`FromServerHost targetHost` -- mirrors `Components.Pages.UserProfilePage.setBreadcrumbsHost`
-(reissued after every `update`, a no-op once already in sync via the same
-equality check), so the trail identifies this server both on the very first
-paint and across any later host change (e.g. `GotOwnServerResult` resolving
-the own-probe).
--}
-setBreadcrumbsHost : Shared.Model -> Model -> Effect Msg
-setBreadcrumbsHost shared model =
-    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost model.targetHost) then
-        Effect.none
-
-    else
-        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost model.targetHost) model.targetHost []))
-
-
-{-| Persists `model.activeTab` to the URL as a `tab` query param, via
-`replaceUrl` (not `pushUrl` -- switching tabs shouldn't spam browser history
-with one entry per click). Omitted entirely at the default (`AboutTab`), so
-the common case keeps a clean URL. Mirrors
-`Components.Pages.PostsPage.pushSearchUrl` exactly, just over a single `Tab`
-param instead of `search_text`/`context`.
--}
-pushTabUrl : Model -> Effect Msg
-pushTabUrl model =
-    let
-        tabParams =
-            if model.activeTab == AboutTab then
-                []
-
-            else
-                [ Url.Builder.string "tab" (tabParam model.activeTab) ]
-    in
-    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery tabParams)
-        |> Effect.fromCmd
-
-
-fetchAdmins : AccountsPanel.Server -> Effect Msg
-fetchAdmins server =
-    Grpc.new Jonline.getUsers defaultGetUsersRequest
-        |> Grpc.setHost (AccountsPanel.serverUrl server)
-        |> Grpc.toTask
-        |> Task.attempt GotAdmins
-        |> Effect.fromCmd
-
-
-fetchVersion : AccountsPanel.Server -> Effect Msg
-fetchVersion server =
-    Grpc.new Jonline.getServiceVersion {}
-        |> Grpc.setHost (AccountsPanel.serverUrl server)
-        |> Grpc.toTask
-        |> Task.attempt GotVersion
-        |> Effect.fromCmd
-
-
-{-| The signed-in, enabled account (if any) on this specific server, but only
-if it actually has `ADMIN` -- what gates the Rename button/RPC. Renaming (or
-any other `ConfigureServer` mutation) is only possible for a server that's
-already known (see the module doc), so this only ever matches once
-`isKnownServer` is `True`.
--}
-adminAccountFor : Shared.Model -> Model -> Maybe AccountsPanel.Account
-adminAccountFor shared model =
-    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
-        |> Maybe.andThen
-            (\account ->
-                if AccountsPanel.isAdmin account then
-                    Just account
-
-                else
-                    Nothing
-            )
-
-
-{-| `model`'s in-progress `PermissionsEdit` for one `ServerPermissionsSet`,
-alongside its setter `setPermissionsEditFor` just below -- lets `update`/
-`view` treat all three sections generically instead of a `case` per Msg per
-section.
--}
-permissionsEditFor : ServerPermissionsSet -> Model -> Maybe PermissionsEdit
-permissionsEditFor set model =
-    case set of
-        AnonymousPermissions ->
-            model.anonymousPermissionsEdit
-
-        DefaultPermissions ->
-            model.defaultPermissionsEdit
-
-        BasicPermissions ->
-            model.basicPermissionsEdit
-
-
-setPermissionsEditFor : ServerPermissionsSet -> Maybe PermissionsEdit -> Model -> Model
-setPermissionsEditFor set edit model =
-    case set of
-        AnonymousPermissions ->
-            { model | anonymousPermissionsEdit = edit }
-
-        DefaultPermissions ->
-            { model | defaultPermissionsEdit = edit }
-
-        BasicPermissions ->
-            { model | basicPermissionsEdit = edit }
-
-
-{-| One `ServerPermissionsSet`'s current list out of a `ServerConfiguration`,
-alongside its writer `applyPermissionsFor` just below.
--}
-permissionsFor : ServerPermissionsSet -> ServerConfiguration -> List Permission
-permissionsFor set config =
-    case set of
-        AnonymousPermissions ->
-            config.anonymousUserPermissions
-
-        DefaultPermissions ->
-            config.defaultUserPermissions
-
-        BasicPermissions ->
-            config.basicUserPermissions
-
-
-applyPermissionsFor : ServerPermissionsSet -> List Permission -> ServerConfiguration -> ServerConfiguration
-applyPermissionsFor set permissions config =
-    case set of
-        AnonymousPermissions ->
-            { config | anonymousUserPermissions = permissions }
-
-        DefaultPermissions ->
-            { config | defaultUserPermissions = permissions }
-
-        BasicPermissions ->
-            { config | basicUserPermissions = permissions }
-
-
-{-| `LogoSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
-the same way `applyPermissionsFor`'s result is -- overlays just the change
-`edit.choice` describes onto a freshly re-fetched `ServerConfiguration`'s
-`serverInfo.logo.squareMediaId`, leaving every other field (including the
-other three `ServerLogo` variants, none of which this page edits) untouched.
-Mirrors `Components.Pages.UserProfilePage.applyAvatarChoice`.
--}
-applyLogoChoice : LogoChoice -> ServerConfiguration -> ServerConfiguration
-applyLogoChoice choice config =
-    let
-        info =
-            Maybe.withDefault defaultServerInfo config.serverInfo
-
-        logo =
-            Maybe.withDefault defaultServerLogo info.logo
-
-        setSquareMediaId squareMediaId =
-            { config | serverInfo = Just { info | logo = Just { logo | squareMediaId = squareMediaId } } }
-    in
-    case choice of
-        LogoUnchanged ->
-            config
-
-        LogoChosen mediaId ->
-            setSquareMediaId (Just mediaId)
-
-        LogoRemoved ->
-            setSquareMediaId Nothing
-
-
-{-| One `ServerColorField`'s current ARGB value out of a `ServerConfiguration`,
-alongside its writer `applyColorFor` just below -- both mirror `permissionsFor`/
-`applyPermissionsFor`, just over `serverInfo.colors` instead of a top-level
-permission list.
--}
-colorArgbFor : ServerColorField -> ServerConfiguration -> Maybe Int
-colorArgbFor field config =
-    let
-        colors =
-            config.serverInfo |> Maybe.andThen .colors
-    in
-    case field of
-        PrimaryColor ->
-            colors |> Maybe.andThen .primary
-
-        NavigationColor ->
-            colors |> Maybe.andThen .navigation
-
-
-applyColorFor : ServerColorField -> Int -> ServerConfiguration -> ServerConfiguration
-applyColorFor field argb config =
-    let
-        info =
-            Maybe.withDefault defaultServerInfo config.serverInfo
-
-        colors =
-            Maybe.withDefault defaultServerColors info.colors
-
-        newColors =
-            case field of
-                PrimaryColor ->
-                    { colors | primary = Just argb }
-
-                NavigationColor ->
-                    { colors | navigation = Just argb }
-    in
-    { config | serverInfo = Just { info | colors = Just newColors } }
-
-
-{-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
-the same way `applyPermissionsFor`'s/`applyColorFor`'s results are -- overlays
-`servers` (the edit's `pending` list, in its edit's own order) onto a freshly
-re-fetched `ServerConfiguration`'s `federationInfo`, leaving every other field
-untouched.
--}
-applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
-applyFederatedServers servers config =
-    { config | federationInfo = Just { servers = servers } }
-
-
-{-| Updates the one entry of `edit.pending` matching `host`, if any --
-`FederatedServerConfiguredByDefaultToggled`/`FederatedServerPinnedByDefaultToggled`'s
-shared plumbing.
--}
-mapPendingHost : String -> (FederatedServer -> FederatedServer) -> FederationEdit -> FederationEdit
-mapPendingHost host fn edit =
-    { edit
-        | pending =
-            edit.pending
-                |> List.map
-                    (\federatedServer ->
-                        if federatedServer.host == host then
-                            fn federatedServer
-
-                        else
-                            federatedServer
-                    )
-    }
-
-
-{-| `model`'s in-progress `ColorEdit` for one `ServerColorField`, alongside its
-setter `setColorEditFor` just below -- mirrors `permissionsEditFor`/
-`setPermissionsEditFor`.
--}
-colorEditFor : ServerColorField -> Model -> Maybe ColorEdit
-colorEditFor field model =
-    case field of
-        PrimaryColor ->
-            model.primaryColorEdit
-
-        NavigationColor ->
-            model.navigationColorEdit
-
-
-setColorEditFor : ServerColorField -> Maybe ColorEdit -> Model -> Model
-setColorEditFor field edit model =
-    case field of
-        PrimaryColor ->
-            { model | primaryColorEdit = edit }
-
-        NavigationColor ->
-            { model | navigationColorEdit = edit }
-
-
-{-| Starts a `PermissionsEdit` off `currentPermissions` (that set's own, as
-currently configured) -- `addSelection` defaults to the first grantable
-permission not already in that list, same as `resolveAddSelection` picks
-after every add/remove. Mirrors `Components.Pages.UserProfilePage.newPermissionsEdit`.
--}
-newPermissionsEdit : List Permission -> PermissionsEdit
-newPermissionsEdit currentPermissions =
-    { pending = currentPermissions
-    , addSelection = resolveAddSelection Nothing currentPermissions
-    , status = AccountsPanel.Idle
-    }
-
-
-{-| Keeps the "Add Permission" `<select>`'s selection valid as `pending`
-changes: keeps `current` if it's still addable (not already in `pending`),
-otherwise falls back to the first still-addable permission (`Nothing` if
-every permission's already been added). Mirrors `UserProfilePage`'s own.
--}
-resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
-resolveAddSelection current pending =
-    let
-        available =
-            addablePermissions pending
-    in
-    case current of
-        Just permission ->
-            if List.member permission available then
-                Just permission
-
-            else
-                List.head available
-
-        Nothing ->
-            List.head available
-
-
-addablePermissions : List Permission -> List Permission
-addablePermissions pending =
-    Users.configurableServerPermissions |> List.filter (\permission -> not (List.member permission pending))
-
-
-{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `AccountsPanel.updateServerConfig`,
-if a token refresh happened) into an `Effect` to forward it, `Effect.none`
-otherwise. Mirrors `UserProfilePage.accountsPanelEffect`.
--}
-accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
-accountsPanelEffect maybeAccountsPanelMsg =
-    maybeAccountsPanelMsg
-        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-        |> Maybe.withDefault Effect.none
+            Sub.none
 
 
 
 -- UPDATE
-
-
-type Msg
-    = TabSelected Tab
-    | GotOwnServerResult (Result Grpc.Error AccountsPanel.Server)
-    | AddServerClicked AccountsPanel.Server
-    | GotAdmins (Result Grpc.Error GetUsersResponse)
-    | GotVersion (Result Grpc.Error GetServiceVersionResponse)
-    | RenameClicked String
-    | RenameChanged String
-    | RenameCancelClicked
-    | RenameSaveClicked
-    | EditDescriptionClicked AccountsPanel.Server
-    | EditPrivacyPolicyClicked AccountsPanel.Server
-    | EditMediaPolicyClicked AccountsPanel.Server
-    | PermissionsEditClicked ServerPermissionsSet
-    | PermissionRemoveClicked ServerPermissionsSet Permission
-    | PermissionAddSelectionChanged ServerPermissionsSet String
-    | PermissionAddClicked ServerPermissionsSet
-    | PermissionsCancelClicked ServerPermissionsSet
-    | PermissionsSaveClicked ServerPermissionsSet
-    | GotPermissionsSaveResult ServerPermissionsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
-    | LogoEditClicked
-    | LogoRemoveClicked
-    | LogoCancelClicked
-    | LogoSaveClicked
-    | GotLogoSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
-    | ColorEditClicked ServerColorField
-    | ColorChanged ServerColorField String
-    | ColorCancelClicked ServerColorField
-    | ColorSaveClicked ServerColorField
-    | GotColorSaveResult ServerColorField (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
-    | FederationEditClicked
-    | FederationCancelClicked
-    | FederationSaveClicked
-    | GotFederationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
-    | FederatedServerHostInputChanged String
-    | FederatedServerAddClicked
-    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.Server)
-    | FederatedServerRemoveClicked String
-    | FederatedServerRemoved String
-    | FederatedServerConfiguredByDefaultToggled String
-    | FederatedServerPinnedByDefaultToggled String
-    | MoveFederatedServerLeftClicked String
-    | MoveFederatedServerRightClicked String
-    | GotPreMoveFederatedServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
-    | FederatedServerMoveSettled String
-    | AnimateFederatedServerFlip Animation.Msg
-    | AnimateFederatedServerMove Animation.Msg
-    | SharedMsg Shared.Msg
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -1325,17 +975,367 @@ updateInner shared msg model =
             ( { model | renameStatus = renameStatus, logoEdit = logoEdit }, Effect.fromShared subMsg )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model.federationEdit of
-        Just edit ->
-            Sub.batch
-                [ UI.Flip.subscription AnimateFederatedServerFlip (Dict.values edit.itemAnimations)
-                , UI.Flip.moveSubscription AnimateFederatedServerMove (Dict.values edit.moveAnimations)
-                ]
+{-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known
+_and_ actually connected (see `AccountsPanel.knownConnectedServer`) -- a
+known-but-disconnected entry is treated the same as not known at all, so this
+page falls back to its own probe (just like a never-added host) rather than
+trying to show configuration/admins/version for a server it can't currently
+reach.
+-}
+knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
+knownConnectedServer shared targetHost =
+    AccountsPanel.knownConnectedServer shared.accounts.servers targetHost
+
+
+{-| The `Server` to actually show details for -- whichever the app already
+knows about and is connected to (from `Shared.AccountsPanel`, if this
+server's been added to Accounts & Servers already), falling back to this
+page's own probe (`ownServerStatus`) otherwise.
+-}
+effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.Server
+effectiveServer shared model =
+    case knownConnectedServer shared model.targetHost of
+        Just server ->
+            Just server
 
         Nothing ->
-            Sub.none
+            case model.ownServerStatus of
+                OwnServerLoaded server ->
+                    Just server
+
+                _ ->
+                    Nothing
+
+
+isKnownServer : Shared.Model -> Model -> Bool
+isKnownServer shared model =
+    knownConnectedServer shared model.targetHost /= Nothing
+
+
+{-| `model.targetHost`/`isSecure` reassembled into the `[http|https]:hostname`
+form `Pages.Server.ServerIdentifier_`'s route uses -- just for error messages
+here (see `view`'s `OwnServerFailed` branch); this module has no route of its
+own to round-trip through.
+-}
+identifierText : Model -> String
+identifierText model =
+    (if model.isSecure then
+        "https:"
+
+     else
+        "http:"
+    )
+        ++ model.targetHost
+
+
+{-| Keeps `Shared.Breadcrumbs` pointed at this page's own
+`FromServerHost targetHost` -- mirrors `Components.Pages.UserProfilePage.setBreadcrumbsHost`
+(reissued after every `update`, a no-op once already in sync via the same
+equality check), so the trail identifies this server both on the very first
+paint and across any later host change (e.g. `GotOwnServerResult` resolving
+the own-probe).
+-}
+setBreadcrumbsHost : Shared.Model -> Model -> Effect Msg
+setBreadcrumbsHost shared model =
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost model.targetHost) then
+        Effect.none
+
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost model.targetHost) model.targetHost []))
+
+
+{-| Persists `model.activeTab` to the URL as a `tab` query param, via
+`replaceUrl` (not `pushUrl` -- switching tabs shouldn't spam browser history
+with one entry per click). Omitted entirely at the default (`AboutTab`), so
+the common case keeps a clean URL. Mirrors
+`Components.Pages.PostsPage.pushSearchUrl` exactly, just over a single `Tab`
+param instead of `search_text`/`context`.
+-}
+pushTabUrl : Model -> Effect Msg
+pushTabUrl model =
+    let
+        tabParams =
+            if model.activeTab == AboutTab then
+                []
+
+            else
+                [ Url.Builder.string "tab" (tabParam model.activeTab) ]
+    in
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery tabParams)
+        |> Effect.fromCmd
+
+
+fetchAdmins : AccountsPanel.Server -> Effect Msg
+fetchAdmins server =
+    Grpc.new Jonline.getUsers defaultGetUsersRequest
+        |> Grpc.setHost (AccountsPanel.serverUrl server)
+        |> Grpc.toTask
+        |> Task.attempt GotAdmins
+        |> Effect.fromCmd
+
+
+fetchVersion : AccountsPanel.Server -> Effect Msg
+fetchVersion server =
+    Grpc.new Jonline.getServiceVersion {}
+        |> Grpc.setHost (AccountsPanel.serverUrl server)
+        |> Grpc.toTask
+        |> Task.attempt GotVersion
+        |> Effect.fromCmd
+
+
+{-| The signed-in, enabled account (if any) on this specific server, but only
+if it actually has `ADMIN` -- what gates the Rename button/RPC. Renaming (or
+any other `ConfigureServer` mutation) is only possible for a server that's
+already known (see the module doc), so this only ever matches once
+`isKnownServer` is `True`.
+-}
+adminAccountFor : Shared.Model -> Model -> Maybe AccountsPanel.Account
+adminAccountFor shared model =
+    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.andThen
+            (\account ->
+                if AccountsPanel.isAdmin account then
+                    Just account
+
+                else
+                    Nothing
+            )
+
+
+{-| `model`'s in-progress `PermissionsEdit` for one `ServerPermissionsSet`,
+alongside its setter `setPermissionsEditFor` just below -- lets `update`/
+`view` treat all three sections generically instead of a `case` per Msg per
+section.
+-}
+permissionsEditFor : ServerPermissionsSet -> Model -> Maybe PermissionsEdit
+permissionsEditFor set model =
+    case set of
+        AnonymousPermissions ->
+            model.anonymousPermissionsEdit
+
+        DefaultPermissions ->
+            model.defaultPermissionsEdit
+
+        BasicPermissions ->
+            model.basicPermissionsEdit
+
+
+setPermissionsEditFor : ServerPermissionsSet -> Maybe PermissionsEdit -> Model -> Model
+setPermissionsEditFor set edit model =
+    case set of
+        AnonymousPermissions ->
+            { model | anonymousPermissionsEdit = edit }
+
+        DefaultPermissions ->
+            { model | defaultPermissionsEdit = edit }
+
+        BasicPermissions ->
+            { model | basicPermissionsEdit = edit }
+
+
+{-| One `ServerPermissionsSet`'s current list out of a `ServerConfiguration`,
+alongside its writer `applyPermissionsFor` just below.
+-}
+permissionsFor : ServerPermissionsSet -> ServerConfiguration -> List Permission
+permissionsFor set config =
+    case set of
+        AnonymousPermissions ->
+            config.anonymousUserPermissions
+
+        DefaultPermissions ->
+            config.defaultUserPermissions
+
+        BasicPermissions ->
+            config.basicUserPermissions
+
+
+applyPermissionsFor : ServerPermissionsSet -> List Permission -> ServerConfiguration -> ServerConfiguration
+applyPermissionsFor set permissions config =
+    case set of
+        AnonymousPermissions ->
+            { config | anonymousUserPermissions = permissions }
+
+        DefaultPermissions ->
+            { config | defaultUserPermissions = permissions }
+
+        BasicPermissions ->
+            { config | basicUserPermissions = permissions }
+
+
+{-| `LogoSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
+the same way `applyPermissionsFor`'s result is -- overlays just the change
+`edit.choice` describes onto a freshly re-fetched `ServerConfiguration`'s
+`serverInfo.logo.squareMediaId`, leaving every other field (including the
+other three `ServerLogo` variants, none of which this page edits) untouched.
+Mirrors `Components.Pages.UserProfilePage.applyAvatarChoice`.
+-}
+applyLogoChoice : LogoChoice -> ServerConfiguration -> ServerConfiguration
+applyLogoChoice choice config =
+    let
+        info =
+            Maybe.withDefault defaultServerInfo config.serverInfo
+
+        logo =
+            Maybe.withDefault defaultServerLogo info.logo
+
+        setSquareMediaId squareMediaId =
+            { config | serverInfo = Just { info | logo = Just { logo | squareMediaId = squareMediaId } } }
+    in
+    case choice of
+        LogoUnchanged ->
+            config
+
+        LogoChosen mediaId ->
+            setSquareMediaId (Just mediaId)
+
+        LogoRemoved ->
+            setSquareMediaId Nothing
+
+
+{-| One `ServerColorField`'s current ARGB value out of a `ServerConfiguration`,
+alongside its writer `applyColorFor` just below -- both mirror `permissionsFor`/
+`applyPermissionsFor`, just over `serverInfo.colors` instead of a top-level
+permission list.
+-}
+colorArgbFor : ServerColorField -> ServerConfiguration -> Maybe Int
+colorArgbFor field config =
+    let
+        colors =
+            config.serverInfo |> Maybe.andThen .colors
+    in
+    case field of
+        PrimaryColor ->
+            colors |> Maybe.andThen .primary
+
+        NavigationColor ->
+            colors |> Maybe.andThen .navigation
+
+
+applyColorFor : ServerColorField -> Int -> ServerConfiguration -> ServerConfiguration
+applyColorFor field argb config =
+    let
+        info =
+            Maybe.withDefault defaultServerInfo config.serverInfo
+
+        colors =
+            Maybe.withDefault defaultServerColors info.colors
+
+        newColors =
+            case field of
+                PrimaryColor ->
+                    { colors | primary = Just argb }
+
+                NavigationColor ->
+                    { colors | navigation = Just argb }
+    in
+    { config | serverInfo = Just { info | colors = Just newColors } }
+
+
+{-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
+the same way `applyPermissionsFor`'s/`applyColorFor`'s results are -- overlays
+`servers` (the edit's `pending` list, in its edit's own order) onto a freshly
+re-fetched `ServerConfiguration`'s `federationInfo`, leaving every other field
+untouched.
+-}
+applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
+applyFederatedServers servers config =
+    { config | federationInfo = Just { servers = servers } }
+
+
+{-| Updates the one entry of `edit.pending` matching `host`, if any --
+`FederatedServerConfiguredByDefaultToggled`/`FederatedServerPinnedByDefaultToggled`'s
+shared plumbing.
+-}
+mapPendingHost : String -> (FederatedServer -> FederatedServer) -> FederationEdit -> FederationEdit
+mapPendingHost host fn edit =
+    { edit
+        | pending =
+            edit.pending
+                |> List.map
+                    (\federatedServer ->
+                        if federatedServer.host == host then
+                            fn federatedServer
+
+                        else
+                            federatedServer
+                    )
+    }
+
+
+{-| `model`'s in-progress `ColorEdit` for one `ServerColorField`, alongside its
+setter `setColorEditFor` just below -- mirrors `permissionsEditFor`/
+`setPermissionsEditFor`.
+-}
+colorEditFor : ServerColorField -> Model -> Maybe ColorEdit
+colorEditFor field model =
+    case field of
+        PrimaryColor ->
+            model.primaryColorEdit
+
+        NavigationColor ->
+            model.navigationColorEdit
+
+
+setColorEditFor : ServerColorField -> Maybe ColorEdit -> Model -> Model
+setColorEditFor field edit model =
+    case field of
+        PrimaryColor ->
+            { model | primaryColorEdit = edit }
+
+        NavigationColor ->
+            { model | navigationColorEdit = edit }
+
+
+{-| Starts a `PermissionsEdit` off `currentPermissions` (that set's own, as
+currently configured) -- `addSelection` defaults to the first grantable
+permission not already in that list, same as `resolveAddSelection` picks
+after every add/remove. Mirrors `Components.Pages.UserProfilePage.newPermissionsEdit`.
+-}
+newPermissionsEdit : List Permission -> PermissionsEdit
+newPermissionsEdit currentPermissions =
+    { pending = currentPermissions
+    , addSelection = resolveAddSelection Nothing currentPermissions
+    , status = AccountsPanel.Idle
+    }
+
+
+{-| Keeps the "Add Permission" `<select>`'s selection valid as `pending`
+changes: keeps `current` if it's still addable (not already in `pending`),
+otherwise falls back to the first still-addable permission (`Nothing` if
+every permission's already been added). Mirrors `UserProfilePage`'s own.
+-}
+resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
+resolveAddSelection current pending =
+    let
+        available =
+            addablePermissions pending
+    in
+    case current of
+        Just permission ->
+            if List.member permission available then
+                Just permission
+
+            else
+                List.head available
+
+        Nothing ->
+            List.head available
+
+
+addablePermissions : List Permission -> List Permission
+addablePermissions pending =
+    Users.configurableServerPermissions |> List.filter (\permission -> not (List.member permission pending))
+
+
+{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `AccountsPanel.updateServerConfig`,
+if a token refresh happened) into an `Effect` to forward it, `Effect.none`
+otherwise. Mirrors `UserProfilePage.accountsPanelEffect`.
+-}
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
 
 
 

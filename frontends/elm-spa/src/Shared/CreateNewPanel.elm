@@ -66,20 +66,6 @@ import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 
-type SubmitStatus
-    = Idle
-    | Submitting
-    | SubmitFailed String
-
-
-{-| Which kind of thing this panel's draft is right now -- switched via the
-header's tabs (`modeTabsView`). See module doc.
--}
-type Mode
-    = PostMode
-    | EventMode
-
-
 type alias Model =
     { open : Bool
     , mode : Mode
@@ -106,27 +92,6 @@ type alias Model =
     }
 
 
-init : Model
-init =
-    { open = False
-    , mode = PostMode
-    , postingAs = Nothing
-    , visibility = Nothing
-    , title = ""
-    , link = ""
-    , media = []
-    , content = ""
-    , startsAt = Nothing
-    , endsAt = Nothing
-    , status = Idle
-    }
-
-
-isOpen : Model -> Bool
-isOpen model =
-    model.open
-
-
 type Msg
     = ToggleOpen
     | CloseClicked
@@ -147,6 +112,47 @@ type Msg
     | MediaSaved (List MediaReference)
     | SaveClicked
     | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
+
+
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
+
+
+{-| Which kind of thing this panel's draft is right now -- switched via the
+header's tabs (`modeTabsView`). See module doc.
+-}
+type Mode
+    = PostMode
+    | EventMode
+
+
+type alias Resolved =
+    { server : AccountsPanel.Server
+    , account : AccountsPanel.Account
+    }
+
+
+init : Model
+init =
+    { open = False
+    , mode = PostMode
+    , postingAs = Nothing
+    , visibility = Nothing
+    , title = ""
+    , link = ""
+    , media = []
+    , content = ""
+    , startsAt = Nothing
+    , endsAt = Nothing
+    , status = Idle
+    }
+
+
+isOpen : Model -> Bool
+isOpen model =
+    model.open
 
 
 noForward : ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg )
@@ -346,12 +352,6 @@ convention) if there's no eligible account at all.
 postingAsHost : AccountsPanel.Model -> Model -> String
 postingAsHost accountsPanelModel model =
     resolvedAccount accountsPanelModel model |> Maybe.map .server |> Maybe.withDefault ""
-
-
-type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
-    }
 
 
 {-| Verifies a `SaveClicked` is actually submittable right now: `title` isn't

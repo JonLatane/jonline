@@ -30,12 +30,12 @@ page shared req =
         }
 
 
-
--- MODEL
-
-
 type alias Model =
     UserProfilePage.Model
+
+
+type alias Msg =
+    UserProfilePage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -47,12 +47,11 @@ init shared req =
     UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query
 
 
-
--- UPDATE
-
-
-type alias Msg =
-    UserProfilePage.Msg
+view : Shared.Model -> Request.With Params -> Model -> View Msg
+view shared req model =
+    { title = UI.pageTitle shared [ UserProfilePage.titleFor model ]
+    , body = UI.layout shared req.route fromShared [ UserProfilePage.view shared model ]
+    }
 
 
 {-| See `Components.UserProfilePage.fromShared` -- lets `Main` notify this
@@ -62,14 +61,3 @@ at startup), same as `Pages.Post.PostId_.fromShared`.
 fromShared : Shared.Msg -> Msg
 fromShared =
     UserProfilePage.fromShared
-
-
-
--- VIEW
-
-
-view : Shared.Model -> Request.With Params -> Model -> View Msg
-view shared req model =
-    { title = UI.pageTitle shared [ UserProfilePage.titleFor model ]
-    , body = UI.layout shared req.route fromShared [ UserProfilePage.view shared model ]
-    }
