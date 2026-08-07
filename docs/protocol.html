@@ -4877,7 +4877,10 @@ function copied(target, str) {
 //      <nav id="toc-sidebar">, which becomes the sidebar's content.
 //   2. Inserts a few extra links (Authentication/HTTP Endpoints/API Design
 //      Notes/gRPC API) into the "jonline.proto" sub-list, since protoc-gen-doc's
-//      generated TOC only includes top-level message/service headings.
+//      generated TOC only includes top-level message/service headings. Every
+//      RPC method from the gRPC API table is then listed as a child of the
+//      "gRPC API" entry, in table order; since the table has no per-row ids
+//      to link to, one is added to each row as it's listed.
 //   3. Appends the sidebar as the LAST child of <body> (not the first) so that
 //      dragging a text selection in the main content can't "bleed" into the
 //      sidebar: browsers extend a selection's focus to whatever DOM node is
@@ -4951,6 +4954,7 @@ function copied(target, str) {
       ['gRPC API', '#grpc-api']
     ];
     var afterItem = jonlineItem;
+    var grpcApiItem = null;
     extraLinks.forEach(function (entry) {
       var item = document.createElement('li');
       var link = document.createElement('a');
@@ -4959,7 +4963,32 @@ function copied(target, str) {
       item.appendChild(link);
       afterItem.insertAdjacentElement('afterend', item);
       afterItem = item;
+      if (entry[1] === '#grpc-api') grpcApiItem = item;
     });
+
+    // List each RPC method (in the order they appear in the gRPC API table)
+    // as children of the "gRPC API" TOC entry. The table has no per-row ids
+    // to link to, so we add one (prefixed to avoid clashing with existing
+    // message/service anchor ids) to each row as we go.
+    var grpcTable = document.getElementById('grpc-api');
+    grpcTable = grpcTable && grpcTable.nextElementSibling;
+    if (grpcApiItem && grpcTable && grpcTable.tagName === 'TABLE') {
+      var rpcList = document.createElement('ul');
+      grpcTable.querySelectorAll('tbody > tr').forEach(function (row) {
+        var nameCell = row.querySelector('td');
+        if (!nameCell) return;
+        var name = nameCell.textContent.trim();
+        var id = 'grpc-api-' + name;
+        row.id = id;
+        var item = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = '#' + id;
+        link.textContent = name;
+        item.appendChild(link);
+        rpcList.appendChild(item);
+      });
+      grpcApiItem.appendChild(rpcList);
+    }
   }
 
   var resizeHandle = document.createElement('div');
@@ -5041,7 +5070,8 @@ function copied(target, str) {
     'background:var(--color-theme-bg,#fff);color:var(--color-theme-text,#24292f);' +
     'font-size:14px;cursor:pointer;' +
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}' +
-    '.markdown-style{max-width:1080px!important;transition:margin-left .15s ease;}' +
+    '.markdown-style{max-width:1080px!important;margin-top:32px!important;transition:margin-left .15s ease;}' +
+    'dark-mode{backdrop-filter:blur(4px);border-radius:4px;padding:0 6px;}' +
     'dark-mode::part(text){font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}';
   document.head.appendChild(style);
 })();
