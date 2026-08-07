@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "recipient_type"))]
+    pub struct RecipientType;
+}
+
 diesel::table! {
     event_attendances (id) {
         id -> Int8,
@@ -60,26 +66,6 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
         event_sync_source_id -> Nullable<Int8>,
-    }
-}
-
-diesel::table! {
-    email_message_recipients (id) {
-        id -> Int8,
-        email_message_id -> Int8,
-        user_id -> Int8,
-        recipient_type -> Varchar,
-        created_at -> Timestamp,
-    }
-}
-
-diesel::table! {
-    email_messages (id) {
-        id -> Int8,
-        message_id -> Varchar,
-        minio_path -> Varchar,
-        headers -> Jsonb,
-        created_at -> Timestamp,
     }
 }
 
@@ -191,6 +177,36 @@ diesel::table! {
         user_moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::RecipientType;
+
+    message_recipients (id) {
+        id -> Int8,
+        message_id -> Int8,
+        user_id -> Int8,
+        recipient_type -> RecipientType,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::TsVector;
+
+    messages (id) {
+        id -> Int8,
+        from_user_id -> Nullable<Int8>,
+        subject -> Nullable<Varchar>,
+        body_text -> Nullable<Text>,
+        email_headers -> Nullable<Jsonb>,
+        email_message_id -> Nullable<Varchar>,
+        email_minio_path -> Nullable<Varchar>,
+        created_at -> Timestamp,
+        search_text -> TsVector,
     }
 }
 
@@ -342,8 +358,6 @@ diesel::joinable!(event_instances -> posts (post_id));
 diesel::joinable!(event_sync_sources -> users (user_id));
 diesel::joinable!(events -> event_sync_sources (event_sync_source_id));
 diesel::joinable!(events -> posts (post_id));
-diesel::joinable!(email_message_recipients -> email_messages (email_message_id));
-diesel::joinable!(email_message_recipients -> users (user_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
 diesel::joinable!(federated_profiles -> federated_users (federated_user_id));
@@ -354,6 +368,9 @@ diesel::joinable!(group_posts -> users (user_id));
 diesel::joinable!(groups -> media (avatar_media_id));
 diesel::joinable!(memberships -> groups (group_id));
 diesel::joinable!(memberships -> users (user_id));
+diesel::joinable!(message_recipients -> messages (message_id));
+diesel::joinable!(message_recipients -> users (user_id));
+diesel::joinable!(messages -> users (from_user_id));
 diesel::joinable!(posts -> users (user_id));
 diesel::joinable!(push_token_posts -> posts (post_id));
 diesel::joinable!(push_token_posts -> push_tokens (push_token_id));
@@ -365,8 +382,6 @@ diesel::joinable!(user_posts -> users (user_id));
 diesel::joinable!(user_refresh_tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    email_message_recipients,
-    email_messages,
     event_attendances,
     event_instances,
     event_sync_sources,
@@ -380,6 +395,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     groups,
     media,
     memberships,
+    message_recipients,
+    messages,
     posts,
     push_token_posts,
     push_tokens,

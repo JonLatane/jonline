@@ -48,6 +48,7 @@ prost-wkt = "0.6.0"
 prost-wkt-types = "0.6.0"
 diesel = { version = "2.2.4", features = ["postgres", "r2d2", "serde_json"] }
 diesel_migrations = "2.2.0"
+diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
 # Not used directly -- pulled in transitively by diesel's "postgres" feature.
 # Declared here only so its "bundled" feature (vendors & statically compiles
 # libpq via pq-src, satisfying diesel's `pq-sys >=0.4.0, <0.7.0` requirement)

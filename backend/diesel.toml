@@ -3,6 +3,9 @@
 
 [print_schema]
 file = "src/schema.rs"
+# Required by diesel-derive-enum 2.1.0's `ExistingTypePath` mode (see models/email_models.rs'
+# `RecipientType`) so the generated sql_types::RecipientType marker implements QueryId.
+custom_type_derives = ["diesel::query_builder::QueryId"]
 # Patches the raw `diesel print-schema` output so posts.search_text/users.search_text use
 # diesel_full_text_search::TsVector instead of the local `Tsvector` struct Diesel generates for
 # the postgres `tsvector` type (Diesel's postgres-type-name -> Rust-type-name convention
