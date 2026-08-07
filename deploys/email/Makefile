@@ -1,10 +1,5 @@
 .NOTPARALLEL:
 
-# Selects which provider-specific k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml manifest
-# create_email_postgres/etc. below use (mirrors ../Makefile's K8S_PROVIDER, which selects the
-# per-domain jonline-postgres equivalent).
-K8S_PROVIDER ?= digitalocean
-
 # create_email: boots the shared Stalwart controller (Namespace, PVC, Deployment, two ClusterIP
 # Services, and an IngressRouteTCP on the shared Traefik ingress's `smtp` entrypoint -- see
 # k8s/stalwart.yaml's comments). Requires deploys/ingress's shared controller to already be
@@ -21,23 +16,6 @@ restart_email:
 	kubectl rollout restart deployment stalwart -n jonline-email
 remove_email:
 	kubectl delete -f k8s/stalwart.yaml -n jonline-email
-
-# Optional Postgres backend for Stalwart's OWN config (accepted domains, MTA hook definitions,
-# DKIM keys, TLS state) and queue, as an alternative to the embedded RocksDB store on
-# stalwart-data's PVC -- see k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml's header comment and
-# ../Makefile's equivalent create_backend_postgres for the per-domain jonline-postgres version
-# this mirrors. Run create_email first (it creates the jonline-email Namespace); then pick
-# "PostgreSQL" in Stalwart's setup wizard, pointed at
-# stalwart-postgres.jonline-email.svc.cluster.local:5432 with the credentials baked into the yaml.
-create_email_postgres:
-	cd .. && $(MAKE) deploy_ensure_storageclass_retain
-	kubectl create -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml --save-config -n jonline-email
-update_email_postgres:
-	kubectl apply -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml -n jonline-email
-delete_email_postgres:
-	- kubectl delete -f k8s/k8s-stalwart-postgres-$(K8S_PROVIDER).yaml -n jonline-email
-restart_email_postgres:
-	kubectl rollout restart statefulset stalwart-postgres -n jonline-email
 
 # create_email_admin_secret: pre-codes Stalwart's initial admin credentials into a Secret instead
 # of hunting a random one-time password out of `kubectl logs` (see k8s/stalwart.yaml's

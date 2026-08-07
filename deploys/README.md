@@ -216,8 +216,6 @@ NAMESPACE=my_namespace DOMAIN=my.domain.example.com make add_ingress_domain
 
 See [`deploys/ingress/README.md`](./ingress/README.md) for the full walkthrough, including how to cut a domain over from its own LoadBalancer without downtime.
 
-This replaces the earlier, incomplete "JBL" (Jonline Balancer of Loads) effort described below, which hand-rolled an equivalent via a custom Rust binary shelling out to Nginx.
-
 ### Example Kubernetes Cluster Setups
 #### K8s cluster with multiple Kubernetes LoadBalancers (without a shared ingress)
 This is how Jonline was originally deployed, and still is by default for a single domain.

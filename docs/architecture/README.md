@@ -28,7 +28,7 @@ The main CI jobs behind Jonline are:
 [![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
 
 ## Example Kubernetes Cluster Setups
-### K8s cluster with multiple Kubernetes LoadBalancers (without JBL)
+### K8s cluster with multiple Kubernetes LoadBalancers
 This is how Jonline is currently deployed.
 
 ![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg)

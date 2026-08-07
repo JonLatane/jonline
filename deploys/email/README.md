@@ -49,17 +49,14 @@ make create_email
 
 This installs Stalwart (`Deployment`, two `ClusterIP` Services, a `PersistentVolumeClaim`, and an `IngressRouteTCP` onto the shared Traefik controller) into its own `jonline-email` namespace -- see `k8s/stalwart.yaml`'s comments for what each piece is for, in particular:
 
-* The `stalwart-data` PVC holds **Stalwart's own configuration** (accepted domains, MTA Hook definitions, DKIM keys, TLS state) and its in-flight message queue -- not user mailboxes. Losing it means redoing a few minutes of setup, not losing anyone's mail, since accepted messages are handed off immediately and never stored here. If you'd rather this config lived in Postgres than the embedded RocksDB store, `make create_email_postgres` stands up a 1Gi Postgres instance in the same namespace -- see `k8s/k8s-stalwart-postgres-digitalocean.yaml`'s header comment; pick "PostgreSQL" in Stalwart's setup wizard and point it at `stalwart-postgres.jonline-email.svc.cluster.local:5432`.
+* The `stalwart-data` PVC holds **Stalwart's own configuration** (accepted domains, MTA Hook definitions, DKIM keys, TLS state) and its in-flight message queue -- not user mailboxes. Losing it means redoing a few minutes of setup, not losing anyone's mail, since accepted messages are handed off immediately and never stored here.
 * Port 8080 (the admin UI / setup wizard) is deliberately `ClusterIP`-only, never a `LoadBalancer`. Reach it with:
 
   ```bash
   make deploy_email_admin_port_forward
   # then open http://localhost:8080
-
-  # The k8s postgres instance is at: 
-  # postgresql://admin:secure_password1@stalwart-postgres.jonline-email.svc.cluster.local/stalwart
   ```
-* On a fresh volume, Stalwart boots into a setup wizard -- log in with the credentials from `create_email_admin_secret` above (or the random one-time password from `kubectl logs -n jonline-email deployment/stalwart` if you skipped it) and walk through hostname/storage/directory choices.
+* On a fresh volume, Stalwart boots into a setup wizard -- log in with the credentials from `create_email_admin_secret` above (or the random one-time password from `kubectl logs -n jonline-email deployment/stalwart` if you skipped it) and walk through hostname/storage/directory choices. Pick **RocksDB** for storage (there's no Postgres option provisioned here -- see the PVC note above), and set logging to output to the **console** rather than a file, so `kubectl logs` actually shows something.
 
 Get the shared ingress's external IP (what your MX records will point at -- Stalwart no longer has an IP of its own) with:
 
