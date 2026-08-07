@@ -66,10 +66,12 @@ make deploy_email_get_ip
 
 ## Onboarding a domain
 
-Unlike `deploys/ingress`'s `add_ingress_domain`, this isn't a `kubectl apply` of generated YAML -- Stalwart keeps its accepted-domains list and MTA Hook definitions in its own database. `add_email_domain`/`remove_email_domain`/`list_email_domains` script that database through Stalwart's REST Management API (its JMAP-based `x:Domain`/`x:MtaHook` extension objects; see [stalw.art/docs/api/management](https://stalw.art/docs/api/management/overview/)) instead of walking the admin UI by hand:
+Unlike `deploys/ingress`'s `add_ingress_domain`, this isn't a `kubectl apply` of generated YAML -- Stalwart keeps its accepted-domains list and MTA Hook definitions in its own database. `add_email_domain`/`remove_email_domain`/`list_email_domains` script that database through Stalwart's REST Management API (its JMAP-based `x:Domain`/`x:MtaHook` extension objects; see [stalw.art/docs/api/management](https://stalw.art/docs/api/management/overview/)) instead of walking the admin UI by hand.
+
+**`make deploy_email_admin_port_forward` must already be running in another terminal for any of `add_email_domain`/`remove_email_domain`/`list_email_domains` to work** -- Stalwart's Management API is `ClusterIP`-only (same as the admin UI), so without the port-forward these will just hang or fail to connect to `localhost:8080`:
 
 ```bash
-make deploy_email_admin_port_forward &   # the API is ClusterIP-only, same as the admin UI
+make deploy_email_admin_port_forward &   # leave this running
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com make add_email_domain
 ```
 
@@ -88,9 +90,44 @@ Per domain, still in Cloudflare (or wherever it's hosted):
 | SPF | `my.domain.example.com. TXT "v=spf1 mx ~all"` | Helps other servers trust anything you bounce, even before you're sending real outbound mail. |
 | DMARC | `_dmarc.my.domain.example.com TXT "v=DMARC1; p=none; rua=mailto:you@..."` | Start at `p=none` (report-only). |
 
-Before touching DNS, validate mail actually reaches your namespace by watching `kubectl logs -f deployment/jonline -n mynamespace` while sending a test message with `swaks --to test@<target> --server <ingress-ip>`.
-
 Also confirm your hosting/cloud provider allows inbound traffic on port 25 -- some block it by default even for receive-only use, and require a support ticket to lift it.
+
+### Testing
+
+Validate mail actually reaches your namespace *before* touching real DNS, by connecting straight to the ingress IP -- this isolates "does Stalwart accept mail for this domain" from "is DNS wired up right":
+
+1. **Confirm the port's even reachable** (this is a Traefik/firewall check, independent of Stalwart):
+
+   ```bash
+   openssl s_client -connect <ingress-ip>:25 -crlf
+   ```
+
+   You should see Stalwart's `220 ... ESMTP` banner. If it hangs, it's `deploys/ingress`'s `IngressRouteTCP`/firewall, not Stalwart.
+
+2. **Send a test message** with `swaks`, bypassing MX/DNS by pointing straight at the IP:
+
+   ```bash
+   swaks --to test@<target> --server <ingress-ip> --header "Subject: Test" --body "Test message."
+   ```
+
+   Always pass `--header`/`--body` explicitly -- without them, `swaks` may decide stdin isn't a real terminal and sit waiting for you to type the message body instead of using its canned default (end manual entry with a lone `.` or `Ctrl-D` if you get stuck here).
+
+3. **Watch both ends while it sends:**
+
+   ```bash
+   kubectl logs -f deployment/stalwart -n jonline-email     # did Stalwart accept it / fire the hook?
+   kubectl logs -f deployment/jonline -n mynamespace         # did the hook's POST /email land?
+   ```
+
+If it doesn't just work, the SMTP response usually tells you exactly which layer to blame:
+
+| Response | Cause | Fix |
+| --- | --- | --- |
+| `550 5.1.2 Relay not allowed.` | Stalwart doesn't think it owns this domain at all -- either `add_email_domain` wasn't run/succeeded, or Stalwart cached an earlier "no such domain" lookup before the domain existed. | `make list_email_domains` to confirm it's actually there; if it is, `make deploy_email_restart` to flush Stalwart's in-memory domain cache (it caches negative lookups with a TTL) and retest. |
+| `550 5.1.2 Mailbox does not exist.` | The domain is accepted, but Stalwart itself has no matching account/mailing list/catch-all for that address -- expected, since Stalwart deliberately never has its own concept of `jonline` users. The `Domain` object needs `allowRelaying: true` so Stalwart accepts *any* recipient and defers the real "does this user exist" check downstream (`jonline`'s backend silently drops unmatched recipients -- see `backend/src/web/email.rs`). `add_email_domain` sets this automatically for new domains; for one created before that existed, patch it directly (`x:Domain/set` `update`, not `create` -- `create` on an existing domain just no-ops with `primaryKeyViolation`). | `make deploy_email_restart` after patching, same caching reason as above. |
+| Hangs ~30s after `DATA`, then `451 4.3.5 Unable to accept message at this time.` | Everything on the Stalwart side is correct -- it accepted the mail and fired the MTA Hook, which then timed out (hook's default 30s timeout, `tempFailOnError: true`) trying to reach `http://jonline.<namespace>.svc.cluster.local:27705/email`. Nothing's listening there yet. | Deploy `jonline` with the port-27705 internal endpoint to that namespace, then retest -- this is actually a good sign, it confirms the whole chain up to the handoff works. |
+
+Once a test message with a *real* onboarded username actually lands (check the recipient's inbox, or `email_messages`/`email_message_recipients` in that namespace's Postgres), you're ready to point real DNS at it.
 
 ## Removing a domain / tearing down
 
