@@ -31,14 +31,18 @@ CREATE TABLE messages (
 CREATE UNIQUE INDEX idx_messages_email_message_id ON messages(email_message_id);
 CREATE INDEX idx_messages_search_text ON messages USING GIN (search_text);
 
+-- Uses the 'simple' text search config throughout (no stemming, no per-language stopword list)
+-- rather than 'english', for the same reason posts/users made the same switch: see
+-- 2026-07-23-012047_add_search_text_no_stopwords -- 'english' silently drops common words like
+-- "about" via its built-in stopword list, and this app's content isn't English-only anyway.
 CREATE FUNCTION messages_build_search_text(
   p_subject VARCHAR,
   p_body_text TEXT,
   p_email_headers JSONB
 ) RETURNS tsvector AS $$
   SELECT
-    setweight(to_tsvector('english', coalesce(p_subject, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(p_body_text, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(p_subject, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(p_body_text, '')), 'B') ||
     setweight(to_tsvector('simple', coalesce(p_email_headers::text, '')), 'D');
 $$ LANGUAGE sql IMMUTABLE;
 

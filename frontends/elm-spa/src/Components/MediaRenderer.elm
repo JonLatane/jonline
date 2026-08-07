@@ -63,7 +63,7 @@ view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPane
 view mediaSize sizeConstraint server maybeAccount onImageClicked media =
     let
         mediaUrl =
-            url server maybeAccount media
+            url mediaSize server maybeAccount media
 
         sizeClass =
             mediaSizeClass mediaSize ++ " " ++ sizeConstraintClass sizeConstraint
@@ -136,17 +136,39 @@ previewTimeFragment media =
 
 {-| Authorized URL for `media`, mirroring `Components.Users.mediaReferenceUrl`
 -- media may be visibility-restricted, so this may still 403 for a
-`maybeAccount` (or anonymous request) that isn't allowed to see it.
+`maybeAccount` (or anonymous request) that isn't allowed to see it. `Natural`
+sizing requests the server's larger rendition (`?size=large`) since it's used
+for a post's single "focus" media item, rather than the server's default
+size.
 -}
-url : AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> String
-url server maybeAccount media =
+url : MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> String
+url mediaSize server maybeAccount media =
     let
         base =
             AccountsPanel.mediaUrl server media.id |> Maybe.withDefault ""
-    in
-    case maybeAccount of
-        Just account ->
-            base ++ "?authorization=" ++ account.accessToken.token
 
-        Nothing ->
+        sizeParam =
+            case mediaSize of
+                Natural ->
+                    [ "size=large" ]
+
+                Small ->
+                    []
+
+                ExtraSmall ->
+                    []
+
+        authParam =
+            case maybeAccount of
+                Just account ->
+                    [ "authorization=" ++ account.accessToken.token ]
+
+                Nothing ->
+                    []
+    in
+    case sizeParam ++ authParam of
+        [] ->
             base
+
+        params ->
+            base ++ "?" ++ String.join "&" params

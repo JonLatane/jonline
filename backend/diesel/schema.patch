@@ -1,5 +1,5 @@
---- a/schema.rs
-+++ b/schema.rs
+--- a/schema.rs	2026-08-07 08:22:37
++++ b/schema.rs	2026-08-07 08:24:03
 @@ -4,10 +4,6 @@
      #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
      #[diesel(postgres_type(name = "recipient_type"))]
@@ -9,15 +9,15 @@
 -    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
 -    pub struct Tsvector;
  }
-
+ 
  diesel::table! {
 @@ -29,7 +25,7 @@
-
+ 
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
-
+ 
      event_instances (id) {
          id -> Int8,
 @@ -42,7 +38,7 @@
@@ -30,31 +30,33 @@
          sync_missing_since -> Nullable<Timestamp>,
      }
 @@ -199,7 +195,7 @@
-
+ 
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
-
+ 
      messages (id) {
          id -> Int8,
-@@ -210,13 +206,13 @@
+@@ -210,7 +206,7 @@
          email_message_id -> Nullable<Varchar>,
          email_minio_path -> Nullable<Varchar>,
          created_at -> Timestamp,
 -        search_text -> Tsvector,
 +        search_text -> TsVector,
+         messaging_group_id -> Int8,
      }
  }
-
+@@ -225,7 +221,7 @@
+ 
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
-
+ 
      posts (id) {
          id -> Int8,
-@@ -240,7 +236,7 @@
+@@ -249,7 +245,7 @@
          published_at -> Nullable<Timestamp>,
          last_activity_at -> Timestamp,
          unauthenticated_star_count -> Int8,
@@ -63,16 +65,16 @@
          sort_published_at -> Timestamp,
      }
  }
-@@ -327,7 +323,7 @@
-
+@@ -336,7 +332,7 @@
+ 
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
-
+ 
      users (id) {
          id -> Int8,
-@@ -350,7 +346,7 @@
+@@ -359,7 +355,7 @@
          response_count -> Int4,
          created_at -> Timestamp,
          updated_at -> Timestamp,

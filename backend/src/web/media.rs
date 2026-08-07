@@ -126,7 +126,7 @@ pub async fn media_file<'a>(
 /// Picks the (minio_path, content_type) to serve for a given size request.
 ///
 /// `size` of `Some("original")` always forces the unconverted original. Otherwise the requested
-/// size (defaulting to `Large` when `size` is `None`/unrecognized) is looked up, falling through
+/// size (defaulting to `Medium` when `size` is `None`/unrecognized) is looked up, falling through
 /// to the next *larger* converted size, and finally to the original if no converted size (at or
 /// above the request) is available -- which also covers media that hasn't been converted at all.
 fn resolve_media_size(media: &models::Media, size: Option<&str>) -> (String, String) {
@@ -136,8 +136,8 @@ fn resolve_media_size(media: &models::Media, size: Option<&str>) -> (String, Str
 
     let requested = match size {
         Some("small") => models::ConvertedSizeSpec::Small,
-        Some("medium") => models::ConvertedSizeSpec::Medium,
-        _ => models::ConvertedSizeSpec::Large,
+        Some("large") => models::ConvertedSizeSpec::Large,
+        _ => models::ConvertedSizeSpec::Medium,
     };
     let converted_sizes = media.converted_sizes();
 

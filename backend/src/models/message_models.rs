@@ -5,9 +5,32 @@ use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
 
 use super::User;
-use crate::schema::{message_recipients, messages};
+use crate::schema::{message_recipients, messages, messaging_groups};
 
+/// The canonical conversation between a set of participants -- every [`Message`] belongs to
+/// exactly one. `sorted_user_ids` excludes Bcc'd recipients (see [`MessageRecipient`],
+/// [`RecipientType::Bcc`]) since they're invisible to the group's other members by design; a
+/// message with no local To/Cc recipients (e.g. a purely Bcc'd or fully-external-recipient email)
+/// lands in the `[]` group rather than one of its own.
 #[derive(Debug, Queryable, Identifiable, Clone)]
+#[diesel(table_name = messaging_groups)]
+pub struct MessagingGroup {
+    pub id: i64,
+    /// Ascending, deduplicated participant user ids. Diesel reports Postgres arrays as
+    /// nullable-element regardless of the column's own nullability (mirroring
+    /// `post_models::Post::media`), but application code never stores a NULL element.
+    pub sorted_user_ids: Vec<Option<i64>>,
+    pub created_at: SystemTime,
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = messaging_groups)]
+pub struct NewMessagingGroup {
+    pub sorted_user_ids: Vec<i64>,
+}
+
+#[derive(Debug, Queryable, Identifiable, Associations, Clone)]
+#[diesel(belongs_to(MessagingGroup))]
 #[diesel(table_name = messages)]
 pub struct Message {
     pub id: i64,
@@ -18,6 +41,7 @@ pub struct Message {
     pub email_message_id: Option<String>,
     pub email_minio_path: Option<String>,
     pub created_at: SystemTime,
+    pub messaging_group_id: i64,
 }
 
 impl Message {
@@ -43,6 +67,7 @@ pub const MESSAGE_COLUMNS: (
     messages::email_message_id,
     messages::email_minio_path,
     messages::created_at,
+    messages::messaging_group_id,
 ) = (
     messages::id,
     messages::from_user_id,
@@ -52,6 +77,7 @@ pub const MESSAGE_COLUMNS: (
     messages::email_message_id,
     messages::email_minio_path,
     messages::created_at,
+    messages::messaging_group_id,
 );
 
 #[derive(Debug, Insertable)]
@@ -62,6 +88,7 @@ pub struct NewMessage {
     pub email_headers: Option<serde_json::Value>,
     pub email_message_id: Option<String>,
     pub email_minio_path: Option<String>,
+    pub messaging_group_id: i64,
 }
 
 /// `Message.email_headers`' typed shape. Address fields hold raw `To`/`Cc`/`Bcc`/`From` header

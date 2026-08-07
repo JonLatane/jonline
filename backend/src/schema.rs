@@ -207,6 +207,15 @@ diesel::table! {
         email_minio_path -> Nullable<Varchar>,
         created_at -> Timestamp,
         search_text -> TsVector,
+        messaging_group_id -> Int8,
+    }
+}
+
+diesel::table! {
+    messaging_groups (id) {
+        id -> Int8,
+        sorted_user_ids -> Array<Nullable<Int8>>,
+        created_at -> Timestamp,
     }
 }
 
@@ -370,6 +379,7 @@ diesel::joinable!(memberships -> groups (group_id));
 diesel::joinable!(memberships -> users (user_id));
 diesel::joinable!(message_recipients -> messages (message_id));
 diesel::joinable!(message_recipients -> users (user_id));
+diesel::joinable!(messages -> messaging_groups (messaging_group_id));
 diesel::joinable!(messages -> users (from_user_id));
 diesel::joinable!(posts -> users (user_id));
 diesel::joinable!(push_token_posts -> posts (post_id));
@@ -397,6 +407,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     memberships,
     message_recipients,
     messages,
+    messaging_groups,
     posts,
     push_token_posts,
     push_tokens,
