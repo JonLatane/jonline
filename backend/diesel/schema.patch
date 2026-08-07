@@ -1,18 +1,17 @@
 --- a/schema.rs
 +++ b/schema.rs
-@@ -1,11 +1,5 @@
- // @generated automatically by Diesel CLI.
-
--pub mod sql_types {
--    #[derive(diesel::sql_types::SqlType)]
+@@ -4,10 +4,6 @@
+     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+     #[diesel(postgres_type(name = "recipient_type"))]
+     pub struct RecipientType;
+-
+-    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
 -    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
 -    pub struct Tsvector;
--}
--
+ }
+
  diesel::table! {
-     event_attendances (id) {
-         id -> Int8,
-@@ -25,7 +19,7 @@
+@@ -29,7 +25,7 @@
 
  diesel::table! {
      use diesel::sql_types::*;
@@ -21,7 +20,7 @@
 
      event_instances (id) {
          id -> Int8,
-@@ -38,7 +32,7 @@
+@@ -42,7 +38,7 @@
          created_at -> Timestamp,
          updated_at -> Nullable<Timestamp>,
          event_sync_source_instance_id -> Nullable<Varchar>,
@@ -30,7 +29,23 @@
          user_id -> Nullable<Int8>,
          sync_missing_since -> Nullable<Timestamp>,
      }
-@@ -182,7 +176,7 @@
+@@ -199,7 +195,7 @@
+
+ diesel::table! {
+     use diesel::sql_types::*;
+-    use super::sql_types::Tsvector;
++    use diesel_full_text_search::TsVector;
+
+     messages (id) {
+         id -> Int8,
+@@ -210,13 +206,13 @@
+         email_message_id -> Nullable<Varchar>,
+         email_minio_path -> Nullable<Varchar>,
+         created_at -> Timestamp,
+-        search_text -> Tsvector,
++        search_text -> TsVector,
+     }
+ }
 
  diesel::table! {
      use diesel::sql_types::*;
@@ -39,7 +54,7 @@
 
      posts (id) {
          id -> Int8,
-@@ -206,7 +200,7 @@
+@@ -240,7 +236,7 @@
          published_at -> Nullable<Timestamp>,
          last_activity_at -> Timestamp,
          unauthenticated_star_count -> Int8,
@@ -48,7 +63,7 @@
          sort_published_at -> Timestamp,
      }
  }
-@@ -293,7 +287,7 @@
+@@ -327,7 +323,7 @@
 
  diesel::table! {
      use diesel::sql_types::*;
@@ -57,7 +72,7 @@
 
      users (id) {
          id -> Int8,
-@@ -316,7 +310,7 @@
+@@ -350,7 +346,7 @@
          response_count -> Int4,
          created_at -> Timestamp,
          updated_at -> Timestamp,

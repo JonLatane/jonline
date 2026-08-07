@@ -27,6 +27,14 @@ spec:
       protocol: TCP
       port: 8000
       targetPort: 8000
+    # Internal-only mail delivery endpoint used by the Stalwart mail server (see
+    # deploys/email) -- safe to expose here because this Service is ClusterIP, not
+    # reachable from outside the cluster. Deliberately NOT present in
+    # server_external.yaml's Service (a LoadBalancer) -- see the comment there.
+    - name: mail-delivery
+      protocol: TCP
+      port: 27705
+      targetPort: 27705
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -93,6 +101,9 @@ spec:
             - containerPort: 8000
               protocol: TCP
               name: jonline-web-i2
+            - containerPort: 27705
+              protocol: TCP
+              name: jonline-mail
 ---
 apiVersion: batch/v1
 kind: CronJob

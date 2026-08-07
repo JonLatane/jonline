@@ -10,9 +10,9 @@ CERT_MANAGER_EMAIL ?= invalid_email
 CERT_MANAGER_API_TOKEN ?= invalid_token
 
 # Certificate-related targets
-deploy_be_get_certs:
+get_backend_generated_certs:
 	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
-deploy_be_get_ca_certs:
+get_backend_generated_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
 
 deploy_certmanager:

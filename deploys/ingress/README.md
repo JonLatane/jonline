@@ -6,9 +6,11 @@ This whole setup is domain-agnostic and cluster-agnostic: nothing you type here 
 
 ## How it works
 
-Your `jonline` backend already terminates its own TLS (see `deploy_be_internal_create`/`deploy_be_internal_update` in `../Makefile`, and `k8s/server_internal.yaml`) using the Cert-Manager certs set up per [`../generated_certs/README.md`](../generated_certs/README.md). This ingress does **not** re-terminate that TLS. Instead it reads the plaintext SNI hostname out of the TLS handshake's first message (the same mechanism that lets any single IP host multiple HTTPS sites) to decide which namespace's `jonline` Service to forward the still-encrypted bytes to, then gets out of the way. Your certs, your `jonline-generated-tls` secrets, and Cert-Manager's renewal all keep working completely untouched, in their existing per-namespace locations.
+Your `jonline` backend already terminates its own TLS (see `create_internal_backend`/`update_internal_backend` in `../Makefile`, and `k8s/server_internal.yaml`) using the Cert-Manager certs set up per [`../generated_certs/README.md`](../generated_certs/README.md). This ingress does **not** re-terminate that TLS. Instead it reads the plaintext SNI hostname out of the TLS handshake's first message (the same mechanism that lets any single IP host multiple HTTPS sites) to decide which namespace's `jonline` Service to forward the still-encrypted bytes to, then gets out of the way. Your certs, your `jonline-generated-tls` secrets, and Cert-Manager's renewal all keep working completely untouched, in their existing per-namespace locations.
 
 Plain HTTP (ports 80 and 8000) is routed the normal way, by `Host` header.
+
+This controller also carries a plain TCP passthrough entrypoint on port 25 for the shared Stalwart mail server (see [`../email/README.md`](../email/README.md)) -- unlike the ports above, there's nothing to route *between* there (Stalwart is cluster-wide, not per-namespace), so its `IngressRouteTCP` just catches everything with ``HostSNI(`*`)`` and forwards it straight through.
 
 Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/jonline-routes.template.yaml`), right next to its `jonline` Service -- not in some central config. Traefik discovers them across every namespace automatically.
 
@@ -25,7 +27,7 @@ This installs Traefik's CRDs (pinned to `TRAEFIK_VERSION` at the top of the `Mak
 Get its external IP with:
 
 ```bash
-make deploy_ingress_get_ip
+make get_ingress_external_ip
 ```
 
 To tear the shared controller back down (leaving any per-domain routes in place, harmlessly inert, and without touching the Traefik CRDs -- deleting those would delete every domain's routes across the whole cluster, not just the controller):
@@ -42,7 +44,7 @@ Once a namespace already has its own `jonline` backend, Postgres, MinIO and Cert
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com make add_ingress_domain
 ```
 
-**Before touching DNS**, validate the route directly against the shared ingress's IP (from `make deploy_ingress_get_ip`), for all 4 ports:
+**Before touching DNS**, validate the route directly against the shared ingress's IP (from `make get_ingress_external_ip`), for all 4 ports:
 
 ```bash
 curl --resolve my.domain.example.com:443:<ingress-ip> https://my.domain.example.com/
@@ -53,7 +55,7 @@ grpcurl -authority my.domain.example.com <ingress-ip>:27707 list
 Once that all looks right, point `my.domain.example.com`'s DNS A record at the shared ingress's IP. Only *after* traffic has actually moved over (watch it drain from the old LoadBalancer, or just wait out the old DNS TTL), switch that namespace off its own LoadBalancer to reclaim its cost:
 
 ```bash
-NAMESPACE=mynamespace make deploy_be_internal_update
+NAMESPACE=mynamespace make update_internal_backend
 ```
 
 Doing this out of order -- switching off the old LoadBalancer before DNS has actually moved -- will take the site down until DNS propagates, so don't skip the validation step above.

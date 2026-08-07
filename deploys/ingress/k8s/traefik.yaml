@@ -90,6 +90,15 @@ spec:
             - --entryPoints.web-alt.address=:8000
             - --entryPoints.websecure.address=:443
             - --entryPoints.grpc.address=:27707
+            # Plain TCP passthrough for the shared Stalwart mail server (see
+            # ../../email/README.md) -- unlike web/websecure/grpc above, this entrypoint's
+            # IngressRouteTCP (in deploys/email/k8s/stalwart.yaml) has nothing to route
+            # *between*, since Stalwart is the only possible destination (it does its own
+            # per-domain acceptance internally). So it matches on HostSNI(`*`), Traefik's
+            # catch-all for non-TLS TCP -- there's no SNI to peek at on a plaintext SMTP
+            # connection the way there is on 443/27707's TLS ClientHellos; STARTTLS just
+            # upgrades the same already-routed connection in place.
+            - --entryPoints.smtp.address=:25
           ports:
             - name: web
               containerPort: 80
@@ -102,6 +111,9 @@ spec:
               protocol: TCP
             - name: grpc
               containerPort: 27707
+              protocol: TCP
+            - name: smtp
+              containerPort: 25
               protocol: TCP
 ---
 apiVersion: v1
@@ -132,3 +144,7 @@ spec:
       protocol: TCP
       port: 27707
       targetPort: 27707
+    - name: smtp
+      protocol: TCP
+      port: 25
+      targetPort: 25

@@ -46,3 +46,6 @@ pub use external_cdn::*;
 
 pub mod ical_subscription;
 pub use ical_subscription::*;
+
+pub mod email;
+pub use email::*;

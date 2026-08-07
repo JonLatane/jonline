@@ -1,0 +1,157 @@
+# The shared Stalwart mail server -- see ../README.md. One of these per cluster, regardless of
+# how many domains you onboard for mail (mirrors deploys/ingress's shared Traefik controller).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jonline-email
+---
+# Stalwart's OWN operational state (accepted domains, MTA hook definitions, DKIM keys, TLS
+# material it manages, and its queue of in-flight messages) lives in its embedded RocksDB store at
+# /var/lib/stalwart, backed by this PVC -- NOT user mailboxes. No Jonline mail content is ever
+# persisted here: the whole point of the MTA hook wired up in the admin UI (see ../README.md) is
+# that an accepted message is hashed off to the right namespace's `jonline` Service immediately
+# and never stored as a mailbox. Losing this PVC loses Stalwart's *configuration* (a few minutes
+# of admin-UI clicks to redo), not any user's mail.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stalwart-data
+  namespace: jonline-email
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stalwart
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  # Stateless per-connection (no local mailboxes), so this *could* scale horizontally -- but
+  # stalwart-data above is ReadWriteOnce, so start at 1 until you've moved that PVC to something
+  # that supports concurrent writers (or split config/queue storage from a shared backend).
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: stalwart
+  template:
+    metadata:
+      labels:
+        app: stalwart
+    spec:
+      # The image runs as a non-root `stalwart` user (uid/gid 2000), but PVCs are typically
+      # provisioned root-owned -- without this, Stalwart can't write its own config/DKIM keys to
+      # stalwart-data and setup fails with e.g. "Local registry write error ... Permission denied
+      # (os error 13)". fsGroup makes the kubelet chown the mounted volume to gid 2000 on attach.
+      securityContext:
+        fsGroup: 2000
+      containers:
+        - name: stalwart
+          # Pin to a specific v<major>.<minor> tag in production -- check
+          # https://hub.docker.com/r/stalwartlabs/stalwart/tags for the current stable release.
+          image: docker.io/stalwartlabs/stalwart:v0.16
+          env:
+            # On a totally empty stalwart-etc volume, Stalwart boots into a setup wizard at
+            # /admin and logs a random one-time admin password to stderr (`kubectl logs`) --
+            # fine for a first pass. Set this (e.g. from a Secret) if you'd rather pin fixed
+            # initial credentials than go hunting through logs:
+            # - name: STALWART_RECOVERY_ADMIN
+            #   value: "admin:some-secure-password"
+            - name: STALWART_RECOVERY_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: stalwart-admin
+                  key: credentials
+                  optional: true
+          ports:
+            - containerPort: 25
+              protocol: TCP
+              name: smtp
+            - containerPort: 8080
+              protocol: TCP
+              name: admin
+          volumeMounts:
+            # Two mounts of the *same* PVC, split via subPath into separate subdirectories --
+            # config (accepted domains, MTA hook definitions, DKIM keys, TLS state) and data (the
+            # in-flight message queue) don't need separate volumes for a first pass. See the
+            # PVC's comment above for why losing either is safe (no user mail lives here).
+            - name: stalwart-data
+              mountPath: /etc/stalwart
+              subPath: etc
+            - name: stalwart-data
+              mountPath: /var/lib/stalwart
+              subPath: data
+      volumes:
+        - name: stalwart-data
+          persistentVolumeClaim:
+            claimName: stalwart-data
+---
+# ClusterIP, not a LoadBalancer -- port 25 reaches this Service via the shared Traefik ingress's
+# IngressRouteTCP below, not a dedicated external IP of its own. See ../README.md and
+# ../../ingress/README.md for why: Traefik doesn't need to choose *between* anything to route
+# SMTP (Stalwart is the only possible destination cluster-wide), so it's a plain TCP passthrough,
+# no separate LoadBalancer required.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stalwart
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  type: ClusterIP
+  selector:
+    app: stalwart
+  ports:
+    - name: smtp
+      protocol: TCP
+      port: 25
+      targetPort: 25
+---
+# Requires deploys/ingress's shared Traefik controller to already be installed (`make
+# create_ingress`), with its `smtp` entrypoint (see ../../ingress/k8s/traefik.yaml). Traefik
+# auto-discovers IngressRouteTCP objects across all namespaces, so this needs nothing applied
+# into Traefik's own namespace -- same as jonline's own per-domain routes.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: stalwart-smtp
+  namespace: jonline-email
+spec:
+  entryPoints:
+    - smtp
+  routes:
+    # HostSNI(`*`) is Traefik's catch-all match for non-TLS TCP -- there's no SNI to match on a
+    # plaintext SMTP connection (STARTTLS upgrades this same already-routed connection in place,
+    # it doesn't open a new one), and there's nothing to choose between anyway since Stalwart is
+    # the only destination.
+    - match: HostSNI(`*`)
+      services:
+        - name: stalwart
+          port: 25
+---
+# ClusterIP-only -- never a LoadBalancer -- so the setup wizard/admin UI is reachable solely via
+# `make deploy_email_admin_port_forward`, not the open internet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stalwart-admin
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  type: ClusterIP
+  selector:
+    app: stalwart
+  ports:
+    - name: admin
+      protocol: TCP
+      port: 8080
+      targetPort: 8080

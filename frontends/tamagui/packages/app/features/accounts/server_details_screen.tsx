@@ -787,7 +787,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         <Heading size='$3' my='auto'
                           opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>External CDN gRPC Support</Heading>
                         <Paragraph size='$1'
-                          opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>Additional service restart required. Ensure CDN HTTP support is working before enabling CDN gRPC support. <Text fontStyle='italic' fontWeight='900'>In case enabling makes this UI inaccessible, make sure you can shell in</Text> (<Text fontFamily='$mono'>make deploy_be_shell</Text>, using Jonline Makefiles) and run <Text fontFamily='$mono'>./opt/disable_cdn_grpc</Text> to revert this setting.</Paragraph>
+                          opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>Additional service restart required. Ensure CDN HTTP support is working before enabling CDN gRPC support. <Text fontStyle='italic' fontWeight='900'>In case enabling makes this UI inaccessible, make sure you can shell in</Text> (<Text fontFamily='$mono'>make backend_shell</Text>, using Jonline Makefiles) and run <Text fontFamily='$mono'>./opt/disable_cdn_grpc</Text> to revert this setting.</Paragraph>
                       </YStack>
                       <Switch size="$5" margin='auto'
                         defaultChecked={externalCdnConfig?.cdnGrpc}

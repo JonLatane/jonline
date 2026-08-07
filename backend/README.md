@@ -33,25 +33,25 @@ Most of the high-level Jonline backend build management lives in `../Makefile`.
 For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.jonline](https://getj.online):
 
 ```bash
-make release_be_cloud deploy_be_external_update && NAMESPACE=getjonline make deploy_be_external_update && say 'deploy complete'
+make release_be_cloud update_external_backend && NAMESPACE=getjonline make update_external_backend && say 'deploy complete'
 ```
 
 As an end user, once you've set up per the quick setup, you can simply run this to apply updates:
 
 ```bash
-git pull && make deploy_be_external_update
+git pull && make update_external_backend
 ```
 
 Until Jonline is fairly complete, I'm not bothering with migrations. Be prepared to reset data until then. To reset your database/minio (if you're using the K8s one and not a managed DB):
 
 ```bash
-make deploy_db_delete deploy_db_create deploy_minio_delete deploy_minio_create deploy_be_restart
+make delete_backend_postgres create_backend_postgres delete_backend_minio create_backend_minio restart_backend
 ```
 
 or, more succinctly:
 
 ```bash
-make deploy_data_delete deploy_data_create deploy_be_restart
+make delete_backend_data create_backend_data restart_backend
 ```
 
 ## Architecture & Data
@@ -91,7 +91,7 @@ TBD. Should be a matter of doing a `cargo test`. Ideally there shoouldn't be so 
 Some really dumb integration tests are provided in `backend/Makefile`. You need `grpc_cli` installed (`brew install grpc_cli`). `make test_list_services` and `make test_authentication` will test Jonline's gRPC reflection and the actual authentication locally with `grpc_cli`.
 
 ## Deploying
-The quickest way to deploy is to simply run `make deploy_db_create deploy_be_create` from the root of this repo. This will create a database and two `jonline` service replicas in your Kubernetes cluster. No compilation required. Note that by default, Jonline will run without TLS, so passwords, tokens, and everything goes back and forth as plain text!
+The quickest way to deploy is to simply run `make create_backend_postgres create_internal_backend([^_]) from the root of this repo. This will create a database and two `jonline` service replicas in your Kubernetes cluster. No compilation required. Note that by default, Jonline will run without TLS, so passwords, tokens, and everything goes back and forth as plain text!
 
 ### Deploying with TLS support
 1. Initial TLS Setup
@@ -101,9 +101,9 @@ The quickest way to deploy is to simply run `make deploy_db_create deploy_be_cre
         * Use the cert password and challenge passwords you saved above when prompted.
     3. `make certs_store_in_k8s`
         * The certs you generated will be stored in `secret tls jonline-generated-tls` and `configmap jonline-generated-ca` in your k8s.
-2. `make deploy_db_create` to create a Postgres instance named `jonline-postgres` with credentials `admin:secure_password1`.
+2. `make create_backend_postgres` to create a Postgres instance named `jonline-postgres` with credentials `admin:secure_password1`.
     * `make [update,restart,delete]_db_deployment` are all valid targets, too.
-3. `make deploy_be_create` to deploy the Jonline backend.
+3. `make create_internal_backend([^_]) to deploy the Jonline backend.
     * `make [update,restart,delete]_be_deployment` and `make deploy_be_get_pods` are all valid targets, too.
 4. Optional: Validate TLS setup
     1. `kubectl get pods` and get the ID of your first pod, say `jonline-646c9f8699-kthkr`.
@@ -146,4 +146,4 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
     * You can also `make release_be_push_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
-Make sure to update `k8s/server_external.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.
+Make sure to update `k8s/server_external.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_internal_backend([^_]) to launch your forked Jonline.

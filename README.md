@@ -479,13 +479,13 @@ Next, from the repo root, to create Postgres, Minio and two load-balanced Jonlin
 
 ```bash
 # THIS STEP WILL COST MONEY WITH MOST KUBERNETES PROVIDERS. ($12/mo. at DigitalOcean)
-# The deploy_be_external_create Make target, specifically, will create the Joline service as a K8s LoadBalancer.
+# The create_external_backend Make target, specifically, will create the Joline service as a K8s LoadBalancer.
 # Of course, it costs nothing to use Minikube.
-# To deploy for use with a different ingress (say, a shared nginx, or Jonline's pending internal LB), use deploy_be_internal_create or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
-make deploy_data_create deploy_be_external_create
+# To deploy for use with a different ingress (say, a shared nginx, or Jonline's pending internal LB), use create_internal_backend or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
+make create_backend_data create_external_backend
 ```
 
-That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make deploy_data_delete deploy_data_create deploy_be_restart` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make delete_backend_data create_backend_data restart_backend` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
 Simply `kubectl delete namespace jonline` to delete your deployment (or see below for more detailed management instructions).
 

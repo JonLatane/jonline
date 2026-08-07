@@ -50,7 +50,7 @@ use ::jonline::{env_var, init_crypto, init_service_logging, report_error};
 use diesel::*;
 use futures::future::join_all;
 use marshaling::ToProtoServerConfiguration;
-use servers::{start_rocket_secure, start_rocket_unsecured, start_tonic_server};
+use servers::{start_rocket_internal, start_rocket_secure, start_rocket_unsecured, start_tonic_server};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 
@@ -73,7 +73,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
  (Jonline Server)
 A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
 (providing a \"Twitter-like with events\" experience with no feeds and a
-privacy-conscious design).
+privacy-conscious design), plus an internal-only HTTP mail delivery endpoint
+(27705, see deploys/email) used by a Stalwart mail server.
 
 Serves up its React FE by default at \"/\" (configurable) and always at \"/tamagui\";
 its Elm FE at \"/elm\" (also configurable to run from \"/\"), and
@@ -219,6 +220,9 @@ Supported environment variables (and examples):
         tempdir.clone(),
         false,
     ));
+    // Internal-only: accepts mail delivery from the Stalwart mail server (deploys/email). Never
+    // put this behind the public ingress -- see start_rocket_internal's docs.
+    rocket_handles.push(start_rocket_internal(27705, pool, bucket, tempdir));
 
     join_all::<_>(rocket_handles).await;
 
