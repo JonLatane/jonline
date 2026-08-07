@@ -233,11 +233,11 @@ encodeGetMessagesRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetMessagesRequest
 
 
-{-|  Jonline Email support is "low trust." You should not trust that people are who
+{-|  Jonline Message/Email support is "low trust." You should not trust that people are who
  they say they are, or ever exchange financial or private information with Jonline's
- email features.
+ message/email features.
 
- That said, this "low trust email system" is the foundation for all of Jonline's messaging
+ That said, this "low trust system" is the foundation for all of Jonline's messaging
  features. It's meant to be *just enough* that strangers can find you on a Jonline instance,
  like your posts, and send you a message via email (no account needed). From there, it needs
  only give you the ability to exchange, say, Signal usernames or personal emails.

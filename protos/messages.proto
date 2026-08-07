@@ -5,11 +5,11 @@ package jonline;
 import "google/protobuf/timestamp.proto";
 import "users.proto";
 
-// Jonline Email support is "low trust." You should not trust that people are who
+// Jonline Message/Email support is "low trust." You should not trust that people are who
 // they say they are, or ever exchange financial or private information with Jonline's
-// email features.
+// message/email features.
 //
-// That said, this "low trust email system" is the foundation for all of Jonline's messaging
+// That said, this "low trust system" is the foundation for all of Jonline's messaging
 // features. It's meant to be *just enough* that strangers can find you on a Jonline instance,
 // like your posts, and send you a message via email (no account needed). From there, it needs
 // only give you the ability to exchange, say, Signal usernames or personal emails.
@@ -19,7 +19,7 @@ message GetMessagesRequest {
   // Returns the single message with the given ID.
   optional string message_id = 1;
 
-  // Full-text search query, matched against the sender's username/real name and the email's
+  // Full-text search query, matched against the sender's username/real name and the message's
   // subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
   optional string search_text = 7;
 
