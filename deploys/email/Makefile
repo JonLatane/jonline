@@ -87,13 +87,13 @@ deploy_email_admin_port_forward:
 #
 # Requires `make deploy_email_admin_port_forward` running in another terminal (Stalwart's admin
 # API is ClusterIP-only, per k8s/stalwart.yaml).
-STALWART_ADMIN_URL ?= http://localhost:8080/api
+STALWART_ADMIN_URL ?= http://localhost:8080/jmap
 stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n jonline-email -o jsonpath='{.data.credentials}' | base64 -d)
 
 add_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
-	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: ["data"], httpAuth: {"@type": "Unauthenticated"}, enable: {match: [{"if": $$expr, then: "true"}], "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
+	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain, allowRelaying: true}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: {data: true}, httpAuth: {"@type": "Unauthenticated"}, enable: {match: {"0": {"if": $$expr, then: "true"}}, "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
 	@echo "If that succeeded (check for \"notCreated\" errors above), point '$(DOMAIN)'s MX record at"
 	@echo "this cluster's mail IP (make deploy_email_get_ip); see ../README.md's DNS table for SPF/DMARC."
 

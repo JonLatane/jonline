@@ -75,6 +75,8 @@ create_email:
 	cd deploys/email && $(MAKE) create_email
 remove_email:
 	cd deploys/email && $(MAKE) remove_email
+restart_email:
+	cd deploys/email && $(MAKE) restart_email
 deploy_email_get_ip:
 	cd deploys/email && $(MAKE) deploy_email_get_ip
 deploy_email_restart:
