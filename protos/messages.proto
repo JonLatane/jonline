@@ -15,9 +15,9 @@ import "users.proto";
 // only give you the ability to exchange, say, Signal usernames or personal emails.
 // 
 // Any UI built on these APIs needs to reflect this.
-message GetEmailsRequest {
-  // Returns the single email with the given ID.
-  optional string email_id = 1;
+message GetMessagesRequest {
+  // Returns the single message with the given ID.
+  optional string message_id = 1;
 
   // Full-text search query, matched against the sender's username/real name and the email's
   // subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
@@ -27,33 +27,30 @@ message GetEmailsRequest {
   optional google.protobuf.Timestamp created_before = 8;
 }
 
-message GetEmailsRequest {
-}
 
-enum EmailListingType {
-  // Gets emails sent to the current user, and emails (purportedly) sent by the user.
-  PERSONAL_EMAILS = 0;
-  // Gets emails sent to the current user, and emails (purportedly) sent by the user, that match the given search text.
+enum MessageListingType {
+  // Gets messages sent to the current user, and messages (purportedly) sent by the user.
+  PERSONAL_MESSAGES = 0;
+  // Gets messages sent to the current user, and messages (purportedly) sent by the user, that match the given search text.
   // Returns results in order of relevance to the search text.
-  PERSONAL_EMAILS_TEXT_SEARCH = 1;
+  PERSONAL_MESSAGES_TEXT_SEARCH = 1;
 
-  // Gets all emails on the server (to a limit), including those sent to other users. Requires admin privileges.
-  ALL_SYSTEM_EMAILS = 10;
-  ALL_SYSTEM_EMAILS_TEXT_SEARCH = 11;
+  // Gets all messages on the server (to a limit), including those sent to other users. Requires admin privileges.
+  ALL_SYSTEM_MESSAGES = 10;
+  ALL_SYSTEM_MESSAGES_TEXT_SEARCH = 11;
 }
 
-message Email {
-  // The sender of the email. Note that this is *purported* (we don't protect against spoofing).
+message Message {
+  // The sender of the message. Note that this is *purported* (we don't protect against spoofing).
   optional Author sender = 1;
   optional string from = 2;
   optional string to = 3;
   optional string cc = 4;
   optional string bcc = 5;
   optional string subject = 6;
-  optional string body_preview = 7;
-  optional string text_body = 8;
-  optional string html_body = 9;
+  optional string body_text = 7;
+  optional string html_body = 8;
   
-  // The time the email was created.
+  // The time the message was created.
   google.protobuf.Timestamp created_at = 20;
 }
