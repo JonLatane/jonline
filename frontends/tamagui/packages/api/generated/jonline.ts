@@ -29,6 +29,7 @@ import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse, Media } from "./media";
+import { GetMessagesRequest, GetMessagesResponse, Message, SendMessageRequest } from "./messages";
 import {
   GetGroupPostsRequest,
   GetGroupPostsResponse,
@@ -271,6 +272,34 @@ export const JonlineDefinition = {
       requestType: User,
       requestStream: false,
       responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+     * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+     * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+     */
+    sendMessage: {
+      name: "SendMessage",
+      requestType: SendMessageRequest,
+      requestStream: false,
+      responseType: Message,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Gets Messages. *Authenticated.*
+     * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+     * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+     * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+     * every Message on the server.
+     */
+    getMessages: {
+      name: "GetMessages",
+      requestType: GetMessagesRequest,
+      requestStream: false,
+      responseType: GetMessagesResponse,
       responseStream: false,
       options: {},
     },
@@ -697,6 +726,23 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
    * Deleting other users requires `ADMIN` permissions.
    */
   deleteUser(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  /**
+   * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+   * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+   * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+   */
+  sendMessage(request: SendMessageRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Message>>;
+  /**
+   * Gets Messages. *Authenticated.*
+   * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+   * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+   * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+   * every Message on the server.
+   */
+  getMessages(
+    request: GetMessagesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetMessagesResponse>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -890,6 +936,23 @@ export interface JonlineClient<CallOptionsExt = {}> {
    * Deleting other users requires `ADMIN` permissions.
    */
   deleteUser(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  /**
+   * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+   * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+   * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+   */
+  sendMessage(request: DeepPartial<SendMessageRequest>, options?: CallOptions & CallOptionsExt): Promise<Message>;
+  /**
+   * Gets Messages. *Authenticated.*
+   * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+   * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+   * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+   * every Message on the server.
+   */
+  getMessages(
+    request: DeepPartial<GetMessagesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetMessagesResponse>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */

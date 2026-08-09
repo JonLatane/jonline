@@ -3,10 +3,9 @@ use mail_parser::{Addr, Address};
 use rocket::{data::ToByteUnit, http::Status, routes, Data, Route, State};
 use uuid::Uuid;
 
-use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::models::MESSAGE_COLUMNS;
-use crate::schema::{self, message_recipients, messages, messaging_groups, users};
+use crate::models::{find_or_create_messaging_group, MESSAGE_COLUMNS};
+use crate::schema::{self, message_recipients, messages, users};
 use crate::web::headers::RecipientsHeader;
 use crate::web::RocketState;
 
@@ -110,7 +109,8 @@ pub async fn create_email_message(
         .filter(|(_, recipient_type)| *recipient_type != models::RecipientType::Bcc)
         .map(|(user_id, _)| *user_id)
         .collect();
-    let messaging_group_id = find_or_create_messaging_group(group_user_ids, &mut conn)?;
+    let messaging_group_id = find_or_create_messaging_group(group_user_ids, &mut conn)
+        .map_err(|_| Status::InternalServerError)?;
 
     let email_minio_path = format!("email/{}.eml", Uuid::new_v4());
     state
@@ -120,6 +120,7 @@ pub async fn create_email_message(
         .map_err(|_| Status::InternalServerError)?;
 
     let new_message = models::NewMessage {
+        from_user_id: None,
         subject: parsed.subject().map(|subject| subject.to_string()),
         body_text: parsed.body_text(0).map(|body| body.to_string()),
         email_headers: Some(serde_json::to_value(email_headers).unwrap()),
@@ -167,40 +168,6 @@ pub async fn create_email_message(
     }
 
     Ok(message.id.to_string())
-}
-
-/// Finds the [`models::MessagingGroup`] for a given participant set, creating it if it doesn't
-/// exist yet. `user_ids` need not be sorted or deduplicated -- that's normalized here, once,
-/// so callers can't accidentally create two group rows for the same set in a different order.
-///
-/// Tries the insert first rather than checking existence up front (same "optimistic insert, fall
-/// back to a select on unique violation" pattern used for `email_message_id` above) since group
-/// reuse -- not creation -- is the common case once a conversation has more than one message.
-fn find_or_create_messaging_group(
-    mut user_ids: Vec<i64>,
-    conn: &mut PgPooledConnection,
-) -> Result<i64, Status> {
-    user_ids.sort_unstable();
-    user_ids.dedup();
-
-    match insert_into(messaging_groups::table)
-        .values(&models::NewMessagingGroup {
-            sorted_user_ids: user_ids.clone(),
-        })
-        .returning(messaging_groups::id)
-        .get_result::<i64>(conn)
-    {
-        Ok(id) => Ok(id),
-        Err(diesel::result::Error::DatabaseError(
-            diesel::result::DatabaseErrorKind::UniqueViolation,
-            _,
-        )) => messaging_groups::table
-            .select(messaging_groups::id)
-            .filter(messaging_groups::sorted_user_ids.eq(&user_ids))
-            .first::<i64>(conn)
-            .map_err(|_| Status::InternalServerError),
-        Err(_) => Err(Status::InternalServerError),
-    }
 }
 
 fn format_addr(addr: &Addr) -> Option<String> {

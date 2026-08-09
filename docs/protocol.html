@@ -177,6 +177,29 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
       <li>
+        <p><a href="#messages-proto">messages.proto</a></p>
+        <ul>
+          <li>
+            <p><a href="#jonline-GetMessagesRequest">GetMessagesRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetMessagesResponse">GetMessagesResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Message">Message</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-MessagingGroup">MessagingGroup</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-SendMessageRequest">SendMessageRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-MessageListingType">MessageListingType</a></p>
+          </li>
+        </ul>
+      </li>
+      <li>
         <p><a href="#groups-proto">groups.proto</a></p>
         <ul>
           <li>
@@ -548,6 +571,18 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-User">User</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Deletes a user by ID. <em>Authenticated.</em> Deleting other users requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>SendMessage</td>
+          <td><a href="#jonline-SendMessageRequest">SendMessageRequest</a></td>
+          <td><a href="#jonline-Message">Message</a></td>
+          <td>Sends a Message to one or more recipients (creating/reusing their MessagingGroup). <em>Publicly accessible <strong>or</strong> Authenticated.</em> Like <code>CreatePost</code>/<code>CreateEvent</code>, authentication (if any) is via a standard <code>access_token</code>; unauthenticated calls are simply sent with no <code>sender</code>.</td>
+        </tr>
+        <tr>
+          <td>GetMessages</td>
+          <td><a href="#jonline-GetMessagesRequest">GetMessagesRequest</a></td>
+          <td><a href="#jonline-GetMessagesResponse">GetMessagesResponse</a></td>
+          <td>Gets Messages. <em>Authenticated.</em> <code>PERSONAL_MESSAGES(_TEXT_SEARCH)</code> (and looking up a single Message/MessagingGroup) requires the <code>READ_PERSONAL_MESSAGES</code> permission and only returns Messages the current user sent or received. <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> requires the <code>READ_ALL_SYSTEM_MESSAGES</code> permission and returns every Message on the server.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -1479,6 +1514,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>Allow the user to moderate events.</td>
         </tr>
         <tr>
+          <td>READ_PERSONAL_MESSAGES</td>
+          <td>50</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>READ_ALL_SYSTEM_MESSAGES</td>
+          <td>51</td>
+          <td></td>
+        </tr>
+        <tr>
           <td>BUSINESS</td>
           <td>9998</td>
           <td>Indicates the user is a business. Used purely for display purposes.</td>
@@ -2277,6 +2322,269 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>metadata</td>
           <td><a href="#jonline-MediaMetadata">MediaMetadata</a></td>
           <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="messages-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="messagesproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messagesproto"><span class="octicon octicon-link"></span></a>messages.proto</h2>
+    <p><a name="jonline-GetMessagesRequest"></a></p>
+    <h3 id="getmessagesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmessagesrequest"><span class="octicon octicon-link"></span></a>GetMessagesRequest</h3>
+    <p>
+      Request to get messages from the server. The request may be filtered by message ID, search text, or creation time.
+      All non-text-search requests return messages in reverse chronological order (newest first).
+      Text search requests return messages in order of relevance to the search text.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>listing_type</td>
+          <td><a href="#jonline-MessageListingType">MessageListingType</a></td>
+          <td></td>
+          <td>The type of message listing to return. Required.</td>
+        </tr>
+        <tr>
+          <td>message_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns the single message with the given ID (assuming the user has access to it).</td>
+        </tr>
+        <tr>
+          <td>message_group_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns messages that are part of the given messaging group (assuming the user has access to it).</td>
+        </tr>
+        <tr>
+          <td>search_text</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Full-text search query, matched against the sender's username/real name and the message's subject and body. Required (and only used) when <code>listing_type</code> is <code>TEXT_SEARCH</code>.</td>
+        </tr>
+        <tr>
+          <td>sent_before</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Request to only return posts that were published or created before the given timestamp.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetMessagesResponse"></a></p>
+    <h3 id="getmessagesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmessagesresponse"><span class="octicon octicon-link"></span></a>GetMessagesResponse</h3>
+    <p>Response to a <code>GetMessagesRequest</code>, containing the requested messages.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>messages</td>
+          <td><a href="#jonline-Message">Message</a></td>
+          <td>repeated</td>
+          <td>The messages that match the request. May be empty if no messages match. May be shortened to a server-defined limit, dependent on service version, configuration, load, etc.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Message"></a></p>
+    <h3 id="message"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message"><span class="octicon octicon-link"></span></a>Message</h3>
+    <p>
+      A Jonline <code>Message</code> represents a single message/email sent to one or more recipients
+      (really, "zero or more", as the design incorporates undeliverable messages).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The ID of the message.</td>
+        </tr>
+        <tr>
+          <td>sender</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td>optional</td>
+          <td>The sender of the message. Note that this is <em>purported</em> (we don't protect against spoofing).</td>
+        </tr>
+        <tr>
+          <td>messaging_group</td>
+          <td><a href="#jonline-MessagingGroup">MessagingGroup</a></td>
+          <td>optional</td>
+          <td>Note that, on the backend, every message actually has a messaging group. From the client's perspective, if messaging_group is not set, you were BCC'ed on the message and don't have access to the messaging group.</td>
+        </tr>
+        <tr>
+          <td>body_text</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The body text of the message. For email messages, this is the email body.</td>
+        </tr>
+        <tr>
+          <td>subject</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Subject of the message. For email messages, this is the email subject.</td>
+        </tr>
+        <tr>
+          <td>email_message_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this message derived from an email, the original email's message ID (RFC 5322). Used to prevent duplicate messages from being created when the same email is sent multiple times.</td>
+        </tr>
+        <tr>
+          <td>from</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this message derived from an email, the original email's "from" address.</td>
+        </tr>
+        <tr>
+          <td>to</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this message derived from an email, the original email's "to" address.</td>
+        </tr>
+        <tr>
+          <td>cc</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this message derived from an email, the original email's "cc" address.</td>
+        </tr>
+        <tr>
+          <td>bcc</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this message derived from an email, the original email's "bcc" address.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the message was created.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MessagingGroup"></a></p>
+    <h3 id="messaginggroup"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messaginggroup"><span class="octicon octicon-link"></span></a>MessagingGroup</h3>
+    <p>
+      A group of users who are participating in a conversation.
+      Most servers will probably have a (dynamically created) "empty group" for an email like
+      <code>not_a_user@my_jonline_instance.com</code>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The ID of the messaging group.</td>
+        </tr>
+        <tr>
+          <td>members</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td>repeated</td>
+          <td>The users who are members of the group. Note that this is a superset of the users who are</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the group was created.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-SendMessageRequest"></a></p>
+    <h3 id="sendmessagerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#sendmessagerequest"><span class="octicon octicon-link"></span></a>SendMessageRequest</h3>
+    <p>
+      Request to create a new message.
+      The server will create a new messaging group for the message, and send it to the given recipients.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>to_user_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>subject</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>body_text</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MessageListingType"></a></p>
+    <h3 id="messagelistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messagelistingtype"><span class="octicon octicon-link"></span></a>MessageListingType</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PERSONAL_MESSAGES</td>
+          <td>0</td>
+          <td>Gets messages sent to the current user, and messages (purportedly) sent by the user.</td>
+        </tr>
+        <tr>
+          <td>PERSONAL_MESSAGES_TEXT_SEARCH</td>
+          <td>1</td>
+          <td>Gets messages sent to the current user, and messages (purportedly) sent by the user, that match the given search text. Returns results in order of relevance to the search text.</td>
+        </tr>
+        <tr>
+          <td>ALL_SYSTEM_MESSAGES</td>
+          <td>10</td>
+          <td>Gets all messages on the server (to a limit), including those sent to other users. Requires admin privileges.</td>
+        </tr>
+        <tr>
+          <td>ALL_SYSTEM_MESSAGES_TEXT_SEARCH</td>
+          <td>11</td>
           <td></td>
         </tr>
       </tbody>

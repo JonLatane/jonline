@@ -118,6 +118,8 @@ export enum Permission {
   PUBLISH_MEDIA_GLOBALLY = 43,
   /** MODERATE_MEDIA - Allow the user to moderate events. */
   MODERATE_MEDIA = 44,
+  READ_PERSONAL_MESSAGES = 50,
+  READ_ALL_SYSTEM_MESSAGES = 51,
   /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
   BUSINESS = 9998,
   /**
@@ -237,6 +239,12 @@ export function permissionFromJSON(object: any): Permission {
     case 44:
     case "MODERATE_MEDIA":
       return Permission.MODERATE_MEDIA;
+    case 50:
+    case "READ_PERSONAL_MESSAGES":
+      return Permission.READ_PERSONAL_MESSAGES;
+    case 51:
+    case "READ_ALL_SYSTEM_MESSAGES":
+      return Permission.READ_ALL_SYSTEM_MESSAGES;
     case 9998:
     case "BUSINESS":
       return Permission.BUSINESS;
@@ -322,6 +330,10 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_MEDIA_GLOBALLY";
     case Permission.MODERATE_MEDIA:
       return "MODERATE_MEDIA";
+    case Permission.READ_PERSONAL_MESSAGES:
+      return "READ_PERSONAL_MESSAGES";
+    case Permission.READ_ALL_SYSTEM_MESSAGES:
+      return "READ_ALL_SYSTEM_MESSAGES";
     case Permission.BUSINESS:
       return "BUSINESS";
     case Permission.RUN_BOTS:

@@ -53,7 +53,7 @@ message Message {
 
 // Request to create a new message.
 // The server will create a new messaging group for the message, and send it to the given recipients.
-message CreateMessageRequest {
+message SendMessageRequest {
   repeated string to_user_ids = 1;
   optional string subject = 2;
   optional string body_text = 3;
@@ -79,20 +79,17 @@ message GetMessagesRequest {
   MessageListingType listing_type = 1;
 
   // Returns the single message with the given ID (assuming the user has access to it).
-  optional string message_id = 1;
+  optional string message_id = 2;
 
   // Returns messages that are part of the given messaging group (assuming the user has access to it).
-  optional string message_group_id = 2;
+  optional string message_group_id = 3;
 
   // Full-text search query, matched against the sender's username/real name and the message's
   // subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
   optional string search_text = 7;
 
   // Request to only return posts that were published or created before the given timestamp.
-  optional google.protobuf.Timestamp created_before = 8;
-
-  // Only applicable for `_TEXT_SEARCH` listing types. The page of search results to return, starting at 1. Defaults to 1.
-  optional int32 search_page = 9;
+  optional google.protobuf.Timestamp sent_before = 8;
 }
 
 // Response to a `GetMessagesRequest`, containing the requested messages.

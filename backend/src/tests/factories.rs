@@ -13,7 +13,7 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::{
     event_attendances, event_instances, event_sync_sources, events, follows, group_posts, groups,
-    memberships, posts, users,
+    memberships, messages, posts, users,
 };
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
@@ -204,6 +204,65 @@ pub fn create_post(
         .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)
         .expect("failed to create test post")
+}
+
+pub struct MessageOpts {
+    pub subject: Option<String>,
+    pub body_text: Option<String>,
+    /// Overrides `created_at`, which otherwise defaults to `NOW()` - frozen for the lifetime of a
+    /// Postgres transaction, so specs asserting on `GetMessages`' recency ordering need distinct,
+    /// explicit timestamps (mirroring `PostOpts::created_at`).
+    pub created_at: Option<SystemTime>,
+}
+
+impl Default for MessageOpts {
+    fn default() -> Self {
+        MessageOpts {
+            subject: Some("Test Subject".to_string()),
+            body_text: Some("Test body".to_string()),
+            created_at: None,
+        }
+    }
+}
+
+/// Creates a `Message` from `sender` (`None` for an anonymous/inbound-email-style Message) to
+/// `to_users`, reusing (or creating) their `MessagingGroup` - the sender is folded into the group
+/// too, mirroring `send_message.rs`'s own behavior.
+pub fn create_message(
+    conn: &mut PgPooledConnection,
+    sender: Option<&models::User>,
+    to_users: &[&models::User],
+    opts: MessageOpts,
+) -> models::Message {
+    let mut group_user_ids: Vec<i64> = to_users.iter().map(|u| u.id).collect();
+    if let Some(sender) = sender {
+        group_user_ids.push(sender.id);
+    }
+    let messaging_group_id = models::find_or_create_messaging_group(group_user_ids, conn)
+        .expect("failed to create test messaging group");
+
+    let message = insert_into(messages::table)
+        .values(&models::NewMessage {
+            from_user_id: sender.map(|u| u.id),
+            subject: opts.subject,
+            body_text: opts.body_text,
+            email_headers: None,
+            email_message_id: None,
+            email_minio_path: None,
+            messaging_group_id,
+        })
+        .returning(models::MESSAGE_COLUMNS)
+        .get_result::<models::Message>(conn)
+        .expect("failed to create test message");
+
+    let Some(created_at) = opts.created_at else {
+        return message;
+    };
+    diesel::update(messages::table.filter(messages::id.eq(message.id)))
+        .set(messages::created_at.eq(created_at))
+        .returning(models::MESSAGE_COLUMNS)
+        .get_result::<models::Message>(conn)
+        .expect("failed to update test message")
 }
 
 pub struct GroupOpts {

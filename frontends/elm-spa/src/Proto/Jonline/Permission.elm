@@ -120,6 +120,12 @@ fieldNumbersPermission n_ =
         MODERATEMEDIA ->
             44
 
+        READPERSONALMESSAGES ->
+            50
+
+        READALLSYSTEMMESSAGES ->
+            51
+
         BUSINESS ->
             9998
 
@@ -247,6 +253,12 @@ encodePermission value =
             MODERATEMEDIA ->
                 44
 
+            READPERSONALMESSAGES ->
+                50
+
+            READALLSYSTEMMESSAGES ->
+                51
+
             BUSINESS ->
                 9998
 
@@ -368,6 +380,12 @@ decodePermission =
                     44 ->
                         MODERATEMEDIA
 
+                    50 ->
+                        READPERSONALMESSAGES
+
+                    51 ->
+                        READALLSYSTEMMESSAGES
+
                     9998 ->
                         BUSINESS
 
@@ -421,6 +439,8 @@ type Permission
     | PUBLISHMEDIALOCALLY
     | PUBLISHMEDIAGLOBALLY
     | MODERATEMEDIA
+    | READPERSONALMESSAGES
+    | READALLSYSTEMMESSAGES
     | BUSINESS
     | RUNBOTS
     | ADMIN

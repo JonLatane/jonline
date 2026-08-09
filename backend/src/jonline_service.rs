@@ -169,6 +169,19 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_users, request)
     }
 
+    async fn send_message(
+        &self,
+        request: Request<SendMessageRequest>,
+    ) -> Result<Response<Message>, Status> {
+        unauthenticated_rpc!(self, rpcs::send_message, request)
+    }
+    async fn get_messages(
+        &self,
+        request: Request<GetMessagesRequest>,
+    ) -> Result<Response<GetMessagesResponse>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_messages, request)
+    }
+
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
         authenticated_rpc!(self, rpcs::create_follow, request)
     }

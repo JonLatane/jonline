@@ -19,6 +19,9 @@ pub use groups::*;
 pub mod posts;
 pub use posts::*;
 
+pub mod messages;
+pub use messages::*;
+
 pub mod events;
 pub use events::*;
 

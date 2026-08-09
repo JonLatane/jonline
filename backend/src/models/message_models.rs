@@ -3,8 +3,10 @@ use std::time::SystemTime;
 use diesel::*;
 use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
+use tonic::{Code, Status};
 
 use super::User;
+use crate::db_connection::PgPooledConnection;
 use crate::schema::{message_recipients, messages, messaging_groups};
 
 /// The canonical conversation between a set of participants -- every [`Message`] belongs to
@@ -83,12 +85,62 @@ pub const MESSAGE_COLUMNS: (
 #[derive(Debug, Insertable)]
 #[diesel(table_name = messages)]
 pub struct NewMessage {
+    /// The sender for an in-app `SendMessage`. Always `None` for inbound email -- see `Message`'s
+    /// own doc comment above.
+    pub from_user_id: Option<i64>,
     pub subject: Option<String>,
     pub body_text: Option<String>,
     pub email_headers: Option<serde_json::Value>,
     pub email_message_id: Option<String>,
     pub email_minio_path: Option<String>,
     pub messaging_group_id: i64,
+}
+
+/// Finds the [`MessagingGroup`] for a given participant set, creating it if it doesn't exist yet.
+/// `user_ids` need not be sorted or deduplicated -- that's normalized here, once, so callers can't
+/// accidentally create two group rows for the same set in a different order.
+///
+/// Tries the insert first rather than checking existence up front (same "optimistic insert, fall
+/// back to a select on unique violation" pattern used for `messages.email_message_id`) since group
+/// reuse -- not creation -- is the common case once a conversation has more than one message.
+///
+/// The insert runs in its own `conn.transaction(...)` so a unique violation there can't poison a
+/// transaction this function was called from (diesel nests via `SAVEPOINT` when one's already
+/// open - e.g. a caller's own `conn.transaction(...)`, or `test_transaction` in specs). Without
+/// this, Postgres aborts the whole enclosing transaction on the failed `INSERT`, and the fallback
+/// `SELECT` below fails too ("current transaction is aborted, commands ignored until end of
+/// transaction block") instead of returning the existing group's id.
+pub fn find_or_create_messaging_group(
+    mut user_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Result<i64, Status> {
+    user_ids.sort_unstable();
+    user_ids.dedup();
+
+    let inserted = conn.transaction::<i64, diesel::result::Error, _>(|conn| {
+        insert_into(messaging_groups::table)
+            .values(&NewMessagingGroup {
+                sorted_user_ids: user_ids.clone(),
+            })
+            .returning(messaging_groups::id)
+            .get_result::<i64>(conn)
+    });
+
+    match inserted {
+        Ok(id) => Ok(id),
+        Err(diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::UniqueViolation,
+            _,
+        )) => messaging_groups::table
+            .select(messaging_groups::id)
+            .filter(messaging_groups::sorted_user_ids.eq(&user_ids))
+            .first::<i64>(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_creating_messaging_group")),
+        Err(_) => Err(Status::new(
+            Code::Internal,
+            "error_creating_messaging_group",
+        )),
+    }
 }
 
 /// `Message.email_headers`' typed shape. Address fields hold raw `To`/`Cc`/`Bcc`/`From` header

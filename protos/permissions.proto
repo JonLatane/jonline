@@ -91,6 +91,9 @@ enum Permission {
   // Allow the user to moderate events.
   MODERATE_MEDIA = 44;
 
+  READ_PERSONAL_MESSAGES = 50;
+  READ_ALL_SYSTEM_MESSAGES = 51;
+
   // Indicates the user is a business. Used purely for display purposes.
   BUSINESS = 9998;
 

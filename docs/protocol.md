@@ -43,6 +43,15 @@
     - [MediaMetadata](#jonline-MediaMetadata)
     - [MediaReference](#jonline-MediaReference)
   
+- [messages.proto](#messages-proto)
+    - [GetMessagesRequest](#jonline-GetMessagesRequest)
+    - [GetMessagesResponse](#jonline-GetMessagesResponse)
+    - [Message](#jonline-Message)
+    - [MessagingGroup](#jonline-MessagingGroup)
+    - [SendMessageRequest](#jonline-SendMessageRequest)
+  
+    - [MessageListingType](#jonline-MessageListingType)
+  
 - [groups.proto](#groups-proto)
     - [GetGroupsRequest](#jonline-GetGroupsRequest)
     - [GetGroupsResponse](#jonline-GetGroupsResponse)
@@ -246,6 +255,8 @@ approach to predictable atomicity.
 | GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. *Authenticated.* Updating other users requires `ADMIN` permissions. |
 | DeleteUser | [User](#jonline-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
+| SendMessage | [SendMessageRequest](#jonline-SendMessageRequest) | [Message](#jonline-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
+| GetMessages | [GetMessagesRequest](#jonline-GetMessagesRequest) | [GetMessagesResponse](#jonline-GetMessagesResponse) | Gets Messages. *Authenticated.* `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received. `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns every Message on the server. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
@@ -628,6 +639,8 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_GLOBALLY | 43 | Allow the user to publish media with `GLOBAL_PUBLIC` visibility. *Not currently enforced.* |
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
+| READ_PERSONAL_MESSAGES | 50 |  |
+| READ_ALL_SYSTEM_MESSAGES | 51 |  |
 | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
@@ -975,6 +988,135 @@ and the media item&#39;s name (for alt text usage).
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="messages-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## messages.proto
+
+
+
+<a name="jonline-GetMessagesRequest"></a>
+
+### GetMessagesRequest
+Request to get messages from the server. The request may be filtered by message ID, search text, or creation time.
+All non-text-search requests return messages in reverse chronological order (newest first). 
+Text search requests return messages in order of relevance to the search text.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| listing_type | [MessageListingType](#jonline-MessageListingType) |  | The type of message listing to return. Required. |
+| message_id | [string](#string) | optional | Returns the single message with the given ID (assuming the user has access to it). |
+| message_group_id | [string](#string) | optional | Returns messages that are part of the given messaging group (assuming the user has access to it). |
+| search_text | [string](#string) | optional | Full-text search query, matched against the sender&#39;s username/real name and the message&#39;s subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`. |
+| sent_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request to only return posts that were published or created before the given timestamp. |
+
+
+
+
+
+
+<a name="jonline-GetMessagesResponse"></a>
+
+### GetMessagesResponse
+Response to a `GetMessagesRequest`, containing the requested messages.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| messages | [Message](#jonline-Message) | repeated | The messages that match the request. May be empty if no messages match. May be shortened to a server-defined limit, dependent on service version, configuration, load, etc. |
+
+
+
+
+
+
+<a name="jonline-Message"></a>
+
+### Message
+A Jonline `Message` represents a single message/email sent to one or more recipients
+(really, &#34;zero or more&#34;, as the design incorporates undeliverable messages).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The ID of the message. |
+| sender | [Author](#jonline-Author) | optional | The sender of the message. Note that this is *purported* (we don&#39;t protect against spoofing). |
+| messaging_group | [MessagingGroup](#jonline-MessagingGroup) | optional | Note that, on the backend, every message actually has a messaging group. From the client&#39;s perspective, if messaging_group is not set, you were BCC&#39;ed on the message and don&#39;t have access to the messaging group. |
+| body_text | [string](#string) |  | The body text of the message. For email messages, this is the email body. |
+| subject | [string](#string) | optional | Subject of the message. For email messages, this is the email subject. |
+| email_message_id | [string](#string) | optional | If this message derived from an email, the original email&#39;s message ID (RFC 5322). Used to prevent duplicate messages from being created when the same email is sent multiple times. |
+| from | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;from&#34; address. |
+| to | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;to&#34; address. |
+| cc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;cc&#34; address. |
+| bcc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;bcc&#34; address. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the message was created. |
+
+
+
+
+
+
+<a name="jonline-MessagingGroup"></a>
+
+### MessagingGroup
+A group of users who are participating in a conversation.
+Most servers will probably have a (dynamically created) &#34;empty group&#34; for an email like
+`not_a_user@my_jonline_instance.com`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The ID of the messaging group. |
+| members | [Author](#jonline-Author) | repeated | The users who are members of the group. Note that this is a superset of the users who are |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the group was created. |
+
+
+
+
+
+
+<a name="jonline-SendMessageRequest"></a>
+
+### SendMessageRequest
+Request to create a new message.
+The server will create a new messaging group for the message, and send it to the given recipients.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| to_user_ids | [string](#string) | repeated |  |
+| subject | [string](#string) | optional |  |
+| body_text | [string](#string) | optional |  |
+
+
+
+
+
+ 
+
+
+<a name="jonline-MessageListingType"></a>
+
+### MessageListingType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PERSONAL_MESSAGES | 0 | Gets messages sent to the current user, and messages (purportedly) sent by the user. |
+| PERSONAL_MESSAGES_TEXT_SEARCH | 1 | Gets messages sent to the current user, and messages (purportedly) sent by the user, that match the given search text. Returns results in order of relevance to the search text. |
+| ALL_SYSTEM_MESSAGES | 10 | Gets all messages on the server (to a limit), including those sent to other users. Requires admin privileges. |
+| ALL_SYSTEM_MESSAGES_TEXT_SEARCH | 11 |  |
+
 
  
 
