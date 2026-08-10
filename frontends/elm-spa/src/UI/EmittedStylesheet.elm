@@ -139,7 +139,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
                 ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
 
         listItemColorRule =
-            withDescendants selector ".list-item-bordered-color-primary" ++ " { border-left: 4px solid " ++ theme.primaryAnchorColor ++ "; border-bottom: 2px solid " ++ theme.primaryAnchorColor ++ "; border-radius: 4px; }\n"
+            withDescendants selector ".list-item-bordered-color-primary" ++ " { border-left: 4px solid " ++ theme.primaryAnchorColor ++ "; border-bottom: 2px solid " ++ theme.primaryAnchorColor ++ "; border-top: 1px solid " ++ theme.navAnchorColor ++ "88; border-right: 1px solid " ++ theme.navAnchorColor ++ "88; border-radius: 4px; }\n"
     in
     String.concat
         [ colorRule (withDescendants selector ".background-color-primary") theme.primaryColor theme.primaryTextColor

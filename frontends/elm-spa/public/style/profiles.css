@@ -242,6 +242,25 @@
 /* .section-title, .permission-badges, .permission-badge (+ .editable) and
    .permission-remove are shared with ServerInformationPage -- see main.css. */
 
+/* `expandableProfileSection`'s own clickable header, wrapping `.section-title`
+   -- used by the Permissions/Event Sync Sources sections, both collapsed by
+   default. */
+.expandable-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandable-section-arrow {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--muted);
+  margin-top: -0.4rem;
+
+}
+
 .profile-federated {
   display: flex;
   flex-wrap: wrap;
@@ -373,6 +392,7 @@
   flex-direction: column;
   gap: 0.25rem;
   margin-top: 8px;
+  margin-bottom: 16px;
 }
 
 .event-sync-sources-list {
@@ -418,6 +438,10 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  margin-left: auto;
+}
+
+.event-sync-source-add {
   margin-left: auto;
 }
 

@@ -71,8 +71,10 @@ type alias Model =
     , realNameEdit : Maybe RealNameEdit
     , avatarEdit : Maybe AvatarEdit
     , permissionsEdit : Maybe PermissionsEdit
+    , permissionsExpanded : Bool
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
     , eventSyncSources : EventSyncSourcesState
+    , eventSyncSourcesExpanded : Bool
     , followStatusAndButton : FollowStatusAndButton.Model
 
     -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
@@ -112,6 +114,7 @@ type Msg
     | AvatarSaveClicked
     | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | BioEditClicked
+    | PermissionsExpandedToggled
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
     | PermissionAddSelectionChanged String
@@ -138,6 +141,7 @@ type Msg
     | EventSyncSourceAddClicked
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
+    | EventSyncSourcesExpandedToggled
     | DeleteUserClicked
 
 
@@ -321,8 +325,10 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , realNameEdit = Nothing
             , avatarEdit = Nothing
             , permissionsEdit = Nothing
+            , permissionsExpanded = False
             , federatedProfilesEdit = Nothing
             , eventSyncSources = initEventSyncSources
+            , eventSyncSourcesExpanded = False
             , followStatusAndButton = FollowStatusAndButton.init
             , posts = Nothing
             , events = Nothing
@@ -808,6 +814,9 @@ updateInner shared msg model =
                 _ ->
                     ( model, Effect.none )
 
+        PermissionsExpandedToggled ->
+            ( { model | permissionsExpanded = not model.permissionsExpanded }, Effect.none )
+
         PermissionsEditClicked ->
             case model.resolver.status of
                 Resolver.Loaded user ->
@@ -1175,6 +1184,9 @@ updateInner shared msg model =
             ( model
             , Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents model.resolver.targetHost))
             )
+
+        EventSyncSourcesExpandedToggled ->
+            ( { model | eventSyncSourcesExpanded = not model.eventSyncSourcesExpanded }, Effect.none )
 
         -- Same shape as `EventSyncSourceDeleteClicked`: just opens the
         -- shared "are you sure?" dialog -- the actual `DeleteUser` call
@@ -1671,13 +1683,13 @@ profileDetail shared model server maybeAccount user =
             ]
         , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
-        , eventSyncSourcesSection shared model canEdit (isOwnProfile maybeAccount user)
         , case model.events of
             Just eventsModel ->
                 Html.map EventsMsg (EventsPage.view shared False eventsModel)
 
             Nothing ->
                 text ""
+        , eventSyncSourcesSection shared model canEdit (isOwnProfile maybeAccount user)
         , h3 [] [ text (postsHeading model.posts) ]
         , case model.posts of
             Just postsModel ->
@@ -1685,7 +1697,7 @@ profileDetail shared model server maybeAccount user =
 
             Nothing ->
                 text ""
-        , permissionsSection isAdmin model.permissionsEdit user
+        , permissionsSection isAdmin model.permissionsExpanded model.permissionsEdit user
         , deleteUserSection canEdit
         ]
 
@@ -1957,61 +1969,100 @@ profileCountView ( label, count, maybeHref ) =
             div [ class "profile-count" ] content
 
 
+{-| A `.section-title` header that also toggles a collapsed/expanded body
+below it -- shared by `permissionsSection`/`eventSyncSourcesSection`, both of
+which start collapsed (see `Model.permissionsExpanded`/`eventSyncSourcesExpanded`,
+both `False` in `init`) so neither dumps a wall of mostly-admin-only content
+onto every profile visit by default.
+-}
+expandableProfileSection : String -> String -> Bool -> Msg -> List (Html Msg) -> Html Msg
+expandableProfileSection sectionClass title expanded toggleMsg content =
+    div [ class sectionClass ]
+        (h2
+            [ classes [ "section-title", "expandable-section-title" ]
+            , onClick toggleMsg
+            ]
+            [ span [ class "expandable-section-arrow" ]
+                [ text
+                    (if expanded then
+                        "▾"
+
+                     else
+                        "▸"
+                    )
+                ]
+            , text title
+            ]
+            :: (if expanded then
+                    content
+
+                else
+                    []
+               )
+        )
+
+
 {-| The Permissions list -- plain badges (plus an Edit button, if `isAdmin`)
 when `permissionsEdit == Nothing`, or the removable-badges + Add Permission +
 Save/Cancel editor while being edited by an admin. Shown (with just the Edit
 button) even with no permissions yet, so an admin can grant the first one.
+Collapsed by default (`expanded`, `Model.permissionsExpanded`) behind
+`expandableProfileSection`'s own header -- an admin must expand it before the
+Edit button (and thus `PermissionsEditClicked`) is even reachable.
 -}
-permissionsSection : Bool -> Maybe PermissionsEdit -> User -> Html Msg
-permissionsSection isAdmin maybeEdit user =
-    case maybeEdit of
-        Just edit ->
-            div [ class "profile-permissions-edit" ]
-                [ h2 [ class "section-title" ] [ text "Permissions" ]
-                , div [ class "permission-badges" ] (edit.pending |> List.map permissionEditBadge)
-                , div [ class "profile-permissions-add" ]
-                    [ select [ onInput PermissionAddSelectionChanged ]
-                        (addablePermissions edit.pending
-                            |> List.map
-                                (\permission ->
-                                    option
-                                        [ value (Users.permissionText permission)
-                                        , selected (edit.addSelection == Just permission)
-                                        ]
-                                        [ text (Users.permissionText permission) ]
+permissionsSection : Bool -> Bool -> Maybe PermissionsEdit -> User -> Html Msg
+permissionsSection isAdmin expanded maybeEdit user =
+    if List.isEmpty user.permissions && not isAdmin then
+        text ""
+
+    else
+        expandableProfileSection "profile-permissions-section"
+            "Permissions"
+            expanded
+            PermissionsExpandedToggled
+            [ case maybeEdit of
+                Just edit ->
+                    div [ class "profile-permissions-edit" ]
+                        [ div [ class "permission-badges" ] (edit.pending |> List.map permissionEditBadge)
+                        , div [ class "profile-permissions-add" ]
+                            [ select [ onInput PermissionAddSelectionChanged ]
+                                (addablePermissions edit.pending
+                                    |> List.map
+                                        (\permission ->
+                                            option
+                                                [ value (Users.permissionText permission)
+                                                , selected (edit.addSelection == Just permission)
+                                                ]
+                                                [ text (Users.permissionText permission) ]
+                                        )
                                 )
-                        )
-                    , button
-                        [ class "profile-permission-add-button"
-                        , onClick PermissionAddClicked
-                        , disabled (edit.addSelection == Nothing)
+                            , button
+                                [ class "profile-permission-add-button"
+                                , onClick PermissionAddClicked
+                                , disabled (edit.addSelection == Nothing)
+                                ]
+                                [ text "Add Permission" ]
+                            ]
+                        , div [ class "profile-permissions-actions" ]
+                            [ editSaveButton PermissionsSaveClicked edit.status
+                            , editCancelButton PermissionsCancelClicked edit.status
+                            ]
+                        , editErrorView edit.status
                         ]
-                        [ text "Add Permission" ]
-                    ]
-                , div [ class "profile-permissions-actions" ]
-                    [ editSaveButton PermissionsSaveClicked edit.status
-                    , editCancelButton PermissionsCancelClicked edit.status
-                    ]
-                , editErrorView edit.status
-                ]
 
-        Nothing ->
-            if List.isEmpty user.permissions && not isAdmin then
-                text ""
+                Nothing ->
+                    div [ class "profile-permissions-view" ]
+                        [ div [ class "permission-badges" ]
+                            (user.permissions
+                                |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ])
+                            )
+                        , if isAdmin then
+                            button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit" ]
 
-            else
-                div [ class "profile-permissions-view" ]
-                    [ h2 [ class "section-title" ] [ text "Permissions" ]
-                    , div [ class "permission-badges" ]
-                        (user.permissions
-                            |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ])
-                        )
-                    , if isAdmin then
-                        button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit" ]
-
-                      else
-                        text ""
-                    ]
+                          else
+                            text ""
+                        ]
+            ]
 
 
 {-| The "Delete User" button -- shown only to `canEdit` viewers (the
@@ -2286,7 +2337,9 @@ Admin may manage anyone's) -- gates the whole section's edit/delete
 affordances (a caller with neither shouldn't even see this section, but this
 doesn't assume that's already been checked). `canAdd` is self-only (an Admin
 still can't create a source _for_ someone else, see
-`create_event_sync_source.rs`) -- gates just the add row.
+`create_event_sync_source.rs`) -- gates just the add row. Collapsed by
+default (`model.eventSyncSourcesExpanded`) behind `expandableProfileSection`'s
+own header.
 -}
 eventSyncSourcesSection : Shared.Model -> Model -> Bool -> Bool -> Html Msg
 eventSyncSourcesSection shared model canManage canAdd =
@@ -2294,11 +2347,12 @@ eventSyncSourcesSection shared model canManage canAdd =
         text ""
 
     else
-        div [ class "event-sync-sources-section" ]
-            ([ h2 [ class "section-title" ] [ text "Event Sync Sources" ]
-             , div [ class "event-sync-sources-list" ] (eventSyncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.eventSyncSources)
-             ]
-                ++ (if canAdd then
+        expandableProfileSection "event-sync-sources-section"
+            "Event Sync Sources"
+            model.eventSyncSourcesExpanded
+            EventSyncSourcesExpandedToggled
+            (div [ class "event-sync-sources-list" ] (eventSyncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.eventSyncSources)
+                :: (if canAdd then
                         [ eventSyncSourceAddRowView model.resolver.targetHost model.eventSyncSources.addForm ]
 
                     else
@@ -2401,19 +2455,19 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
 
 eventSyncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
 eventSyncSourceAddRowView targetHost addForm =
-    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
+    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost ] ]
         [ input
             [ class "event-sync-source-url"
             , type_ "text"
             , value addForm.url
-            , placeholder "iCal subscription URL"
+            , placeholder "New iCal subscription URL"
             , disabled (addForm.status == Submitting)
             , onInput EventSyncSourceAddUrlChanged
             ]
             []
         , eventSyncIntervalSelect EventSyncSourceAddIntervalChanged addForm.intervalSeconds (addForm.status == Submitting)
         , button
-            [ class "event-sync-source-add"
+            [ classes [ "event-sync-source-add", "background-color-primary" ]
             , onClick EventSyncSourceAddClicked
             , disabled (addForm.status == Submitting || String.isEmpty (String.trim addForm.url))
             ]
@@ -2422,7 +2476,7 @@ eventSyncSourceAddRowView targetHost addForm =
                     "Adding…"
 
                  else
-                    "+ Add"
+                    "+ Create New Source"
                 )
             ]
         , case addForm.status of
