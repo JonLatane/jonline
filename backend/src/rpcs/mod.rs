@@ -28,5 +28,8 @@ pub use events::*;
 pub mod event_sync_sources;
 pub use event_sync_sources::*;
 
+pub mod event_sync_destinations;
+pub use event_sync_destinations::*;
+
 mod federation;
 pub use federation::*;

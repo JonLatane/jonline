@@ -264,6 +264,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-AnonymousAttendee">AnonymousAttendee</a></p>
           </li>
           <li>
+            <p><a href="#jonline-DeleteEventSyncDestinationRequest">DeleteEventSyncDestinationRequest</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></p>
           </li>
           <li>
@@ -288,10 +291,22 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-EventInstanceRsvpInfo">EventInstanceRsvpInfo</a></p>
           </li>
           <li>
+            <p><a href="#jonline-EventInstanceSyncStatus">EventInstanceSyncStatus</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventSyncDestination">EventSyncDestination</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-EventSyncSource">EventSyncSource</a></p>
           </li>
           <li>
+            <p><a href="#jonline-FacebookPage">FacebookPage</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetEventSyncDestinationsResponse">GetEventSyncDestinationsResponse</a></p>
           </li>
           <li>
             <p><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></p>
@@ -301,6 +316,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#jonline-GetEventsResponse">GetEventsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-SyncEventInstanceRequest">SyncEventInstanceRequest</a></p>
           </li>
           <li>
             <p><a href="#jonline-TimeFilter">TimeFilter</a></p>
@@ -757,6 +775,36 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Deletes an EventSyncSource. <em>Authenticated</em> (owner, or Admin).</td>
+        </tr>
+        <tr>
+          <td>GetEventSyncDestinations</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td><a href="#jonline-GetEventSyncDestinationsResponse">GetEventSyncDestinationsResponse</a></td>
+          <td>Gets a user's EventSyncDestinations. <em>Authenticated</em> (self, or Admin for any user).</td>
+        </tr>
+        <tr>
+          <td>CreateEventSyncDestination</td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td>Creates an EventSyncDestination for the current user. <em>Authenticated</em>, requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>UpdateEventSyncDestination</td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td>Updates an EventSyncDestination. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>DeleteEventSyncDestination</td>
+          <td><a href="#jonline-DeleteEventSyncDestinationRequest">DeleteEventSyncDestinationRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes an EventSyncDestination. <em>Authenticated</em> (owner, or Admin).</td>
+        </tr>
+        <tr>
+          <td>SyncEventInstance</td>
+          <td><a href="#jonline-SyncEventInstanceRequest">SyncEventInstanceRequest</a></td>
+          <td><a href="#jonline-EventInstance">EventInstance</a></td>
+          <td>Syncs (cross-posts) an EventInstance to an EventSyncDestination. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -1487,6 +1535,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>SYNCHRONIZE_EVENTS</td>
           <td>36</td>
           <td>Allow the user to synchronize events from outside sources.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_FACEBOOK</td>
+          <td>37</td>
+          <td>Allow the user to create/update <code>EventSyncDestination</code>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them.</td>
         </tr>
         <tr>
           <td>VIEW_MEDIA</td>
@@ -3484,6 +3537,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-DeleteEventSyncDestinationRequest"></a></p>
+    <h3 id="deleteeventsyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventsyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeleteEventSyncDestinationRequest</h3>
+    <p>Request to delete an EventSyncDestination.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>destination</td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td></td>
+          <td>The destination to be deleted.</td>
+        </tr>
+        <tr>
+          <td>delete_synced_posts</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether to also delete posts already made on the destination (e.g. the Facebook Page posts).</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-DeleteEventSyncSourceRequest"></a></p>
     <h3 id="deleteeventsyncsourcerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventsyncsourcerequest"><span class="octicon octicon-link"></span></a>DeleteEventSyncSourceRequest</h3>
     <p>Request to delete an EventSyncSource.</p>
@@ -3810,6 +3890,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>optional</td>
           <td>If the request was made by a logged-in user, this is the current user's attendance for this instance.</td>
         </tr>
+        <tr>
+          <td>sync_destinations</td>
+          <td><a href="#jonline-EventInstanceSyncStatus">EventInstanceSyncStatus</a></td>
+          <td>repeated</td>
+          <td>EventSyncDestinations this instance has been synced (cross-posted) to, and their status.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-EventInstanceInfo"></a></p>
@@ -3908,6 +3994,93 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-EventInstanceSyncStatus"></a></p>
+    <h3 id="eventinstancesyncstatus"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstancesyncstatus"><span class="octicon octicon-link"></span></a>EventInstanceSyncStatus</h3>
+    <p>The status of an EventInstance's sync (cross-post) to one EventSyncDestination.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>event_sync_destination_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The EventSyncDestination this status is for.</td>
+        </tr>
+        <tr>
+          <td>destination_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The ID of the resulting post on the destination (e.g. a Facebook Post ID).</td>
+        </tr>
+        <tr>
+          <td>destination_url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>A link to the resulting post on the destination, if available.</td>
+        </tr>
+        <tr>
+          <td>synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time this instance was last successfully synced to the destination.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventSyncDestination"></a></p>
+    <h3 id="eventsyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination"><span class="octicon octicon-link"></span></a>EventSyncDestination</h3>
+    <p>
+      A user-owned destination to sync (cross-post) EventInstances to. Mirrors <code>EventSyncSource</code>,
+      but for pushing instances out rather than pulling events in.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the destination.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this destination.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the EventSyncDestination was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncDestination was last updated.</td>
+        </tr>
+        <tr>
+          <td>facebook_page</td>
+          <td><a href="#jonline-FacebookPage">FacebookPage</a></td>
+          <td></td>
+          <td>A connected Facebook Page to post EventInstances to.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-EventSyncSource"></a></p>
     <h3 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
     <p>A user-owned source to sync events from.</p>
@@ -3977,6 +4150,39 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-FacebookPage"></a></p>
+    <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
+    <p>A Facebook Page connected as an <code>EventSyncDestination</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>page_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's ID.</td>
+        </tr>
+        <tr>
+          <td>page_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's name, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>short_lived_user_access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateEventSyncDestination</code>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-GetEventAttendancesRequest"></a></p>
     <h3 id="geteventattendancesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventattendancesrequest"><span class="octicon octicon-link"></span></a>GetEventAttendancesRequest</h3>
     <p>Request to get RSVP data for an event.</p>
@@ -4001,6 +4207,26 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetEventSyncDestinationsResponse"></a></p>
+    <h3 id="geteventsyncdestinationsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsyncdestinationsresponse"><span class="octicon octicon-link"></span></a>GetEventSyncDestinationsResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>destinations</td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td>repeated</td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -4157,6 +4383,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-Event">Event</a></td>
           <td>repeated</td>
           <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-SyncEventInstanceRequest"></a></p>
+    <h3 id="synceventinstancerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#synceventinstancerequest"><span class="octicon octicon-link"></span></a>SyncEventInstanceRequest</h3>
+    <p>Syncs (cross-posts) a single EventInstance to one EventSyncDestination.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>event_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The EventInstance to sync.</td>
+        </tr>
+        <tr>
+          <td>event_sync_destination_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The EventSyncDestination to sync it to.</td>
         </tr>
       </tbody>
     </table>

@@ -40,6 +40,7 @@ import Components.Users.ProfileHeading as ProfileHeading
 import Components.Users.Resolver as Resolver
 import Dict exposing (Dict)
 import Effect exposing (Effect)
+import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, type_, value)
@@ -137,6 +138,7 @@ type Msg
     | EventSyncSourceAddClicked
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
+    | DeleteUserClicked
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
@@ -624,6 +626,27 @@ updateInner shared msg model =
                                     { resolvedModel | eventSyncSources = { es | sources = List.filter (\s -> s.id /= id) es.sources } }
                             in
                             refetchEvents shared deletedModel
+
+                        -- This page's own `DeleteUserClicked` (via
+                        -- `Shared.RequestDelete`/`Shared.ConfirmDelete`)
+                        -- resolving successfully -- the profile being
+                        -- viewed no longer exists, so navigate away, same
+                        -- as `Pages.Post.PostId_`'s own
+                        -- `Shared.GotPostDeleteResult` handling. Signing
+                        -- out locally, if it was the viewer's own account
+                        -- being deleted, happens in `Shared.update`'s own
+                        -- handling of this same result, not here --
+                        -- `Main.notifyPageOfSharedMsg` (which is what
+                        -- delivers a top-level-originated `Shared.Msg` like
+                        -- this one to a page) silently drops any *new*
+                        -- `Shared.Msg` a page's own `SharedMsg` branch
+                        -- forwards back in response, on the assumption
+                        -- that only an echo of the incoming message itself
+                        -- is ever forwarded that way -- see its own doc.
+                        Shared.GotUserDeleteResult _ _ (Ok _) ->
+                            ( resolvedModel
+                            , Browser.Navigation.pushUrl resolvedModel.navKey (Gen.Route.toHref Gen.Route.Home_) |> Effect.fromCmd
+                            )
 
                         _ ->
                             ( resolvedModel, Effect.none )
@@ -1153,6 +1176,21 @@ updateInner shared msg model =
             , Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents model.resolver.targetHost))
             )
 
+        -- Same shape as `EventSyncSourceDeleteClicked`: just opens the
+        -- shared "are you sure?" dialog -- the actual `DeleteUser` call
+        -- happens in `Shared.update`'s `ConfirmDelete` (see
+        -- `Shared.ConfirmUserDelete`'s own doc), whose result comes back
+        -- here as `Shared.GotUserDeleteResult` (see `SharedMsg` above).
+        DeleteUserClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( model
+                    , Effect.fromShared (Shared.RequestDelete (Shared.ConfirmUserDelete user model.resolver.targetHost))
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accounts.servers`
             -- (same as `ConnectClicked`'s own `GotConnectResult` does for
@@ -1648,6 +1686,7 @@ profileDetail shared model server maybeAccount user =
             Nothing ->
                 text ""
         , permissionsSection isAdmin model.permissionsEdit user
+        , deleteUserSection canEdit
         ]
 
 
@@ -1973,6 +2012,23 @@ permissionsSection isAdmin maybeEdit user =
                       else
                         text ""
                     ]
+
+
+{-| The "Delete User" button -- shown only to `canEdit` viewers (the
+profile's own owner, or an Admin), matching
+`backend/src/rpcs/users/delete_user.rs`'s own self-or-Admin gate. Fires
+`DeleteUserClicked`, which just opens the shared "are you sure?" dialog
+(`Shared.RequestDelete`/`Shared.ConfirmUserDelete`) -- see its own doc for
+where the actual `DeleteUser` RPC happens.
+-}
+deleteUserSection : Bool -> Html Msg
+deleteUserSection canEdit =
+    if not canEdit then
+        text ""
+
+    else
+        div [ class "profile-delete-section" ]
+            [ button [ class "profile-delete-button", onClick DeleteUserClicked ] [ text "Delete User" ] ]
 
 
 permissionEditBadge : Permission -> Html Msg

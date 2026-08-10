@@ -361,6 +361,65 @@ export interface DeleteEventSyncSourceRequest {
 }
 
 /**
+ * A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
+ * but for pushing instances out rather than pulling events in.
+ */
+export interface EventSyncDestination {
+  /** Unique ID for the destination. */
+  id: string;
+  /** The user information for the owner of this destination. */
+  owner:
+    | Author
+    | undefined;
+  /** The time the EventSyncDestination was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the EventSyncDestination was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /** A connected Facebook Page to post EventInstances to. */
+  facebookPage?: FacebookPage | undefined;
+}
+
+/** A Facebook Page connected as an `EventSyncDestination`. */
+export interface FacebookPage {
+  /** The Facebook Page's ID. */
+  pageId: string;
+  /** The Facebook Page's name, populated by the server when the connection is made. */
+  pageName: string;
+  /**
+   * Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token
+   * from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
+   * Never populated in responses.
+   */
+  shortLivedUserAccessToken?: string | undefined;
+}
+
+export interface GetEventSyncDestinationsResponse {
+  destinations: EventSyncDestination[];
+}
+
+/** Request to delete an EventSyncDestination. */
+export interface DeleteEventSyncDestinationRequest {
+  /** The destination to be deleted. */
+  destination:
+    | EventSyncDestination
+    | undefined;
+  /** Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). */
+  deleteSyncedPosts: boolean;
+}
+
+/** Syncs (cross-posts) a single EventInstance to one EventSyncDestination. */
+export interface SyncEventInstanceRequest {
+  /** The EventInstance to sync. */
+  eventInstanceId: string;
+  /** The EventSyncDestination to sync it to. */
+  eventSyncDestinationId: string;
+}
+
+/**
  * To be used for ticketing, RSVPs, etc.
  * Stored as JSON in the database.
  */
@@ -439,7 +498,27 @@ export interface EventInstance {
     | EventAttendances
     | undefined;
   /** If the request was made by a logged-in user, this is the current user's attendance for this instance. */
-  currentUserAttendance?: EventAttendance | undefined;
+  currentUserAttendance?:
+    | EventAttendance
+    | undefined;
+  /** EventSyncDestinations this instance has been synced (cross-posted) to, and their status. */
+  syncDestinations: EventInstanceSyncStatus[];
+}
+
+/** The status of an EventInstance's sync (cross-post) to one EventSyncDestination. */
+export interface EventInstanceSyncStatus {
+  /** The EventSyncDestination this status is for. */
+  eventSyncDestinationId: string;
+  /** The ID of the resulting post on the destination (e.g. a Facebook Post ID). */
+  destinationInstanceId?:
+    | string
+    | undefined;
+  /** A link to the resulting post on the destination, if available. */
+  destinationUrl?:
+    | string
+    | undefined;
+  /** The time this instance was last successfully synced to the destination. */
+  syncedAt?: string | undefined;
 }
 
 /**
@@ -1490,6 +1569,454 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
   },
 };
 
+function createBaseEventSyncDestination(): EventSyncDestination {
+  return { id: "", owner: undefined, createdAt: undefined, updatedAt: undefined, facebookPage: undefined };
+}
+
+export const EventSyncDestination: MessageFns<EventSyncDestination> = {
+  encode(message: EventSyncDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.owner !== undefined) {
+      Author.encode(message.owner, writer.uint32(18).fork()).join();
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.facebookPage !== undefined) {
+      FacebookPage.encode(message.facebookPage, writer.uint32(74).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSyncDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSyncDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.owner = Author.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.facebookPage = FacebookPage.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSyncDestination {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
+    };
+  },
+
+  toJSON(message: EventSyncDestination): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== undefined) {
+      obj.owner = Author.toJSON(message.owner);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.facebookPage !== undefined) {
+      obj.facebookPage = FacebookPage.toJSON(message.facebookPage);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSyncDestination>, I>>(base?: I): EventSyncDestination {
+    return EventSyncDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSyncDestination>, I>>(object: I): EventSyncDestination {
+    const message = createBaseEventSyncDestination();
+    message.id = object.id ?? "";
+    message.owner = (object.owner !== undefined && object.owner !== null)
+      ? Author.fromPartial(object.owner)
+      : undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
+      ? FacebookPage.fromPartial(object.facebookPage)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseFacebookPage(): FacebookPage {
+  return { pageId: "", pageName: "", shortLivedUserAccessToken: undefined };
+}
+
+export const FacebookPage: MessageFns<FacebookPage> = {
+  encode(message: FacebookPage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.pageId !== "") {
+      writer.uint32(10).string(message.pageId);
+    }
+    if (message.pageName !== "") {
+      writer.uint32(18).string(message.pageName);
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      writer.uint32(26).string(message.shortLivedUserAccessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FacebookPage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFacebookPage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pageId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.shortLivedUserAccessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FacebookPage {
+    return {
+      pageId: isSet(object.pageId) ? globalThis.String(object.pageId) : "",
+      pageName: isSet(object.pageName) ? globalThis.String(object.pageName) : "",
+      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
+        ? globalThis.String(object.shortLivedUserAccessToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: FacebookPage): unknown {
+    const obj: any = {};
+    if (message.pageId !== "") {
+      obj.pageId = message.pageId;
+    }
+    if (message.pageName !== "") {
+      obj.pageName = message.pageName;
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FacebookPage>, I>>(base?: I): FacebookPage {
+    return FacebookPage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FacebookPage>, I>>(object: I): FacebookPage {
+    const message = createBaseFacebookPage();
+    message.pageId = object.pageId ?? "";
+    message.pageName = object.pageName ?? "";
+    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseGetEventSyncDestinationsResponse(): GetEventSyncDestinationsResponse {
+  return { destinations: [] };
+}
+
+export const GetEventSyncDestinationsResponse: MessageFns<GetEventSyncDestinationsResponse> = {
+  encode(message: GetEventSyncDestinationsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.destinations) {
+      EventSyncDestination.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEventSyncDestinationsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEventSyncDestinationsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.destinations.push(EventSyncDestination.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetEventSyncDestinationsResponse {
+    return {
+      destinations: globalThis.Array.isArray(object?.destinations)
+        ? object.destinations.map((e: any) => EventSyncDestination.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetEventSyncDestinationsResponse): unknown {
+    const obj: any = {};
+    if (message.destinations?.length) {
+      obj.destinations = message.destinations.map((e) => EventSyncDestination.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetEventSyncDestinationsResponse>, I>>(
+    base?: I,
+  ): GetEventSyncDestinationsResponse {
+    return GetEventSyncDestinationsResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetEventSyncDestinationsResponse>, I>>(
+    object: I,
+  ): GetEventSyncDestinationsResponse {
+    const message = createBaseGetEventSyncDestinationsResponse();
+    message.destinations = object.destinations?.map((e) => EventSyncDestination.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDeleteEventSyncDestinationRequest(): DeleteEventSyncDestinationRequest {
+  return { destination: undefined, deleteSyncedPosts: false };
+}
+
+export const DeleteEventSyncDestinationRequest: MessageFns<DeleteEventSyncDestinationRequest> = {
+  encode(message: DeleteEventSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.destination !== undefined) {
+      EventSyncDestination.encode(message.destination, writer.uint32(10).fork()).join();
+    }
+    if (message.deleteSyncedPosts !== false) {
+      writer.uint32(16).bool(message.deleteSyncedPosts);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteEventSyncDestinationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteEventSyncDestinationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.destination = EventSyncDestination.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.deleteSyncedPosts = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteEventSyncDestinationRequest {
+    return {
+      destination: isSet(object.destination) ? EventSyncDestination.fromJSON(object.destination) : undefined,
+      deleteSyncedPosts: isSet(object.deleteSyncedPosts) ? globalThis.Boolean(object.deleteSyncedPosts) : false,
+    };
+  },
+
+  toJSON(message: DeleteEventSyncDestinationRequest): unknown {
+    const obj: any = {};
+    if (message.destination !== undefined) {
+      obj.destination = EventSyncDestination.toJSON(message.destination);
+    }
+    if (message.deleteSyncedPosts !== false) {
+      obj.deleteSyncedPosts = message.deleteSyncedPosts;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteEventSyncDestinationRequest>, I>>(
+    base?: I,
+  ): DeleteEventSyncDestinationRequest {
+    return DeleteEventSyncDestinationRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteEventSyncDestinationRequest>, I>>(
+    object: I,
+  ): DeleteEventSyncDestinationRequest {
+    const message = createBaseDeleteEventSyncDestinationRequest();
+    message.destination = (object.destination !== undefined && object.destination !== null)
+      ? EventSyncDestination.fromPartial(object.destination)
+      : undefined;
+    message.deleteSyncedPosts = object.deleteSyncedPosts ?? false;
+    return message;
+  },
+};
+
+function createBaseSyncEventInstanceRequest(): SyncEventInstanceRequest {
+  return { eventInstanceId: "", eventSyncDestinationId: "" };
+}
+
+export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
+  encode(message: SyncEventInstanceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventInstanceId !== "") {
+      writer.uint32(10).string(message.eventInstanceId);
+    }
+    if (message.eventSyncDestinationId !== "") {
+      writer.uint32(18).string(message.eventSyncDestinationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncEventInstanceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncEventInstanceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventInstanceId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.eventSyncDestinationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncEventInstanceRequest {
+    return {
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      eventSyncDestinationId: isSet(object.eventSyncDestinationId)
+        ? globalThis.String(object.eventSyncDestinationId)
+        : "",
+    };
+  },
+
+  toJSON(message: SyncEventInstanceRequest): unknown {
+    const obj: any = {};
+    if (message.eventInstanceId !== "") {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    if (message.eventSyncDestinationId !== "") {
+      obj.eventSyncDestinationId = message.eventSyncDestinationId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SyncEventInstanceRequest>, I>>(base?: I): SyncEventInstanceRequest {
+    return SyncEventInstanceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SyncEventInstanceRequest>, I>>(object: I): SyncEventInstanceRequest {
+    const message = createBaseSyncEventInstanceRequest();
+    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.eventSyncDestinationId = object.eventSyncDestinationId ?? "";
+    return message;
+  },
+};
+
 function createBaseEventInfo(): EventInfo {
   return {
     allowsRsvps: undefined,
@@ -1639,6 +2166,7 @@ function createBaseEventInstance(): EventInstance {
     syncMissingSince: undefined,
     attendances: undefined,
     currentUserAttendance: undefined,
+    syncDestinations: [],
   };
 }
 
@@ -1676,6 +2204,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     if (message.currentUserAttendance !== undefined) {
       EventAttendance.encode(message.currentUserAttendance, writer.uint32(90).fork()).join();
+    }
+    for (const v of message.syncDestinations) {
+      EventInstanceSyncStatus.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -1775,6 +2306,14 @@ export const EventInstance: MessageFns<EventInstance> = {
           message.currentUserAttendance = EventAttendance.decode(reader, reader.uint32());
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.syncDestinations.push(EventInstanceSyncStatus.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1801,6 +2340,9 @@ export const EventInstance: MessageFns<EventInstance> = {
       currentUserAttendance: isSet(object.currentUserAttendance)
         ? EventAttendance.fromJSON(object.currentUserAttendance)
         : undefined,
+      syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
+        ? object.syncDestinations.map((e: any) => EventInstanceSyncStatus.fromJSON(e))
+        : [],
     };
   },
 
@@ -1839,6 +2381,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     if (message.currentUserAttendance !== undefined) {
       obj.currentUserAttendance = EventAttendance.toJSON(message.currentUserAttendance);
     }
+    if (message.syncDestinations?.length) {
+      obj.syncDestinations = message.syncDestinations.map((e) => EventInstanceSyncStatus.toJSON(e));
+    }
     return obj;
   },
 
@@ -1867,6 +2412,124 @@ export const EventInstance: MessageFns<EventInstance> = {
       (object.currentUserAttendance !== undefined && object.currentUserAttendance !== null)
         ? EventAttendance.fromPartial(object.currentUserAttendance)
         : undefined;
+    message.syncDestinations = object.syncDestinations?.map((e) => EventInstanceSyncStatus.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEventInstanceSyncStatus(): EventInstanceSyncStatus {
+  return {
+    eventSyncDestinationId: "",
+    destinationInstanceId: undefined,
+    destinationUrl: undefined,
+    syncedAt: undefined,
+  };
+}
+
+export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
+  encode(message: EventInstanceSyncStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventSyncDestinationId !== "") {
+      writer.uint32(10).string(message.eventSyncDestinationId);
+    }
+    if (message.destinationInstanceId !== undefined) {
+      writer.uint32(18).string(message.destinationInstanceId);
+    }
+    if (message.destinationUrl !== undefined) {
+      writer.uint32(26).string(message.destinationUrl);
+    }
+    if (message.syncedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.syncedAt), writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventInstanceSyncStatus {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventInstanceSyncStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventSyncDestinationId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.destinationInstanceId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.destinationUrl = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.syncedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventInstanceSyncStatus {
+    return {
+      eventSyncDestinationId: isSet(object.eventSyncDestinationId)
+        ? globalThis.String(object.eventSyncDestinationId)
+        : "",
+      destinationInstanceId: isSet(object.destinationInstanceId)
+        ? globalThis.String(object.destinationInstanceId)
+        : undefined,
+      destinationUrl: isSet(object.destinationUrl) ? globalThis.String(object.destinationUrl) : undefined,
+      syncedAt: isSet(object.syncedAt) ? globalThis.String(object.syncedAt) : undefined,
+    };
+  },
+
+  toJSON(message: EventInstanceSyncStatus): unknown {
+    const obj: any = {};
+    if (message.eventSyncDestinationId !== "") {
+      obj.eventSyncDestinationId = message.eventSyncDestinationId;
+    }
+    if (message.destinationInstanceId !== undefined) {
+      obj.destinationInstanceId = message.destinationInstanceId;
+    }
+    if (message.destinationUrl !== undefined) {
+      obj.destinationUrl = message.destinationUrl;
+    }
+    if (message.syncedAt !== undefined) {
+      obj.syncedAt = message.syncedAt;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventInstanceSyncStatus>, I>>(base?: I): EventInstanceSyncStatus {
+    return EventInstanceSyncStatus.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventInstanceSyncStatus>, I>>(object: I): EventInstanceSyncStatus {
+    const message = createBaseEventInstanceSyncStatus();
+    message.eventSyncDestinationId = object.eventSyncDestinationId ?? "";
+    message.destinationInstanceId = object.destinationInstanceId ?? undefined;
+    message.destinationUrl = object.destinationUrl ?? undefined;
+    message.syncedAt = object.syncedAt ?? undefined;
     return message;
   },
 };

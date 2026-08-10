@@ -1,0 +1,14 @@
+mod get_event_sync_destinations;
+pub use get_event_sync_destinations::get_event_sync_destinations;
+
+mod create_event_sync_destination;
+pub use create_event_sync_destination::create_event_sync_destination;
+
+mod update_event_sync_destination;
+pub use update_event_sync_destination::update_event_sync_destination;
+
+mod delete_event_sync_destination;
+pub use delete_event_sync_destination::delete_event_sync_destination;
+
+mod sync_event_instance;
+pub use sync_event_instance::sync_event_instance;

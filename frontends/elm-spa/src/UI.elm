@@ -2134,6 +2134,13 @@ deleteConfirmationModal shared =
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\"? This can't be undone."
                             )
+
+                        Shared.ConfirmUserDelete user _ ->
+                            ( "Delete User?"
+                            , "Delete "
+                                ++ Users.titleName user
+                                ++ "'s account? This can't be undone."
+                            )
             in
             UI.Modal.view
                 { class = "confirm-delete-modal"

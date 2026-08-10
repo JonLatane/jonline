@@ -83,6 +83,79 @@ pub fn configuration_to_json(
 }
 
 #[derive(Debug, Clone)]
+pub struct MarshalableEventSyncDestination(pub models::EventSyncDestination, pub models::Author);
+
+pub trait ToProtoMarshalableEventSyncDestination {
+    fn to_proto(&self) -> EventSyncDestination;
+}
+
+impl ToProtoMarshalableEventSyncDestination for MarshalableEventSyncDestination {
+    fn to_proto(&self) -> EventSyncDestination {
+        let destination = &self.0;
+        let owner = &self.1;
+        EventSyncDestination {
+            id: destination.id.to_proto_id(),
+            owner: Some(owner.to_proto(None)),
+            created_at: Some(destination.created_at.to_proto()),
+            updated_at: destination.updated_at.map(|t| t.to_proto()),
+            configuration: destination_configuration_to_proto(&destination.configuration),
+        }
+    }
+}
+
+/// `configuration` JSONB shape today: `{"facebook_page": {"page_id": ..., "page_name": ...,
+/// "access_token": ...}}` -- `access_token` is intentionally never surfaced here; it's
+/// server-side only (see `logic::facebook_sync`).
+pub fn destination_configuration_to_proto(
+    configuration: &serde_json::Value,
+) -> Option<event_sync_destination::Configuration> {
+    let facebook_page = configuration.get("facebook_page")?;
+    let page_id = facebook_page.get("page_id").and_then(|v| v.as_str())?;
+    let page_name = facebook_page
+        .get("page_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    Some(event_sync_destination::Configuration::FacebookPage(
+        FacebookPage {
+            page_id: page_id.to_string(),
+            page_name: page_name.to_string(),
+            short_lived_user_access_token: None,
+        },
+    ))
+}
+
+pub type EventInstanceSyncLookup = HashMap<i64, Vec<models::EventInstanceSyncDestination>>;
+
+pub fn load_event_instance_sync_lookup(
+    event_instance_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> EventInstanceSyncLookup {
+    let mut lookup: EventInstanceSyncLookup = HashMap::new();
+    for row in models::get_event_instance_sync_destinations(event_instance_ids, conn) {
+        lookup
+            .entry(row.event_instance_id)
+            .or_default()
+            .push(row);
+    }
+    lookup
+}
+
+pub trait ToProtoEventInstanceSyncStatus {
+    fn to_proto(&self) -> EventInstanceSyncStatus;
+}
+
+impl ToProtoEventInstanceSyncStatus for models::EventInstanceSyncDestination {
+    fn to_proto(&self) -> EventInstanceSyncStatus {
+        EventInstanceSyncStatus {
+            event_sync_destination_id: self.event_sync_destination_id.to_proto_id(),
+            destination_instance_id: self.destination_instance_id.clone(),
+            destination_url: self.destination_url.clone(),
+            synced_at: self.synced_at.map(|t| t.to_proto()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct MarshalableEvent(
     pub models::Event,
     pub MarshalablePost,
@@ -125,9 +198,24 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
         .collect();
     let sync_source_lookup = load_event_sync_source_lookup(event_sync_source_ids, conn);
 
+    let event_instance_ids: Vec<i64> = data
+        .iter()
+        .flat_map(|marshalable_event| {
+            marshalable_event
+                .2
+                .iter()
+                .map(|MarshalableEventInstance(instance, _)| instance.id)
+        })
+        .collect();
+    let instance_sync_lookup = load_event_instance_sync_lookup(event_instance_ids, conn);
+
     data.iter()
         .map(|marshalable_event| {
-            marshalable_event.to_proto(lookup.as_ref(), sync_source_lookup.as_ref())
+            marshalable_event.to_proto(
+                lookup.as_ref(),
+                sync_source_lookup.as_ref(),
+                Some(&instance_sync_lookup),
+            )
         })
         .collect()
 }
@@ -136,6 +224,7 @@ pub trait ToProtoMarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&EventSyncSourceLookup>,
+        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
     ) -> Event;
 }
 
@@ -144,6 +233,7 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&EventSyncSourceLookup>,
+        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
     ) -> Event {
         let event = self.0.to_owned();
         let post = self.1.to_owned();
@@ -162,7 +252,7 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
             post: Some(post.to_proto(media_lookup)),
             instances: instances
                 .iter()
-                .map(|i| i.to_proto(media_lookup, hide_location))
+                .map(|i| i.to_proto(media_lookup, hide_location, instance_sync_lookup))
                 .collect(),
             info: serde_json::from_value(self.0.info.to_owned()).ok(),
             event_sync_source: event
@@ -175,11 +265,21 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
 }
 
 pub trait ToProtoMarshalableEventInstance {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>, hide_location: bool) -> EventInstance;
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        hide_location: bool,
+        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+    ) -> EventInstance;
 }
 
 impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>, hide_location: bool) -> EventInstance {
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        hide_location: bool,
+        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+    ) -> EventInstance {
         let event_instance = self.0.to_owned();
         let marshalable_post = self.1.to_owned();
         let location: Option<Location> = if hide_location {
@@ -187,6 +287,10 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
         } else {
             event_instance.location.map(|c| c.to_proto_location())
         };
+        let sync_destinations = instance_sync_lookup
+            .and_then(|lookup| lookup.get(&event_instance.id))
+            .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
+            .unwrap_or_default();
         EventInstance {
             id: event_instance.id.to_proto_id(),
             event_id: event_instance.event_id.to_proto_id(),
@@ -198,6 +302,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             }),
             location,
             event_sync_source_instance_id: event_instance.event_sync_source_instance_id,
+            sync_destinations,
             ..Default::default()
         }
     }

@@ -24,6 +24,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    event_instance_sync_destinations (event_instance_id, event_sync_destination_id) {
+        event_instance_id -> Int8,
+        event_sync_destination_id -> Int8,
+        destination_instance_id -> Nullable<Varchar>,
+        destination_url -> Nullable<Varchar>,
+        synced_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::TsVector;
 
@@ -41,6 +52,16 @@ diesel::table! {
         search_text -> TsVector,
         user_id -> Nullable<Int8>,
         sync_missing_since -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
+    event_sync_destinations (id) {
+        id -> Int8,
+        user_id -> Int8,
+        configuration -> Jsonb,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -362,8 +383,11 @@ diesel::table! {
 }
 
 diesel::joinable!(event_attendances -> event_instances (event_instance_id));
+diesel::joinable!(event_instance_sync_destinations -> event_instances (event_instance_id));
+diesel::joinable!(event_instance_sync_destinations -> event_sync_destinations (event_sync_destination_id));
 diesel::joinable!(event_instances -> events (event_id));
 diesel::joinable!(event_instances -> posts (post_id));
+diesel::joinable!(event_sync_destinations -> users (user_id));
 diesel::joinable!(event_sync_sources -> users (user_id));
 diesel::joinable!(events -> event_sync_sources (event_sync_source_id));
 diesel::joinable!(events -> posts (post_id));
@@ -393,7 +417,9 @@ diesel::joinable!(user_refresh_tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     event_attendances,
+    event_instance_sync_destinations,
     event_instances,
+    event_sync_destinations,
     event_sync_sources,
     events,
     federated_accounts,

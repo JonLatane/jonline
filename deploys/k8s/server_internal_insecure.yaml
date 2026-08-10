@@ -88,6 +88,18 @@ spec:
                   name: jonline-generated-ca
                   key: ca.crt
                   optional: true
+            - name: FACEBOOK_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: jonline-facebook-app
+                  key: app-id
+                  optional: true
+            - name: FACEBOOK_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jonline-facebook-app
+                  key: app-secret
+                  optional: true
           ports:
             - containerPort: 27707
               protocol: TCP
