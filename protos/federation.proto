@@ -13,6 +13,9 @@ message GetServiceVersionResponse {
 message FederationInfo {
   // A list of servers that this server will federate with.
   repeated FederatedServer servers = 1;
+
+  // Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.
+  optional FacebookAuthConfig facebook_auth_config = 2;
 }
 
 // A server that this server will federate with.
@@ -34,4 +37,13 @@ message FederatedAccount {
   string host = 1;
   // The user ID of the user on the server.
   string user_id = 2;
+}
+
+// Facebook authentication configuration for the server.
+message FacebookAuthConfig {
+  // The Facebook App ID for the server.
+  string app_id = 1;
+  // The Facebook App Secret for the server. *Never serialized to the client.*
+  // Admins: Edit this in the database's JSONB column directly.
+  string app_secret = 2;
 }

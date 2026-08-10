@@ -69,18 +69,38 @@ fn create_requires_facebook_page_configuration() {
 }
 
 #[test]
+fn create_fails_when_facebook_app_not_configured() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "esdt_create_noapp");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
+
+        let err = create_event_sync_destination(
+            facebook_page_request("123", "short-lived-token"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "facebook_app_not_configured");
+
+        Ok(())
+    });
+}
+
+#[test]
 fn create_succeeds_and_owner_is_always_current_user() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        std::env::set_var("FACEBOOK_APP_ID", "test-app-id");
-        std::env::set_var("FACEBOOK_APP_SECRET", "test-app-secret");
+        configure_facebook_app(conn, "test-app-id", "test-app-secret");
 
         let user = create_user(conn, "esdt_create_ok");
         let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
 
-        // create_event_sync_destination always hits the real Graph API base URL, which isn't
-        // reachable in tests -- see `facebook_sync_tests` for coverage of the actual Graph API
-        // interaction (against a mock server) via `logic::facebook_sync`'s `_at` functions.
+        // Once an app is configured, create_event_sync_destination goes on to hit the real Graph
+        // API base URL, which isn't reachable in tests -- see `facebook_sync_tests` for coverage
+        // of the actual Graph API interaction (against a mock server) via `logic::facebook_sync`'s
+        // `_at` functions.
         let err = create_event_sync_destination(
             facebook_page_request("123", "short-lived-token"),
             &user,

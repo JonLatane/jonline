@@ -22,6 +22,19 @@ export interface GetServiceVersionResponse {
 export interface FederationInfo {
   /** A list of servers that this server will federate with. */
   servers: FederatedServer[];
+  /** Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. */
+  facebookAuthConfig?: FacebookAuthConfig | undefined;
+}
+
+/** Facebook authentication configuration for the server. */
+export interface FacebookAuthConfig {
+  /** The Facebook App ID for the server. */
+  appId: string;
+  /**
+   * The Facebook App Secret for the server. *Never serialized to the client.*
+   * Admins: Edit this in the database's JSONB column directly.
+   */
+  appSecret: string;
 }
 
 /** A server that this server will federate with. */
@@ -110,13 +123,16 @@ export const GetServiceVersionResponse: MessageFns<GetServiceVersionResponse> = 
 };
 
 function createBaseFederationInfo(): FederationInfo {
-  return { servers: [] };
+  return { servers: [], facebookAuthConfig: undefined };
 }
 
 export const FederationInfo: MessageFns<FederationInfo> = {
   encode(message: FederationInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.servers) {
       FederatedServer.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.facebookAuthConfig !== undefined) {
+      FacebookAuthConfig.encode(message.facebookAuthConfig, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -136,6 +152,14 @@ export const FederationInfo: MessageFns<FederationInfo> = {
           message.servers.push(FederatedServer.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.facebookAuthConfig = FacebookAuthConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -150,6 +174,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       servers: globalThis.Array.isArray(object?.servers)
         ? object.servers.map((e: any) => FederatedServer.fromJSON(e))
         : [],
+      facebookAuthConfig: isSet(object.facebookAuthConfig)
+        ? FacebookAuthConfig.fromJSON(object.facebookAuthConfig)
+        : undefined,
     };
   },
 
@@ -157,6 +184,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     const obj: any = {};
     if (message.servers?.length) {
       obj.servers = message.servers.map((e) => FederatedServer.toJSON(e));
+    }
+    if (message.facebookAuthConfig !== undefined) {
+      obj.facebookAuthConfig = FacebookAuthConfig.toJSON(message.facebookAuthConfig);
     }
     return obj;
   },
@@ -167,6 +197,85 @@ export const FederationInfo: MessageFns<FederationInfo> = {
   fromPartial<I extends Exact<DeepPartial<FederationInfo>, I>>(object: I): FederationInfo {
     const message = createBaseFederationInfo();
     message.servers = object.servers?.map((e) => FederatedServer.fromPartial(e)) || [];
+    message.facebookAuthConfig = (object.facebookAuthConfig !== undefined && object.facebookAuthConfig !== null)
+      ? FacebookAuthConfig.fromPartial(object.facebookAuthConfig)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseFacebookAuthConfig(): FacebookAuthConfig {
+  return { appId: "", appSecret: "" };
+}
+
+export const FacebookAuthConfig: MessageFns<FacebookAuthConfig> = {
+  encode(message: FacebookAuthConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.appId !== "") {
+      writer.uint32(10).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(18).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FacebookAuthConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFacebookAuthConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FacebookAuthConfig {
+    return {
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: FacebookAuthConfig): unknown {
+    const obj: any = {};
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(base?: I): FacebookAuthConfig {
+    return FacebookAuthConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(object: I): FacebookAuthConfig {
+    const message = createBaseFacebookAuthConfig();
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };

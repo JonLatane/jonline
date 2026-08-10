@@ -14,7 +14,8 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::{
     event_attendances, event_instances, event_sync_destinations, event_sync_sources, events,
-    follows, group_posts, groups, media, memberships, messages, posts, users,
+    follows, group_posts, groups, media, memberships, messages, posts, server_configurations,
+    users,
 };
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
@@ -606,6 +607,26 @@ pub fn create_event_sync_destination_row(
         })
         .get_result::<models::EventSyncDestination>(conn)
         .expect("failed to create test event sync destination")
+}
+
+/// Inserts an active `server_configurations` row with `federation_info.facebook_auth_config` set
+/// to `app_id`/`app_secret` -- lets specs exercise `logic::server_facebook_app_credentials` (and
+/// RPCs that call it, like `create_event_sync_destination`) without going through
+/// `ConfigureServer`'s own merge logic.
+pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_secret: &str) {
+    let mut new_config = models::default_server_configuration();
+    new_config.federation_info = serde_json::to_value(FederationInfo {
+        servers: vec![],
+        facebook_auth_config: Some(FacebookAuthConfig {
+            app_id: app_id.to_string(),
+            app_secret: app_secret.to_string(),
+        }),
+    })
+    .unwrap();
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
 }
 
 /// Inserts a `media` row directly (bypassing the `/media` upload endpoint, which lives outside

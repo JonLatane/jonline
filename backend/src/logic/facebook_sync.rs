@@ -5,17 +5,21 @@
 //! `publish_actions` in 2018) -- only to a Page the user administers, hence `EventSyncDestination`
 //! only supports `FacebookPage`, not a personal profile.
 //!
-//! Requires the `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET` env vars (this app's own Facebook App
-//! credentials, used to extend the short-lived user access token the client gets from Facebook
-//! Login into a long-lived Page access token -- see `connect_facebook_page`). A Page access token
-//! obtained this way is effectively non-expiring (it lasts until the user revokes access or
-//! changes their Facebook password), so it's stored once and reused indefinitely.
+//! Needs this app's own Facebook App ID/Secret (an admin-configured
+//! `ServerConfiguration.federation_info.facebook_auth_config`, not an env var -- callers fetch it
+//! via `server_facebook_app_credentials` and pass it in) to extend the short-lived user access
+//! token the client gets from Facebook Login into a long-lived Page access token -- see
+//! `connect_facebook_page`. A Page access token obtained this way is effectively non-expiring (it
+//! lasts until the user revokes access or changes their Facebook password), so it's stored once
+//! and reused indefinitely.
 
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 use tonic::{Code, Status};
 
+use crate::db_connection::PgPooledConnection;
 use crate::models;
+use crate::protos::FederationInfo;
 
 const GRAPH_API_VERSION: &str = "v19.0";
 const DEFAULT_GRAPH_API_BASE_URL: &str = "https://graph.facebook.com";
@@ -27,15 +31,41 @@ pub struct FacebookPageConnection {
     pub access_token: String,
 }
 
+/// Loads this server's own Facebook App ID/Secret, as configured by an admin via `ConfigureServer`
+/// (`ServerConfiguration.federation_info.facebook_auth_config`) -- required before any
+/// `connect_facebook_page`/`connect_facebook_page_at` call. Reads the raw DB model (not
+/// `get_server_configuration_proto`), since that always blanks `app_secret` for client responses
+/// (see `ToProtoServerConfiguration`) -- this needs the real value.
+pub fn server_facebook_app_credentials(
+    conn: &mut PgPooledConnection,
+) -> Result<(String, String), Status> {
+    let configuration = crate::rpcs::get_server_configuration_model(conn)?;
+    let federation_info: FederationInfo = serde_json::from_value(configuration.federation_info)
+        .map_err(|e| {
+            log::error!("Failed to parse stored federation_info: {:?}", e);
+            Status::new(Code::Internal, "failed_to_load_server_configuration")
+        })?;
+    federation_info
+        .facebook_auth_config
+        .filter(|c| !c.app_id.is_empty() && !c.app_secret.is_empty())
+        .map(|c| (c.app_id, c.app_secret))
+        .ok_or_else(|| Status::new(Code::FailedPrecondition, "facebook_app_not_configured"))
+}
+
 /// Exchanges a short-lived user access token (from client-side Facebook Login) for `page_id`'s
 /// long-lived Page access token: extends the user token, then looks up the Page's own token from
-/// `/me/accounts` (which only lists Pages the user administers).
+/// `/me/accounts` (which only lists Pages the user administers). `app_id`/`app_secret` are this
+/// Jonline server's own Facebook App credentials -- see the module doc.
 pub fn connect_facebook_page(
+    app_id: &str,
+    app_secret: &str,
     short_lived_user_access_token: &str,
     page_id: &str,
 ) -> Result<FacebookPageConnection, Status> {
     connect_facebook_page_at(
         DEFAULT_GRAPH_API_BASE_URL,
+        app_id,
+        app_secret,
         short_lived_user_access_token,
         page_id,
     )
@@ -47,23 +77,15 @@ pub fn connect_facebook_page(
 /// needed in production too.
 pub fn connect_facebook_page_at(
     base_url: &str,
+    app_id: &str,
+    app_secret: &str,
     short_lived_user_access_token: &str,
     page_id: &str,
 ) -> Result<FacebookPageConnection, Status> {
-    let app_id = crate::env_var("FACEBOOK_APP_ID").ok_or_else(|| {
-        Status::new(Code::FailedPrecondition, "facebook_app_id_not_configured")
-    })?;
-    let app_secret = crate::env_var("FACEBOOK_APP_SECRET").ok_or_else(|| {
-        Status::new(
-            Code::FailedPrecondition,
-            "facebook_app_secret_not_configured",
-        )
-    })?;
-
     let long_lived_user_token = exchange_long_lived_user_token(
         base_url,
-        &app_id,
-        &app_secret,
+        app_id,
+        app_secret,
         short_lived_user_access_token,
     )?;
     find_page_access_token(base_url, &long_lived_user_token, page_id)

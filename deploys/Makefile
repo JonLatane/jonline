@@ -127,30 +127,3 @@ get_backend_generated_certs:
 	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
 get_backend_generated_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
-
-# Facebook App credentials (FACEBOOK_APP_ID/FACEBOOK_APP_SECRET -- see
-# backend/src/logic/facebook_sync.rs) used to cross-post Events to a connected Facebook Page.
-# Kept in their own Secret (jonline-facebook-app), read by k8s/server_*.yaml's `optional: true`
-# env entries -- skipping this target entirely is safe if a namespace doesn't need Facebook sync.
-set_facebook_app_data:
-	@read -p "Facebook App ID: " FACEBOOK_APP_ID; \
-	read -s -p "Facebook App Secret: " FACEBOOK_APP_SECRET; echo; \
-	test -n "$$FACEBOOK_APP_ID" || (echo "Facebook App ID is required" && exit 1); \
-	test -n "$$FACEBOOK_APP_SECRET" || (echo "Facebook App Secret is required" && exit 1); \
-	kubectl create secret generic jonline-facebook-app -n $(NAMESPACE) \
-	  --from-literal=app-id="$$FACEBOOK_APP_ID" \
-	  --from-literal=app-secret="$$FACEBOOK_APP_SECRET" \
-	  --dry-run=client -o yaml | kubectl apply -f -
-
-remove_facebook_app_data:
-	- kubectl delete secret jonline-facebook-app -n $(NAMESPACE)
-
-# Copies the jonline-facebook-app Secret from SOURCE_NAMESPACE into NAMESPACE (e.g. sharing one
-# Facebook App's credentials across several instances) without re-prompting for them.
-copy_facebook_app_data:
-	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial SOURCE_NAMESPACE=jonline make copy_facebook_app_data" && exit 1)
-	@test -n "$(SOURCE_NAMESPACE)" || (echo "SOURCE_NAMESPACE is required, e.g. NAMESPACE=bullcitysocial SOURCE_NAMESPACE=jonline make copy_facebook_app_data" && exit 1)
-	@test "$(NAMESPACE)" != "$(SOURCE_NAMESPACE)" || (echo "NAMESPACE and SOURCE_NAMESPACE must be different" && exit 1)
-	kubectl get secret jonline-facebook-app -n $(SOURCE_NAMESPACE) -o json \
-	  | jq 'del(.metadata.namespace,.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.selfLink,.metadata.managedFields,.metadata.ownerReferences)' \
-	  | kubectl apply -n $(NAMESPACE) -f -

@@ -341,6 +341,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></p>
           </li>
           <li>
+            <p><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
           </li>
           <li>
@@ -4663,6 +4666,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-FacebookAuthConfig"></a></p>
+    <h3 id="facebookauthconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookauthconfig"><span class="octicon octicon-link"></span></a>FacebookAuthConfig</h3>
+    <p>Facebook authentication configuration for the server.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>app_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook App ID for the server.</td>
+        </tr>
+        <tr>
+          <td>app_secret</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook App Secret for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-FeatureSettings"></a></p>
     <h3 id="featuresettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#featuresettings"><span class="octicon octicon-link"></span></a>FeatureSettings</h3>
     <p>
@@ -4891,6 +4921,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-WebPushConfig">WebPushConfig</a></td>
           <td>optional</td>
           <td>Web Push (VAPID) configuration for the server.</td>
+        </tr>
+        <tr>
+          <td>facebook_auth_config</td>
+          <td><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></td>
+          <td>optional</td>
+          <td>Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.</td>
         </tr>
       </tbody>
     </table>

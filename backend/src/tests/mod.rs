@@ -1,5 +1,6 @@
 pub mod factories;
 
+mod configure_server_tests;
 mod create_post_tests;
 mod delete_event_attendance_tests;
 mod delete_event_tests;

@@ -10,20 +10,19 @@ use crate::logic::{connect_facebook_page_at, post_event_instance_at};
 use crate::models;
 use crate::tests::factories::*;
 
-/// `connect_facebook_page_at` always needs *some* app id/secret configured -- their actual value
-/// doesn't matter against a mock server, only that they're present.
-fn set_test_app_credentials() {
-    std::env::set_var("FACEBOOK_APP_ID", "test-app-id");
-    std::env::set_var("FACEBOOK_APP_SECRET", "test-app-secret");
-}
+/// `app_id`/`app_secret` are this Jonline server's own Facebook App credentials (now sourced from
+/// `ServerConfiguration.federation_info.facebook_auth_config`, not an env var) -- their actual
+/// value doesn't matter against a mock server, only that they're passed through.
+const TEST_APP_ID: &str = "test-app-id";
+const TEST_APP_SECRET: &str = "test-app-secret";
 
 #[test]
 fn connect_succeeds_for_a_page_the_user_manages() {
-    set_test_app_credentials();
     let base_url = serve_facebook_graph_api(Some(("123", "Test Page", "page-token")), "unused");
 
-    let connection = connect_facebook_page_at(&base_url, "short-lived-token", "123")
-        .expect("connect should succeed");
+    let connection =
+        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "123")
+            .expect("connect should succeed");
     assert_eq!(connection.page_id, "123");
     assert_eq!(connection.page_name, "Test Page");
     assert_eq!(connection.access_token, "page-token");
@@ -31,20 +30,22 @@ fn connect_succeeds_for_a_page_the_user_manages() {
 
 #[test]
 fn connect_fails_for_a_page_the_user_does_not_manage() {
-    set_test_app_credentials();
     let base_url = serve_facebook_graph_api(Some(("123", "Test Page", "page-token")), "unused");
 
-    let err = connect_facebook_page_at(&base_url, "short-lived-token", "999").unwrap_err();
+    let err =
+        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "999")
+            .unwrap_err();
     assert_eq!(err.code(), Code::PermissionDenied);
     assert_eq!(err.message(), "facebook_page_not_managed_by_user");
 }
 
 #[test]
 fn connect_fails_when_user_manages_no_pages() {
-    set_test_app_credentials();
     let base_url = serve_facebook_graph_api(None, "unused");
 
-    let err = connect_facebook_page_at(&base_url, "short-lived-token", "123").unwrap_err();
+    let err =
+        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "123")
+            .unwrap_err();
     assert_eq!(err.code(), Code::PermissionDenied);
     assert_eq!(err.message(), "facebook_page_not_managed_by_user");
 }

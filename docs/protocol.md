@@ -103,6 +103,7 @@
   
 - [server_configuration.proto](#server_configuration-proto)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
+    - [FacebookAuthConfig](#jonline-FacebookAuthConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
@@ -2037,6 +2038,22 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 
 
 
+<a name="jonline-FacebookAuthConfig"></a>
+
+### FacebookAuthConfig
+Facebook authentication configuration for the server.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  | The Facebook App ID for the server. |
+| app_secret | [string](#string) |  | The Facebook App Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
+
+
+
+
+
+
 <a name="jonline-FeatureSettings"></a>
 
 ### FeatureSettings
@@ -2116,6 +2133,7 @@ Configuration for a Jonline server instance.
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 | web_push_config | [WebPushConfig](#jonline-WebPushConfig) | optional | Web Push (VAPID) configuration for the server. |
+| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
 
 
 

@@ -3,7 +3,7 @@ use serde_json::json;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::connect_facebook_page;
+use crate::logic::{connect_facebook_page, server_facebook_app_credentials};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
@@ -31,7 +31,13 @@ pub fn create_event_sync_destination(
             short_lived_user_access_token: Some(short_lived_user_access_token),
             ..
         })) if !page_id.trim().is_empty() && !short_lived_user_access_token.trim().is_empty() => {
-            let connection = connect_facebook_page(&short_lived_user_access_token, &page_id)?;
+            let (app_id, app_secret) = server_facebook_app_credentials(conn)?;
+            let connection = connect_facebook_page(
+                &app_id,
+                &app_secret,
+                &short_lived_user_access_token,
+                &page_id,
+            )?;
             json!({
                 "facebook_page": {
                     "page_id": connection.page_id,
