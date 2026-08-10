@@ -652,7 +652,6 @@ bodyView shared req model =
                         [ postDetailView shared model post
                         , postActionsView shared model post
                         , repliesView shared model
-                        , reactLinkView shared req
                         ]
         )
 
@@ -893,55 +892,6 @@ repliesView shared model =
 
         Nothing ->
             text ""
-
-
-{-| A link out to the same post's comments on the React (Tamagui) app, which
-has actual comment-viewing/-posting UI this app doesn't yet -- only shown if
-there are any comments to see. Same origin the Elm app itself is being viewed
-from (just `/elm` swapped for `/tamagui`, and `#comments` appended to jump
-straight there) -- except when that origin is the bare `elm-spa server` dev
-server (port 1234), which has no Rust backend of its own to serve `/tamagui`
-from at all, so that case links to the local backend's default port (8000)
-instead.
--}
-reactLinkView : Shared.Model -> Request.With Params -> Html Msg
-reactLinkView shared req =
-    let
-        isDevServer =
-            req.url.port_ == Just 1234
-
-        scheme =
-            if AccountsPanel.isSecure req then
-                "https://"
-
-            else
-                "http://"
-
-        port_ =
-            if isDevServer then
-                Just 8000
-
-            else
-                req.url.port_
-
-        portSuffix =
-            port_
-                |> Maybe.map (\p -> ":" ++ String.fromInt p)
-                |> Maybe.withDefault ""
-
-        reactCommentsHref =
-            scheme
-                ++ shared.accounts.browsingHost
-                ++ portSuffix
-                ++ "/tamagui/post/"
-                ++ req.params.postId
-    in
-    p [ class "post-comments-link" ]
-        [ a [ href reactCommentsHref, target "_self" ]
-            [ text
-                "View from the React app"
-            ]
-        ]
 
 
 titleFor : Shared.Model -> Model -> String

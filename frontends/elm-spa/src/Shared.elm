@@ -141,12 +141,15 @@ type Msg
       -- The trailing `User`/`String` are the deleted user/acting `targetHost`
       -- (mirroring `ConfirmUserDelete`'s own two extra fields) -- unlike
       -- `GotPostDeleteResult`/`GotEventDeleteResult`, this needs them back:
-      -- a successful self-delete also has to sign the now-nonexistent
-      -- account out locally (`AccountsPanel.RemoveAccountClicked`, see this
-      -- handling below), and that decision can only be made once, here in
-      -- `Shared.update` itself -- `Components.Pages.UserProfilePage`'s own
-      -- `SharedMsg` handling of this same message can't do it instead,
-      -- since `Main.notifyPageOfSharedMsg` (which delivers a top-level
+      -- a successful delete also has to drop that user's account from
+      -- `AccountsPanel`'s own locally-known list, if it's in there at all
+      -- -- whether that's the viewer's own account (a self-delete) or some
+      -- other, possibly-disabled account an Admin had signed into and left
+      -- disabled (e.g. after banning them) -- and that decision can only
+      -- be made once, here in `Shared.update` itself --
+      -- `Components.Pages.UserProfilePage`'s own `SharedMsg` handling of
+      -- this same message can't do it instead, since
+      -- `Main.notifyPageOfSharedMsg` (which delivers a top-level
       -- `Shared.Msg` like this one to a page) silently drops any *new*
       -- `Shared.Msg` a page's own `SharedMsg` branch forwards back in
       -- response -- only an echo of the incoming message itself is safe to
@@ -1085,21 +1088,23 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( model.accounts, Cmd.none )
 
-                -- Deleting *someone else's* account (an Admin, from their
-                -- profile) leaves the viewer's own signed-in accounts
-                -- alone. Deleting the viewer's own, though, leaves it
-                -- signed in to an account the server no longer has anything
-                -- to authenticate against -- sign it out locally too, the
-                -- same way a manual "remove account" (`UI.deleteConfirmationModal`'s
-                -- `ConfirmAccountDelete`) would.
+                -- Removes `deletedUser` from `refreshedAccounts.accounts` too,
+                -- if it's known locally at all -- not just the *enabled*
+                -- account for `host` (an Admin deleting a different user's
+                -- account they'd disabled here, e.g. after banning them,
+                -- should still drop that now-dangling account -- there's no
+                -- reason to keep offering to sign back into a user that no
+                -- longer exists). Checking every account on `host` rather
+                -- than only the enabled one is what makes this also cover
+                -- the self-delete case (the deleted account was, by
+                -- definition, the one the viewer just acted as), the same
+                -- way a manual "remove account"
+                -- (`UI.deleteConfirmationModal`'s `ConfirmAccountDelete`)
+                -- would.
                 ( accountsPanelModel, accountsPanelCmd ) =
-                    case AccountsPanel.enabledAccountForServer refreshedAccounts.accounts host of
+                    case refreshedAccounts.accounts |> List.filter (\account -> account.server == host && account.userId == deletedUser.id) |> List.head of
                         Just account ->
-                            if account.userId == deletedUser.id then
-                                AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) refreshedAccounts
-
-                            else
-                                ( refreshedAccounts, Cmd.none )
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) refreshedAccounts
 
                         Nothing ->
                             ( refreshedAccounts, Cmd.none )
