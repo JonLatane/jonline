@@ -124,13 +124,17 @@
     }
   }
 
+  function findTarget(id) {
+    // Most TOC targets (per-file/message/service headings) are marked with
+    // <a name="..."> rather than a real id, courtesy of protoc-gen-doc.
+    return document.getElementById(id) || document.getElementsByName(id)[0];
+  }
+
   sidebar.addEventListener('click', function (e) {
     var link = e.target.closest('a[href^="#"]');
     if (!link) return;
     var id = decodeURIComponent(link.getAttribute('href').slice(1));
-    // Most TOC targets (per-file/message/service headings) are marked with
-    // <a name="..."> rather than a real id, courtesy of protoc-gen-doc.
-    var target = document.getElementById(id) || document.getElementsByName(id)[0];
+    var target = findTarget(id);
     if (!target) return;
     e.preventDefault();
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -197,6 +201,19 @@
 
   applyLayout();
 
+  // Moving the ToC out of the top of the page (above) shifts everything
+  // below it, so if the page loaded with a #hash the browser's initial
+  // (pre-move) jump-to-anchor is now misaligned. Redo it, smoothly, once
+  // the DOM has settled into its final layout.
+  if (location.hash) {
+    var initialTarget = findTarget(decodeURIComponent(location.hash.slice(1)));
+    if (initialTarget) {
+      requestAnimationFrame(function () {
+        initialTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }
+
   var style = document.createElement('style');
   style.textContent =
     '#toc-sidebar{position:fixed;top:0;left:0;height:100vh;' +
@@ -216,7 +233,7 @@
     'background:var(--color-theme-bg,#fff);color:var(--color-theme-text,#24292f);' +
     'font-size:14px;cursor:pointer;' +
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}' +
-    '.markdown-style{max-width:1080px!important;margin-top:32px!important;transition:margin-left .15s ease;}' +
+    '.markdown-style{max-width:1180px!important;margin-top:32px!important;transition:margin-left .15s ease;}' +
     'dark-mode{backdrop-filter:blur(4px);border-radius:4px;padding:0 6px;}' +
     'dark-mode::part(text){font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}';
   document.head.appendChild(style);
