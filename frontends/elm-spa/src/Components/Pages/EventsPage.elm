@@ -183,8 +183,7 @@ type alias Model =
 exactly -- see `Model.pushStatuses`.
 -}
 type SubmitStatus
-    = Idle
-    | Submitting
+    = Submitting
     | SubmitFailed String
 
 

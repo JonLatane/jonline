@@ -59,7 +59,7 @@ import Html.Attributes exposing (checked, class, classList, disabled, id, placeh
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FacebookAuthConfig, FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultEventSettings, defaultFacebookAuthConfig, defaultFeatureSettings, defaultGetUsersRequest, defaultMediaReference, defaultPostSettings, defaultServerColors, defaultServerInfo, defaultServerLogo)
+import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultEventSettings, defaultFeatureSettings, defaultGetUsersRequest, defaultMediaReference, defaultPostSettings, defaultServerColors, defaultServerInfo, defaultServerLogo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -1694,7 +1694,7 @@ applyFacebookAppId appId config =
 
 
 {-| `FacebookAppSecretSaveClicked`'s transform -- mirrors `applyFacebookAppId`, just overlaying a
-new `appSecret` (this time actually non-blank, since this *is* the save that's meant to change
+new `appSecret` (this time actually non-blank, since this _is_ the save that's meant to change
 it) instead. Keeps whatever `appId` the freshly re-fetched config already has.
 -}
 applyFacebookAppSecret : String -> ServerConfiguration -> ServerConfiguration

@@ -1,4 +1,4 @@
-module Components.Authors exposing (avatarUrl, badges, hasPermission, link, name)
+module Components.Authors exposing (avatarUrl, badges, link, name)
 
 {-| Everything about displaying a `Proto.Jonline.Author` -- the
 post/authorship-centric, cacheable-in-the-UI sibling of `User` embedded

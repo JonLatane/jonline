@@ -1,8 +1,7 @@
 module Components.Users exposing
     ( allModerations
-    , allowedVisibilities
     , allPermissions
-    , allVisibilities
+    , allowedVisibilities
     , authorAvatarUrl
     , avatarUrl
     , configurableServerPermissions

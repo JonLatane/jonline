@@ -8,7 +8,6 @@ module Shared exposing
     , basePathFromPath
     , effectiveDarkMode
     , init
-    , navLinkHomeMaxWidth
     , normalizeUrl
     , subscriptions
     , themePreferenceLabel
@@ -1270,46 +1269,6 @@ basePathFromPath path =
 
     else
         ""
-
-
-{-| The Home link's (`.nav-link-home`, `UI.navLink`) `max-width`, applied
-inline (rather than via a CSS class swap) so nav.css's own `transition` on
-that property is what animates it; nav.css no longer sets `max-width`
-itself, since this always overrides it.
-
-A continuous function of how far right `.nav-links-scroll` is scrolled:
-`upperBound` slides from `220` (unscrolled) down to `64` (scrolled all the
-way right, i.e. `scrollLeft == scrollWidth - clientWidth`) in direct
-proportion to that scroll fraction; `lowerBound` tracks `150` until
-`upperBound` itself drops below that, then tracks `upperBound` down the rest
-of the way -- so the button holds around its `150`-`220` resting size while
-only lightly scrolled, then visibly shrinks the rest of the way to a bare
-`64px` glyph as scrolling continues to the end. `maxScroll` is floored at
-`1` (rather than `0`) purely to keep the division defined when
-`.nav-links-scroll` has nothing to scroll (`scrollWidth <= clientWidth`) --
-`scrollLeft` is `0` in that case regardless, so `fraction` still comes out
-`0`.
-
--}
-navLinkHomeMaxWidth : NavAnimationState -> String
-navLinkHomeMaxWidth state =
-    let
-        -- maxScroll =
-        --     max 1 (state.scrollWidth - state.clientWidth)
-        -- fraction =
-        --     clamp 0 1 (state.scrollLeft / maxScroll)
-        upperBound =
-            if state.homeCollapsed then
-                64
-
-            else
-                220
-
-        -- round (220 - fraction * (220 - 64))
-        lowerBound =
-            min 150 upperBound
-    in
-    "calc(min(max(" ++ String.fromInt lowerBound ++ "px, 25vw), " ++ String.fromInt upperBound ++ "px))"
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`

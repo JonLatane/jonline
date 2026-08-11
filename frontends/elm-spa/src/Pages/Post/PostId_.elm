@@ -8,8 +8,8 @@ import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, option, p, select, span, text)
-import Html.Attributes exposing (class, disabled, href, selected, target, value)
+import Html exposing (Html, button, div, option, p, select, span, text)
+import Html.Attributes exposing (class, disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
 import Page
 import Proto.Jonline exposing (Post)
@@ -625,12 +625,12 @@ accountsPanelEffect maybeAccountsPanelMsg =
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = titleFor shared model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
+    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
     }
 
 
-bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
-bodyView shared req model =
+bodyView : Shared.Model -> Model -> Html Msg
+bodyView shared model =
     ServerDependentView.view
         { hostname = model.targetHost
         , servers = shared.accounts.servers

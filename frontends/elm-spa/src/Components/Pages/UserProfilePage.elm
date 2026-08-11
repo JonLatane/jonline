@@ -56,7 +56,7 @@ import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Jonline.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -362,7 +362,7 @@ initEventSyncSources =
 {-| One Facebook Page returned by the Graph API's `/me/accounts` after a successful Facebook
 login (`fetchFacebookPages`) -- `id`/`name` only. The per-page access token that endpoint also
 returns is never used: the backend re-derives its own long-lived Page token server-side from the
-short-lived *user* token this page already has, via `FacebookPage.shortLivedUserAccessToken` (see
+short-lived _user_ token this page already has, via `FacebookPage.shortLivedUserAccessToken` (see
 `logic::facebook_sync::connect_facebook_page` on the backend).
 -}
 type alias FacebookPageOption =
@@ -386,6 +386,7 @@ independently edit/cancel the way `RealNameEdit`/`EventSyncAddForm` have:
   - `FacebookLoginNoPagesFound`: `/me/accounts` returned zero Pages -- nothing to link.
   - `FacebookLoginLinking token page`: `CreateEventSyncDestination` is in flight for `page`.
   - `FacebookLoginFailed message`: the popup, the Graph API call, or the create RPC failed.
+
 -}
 type FacebookLoginStatus
     = FacebookLoginNotStarted
@@ -412,6 +413,7 @@ Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteCon
 a Facebook Page is a low-stakes, easily-reversible action (nothing else gets deleted --
 `deleteSyncedPosts` is always sent `False`, see `Components.EventSyncDestinations`), so there's no
 need for the global "are you sure?" overlay here.
+
 -}
 type alias EventSyncDestinationsState =
     { login : FacebookLoginStatus
@@ -1949,8 +1951,6 @@ fetchEventSyncSources shared host targetUserId model =
             )
 
 
-
-
 setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
 setEventSyncDestinationsLogin login model =
     let
@@ -1961,7 +1961,7 @@ setEventSyncDestinationsLogin login model =
 
 
 {-| Whether the section (and its "Sign in to Facebook Page" button) should be shown at all --
-requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) *and* this server having
+requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) _and_ this server having
 a Facebook App configured (`facebookAppId` resolving to a non-empty id) -- there's no point
 showing a button that would just fail immediately either way.
 -}
@@ -3168,7 +3168,7 @@ eventSyncSourceAddRowView targetHost addForm =
 own profile, holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`), and this server having a Facebook App
 configured (see `canUseFacebookSync`) -- rather than a separate `canManage`/`canAdd` split. There's
 no "view-only for an Admin visiting someone else's profile" case the way sources have: a linked
-Facebook Page is always the *caller's own* (`create_event_sync_destination.rs` always creates for
+Facebook Page is always the _caller's own_ (`create_event_sync_destination.rs` always creates for
 `current_user`), so there's nothing for anyone else to usefully see here.
 -}
 eventSyncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
@@ -3182,7 +3182,7 @@ eventSyncDestinationsSection shared model maybeAccount user =
             model.eventSyncDestinationsExpanded
             EventSyncDestinationsExpandedToggled
             [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.eventSyncDestinations)
-            , facebookLoginView model.eventSyncDestinations user.eventSyncDestinations
+            , facebookLoginView model.eventSyncDestinations
             ]
 
 
@@ -3257,18 +3257,17 @@ pluralCount count noun =
 `EventSyncDestinationsState`'s own doc for why there's no "add another" flow in this first
 version) and every step of `FacebookLoginStatus` past that.
 -}
-facebookLoginView : EventSyncDestinationsState -> List EventSyncDestination -> Html Msg
-facebookLoginView ed destinations =
+facebookLoginView : EventSyncDestinationsState -> Html Msg
+facebookLoginView ed =
     case ed.login of
         FacebookLoginNotStarted ->
-            if List.isEmpty destinations then
-                button
-                    [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
-                    [ text "Sign in to Facebook Page" ]
+            -- if List.isEmpty destinations then
+            button
+                [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
+                [ text "Sign in to Facebook Page" ]
 
-            else
-                text ""
-
+        -- else
+        --     text ""
         FacebookLoginPopupOpen ->
             div [ class "event-sync-destinations-message" ] [ text "Waiting for Facebook…" ]
 
