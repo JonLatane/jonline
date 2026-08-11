@@ -5,6 +5,8 @@ module Components.Pages.EventsPage exposing
     , fromShared
     , init
     , searchTextChanged
+    , showSyncDestinationsChanged
+    , showSyncSourcesChanged
     , subscriptions
     , update
     , view
@@ -55,7 +57,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, User)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, User)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -148,7 +150,46 @@ type alias Model =
     -- actually started (see `anyStartedEvents`/`view`) -- nothing to filter,
     -- nothing to show a toggle for.
     , hideStartedUpcomingEvents : Bool
+
+    -- Whether `eventCardView` shows each card's `Events.eventSyncSourceView`/
+    -- `Events.eventSyncDestinationsView` -- both default to `False` (`init`),
+    -- set via `ShowSyncSourcesChanged`/`ShowSyncDestinationsChanged`.
+    -- `Components.Pages.UserProfilePage`'s embedded copy keeps these in sync
+    -- with its own `eventSyncSourcesExpanded`/`eventSyncDestinationsExpanded`
+    -- section toggles; no other caller ever sets them, so they stay `False`
+    -- (and these lines don't render) everywhere else.
+    , showSyncSources : Bool
+    , showSyncDestinations : Bool
+
+    -- Threaded straight into `Events.eventCard`'s own `availableSyncDestinations`
+    -- param (see that function's own doc) -- set once at `init` (unlike
+    -- `showSyncSources`/`showSyncDestinations`, this only ever needs to
+    -- change when the whole page gets re-inited anyway, since it comes from
+    -- a resolved `User`, not a live UI toggle). `Nothing` for every caller
+    -- except `Components.Pages.UserProfilePage`, which passes
+    -- `Just user.eventSyncDestinations` -- see `init`'s own doc.
+    , availableSyncDestinations : Maybe (List EventSyncDestination)
+
+    -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
+    -- destinationId` (many instances on screen at once, unlike
+    -- `Pages.Event.EventId_`'s own single-instance `pushStatuses`, which
+    -- only needs to key by `destinationId`) -- drives the `isPushing`/
+    -- `pushError` closures `eventCardView` builds for `Events.eventCard`.
+    , pushStatuses : Dict String SubmitStatus
     }
+
+
+{-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
+exactly -- see `Model.pushStatuses`.
+-}
+type SubmitStatus
+    = Submitting
+    | SubmitFailed String
+
+
+pushStatusKey : String -> String -> String
+pushStatusKey eventInstanceId eventSyncDestinationId =
+    eventInstanceId ++ "|" ++ eventSyncDestinationId
 
 
 type Msg
@@ -221,6 +262,13 @@ type Msg
       -- filter over already-fetched data (see `hiddenAsStarted`/
       -- `syncAnimations`), so there's nothing to fetch here.
     | HideStartedEventsToggled
+      -- Sets `model.showSyncSources`/`model.showSyncDestinations` -- driven
+      -- by `Components.Pages.UserProfilePage`'s own "Event Sync Sources"/
+      -- "Event Sync Destinations" section-expanded toggles (see
+      -- `Model.showSyncSources`'s own doc), not by anything in this page's
+      -- own UI.
+    | ShowSyncSourcesChanged Bool
+    | ShowSyncDestinationsChanged Bool
       -- Opens/closes the "Export" button's ICS-subscription-link popover
       -- (see `exportButtonView`).
     | ExportClicked
@@ -232,6 +280,12 @@ type Msg
       -- generation guard: a no-op if a later `CopyLinkClicked` already bumped
       -- `copyLinkGeneration` past this timer's own.
     | CopyLinkCopyTimeoutElapsed Int
+      -- The Push button on a card's `Events.eventCard`-rendered sync
+      -- destination row (see `Model.availableSyncDestinations`'s own doc) --
+      -- host/eventInstanceId/eventSyncDestinationId, keyed into
+      -- `Model.pushStatuses` via `pushStatusKey`.
+    | PushEventInstanceToDestination String String String
+    | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
 
 
 {-| The three interchangeable layouts `eventsListView` can render its cards
@@ -356,9 +410,13 @@ for why that matters.
 flips `mode`'s own default to `HorizontalList` here (absent an explicit
 `?display=`), matching the layout those copies are fixed to.
 
+`availableSyncDestinations` seeds `Model.availableSyncDestinations` directly
+-- `Nothing` for every caller except `Components.Pages.UserProfilePage`,
+which passes `Just user.eventSyncDestinations` (see that field's own doc).
+
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage availableSyncDestinations =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -387,6 +445,10 @@ init shared author navKey path query embeddedPage =
                 , copyLinkCopied = False
                 , copyLinkGeneration = 0
                 , hideStartedUpcomingEvents = True
+                , showSyncSources = False
+                , showSyncDestinations = False
+                , availableSyncDestinations = availableSyncDestinations
+                , pushStatuses = Dict.empty
                 }
     in
     ( fetchedModel
@@ -447,6 +509,24 @@ exactly as if the user had typed it into this module's own search box -- same
 searchTextChanged : String -> Msg
 searchTextChanged =
     SearchTextChanged
+
+
+{-| Lets `Components.Pages.UserProfilePage` keep this page's `showSyncSources`
+in sync with its own "Event Sync Sources" section's `eventSyncSourcesExpanded`
+toggle -- same "expose a `Bool -> Msg`/`String -> Msg` wrapper, round-trip it
+through `update`" convention as `searchTextChanged` itself.
+-}
+showSyncSourcesChanged : Bool -> Msg
+showSyncSourcesChanged =
+    ShowSyncSourcesChanged
+
+
+{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Event Sync
+Destinations" section's `eventSyncDestinationsExpanded` toggle.
+-}
+showSyncDestinationsChanged : Bool -> Msg
+showSyncDestinationsChanged =
+    ShowSyncDestinationsChanged
 
 
 accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
@@ -711,6 +791,12 @@ updateInner shared msg model =
         HideStartedEventsToggled ->
             ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
 
+        ShowSyncSourcesChanged showSyncSources ->
+            ( { model | showSyncSources = showSyncSources }, Effect.none )
+
+        ShowSyncDestinationsChanged showSyncDestinations ->
+            ( { model | showSyncDestinations = showSyncDestinations }, Effect.none )
+
         ExportClicked ->
             ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
 
@@ -737,6 +823,46 @@ updateInner shared msg model =
 
             else
                 ( model, Effect.none )
+
+        PushEventInstanceToDestination host eventInstanceId eventSyncDestinationId ->
+            let
+                key =
+                    pushStatusKey eventInstanceId eventSyncDestinationId
+
+                maybeAccountServer =
+                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+            in
+            ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
+            , Events.syncEventInstance shared.accounts maybeAccountServer eventInstanceId eventSyncDestinationId
+                |> Task.attempt (GotPushResult host eventInstanceId eventSyncDestinationId)
+                |> Effect.fromCmd
+            )
+
+        GotPushResult host eventInstanceId eventSyncDestinationId result ->
+            let
+                key =
+                    pushStatusKey eventInstanceId eventSyncDestinationId
+
+                clearedModel =
+                    { model | pushStatuses = Dict.remove key model.pushStatuses }
+            in
+            case result of
+                Ok ( maybeAccountsPanelMsg, _ ) ->
+                    let
+                        ( refetchedModel, refetchEffect ) =
+                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                                Just server ->
+                                    refetchServers shared clearedModel [ server ]
+
+                                Nothing ->
+                                    ( clearedModel, Effect.none )
+                    in
+                    ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
+
+                Err err ->
+                    ( { clearedModel | pushStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) clearedModel.pushStatuses }
+                    , Effect.none
+                    )
 
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
@@ -1776,7 +1902,10 @@ eventsListView shared model =
             in
             Html.Keyed.node "div"
                 [ class containerClass ]
-                (List.map (eventAnimationView shared model.embeddedPage axis) animations)
+                (List.map
+                    (eventAnimationView shared model.embeddedPage model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses axis)
+                    animations
+                )
 
 
 {-| Wraps `eventCardView` in a fading/scaling/collapsing animated `<div>`
@@ -1791,8 +1920,8 @@ The inner div's `event-card-move` class (see `events.css`) sets
 `transform-origin: top left` -- see `UI.Flip.startMoveScaled`'s own doc for
 why that's needed alongside a scale.
 -}
-eventAnimationView : Shared.Model -> Bool -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
-eventAnimationView shared embeddedPage axis ( key, anim ) =
+eventAnimationView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
+eventAnimationView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses axis ( key, anim ) =
     let
         pointerEventsAttr =
             if anim.flip.removing then
@@ -1804,7 +1933,7 @@ eventAnimationView shared embeddedPage axis ( key, anim ) =
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared embeddedPage ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
         ]
     )
 
@@ -1818,8 +1947,8 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared embeddedPage ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
@@ -1862,6 +1991,20 @@ eventCardView shared embeddedPage ( host, event, instance ) =
 
             else
                 MediaRenderer.Small
+
+        isPushing destinationId =
+            Dict.get (pushStatusKey instance.id destinationId) pushStatuses == Just Submitting
+
+        pushError destinationId =
+            case Dict.get (pushStatusKey instance.id destinationId) pushStatuses of
+                Just (SubmitFailed err) ->
+                    Just err
+
+                _ ->
+                    Nothing
+
+        onPush destinationId =
+            PushEventInstanceToDestination host instance.id destinationId
     in
     Events.eventCard
         shared.time
@@ -1875,5 +2018,11 @@ eventCardView shared embeddedPage ( host, event, instance ) =
         starred
         onStarClicked
         False
+        showSyncSources
+        showSyncDestinations
+        availableSyncDestinations
+        isPushing
+        pushError
+        onPush
         event
         displayInstance

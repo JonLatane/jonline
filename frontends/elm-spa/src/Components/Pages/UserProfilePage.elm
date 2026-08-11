@@ -43,8 +43,8 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
-import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, type_, value)
+import Html exposing (Html, a, button, div, h2, h3, input, label, option, p, select, span, text)
+import Html.Attributes exposing (checked, class, classList, disabled, href, placeholder, selected, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode
@@ -53,8 +53,10 @@ import Proto.Google.Protobuf
 import Proto.Jonline exposing (EventSyncDestination, EventSyncSource, FederatedAccount, User, defaultEventSyncDestination, defaultEventSyncSource, defaultMediaReference)
 import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Jonline.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -76,6 +78,9 @@ type alias Model =
     , federatedProfiles : Dict String FederatedProfileStatus
     , realNameEdit : Maybe RealNameEdit
     , avatarEdit : Maybe AvatarEdit
+    , visibilityEdit : Maybe VisibilityEdit
+    , moderationEdit : Maybe ModerationEdit
+    , followModerationStatus : SubmitStatus
     , permissionsEdit : Maybe PermissionsEdit
     , permissionsExpanded : Bool
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
@@ -122,6 +127,18 @@ type Msg
     | AvatarSaveClicked
     | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | BioEditClicked
+    | VisibilityEditClicked
+    | VisibilityChanged String
+    | VisibilityCancelClicked
+    | VisibilitySaveClicked
+    | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | ModerationEditClicked
+    | ModerationChanged String
+    | ModerationCancelClicked
+    | ModerationSaveClicked
+    | GotModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | FollowModerationToggled
+    | GotFollowModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | PermissionsExpandedToggled
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
@@ -150,7 +167,6 @@ type Msg
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
     | EventSyncSourcesExpandedToggled
-    | GotEventSyncDestinationsFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncDestinationsResponse ))
     | EventSyncDestinationsExpandedToggled
     | FacebookLoginClicked
     | GotFacebookLoginResult Decode.Value
@@ -214,6 +230,30 @@ button/the `Shared.MyMediaPanel` chooser this opens rather than typing.
 -}
 type alias AvatarEdit =
     { choice : AvatarChoice
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the Visibility picker (see `Model.visibilityEdit`) is
+being edited by the profile's own owner or an Admin (see `canEditProfile`,
+the same gate `backend/src/rpcs/users/update_user.rs`'s `admin || self_update`
+branch enforces server-side, which is also what actually applies
+`visibility`) -- mirrors `Pages.Post.PostId_.VisibilityEdit`.
+-}
+type alias VisibilityEdit =
+    { pending : Visibility
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the Moderation picker (see `Model.moderationEdit`) is
+being edited by an Admin or a `MODERATEUSERS` holder (see `canModerateUser`,
+mirroring `update_user.rs`'s own `admin || moderator` branch, which is also
+what actually applies `moderation`) -- mirrors `VisibilityEdit` exactly, just
+for `Moderation` instead of `Visibility`.
+-}
+type alias ModerationEdit =
+    { pending : Moderation
     , status : SubmitStatus
     }
 
@@ -319,20 +359,10 @@ initEventSyncSources =
     { status = EventSyncSourcesNotFetched, sources = [], rowEdits = Dict.empty, addForm = defaultEventSyncAddForm }
 
 
-{-| The fetch state of `Model.eventSyncDestinations.destinations` -- mirrors `EventSyncFetchStatus`
-exactly, just for destinations rather than sources.
--}
-type EventSyncDestinationFetchStatus
-    = EventSyncDestinationsNotFetched
-    | EventSyncDestinationsFetching
-    | EventSyncDestinationsFetchFailed String
-    | EventSyncDestinationsFetched
-
-
 {-| One Facebook Page returned by the Graph API's `/me/accounts` after a successful Facebook
 login (`fetchFacebookPages`) -- `id`/`name` only. The per-page access token that endpoint also
 returns is never used: the backend re-derives its own long-lived Page token server-side from the
-short-lived *user* token this page already has, via `FacebookPage.shortLivedUserAccessToken` (see
+short-lived _user_ token this page already has, via `FacebookPage.shortLivedUserAccessToken` (see
 `logic::facebook_sync::connect_facebook_page` on the backend).
 -}
 type alias FacebookPageOption =
@@ -356,6 +386,7 @@ independently edit/cancel the way `RealNameEdit`/`EventSyncAddForm` have:
   - `FacebookLoginNoPagesFound`: `/me/accounts` returned zero Pages -- nothing to link.
   - `FacebookLoginLinking token page`: `CreateEventSyncDestination` is in flight for `page`.
   - `FacebookLoginFailed message`: the popup, the Graph API call, or the create RPC failed.
+
 -}
 type FacebookLoginStatus
     = FacebookLoginNotStarted
@@ -369,28 +400,30 @@ type FacebookLoginStatus
 
 {-| The "Event Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
 (bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
-only mutable-from-here field, in effect, is "does it exist"), so this is just the fetched list
-plus the `FacebookLoginStatus` state machine that creates one, plus a per-destination-id
-`SubmitStatus` for `EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since,
-in principle, more than one delete could be in flight -- e.g. an Admin clicking two rows quickly).
+only mutable-from-here field, in effect, is "does it exist"), so this is just the `FacebookLoginStatus`
+state machine that creates a new one, plus a per-destination-id `SubmitStatus` for
+`EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since, in principle, more
+than one delete could be in flight -- e.g. an Admin clicking two rows quickly). The destinations
+themselves are no longer fetched/held here at all -- `Components.Users.Resolver` already resolves
+this profile's own `User` (via `GetUsers`), which (self-or-Admin gated server-side, see
+`protos/users.proto`'s own doc on `User.event_sync_destinations`) already carries them, so
+`eventSyncDestinationsSection` just reads `user.eventSyncDestinations` directly.
+
 Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
 a Facebook Page is a low-stakes, easily-reversible action (nothing else gets deleted --
 `deleteSyncedPosts` is always sent `False`, see `Components.EventSyncDestinations`), so there's no
 need for the global "are you sure?" overlay here.
+
 -}
 type alias EventSyncDestinationsState =
-    { status : EventSyncDestinationFetchStatus
-    , destinations : List EventSyncDestination
-    , login : FacebookLoginStatus
+    { login : FacebookLoginStatus
     , deleteStatuses : Dict String SubmitStatus
     }
 
 
 initEventSyncDestinations : EventSyncDestinationsState
 initEventSyncDestinations =
-    { status = EventSyncDestinationsNotFetched
-    , destinations = []
-    , login = FacebookLoginNotStarted
+    { login = FacebookLoginNotStarted
     , deleteStatuses = Dict.empty
     }
 
@@ -417,6 +450,9 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , federatedProfiles = Dict.empty
             , realNameEdit = Nothing
             , avatarEdit = Nothing
+            , visibilityEdit = Nothing
+            , moderationEdit = Nothing
+            , followModerationStatus = Idle
             , permissionsEdit = Nothing
             , permissionsExpanded = False
             , federatedProfilesEdit = Nothing
@@ -553,31 +589,20 @@ updateInner shared msg model =
                             else
                                 ( federatedModel, Effect.none )
 
-                        -- Only fetched for the caller's own profile, and only when they could
-                        -- actually use the section at all (see `canUseFacebookSync`'s own doc) --
-                        -- no point firing a request that either can't return anything useful or
-                        -- (unlike sources) wouldn't even be shown.
-                        ( eventSyncDestFetchedModel, eventSyncDestFetchEffect ) =
-                            if isOwnProfile maybeAccount user && canUseFacebookSync shared newResolver.targetHost maybeAccount then
-                                fetchEventSyncDestinations shared newResolver.targetHost user.id eventSyncFetchedModel
-
-                            else
-                                ( eventSyncFetchedModel, Effect.none )
-
                         -- Only ever `init`ed once -- see `Model.posts`/`Model.events`'
                         -- own doc for why a later refetch (which re-fires this same
                         -- `Loaded` case) must leave an already-`Just` copy alone.
                         ( postsInitedModel, postsInitEffect ) =
-                            case eventSyncDestFetchedModel.posts of
+                            case eventSyncFetchedModel.posts of
                                 Just _ ->
-                                    ( eventSyncDestFetchedModel, Effect.none )
+                                    ( eventSyncFetchedModel, Effect.none )
 
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncDestFetchedModel.navKey eventSyncDestFetchedModel.path eventSyncDestFetchedModel.query True
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncFetchedModel.navKey eventSyncFetchedModel.path eventSyncFetchedModel.query True
                                     in
-                                    ( { eventSyncDestFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
+                                    ( { eventSyncFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
 
                         ( eventsInitedModel, eventsInitEffect ) =
                             case postsInitedModel.events of
@@ -587,16 +612,40 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( eventsModel, eventsEffect ) =
-                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True (Just user.eventSyncDestinations)
                                     in
-                                    ( { postsInitedModel | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+                                    ( { postsInitedModel
+                                        | events =
+                                            Just
+                                                { eventsModel
+                                                    | showSyncSources = model.eventSyncSourcesExpanded
+                                                    , showSyncDestinations = model.eventSyncDestinationsExpanded
+                                                }
+                                      }
+                                    , Effect.map EventsMsg eventsEffect
+                                    )
+
+                        -- A *refetch* (not just the first load) needs this too --
+                        -- the `Just _ -> (postsInitedModel, Effect.none)` guard
+                        -- above deliberately leaves an already-`init`ed
+                        -- `EventsPage.Model` alone, so its own `availableSyncDestinations`
+                        -- (seeded once, at `init` time) would otherwise go stale
+                        -- after e.g. linking/unlinking a Facebook Page (see
+                        -- `refetch`'s own call sites below). Harmless/redundant on
+                        -- the very first load, where `init` above already got the
+                        -- right value directly.
+                        eventsResyncedModel =
+                            { eventsInitedModel
+                                | events =
+                                    eventsInitedModel.events
+                                        |> Maybe.map (\em -> { em | availableSyncDestinations = Just user.eventSyncDestinations })
+                            }
                     in
-                    ( eventsInitedModel
+                    ( eventsResyncedModel
                     , Effect.batch
                         [ Effect.map ResolverMsg resolverEffect
                         , federatedEffect
                         , eventSyncFetchEffect
-                        , eventSyncDestFetchEffect
                         , postsInitEffect
                         , eventsInitEffect
                         ]
@@ -921,6 +970,124 @@ updateInner shared msg model =
 
                 _ ->
                     ( model, Effect.none )
+
+        VisibilityEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | visibilityEdit = Just { pending = user.visibility, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        VisibilityChanged text ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit
+                        |> Maybe.map (\edit -> { edit | pending = Users.visibilityFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        VisibilityCancelClicked ->
+            ( { model | visibilityEdit = Nothing }, Effect.none )
+
+        VisibilitySaveClicked ->
+            case ( model.resolver.status, model.visibilityEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | visibilityEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | visibility = edit.pending })
+                        |> Task.attempt GotVisibilitySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotVisibilitySaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, visibilityEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotVisibilitySaveResult (Err err) ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        ModerationEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | moderationEdit = Just { pending = user.moderation, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        ModerationChanged text ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit
+                        |> Maybe.map (\edit -> { edit | pending = Users.moderationFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        ModerationCancelClicked ->
+            ( { model | moderationEdit = Nothing }, Effect.none )
+
+        ModerationSaveClicked ->
+            case ( model.resolver.status, model.moderationEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | moderationEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | moderation = edit.pending })
+                        |> Task.attempt GotModerationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, moderationEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotModerationSaveResult (Err err) ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        FollowModerationToggled ->
+            case ( model.resolver.status, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just ( server, account ) ) ->
+                    let
+                        newModeration =
+                            if user.defaultFollowModeration == PENDING then
+                                UNMODERATED
+
+                            else
+                                PENDING
+                    in
+                    ( { model | followModerationStatus = Submitting }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | defaultFollowModeration = newModeration })
+                        |> Task.attempt GotFollowModerationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFollowModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, followModerationStatus = Idle }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotFollowModerationSaveResult (Err err) ->
+            ( { model | followModerationStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Effect.none )
 
         PermissionsExpandedToggled ->
             ( { model | permissionsExpanded = not model.permissionsExpanded }, Effect.none )
@@ -1294,28 +1461,40 @@ updateInner shared msg model =
             )
 
         EventSyncSourcesExpandedToggled ->
-            ( { model | eventSyncSourcesExpanded = not model.eventSyncSourcesExpanded }, Effect.none )
-
-        GotEventSyncDestinationsFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
             let
-                ed =
-                    model.eventSyncDestinations
+                expanded =
+                    not model.eventSyncSourcesExpanded
             in
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetched, destinations = response.destinations } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
+            case model.events of
+                Just eventsModel ->
+                    let
+                        ( newEventsModel, eventsEffect ) =
+                            EventsPage.update shared (EventsPage.showSyncSourcesChanged expanded) eventsModel
+                    in
+                    ( { model | eventSyncSourcesExpanded = expanded, events = Just newEventsModel }
+                    , Effect.map EventsMsg eventsEffect
+                    )
 
-        GotEventSyncDestinationsFetchResult (Err err) ->
-            let
-                ed =
-                    model.eventSyncDestinations
-            in
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed (AccountsPanel.grpcErrorToString err) } }
-            , Effect.none
-            )
+                Nothing ->
+                    ( { model | eventSyncSourcesExpanded = expanded }, Effect.none )
 
         EventSyncDestinationsExpandedToggled ->
-            ( { model | eventSyncDestinationsExpanded = not model.eventSyncDestinationsExpanded }, Effect.none )
+            let
+                expanded =
+                    not model.eventSyncDestinationsExpanded
+            in
+            case model.events of
+                Just eventsModel ->
+                    let
+                        ( newEventsModel, eventsEffect ) =
+                            EventsPage.update shared (EventsPage.showSyncDestinationsChanged expanded) eventsModel
+                    in
+                    ( { model | eventSyncDestinationsExpanded = expanded, events = Just newEventsModel }
+                    , Effect.map EventsMsg eventsEffect
+                    )
+
+                Nothing ->
+                    ( { model | eventSyncDestinationsExpanded = expanded }, Effect.none )
 
         -- Opens the popup (see `Ports.facebookLoginPopup`'s own doc for why this happens
         -- synchronously here rather than after some other async step) -- the result arrives via
@@ -1391,14 +1570,18 @@ updateInner shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, created )) ->
+        GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ed =
                     model.eventSyncDestinations
+
+                loginResetModel =
+                    { model | eventSyncDestinations = { ed | login = FacebookLoginNotStarted } }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared loginResetModel
             in
-            ( { model | eventSyncDestinations = { ed | destinations = ed.destinations ++ [ created ], login = FacebookLoginNotStarted } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
+            ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotFacebookLinkResult (Err err) ->
             ( setEventSyncDestinationsLogin (FacebookLoginFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
@@ -1420,10 +1603,14 @@ updateInner shared msg model =
             let
                 ed =
                     model.eventSyncDestinations
+
+                clearedModel =
+                    { model | eventSyncDestinations = { ed | deleteStatuses = Dict.remove id ed.deleteStatuses } }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared clearedModel
             in
-            ( { model | eventSyncDestinations = { ed | destinations = List.filter (\d -> d.id /= id) ed.destinations, deleteStatuses = Dict.remove id ed.deleteStatuses } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
+            ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotEventSyncDestinationDeleteResult id (Err err) ->
             let
@@ -1719,9 +1906,18 @@ refetchEvents shared model =
         Resolver.Loaded user ->
             let
                 ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True (Just user.eventSyncDestinations)
             in
-            ( { model | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+            ( { model
+                | events =
+                    Just
+                        { eventsModel
+                            | showSyncSources = model.eventSyncSourcesExpanded
+                            , showSyncDestinations = model.eventSyncDestinationsExpanded
+                        }
+              }
+            , Effect.map EventsMsg eventsEffect
+            )
 
         _ ->
             ( model, Effect.none )
@@ -1755,30 +1951,6 @@ fetchEventSyncSources shared host targetUserId model =
             )
 
 
-{-| Mirrors `fetchEventSyncSources`, just for destinations -- always fetches the caller's own
-(`targetUserId = user.id` from the page's own resolved profile, same as sources), since
-`eventSyncDestinationsSection` is only ever shown on one's own profile (see `canUseFacebookSync`).
--}
-fetchEventSyncDestinations : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
-fetchEventSyncDestinations shared host targetUserId model =
-    let
-        ed =
-            model.eventSyncDestinations
-    in
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
-        Just account ->
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetching, destinations = [] } }
-            , EventSyncDestinations.getEventSyncDestinations shared.accounts ( Just account.userId, host ) targetUserId
-                |> Task.attempt GotEventSyncDestinationsFetchResult
-                |> Effect.fromCmd
-            )
-
-        Nothing ->
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed "You're not signed in on that server.", destinations = [] } }
-            , Effect.none
-            )
-
-
 setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
 setEventSyncDestinationsLogin login model =
     let
@@ -1789,7 +1961,7 @@ setEventSyncDestinationsLogin login model =
 
 
 {-| Whether the section (and its "Sign in to Facebook Page" button) should be shown at all --
-requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) *and* this server having
+requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) _and_ this server having
 a Facebook App configured (`facebookAppId` resolving to a non-empty id) -- there's no point
 showing a button that would just fail immediately either way.
 -}
@@ -2034,16 +2206,16 @@ profileDetail shared model server maybeAccount user =
             ]
         , federatedProfilesSection shared model server (isOwnProfile maybeAccount user) user
         , div [ class "profile-meta" ]
-            [ text
-                (Users.visibilityText user.visibility
-                    ++ " · "
-                    ++ Users.moderationText user.moderation
-                    ++ (user.createdAt
-                            |> Maybe.map (\ts -> " · Joined " ++ SharedTime.formatDate shared.time.browserTimeZone.zone (timestampToPosix ts))
-                            |> Maybe.withDefault ""
-                       )
-                )
-            ]
+            ([ visibilityView canEdit maybeAccount model.visibilityEdit user
+             , moderationView (canModerateUser maybeAccount) model.moderationEdit user
+             ]
+                ++ (user.createdAt
+                        |> Maybe.map (\ts -> text (" · Joined " ++ SharedTime.formatDate shared.time.browserTimeZone.zone (timestampToPosix ts)))
+                        |> Maybe.map List.singleton
+                        |> Maybe.withDefault []
+                   )
+            )
+        , followModerationToggleView canEdit model.followModerationStatus user
         , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
         , case model.events of
@@ -2108,6 +2280,23 @@ isAdminAccount maybeAccount =
     case maybeAccount of
         Just account ->
             List.member ADMIN account.permissions
+
+        Nothing ->
+            False
+
+
+{-| Whether the currently signed-in account on this profile's server may
+moderate `user` -- an `ADMIN`, or a `MODERATEUSERS` holder, matching
+`backend/src/rpcs/users/update_user.rs`'s own `admin || moderator` check
+(the branch that actually applies `moderation`), gating `moderationView`'s
+"Moderate" button. Unlike `canEditProfile`, `user` themself doesn't get a
+pass here unless they also hold one of these permissions.
+-}
+canModerateUser : Maybe AccountsPanel.Account -> Bool
+canModerateUser maybeAccount =
+    case maybeAccount of
+        Just account ->
+            List.member ADMIN account.permissions || List.member MODERATEUSERS account.permissions
 
         Nothing ->
             False
@@ -2230,6 +2419,129 @@ realNameView canEdit maybeEdit user =
                       else
                         text ""
                     ]
+
+
+{-| The Visibility segment of `profileDetail`'s meta line -- plain text
+(`Users.visibilityText`) plus an Edit button when `model.visibilityEdit ==
+Nothing`, shown only to `canEdit` viewers (mirrors `Pages.Post.PostId_.
+visibilityView`'s own `isAuthor`-gated Edit button, just gated on
+`canEditProfile` here instead); an inline `<select>` + Save/Cancel once
+editing, with its options narrowed to whatever `maybeAccount` is actually
+allowed to pick (`Users.allowedVisibilities`, mirroring
+`backend/src/rpcs/users/update_user.rs`'s own `PUBLISHUSERSGLOBALLY` check).
+-}
+visibilityView : Bool -> Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> User -> Html Msg
+visibilityView canEdit maybeAccount maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            let
+                options =
+                    maybeAccount
+                        |> Maybe.map (\account -> Users.allowedVisibilities account.permissions user.visibility)
+                        |> Maybe.withDefault [ edit.pending ]
+            in
+            span [ class "profile-visibility-edit" ]
+                [ select [ onInput VisibilityChanged ]
+                    (options
+                        |> List.map
+                            (\visibility ->
+                                option
+                                    [ value (Users.visibilityText visibility)
+                                    , selected (edit.pending == visibility)
+                                    ]
+                                    [ text (Users.visibilityText visibility) ]
+                            )
+                    )
+                , editSaveButton VisibilitySaveClicked edit.status
+                , editCancelButton VisibilityCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            span [ class "profile-visibility-display" ]
+                [ text (Users.visibilityText user.visibility)
+                , if canEdit then
+                    button [ class "profile-edit-button", onClick VisibilityEditClicked ] [ text "Edit" ]
+
+                  else
+                    text ""
+                ]
+
+
+{-| The Moderation segment of `profileDetail`'s meta line -- mirrors
+`visibilityView` exactly, just for `Moderation` instead of `Visibility`,
+shown to an Admin/`MODERATEUSERS` holder instead of `canEditProfile` (see
+`canModerateUser`), and its own "Edit" button reads "Moderate" instead,
+mirroring `Pages.Post.PostId_.moderationView`'s own convention.
+-}
+moderationView : Bool -> Maybe ModerationEdit -> User -> Html Msg
+moderationView canModerate maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            span [ class "profile-moderation-edit" ]
+                [ text " · "
+                , select [ onInput ModerationChanged ]
+                    (Users.allModerations
+                        |> List.map
+                            (\moderation ->
+                                option
+                                    [ value (Users.moderationText moderation)
+                                    , selected (edit.pending == moderation)
+                                    ]
+                                    [ text (Users.moderationText moderation) ]
+                            )
+                    )
+                , editSaveButton ModerationSaveClicked edit.status
+                , editCancelButton ModerationCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            span [ class "profile-moderation-display" ]
+                [ text (" · " ++ Users.moderationText user.moderation)
+                , if canModerate then
+                    button [ class "profile-edit-button", onClick ModerationEditClicked ] [ text "Moderate" ]
+
+                  else
+                    text ""
+                ]
+
+
+{-| The "Requires permission to follow" toggle -- a bare on/off switch
+(`profileSwitch`) rather than a Save/Cancel edit like `visibilityView`/
+`moderationView`, since it's just one boolean: "on" sets
+`user.defaultFollowModeration` to `PENDING` (a follow request needs
+approval), "off" sets it to `UNMODERATED` (anyone can follow outright).
+Treats any moderation value other than `PENDING` (e.g. a legacy `APPROVED`/
+`REJECTED`) as "off", matching `Components.Users.moderationPasses`' own
+`UNMODERATED`-or-`APPROVED` "in effect" reasoning -- there's no third state
+to round-trip here. Always shown (unlike `visibilityView`/`moderationView`'s
+Edit/Moderate buttons, which disappear entirely for a viewer who can't use
+them), just disabled for a `not canEdit` viewer -- mirrors
+`Components.Pages.ServerInformationPage.switchDisplay`'s "show the state,
+disable the control" treatment for a setting this viewer can see but not
+change.
+-}
+followModerationToggleView : Bool -> SubmitStatus -> User -> Html Msg
+followModerationToggleView canEdit status user =
+    div [ class "profile-follow-moderation-toggle" ]
+        [ span [ class "profile-follow-moderation-label" ] [ text "Requires permission to follow" ]
+        , profileSwitch (user.defaultFollowModeration == PENDING) (not canEdit || status == Submitting) FollowModerationToggled
+        , editErrorView status
+        ]
+
+
+{-| A checkbox styled as a toggle switch -- same `.switch`/`.slider` classes
+as `UI.switchInput`, not reused directly since that function's `toggleMsg` is
+hard-coded to `Shared.Msg` (mirrors `Components.Pages.ServerInformationPage.
+flagSwitch`, which duplicates it for the same reason).
+-}
+profileSwitch : Bool -> Bool -> Msg -> Html Msg
+profileSwitch isChecked isDisabled toggleMsg =
+    label [ classList [ ( "switch", True ), ( "disabled", isDisabled ) ] ]
+        [ input [ type_ "checkbox", checked isChecked, disabled isDisabled, onClick toggleMsg ] []
+        , span [ class "slider" ] []
+        ]
 
 
 {-| The bio, rendered as Markdown, with an Edit button (opening the shared
@@ -2856,7 +3168,7 @@ eventSyncSourceAddRowView targetHost addForm =
 own profile, holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`), and this server having a Facebook App
 configured (see `canUseFacebookSync`) -- rather than a separate `canManage`/`canAdd` split. There's
 no "view-only for an Admin visiting someone else's profile" case the way sources have: a linked
-Facebook Page is always the *caller's own* (`create_event_sync_destination.rs` always creates for
+Facebook Page is always the _caller's own_ (`create_event_sync_destination.rs` always creates for
 `current_user`), so there's nothing for anyone else to usefully see here.
 -}
 eventSyncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
@@ -2869,29 +3181,24 @@ eventSyncDestinationsSection shared model maybeAccount user =
             "Event Sync Destinations"
             model.eventSyncDestinationsExpanded
             EventSyncDestinationsExpandedToggled
-            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations)
+            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.eventSyncDestinations)
             , facebookLoginView model.eventSyncDestinations
             ]
 
 
-eventSyncDestinationsContentView : EventSyncDestinationsState -> List (Html Msg)
-eventSyncDestinationsContentView ed =
-    if not (List.isEmpty ed.destinations) then
-        List.map (eventSyncDestinationRowView ed) ed.destinations
+{-| Reads `destinations` straight off the profile's already-resolved `User`
+(`user.eventSyncDestinations`, self-or-Admin gated server-side -- see
+`protos/users.proto`'s own doc on that field) rather than a separately
+fetched/tracked status -- no "Loading…" state needed, same as nothing
+elsewhere shows a "loading permissions" spinner for other `User` fields.
+-}
+eventSyncDestinationsContentView : EventSyncDestinationsState -> List EventSyncDestination -> List (Html Msg)
+eventSyncDestinationsContentView ed destinations =
+    if List.isEmpty destinations then
+        [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
 
     else
-        case ed.status of
-            EventSyncDestinationsNotFetched ->
-                []
-
-            EventSyncDestinationsFetching ->
-                [ div [ class "event-sync-destinations-message" ] [ text "Loading…" ] ]
-
-            EventSyncDestinationsFetchFailed err ->
-                [ div [ class "event-sync-destinations-message" ] [ text err ] ]
-
-            EventSyncDestinationsFetched ->
-                [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
+        List.map (eventSyncDestinationRowView ed) destinations
 
 
 eventSyncDestinationRowView : EventSyncDestinationsState -> EventSyncDestination -> Html Msg
@@ -2954,14 +3261,13 @@ facebookLoginView : EventSyncDestinationsState -> Html Msg
 facebookLoginView ed =
     case ed.login of
         FacebookLoginNotStarted ->
-            if List.isEmpty ed.destinations then
-                button
-                    [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
-                    [ text "Sign in to Facebook Page" ]
+            -- if List.isEmpty destinations then
+            button
+                [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
+                [ text "Sign in to Facebook Page" ]
 
-            else
-                text ""
-
+        -- else
+        --     text ""
         FacebookLoginPopupOpen ->
             div [ class "event-sync-destinations-message" ] [ text "Waiting for Facebook…" ]
 

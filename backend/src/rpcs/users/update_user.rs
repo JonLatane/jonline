@@ -79,6 +79,9 @@ pub fn update_user(
             if admin {
                 existing_user.permissions = request.permissions.to_json_permissions();
             }
+            if admin || moderator {
+                existing_user.moderation = request.moderation.to_string_moderation();
+            }
             existing_user.updated_at = SystemTime::now().into();
 
             log::info!("Updating user: {:?}", existing_user);

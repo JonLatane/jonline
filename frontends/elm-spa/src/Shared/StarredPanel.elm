@@ -146,6 +146,11 @@ type Msg
     | MediaClicked String Post String
     | StarredPostsBroadcastReceived Decode.Value
     | PostUpdated String Post
+      -- Unreachable placeholder passed as `Events.eventCard`'s `onPush` --
+      -- this panel always passes `Nothing` for `availableSyncDestinations`
+      -- (see `starredPostView`'s own `eventCard` call), so no Push button
+      -- ever renders to actually produce this.
+    | NoOp
 
 
 {-| The fetch state of one starred post, keyed by its `starKey` -- see
@@ -689,6 +694,9 @@ sendUpdate accountsPanelModel msg model =
             , Nothing
             )
 
+        NoOp ->
+            ( model, Cmd.none, Nothing )
+
         StarredPostsBroadcastReceived value ->
             case Decode.decodeValue (Decode.list Decode.string) value of
                 Err _ ->
@@ -1168,7 +1176,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
 
                     Nothing ->
                         text ""
-                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current event displayInstance
+                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) event displayInstance
                 ]
 
         Just FetchingEvent ->

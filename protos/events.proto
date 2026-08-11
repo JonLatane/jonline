@@ -135,35 +135,6 @@ message Event {
   optional EventSyncSource event_sync_source = 5;
 }
 
-// A user-owned source to sync events from.
-message EventSyncSource {
-  // Unique ID for the synchronization.
-  string id = 1;
-  // The user information for the owner of this event sync.
-  Author owner = 2;
-  // How frequently the sync should happen in seconds.
-  uint64 sync_interval_seconds = 3;
-
-  // The time the EventSyncSource was created.
-  google.protobuf.Timestamp created_at = 4;
-  // The time the EventSyncSource was last updated.
-  optional google.protobuf.Timestamp updated_at = 5;
-  // The time the EventSyncSource was last synced.
-  optional google.protobuf.Timestamp last_synced_at = 6;
-
-  // The number of events total associated with this EventSyncSource. Recomputed
-  // on each sync.
-  uint64 event_count = 7;
-  // The number of event instances total associated with this EventSyncSource. Recomputed
-  // on each sync.
-  uint64 event_instance_count = 8;
-
-  oneof configuration {
-    // The iCal subscription URL for the calendar sync.
-    string ics_subscription_url = 9;
-  }
-}
-
 message GetEventSyncSourcesResponse {
   repeated EventSyncSource sources = 1;
 }
@@ -174,43 +145,6 @@ message DeleteEventSyncSourceRequest {
   EventSyncSource source = 1;
   // Whether to delete synced events.
   bool delete_synced_events = 2;
-}
-
-// A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
-// but for pushing instances out rather than pulling events in.
-message EventSyncDestination {
-  // Unique ID for the destination.
-  string id = 1;
-  // The user information for the owner of this destination.
-  Author owner = 2;
-
-  // The time the EventSyncDestination was created.
-  google.protobuf.Timestamp created_at = 4;
-  // The time the EventSyncDestination was last updated.
-  optional google.protobuf.Timestamp updated_at = 5;
-
-  // The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  // request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
-  // recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
-  // in bulk on an interval.
-  optional uint64 synced_event_instance_count = 6;
-
-  oneof configuration {
-    // A connected Facebook Page to post EventInstances to.
-    FacebookPage facebook_page = 9;
-  }
-}
-
-// A Facebook Page connected as an `EventSyncDestination`.
-message FacebookPage {
-  // The Facebook Page's ID.
-  string page_id = 1;
-  // The Facebook Page's name, populated by the server when the connection is made.
-  string page_name = 2;
-  // Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token
-  // from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
-  // Never populated in responses.
-  optional string short_lived_user_access_token = 3;
 }
 
 message GetEventSyncDestinationsResponse {

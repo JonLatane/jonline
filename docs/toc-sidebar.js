@@ -26,6 +26,9 @@
 //      main content's left margin is dropped entirely -- an expanded sidebar
 //      there overlays the content like a mobile nav drawer instead of
 //      squeezing it.
+//   6. Scroll-spies the main content: on scroll, the sidebar link for
+//      whichever section is currently at the top of the viewport is marked
+//      active and nudged into view within the sidebar.
 //
 // Because docs/protocol.html itself is regenerated wholesale from docs/protocol.md
 // on every `make html_docs`, none of this can live as static markup in the .md
@@ -201,6 +204,59 @@
 
   applyLayout();
 
+  // Scroll-spy: the active link is whichever section heading is the last
+  // one to have scrolled up past the top of the viewport -- so it stays
+  // active for that section's whole span, until the next heading reaches
+  // the top in turn.
+  var tocLinks = Array.prototype.slice.call(sidebar.querySelectorAll('a[href^="#"]'));
+  var linkTargets = [];
+  tocLinks.forEach(function (link) {
+    var target = findTarget(decodeURIComponent(link.getAttribute('href').slice(1)));
+    if (target) linkTargets.push({ link: link, target: target });
+  });
+  linkTargets.sort(function (a, b) {
+    return (a.target.compareDocumentPosition(b.target) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+  });
+
+  var activeLink = null;
+  function setActiveLink(link) {
+    if (link === activeLink) return;
+    if (activeLink) activeLink.classList.remove('toc-active');
+    activeLink = link;
+    if (!activeLink) return;
+    activeLink.classList.add('toc-active');
+
+    // Smooth-scroll the sidebar (never the main page) to center the active
+    // link, but only when it isn't already fully in view.
+    var sidebarRect = sidebar.getBoundingClientRect();
+    var linkRect = activeLink.getBoundingClientRect();
+    if (linkRect.top < sidebarRect.top || linkRect.bottom > sidebarRect.bottom) {
+      var target = sidebar.scrollTop + (linkRect.top - sidebarRect.top) - (sidebar.clientHeight - linkRect.height) / 2;
+      target = Math.max(0, Math.min(target, sidebar.scrollHeight - sidebar.clientHeight));
+      sidebar.scrollTo({ top: target, behavior: 'smooth' });
+    }
+  }
+
+  function updateActiveLink() {
+    var current = null;
+    for (var i = 0; i < linkTargets.length; i++) {
+      if (linkTargets[i].target.getBoundingClientRect().top > 5) break;
+      current = linkTargets[i].link;
+    }
+    setActiveLink(current);
+  }
+
+  var scrollTicking = false;
+  window.addEventListener('scroll', function () {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(function () {
+      scrollTicking = false;
+      updateActiveLink();
+    });
+  }, { passive: true });
+  updateActiveLink();
+
   // Moving the ToC out of the top of the page (above) shifts everything
   // below it, so if the page loaded with a #hash the browser's initial
   // (pre-move) jump-to-anchor is now misaligned. Redo it, smoothly, once
@@ -226,6 +282,8 @@
     '#toc-sidebar.collapsed{transform:translateX(-100%);}' +
     '#toc-sidebar ul,#toc-sidebar ol{padding-left:1.1em;padding-top:2px;padding-bottom:2px;}' +
     '#toc-sidebar p{margin:0;}' +
+    '#toc-sidebar a{border-radius:4px;transition:background-color .1s ease,color .1s ease;}' +
+    '#toc-sidebar a.toc-active{background:rgba(100,150,255,.16);color:var(--color-link,#0969da);font-weight:600;}' +
     '#toc-resize-handle{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;}' +
     '#toc-toggle{position:fixed;top:8px;left:8px;z-index:1001;width:28px;height:28px;' +
     'display:flex;align-items:center;justify-content:center;padding:0;' +

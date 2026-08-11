@@ -21,8 +21,6 @@ import {
   EventAttendance,
   EventAttendances,
   EventInstance,
-  EventSyncDestination,
-  EventSyncSource,
   GetEventAttendancesRequest,
   GetEventsRequest,
   GetEventsResponse,
@@ -44,7 +42,15 @@ import {
   Post,
 } from "./posts";
 import { ServerConfiguration } from "./server_configuration";
-import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./users";
+import {
+  EventSyncDestination,
+  EventSyncSource,
+  Follow,
+  GetUsersRequest,
+  GetUsersResponse,
+  Membership,
+  User,
+} from "./users";
 
 export const protobufPackage = "jonline";
 

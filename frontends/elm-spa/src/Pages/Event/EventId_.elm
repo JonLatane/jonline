@@ -38,7 +38,6 @@ import Page
 import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
-import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Request
@@ -1133,7 +1132,17 @@ eventDetailView shared model event instance =
             Nothing ->
                 text ""
         , instanceMetaView shared model instance
-        , syncedFromView event
+        , Events.eventSyncSourceView event
+
+        -- `availableSyncDestinations` is always `Nothing` here -- push UI is
+        -- only wired up on `Components.Pages.UserProfilePage`'s embedded
+        -- events feed for now (see `Components.Events.eventSyncDestinationsView`'s
+        -- own doc). The `isPushing`/`pushError`/`onPush` placeholders below
+        -- are never actually invoked (no button renders when `Nothing`), so
+        -- this needs no new `Msg`/`update`/state here -- just enough shape to
+        -- type-check against the shared function's signature, ready for a
+        -- future session to wire up real push here.
+        , Events.eventSyncDestinationsView Nothing (\_ -> False) (\_ -> Nothing) (\_ -> SharedMsg Shared.NoOp) instance
         ]
 
 
@@ -1466,24 +1475,6 @@ instanceMetaView shared model instance =
                 ]
 
         Nothing ->
-            text ""
-
-
-{-| One small-text, clipped-not-wrapped line at the bottom of the event
-detail view, crediting the ICS feed this `Event` was pulled in from (see
-`Components.Pages.UserProfilePage`) -- renders nothing for a normal, non-synced
-event.
--}
-syncedFromView : Event -> Html Msg
-syncedFromView event =
-    case event.eventSyncSource |> Maybe.andThen .configuration of
-        Just (Configuration.IcsSubscriptionUrl url) ->
-            div [ class "event-synced-from" ]
-                [ text "synced from "
-                , a [ href url, class "event-synced-from-link" ] [ text url ]
-                ]
-
-        _ ->
             text ""
 
 

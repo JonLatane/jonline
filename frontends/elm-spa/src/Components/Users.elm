@@ -1,5 +1,7 @@
 module Components.Users exposing
-    ( allPermissions
+    ( allModerations
+    , allPermissions
+    , allowedVisibilities
     , authorAvatarUrl
     , avatarUrl
     , configurableServerPermissions
@@ -13,6 +15,7 @@ module Components.Users exposing
     , fetchUserListing
     , isReservedUsername
     , mediaReferenceUrl
+    , moderationFromText
     , moderationPasses
     , moderationPending
     , moderationRejected
@@ -27,6 +30,7 @@ module Components.Users exposing
     , userCard
     , userIdHref
     , usernameHref
+    , visibilityFromText
     , visibilityText
     )
 
@@ -605,6 +609,51 @@ visibilityText visibility =
             "Unknown"
 
 
+{-| The visibility options offered by a User's visibility-editing `<select>`
+(see `Components.Pages.UserProfilePage`) -- mirrors `Components.Posts.allVisibilities`
+(duplicated rather than imported, since `Posts` itself imports this module,
+so the reverse import would be a cycle -- same reasoning as `userCardAvatar`
+above), excluding `DIRECT` (the proto itself marks it `[TODO]`/unimplemented,
+see `protos/visibility_moderation.proto`) and `VISIBILITYUNKNOWN` (never a
+valid value to _set_). Order matches `visibilityText`/the proto's own
+declaration order.
+-}
+allVisibilities : List Visibility
+allVisibilities =
+    [ PRIVATE, LIMITED, SERVERPUBLIC, GLOBALPUBLIC ]
+
+
+{-| The reverse of `visibilityText` -- looks up a `Visibility` by its display
+label, the same round-trip `permissionFromText` does for `Permission`.
+`Nothing` for any text that isn't one of `allVisibilities`' labels (shouldn't
+happen, since the `<select>`'s own options are always built from
+`allVisibilities` in the first place).
+-}
+visibilityFromText : String -> Maybe Visibility
+visibilityFromText text =
+    allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
+
+
+{-| Which of `allVisibilities` `permissions` may pick for a User -- mirrors
+`backend/src/rpcs/users/update_user.rs`'s own permission check: setting
+`GLOBALPUBLIC` needs `PUBLISHUSERSGLOBALLY` (or `ADMIN`); every other
+visibility is always pickable by whoever's already allowed to edit the
+profile at all (see `Components.Pages.UserProfilePage.canEditProfile`).
+`currentVisibility` is always included even if it wouldn't otherwise be
+pickable, so an account whose permission was revoked after the profile was
+already elevated still sees its own current value in the list (just can't
+newly pick it again) -- mirrors `Components.Posts.allowedVisibilities`.
+-}
+allowedVisibilities : List Permission -> Visibility -> List Visibility
+allowedVisibilities permissions currentVisibility =
+    let
+        canPublishGlobally =
+            List.member PUBLISHUSERSGLOBALLY permissions || List.member ADMIN permissions
+    in
+    allVisibilities
+        |> List.filter (\visibility -> visibility /= GLOBALPUBLIC || canPublishGlobally || visibility == currentVisibility)
+
+
 moderationText : Moderation -> String
 moderationText moderation =
     case moderation of
@@ -625,6 +674,25 @@ moderationText moderation =
 
         ModerationUnrecognized_ _ ->
             "Unknown"
+
+
+{-| The moderation-status options offered by a User's moderation-editing
+`<select>` (see `Components.Pages.UserProfilePage`) -- mirrors
+`Components.Posts.allModerations` (duplicated for the same cycle-avoiding
+reason as `allVisibilities` above), excluding `MODERATIONUNKNOWN`, never a
+valid value to _set_. Order matches the proto's own declaration order.
+-}
+allModerations : List Moderation
+allModerations =
+    [ UNMODERATED, PENDING, APPROVED, REJECTED ]
+
+
+{-| The reverse of `moderationText` -- same `<select>`-value round-trip
+`visibilityFromText` does for `Visibility`.
+-}
+moderationFromText : String -> Maybe Moderation
+moderationFromText text =
+    allModerations |> List.filter (\moderation -> moderationText moderation == text) |> List.head
 
 
 {-| Whether a `Moderation` (e.g. a `Follow`'s `targetUserModeration`) counts

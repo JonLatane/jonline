@@ -171,6 +171,63 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
   }
 }
 
+/** The default navigation tabs in Jonline's Elm UI. */
+export enum NavigationTab {
+  /** HOME_TAB - The home/landing tab. */
+  HOME_TAB = 0,
+  /** EVENTS_TAB - The Events tab. */
+  EVENTS_TAB = 10,
+  /** POSTS_TAB - The Posts tab. */
+  POSTS_TAB = 11,
+  /** PEOPLE_TAB - The People tab. */
+  PEOPLE_TAB = 12,
+  /** ABOUT_TAB - The About tab. */
+  ABOUT_TAB = 15,
+  UNRECOGNIZED = -1,
+}
+
+export function navigationTabFromJSON(object: any): NavigationTab {
+  switch (object) {
+    case 0:
+    case "HOME_TAB":
+      return NavigationTab.HOME_TAB;
+    case 10:
+    case "EVENTS_TAB":
+      return NavigationTab.EVENTS_TAB;
+    case 11:
+    case "POSTS_TAB":
+      return NavigationTab.POSTS_TAB;
+    case 12:
+    case "PEOPLE_TAB":
+      return NavigationTab.PEOPLE_TAB;
+    case 15:
+    case "ABOUT_TAB":
+      return NavigationTab.ABOUT_TAB;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return NavigationTab.UNRECOGNIZED;
+  }
+}
+
+export function navigationTabToJSON(object: NavigationTab): string {
+  switch (object) {
+    case NavigationTab.HOME_TAB:
+      return "HOME_TAB";
+    case NavigationTab.EVENTS_TAB:
+      return "EVENTS_TAB";
+    case NavigationTab.POSTS_TAB:
+      return "POSTS_TAB";
+    case NavigationTab.PEOPLE_TAB:
+      return "PEOPLE_TAB";
+    case NavigationTab.ABOUT_TAB:
+      return "ABOUT_TAB";
+    case NavigationTab.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Configuration for a Jonline server instance. */
 export interface ServerConfiguration {
   /** The name, description, logo, color scheme, etc. of the server. */
@@ -234,7 +291,7 @@ export interface ServerConfiguration {
    * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
   eventSettings:
-    | PostSettings
+    | EventSettings
     | undefined;
   /**
    * Configuration for media on the server.
@@ -344,9 +401,42 @@ export interface FeatureSettings {
   customTitle?: string | undefined;
 }
 
-/** Specific settings for Posts and Events. */
+/** Specific settings for Posts. */
 export interface PostSettings {
-  /** Hide the Posts or Events tab from the user with this flag. */
+  /** Hide the Posts tab from the user with this flag. */
+  visible: boolean;
+  /**
+   * Only `UNMODERATED` and `PENDING` are valid.
+   * When `UNMODERATED`, user reports may transition status to `PENDING`.
+   * When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+   * be visible until a moderator approves them. `LIMITED` visiblity
+   * posts are always visible to targeted users (who have not blocked
+   * the author) regardless of default_moderation.
+   */
+  defaultModeration: Moderation;
+  /**
+   * Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+   * if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+   * as appropriate.
+   */
+  defaultVisibility: Visibility;
+  /**
+   * (TODO) Custom title, like "Squawks"s instead of "Posts".
+   * This is more an idea; internationalization is obviously problematic here.
+   */
+  customTitle?:
+    | string
+    | undefined;
+  /**
+   * Controls whether replies are shown in the UI. Note that users' ability to reply
+   * is controlled by the `REPLY_TO_POSTS` permission.
+   */
+  enableReplies?: boolean | undefined;
+}
+
+/** Specific settings for Events. */
+export interface EventSettings {
+  /** Hide the Events tab from the user with this flag. */
   visible: boolean;
   /**
    * Only `UNMODERATED` and `PENDING` are valid.
@@ -443,6 +533,61 @@ export interface ServerLogo {
   wideMediaIdDark?: string | undefined;
 }
 
+/** If set, should override the default tab set for the Elm navigation on a Jonline instance. */
+export interface CustomNavigationTabSet {
+  /** Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. */
+  home?:
+    | CustomNavigationTab
+    | undefined;
+  /**
+   * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+   * Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
+   * `/` is modified via `CustomNavigationTabSet`.home instead.
+   */
+  tabs: CustomNavigationTabWithPath[];
+}
+
+/** Either one of the app's predefined tabs, or a Post */
+export interface CustomNavigationTab {
+  /** Links to one of the app's predefined tabs/pages. */
+  tab?:
+    | NavigationTab
+    | undefined;
+  /** Links to a specific Post (e.g. for a custom business site's page). */
+  postId?:
+    | string
+    | undefined;
+  /** Emoji shown as the tab's icon (e.g. "🎪"). */
+  emojiIcon?:
+    | string
+    | undefined;
+  /** Media ID (see `Media` APIs) of an image shown as the tab's icon. */
+  iconMediaId?:
+    | string
+    | undefined;
+  /** Title shown for the tab. Defaults to the predefined tab's/Post's title if unset. */
+  title?: string | undefined;
+}
+
+/**
+ * A custom navigation tab with an associated path.
+ * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+ * `/` is modified via `CustomNavigationTabSet`.home instead.
+ */
+export interface CustomNavigationTabWithPath {
+  /** The tab to show at this path. */
+  customTab:
+    | CustomNavigationTab
+    | undefined;
+  /**
+   * e.g. link `/gigs` or `/shows` for a band to the "Events" page.
+   * Or, /weddings to a Post about wedding offerings for a custom business site.
+   * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+   * `/` is modified via `CustomNavigationTabSet`.home instead.
+   */
+  path: string;
+}
+
 /** Color in ARGB hex format (i.e `0xAARRGGBB`). */
 export interface ServerColors {
   /** App Bar/primary accent color. */
@@ -528,7 +673,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       PostSettings.encode(message.postSettings, writer.uint32(178).fork()).join();
     }
     if (message.eventSettings !== undefined) {
-      PostSettings.encode(message.eventSettings, writer.uint32(186).fork()).join();
+      EventSettings.encode(message.eventSettings, writer.uint32(186).fork()).join();
     }
     if (message.mediaSettings !== undefined) {
       FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).join();
@@ -656,7 +801,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
             break;
           }
 
-          message.eventSettings = PostSettings.decode(reader, reader.uint32());
+          message.eventSettings = EventSettings.decode(reader, reader.uint32());
           continue;
         }
         case 24: {
@@ -734,7 +879,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
-      eventSettings: isSet(object.eventSettings) ? PostSettings.fromJSON(object.eventSettings) : undefined,
+      eventSettings: isSet(object.eventSettings) ? EventSettings.fromJSON(object.eventSettings) : undefined,
       mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
       externalCdnConfig: isSet(object.externalCdnConfig)
         ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
@@ -776,7 +921,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       obj.postSettings = PostSettings.toJSON(message.postSettings);
     }
     if (message.eventSettings !== undefined) {
-      obj.eventSettings = PostSettings.toJSON(message.eventSettings);
+      obj.eventSettings = EventSettings.toJSON(message.eventSettings);
     }
     if (message.mediaSettings !== undefined) {
       obj.mediaSettings = FeatureSettings.toJSON(message.mediaSettings);
@@ -820,7 +965,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       ? PostSettings.fromPartial(object.postSettings)
       : undefined;
     message.eventSettings = (object.eventSettings !== undefined && object.eventSettings !== null)
-      ? PostSettings.fromPartial(object.eventSettings)
+      ? EventSettings.fromPartial(object.eventSettings)
       : undefined;
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
       ? FeatureSettings.fromPartial(object.mediaSettings)
@@ -1222,6 +1367,136 @@ export const PostSettings: MessageFns<PostSettings> = {
   },
 };
 
+function createBaseEventSettings(): EventSettings {
+  return {
+    visible: false,
+    defaultModeration: 0,
+    defaultVisibility: 0,
+    customTitle: undefined,
+    enableReplies: undefined,
+  };
+}
+
+export const EventSettings: MessageFns<EventSettings> = {
+  encode(message: EventSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.visible !== false) {
+      writer.uint32(8).bool(message.visible);
+    }
+    if (message.defaultModeration !== 0) {
+      writer.uint32(16).int32(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      writer.uint32(24).int32(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      writer.uint32(34).string(message.customTitle);
+    }
+    if (message.enableReplies !== undefined) {
+      writer.uint32(40).bool(message.enableReplies);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSettings {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSettings();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.visible = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.defaultModeration = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.defaultVisibility = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.customTitle = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.enableReplies = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSettings {
+    return {
+      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
+      defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
+      defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
+      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : undefined,
+    };
+  },
+
+  toJSON(message: EventSettings): unknown {
+    const obj: any = {};
+    if (message.visible !== false) {
+      obj.visible = message.visible;
+    }
+    if (message.defaultModeration !== 0) {
+      obj.defaultModeration = moderationToJSON(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      obj.customTitle = message.customTitle;
+    }
+    if (message.enableReplies !== undefined) {
+      obj.enableReplies = message.enableReplies;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSettings>, I>>(base?: I): EventSettings {
+    return EventSettings.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSettings>, I>>(object: I): EventSettings {
+    const message = createBaseEventSettings();
+    message.visible = object.visible ?? false;
+    message.defaultModeration = object.defaultModeration ?? 0;
+    message.defaultVisibility = object.defaultVisibility ?? 0;
+    message.customTitle = object.customTitle ?? undefined;
+    message.enableReplies = object.enableReplies ?? undefined;
+    return message;
+  },
+};
+
 function createBaseServerInfo(): ServerInfo {
   return {
     name: undefined,
@@ -1530,6 +1805,288 @@ export const ServerLogo: MessageFns<ServerLogo> = {
     message.squareMediaIdDark = object.squareMediaIdDark ?? undefined;
     message.wideMediaId = object.wideMediaId ?? undefined;
     message.wideMediaIdDark = object.wideMediaIdDark ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCustomNavigationTabSet(): CustomNavigationTabSet {
+  return { home: undefined, tabs: [] };
+}
+
+export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
+  encode(message: CustomNavigationTabSet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.home !== undefined) {
+      CustomNavigationTab.encode(message.home, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.tabs) {
+      CustomNavigationTabWithPath.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CustomNavigationTabSet {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCustomNavigationTabSet();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.home = CustomNavigationTab.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tabs.push(CustomNavigationTabWithPath.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CustomNavigationTabSet {
+    return {
+      home: isSet(object.home) ? CustomNavigationTab.fromJSON(object.home) : undefined,
+      tabs: globalThis.Array.isArray(object?.tabs)
+        ? object.tabs.map((e: any) => CustomNavigationTabWithPath.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: CustomNavigationTabSet): unknown {
+    const obj: any = {};
+    if (message.home !== undefined) {
+      obj.home = CustomNavigationTab.toJSON(message.home);
+    }
+    if (message.tabs?.length) {
+      obj.tabs = message.tabs.map((e) => CustomNavigationTabWithPath.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CustomNavigationTabSet>, I>>(base?: I): CustomNavigationTabSet {
+    return CustomNavigationTabSet.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CustomNavigationTabSet>, I>>(object: I): CustomNavigationTabSet {
+    const message = createBaseCustomNavigationTabSet();
+    message.home = (object.home !== undefined && object.home !== null)
+      ? CustomNavigationTab.fromPartial(object.home)
+      : undefined;
+    message.tabs = object.tabs?.map((e) => CustomNavigationTabWithPath.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCustomNavigationTab(): CustomNavigationTab {
+  return { tab: undefined, postId: undefined, emojiIcon: undefined, iconMediaId: undefined, title: undefined };
+}
+
+export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
+  encode(message: CustomNavigationTab, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tab !== undefined) {
+      writer.uint32(8).int32(message.tab);
+    }
+    if (message.postId !== undefined) {
+      writer.uint32(18).string(message.postId);
+    }
+    if (message.emojiIcon !== undefined) {
+      writer.uint32(82).string(message.emojiIcon);
+    }
+    if (message.iconMediaId !== undefined) {
+      writer.uint32(90).string(message.iconMediaId);
+    }
+    if (message.title !== undefined) {
+      writer.uint32(98).string(message.title);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CustomNavigationTab {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCustomNavigationTab();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.tab = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.postId = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.emojiIcon = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.iconMediaId = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CustomNavigationTab {
+    return {
+      tab: isSet(object.tab) ? navigationTabFromJSON(object.tab) : undefined,
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      emojiIcon: isSet(object.emojiIcon) ? globalThis.String(object.emojiIcon) : undefined,
+      iconMediaId: isSet(object.iconMediaId) ? globalThis.String(object.iconMediaId) : undefined,
+      title: isSet(object.title) ? globalThis.String(object.title) : undefined,
+    };
+  },
+
+  toJSON(message: CustomNavigationTab): unknown {
+    const obj: any = {};
+    if (message.tab !== undefined) {
+      obj.tab = navigationTabToJSON(message.tab);
+    }
+    if (message.postId !== undefined) {
+      obj.postId = message.postId;
+    }
+    if (message.emojiIcon !== undefined) {
+      obj.emojiIcon = message.emojiIcon;
+    }
+    if (message.iconMediaId !== undefined) {
+      obj.iconMediaId = message.iconMediaId;
+    }
+    if (message.title !== undefined) {
+      obj.title = message.title;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CustomNavigationTab>, I>>(base?: I): CustomNavigationTab {
+    return CustomNavigationTab.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CustomNavigationTab>, I>>(object: I): CustomNavigationTab {
+    const message = createBaseCustomNavigationTab();
+    message.tab = object.tab ?? undefined;
+    message.postId = object.postId ?? undefined;
+    message.emojiIcon = object.emojiIcon ?? undefined;
+    message.iconMediaId = object.iconMediaId ?? undefined;
+    message.title = object.title ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCustomNavigationTabWithPath(): CustomNavigationTabWithPath {
+  return { customTab: undefined, path: "" };
+}
+
+export const CustomNavigationTabWithPath: MessageFns<CustomNavigationTabWithPath> = {
+  encode(message: CustomNavigationTabWithPath, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.customTab !== undefined) {
+      CustomNavigationTab.encode(message.customTab, writer.uint32(10).fork()).join();
+    }
+    if (message.path !== "") {
+      writer.uint32(18).string(message.path);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CustomNavigationTabWithPath {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCustomNavigationTabWithPath();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.customTab = CustomNavigationTab.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CustomNavigationTabWithPath {
+    return {
+      customTab: isSet(object.customTab) ? CustomNavigationTab.fromJSON(object.customTab) : undefined,
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
+    };
+  },
+
+  toJSON(message: CustomNavigationTabWithPath): unknown {
+    const obj: any = {};
+    if (message.customTab !== undefined) {
+      obj.customTab = CustomNavigationTab.toJSON(message.customTab);
+    }
+    if (message.path !== "") {
+      obj.path = message.path;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CustomNavigationTabWithPath>, I>>(base?: I): CustomNavigationTabWithPath {
+    return CustomNavigationTabWithPath.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CustomNavigationTabWithPath>, I>>(object: I): CustomNavigationTabWithPath {
+    const message = createBaseCustomNavigationTabWithPath();
+    message.customTab = (object.customTab !== undefined && object.customTab !== null)
+      ? CustomNavigationTab.fromPartial(object.customTab)
+      : undefined;
+    message.path = object.path ?? "";
     return message;
   },
 };

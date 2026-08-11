@@ -147,6 +147,15 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-ContactMethod">ContactMethod</a></p>
           </li>
           <li>
+            <p><a href="#jonline-EventSyncDestination">EventSyncDestination</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventSyncSource">EventSyncSource</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-FacebookPage">FacebookPage</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-Follow">Follow</a></p>
           </li>
           <li>
@@ -294,15 +303,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-EventInstanceSyncDestination">EventInstanceSyncDestination</a></p>
           </li>
           <li>
-            <p><a href="#jonline-EventSyncDestination">EventSyncDestination</a></p>
-          </li>
-          <li>
-            <p><a href="#jonline-EventSyncSource">EventSyncSource</a></p>
-          </li>
-          <li>
-            <p><a href="#jonline-FacebookPage">FacebookPage</a></p>
-          </li>
-          <li>
             <p><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></p>
           </li>
           <li>
@@ -338,6 +338,18 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#server_configuration-proto">server_configuration.proto</a></p>
         <ul>
           <li>
+            <p><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-CustomNavigationTabSet">CustomNavigationTabSet</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-CustomNavigationTabWithPath">CustomNavigationTabWithPath</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventSettings">EventSettings</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></p>
           </li>
           <li>
@@ -363,6 +375,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-NavigationTab">NavigationTab</a></p>
           </li>
           <li>
             <p><a href="#jonline-PrivateUserStrategy">PrivateUserStrategy</a></p>
@@ -1719,6 +1734,162 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-EventSyncDestination"></a></p>
+    <h3 id="eventsyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination"><span class="octicon octicon-link"></span></a>EventSyncDestination</h3>
+    <p>
+      A user-owned destination to sync (cross-post) EventInstances to. Mirrors <code>EventSyncSource</code>,
+      but for pushing instances out rather than pulling events in.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the destination.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this destination.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the EventSyncDestination was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncDestination was last updated.</td>
+        </tr>
+        <tr>
+          <td>synced_event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td>optional</td>
+          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <code>EventSyncSource</code>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
+        </tr>
+        <tr>
+          <td>facebook_page</td>
+          <td><a href="#jonline-FacebookPage">FacebookPage</a></td>
+          <td></td>
+          <td>A connected Facebook Page to post EventInstances to.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventSyncSource"></a></p>
+    <h3 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
+    <p>A user-owned source to sync events from.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the synchronization.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this event sync.</td>
+        </tr>
+        <tr>
+          <td>sync_interval_seconds</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>How frequently the sync should happen in seconds.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the EventSyncSource was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last updated.</td>
+        </tr>
+        <tr>
+          <td>last_synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last synced.</td>
+        </tr>
+        <tr>
+          <td>event_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of events total associated with this EventSyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of event instances total associated with this EventSyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>ics_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The iCal subscription URL for the calendar sync.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-FacebookPage"></a></p>
+    <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
+    <p>A Facebook Page connected as an <code>EventSyncDestination</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>page_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's ID.</td>
+        </tr>
+        <tr>
+          <td>page_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's name, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>short_lived_user_access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateEventSyncDestination</code>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-Follow"></a></p>
     <h3 id="follow"><a class="anchor" aria-hidden="true" tabindex="-1" href="#follow"><span class="octicon octicon-link"></span></a>Follow</h3>
     <p>Model for a user's follow of another user.</p>
@@ -2076,6 +2247,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-FederatedAccount">FederatedAccount</a></td>
           <td>repeated</td>
           <td>Federated profiles for the user. <em>Not always loaded.</em> This is a list of profiles from other servers that the user has connected to their account. Managed by the user via <code>Federate</code></td>
+        </tr>
+        <tr>
+          <td>event_sync_destinations</td>
+          <td><a href="#jonline-EventSyncDestination">EventSyncDestination</a></td>
+          <td>repeated</td>
+          <td>The target user's own linked EventSyncDestinations (e.g. Facebook Pages). Only ever populated by <code>GetUsers</code>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code>) or an Admin -- always empty otherwise, including via every other <code>GetUsers</code> listing type and via <code>GetCurrentUser</code>.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -4061,162 +4238,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-EventSyncDestination"></a></p>
-    <h3 id="eventsyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination"><span class="octicon octicon-link"></span></a>EventSyncDestination</h3>
-    <p>
-      A user-owned destination to sync (cross-post) EventInstances to. Mirrors <code>EventSyncSource</code>,
-      but for pushing instances out rather than pulling events in.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>id</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>Unique ID for the destination.</td>
-        </tr>
-        <tr>
-          <td>owner</td>
-          <td><a href="#jonline-Author">Author</a></td>
-          <td></td>
-          <td>The user information for the owner of this destination.</td>
-        </tr>
-        <tr>
-          <td>created_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td></td>
-          <td>The time the EventSyncDestination was created.</td>
-        </tr>
-        <tr>
-          <td>updated_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td>optional</td>
-          <td>The time the EventSyncDestination was last updated.</td>
-        </tr>
-        <tr>
-          <td>synced_event_instance_count</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td>optional</td>
-          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <code>EventSyncSource</code>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
-        </tr>
-        <tr>
-          <td>facebook_page</td>
-          <td><a href="#jonline-FacebookPage">FacebookPage</a></td>
-          <td></td>
-          <td>A connected Facebook Page to post EventInstances to.</td>
-        </tr>
-      </tbody>
-    </table>
-    <p><a name="jonline-EventSyncSource"></a></p>
-    <h3 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
-    <p>A user-owned source to sync events from.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>id</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>Unique ID for the synchronization.</td>
-        </tr>
-        <tr>
-          <td>owner</td>
-          <td><a href="#jonline-Author">Author</a></td>
-          <td></td>
-          <td>The user information for the owner of this event sync.</td>
-        </tr>
-        <tr>
-          <td>sync_interval_seconds</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>How frequently the sync should happen in seconds.</td>
-        </tr>
-        <tr>
-          <td>created_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td></td>
-          <td>The time the EventSyncSource was created.</td>
-        </tr>
-        <tr>
-          <td>updated_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td>optional</td>
-          <td>The time the EventSyncSource was last updated.</td>
-        </tr>
-        <tr>
-          <td>last_synced_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td>optional</td>
-          <td>The time the EventSyncSource was last synced.</td>
-        </tr>
-        <tr>
-          <td>event_count</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>The number of events total associated with this EventSyncSource. Recomputed on each sync.</td>
-        </tr>
-        <tr>
-          <td>event_instance_count</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>The number of event instances total associated with this EventSyncSource. Recomputed on each sync.</td>
-        </tr>
-        <tr>
-          <td>ics_subscription_url</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The iCal subscription URL for the calendar sync.</td>
-        </tr>
-      </tbody>
-    </table>
-    <p><a name="jonline-FacebookPage"></a></p>
-    <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
-    <p>A Facebook Page connected as an <code>EventSyncDestination</code>.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>page_id</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The Facebook Page's ID.</td>
-        </tr>
-        <tr>
-          <td>page_name</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The Facebook Page's name, populated by the server when the connection is made.</td>
-        </tr>
-        <tr>
-          <td>short_lived_user_access_token</td>
-          <td><a href="#string">string</a></td>
-          <td>optional</td>
-          <td>Only used (and required) on <code>CreateEventSyncDestination</code>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
-        </tr>
-      </tbody>
-    </table>
     <p><a name="jonline-GetEventAttendancesRequest"></a></p>
     <h3 id="geteventattendancesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventattendancesrequest"><span class="octicon octicon-link"></span></a>GetEventAttendancesRequest</h3>
     <p>Request to get RSVP data for an event.</p>
@@ -4642,6 +4663,153 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="server_configuration-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="jonline-CustomNavigationTab"></a></p>
+    <h3 id="customnavigationtab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtab"><span class="octicon octicon-link"></span></a>CustomNavigationTab</h3>
+    <p>Either one of the app's predefined tabs, or a Post</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>tab</td>
+          <td><a href="#jonline-NavigationTab">NavigationTab</a></td>
+          <td></td>
+          <td>Links to one of the app's predefined tabs/pages.</td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Links to a specific Post (e.g. for a custom business site's page).</td>
+        </tr>
+        <tr>
+          <td>emoji_icon</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Emoji shown as the tab's icon (e.g. "🎪").</td>
+        </tr>
+        <tr>
+          <td>icon_media_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Media ID (see <code>Media</code> APIs) of an image shown as the tab's icon.</td>
+        </tr>
+        <tr>
+          <td>title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-CustomNavigationTabSet"></a></p>
+    <h3 id="customnavigationtabset"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtabset"><span class="octicon octicon-link"></span></a>CustomNavigationTabSet</h3>
+    <p>If set, should override the default tab set for the Elm navigation on a Jonline instance.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>home</td>
+          <td><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></td>
+          <td>optional</td>
+          <td>Overrides the default <code>HOME_TAB</code> entry. If unset, the default Home tab is used.</td>
+        </tr>
+        <tr>
+          <td>tabs</td>
+          <td><a href="#jonline-CustomNavigationTabWithPath">CustomNavigationTabWithPath</a></td>
+          <td>repeated</td>
+          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts/</code>, <code>/people</code>, and <code>/about</code> paths are not modifiable. <code>/</code> is modified via <code>CustomNavigationTabSet</code>.home instead.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-CustomNavigationTabWithPath"></a></p>
+    <h3 id="customnavigationtabwithpath"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtabwithpath"><span class="octicon octicon-link"></span></a>CustomNavigationTabWithPath</h3>
+    <p>
+      A custom navigation tab with an associated path.
+      Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code>is modified via</code>CustomNavigationTabSet`.home instead.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>custom_tab</td>
+          <td><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></td>
+          <td></td>
+          <td>The tab to show at this path.</td>
+        </tr>
+        <tr>
+          <td>path</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>e.g. link <code>/gigs</code> or <code>/shows</code> for a band to the "Events" page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code>is modified via</code>CustomNavigationTabSet`.home instead.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventSettings"></a></p>
+    <h3 id="eventsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsettings"><span class="octicon octicon-link"></span></a>EventSettings</h3>
+    <p>Specific settings for Events.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>visible</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Hide the Events tab from the user with this flag.</td>
+        </tr>
+        <tr>
+          <td>default_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only <code>UNMODERATED</code> and <code>PENDING</code> are valid. When <code>UNMODERATED</code>, user reports may transition status to <code>PENDING</code>. When <code>PENDING</code>, users' SERVER_PUBLIC or <code>GLOBAL_PUBLIC</code> posts will not be visible until a moderator approves them. <code>LIMITED</code> visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation.</td>
+        </tr>
+        <tr>
+          <td>default_visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
+        </tr>
+        <tr>
+          <td>custom_title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+        </tr>
+        <tr>
+          <td>enable_replies</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Controls whether replies are shown in the UI. Note that users' ability to reply is controlled by the <code>REPLY_TO_POSTS</code> permission.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-ExternalCDNConfig"></a></p>
     <h3 id="externalcdnconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#externalcdnconfig"><span class="octicon octicon-link"></span></a>ExternalCDNConfig</h3>
     <p>
@@ -4741,7 +4909,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </table>
     <p><a name="jonline-PostSettings"></a></p>
     <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
-    <p>Specific settings for Posts and Events.</p>
+    <p>Specific settings for Posts.</p>
     <table>
       <thead>
         <tr>
@@ -4756,7 +4924,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>visible</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Hide the Posts or Events tab from the user with this flag.</td>
+          <td>Hide the Posts tab from the user with this flag.</td>
         </tr>
         <tr>
           <td>default_moderation</td>
@@ -4774,7 +4942,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>custom_title</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+          <td>(TODO) Custom title, like "Squawks"s instead of "Posts". This is more an idea; internationalization is obviously problematic here.</td>
         </tr>
         <tr>
           <td>enable_replies</td>
@@ -4892,7 +5060,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
         <tr>
           <td>event_settings</td>
-          <td><a href="#jonline-PostSettings">PostSettings</a></td>
+          <td><a href="#jonline-EventSettings">EventSettings</a></td>
           <td></td>
           <td>Configuration for events on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
         </tr>
@@ -5089,6 +5257,45 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>LOGIN</td>
           <td>2</td>
           <td>Users can sign in with an existing account.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-NavigationTab"></a></p>
+    <h3 id="navigationtab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#navigationtab"><span class="octicon octicon-link"></span></a>NavigationTab</h3>
+    <p>The default navigation tabs in Jonline's Elm UI.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>HOME_TAB</td>
+          <td>0</td>
+          <td>The home/landing tab.</td>
+        </tr>
+        <tr>
+          <td>EVENTS_TAB</td>
+          <td>10</td>
+          <td>The Events tab.</td>
+        </tr>
+        <tr>
+          <td>POSTS_TAB</td>
+          <td>11</td>
+          <td>The Posts tab.</td>
+        </tr>
+        <tr>
+          <td>PEOPLE_TAB</td>
+          <td>12</td>
+          <td>The People tab.</td>
+        </tr>
+        <tr>
+          <td>ABOUT_TAB</td>
+          <td>15</td>
+          <td>The About tab.</td>
         </tr>
       </tbody>
     </table>
@@ -5522,6 +5729,9 @@ function copied(target, str) {
 //      main content's left margin is dropped entirely -- an expanded sidebar
 //      there overlays the content like a mobile nav drawer instead of
 //      squeezing it.
+//   6. Scroll-spies the main content: on scroll, the sidebar link for
+//      whichever section is currently at the top of the viewport is marked
+//      active and nudged into view within the sidebar.
 //
 // Because docs/protocol.html itself is regenerated wholesale from docs/protocol.md
 // on every `make html_docs`, none of this can live as static markup in the .md
@@ -5697,6 +5907,59 @@ function copied(target, str) {
 
   applyLayout();
 
+  // Scroll-spy: the active link is whichever section heading is the last
+  // one to have scrolled up past the top of the viewport -- so it stays
+  // active for that section's whole span, until the next heading reaches
+  // the top in turn.
+  var tocLinks = Array.prototype.slice.call(sidebar.querySelectorAll('a[href^="#"]'));
+  var linkTargets = [];
+  tocLinks.forEach(function (link) {
+    var target = findTarget(decodeURIComponent(link.getAttribute('href').slice(1)));
+    if (target) linkTargets.push({ link: link, target: target });
+  });
+  linkTargets.sort(function (a, b) {
+    return (a.target.compareDocumentPosition(b.target) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+  });
+
+  var activeLink = null;
+  function setActiveLink(link) {
+    if (link === activeLink) return;
+    if (activeLink) activeLink.classList.remove('toc-active');
+    activeLink = link;
+    if (!activeLink) return;
+    activeLink.classList.add('toc-active');
+
+    // Smooth-scroll the sidebar (never the main page) to center the active
+    // link, but only when it isn't already fully in view.
+    var sidebarRect = sidebar.getBoundingClientRect();
+    var linkRect = activeLink.getBoundingClientRect();
+    if (linkRect.top < sidebarRect.top || linkRect.bottom > sidebarRect.bottom) {
+      var target = sidebar.scrollTop + (linkRect.top - sidebarRect.top) - (sidebar.clientHeight - linkRect.height) / 2;
+      target = Math.max(0, Math.min(target, sidebar.scrollHeight - sidebar.clientHeight));
+      sidebar.scrollTo({ top: target, behavior: 'smooth' });
+    }
+  }
+
+  function updateActiveLink() {
+    var current = null;
+    for (var i = 0; i < linkTargets.length; i++) {
+      if (linkTargets[i].target.getBoundingClientRect().top > 5) break;
+      current = linkTargets[i].link;
+    }
+    setActiveLink(current);
+  }
+
+  var scrollTicking = false;
+  window.addEventListener('scroll', function () {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(function () {
+      scrollTicking = false;
+      updateActiveLink();
+    });
+  }, { passive: true });
+  updateActiveLink();
+
   // Moving the ToC out of the top of the page (above) shifts everything
   // below it, so if the page loaded with a #hash the browser's initial
   // (pre-move) jump-to-anchor is now misaligned. Redo it, smoothly, once
@@ -5722,6 +5985,8 @@ function copied(target, str) {
     '#toc-sidebar.collapsed{transform:translateX(-100%);}' +
     '#toc-sidebar ul,#toc-sidebar ol{padding-left:1.1em;padding-top:2px;padding-bottom:2px;}' +
     '#toc-sidebar p{margin:0;}' +
+    '#toc-sidebar a{border-radius:4px;transition:background-color .1s ease,color .1s ease;}' +
+    '#toc-sidebar a.toc-active{background:rgba(100,150,255,.16);color:var(--color-link,#0969da);font-weight:600;}' +
     '#toc-resize-handle{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;}' +
     '#toc-toggle{position:fixed;top:8px;left:8px;z-index:1001;width:28px;height:28px;' +
     'display:flex;align-items:center;justify-content:center;padding:0;' +

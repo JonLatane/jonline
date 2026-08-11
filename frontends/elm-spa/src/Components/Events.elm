@@ -3,6 +3,8 @@ module Components.Events exposing
     , eventCard
     , eventInstanceHref
     , eventInstancePairs
+    , eventSyncDestinationsView
+    , eventSyncSourceView
     , fetchEvent
     , fetchEvents
     , fetchEventsByInstancePostIds
@@ -14,6 +16,7 @@ module Components.Events exposing
     , meaningfulPost
     , parseEventRouteId
     , siblingInstanceWhenText
+    , syncEventInstance
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
@@ -34,10 +37,13 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, span, text)
-import Html.Attributes exposing (attribute, class, href, rel, target)
-import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
+import Html exposing (Html, a, button, div, span, text)
+import Html.Attributes exposing (attribute, class, disabled, href, rel, target)
+import Html.Events exposing (onClick)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
+import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
+import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
@@ -89,6 +95,32 @@ deleteEvent accountsPanelModel maybeAccountServer eventId =
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.deleteEvent { defaultEvent | id = eventId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Pushes (cross-posts) `eventInstanceId` to `eventSyncDestinationId` (`SyncEventInstance`,
+owner-or-Admin gated server-side, see
+`backend/src/rpcs/event_sync_destinations/sync_event_instance.rs`) -- mirrors `deleteEvent`'s
+shape exactly. The returned `EventInstance` carries a freshly updated `syncDestinations`, but
+callers here just reuse their own existing full refetch (`Pages.Event.EventId_.refetch`/
+`Components.Pages.EventsPage.refetchServers`) rather than patching it in by hand.
+-}
+syncEventInstance :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance )
+syncEventInstance accountsPanelModel maybeAccountServer eventInstanceId eventSyncDestinationId =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.syncEventInstance
+                { eventInstanceId = eventInstanceId, eventSyncDestinationId = eventSyncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -420,6 +452,153 @@ meaningfulPost post =
         Nothing
 
 
+{-| One small-text, clipped-not-wrapped line crediting the source `event` was
+synced from (e.g. an ICS feed) -- see `Components.Pages.UserProfilePage`'s
+"Event Sync Sources" section. Renders nothing for a normal, non-synced event.
+Shared by `Pages.Event.EventId_`'s detail view and `eventCard` (gated on
+`showSyncSource`).
+-}
+eventSyncSourceView : Event -> Html msg
+eventSyncSourceView event =
+    case event.eventSyncSource |> Maybe.andThen .configuration of
+        Just (SyncSourceConfiguration.IcsSubscriptionUrl url) ->
+            div [ class "event-synced-from" ]
+                [ text "synced from "
+                , a [ href url, class "event-synced-from-link" ] [ text url ]
+                ]
+
+        _ ->
+            text ""
+
+
+{-| `Nothing` renders one line per `instance.syncDestinations` entry with a
+`destinationUrl` set, linking out to wherever `instance` was synced to (e.g.
+the resulting Facebook post) -- read-only, no push controls -- used by every
+caller except `Components.Pages.UserProfilePage`'s embedded events feed.
+
+`Just availableDestinations` renders a unified row list instead: one row per
+destination id in `instance.syncDestinations` (already synced, shows its URL
+if any) unioned with any of `availableDestinations` not yet in that list
+(not yet synced, no URL), each with a "Push"/"Push again" button --
+`isPushing`/`pushError` (keyed by destination id) drive its disabled/error
+state, `onPush` fires the push. This `Maybe` is the *only* gate on whether
+push controls show at all -- deciding when to pass `Just` (only
+`UserProfilePage`'s own embedded feed, for now) is entirely the caller's
+call; this module has no opinion on `AccountsPanel`/permissions.
+-}
+eventSyncDestinationsView :
+    Maybe (List EventSyncDestination)
+    -> (String -> Bool)
+    -> (String -> Maybe String)
+    -> (String -> msg)
+    -> EventInstance
+    -> Html msg
+eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush instance =
+    case availableSyncDestinations of
+        Nothing ->
+            let
+                urls =
+                    instance.syncDestinations |> List.filterMap .destinationUrl
+            in
+            if List.isEmpty urls then
+                text ""
+
+            else
+                div [ class "event-synced-to" ]
+                    (urls
+                        |> List.map
+                            (\url ->
+                                div [ class "event-synced-to-line" ]
+                                    [ text "synced to "
+                                    , a [ href url, target "_blank", rel "noopener noreferrer", class "event-synced-to-link" ] [ text url ]
+                                    ]
+                            )
+                    )
+
+        Just availableDestinations ->
+            let
+                destinationName id =
+                    availableDestinations
+                        |> List.filter (\d -> d.id == id)
+                        |> List.head
+                        |> Maybe.andThen .configuration
+                        |> Maybe.map (\(DestinationConfiguration.FacebookPage page) -> page.pageName)
+
+                syncedRows =
+                    instance.syncDestinations
+                        |> List.map (\sd -> { id = sd.eventSyncDestinationId, url = sd.destinationUrl })
+
+                syncedIds =
+                    syncedRows |> List.map .id
+
+                notYetSyncedRows =
+                    availableDestinations
+                        |> List.filter (\d -> not (List.member d.id syncedIds))
+                        |> List.map (\d -> { id = d.id, url = Nothing })
+
+                rows =
+                    syncedRows ++ notYetSyncedRows
+            in
+            if List.isEmpty rows then
+                text ""
+
+            else
+                div [ class "event-card-sync-destinations" ]
+                    (rows |> List.map (eventCardSyncDestinationRowView destinationName isPushing pushError onPush))
+
+
+eventCardSyncDestinationRowView :
+    (String -> Maybe String)
+    -> (String -> Bool)
+    -> (String -> Maybe String)
+    -> (String -> msg)
+    -> { id : String, url : Maybe String }
+    -> Html msg
+eventCardSyncDestinationRowView destinationName isPushing pushError onPush row =
+    let
+        pushing =
+            isPushing row.id
+
+        label =
+            if pushing then
+                "Pushing…"
+
+            else if row.url == Nothing then
+                "Push"
+
+            else
+                "Push again"
+    in
+    div [ class "event-card-sync-destination-row" ]
+        [ span [ class "event-card-sync-destination-name" ]
+            [ text (destinationName row.id |> Maybe.withDefault "Facebook Page") ]
+        , case row.url of
+            Just url ->
+                a
+                    [ href url
+                    , target "_blank"
+                    , rel "noopener noreferrer"
+                    , class "event-card-sync-destination-link"
+                    ]
+                    [ text url ]
+
+            Nothing ->
+                text ""
+        , button
+            [ class "event-card-sync-destination-push"
+            , onClick (onPush row.id)
+            , disabled pushing
+            ]
+            [ text label ]
+        , case pushError row.id of
+            Just err ->
+                div [ class "event-card-sync-destination-push-error" ] [ text err ]
+
+            Nothing ->
+                text ""
+        ]
+
+
 {-| A compact, read-only card for one `(Event, EventInstance)` pair --
 `Components.Pages.EventsPage`'s per-item rendering, centered on `instance`
 (its own start/end/location) the same way `Pages.Event.EventId_`'s detail view
@@ -454,6 +633,18 @@ class, mirroring `post-card-current`) instead of the default
 caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 `Components.Pages.EventsPage`'s own listing always passes `False`.
 
+`showSyncSource`/`showSyncDestinations` gate `eventSyncSourceView event`/
+`eventSyncDestinationsView` at the bottom of the card -- mirrors
+`Components.Pages.EventsPage.Model`'s own `showSyncSources`/
+`showSyncDestinations` fields, which `EventsPage.eventCardView` threads
+straight through.
+
+`availableSyncDestinations`/`isPushing`/`pushError`/`onPush` thread straight
+into `eventSyncDestinationsView`'s own params of the same name/shape -- see
+that function's own doc. `availableSyncDestinations` is `Nothing` for every
+caller except `Components.Pages.UserProfilePage`'s embedded events feed, so
+push controls render nowhere else.
+
 -}
 eventCard :
     SharedTime.Model
@@ -467,10 +658,16 @@ eventCard :
     -> Bool
     -> Maybe msg
     -> Bool
+    -> Bool
+    -> Bool
+    -> Maybe (List EventSyncDestination)
+    -> (String -> Bool)
+    -> (String -> Maybe String)
+    -> (String -> msg)
     -> Event
     -> EventInstance
     -> Html msg
-eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
+eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current showSyncSource showSyncDestinations availableSyncDestinations isPushing pushError onPush event instance =
     case event.post of
         Nothing ->
             text ""
@@ -564,4 +761,14 @@ eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccou
                         Nothing ->
                             text ""
                     ]
+                , if showSyncSource then
+                    eventSyncSourceView event
+
+                  else
+                    text ""
+                , if showSyncDestinations then
+                    eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush instance
+
+                  else
+                    text ""
                 ]
