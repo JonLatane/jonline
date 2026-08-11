@@ -10,13 +10,13 @@ package jonline;
 enum Permission {
   // A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.)
   PERMISSION_UNKNOWN = 0;
-  // Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
-  // Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).
+  // Allow the user to view profiles with `SERVER_PUBLIC` Visibility.
+  // Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visibility (when configured as an anonymous user permission).
   VIEW_USERS = 1;
-  // Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
+  // Allow the user to publish profiles with `SERVER_PUBLIC` Visibility.
   // This generally only applies to the user's own profile, except for Admins.
   PUBLISH_USERS_LOCALLY = 2;
-  // Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
+  // Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility.
   // This generally only applies to the user's own profile, except for Admins.
   PUBLISH_USERS_GLOBALLY = 3;
   // Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS`
@@ -78,6 +78,9 @@ enum Permission {
   RSVP_TO_EVENTS = 35;
   // Allow the user to synchronize events from outside sources.
   SYNCHRONIZE_EVENTS = 36;
+  // Allow the user to create/update `EventSyncDestination`s that cross-post EventInstances to a
+  // connected Facebook Page, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_FACEBOOK = 37;
 
   // Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
   // Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -90,6 +93,9 @@ enum Permission {
   PUBLISH_MEDIA_GLOBALLY = 43;
   // Allow the user to moderate events.
   MODERATE_MEDIA = 44;
+
+  READ_PERSONAL_MESSAGES = 50;
+  READ_ALL_SYSTEM_MESSAGES = 51;
 
   // Indicates the user is a business. Used purely for display purposes.
   BUSINESS = 9998;

@@ -20,45 +20,38 @@ pub async fn get_and_test_bucket() -> Result<Box<Bucket>, S3Error> {
         ))
     })?;
 
-    let mut bucket = get_bucket()?;
+    let bucket = get_bucket()?;
 
     let s3_path = "test.file";
     let test = b"I'm going to S3!";
 
-    let response_data = bucket.put_object(s3_path, test).await;
-    match response_data.as_ref() {
-        Err(e) => {
-            if e.to_string().contains("NoSuchBucket") {
-                log::warn!("MinIO bucket does not exist, attempting to create");
-                let new_bucket = Bucket::create_with_path_style(
-                    bucket.name.as_str(),
-                    bucket.region.clone(),
-                    Credentials {
-                        access_key: Some(minio_access_key.to_owned()),
-                        secret_key: Some(minio_secret_key.to_owned()),
-                        security_token: None,
-                        expiration: None,
-                        session_token: None,
-                    },
-                    BucketConfiguration::public(),
-                )
-                .await;
-                match new_bucket {
-                    Ok(_) => {
-                        log::warn!("MinIO bucket created");
-                        bucket = get_bucket()?;
-                        bucket.put_object(s3_path, test).await?;
-                    }
-                    Err(e) => {
-                        log::error!("Failed to create MinIO Bucket: {:?}", e);
-                        return Err(e);
-                    }
-                }
-            } //else {
-              //     return Err(*e);
-              // }
+    // `Bucket` is just a config struct (name/region/credentials), not a live connection, so
+    // it doesn't need to be reconstructed after creating the bucket below -- the same `bucket`
+    // can be reused for the retried `put_object`.
+    let response_data = match bucket.put_object(s3_path, test).await {
+        Err(e) if e.to_string().contains("NoSuchBucket") => {
+            log::warn!("MinIO bucket does not exist, attempting to create");
+            Bucket::create_with_path_style(
+                bucket.name.as_str(),
+                bucket.region.clone(),
+                Credentials {
+                    access_key: Some(minio_access_key.to_owned()),
+                    secret_key: Some(minio_secret_key.to_owned()),
+                    security_token: None,
+                    expiration: None,
+                    session_token: None,
+                },
+                BucketConfiguration::public(),
+            )
+            .await
+            .map_err(|e| {
+                log::error!("Failed to create MinIO Bucket: {:?}", e);
+                e
+            })?;
+            log::warn!("MinIO bucket created");
+            bucket.put_object(s3_path, test).await
         }
-        _ => {}
+        other => other,
     };
     assert_eq!(response_data?.status_code(), 200);
 

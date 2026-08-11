@@ -31,6 +31,9 @@ pub use group_marshaling::*;
 mod post_marshaling;
 pub use post_marshaling::*;
 
+mod message_marshaling;
+pub use message_marshaling::*;
+
 mod link_marshaling;
 pub use link_marshaling::*;
 

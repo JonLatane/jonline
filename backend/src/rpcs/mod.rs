@@ -19,11 +19,17 @@ pub use groups::*;
 pub mod posts;
 pub use posts::*;
 
+pub mod messages;
+pub use messages::*;
+
 pub mod events;
 pub use events::*;
 
 pub mod event_sync_sources;
 pub use event_sync_sources::*;
+
+pub mod event_sync_destinations;
+pub use event_sync_destinations::*;
 
 mod federation;
 pub use federation::*;

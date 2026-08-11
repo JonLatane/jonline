@@ -3,6 +3,8 @@ port module Ports exposing
     , clearFederatedAuthKeyPair
     , copyToClipboard
     , elementsMeasured
+    , facebookLoginPopup
+    , facebookLoginResult
     , federatedAuthDecrypt
     , federatedAuthDecrypted
     , federatedAuthEncrypt
@@ -151,6 +153,28 @@ port copyToClipboard : String -> Cmd msg
 open (relevant only in "auto" mode).
 -}
 port systemPrefersDarkChanged : (Bool -> msg) -> Sub msg
+
+
+{-| Opens a Facebook OAuth login popup for `Components.EventSyncDestinations` (via
+`Components.Pages.UserProfilePage`'s "Sign in to Facebook Page" button), for the given Facebook
+App ID. Deliberately hand-rolled (a plain `window.open` at Facebook's own OAuth dialog URL, with
+our own tiny static `facebook-callback.html` as the `redirect_uri`) rather than loading Facebook's
+JS SDK -- see `public/index.html`'s subscription for why: the popup has to open synchronously
+inside the click that requested it to reliably avoid being blocked (especially on mobile Safari),
+and loading a third-party SDK first would introduce an async gap that breaks that. The result
+arrives via `facebookLoginResult`.
+-}
+port facebookLoginPopup : String -> Cmd msg
+
+
+{-| `{ ok : Bool, value : String }` -- on success, `value` is a short-lived Facebook user access
+token (to send straight through as `FacebookPage.shortLivedUserAccessToken` on
+`CreateEventSyncDestination`; the backend exchanges it server-side and never stores/returns it as
+given). On failure, `value` is either `"cancelled"` (the user closed the popup without finishing)
+or a human-readable error message -- callers should treat `"cancelled"` as "silently go back to
+not-logged-in," not as an error to display.
+-}
+port facebookLoginResult : (Encode.Value -> msg) -> Sub msg
 
 
 

@@ -15,20 +15,26 @@ import {
   ResetPasswordRequest,
 } from "./authentication";
 import {
+  DeleteEventSyncDestinationRequest,
   DeleteEventSyncSourceRequest,
   Event,
   EventAttendance,
   EventAttendances,
+  EventInstance,
+  EventSyncDestination,
   EventSyncSource,
   GetEventAttendancesRequest,
   GetEventsRequest,
   GetEventsResponse,
+  GetEventSyncDestinationsResponse,
   GetEventSyncSourcesResponse,
+  SyncEventInstanceRequest,
 } from "./events";
 import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse, Media } from "./media";
+import { GetMessagesRequest, GetMessagesResponse, Message, SendMessageRequest } from "./messages";
 import {
   GetGroupPostsRequest,
   GetGroupPostsResponse,
@@ -43,11 +49,25 @@ import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./u
 export const protobufPackage = "jonline";
 
 /**
- * A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
- * The bulk of these docs involve the [gRPC API](#grpc-api) (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
- * [media files](#jonline-Media), and a [`backend_host` resource for client/host negotiation](#http-based-client-host-negotiation-for-external-cdns).
- * Jonline serves up a few other [HTTP endpoints](#http-endpoints), providing a `/sitemap.xml`, `/robots.txt`, iCal/RFC5545 subscription endpoints, and more,
- * but these are essentially accessories to the core APIs.
+ * Jonline is a social media protocol with support for Posts, Events, Users, Groups, Media and Messages. It is designed to be federated, but does not require federation.
+ * It is designed to be used with a variety of frontends, including web, mobile, and desktop applications. It interoperates across numerous ports, protocols, and formats, including
+ * gRPC, HTTP, HTTPS, and ICS/iCal, and is designed to link with SMTP via Stalwart (and other SMTP servers/providers), Facebook Page APIs for post ing Events, and more.
+ * Essentially, your server is your own customizable, self-contained social network.
+ *
+ * Jonline is designed to be easy to run and deploy yourself with a [2 minute setup with Homebrew](#2-minute-startup-with-homebrew) and [3 minute setup on Linux](#3-minute-startup-on-linux),
+ * [images](https://hub.docker.com/r/jonlatane/jonline/tags) on [DockerHub](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags) and deployment to your K8s clusters available via
+ * a simple but powerful `Makefile`-based design language.
+ *
+ * #### Ports
+ * Jonline servers interact across several ports:
+ * * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+ *      * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
+ * * [HTTP (80, 8000, 27705), HTTPS (443)](#http-endpoints) - The main Jonline HTTP API. This is used for some endpoints, including media upload/download, and for negotiating the gRPC host.
+ *      * Port 443 will serve up a secure HTTPS server. If it fails to startup, Jonline handles this gracefully and degrades to plain HTTP.
+ *      * Port 80 will serve up either an unsecured set of Jonline's HTTP endpoints, or a redirect to the HTTPS/443 server if that one launched successfully.
+ *      * Port 8000 *always* serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.
+ *      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
+ *          * Currently this just has an `/email` endpoint. It is designed for [email support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
  *
  * #### Authentication
  * Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
@@ -60,7 +80,7 @@ export const protobufPackage = "jonline";
  * may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
  * one in client storage.)
  *
- * #### Dumfederation
+ * #### Federation
  * Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
  * Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
  * "nice to have" features require it, so it is not used.
@@ -97,6 +117,9 @@ export const protobufPackage = "jonline";
  *
  * ##### Robots & Sitemap (`GET /robots.txt` and `GET /sitemap.xml`)
  * Jonline servers are expected to serve a `robots.txt` file at `/robots.txt` and a `sitemap.xml` file at `/sitemap.xml`.
+ *
+ * ##### Favicons (`GET /favicon.ico`, `GET /favicon.png`)
+ * Favicons in a couple of formats.
  *
  * ##### Media (`GET /media/{id}` and `POST /media`)
  * See the [Media](#jonline-Media) section for details on how to upload/download media files.
@@ -271,6 +294,34 @@ export const JonlineDefinition = {
       requestType: User,
       requestStream: false,
       responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+     * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+     * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+     */
+    sendMessage: {
+      name: "SendMessage",
+      requestType: SendMessageRequest,
+      requestStream: false,
+      responseType: Message,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Gets Messages. *Authenticated.*
+     * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+     * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+     * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+     * every Message on the server.
+     */
+    getMessages: {
+      name: "GetMessages",
+      requestType: GetMessagesRequest,
+      requestStream: false,
+      responseType: GetMessagesResponse,
       responseStream: false,
       options: {},
     },
@@ -560,6 +611,51 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
+    getEventSyncDestinations: {
+      name: "GetEventSyncDestinations",
+      requestType: User,
+      requestStream: false,
+      responseType: GetEventSyncDestinationsResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    createEventSyncDestination: {
+      name: "CreateEventSyncDestination",
+      requestType: EventSyncDestination,
+      requestStream: false,
+      responseType: EventSyncDestination,
+      responseStream: false,
+      options: {},
+    },
+    /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    updateEventSyncDestination: {
+      name: "UpdateEventSyncDestination",
+      requestType: EventSyncDestination,
+      requestStream: false,
+      responseType: EventSyncDestination,
+      responseStream: false,
+      options: {},
+    },
+    /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
+    deleteEventSyncDestination: {
+      name: "DeleteEventSyncDestination",
+      requestType: DeleteEventSyncDestinationRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    syncEventInstance: {
+      name: "SyncEventInstance",
+      requestType: SyncEventInstanceRequest,
+      requestStream: false,
+      responseType: EventInstance,
+      responseStream: false,
+      options: {},
+    },
     /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
@@ -697,6 +793,23 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
    * Deleting other users requires `ADMIN` permissions.
    */
   deleteUser(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  /**
+   * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+   * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+   * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+   */
+  sendMessage(request: SendMessageRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Message>>;
+  /**
+   * Gets Messages. *Authenticated.*
+   * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+   * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+   * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+   * every Message on the server.
+   */
+  getMessages(
+    request: GetMessagesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetMessagesResponse>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -798,6 +911,31 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: DeleteEventSyncSourceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
+  /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
+  getEventSyncDestinations(
+    request: User,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetEventSyncDestinationsResponse>>;
+  /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  createEventSyncDestination(
+    request: EventSyncDestination,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EventSyncDestination>>;
+  /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  updateEventSyncDestination(
+    request: EventSyncDestination,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EventSyncDestination>>;
+  /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
+  deleteEventSyncDestination(
+    request: DeleteEventSyncDestinationRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
+  /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  syncEventInstance(
+    request: SyncEventInstanceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EventInstance>>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
@@ -890,6 +1028,23 @@ export interface JonlineClient<CallOptionsExt = {}> {
    * Deleting other users requires `ADMIN` permissions.
    */
   deleteUser(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  /**
+   * Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly
+   * accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via
+   * a standard `access_token`; unauthenticated calls are simply sent with no `sender`.
+   */
+  sendMessage(request: DeepPartial<SendMessageRequest>, options?: CallOptions & CallOptionsExt): Promise<Message>;
+  /**
+   * Gets Messages. *Authenticated.*
+   * `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the
+   * `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received.
+   * `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns
+   * every Message on the server.
+   */
+  getMessages(
+    request: DeepPartial<GetMessagesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetMessagesResponse>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -991,6 +1146,31 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<DeleteEventSyncSourceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
+  /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
+  getEventSyncDestinations(
+    request: DeepPartial<User>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetEventSyncDestinationsResponse>;
+  /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  createEventSyncDestination(
+    request: DeepPartial<EventSyncDestination>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EventSyncDestination>;
+  /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  updateEventSyncDestination(
+    request: DeepPartial<EventSyncDestination>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EventSyncDestination>;
+  /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
+  deleteEventSyncDestination(
+    request: DeepPartial<DeleteEventSyncDestinationRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  syncEventInstance(
+    request: DeepPartial<SyncEventInstanceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EventInstance>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: DeepPartial<GetEventAttendancesRequest>,

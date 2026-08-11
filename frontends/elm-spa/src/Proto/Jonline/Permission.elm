@@ -105,6 +105,9 @@ fieldNumbersPermission n_ =
         SYNCHRONIZEEVENTS ->
             36
 
+        SYNCEVENTSTOFACEBOOK ->
+            37
+
         VIEWMEDIA ->
             40
 
@@ -119,6 +122,12 @@ fieldNumbersPermission n_ =
 
         MODERATEMEDIA ->
             44
+
+        READPERSONALMESSAGES ->
+            50
+
+        READALLSYSTEMMESSAGES ->
+            51
 
         BUSINESS ->
             9998
@@ -232,6 +241,9 @@ encodePermission value =
             SYNCHRONIZEEVENTS ->
                 36
 
+            SYNCEVENTSTOFACEBOOK ->
+                37
+
             VIEWMEDIA ->
                 40
 
@@ -246,6 +258,12 @@ encodePermission value =
 
             MODERATEMEDIA ->
                 44
+
+            READPERSONALMESSAGES ->
+                50
+
+            READALLSYSTEMMESSAGES ->
+                51
 
             BUSINESS ->
                 9998
@@ -353,6 +371,9 @@ decodePermission =
                     36 ->
                         SYNCHRONIZEEVENTS
 
+                    37 ->
+                        SYNCEVENTSTOFACEBOOK
+
                     40 ->
                         VIEWMEDIA
 
@@ -367,6 +388,12 @@ decodePermission =
 
                     44 ->
                         MODERATEMEDIA
+
+                    50 ->
+                        READPERSONALMESSAGES
+
+                    51 ->
+                        READALLSYSTEMMESSAGES
 
                     9998 ->
                         BUSINESS
@@ -416,11 +443,14 @@ type Permission
     | MODERATEEVENTS
     | RSVPTOEVENTS
     | SYNCHRONIZEEVENTS
+    | SYNCEVENTSTOFACEBOOK
     | VIEWMEDIA
     | CREATEMEDIA
     | PUBLISHMEDIALOCALLY
     | PUBLISHMEDIAGLOBALLY
     | MODERATEMEDIA
+    | READPERSONALMESSAGES
+    | READALLSYSTEMMESSAGES
     | BUSINESS
     | RUNBOTS
     | ADMIN

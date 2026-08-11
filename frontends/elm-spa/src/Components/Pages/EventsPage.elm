@@ -1515,12 +1515,11 @@ searchRowView model =
             [ type_ "text"
             , class "filter-search-input"
             , placeholder <|
-                case model.mode of
-                    HorizontalList ->
-                        "Search posts and events..."
+                if model.embeddedPage then
+                    "Search posts and events..."
 
-                    _ ->
-                        "Search events..."
+                else
+                    "Search events..."
             , value model.searchText
             , onInput SearchTextChanged
             , onEscape ClearSearchClicked
@@ -1726,7 +1725,15 @@ own doc for how this was diagnosed.
 eventsListView : Shared.Model -> Model -> Html Msg
 eventsListView shared model =
     if Dict.isEmpty model.eventsByServer then
-        p [ class "posts-empty" ] [ text "Connect to a server to see upcoming events." ]
+        p [ class "posts-empty" ]
+            [ text <|
+                case model.tab of
+                    UpcomingEvents ->
+                        "Connect to a server to see upcoming events."
+
+                    EventsAfterDate ->
+                        "Connect to a server to see events."
+            ]
 
     else
         let
@@ -1734,7 +1741,15 @@ eventsListView shared model =
                 visibleAnimations model
         in
         if List.isEmpty animations then
-            p [ class "posts-empty" ] [ text "No upcoming events." ]
+            p [ class "posts-empty" ]
+                [ text <|
+                    case model.tab of
+                        UpcomingEvents ->
+                            "No upcoming events."
+
+                        EventsAfterDate ->
+                            "No events."
+                ]
 
         else
             let

@@ -6,14 +6,16 @@ use std::time::SystemTime;
 
 use diesel::*;
 use diesel_migrations::MigrationHarness;
+use s3::Bucket;
 
 use crate::db_connection::{establish_test_pool, PgPool, PgPooledConnection, MIGRATIONS};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{
-    event_attendances, event_instances, event_sync_sources, events, follows, group_posts, groups,
-    memberships, posts, users,
+    event_attendances, event_instance_sync_destinations, event_instances, event_sync_destinations,
+    event_sync_sources, events, follows, group_posts, groups, media, memberships, messages, posts,
+    server_configurations, users,
 };
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
@@ -204,6 +206,65 @@ pub fn create_post(
         .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)
         .expect("failed to create test post")
+}
+
+pub struct MessageOpts {
+    pub subject: Option<String>,
+    pub body_text: Option<String>,
+    /// Overrides `created_at`, which otherwise defaults to `NOW()` - frozen for the lifetime of a
+    /// Postgres transaction, so specs asserting on `GetMessages`' recency ordering need distinct,
+    /// explicit timestamps (mirroring `PostOpts::created_at`).
+    pub created_at: Option<SystemTime>,
+}
+
+impl Default for MessageOpts {
+    fn default() -> Self {
+        MessageOpts {
+            subject: Some("Test Subject".to_string()),
+            body_text: Some("Test body".to_string()),
+            created_at: None,
+        }
+    }
+}
+
+/// Creates a `Message` from `sender` (`None` for an anonymous/inbound-email-style Message) to
+/// `to_users`, reusing (or creating) their `MessagingGroup` - the sender is folded into the group
+/// too, mirroring `send_message.rs`'s own behavior.
+pub fn create_message(
+    conn: &mut PgPooledConnection,
+    sender: Option<&models::User>,
+    to_users: &[&models::User],
+    opts: MessageOpts,
+) -> models::Message {
+    let mut group_user_ids: Vec<i64> = to_users.iter().map(|u| u.id).collect();
+    if let Some(sender) = sender {
+        group_user_ids.push(sender.id);
+    }
+    let messaging_group_id = models::find_or_create_messaging_group(group_user_ids, conn)
+        .expect("failed to create test messaging group");
+
+    let message = insert_into(messages::table)
+        .values(&models::NewMessage {
+            from_user_id: sender.map(|u| u.id),
+            subject: opts.subject,
+            body_text: opts.body_text,
+            email_headers: None,
+            email_message_id: None,
+            email_minio_path: None,
+            messaging_group_id,
+        })
+        .returning(models::MESSAGE_COLUMNS)
+        .get_result::<models::Message>(conn)
+        .expect("failed to create test message");
+
+    let Some(created_at) = opts.created_at else {
+        return message;
+    };
+    diesel::update(messages::table.filter(messages::id.eq(message.id)))
+        .set(messages::created_at.eq(created_at))
+        .returning(models::MESSAGE_COLUMNS)
+        .get_result::<models::Message>(conn)
+        .expect("failed to update test message")
 }
 
 pub struct GroupOpts {
@@ -522,4 +583,211 @@ pub fn serve_ics(ics_text: &str) -> String {
         }
     });
     format!("http://127.0.0.1:{port}/test.ics")
+}
+
+/// Inserts an `event_sync_destinations` row directly (bypassing `rpcs::create_event_sync_destination`,
+/// so no Facebook OAuth exchange happens) -- for specs that only care about ownership/permission
+/// handling. Specs exercising the actual Facebook Graph API calls should go through
+/// `logic::facebook_sync`'s `_at` functions against `serve_facebook_graph_api` instead.
+pub fn create_event_sync_destination_row(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    page_id: &str,
+) -> models::EventSyncDestination {
+    insert_into(event_sync_destinations::table)
+        .values(&models::NewEventSyncDestination {
+            user_id: user.id,
+            configuration: serde_json::json!({
+                "facebook_page": {
+                    "page_id": page_id,
+                    "page_name": "Test Page",
+                    "access_token": "test-page-access-token",
+                }
+            }),
+        })
+        .get_result::<models::EventSyncDestination>(conn)
+        .expect("failed to create test event sync destination")
+}
+
+/// Inserts an `event_instance_sync_destinations` row directly -- simulates a successful
+/// `SyncEventInstance` without going through the RPC (which always hits the real Facebook Graph
+/// API -- see `event_sync_destination_rpc_tests`' own note on that).
+pub fn create_event_instance_sync_destination_row(
+    conn: &mut PgPooledConnection,
+    instance: &models::EventInstance,
+    destination: &models::EventSyncDestination,
+) {
+    insert_into(event_instance_sync_destinations::table)
+        .values(&models::NewEventInstanceSyncDestination {
+            event_instance_id: instance.id,
+            event_sync_destination_id: destination.id,
+            destination_instance_id: Some("test-post-id".to_string()),
+            destination_url: Some("https://www.facebook.com/test-post-id".to_string()),
+            synced_at: Some(SystemTime::now()),
+        })
+        .execute(conn)
+        .expect("failed to create test event instance sync destination");
+}
+
+/// Inserts an active `server_configurations` row with `federation_info.facebook_auth_config` set
+/// to `app_id`/`app_secret` -- lets specs exercise `logic::server_facebook_app_credentials` (and
+/// RPCs that call it, like `create_event_sync_destination`) without going through
+/// `ConfigureServer`'s own merge logic.
+pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_secret: &str) {
+    let mut new_config = models::default_server_configuration();
+    new_config.federation_info = serde_json::to_value(FederationInfo {
+        servers: vec![],
+        facebook_auth_config: Some(FacebookAuthConfig {
+            app_id: app_id.to_string(),
+            app_secret: app_secret.to_string(),
+        }),
+    })
+    .unwrap();
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// Inserts a `media` row directly (bypassing the `/media` upload endpoint, which lives outside
+/// the gRPC/`rpcs` layer entirely). Doesn't touch MinIO -- pair with `TestBucket::put_object` (via
+/// `test_bucket()`) when a spec needs a real object at `minio_path` to verify gets cleaned up.
+pub fn create_media(
+    conn: &mut PgPooledConnection,
+    author: Option<&models::User>,
+    minio_path: &str,
+) -> models::Media {
+    insert_into(media::table)
+        .values(&models::NewMedia {
+            user_id: author.map(|u| u.id),
+            minio_path: minio_path.to_string(),
+            content_type: "image/png".to_string(),
+            name: None,
+            description: None,
+            generated: false,
+            visibility: Visibility::ServerPublic.to_string_visibility(),
+            metadata: serde_json::json!({}),
+        })
+        .get_result::<models::Media>(conn)
+        .expect("failed to create test media")
+}
+
+/// Sets `media.converted_sizes` directly -- `create_media` always starts with none (matching a
+/// freshly-uploaded, not-yet-`convert_media_sizes`-processed row), and specs covering
+/// `delete_media`'s MinIO cleanup need converted copies present to prove they get deleted too.
+pub fn set_converted_sizes(
+    conn: &mut PgPooledConnection,
+    test_media: &models::Media,
+    converted_sizes: models::ConvertedSizes,
+) -> models::Media {
+    diesel::update(media::table.filter(media::id.eq(test_media.id)))
+        .set(media::converted_sizes.eq(serde_json::to_value(converted_sizes).unwrap()))
+        .get_result::<models::Media>(conn)
+        .expect("failed to set test media converted_sizes")
+}
+
+/// A live connection to the MinIO bucket configured by the `MINIO_*` env vars (see `.env`), plus
+/// the single Tokio runtime used to drive it. Specs proving `delete_media`/`delete_user` actually
+/// clean up MinIO objects need a real bucket -- `rust-s3`'s async client isn't mockable -- and
+/// need to run those RPCs' `.await` points from *somewhere*, but the rest of the test harness
+/// (`test_conn`/`test_transaction`) is entirely synchronous. Every await for a given spec should
+/// go through this same runtime, and every spec should share the same `Bucket` -- besides the
+/// (real, tokio-bound) cross-runtime concerns, `get_and_test_bucket` sanity-checks the connection
+/// with a put/get/head/delete round trip against a *fixed* `"test.file"` key, so calling it fresh
+/// per-spec races those round trips against each other under `cargo test`'s parallel threads.
+/// `test_bucket` therefore hands out a single process-wide connection (`lazy_static`, same trick
+/// `test_conn`'s `POOL` uses) instead of dialing MinIO anew for every spec.
+fn block_on<F: std::future::Future>(fut: F) -> F::Output {
+    lazy_static! {
+        static ref RUNTIME: tokio::runtime::Runtime =
+            tokio::runtime::Runtime::new().expect("failed to create test tokio runtime");
+    }
+    RUNTIME.block_on(fut)
+}
+
+pub struct TestBucket {
+    pub bucket: &'static Bucket,
+}
+
+impl TestBucket {
+    pub fn block_on<F: std::future::Future>(&self, fut: F) -> F::Output {
+        block_on(fut)
+    }
+
+    /// Whether an object exists at `minio_path` -- used to assert deletion actually happened.
+    pub fn object_exists(&self, minio_path: &str) -> bool {
+        self.block_on(self.bucket.get_object(minio_path)).is_ok()
+    }
+}
+
+pub fn test_bucket() -> TestBucket {
+    lazy_static! {
+        static ref BUCKET: Box<Bucket> = {
+            // `test_conn`/`establish_test_pool` load `.env` (via `dotenv()`) before reading
+            // `TEST_DATABASE_URL`; `minio_connection::get_and_test_bucket` doesn't load `.env`
+            // itself, and callers may reach for a bucket before ever calling `test_conn`, so do
+            // it here too.
+            dotenv::dotenv().ok();
+            block_on(crate::minio_connection::get_and_test_bucket()).expect(
+                "failed to connect to test MinIO bucket -- is MinIO running? (`docker compose up minio`, or the full dev stack)",
+            )
+        };
+    }
+    TestBucket { bucket: &BUCKET }
+}
+
+/// Starts a background thread serving canned Facebook Graph API JSON responses (mirrors
+/// `serve_ics`, but routes by request path since `logic::facebook_sync` hits different endpoints
+/// depending on which step it's on): `/oauth/access_token` returns a long-lived user token,
+/// `/me/accounts` returns `page` as the (fake) user's one managed Page (or none, if `page` is
+/// `None` -- for testing the "page not managed by this user" error path), and anything else (the
+/// `/{page_id}/feed` post) returns `post_id`. Returns the `http://127.0.0.1:<port>` base URL to
+/// pass as `logic::facebook_sync`'s `base_url` param.
+pub fn serve_facebook_graph_api(page: Option<(&str, &str, &str)>, post_id: &str) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener =
+        TcpListener::bind("127.0.0.1:0").expect("failed to bind test Facebook Graph API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Facebook Graph API server port")
+        .port();
+    let page = page.map(|(id, name, token)| (id.to_string(), name.to_string(), token.to_string()));
+    let post_id = post_id.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let body = if request_line.contains("/oauth/access_token") {
+                serde_json::json!({
+                    "access_token": "long-lived-user-token",
+                    "token_type": "bearer",
+                    "expires_in": 5_184_000,
+                })
+            } else if request_line.contains("/me/accounts") {
+                let data = match &page {
+                    Some((id, name, token)) => {
+                        serde_json::json!([{ "id": id, "name": name, "access_token": token }])
+                    }
+                    None => serde_json::json!([]),
+                };
+                serde_json::json!({ "data": data })
+            } else {
+                serde_json::json!({ "id": post_id })
+            };
+            let body = body.to_string();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
 }

@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use super::{
-    Author, Event, EventAttendance, EventInstance, EventSyncSource, Post, User, AUTHOR_COLUMNS,
-    EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
+    Author, Event, EventAttendance, EventInstance, EventInstanceSyncDestination,
+    EventSyncDestination, EventSyncSource, Post, User, AUTHOR_COLUMNS, EVENT_INSTANCE_COLUMNS,
+    POST_COLUMNS,
 };
 use diesel::{
-    dsl::sql,
+    dsl::{count_star, sql},
     sql_types::{Bool, Text},
     *,
 };
@@ -13,7 +16,8 @@ use crate::{
     db_connection::PgPooledConnection,
     // protos::Author,
     schema::{
-        event_attendances, event_instances, event_sync_sources, events, follows, posts, users,
+        event_attendances, event_instance_sync_destinations, event_instances,
+        event_sync_destinations, event_sync_sources, events, follows, posts, users,
     },
 };
 
@@ -60,6 +64,79 @@ pub fn get_event_sync_sources_by_ids(
         .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
         .filter(event_sync_sources::id.eq_any(ids))
         .load::<(EventSyncSource, Author)>(conn)
+        .unwrap_or_default()
+}
+
+pub fn get_event_sync_destination(
+    id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<EventSyncDestination, Status> {
+    event_sync_destinations::table
+        .select(event_sync_destinations::all_columns)
+        .filter(event_sync_destinations::id.eq(id))
+        .first::<EventSyncDestination>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "event_sync_destination_not_found"))
+}
+
+pub fn get_event_sync_destinations_for_user(
+    user_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<(EventSyncDestination, Author)>, Status> {
+    event_sync_destinations::table
+        .inner_join(users::table.on(event_sync_destinations::user_id.eq(users::id)))
+        .select((event_sync_destinations::all_columns, AUTHOR_COLUMNS))
+        .filter(event_sync_destinations::user_id.eq(user_id))
+        .order(event_sync_destinations::created_at.desc())
+        .load::<(EventSyncDestination, Author)>(conn)
+        .map_err(|e| {
+            log::error!(
+                "Failed to load event sync destinations for user_id={}: {:?}",
+                user_id,
+                e
+            );
+            Status::new(Code::Internal, "failed_to_load_event_sync_destinations")
+        })
+}
+
+/// The number of EventInstances synced to each of `destination_ids` so far, batched into one
+/// `GROUP BY` query (mirrors `get_events.rs`'s `attach_event_instance_attendances`: fetch the
+/// primary rows first, then attach a derived count/list in a second, batched query rather than
+/// one query per row) -- see `marshaling::attach_synced_event_instance_counts`, which mutates
+/// already-built `EventSyncDestination` protos with this. A destination with zero synced
+/// instances is simply absent from the result map (no row to group), so callers should treat a
+/// missing key as `0`.
+pub fn get_event_sync_destination_synced_counts(
+    destination_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> HashMap<i64, i64> {
+    if destination_ids.is_empty() {
+        return HashMap::new();
+    }
+    event_instance_sync_destinations::table
+        .filter(event_instance_sync_destinations::event_sync_destination_id.eq_any(destination_ids))
+        .group_by(event_instance_sync_destinations::event_sync_destination_id)
+        .select((
+            event_instance_sync_destinations::event_sync_destination_id,
+            count_star(),
+        ))
+        .load::<(i64, i64)>(conn)
+        .unwrap_or_default()
+        .into_iter()
+        .collect()
+}
+
+/// Loads sync status rows for a set of EventInstances, keyed for `event_marshaling` to group by
+/// `event_instance_id`.
+pub fn get_event_instance_sync_destinations(
+    event_instance_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Vec<EventInstanceSyncDestination> {
+    if event_instance_ids.is_empty() {
+        return vec![];
+    }
+    event_instance_sync_destinations::table
+        .filter(event_instance_sync_destinations::event_instance_id.eq_any(event_instance_ids))
+        .load::<EventInstanceSyncDestination>(conn)
         .unwrap_or_default()
 }
 

@@ -41,8 +41,18 @@ pub trait ToProtoServerConfiguration {
 impl ToProtoServerConfiguration for models::ServerConfiguration {
     fn to_proto(&self) -> ServerConfiguration {
         let server_info: ServerInfo = serde_json::from_value(self.server_info.to_owned()).unwrap();
-        let federation_info: FederationInfo =
+        let mut federation_info: FederationInfo =
             serde_json::from_value(self.federation_info.to_owned()).unwrap();
+        // `FacebookAuthConfig.app_secret` is write-only -- never send the real value to a
+        // client. See `configure_server`'s merge logic for how a blank incoming value is kept
+        // from clobbering the stored secret.
+        federation_info.facebook_auth_config =
+            federation_info
+                .facebook_auth_config
+                .map(|c| FacebookAuthConfig {
+                    app_secret: String::new(),
+                    ..c
+                });
         let group_settings: FeatureSettings =
             serde_json::from_value(self.group_settings.to_owned()).unwrap();
         let people_settings: FeatureSettings =

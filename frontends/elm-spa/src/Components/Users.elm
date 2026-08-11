@@ -6,6 +6,7 @@ module Components.Users exposing
     , createFollow
     , defederateProfile
     , deleteFollow
+    , deleteUser
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
@@ -239,6 +240,33 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.defederateProfile target
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Deletes `user` outright (`DeleteUser`, self-or-Admin gated server-side,
+see `backend/src/rpcs/users/delete_user.rs`) -- unlike
+`Components.Posts.deletePost`/`Components.Events.deleteEvent` (whose backend
+handlers only ever look at `request.id`), `delete_user.rs` runs the _whole_
+request through `validate_user` first, so a bare `{ defaultUser | id = ... }`
+gets rejected (empty `username`, `Visibility::Unknown`, etc.) -- this takes
+the already-loaded `User` (as held by `Resolver.Loaded`/`Shared.ConfirmUserDelete`)
+and sends it through as-is instead. Used by
+`Components.Pages.UserProfilePage`'s own Delete User button.
+-}
+deleteUser :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> User
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty )
+deleteUser accountsPanelModel maybeAccountServer user =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deleteUser user
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -738,6 +766,15 @@ permissionText permission =
         VIEWPRIVATECONTACTMETHODS ->
             "View Private Contact Methods"
 
+        SYNCEVENTSTOFACEBOOK ->
+            "Sync Events To Facebook"
+
+        READPERSONALMESSAGES ->
+            "Read Personal Messages"
+
+        READALLSYSTEMMESSAGES ->
+            "Read All System Messages"
+
         PermissionUnrecognized_ _ ->
             "Unknown"
 
@@ -776,6 +813,7 @@ allPermissions =
     , MODERATEEVENTS
     , RSVPTOEVENTS
     , SYNCHRONIZEEVENTS
+    , SYNCEVENTSTOFACEBOOK
     , VIEWMEDIA
     , CREATEMEDIA
     , PUBLISHMEDIALOCALLY

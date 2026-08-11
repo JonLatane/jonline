@@ -19,17 +19,17 @@ export enum Permission {
   /** PERMISSION_UNKNOWN - A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) */
   PERMISSION_UNKNOWN = 0,
   /**
-   * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
-   * Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).
+   * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visibility.
+   * Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visibility (when configured as an anonymous user permission).
    */
   VIEW_USERS = 1,
   /**
-   * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
+   * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visibility.
    * This generally only applies to the user's own profile, except for Admins.
    */
   PUBLISH_USERS_LOCALLY = 2,
   /**
-   * PUBLISH_USERS_GLOBALLY - Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
+   * PUBLISH_USERS_GLOBALLY - Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility.
    * This generally only applies to the user's own profile, except for Admins.
    */
   PUBLISH_USERS_GLOBALLY = 3,
@@ -106,6 +106,11 @@ export enum Permission {
   /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
   SYNCHRONIZE_EVENTS = 36,
   /**
+   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update `EventSyncDestination`s that cross-post EventInstances to a
+   * connected Facebook Page, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_FACEBOOK = 37,
+  /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
    */
@@ -118,6 +123,8 @@ export enum Permission {
   PUBLISH_MEDIA_GLOBALLY = 43,
   /** MODERATE_MEDIA - Allow the user to moderate events. */
   MODERATE_MEDIA = 44,
+  READ_PERSONAL_MESSAGES = 50,
+  READ_ALL_SYSTEM_MESSAGES = 51,
   /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
   BUSINESS = 9998,
   /**
@@ -222,6 +229,9 @@ export function permissionFromJSON(object: any): Permission {
     case 36:
     case "SYNCHRONIZE_EVENTS":
       return Permission.SYNCHRONIZE_EVENTS;
+    case 37:
+    case "SYNC_EVENTS_TO_FACEBOOK":
+      return Permission.SYNC_EVENTS_TO_FACEBOOK;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -237,6 +247,12 @@ export function permissionFromJSON(object: any): Permission {
     case 44:
     case "MODERATE_MEDIA":
       return Permission.MODERATE_MEDIA;
+    case 50:
+    case "READ_PERSONAL_MESSAGES":
+      return Permission.READ_PERSONAL_MESSAGES;
+    case 51:
+    case "READ_ALL_SYSTEM_MESSAGES":
+      return Permission.READ_ALL_SYSTEM_MESSAGES;
     case 9998:
     case "BUSINESS":
       return Permission.BUSINESS;
@@ -312,6 +328,8 @@ export function permissionToJSON(object: Permission): string {
       return "RSVP_TO_EVENTS";
     case Permission.SYNCHRONIZE_EVENTS:
       return "SYNCHRONIZE_EVENTS";
+    case Permission.SYNC_EVENTS_TO_FACEBOOK:
+      return "SYNC_EVENTS_TO_FACEBOOK";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:
@@ -322,6 +340,10 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_MEDIA_GLOBALLY";
     case Permission.MODERATE_MEDIA:
       return "MODERATE_MEDIA";
+    case Permission.READ_PERSONAL_MESSAGES:
+      return "READ_PERSONAL_MESSAGES";
+    case Permission.READ_ALL_SYSTEM_MESSAGES:
+      return "READ_ALL_SYSTEM_MESSAGES";
     case Permission.BUSINESS:
       return "BUSINESS";
     case Permission.RUN_BOTS:

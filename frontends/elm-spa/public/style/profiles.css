@@ -242,6 +242,25 @@
 /* .section-title, .permission-badges, .permission-badge (+ .editable) and
    .permission-remove are shared with ServerInformationPage -- see main.css. */
 
+/* `expandableProfileSection`'s own clickable header, wrapping `.section-title`
+   -- used by the Permissions/Event Sync Sources sections, both collapsed by
+   default. */
+.expandable-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandable-section-arrow {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--muted);
+  margin-top: -0.4rem;
+
+}
+
 .profile-federated {
   display: flex;
   flex-wrap: wrap;
@@ -373,6 +392,7 @@
   flex-direction: column;
   gap: 0.25rem;
   margin-top: 8px;
+  margin-bottom: 16px;
 }
 
 .event-sync-sources-list {
@@ -421,6 +441,10 @@
   margin-left: auto;
 }
 
+.event-sync-source-add {
+  margin-left: auto;
+}
+
 .event-sync-source-last-synced {
   color: var(--muted);
   font-size: 0.8rem;
@@ -430,4 +454,85 @@
   flex-basis: 100%;
   color: var(--danger);
   font-size: 0.8rem;
+}
+
+/* Components.EventSyncDestinations, embedded on UserProfilePage below Event Sync Sources. */
+
+.event-sync-destinations-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.event-sync-destinations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.event-sync-destinations-message {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.event-sync-destination-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem;
+}
+
+.event-sync-destination-name {
+  font-weight: 600;
+}
+
+.event-sync-destination-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.event-sync-destination-delete {
+  margin-left: auto;
+}
+
+.event-sync-destination-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.event-sync-destination-login {
+  align-self: flex-start;
+}
+
+.event-sync-destination-page-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.event-sync-destination-page-option {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.profile-delete-section {
+  margin: 1rem 0;
+}
+
+.profile-delete-button {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--danger);
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--danger);
+  font-size: 0.85rem;
 }

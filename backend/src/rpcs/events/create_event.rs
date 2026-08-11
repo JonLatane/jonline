@@ -243,7 +243,7 @@ pub fn create_event(
             // };
             Ok(marshalable_event
                 .clone()
-                .to_proto(Some(&media_lookup), None))
+                .to_proto(Some(&media_lookup), None, None))
         }
         Err(e) => {
             log::error!("Error creating event! {:?}", e);

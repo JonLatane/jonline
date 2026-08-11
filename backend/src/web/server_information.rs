@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
-use super::{load_media_file_data, open_named_file, RocketState};
+use super::{load_media_file_data, load_media_file_data_preferring, open_named_file, RocketState};
 use crate::{
+    models::ConvertedSizeSpec,
     protos::{ServerInfo, ServerLogo},
     rpcs::{get_server_configuration_proto, get_service_version},
 };
@@ -14,6 +15,14 @@ use rocket::{
     routes, uri, Route, State,
 };
 use rocket_cache_response::CacheResponse;
+
+/// Favicons are small, so prefer the Medium converted size, then Small, then Large, falling
+/// back to the original upload if none of those conversions exist.
+const FAVICON_SIZE_PREFERENCE: [ConvertedSizeSpec; 3] = [
+    ConvertedSizeSpec::Medium,
+    ConvertedSizeSpec::Small,
+    ConvertedSizeSpec::Large,
+];
 
 lazy_static! {
     pub static ref INFORMATIONAL_PAGES: Vec<Route> = routes![
@@ -181,7 +190,9 @@ async fn favicon_ico<'a>(
             })
         }
         Some(square_media_id) => {
-            let data = load_media_file_data(&square_media_id, None, state).await?;
+            let data =
+                load_media_file_data_preferring(&square_media_id, &FAVICON_SIZE_PREFERENCE, state)
+                    .await?;
             let mut content_type = &data.0;
             let mut named_filename = &data.1.path().as_os_str().to_str().unwrap().to_string();
             let ico_filename = format!(
@@ -262,7 +273,9 @@ async fn favicon_png<'a>(
             })
         }
         Some(square_media_id) => {
-            let data = load_media_file_data(&square_media_id, None, state).await?;
+            let data =
+                load_media_file_data_preferring(&square_media_id, &FAVICON_SIZE_PREFERENCE, state)
+                    .await?;
             let mut content_type = data.0;
             let mut named_filename = data.1.path().as_os_str().to_str().unwrap().to_string();
 

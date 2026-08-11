@@ -123,7 +123,7 @@ lines_of_code:
 docs: documentation html_docs
 
 documentation:
-	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto
+	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto messages.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto
 
 html_docs: documentation
 	npm i markdown-to-html-cli -g

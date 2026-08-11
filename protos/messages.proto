@@ -9,22 +9,95 @@ import "users.proto";
 // they say they are, or ever exchange financial or private information with Jonline's
 // message/email features.
 //
+// ***Admin users have open access to all Messages on a server, and any UI using Jonline Messages must
+// make this clear to users.***
+//
 // That said, this "low trust system" is the foundation for all of Jonline's messaging
 // features. It's meant to be *just enough* that strangers can find you on a Jonline instance,
 // like your posts, and send you a message via email (no account needed). From there, it needs
 // only give you the ability to exchange, say, Signal usernames or personal emails.
-// 
-// Any UI built on these APIs needs to reflect this.
+
+
+// A Jonline `Message` represents a single message/email sent to one or more recipients
+// (really, "zero or more", as the design incorporates undeliverable messages).
+message Message {
+  // The ID of the message.
+  string id = 1;
+  // The sender of the message. Note that this is *purported* (we don't protect against spoofing).
+  optional Author sender = 2;
+
+  // Note that, on the backend, every message actually has a messaging group.
+  // From the client's perspective, if messaging_group is not set, you
+  // were BCC'ed on the message and don't have access to the messaging group.
+  optional MessagingGroup messaging_group = 3;
+
+  // The body text of the message. For email messages, this is the email body.
+  string body_text = 4;
+
+  // Subject of the message. For email messages, this is the email subject.
+  optional string subject = 5;
+  // If this message derived from an email, the original email's message ID (RFC 5322). Used to prevent duplicate messages from being created when the same email is sent multiple times.
+  optional string email_message_id = 6;
+  // If this message derived from an email, the original email's "from" address.
+  optional string from = 7;
+  // If this message derived from an email, the original email's "to" address.
+  optional string to = 8;
+  // If this message derived from an email, the original email's "cc" address.
+  optional string cc = 9;
+  // If this message derived from an email, the original email's "bcc" address.
+  optional string bcc = 10;
+
+  // The time the message was created.
+  google.protobuf.Timestamp created_at = 20;
+}
+
+// Request to create a new message.
+// The server will create a new messaging group for the message, and send it to the given recipients.
+message SendMessageRequest {
+  repeated string to_user_ids = 1;
+  optional string subject = 2;
+  optional string body_text = 3;
+}
+
+// A group of users who are participating in a conversation.
+// Most servers will probably have a (dynamically created) "empty group" for an email like
+// `not_a_user@my_jonline_instance.com`.
+message MessagingGroup {
+  // The ID of the messaging group.
+  string id = 1;
+  // The users who are members of the group. Note that this is a superset of the users who are
+  repeated Author members = 2;
+  // The time the group was created.
+  google.protobuf.Timestamp created_at = 10;
+}
+
+// Request to get messages from the server. The request may be filtered by message ID, search text, or creation time.
+// All non-text-search requests return messages in reverse chronological order (newest first). 
+// Text search requests return messages in order of relevance to the search text.
 message GetMessagesRequest {
-  // Returns the single message with the given ID.
-  optional string message_id = 1;
+  // The type of message listing to return. Required.
+  MessageListingType listing_type = 1;
+
+  // Returns the single message with the given ID (assuming the user has access to it).
+  optional string message_id = 2;
+
+  // Returns messages that are part of the given messaging group (assuming the user has access to it).
+  optional string message_group_id = 3;
 
   // Full-text search query, matched against the sender's username/real name and the message's
   // subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
   optional string search_text = 7;
 
   // Request to only return posts that were published or created before the given timestamp.
-  optional google.protobuf.Timestamp created_before = 8;
+  optional google.protobuf.Timestamp sent_before = 8;
+}
+
+// Response to a `GetMessagesRequest`, containing the requested messages.
+message GetMessagesResponse {
+  // The messages that match the request. May be empty if no messages match.
+  // May be shortened to a server-defined limit, dependent on service version,
+  // configuration, load, etc.
+  repeated Message messages = 1;
 }
 
 
@@ -38,19 +111,4 @@ enum MessageListingType {
   // Gets all messages on the server (to a limit), including those sent to other users. Requires admin privileges.
   ALL_SYSTEM_MESSAGES = 10;
   ALL_SYSTEM_MESSAGES_TEXT_SEARCH = 11;
-}
-
-message Message {
-  // The sender of the message. Note that this is *purported* (we don't protect against spoofing).
-  optional Author sender = 1;
-  optional string from = 2;
-  optional string to = 3;
-  optional string cc = 4;
-  optional string bcc = 5;
-  optional string subject = 6;
-  optional string body_text = 7;
-  optional string html_body = 8;
-  
-  // The time the message was created.
-  google.protobuf.Timestamp created_at = 20;
 }

@@ -126,7 +126,7 @@ pub async fn media_file<'a>(
 /// Picks the (minio_path, content_type) to serve for a given size request.
 ///
 /// `size` of `Some("original")` always forces the unconverted original. Otherwise the requested
-/// size (defaulting to `Large` when `size` is `None`/unrecognized) is looked up, falling through
+/// size (defaulting to `Medium` when `size` is `None`/unrecognized) is looked up, falling through
 /// to the next *larger* converted size, and finally to the original if no converted size (at or
 /// above the request) is available -- which also covers media that hasn't been converted at all.
 fn resolve_media_size(media: &models::Media, size: Option<&str>) -> (String, String) {
@@ -136,17 +136,39 @@ fn resolve_media_size(media: &models::Media, size: Option<&str>) -> (String, Str
 
     let requested = match size {
         Some("small") => models::ConvertedSizeSpec::Small,
-        Some("medium") => models::ConvertedSizeSpec::Medium,
-        _ => models::ConvertedSizeSpec::Large,
+        Some("large") => models::ConvertedSizeSpec::Large,
+        _ => models::ConvertedSizeSpec::Medium,
     };
+
+    resolve_media_size_preferring(media, &[requested])
+}
+
+/// Picks the (minio_path, content_type) to serve, trying each `ConvertedSizeSpec` in
+/// `preference` order in turn and falling back to the original (unconverted) upload if none of
+/// them are available -- which also covers media that hasn't been converted at all.
+fn resolve_media_size_preferring(
+    media: &models::Media,
+    preference: &[models::ConvertedSizeSpec],
+) -> (String, String) {
     let converted_sizes = media.converted_sizes();
 
-    models::ConvertedSizeSpec::ALL
-        .into_iter()
-        .skip_while(|spec| *spec != requested)
-        .find_map(|spec| converted_sizes.get(spec))
+    preference
+        .iter()
+        .find_map(|spec| converted_sizes.get(*spec))
         .map(|converted| (converted.minio_path.clone(), converted.content_type.clone()))
         .unwrap_or_else(|| (media.minio_path.clone(), media.content_type.clone()))
+}
+
+fn load_media_by_id(id: &str, state: &State<RocketState>) -> Result<models::Media, Status> {
+    schema::media::table
+        .filter(
+            media::id.eq(id
+                .to_string()
+                .to_db_id_or_err("media_id")
+                .map_err(|_| Status::BadRequest)?),
+        )
+        .first::<models::Media>(&mut state.pool.get().unwrap())
+        .map_err(|_| Status::NotFound)
 }
 
 // #[rocket::get("/media/<id>?<authorization>&<size>")]
@@ -157,20 +179,33 @@ pub async fn load_media_file_data<'a>(
 ) -> Result<(ContentType, NamedFile), Status> {
     log::info!("media_file: {:?}, size: {:?}", id, size);
 
-    let media = schema::media::table
-        .filter(
-            media::id.eq(id
-                .to_string()
-                .to_db_id_or_err("media_id")
-                .map_err(|_| Status::BadRequest)?),
-        )
-        .first::<models::Media>(&mut state.pool.get().unwrap())
-        .map_err(|_| Status::NotFound)?;
+    // TODO: Validate moderation/visiblity/permissions etc.
+    let media = load_media_by_id(id, state)?;
+    let (minio_path, content_type) = resolve_media_size(&media, size);
+    load_media_file(minio_path, content_type, state).await
+}
+
+/// Like [`load_media_file_data`], but tries each `ConvertedSizeSpec` in `preference` order
+/// instead of a single client-requested size string, falling back to the original if none of
+/// them are available.
+pub async fn load_media_file_data_preferring<'a>(
+    id: &str,
+    preference: &[models::ConvertedSizeSpec],
+    state: &State<RocketState>,
+) -> Result<(ContentType, NamedFile), Status> {
+    log::info!("media_file: {:?}, preference: {:?}", id, preference);
 
     // TODO: Validate moderation/visiblity/permissions etc.
+    let media = load_media_by_id(id, state)?;
+    let (minio_path, content_type) = resolve_media_size_preferring(&media, preference);
+    load_media_file(minio_path, content_type, state).await
+}
 
-    let (minio_path, content_type) = resolve_media_size(&media, size);
-
+async fn load_media_file(
+    minio_path: String,
+    content_type: String,
+    state: &State<RocketState>,
+) -> Result<(ContentType, NamedFile), Status> {
     let local_filename = format!(
         "{}/{}.mediafile",
         state.tempdir.path().display(),

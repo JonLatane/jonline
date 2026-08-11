@@ -420,6 +420,18 @@
   padding-bottom: 0.35rem;
 }
 
+@media (min-width: 850px) {
+  .events-strip:not(:has(>:nth-child(4))) {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 567px) {
+  .events-strip:not(:has(>:nth-child(3))) {
+    justify-content: center;
+  }
+}
+
 /* .events-strip:not(:has(>:nth-child(3))) {
   justify-content: center;
 } */

@@ -4,7 +4,7 @@ use rocket::{data::ToByteUnit, http::Status, routes, Data, Route, State};
 use uuid::Uuid;
 
 use crate::models;
-use crate::models::MESSAGE_COLUMNS;
+use crate::models::{find_or_create_messaging_group, MESSAGE_COLUMNS};
 use crate::schema::{self, message_recipients, messages, users};
 use crate::web::headers::RecipientsHeader;
 use crate::web::RocketState;
@@ -51,7 +51,7 @@ pub async fn create_email_message(
         .parse(&raw_message)
         .ok_or(Status::BadRequest)?;
 
-    let email_message_id = parsed
+    let message_id = parsed
         .message_id()
         .map(|id| id.to_string())
         .unwrap_or_else(|| format!("<generated-{}@jonline.internal>", Uuid::new_v4()));
@@ -100,6 +100,18 @@ pub async fn create_email_message(
         bcc: vec![],
     };
 
+    // The messaging_group is keyed on To/Cc recipients only -- Bcc'd recipients are deliberately
+    // excluded (see 2026-08-07-115738_create_messaging_groups) since they're invisible to everyone
+    // else on the message. Inbound email never has a local from_user_id (see `Message` above), so
+    // there's no sender to fold in here the way there will be for future in-app direct messages.
+    let group_user_ids: Vec<i64> = recipients
+        .iter()
+        .filter(|(_, recipient_type)| *recipient_type != models::RecipientType::Bcc)
+        .map(|(user_id, _)| *user_id)
+        .collect();
+    let messaging_group_id = find_or_create_messaging_group(group_user_ids, &mut conn)
+        .map_err(|_| Status::InternalServerError)?;
+
     let email_minio_path = format!("email/{}.eml", Uuid::new_v4());
     state
         .bucket
@@ -108,11 +120,13 @@ pub async fn create_email_message(
         .map_err(|_| Status::InternalServerError)?;
 
     let new_message = models::NewMessage {
+        from_user_id: None,
         subject: parsed.subject().map(|subject| subject.to_string()),
         body_text: parsed.body_text(0).map(|body| body.to_string()),
         email_headers: Some(serde_json::to_value(email_headers).unwrap()),
-        email_message_id: Some(email_message_id.clone()),
+        email_message_id: Some(message_id.clone()),
         email_minio_path: Some(email_minio_path),
+        messaging_group_id,
     };
 
     let message = match insert_into(messages::table)
@@ -129,23 +143,25 @@ pub async fn create_email_message(
             _,
         )) => messages::table
             .select(MESSAGE_COLUMNS)
-            .filter(messages::email_message_id.eq(&email_message_id))
+            .filter(messages::email_message_id.eq(&message_id))
             .first::<models::Message>(&mut conn)
             .map_err(|_| Status::InternalServerError)?,
         Err(_) => return Err(Status::InternalServerError),
     };
 
-    for (user_id, recipient_type) in &recipients {
+    // Only Bcc rows go into message_recipients now -- To/Cc recipients are already captured by
+    // the message's group (see messaging_group_id above), which is how the UI will look them up.
+    for (user_id, recipient_type) in recipients
+        .iter()
+        .filter(|(_, recipient_type)| *recipient_type == models::RecipientType::Bcc)
+    {
         insert_into(message_recipients::table)
             .values(&models::NewMessageRecipient {
                 message_id: message.id,
                 user_id: *user_id,
                 recipient_type: *recipient_type,
             })
-            .on_conflict((
-                message_recipients::message_id,
-                message_recipients::user_id,
-            ))
+            .on_conflict((message_recipients::message_id, message_recipients::user_id))
             .do_nothing()
             .execute(&mut conn)
             .map_err(|_| Status::InternalServerError)?;

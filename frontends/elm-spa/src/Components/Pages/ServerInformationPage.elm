@@ -58,7 +58,7 @@ import Html.Attributes exposing (checked, class, classList, disabled, id, placeh
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultGetUsersRequest, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
+import Proto.Jonline exposing (FacebookAuthConfig, FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultFacebookAuthConfig, defaultGetUsersRequest, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -96,6 +96,8 @@ type alias Model =
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
     , federationEdit : Maybe FederationEdit
+    , facebookAppIdEdit : Maybe FacebookAuthFieldEdit
+    , facebookAppSecretEdit : Maybe FacebookAuthFieldEdit
     }
 
 
@@ -146,6 +148,16 @@ type Msg
     | FederatedServerMoveSettled String
     | AnimateFederatedServerFlip Animation.Msg
     | AnimateFederatedServerMove Animation.Msg
+    | FacebookAppIdEditClicked
+    | FacebookAppIdChanged String
+    | FacebookAppIdCancelClicked
+    | FacebookAppIdSaveClicked
+    | GotFacebookAppIdSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FacebookAppSecretEditClicked
+    | FacebookAppSecretChanged String
+    | FacebookAppSecretCancelClicked
+    | FacebookAppSecretSaveClicked
+    | GotFacebookAppSecretSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | SharedMsg Shared.Msg
 
 
@@ -315,6 +327,21 @@ type alias ColorEdit =
     }
 
 
+{-| Live only while the Facebook App ID or App Secret (see
+`facebookAuthConfigSection`) is being edited by an admin -- `pending` is the
+in-progress `<input>` value. The App Secret field always starts this at `""`
+(never pre-filled) since `FacebookAuthConfig.appSecret` is write-only and
+never actually sent back by the server (see `ToProtoServerConfiguration` on
+the backend) -- saving with `pending == ""` is a deliberate no-op there
+(leaves whatever secret is already stored alone), same as leaving a "change
+password" field blank.
+-}
+type alias FacebookAuthFieldEdit =
+    { pending : String
+    , status : AccountsPanel.FormStatus
+    }
+
+
 {-| Live only while the Federation tab's `FederatedServer` list is being
 edited by an admin -- `pending` is the in-progress ordered list (its order is
 this editor's own, never rederived from a fetch -- see `UI.Flip.remove`'s own
@@ -373,6 +400,8 @@ init shared pageIsSecure targetHost navKey path query =
             , primaryColorEdit = Nothing
             , navigationColorEdit = Nothing
             , federationEdit = Nothing
+            , facebookAppIdEdit = Nothing
+            , facebookAppSecretEdit = Nothing
             }
 
         ( fetchedModel, fetchEffect ) =
@@ -937,6 +966,86 @@ updateInner shared msg model =
                 Nothing ->
                     ( model, Effect.none )
 
+        FacebookAppIdEditClicked ->
+            case effectiveServer shared model of
+                Just server ->
+                    let
+                        currentAppId =
+                            (AccountsPanel.configurationOf server).federationInfo
+                                |> Maybe.andThen .facebookAuthConfig
+                                |> Maybe.map .appId
+                                |> Maybe.withDefault ""
+                    in
+                    ( { model | facebookAppIdEdit = Just { pending = currentAppId, status = AccountsPanel.Idle } }, Effect.none )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        FacebookAppIdChanged text ->
+            ( { model | facebookAppIdEdit = model.facebookAppIdEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        FacebookAppIdCancelClicked ->
+            ( { model | facebookAppIdEdit = Nothing }, Effect.none )
+
+        FacebookAppIdSaveClicked ->
+            case ( model.facebookAppIdEdit, adminAccountFor shared model ) of
+                ( Just edit, Just account ) ->
+                    ( { model | facebookAppIdEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyFacebookAppId edit.pending)
+                        |> Task.attempt GotFacebookAppIdSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFacebookAppIdSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | facebookAppIdEdit = Nothing }
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult model.targetHost newConfig))
+                ]
+            )
+
+        GotFacebookAppIdSaveResult (Err err) ->
+            ( { model | facebookAppIdEdit = model.facebookAppIdEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        FacebookAppSecretEditClicked ->
+            ( { model | facebookAppSecretEdit = Just { pending = "", status = AccountsPanel.Idle } }, Effect.none )
+
+        FacebookAppSecretChanged text ->
+            ( { model | facebookAppSecretEdit = model.facebookAppSecretEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        FacebookAppSecretCancelClicked ->
+            ( { model | facebookAppSecretEdit = Nothing }, Effect.none )
+
+        FacebookAppSecretSaveClicked ->
+            case ( model.facebookAppSecretEdit, adminAccountFor shared model ) of
+                ( Just edit, Just account ) ->
+                    ( { model | facebookAppSecretEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyFacebookAppSecret edit.pending)
+                        |> Task.attempt GotFacebookAppSecretSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFacebookAppSecretSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | facebookAppSecretEdit = Nothing }
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult model.targetHost newConfig))
+                ]
+            )
+
+        GotFacebookAppSecretSaveResult (Err err) ->
+            ( { model | facebookAppSecretEdit = model.facebookAppSecretEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
         SharedMsg subMsg ->
             let
                 renameStatus =
@@ -1234,12 +1343,56 @@ applyColorFor field argb config =
 {-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
 the same way `applyPermissionsFor`'s/`applyColorFor`'s results are -- overlays
 `servers` (the edit's `pending` list, in its edit's own order) onto a freshly
-re-fetched `ServerConfiguration`'s `federationInfo`, leaving every other field
-untouched.
+re-fetched `ServerConfiguration`'s `federationInfo`, leaving `facebookAuthConfig`
+(and every other field) untouched.
 -}
 applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
 applyFederatedServers servers config =
-    { config | federationInfo = Just { servers = servers } }
+    { config
+        | federationInfo =
+            Just
+                { servers = servers
+                , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
+                }
+    }
+
+
+{-| `FacebookAppIdSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same
+way `applyFederatedServers`'s result is -- overlays a new `appId` onto a freshly re-fetched
+`ServerConfiguration`'s `federationInfo.facebookAuthConfig`, leaving `servers` untouched.
+`appSecret` is always sent blank here: the backend's `ConfigureServer` treats a blank incoming
+`appSecret` as "leave whatever's already stored alone" (it's write-only -- see
+`FacebookAuthFieldEdit`'s own doc), so this can never accidentally clobber it.
+-}
+applyFacebookAppId : String -> ServerConfiguration -> ServerConfiguration
+applyFacebookAppId appId config =
+    let
+        federationInfo =
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+    in
+    { config
+        | federationInfo =
+            Just { federationInfo | facebookAuthConfig = Just { appId = appId, appSecret = "" } }
+    }
+
+
+{-| `FacebookAppSecretSaveClicked`'s transform -- mirrors `applyFacebookAppId`, just overlaying a
+new `appSecret` (this time actually non-blank, since this *is* the save that's meant to change
+it) instead. Keeps whatever `appId` the freshly re-fetched config already has.
+-}
+applyFacebookAppSecret : String -> ServerConfiguration -> ServerConfiguration
+applyFacebookAppSecret appSecret config =
+    let
+        federationInfo =
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+
+        existingAppId =
+            federationInfo.facebookAuthConfig |> Maybe.map .appId |> Maybe.withDefault ""
+    in
+    { config
+        | federationInfo =
+            Just { federationInfo | facebookAuthConfig = Just { appId = existingAppId, appSecret = appSecret } }
+    }
 
 
 {-| Updates the one entry of `edit.pending` matching `host`, if any --
@@ -1969,7 +2122,111 @@ federationTab shared model server =
 
             _ ->
                 text ""
+        , facebookAuthConfigSection shared model server
         ]
+
+
+{-| Below the Federated Servers chip strip -- the Facebook App ID/Secret an admin connects so
+users can create Facebook Event Sync Destinations (see `logic::facebook_sync` on the backend).
+App ID behaves like `nameView`'s Server Name (its current value is shown, an admin can edit it in
+place). App Secret never shows its value -- see `FacebookAuthFieldEdit`'s doc -- so its
+"display" state is just a placeholder, not the real (unknowable, from here) current value.
+-}
+facebookAuthConfigSection : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
+facebookAuthConfigSection shared model server =
+    let
+        maybeAdminAccount =
+            adminAccountFor shared model
+
+        currentAppId =
+            (AccountsPanel.configurationOf server).federationInfo
+                |> Maybe.andThen .facebookAuthConfig
+                |> Maybe.map .appId
+                |> Maybe.withDefault ""
+    in
+    div [ class "server-details-facebook-auth" ]
+        [ h3 [ class "section-title" ] [ text "Facebook Authentication Configuration" ]
+        , facebookAppIdRow currentAppId model.facebookAppIdEdit maybeAdminAccount
+        , facebookAppSecretRow model.facebookAppSecretEdit maybeAdminAccount
+        ]
+
+
+facebookAppIdRow : String -> Maybe FacebookAuthFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppIdRow currentAppId maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "App ID" ]
+                , input
+                    [ class "server-details-rename-input"
+                    , value edit.pending
+                    , onInput FacebookAppIdChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , editSaveButton FacebookAppIdSaveClicked edit.status
+                , editCancelButton FacebookAppIdCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "App ID" ]
+                , span [ class "server-details-color-hex" ]
+                    [ text
+                        (if String.isEmpty currentAppId then
+                            "Not set."
+
+                         else
+                            currentAppId
+                        )
+                    ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick FacebookAppIdEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+{-| Unlike `facebookAppIdRow`, there's no "current value" to show when not editing -- the server
+never sends the real `appSecret` back (see `FacebookAuthFieldEdit`'s doc), so the placeholder
+below is shown regardless of whether a secret is actually configured. Clicking Edit always starts
+from a blank `<input>`; saving it blank is a no-op on the backend, same as leaving a "change
+password" field untouched.
+-}
+facebookAppSecretRow : Maybe FacebookAuthFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppSecretRow maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "App Secret" ]
+                , input
+                    [ type_ "password"
+                    , class "server-details-rename-input"
+                    , placeholder "New App Secret"
+                    , value edit.pending
+                    , onInput FacebookAppSecretChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , editSaveButton FacebookAppSecretSaveClicked edit.status
+                , editCancelButton FacebookAppSecretCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "App Secret" ]
+                , span [ class "server-details-color-hex" ] [ text "Never shown" ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick FacebookAppSecretEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
 
 
 federationDisplayView : Shared.Model -> List FederatedServer -> Html Msg

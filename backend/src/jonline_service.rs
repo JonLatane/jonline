@@ -65,6 +65,32 @@ macro_rules! authenticated_rpc {
     }};
 }
 
+/// Like `authenticated_rpc!`, but for RPCs that also need MinIO access (e.g. to clean up
+/// objects backing deleted Media) and are therefore `async fn`s themselves.
+macro_rules! authenticated_bucket_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let user = auth::get_auth_user(&$request, &mut conn)?.ok_or(Status::new(
+            Code::Unauthenticated,
+            "authentication_required",
+        ))?;
+        let inner = $request.into_inner();
+        let request_log = format!("{:?}", &inner);
+        let result = $rpc(inner, &user, &mut conn, &$self.bucket).await;
+        let truncated_result = format!("{:?}", &result)
+            .chars()
+            .take(1000)
+            .collect::<String>();
+        log::info!(
+            "Authenticated RPC: {}\tRequest: {:?}\tResult: {:?}",
+            stringify!($rpc),
+            request_log,
+            truncated_result
+        );
+        result.map(Response::new)
+    }};
+}
+
 macro_rules! unauthenticated_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
@@ -160,13 +186,26 @@ impl Jonline for JonlineService {
     }
 
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_user, request)
+        authenticated_bucket_rpc!(self, rpcs::delete_user, request)
     }
     async fn get_users(
         &self,
         request: Request<GetUsersRequest>,
     ) -> Result<Response<GetUsersResponse>, Status> {
         unauthenticated_rpc!(self, rpcs::get_users, request)
+    }
+
+    async fn send_message(
+        &self,
+        request: Request<SendMessageRequest>,
+    ) -> Result<Response<Message>, Status> {
+        unauthenticated_rpc!(self, rpcs::send_message, request)
+    }
+    async fn get_messages(
+        &self,
+        request: Request<GetMessagesRequest>,
+    ) -> Result<Response<GetMessagesResponse>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_messages, request)
     }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
@@ -187,7 +226,7 @@ impl Jonline for JonlineService {
     }
 
     async fn delete_media(&self, request: Request<Media>) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_media, request)
+        authenticated_bucket_rpc!(self, rpcs::delete_media, request)
     }
 
     async fn get_groups(
@@ -320,6 +359,37 @@ impl Jonline for JonlineService {
         request: Request<DeleteEventSyncSourceRequest>,
     ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::delete_event_sync_source, request)
+    }
+
+    async fn get_event_sync_destinations(
+        &self,
+        request: Request<User>,
+    ) -> Result<Response<GetEventSyncDestinationsResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_event_sync_destinations, request)
+    }
+    async fn create_event_sync_destination(
+        &self,
+        request: Request<EventSyncDestination>,
+    ) -> Result<Response<EventSyncDestination>, Status> {
+        authenticated_rpc!(self, rpcs::create_event_sync_destination, request)
+    }
+    async fn update_event_sync_destination(
+        &self,
+        request: Request<EventSyncDestination>,
+    ) -> Result<Response<EventSyncDestination>, Status> {
+        authenticated_rpc!(self, rpcs::update_event_sync_destination, request)
+    }
+    async fn delete_event_sync_destination(
+        &self,
+        request: Request<DeleteEventSyncDestinationRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::delete_event_sync_destination, request)
+    }
+    async fn sync_event_instance(
+        &self,
+        request: Request<SyncEventInstanceRequest>,
+    ) -> Result<Response<EventInstance>, Status> {
+        authenticated_rpc!(self, rpcs::sync_event_instance, request)
     }
 
     async fn upsert_event_attendance(

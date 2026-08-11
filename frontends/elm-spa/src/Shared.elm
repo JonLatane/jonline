@@ -27,12 +27,14 @@ import Browser.Navigation as Nav
 import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
 import Components.Posts as Posts
+import Components.Users as Users
 import Grpc
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventSyncSource, Media, Post)
+import Proto.Google.Protobuf
+import Proto.Jonline exposing (Event, EventSyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
@@ -123,18 +125,36 @@ type Msg
     | CancelDelete
     | ConfirmDelete
       -- `ConfirmDelete`'s own handling of `ConfirmEventSyncSourceDelete`/
-      -- `ConfirmPostDelete`/`ConfirmEventDelete` fires the
-      -- `DeleteEventSyncSource`/`DeletePost`/`DeleteEvent` RPC directly
-      -- (unlike every other `DeleteConfirmation`, none of these three is
-      -- owned by any Shared-owned panel `Shared.update` could delegate to)
-      -- -- these are their results. Forwarded, like every `Shared.Msg`, into
-      -- whichever page is active (`Main.notifyPageOfSharedMsg`), so
+      -- `ConfirmPostDelete`/`ConfirmEventDelete`/`ConfirmUserDelete` fires
+      -- the `DeleteEventSyncSource`/`DeletePost`/`DeleteEvent`/`DeleteUser`
+      -- RPC directly (unlike every other `DeleteConfirmation`, none of these
+      -- four is owned by any Shared-owned panel `Shared.update` could
+      -- delegate to) -- these are their results. Forwarded, like every
+      -- `Shared.Msg`, into whichever page is active
+      -- (`Main.notifyPageOfSharedMsg`), so
       -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
       -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
       -- own list/navigate away on success.
     | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- The trailing `User`/`String` are the deleted user/acting `targetHost`
+      -- (mirroring `ConfirmUserDelete`'s own two extra fields) -- unlike
+      -- `GotPostDeleteResult`/`GotEventDeleteResult`, this needs them back:
+      -- a successful delete also has to drop that user's account from
+      -- `AccountsPanel`'s own locally-known list, if it's in there at all
+      -- -- whether that's the viewer's own account (a self-delete) or some
+      -- other, possibly-disabled account an Admin had signed into and left
+      -- disabled (e.g. after banning them) -- and that decision can only
+      -- be made once, here in `Shared.update` itself --
+      -- `Components.Pages.UserProfilePage`'s own `SharedMsg` handling of
+      -- this same message can't do it instead, since
+      -- `Main.notifyPageOfSharedMsg` (which delivers a top-level
+      -- `Shared.Msg` like this one to a page) silently drops any *new*
+      -- `Shared.Msg` a page's own `SharedMsg` branch forwards back in
+      -- response -- only an echo of the incoming message itself is safe to
+      -- forward that way, per its own doc.
+    | GotUserDeleteResult User String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
     | ShowScrollPreserver
     | HideScrollPreserver
     | UncollapseHome
@@ -198,23 +218,26 @@ type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
-      -- The trailing `String` on each of these three is the acting
-      -- `targetHost` (the source/Post/Event isn't itself paired with one) --
-      -- resolved back to a signed-in `Account` (if any) in `ConfirmDelete`'s
-      -- own handling. Unlike every `DeleteConfirmation` above, none of these
-      -- three are owned by a Shared-owned panel to delegate a
-      -- `DeleteConfirmed` into -- each is a plain list rendered by exactly
-      -- one page (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
+      -- The trailing `String` on each of these four is the acting
+      -- `targetHost` (the source/Post/Event/User isn't itself paired with
+      -- one) -- resolved back to a signed-in `Account` (if any) in
+      -- `ConfirmDelete`'s own handling. Unlike every `DeleteConfirmation`
+      -- above, none of these four are owned by a Shared-owned panel to
+      -- delegate a `DeleteConfirmed` into -- each is a plain list (or, for
+      -- `ConfirmUserDelete`, a single button) rendered by exactly one page
+      -- (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
       -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
       -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
-      -- `GotPostDeleteResult`/`GotEventDeleteResult`) is forwarded on to
-      -- whichever page is active the same as any other `Shared.Msg`, for
-      -- that page's own `Model` to apply. This is the shape any *new*
-      -- "list of deletable things shown on one page" should follow -- don't
-      -- give the list itself a Shared-owned home just to reach this dialog.
+      -- `GotPostDeleteResult`/`GotEventDeleteResult`/`GotUserDeleteResult`)
+      -- is forwarded on to whichever page is active the same as any other
+      -- `Shared.Msg`, for that page's own `Model` to apply. This is the
+      -- shape any *new* "list of deletable things shown on one page" should
+      -- follow -- don't give the list itself a Shared-owned home just to
+      -- reach this dialog.
     | ConfirmEventSyncSourceDelete EventSyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
+    | ConfirmUserDelete User String
 
 
 {-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
@@ -998,6 +1021,15 @@ sharedUpdate req msg model =
                         |> Task.attempt GotEventDeleteResult
                     )
 
+                Just (ConfirmUserDelete user host) ->
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
+                    , Users.deleteUser
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        user
+                        |> Task.attempt (GotUserDeleteResult user host)
+                    )
+
                 Nothing ->
                     ( model, Cmd.none )
 
@@ -1044,6 +1076,44 @@ sharedUpdate req msg model =
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventDeleteResult (Err _) ->
+            ( model, Cmd.none )
+
+        GotUserDeleteResult deletedUser host (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( refreshedAccounts, refreshCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+
+                -- Removes `deletedUser` from `refreshedAccounts.accounts` too,
+                -- if it's known locally at all -- not just the *enabled*
+                -- account for `host` (an Admin deleting a different user's
+                -- account they'd disabled here, e.g. after banning them,
+                -- should still drop that now-dangling account -- there's no
+                -- reason to keep offering to sign back into a user that no
+                -- longer exists). Checking every account on `host` rather
+                -- than only the enabled one is what makes this also cover
+                -- the self-delete case (the deleted account was, by
+                -- definition, the one the viewer just acted as), the same
+                -- way a manual "remove account"
+                -- (`UI.deleteConfirmationModal`'s `ConfirmAccountDelete`)
+                -- would.
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case refreshedAccounts.accounts |> List.filter (\account -> account.server == host && account.userId == deletedUser.id) |> List.head of
+                        Just account ->
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) refreshedAccounts
+
+                        Nothing ->
+                            ( refreshedAccounts, Cmd.none )
+            in
+            ( { model | accounts = accountsPanelModel }
+            , Cmd.batch [ Cmd.map AccountsPanelMsg refreshCmd, Cmd.map AccountsPanelMsg accountsPanelCmd ]
+            )
+
+        GotUserDeleteResult _ _ (Err _) ->
             ( model, Cmd.none )
 
         ShowScrollPreserver ->

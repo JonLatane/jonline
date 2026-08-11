@@ -1,11 +1,24 @@
 pub mod factories;
 
+mod configure_server_tests;
 mod create_post_tests;
+mod delete_event_attendance_tests;
+mod delete_event_tests;
+mod delete_follow_tests;
+mod delete_group_tests;
+mod delete_media_tests;
+mod delete_post_tests;
+mod delete_user_tests;
+mod event_sync_destination_count_tests;
+mod event_sync_destination_rpc_tests;
 mod event_sync_source_rpc_tests;
 mod event_sync_tests;
+mod facebook_sync_tests;
 mod get_event_attendances_parity_tests;
 mod get_events_tests;
+mod get_messages_tests;
 mod get_posts_tests;
 mod get_users_tests;
+mod send_message_tests;
 mod update_post_tests;
 mod user_counts_tests;

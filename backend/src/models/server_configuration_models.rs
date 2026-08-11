@@ -116,7 +116,8 @@ Your media policy should describe who has ownership of uploaded media, anything 
                     configured_by_default: Some(false),
                     pinned_by_default: Some(false),
                 },
-            ]
+            ],
+            facebook_auth_config: None,
          }).unwrap(),
         anonymous_user_permissions: vec![
             Permission::ViewUsers,
