@@ -51,7 +51,8 @@ jobs:
           sudo unzip -o "$PROTOC_ZIP" -d /usr/local bin/protoc 'include/*'
           rm "$PROTOC_ZIP"
           protoc --version
-      - uses: ts-graphviz/setup-graphviz@v2
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
       # - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v7
         with:
@@ -79,7 +80,7 @@ jobs:
 
       - name: Build Markdown & HTML docs
         # run: make documentation html_docs
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 3
           max_attempts: 3
