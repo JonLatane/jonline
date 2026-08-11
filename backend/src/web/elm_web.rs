@@ -21,6 +21,7 @@ lazy_static! {
         elm_root_dist,
         elm_root_vendor,
         elm_root_markdown_js,
+        elm_root_facebook_callback,
     ];
 }
 
@@ -137,6 +138,23 @@ async fn elm_root_vendor(
 #[rocket::get("/markdown.js")]
 async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(Path::new("markdown.js")).await;
+    CacheResponse::Public {
+        responder: result,
+        max_age: 60,
+        must_revalidate: false,
+    }
+}
+
+/// The Facebook OAuth popup's `redirect_uri` target (see `public/index.html`'s
+/// `facebookLoginPopup` port and `public/facebook-callback.html`) -- computed client-side as
+/// `window.location.origin + jonlineBasePath + "/facebook-callback.html"`, so when Elm is served
+/// at root (`jonlineBasePath == ""`) this needs its own root-mounted route the same reason
+/// `elm_root_markdown_js`/etc do: without one, `/facebook-callback.html` falls through to
+/// `spa_file_or_username`'s catch-all and gets misinterpreted as a username lookup. (Under
+/// `/elm`, `elm_file`'s own asset fallback already serves it -- no separate route needed there.)
+#[rocket::get("/facebook-callback.html")]
+async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(Path::new("facebook-callback.html")).await;
     CacheResponse::Public {
         responder: result,
         max_age: 60,
