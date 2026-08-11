@@ -217,6 +217,57 @@
   margin-top: 0.4rem;
 }
 
+/* People/Groups/Posts/Events/Media settings sections (see
+   Components/Pages/ServerInformationPage.elm's `featureSettingsSection`) --
+   collapsible (expanded by default), each showing that feature's
+   visible/default_moderation/default_visibility, editable by admins.
+   `.section-title`/`.expandable-section-title`/`.expandable-section-arrow`
+   (the collapsible header itself) are shared with profiles.css's own
+   `expandableProfileSection`. */
+.server-details-feature-settings {
+  margin-bottom: 1.25rem;
+}
+
+.server-details-feature-settings-display,
+.server-details-feature-settings-edit {
+  margin-top: 0.4rem;
+}
+
+/* One label + right-aligned value/control row (`featureSettingsRow`) --
+   mirrors `.server-details-color-row`'s label-left/control-right layout
+   (the Federation tab's own "App ID" row). */
+.server-details-feature-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+}
+
+.server-details-feature-settings-label {
+  color: var(--muted);
+}
+
+.server-details-feature-settings-value {
+  font-family: monospace;
+}
+
+.server-details-feature-settings-row select {
+  font-family: monospace;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.server-details-feature-settings-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
 /* Federated Servers tab (Components/Pages/ServerInformationPage.elm's
    `federationTab`) -- a horizontally-scrolling strip of chips, reusing
    accounts_panel.css's own `.server-chip`/`.server-chip-top`/`-bottom` look

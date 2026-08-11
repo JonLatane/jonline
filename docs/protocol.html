@@ -338,6 +338,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#server_configuration-proto">server_configuration.proto</a></p>
         <ul>
           <li>
+            <p><a href="#jonline-EventSettings">EventSettings</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></p>
           </li>
           <li>
@@ -4642,6 +4645,51 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="server_configuration-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="jonline-EventSettings"></a></p>
+    <h3 id="eventsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsettings"><span class="octicon octicon-link"></span></a>EventSettings</h3>
+    <p>Specific settings for Events.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>visible</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Hide the Events tab from the user with this flag.</td>
+        </tr>
+        <tr>
+          <td>default_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only <code>UNMODERATED</code> and <code>PENDING</code> are valid. When <code>UNMODERATED</code>, user reports may transition status to <code>PENDING</code>. When <code>PENDING</code>, users' SERVER_PUBLIC or <code>GLOBAL_PUBLIC</code> posts will not be visible until a moderator approves them. <code>LIMITED</code> visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation.</td>
+        </tr>
+        <tr>
+          <td>default_visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
+        </tr>
+        <tr>
+          <td>custom_title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+        </tr>
+        <tr>
+          <td>enable_replies</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Controls whether replies are shown in the UI. Note that users' ability to reply is controlled by the <code>REPLY_TO_POSTS</code> permission.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-ExternalCDNConfig"></a></p>
     <h3 id="externalcdnconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#externalcdnconfig"><span class="octicon octicon-link"></span></a>ExternalCDNConfig</h3>
     <p>
@@ -4741,7 +4789,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </table>
     <p><a name="jonline-PostSettings"></a></p>
     <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
-    <p>Specific settings for Posts and Events.</p>
+    <p>Specific settings for Posts.</p>
     <table>
       <thead>
         <tr>
@@ -4756,7 +4804,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>visible</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Hide the Posts or Events tab from the user with this flag.</td>
+          <td>Hide the Posts tab from the user with this flag.</td>
         </tr>
         <tr>
           <td>default_moderation</td>
@@ -4774,7 +4822,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>custom_title</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+          <td>(TODO) Custom title, like "Squawks"s instead of "Posts". This is more an idea; internationalization is obviously problematic here.</td>
         </tr>
         <tr>
           <td>enable_replies</td>
@@ -4892,7 +4940,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
         <tr>
           <td>event_settings</td>
-          <td><a href="#jonline-PostSettings">PostSettings</a></td>
+          <td><a href="#jonline-EventSettings">EventSettings</a></td>
           <td></td>
           <td>Configuration for events on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
         </tr>

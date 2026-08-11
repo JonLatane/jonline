@@ -40,6 +40,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
+import Shared.EventSyncDestinations as EventSyncDestinations
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -59,6 +60,14 @@ type alias Model =
     -- read from all over the app (view code on nearly every page), not just
     -- panel-adjacent code.
     { accounts : AccountsPanel.Model
+
+    -- The current user's known `EventSyncDestination`s (linked Facebook
+    -- Pages), keyed by hostname then userId -- kept top-level for the same
+    -- reason `accounts` is: read from `Components.Events.eventCard`/
+    -- `Pages.Event.EventId_`'s shared `eventSyncDestinationsView` across
+    -- many pages, not just one panel's own view. See
+    -- `Shared.EventSyncDestinations`'s own doc.
+    , eventSyncDestinations : EventSyncDestinations.Model
 
     -- See `Panels` for the rest of the app-wide panels.
     , panels : Panels
@@ -112,6 +121,7 @@ type Msg
     | AdminPanelMsg AdminPanel.Msg
     | FederatedAuthMsg FederatedAuth.Msg
     | StarredPanelMsg StarredPanel.Msg
+    | EventSyncDestinationsMsg EventSyncDestinations.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
@@ -323,6 +333,7 @@ init basePath req flags =
 
         model =
             { accounts = accountsPanelModel
+            , eventSyncDestinations = EventSyncDestinations.init
             , panels =
                 { adminPanel = AdminPanel.init
                 , federatedAuth = federatedAuthModel
@@ -508,6 +519,23 @@ sharedUpdate req msg model =
                     FederatedAuth.update subMsg panels.federatedAuth
             in
             ( { model | panels = { panels | federatedAuth = subModel } }, Cmd.map FederatedAuthMsg subCmd )
+
+        EventSyncDestinationsMsg subMsg ->
+            let
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                    EventSyncDestinations.update model.accounts subMsg model.eventSyncDestinations
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+            in
+            ( { model | eventSyncDestinations = subModel, accounts = accountsPanelModel }
+            , Cmd.batch [ Cmd.map EventSyncDestinationsMsg subCmd, Cmd.map AccountsPanelMsg accountsPanelCmd ]
+            )
 
         StarredPanelMsg subMsg ->
             let

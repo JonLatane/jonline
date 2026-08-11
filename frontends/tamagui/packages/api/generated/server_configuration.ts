@@ -234,7 +234,7 @@ export interface ServerConfiguration {
    * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
   eventSettings:
-    | PostSettings
+    | EventSettings
     | undefined;
   /**
    * Configuration for media on the server.
@@ -344,9 +344,42 @@ export interface FeatureSettings {
   customTitle?: string | undefined;
 }
 
-/** Specific settings for Posts and Events. */
+/** Specific settings for Posts. */
 export interface PostSettings {
-  /** Hide the Posts or Events tab from the user with this flag. */
+  /** Hide the Posts tab from the user with this flag. */
+  visible: boolean;
+  /**
+   * Only `UNMODERATED` and `PENDING` are valid.
+   * When `UNMODERATED`, user reports may transition status to `PENDING`.
+   * When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+   * be visible until a moderator approves them. `LIMITED` visiblity
+   * posts are always visible to targeted users (who have not blocked
+   * the author) regardless of default_moderation.
+   */
+  defaultModeration: Moderation;
+  /**
+   * Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+   * if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+   * as appropriate.
+   */
+  defaultVisibility: Visibility;
+  /**
+   * (TODO) Custom title, like "Squawks"s instead of "Posts".
+   * This is more an idea; internationalization is obviously problematic here.
+   */
+  customTitle?:
+    | string
+    | undefined;
+  /**
+   * Controls whether replies are shown in the UI. Note that users' ability to reply
+   * is controlled by the `REPLY_TO_POSTS` permission.
+   */
+  enableReplies?: boolean | undefined;
+}
+
+/** Specific settings for Events. */
+export interface EventSettings {
+  /** Hide the Events tab from the user with this flag. */
   visible: boolean;
   /**
    * Only `UNMODERATED` and `PENDING` are valid.
@@ -528,7 +561,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       PostSettings.encode(message.postSettings, writer.uint32(178).fork()).join();
     }
     if (message.eventSettings !== undefined) {
-      PostSettings.encode(message.eventSettings, writer.uint32(186).fork()).join();
+      EventSettings.encode(message.eventSettings, writer.uint32(186).fork()).join();
     }
     if (message.mediaSettings !== undefined) {
       FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).join();
@@ -656,7 +689,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
             break;
           }
 
-          message.eventSettings = PostSettings.decode(reader, reader.uint32());
+          message.eventSettings = EventSettings.decode(reader, reader.uint32());
           continue;
         }
         case 24: {
@@ -734,7 +767,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
-      eventSettings: isSet(object.eventSettings) ? PostSettings.fromJSON(object.eventSettings) : undefined,
+      eventSettings: isSet(object.eventSettings) ? EventSettings.fromJSON(object.eventSettings) : undefined,
       mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
       externalCdnConfig: isSet(object.externalCdnConfig)
         ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
@@ -776,7 +809,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       obj.postSettings = PostSettings.toJSON(message.postSettings);
     }
     if (message.eventSettings !== undefined) {
-      obj.eventSettings = PostSettings.toJSON(message.eventSettings);
+      obj.eventSettings = EventSettings.toJSON(message.eventSettings);
     }
     if (message.mediaSettings !== undefined) {
       obj.mediaSettings = FeatureSettings.toJSON(message.mediaSettings);
@@ -820,7 +853,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       ? PostSettings.fromPartial(object.postSettings)
       : undefined;
     message.eventSettings = (object.eventSettings !== undefined && object.eventSettings !== null)
-      ? PostSettings.fromPartial(object.eventSettings)
+      ? EventSettings.fromPartial(object.eventSettings)
       : undefined;
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
       ? FeatureSettings.fromPartial(object.mediaSettings)
@@ -1213,6 +1246,136 @@ export const PostSettings: MessageFns<PostSettings> = {
   },
   fromPartial<I extends Exact<DeepPartial<PostSettings>, I>>(object: I): PostSettings {
     const message = createBasePostSettings();
+    message.visible = object.visible ?? false;
+    message.defaultModeration = object.defaultModeration ?? 0;
+    message.defaultVisibility = object.defaultVisibility ?? 0;
+    message.customTitle = object.customTitle ?? undefined;
+    message.enableReplies = object.enableReplies ?? undefined;
+    return message;
+  },
+};
+
+function createBaseEventSettings(): EventSettings {
+  return {
+    visible: false,
+    defaultModeration: 0,
+    defaultVisibility: 0,
+    customTitle: undefined,
+    enableReplies: undefined,
+  };
+}
+
+export const EventSettings: MessageFns<EventSettings> = {
+  encode(message: EventSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.visible !== false) {
+      writer.uint32(8).bool(message.visible);
+    }
+    if (message.defaultModeration !== 0) {
+      writer.uint32(16).int32(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      writer.uint32(24).int32(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      writer.uint32(34).string(message.customTitle);
+    }
+    if (message.enableReplies !== undefined) {
+      writer.uint32(40).bool(message.enableReplies);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSettings {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSettings();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.visible = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.defaultModeration = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.defaultVisibility = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.customTitle = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.enableReplies = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSettings {
+    return {
+      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
+      defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
+      defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
+      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : undefined,
+    };
+  },
+
+  toJSON(message: EventSettings): unknown {
+    const obj: any = {};
+    if (message.visible !== false) {
+      obj.visible = message.visible;
+    }
+    if (message.defaultModeration !== 0) {
+      obj.defaultModeration = moderationToJSON(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      obj.customTitle = message.customTitle;
+    }
+    if (message.enableReplies !== undefined) {
+      obj.enableReplies = message.enableReplies;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSettings>, I>>(base?: I): EventSettings {
+    return EventSettings.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSettings>, I>>(object: I): EventSettings {
+    const message = createBaseEventSettings();
     message.visible = object.visible ?? false;
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;

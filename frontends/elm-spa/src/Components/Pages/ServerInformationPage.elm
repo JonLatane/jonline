@@ -49,6 +49,7 @@ import Animation
 import Browser.Dom as Dom
 import Browser.Navigation
 import Components.Markdown as Markdown
+import Components.Posts as Posts
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -58,10 +59,13 @@ import Html.Attributes exposing (checked, class, classList, disabled, id, placeh
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FacebookAuthConfig, FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultFacebookAuthConfig, defaultGetUsersRequest, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
+import Proto.Jonline exposing (FacebookAuthConfig, FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultEventSettings, defaultFacebookAuthConfig, defaultFeatureSettings, defaultGetUsersRequest, defaultMediaReference, defaultPostSettings, defaultServerColors, defaultServerInfo, defaultServerLogo)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.Visibility exposing (Visibility(..))
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
+import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -92,6 +96,12 @@ type alias Model =
     , anonymousPermissionsEdit : Maybe PermissionsEdit
     , defaultPermissionsEdit : Maybe PermissionsEdit
     , basicPermissionsEdit : Maybe PermissionsEdit
+    , peopleSettingsEdit : Maybe FeatureSettingsEdit
+    , groupSettingsEdit : Maybe FeatureSettingsEdit
+    , postSettingsEdit : Maybe FeatureSettingsEdit
+    , eventSettingsEdit : Maybe FeatureSettingsEdit
+    , mediaSettingsEdit : Maybe FeatureSettingsEdit
+    , collapsedFeatureSettings : Set String
     , logoEdit : Maybe LogoEdit
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
@@ -121,6 +131,14 @@ type Msg
     | PermissionsCancelClicked ServerPermissionsSet
     | PermissionsSaveClicked ServerPermissionsSet
     | GotPermissionsSaveResult ServerPermissionsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FeatureSettingsSectionToggled FeatureSettingsSet
+    | FeatureSettingsEditClicked FeatureSettingsSet
+    | FeatureSettingsVisibleToggled FeatureSettingsSet
+    | FeatureSettingsModerationChanged FeatureSettingsSet String
+    | FeatureSettingsVisibilityChanged FeatureSettingsSet String
+    | FeatureSettingsCancelClicked FeatureSettingsSet
+    | FeatureSettingsSaveClicked FeatureSettingsSet
+    | GotFeatureSettingsSaveResult FeatureSettingsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | LogoEditClicked
     | LogoRemoveClicked
     | LogoCancelClicked
@@ -281,6 +299,38 @@ type alias PermissionsEdit =
     }
 
 
+{-| Which of `ServerConfiguration`'s five per-feature settings a
+`featureSettingsSection`/`FeatureSettingsEdit` is for -- lets `settingsTab`
+reuse the same editing machinery for People/Groups/Posts/Events/Media, the
+same way `ServerPermissionsSet` does for the three permission lists.
+`PostFeatureSettings`/`EventFeatureSettings` back `ServerConfiguration`'s
+`PostSettings`/`EventSettings` fields (which also carry `enableReplies`, left
+untouched by this editor -- see `applyFeatureSettingsFor`); the other three
+all back a plain `FeatureSettings`.
+-}
+type FeatureSettingsSet
+    = PeopleFeatureSettings
+    | GroupFeatureSettings
+    | PostFeatureSettings
+    | EventFeatureSettings
+    | MediaFeatureSettings
+
+
+{-| Live only while one of the five per-feature settings (see
+`FeatureSettingsSet`) is being edited by an admin -- mirrors `PermissionsEdit`,
+just over `FeatureSettings`/`PostSettings`/`EventSettings`'s shared
+`visible`/`defaultModeration`/`defaultVisibility` trio instead of a
+`Permission` list. Only `custom_title` (and, for Posts/Events,
+`enable_replies`) are left out -- this page has no editor for those yet.
+-}
+type alias FeatureSettingsEdit =
+    { visible : Bool
+    , moderation : Moderation
+    , visibility : Visibility
+    , status : AccountsPanel.FormStatus
+    }
+
+
 {-| What `LogoSaveClicked` should do to `serverInfo.logo.squareMediaId` --
 mirrors `Components.Pages.UserProfilePage`'s `AvatarChoice`/`AvatarEdit`
 exactly, just over the server's own square logo (a bare `Maybe String` media
@@ -396,6 +446,12 @@ init shared pageIsSecure targetHost navKey path query =
             , anonymousPermissionsEdit = Nothing
             , defaultPermissionsEdit = Nothing
             , basicPermissionsEdit = Nothing
+            , peopleSettingsEdit = Nothing
+            , groupSettingsEdit = Nothing
+            , postSettingsEdit = Nothing
+            , eventSettingsEdit = Nothing
+            , mediaSettingsEdit = Nothing
+            , collapsedFeatureSettings = Set.empty
             , logoEdit = Nothing
             , primaryColorEdit = Nothing
             , navigationColorEdit = Nothing
@@ -616,6 +672,80 @@ updateInner shared msg model =
         GotPermissionsSaveResult set (Err err) ->
             ( setPermissionsEditFor set
                 (permissionsEditFor set model |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }))
+                model
+            , Effect.none
+            )
+
+        FeatureSettingsSectionToggled set ->
+            ( { model | collapsedFeatureSettings = toggleSetMember (featureSettingsKey set) model.collapsedFeatureSettings }, Effect.none )
+
+        FeatureSettingsEditClicked set ->
+            case effectiveServer shared model of
+                Just server ->
+                    let
+                        current =
+                            currentFeatureSettingsFor set (AccountsPanel.configurationOf server)
+                    in
+                    ( setFeatureSettingsEditFor set
+                        (Just { visible = current.visible, moderation = current.moderation, visibility = current.visibility, status = AccountsPanel.Idle })
+                        model
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        FeatureSettingsVisibleToggled set ->
+            ( setFeatureSettingsEditFor set
+                (featureSettingsEditFor set model |> Maybe.map (\edit -> { edit | visible = not edit.visible }))
+                model
+            , Effect.none
+            )
+
+        FeatureSettingsModerationChanged set text ->
+            ( setFeatureSettingsEditFor set
+                (featureSettingsEditFor set model
+                    |> Maybe.map (\edit -> { edit | moderation = Users.moderationFromText text |> Maybe.withDefault edit.moderation })
+                )
+                model
+            , Effect.none
+            )
+
+        FeatureSettingsVisibilityChanged set text ->
+            ( setFeatureSettingsEditFor set
+                (featureSettingsEditFor set model
+                    |> Maybe.map (\edit -> { edit | visibility = Posts.visibilityFromText text |> Maybe.withDefault edit.visibility })
+                )
+                model
+            , Effect.none
+            )
+
+        FeatureSettingsCancelClicked set ->
+            ( setFeatureSettingsEditFor set Nothing model, Effect.none )
+
+        FeatureSettingsSaveClicked set ->
+            case ( featureSettingsEditFor set model, adminAccountFor shared model ) of
+                ( Just edit, Just account ) ->
+                    ( setFeatureSettingsEditFor set (Just { edit | status = AccountsPanel.Submitting }) model
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, model.targetHost ) (applyFeatureSettingsFor set edit)
+                        |> Task.attempt (GotFeatureSettingsSaveResult set)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFeatureSettingsSaveResult set (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( setFeatureSettingsEditFor set Nothing model
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult model.targetHost newConfig))
+                ]
+            )
+
+        GotFeatureSettingsSaveResult set (Err err) ->
+            ( setFeatureSettingsEditFor set
+                (featureSettingsEditFor set model |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }))
                 model
             , Effect.none
             )
@@ -1269,6 +1399,193 @@ applyPermissionsFor set permissions config =
 
         BasicPermissions ->
             { config | basicUserPermissions = permissions }
+
+
+{-| Toggles a single `Set` member -- `FeatureSettingsSectionToggled`'s own
+plumbing, generic since nothing else here needs a `Set` yet.
+-}
+toggleSetMember : comparable -> Set comparable -> Set comparable
+toggleSetMember key set =
+    if Set.member key set then
+        Set.remove key set
+
+    else
+        Set.insert key set
+
+
+{-| The URL-param-style key (see `tabParam`) `collapsedFeatureSettings` stores
+per `FeatureSettingsSet` -- distinct from `featureSettingsLabel`'s user-facing
+text so relabeling one never silently breaks the other.
+-}
+featureSettingsKey : FeatureSettingsSet -> String
+featureSettingsKey set =
+    case set of
+        PeopleFeatureSettings ->
+            "people"
+
+        GroupFeatureSettings ->
+            "group"
+
+        PostFeatureSettings ->
+            "post"
+
+        EventFeatureSettings ->
+            "event"
+
+        MediaFeatureSettings ->
+            "media"
+
+
+featureSettingsLabel : FeatureSettingsSet -> String
+featureSettingsLabel set =
+    case set of
+        PeopleFeatureSettings ->
+            "People"
+
+        GroupFeatureSettings ->
+            "Groups"
+
+        PostFeatureSettings ->
+            "Posts"
+
+        EventFeatureSettings ->
+            "Events"
+
+        MediaFeatureSettings ->
+            "Media"
+
+
+{-| `model`'s in-progress `FeatureSettingsEdit` for one `FeatureSettingsSet`,
+alongside its setter `setFeatureSettingsEditFor` just below -- mirrors
+`permissionsEditFor`/`setPermissionsEditFor`.
+-}
+featureSettingsEditFor : FeatureSettingsSet -> Model -> Maybe FeatureSettingsEdit
+featureSettingsEditFor set model =
+    case set of
+        PeopleFeatureSettings ->
+            model.peopleSettingsEdit
+
+        GroupFeatureSettings ->
+            model.groupSettingsEdit
+
+        PostFeatureSettings ->
+            model.postSettingsEdit
+
+        EventFeatureSettings ->
+            model.eventSettingsEdit
+
+        MediaFeatureSettings ->
+            model.mediaSettingsEdit
+
+
+setFeatureSettingsEditFor : FeatureSettingsSet -> Maybe FeatureSettingsEdit -> Model -> Model
+setFeatureSettingsEditFor set edit model =
+    case set of
+        PeopleFeatureSettings ->
+            { model | peopleSettingsEdit = edit }
+
+        GroupFeatureSettings ->
+            { model | groupSettingsEdit = edit }
+
+        PostFeatureSettings ->
+            { model | postSettingsEdit = edit }
+
+        EventFeatureSettings ->
+            { model | eventSettingsEdit = edit }
+
+        MediaFeatureSettings ->
+            { model | mediaSettingsEdit = edit }
+
+
+{-| Only `UNMODERATED`/`PENDING` are valid `default_moderation` values (see
+`protos/server_configuration.proto`'s own `FeatureSettings` doc) -- unlike
+`Components.Users.allModerations`, which also offers `APPROVED`/`REJECTED`
+(valid on a Post/User's own moderation, but not as a server-wide default).
+-}
+allowedDefaultModerations : List Moderation
+allowedDefaultModerations =
+    [ UNMODERATED, PENDING ]
+
+
+{-| Only `SERVER_PUBLIC`/`GLOBAL_PUBLIC` are valid `default_visibility` values
+(same doc as `allowedDefaultModerations`) -- unlike `Components.Posts.allVisibilities`,
+which also offers `PRIVATE`/`LIMITED`.
+-}
+allowedDefaultVisibilities : List Visibility
+allowedDefaultVisibilities =
+    [ SERVERPUBLIC, GLOBALPUBLIC ]
+
+
+{-| The `visible`/`defaultModeration`/`defaultVisibility` trio shared by
+`FeatureSettings`, `PostSettings`, and `EventSettings` -- Elm's records are
+structural, so this reads from any of the three via one polymorphic function
+rather than needing a copy per type.
+-}
+featureSettingsSummary : { r | visible : Bool, defaultModeration : Moderation, defaultVisibility : Visibility } -> { visible : Bool, moderation : Moderation, visibility : Visibility }
+featureSettingsSummary settings =
+    { visible = settings.visible, moderation = settings.defaultModeration, visibility = settings.defaultVisibility }
+
+
+{-| One `FeatureSettingsSet`'s current `visible`/`defaultModeration`/
+`defaultVisibility`, defaulted (via `defaultFeatureSettings`/`defaultPostSettings`/
+`defaultEventSettings`) the same way `applyLogoChoice`/`applyColorFor` default
+their own optional message fields -- `ServerConfiguration`'s
+`peopleSettings`/etc. are all `Maybe`-wrapped even though the proto itself
+doesn't mark them `optional` (every message-typed field is implicitly
+optional in proto3).
+-}
+currentFeatureSettingsFor : FeatureSettingsSet -> ServerConfiguration -> { visible : Bool, moderation : Moderation, visibility : Visibility }
+currentFeatureSettingsFor set config =
+    case set of
+        PeopleFeatureSettings ->
+            featureSettingsSummary (Maybe.withDefault defaultFeatureSettings config.peopleSettings)
+
+        GroupFeatureSettings ->
+            featureSettingsSummary (Maybe.withDefault defaultFeatureSettings config.groupSettings)
+
+        PostFeatureSettings ->
+            featureSettingsSummary (Maybe.withDefault defaultPostSettings config.postSettings)
+
+        EventFeatureSettings ->
+            featureSettingsSummary (Maybe.withDefault defaultEventSettings config.eventSettings)
+
+        MediaFeatureSettings ->
+            featureSettingsSummary (Maybe.withDefault defaultFeatureSettings config.mediaSettings)
+
+
+{-| Overlays a `FeatureSettingsEdit`'s `visible`/`moderation`/`visibility`
+onto whichever of `FeatureSettings`/`PostSettings`/`EventSettings` `settings`
+already is, leaving every other field (`customTitle`, and for Posts/Events,
+`enableReplies`) untouched -- the polymorphic counterpart of
+`featureSettingsSummary`.
+-}
+updatedFeatureSettings : FeatureSettingsEdit -> { r | visible : Bool, defaultModeration : Moderation, defaultVisibility : Visibility } -> { r | visible : Bool, defaultModeration : Moderation, defaultVisibility : Visibility }
+updatedFeatureSettings edit settings =
+    { settings | visible = edit.visible, defaultModeration = edit.moderation, defaultVisibility = edit.visibility }
+
+
+{-| `FeatureSettingsSaveClicked`'s transform, passed to
+`AccountsPanel.updateServerConfig` the same way `applyPermissionsFor`'s result
+is -- overlays `edit`'s trio onto a freshly re-fetched `ServerConfiguration`'s
+matching field, defaulted the same way `currentFeatureSettingsFor` is.
+-}
+applyFeatureSettingsFor : FeatureSettingsSet -> FeatureSettingsEdit -> ServerConfiguration -> ServerConfiguration
+applyFeatureSettingsFor set edit config =
+    case set of
+        PeopleFeatureSettings ->
+            { config | peopleSettings = Just (updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.peopleSettings)) }
+
+        GroupFeatureSettings ->
+            { config | groupSettings = Just (updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.groupSettings)) }
+
+        PostFeatureSettings ->
+            { config | postSettings = Just (updatedFeatureSettings edit (Maybe.withDefault defaultPostSettings config.postSettings)) }
+
+        EventFeatureSettings ->
+            { config | eventSettings = Just (updatedFeatureSettings edit (Maybe.withDefault defaultEventSettings config.eventSettings)) }
+
+        MediaFeatureSettings ->
+            { config | mediaSettings = Just (updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.mediaSettings)) }
 
 
 {-| `LogoSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
@@ -1953,10 +2270,21 @@ settingsTab shared model server =
             adminAccountFor shared model
     in
     div [ class "server-details-tab-content server-details-settings" ]
-        [ permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
-        , permissionsSection DefaultPermissions "Default User Permissions" maybeAdminAccount model.defaultPermissionsEdit config.defaultUserPermissions
-        , permissionsSection BasicPermissions "Basic User Permissions" maybeAdminAccount model.basicPermissionsEdit config.basicUserPermissions
-        ]
+        ([ permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
+         , permissionsSection DefaultPermissions "Default User Permissions" maybeAdminAccount model.defaultPermissionsEdit config.defaultUserPermissions
+         , permissionsSection BasicPermissions "Basic User Permissions" maybeAdminAccount model.basicPermissionsEdit config.basicUserPermissions
+         ]
+            ++ ([ PeopleFeatureSettings, GroupFeatureSettings, PostFeatureSettings, EventFeatureSettings, MediaFeatureSettings ]
+                    |> List.map
+                        (\set ->
+                            featureSettingsSection set
+                                maybeAdminAccount
+                                (featureSettingsEditFor set model)
+                                (Set.member (featureSettingsKey set) model.collapsedFeatureSettings)
+                                (currentFeatureSettingsFor set config)
+                        )
+               )
+        )
 
 
 {-| One of the three server-wide permission sections (Anonymous/Default/Basic,
@@ -2027,6 +2355,135 @@ permissionEditBadge set permission =
             , title ("Remove " ++ Users.permissionText permission)
             ]
             [ text "×" ]
+        ]
+
+
+{-| One of the five per-feature settings sections (People/Groups/Posts/Events/Media,
+distinguished by `set`) -- a collapsible panel (`expanded`, toggled by
+`FeatureSettingsSectionToggled`, defaulted to expanded -- see
+`Model.collapsedFeatureSettings`), reusing the same `.section-title`/
+`.expandable-section-title`/`.expandable-section-arrow` header look
+`Components.Pages.UserProfilePage.expandableProfileSection` establishes for
+its own Permissions/Event Sync sections (not imported directly -- that
+function isn't exposed, and this page's header is an `h3` like
+`permissionsSection`'s own, not that page's `h2`). The body is
+`featureSettingsDisplayView` (plain text/a disabled checkbox, plus an Edit
+button for an admin) when this section has no in-progress `FeatureSettingsEdit`,
+or `featureSettingsEditView` (an enabled checkbox + Moderation/Visibility
+`<select>`s + Save/Cancel) while being edited -- mirrors `permissionsSection`'s
+own edit/non-edit split, just collapsible.
+-}
+featureSettingsSection : FeatureSettingsSet -> Maybe AccountsPanel.Account -> Maybe FeatureSettingsEdit -> Bool -> { visible : Bool, moderation : Moderation, visibility : Visibility } -> Html Msg
+featureSettingsSection set maybeAdminAccount maybeEdit collapsed current =
+    let
+        expanded =
+            not collapsed
+    in
+    div [ class "server-details-feature-settings" ]
+        (h3
+            [ classes [ "section-title", "expandable-section-title" ]
+            , onClick (FeatureSettingsSectionToggled set)
+            ]
+            [ span [ class "expandable-section-arrow" ]
+                [ text
+                    (if expanded then
+                        "▾"
+
+                     else
+                        "▸"
+                    )
+                ]
+            , text (featureSettingsLabel set)
+            ]
+            :: (if expanded then
+                    [ case maybeEdit of
+                        Just edit ->
+                            featureSettingsEditView set edit
+
+                        Nothing ->
+                            featureSettingsDisplayView set maybeAdminAccount current
+                    ]
+
+                else
+                    []
+               )
+        )
+
+
+{-| One label + right-aligned value/control row within a `featureSettingsSection`
+-- mirrors `facebookAppIdRow`'s own label/value layout (see `.server-details-feature-settings-row`
+in servers.css), just generic over whatever control (a `switchDisplay`/`flagSwitch`,
+or a plain monospace value) goes on the right.
+-}
+featureSettingsRow : String -> Html Msg -> Html Msg
+featureSettingsRow label_ control =
+    div [ class "server-details-feature-settings-row" ]
+        [ span [ class "server-details-feature-settings-label" ] [ text label_ ]
+        , control
+        ]
+
+
+{-| The non-editing body of a `featureSettingsSection` -- `visible` is always
+a disabled toggle switch (`switchDisplay`, the same `.switch`/`.slider` control
+`cdnTab` uses for its own read-only flags), `moderation`/`visibility` are plain
+monospace text, mirroring `Pages.Post.PostId_`'s `moderationView`/`visibilityView`
+non-editing case. The Edit button is only shown to an admin (`maybeAdminAccount`),
+same as `permissionsSection`.
+-}
+featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.Account -> { visible : Bool, moderation : Moderation, visibility : Visibility } -> Html Msg
+featureSettingsDisplayView set maybeAdminAccount current =
+    div [ class "server-details-feature-settings-display" ]
+        [ featureSettingsRow "Visible" (switchDisplay current.visible)
+        , featureSettingsRow "Moderation" (span [ class "server-details-feature-settings-value" ] [ text (Users.moderationText current.moderation) ])
+        , featureSettingsRow "Visibility" (span [ class "server-details-feature-settings-value" ] [ text (Posts.visibilityText current.visibility) ])
+        , case maybeAdminAccount of
+            Just _ ->
+                button [ class "server-details-rename-button", onClick (FeatureSettingsEditClicked set) ] [ text "Edit" ]
+
+            Nothing ->
+                text ""
+        ]
+
+
+{-| The editing body of a `featureSettingsSection` -- an enabled toggle switch
+(`flagSwitch`, same control the Federated Servers tab's own flags use) for
+`visible`, plus right-aligned `<select>`s for `moderation`/`visibility`
+narrowed to `allowedDefaultModerations`/`allowedDefaultVisibilities` (the only
+values `ServerConfiguration`'s own doc allows for a `default_moderation`/
+`default_visibility`), mirroring `Pages.Post.PostId_`'s `moderationView`/
+`visibilityView` editing case.
+-}
+featureSettingsEditView : FeatureSettingsSet -> FeatureSettingsEdit -> Html Msg
+featureSettingsEditView set edit =
+    div [ class "server-details-feature-settings-edit" ]
+        [ featureSettingsRow "Visible" (flagSwitch edit.visible (FeatureSettingsVisibleToggled set))
+        , featureSettingsRow "Moderation"
+            (select [ onInput (FeatureSettingsModerationChanged set) ]
+                (allowedDefaultModerations
+                    |> List.map
+                        (\moderation ->
+                            option
+                                [ value (Users.moderationText moderation), selected (edit.moderation == moderation) ]
+                                [ text (Users.moderationText moderation) ]
+                        )
+                )
+            )
+        , featureSettingsRow "Visibility"
+            (select [ onInput (FeatureSettingsVisibilityChanged set) ]
+                (allowedDefaultVisibilities
+                    |> List.map
+                        (\visibility ->
+                            option
+                                [ value (Posts.visibilityText visibility), selected (edit.visibility == visibility) ]
+                                [ text (Posts.visibilityText visibility) ]
+                        )
+                )
+            )
+        , div [ class "server-details-feature-settings-actions" ]
+            [ editSaveButton (FeatureSettingsSaveClicked set) edit.status
+            , editCancelButton (FeatureSettingsCancelClicked set) edit.status
+            ]
+        , editErrorView edit.status
         ]
 
 
@@ -2145,10 +2602,16 @@ facebookAuthConfigSection shared model server =
                 |> Maybe.withDefault ""
     in
     div [ class "server-details-facebook-auth" ]
-        [ h3 [ class "section-title" ] [ text "Facebook Authentication Configuration" ]
-        , facebookAppIdRow currentAppId model.facebookAppIdEdit maybeAdminAccount
-        , facebookAppSecretRow model.facebookAppSecretEdit maybeAdminAccount
-        ]
+        (h3 [ class "section-title" ] [ text "Facebook Authentication Configuration" ]
+            :: facebookAppIdRow currentAppId model.facebookAppIdEdit maybeAdminAccount
+            :: (case maybeAdminAccount of
+                    Just _ ->
+                        [ facebookAppSecretRow model.facebookAppSecretEdit maybeAdminAccount ]
+
+                    Nothing ->
+                        []
+               )
+        )
 
 
 facebookAppIdRow : String -> Maybe FacebookAuthFieldEdit -> Maybe AccountsPanel.Account -> Html Msg

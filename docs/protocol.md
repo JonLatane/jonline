@@ -102,6 +102,7 @@
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [EventSettings](#jonline-EventSettings)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
     - [PostSettings](#jonline-PostSettings)
@@ -2034,6 +2035,25 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="jonline-EventSettings"></a>
+
+### EventSettings
+Specific settings for Events.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| visible | [bool](#bool) |  | Hide the Events tab from the user with this flag. |
+| default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
+| default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
+| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
+| enable_replies | [bool](#bool) | optional | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
+
+
+
+
+
+
 <a name="jonline-ExternalCDNConfig"></a>
 
 ### ExternalCDNConfig
@@ -2078,15 +2098,15 @@ Encompasses both the feature&#39;s visibility and moderation settings.
 <a name="jonline-PostSettings"></a>
 
 ### PostSettings
-Specific settings for Posts and Events.
+Specific settings for Posts.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| visible | [bool](#bool) |  | Hide the Posts or Events tab from the user with this flag. |
+| visible | [bool](#bool) |  | Hide the Posts tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
+| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Squawks&#34;s instead of &#34;Posts&#34;. This is more an idea; internationalization is obviously problematic here. |
 | enable_replies | [bool](#bool) | optional | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
 
 
@@ -2129,7 +2149,7 @@ Configuration for a Jonline server instance.
 | people_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for users on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_USERS_GLOBALLY`. |
 | group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for groups on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
 | post_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for posts on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
-| event_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for events on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
+| event_settings | [EventSettings](#jonline-EventSettings) |  | Configuration for events on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
 | media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for media on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_MEDIA_GLOBALLY`. |
 | external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN. See ExternalCDNConfig for more details on securing this setup. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
