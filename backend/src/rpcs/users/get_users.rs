@@ -12,6 +12,7 @@ use crate::models;
 use crate::models::MEDIA_REFERENCE_COLUMNS;
 use crate::protos::UserListingType::*;
 use crate::protos::*;
+use crate::rpcs::validate_permission;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::follows;
 use crate::schema::media;
@@ -257,6 +258,39 @@ fn get_follow_requests(
     }
 }
 
+// Attaches `row_user`'s own `EventSyncDestination`s to `proto_user` -- only for the single-user
+// `GetUsers` lookups (`get_by_username`/`get_by_user_id`), never the list-returning ones, and only
+// when `user` (the viewer) is `row_user` themselves (and holds `SyncEventsToFacebook`) or an Admin
+// -- mirrors `get_event_sync_destinations.rs`'s own self-or-Admin gate exactly.
+// `validate_permission` already checks `vec![permission, Admin]` internally, so the self-view
+// check below also passes for an Admin viewing their own profile, with no extra permission needed.
+fn attach_own_event_sync_destinations(
+    proto_user: &mut User,
+    row_user: &models::User,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) {
+    let can_view_destinations = match user {
+        Some(viewer) if viewer.id == row_user.id => {
+            validate_permission(&Some(viewer), Permission::SyncEventsToFacebook).is_ok()
+        }
+        Some(viewer) => validate_permission(&Some(viewer), Permission::Admin).is_ok(),
+        None => false,
+    };
+    if can_view_destinations {
+        if let Ok(destinations) = models::get_event_sync_destinations_for_user(row_user.id, conn) {
+            let mut destinations: Vec<EventSyncDestination> = destinations
+                .into_iter()
+                .map(|(destination, owner)| {
+                    MarshalableEventSyncDestination(destination, owner).to_proto()
+                })
+                .collect();
+            attach_synced_event_instance_counts(&mut destinations, conn);
+            proto_user.event_sync_destinations = destinations;
+        }
+    }
+}
+
 fn get_by_username(
     request: GetUsersRequest,
     user: &Option<&models::User>,
@@ -318,14 +352,16 @@ fn get_by_username(
         )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow, media_reference)| {
+        .map(|(row_user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(
+            let mut proto_user = row_user.to_proto(
                 &follow.as_ref(),
                 &target_follow.as_ref(),
                 lookup.as_ref(),
                 Some(conn),
-            )
+            );
+            attach_own_event_sync_destinations(&mut proto_user, row_user, user, conn);
+            proto_user
         })
         .collect();
     GetUsersResponse {
@@ -389,14 +425,16 @@ fn get_by_user_id(
         )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow, media_reference)| {
+        .map(|(row_user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(
+            let mut proto_user = row_user.to_proto(
                 &follow.as_ref(),
                 &target_follow.as_ref(),
                 lookup.as_ref(),
                 Some(conn),
-            )
+            );
+            attach_own_event_sync_destinations(&mut proto_user, row_user, user, conn);
+            proto_user
         })
         .collect();
     Ok(GetUsersResponse {

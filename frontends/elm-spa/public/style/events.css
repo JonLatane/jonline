@@ -193,6 +193,63 @@
   text-overflow: ellipsis;
 }
 
+/* The `Just availableSyncDestinations` (push-enabled) branch of
+   `Components.Events.eventSyncDestinationsView` -- one row per destination
+   relevant to an `EventInstance`, each with a Push/Push again button.
+   Currently only ever rendered inside `Components.Pages.UserProfilePage`'s
+   embedded events feed (see that function's own doc). Named
+   `.event-card-sync-destination-*` (not `.event-sync-destination-*`) to
+   avoid colliding with `profiles.css`'s own identically-shaped classes for
+   the unrelated Event Sync Destinations *management* rows on
+   `UserProfilePage` itself. */
+.event-card-sync-destinations {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* `position: relative` mirrors `.event-synced-from`/`.event-card-link`'s own
+   paint-order trick so the row's link/button stay independently clickable
+   above `.event-card-link-overlay`. */
+.event-card-sync-destination-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.event-card-sync-destination-name {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.event-card-sync-destination-link {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.event-card-sync-destination-push {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.75rem;
+}
+
+.event-card-sync-destination-push-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.7rem;
+}
+
 .event-synced-to-link {
   color: inherit;
 }

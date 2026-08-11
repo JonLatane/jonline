@@ -245,6 +245,51 @@ enum WebUserInterface {
   ELM_SPA = 3;
 }
 
+// If set, should override the default tab set for the Elm navigation on a Jonline instance.
+message CustomNavigationTabSet {
+  // Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+  optional CustomNavigationTab home = 1;
+  // Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+  repeated CustomNavigationTabWithPath tabs = 2;
+}
+
+// The default navigation tabs in Jonline's Elm UI.
+enum NavigationTab {
+  // The home/landing tab.
+  HOME_TAB = 0;
+  // The Events tab.
+  EVENTS_TAB = 10;
+  // The Posts tab.
+  POSTS_TAB = 11;
+  // The People tab.
+  PEOPLE_TAB = 12;
+  // The About tab.
+  ABOUT_TAB = 15;
+}
+
+// Either one of the app's predefined tabs, or a Post
+message CustomNavigationTab {
+  oneof target {
+    // Links to one of the app's predefined tabs/pages.
+    NavigationTab tab = 1;
+    // Links to a specific Post (e.g. for a custom business site's page).
+    string post_id = 2;
+  }
+
+  // Emoji shown alongside (or in place of) the tab's icon.
+  optional string emoji_icon = 11;
+  // Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.
+  optional string title = 12;
+}
+
+message CustomNavigationTabWithPath {
+  // The tab to show at this path.
+  CustomNavigationTab custom_tab = 1;
+  // e.g. link /gigs or /shows for a band to the "Events" page.
+  // Or, /weddings to a Post about wedding offerings for a custom business site.
+  string path = 2;
+}
+
 // Color in ARGB hex format (i.e `0xAARRGGBB`).
 message ServerColors {
   // App Bar/primary accent color.

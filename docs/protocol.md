@@ -28,6 +28,9 @@
 - [users.proto](#users-proto)
     - [Author](#jonline-Author)
     - [ContactMethod](#jonline-ContactMethod)
+    - [EventSyncDestination](#jonline-EventSyncDestination)
+    - [EventSyncSource](#jonline-EventSyncSource)
+    - [FacebookPage](#jonline-FacebookPage)
     - [Follow](#jonline-Follow)
     - [GetUsersRequest](#jonline-GetUsersRequest)
     - [GetUsersResponse](#jonline-GetUsersResponse)
@@ -86,9 +89,6 @@
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
     - [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo)
     - [EventInstanceSyncDestination](#jonline-EventInstanceSyncDestination)
-    - [EventSyncDestination](#jonline-EventSyncDestination)
-    - [EventSyncSource](#jonline-EventSyncSource)
-    - [FacebookPage](#jonline-FacebookPage)
     - [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest)
     - [GetEventSyncDestinationsResponse](#jonline-GetEventSyncDestinationsResponse)
     - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
@@ -102,6 +102,9 @@
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [CustomNavigationTab](#jonline-CustomNavigationTab)
+    - [CustomNavigationTabSet](#jonline-CustomNavigationTabSet)
+    - [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath)
     - [EventSettings](#jonline-EventSettings)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
@@ -113,6 +116,7 @@
     - [WebPushConfig](#jonline-WebPushConfig)
   
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
+    - [NavigationTab](#jonline-NavigationTab)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
     - [WebUserInterface](#jonline-WebUserInterface)
   
@@ -732,6 +736,67 @@ but verification RPCs are not yet implemented.
 
 
 
+<a name="jonline-EventSyncDestination"></a>
+
+### EventSyncDestination
+A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
+but for pushing instances out rather than pulling events in.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the destination. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncDestination was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncDestination was last updated. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike `EventSyncSource`&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances to. |
+
+
+
+
+
+
+<a name="jonline-EventSyncSource"></a>
+
+### EventSyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+
+
+
+
+
+
+<a name="jonline-FacebookPage"></a>
+
+### FacebookPage
+A Facebook Page connected as an `EventSyncDestination`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_id | [string](#string) |  | The Facebook Page&#39;s ID. |
+| page_name | [string](#string) |  | The Facebook Page&#39;s name, populated by the server when the connection is made. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses. |
+
+
+
+
+
+
 <a name="jonline-Follow"></a>
 
 ### Follow
@@ -850,6 +915,7 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
+| event_sync_destinations | [EventSyncDestination](#jonline-EventSyncDestination) | repeated | The target user&#39;s own linked EventSyncDestinations (e.g. Facebook Pages). Only ever populated by `GetUsers`&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -1755,67 +1821,6 @@ The status of an EventInstance&#39;s sync (cross-post) to one EventSyncDestinati
 
 
 
-<a name="jonline-EventSyncDestination"></a>
-
-### EventSyncDestination
-A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
-but for pushing instances out rather than pulling events in.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the destination. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncDestination was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncDestination was last updated. |
-| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike `EventSyncSource`&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
-| facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances to. |
-
-
-
-
-
-
-<a name="jonline-EventSyncSource"></a>
-
-### EventSyncSource
-A user-owned source to sync events from.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the synchronization. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
-| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
-| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
-| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
-| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
-
-
-
-
-
-
-<a name="jonline-FacebookPage"></a>
-
-### FacebookPage
-A Facebook Page connected as an `EventSyncDestination`.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_id | [string](#string) |  | The Facebook Page&#39;s ID. |
-| page_name | [string](#string) |  | The Facebook Page&#39;s name, populated by the server when the connection is made. |
-| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses. |
-
-
-
-
-
-
 <a name="jonline-GetEventAttendancesRequest"></a>
 
 ### GetEventAttendancesRequest
@@ -2035,6 +2040,56 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="jonline-CustomNavigationTab"></a>
+
+### CustomNavigationTab
+Either one of the app&#39;s predefined tabs, or a Post
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tab | [NavigationTab](#jonline-NavigationTab) |  | Links to one of the app&#39;s predefined tabs/pages. |
+| post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
+| emoji_icon | [string](#string) | optional | Emoji shown alongside (or in place of) the tab&#39;s icon. |
+| title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
+
+
+
+
+
+
+<a name="jonline-CustomNavigationTabSet"></a>
+
+### CustomNavigationTabSet
+If set, should override the default tab set for the Elm navigation on a Jonline instance.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. |
+| tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. |
+
+
+
+
+
+
+<a name="jonline-CustomNavigationTabWithPath"></a>
+
+### CustomNavigationTabWithPath
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| custom_tab | [CustomNavigationTab](#jonline-CustomNavigationTab) |  | The tab to show at this path. |
+| path | [string](#string) |  | e.g. link /gigs or /shows for a band to the &#34;Events&#34; page. Or, /weddings to a Post about wedding offerings for a custom business site. |
+
+
+
+
+
+
 <a name="jonline-EventSettings"></a>
 
 ### EventSettings
@@ -2230,6 +2285,21 @@ Authentication features that can be enabled/disabled by the server admin.
 | AUTHENTICATION_FEATURE_UNKNOWN | 0 | An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) |
 | CREATE_ACCOUNT | 1 | Users can sign up for an account. |
 | LOGIN | 2 | Users can sign in with an existing account. |
+
+
+
+<a name="jonline-NavigationTab"></a>
+
+### NavigationTab
+The default navigation tabs in Jonline&#39;s Elm UI.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| HOME_TAB | 0 | The home/landing tab. |
+| EVENTS_TAB | 10 | The Events tab. |
+| POSTS_TAB | 11 | The Posts tab. |
+| PEOPLE_TAB | 12 | The People tab. |
+| ABOUT_TAB | 15 | The About tab. |
 
 
 

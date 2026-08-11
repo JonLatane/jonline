@@ -71,6 +71,11 @@ impl ToProtoUser for models::User {
             federated_profiles: conn
                 .map(|conn| get_federated_users(self.id, conn))
                 .unwrap_or(vec![]),
+            // Only ever populated by `get_users.rs`'s single-user lookups
+            // (`get_by_username`/`get_by_user_id`, self-or-Admin gated), as a
+            // post-`to_proto` step -- see `attach_own_event_sync_destinations`.
+            // Never populated here, unlike `federated_profiles` above.
+            event_sync_destinations: vec![],
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
             target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
             current_group_membership: None, // TODO

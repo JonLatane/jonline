@@ -167,7 +167,6 @@ type Msg
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
     | EventSyncSourcesExpandedToggled
-    | GotEventSyncDestinationsFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncDestinationsResponse ))
     | EventSyncDestinationsExpandedToggled
     | FacebookLoginClicked
     | GotFacebookLoginResult Decode.Value
@@ -360,16 +359,6 @@ initEventSyncSources =
     { status = EventSyncSourcesNotFetched, sources = [], rowEdits = Dict.empty, addForm = defaultEventSyncAddForm }
 
 
-{-| The fetch state of `Model.eventSyncDestinations.destinations` -- mirrors `EventSyncFetchStatus`
-exactly, just for destinations rather than sources.
--}
-type EventSyncDestinationFetchStatus
-    = EventSyncDestinationsNotFetched
-    | EventSyncDestinationsFetching
-    | EventSyncDestinationsFetchFailed String
-    | EventSyncDestinationsFetched
-
-
 {-| One Facebook Page returned by the Graph API's `/me/accounts` after a successful Facebook
 login (`fetchFacebookPages`) -- `id`/`name` only. The per-page access token that endpoint also
 returns is never used: the backend re-derives its own long-lived Page token server-side from the
@@ -410,28 +399,29 @@ type FacebookLoginStatus
 
 {-| The "Event Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
 (bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
-only mutable-from-here field, in effect, is "does it exist"), so this is just the fetched list
-plus the `FacebookLoginStatus` state machine that creates one, plus a per-destination-id
-`SubmitStatus` for `EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since,
-in principle, more than one delete could be in flight -- e.g. an Admin clicking two rows quickly).
+only mutable-from-here field, in effect, is "does it exist"), so this is just the `FacebookLoginStatus`
+state machine that creates a new one, plus a per-destination-id `SubmitStatus` for
+`EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since, in principle, more
+than one delete could be in flight -- e.g. an Admin clicking two rows quickly). The destinations
+themselves are no longer fetched/held here at all -- `Components.Users.Resolver` already resolves
+this profile's own `User` (via `GetUsers`), which (self-or-Admin gated server-side, see
+`protos/users.proto`'s own doc on `User.event_sync_destinations`) already carries them, so
+`eventSyncDestinationsSection` just reads `user.eventSyncDestinations` directly.
+
 Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
 a Facebook Page is a low-stakes, easily-reversible action (nothing else gets deleted --
 `deleteSyncedPosts` is always sent `False`, see `Components.EventSyncDestinations`), so there's no
 need for the global "are you sure?" overlay here.
 -}
 type alias EventSyncDestinationsState =
-    { status : EventSyncDestinationFetchStatus
-    , destinations : List EventSyncDestination
-    , login : FacebookLoginStatus
+    { login : FacebookLoginStatus
     , deleteStatuses : Dict String SubmitStatus
     }
 
 
 initEventSyncDestinations : EventSyncDestinationsState
 initEventSyncDestinations =
-    { status = EventSyncDestinationsNotFetched
-    , destinations = []
-    , login = FacebookLoginNotStarted
+    { login = FacebookLoginNotStarted
     , deleteStatuses = Dict.empty
     }
 
@@ -597,31 +587,20 @@ updateInner shared msg model =
                             else
                                 ( federatedModel, Effect.none )
 
-                        -- Only fetched for the caller's own profile, and only when they could
-                        -- actually use the section at all (see `canUseFacebookSync`'s own doc) --
-                        -- no point firing a request that either can't return anything useful or
-                        -- (unlike sources) wouldn't even be shown.
-                        ( eventSyncDestFetchedModel, eventSyncDestFetchEffect ) =
-                            if isOwnProfile maybeAccount user && canUseFacebookSync shared newResolver.targetHost maybeAccount then
-                                fetchEventSyncDestinations shared newResolver.targetHost user.id eventSyncFetchedModel
-
-                            else
-                                ( eventSyncFetchedModel, Effect.none )
-
                         -- Only ever `init`ed once -- see `Model.posts`/`Model.events`'
                         -- own doc for why a later refetch (which re-fires this same
                         -- `Loaded` case) must leave an already-`Just` copy alone.
                         ( postsInitedModel, postsInitEffect ) =
-                            case eventSyncDestFetchedModel.posts of
+                            case eventSyncFetchedModel.posts of
                                 Just _ ->
-                                    ( eventSyncDestFetchedModel, Effect.none )
+                                    ( eventSyncFetchedModel, Effect.none )
 
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncDestFetchedModel.navKey eventSyncDestFetchedModel.path eventSyncDestFetchedModel.query True
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncFetchedModel.navKey eventSyncFetchedModel.path eventSyncFetchedModel.query True
                                     in
-                                    ( { eventSyncDestFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
+                                    ( { eventSyncFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
 
                         ( eventsInitedModel, eventsInitEffect ) =
                             case postsInitedModel.events of
@@ -631,7 +610,7 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( eventsModel, eventsEffect ) =
-                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True (Just user.eventSyncDestinations)
                                     in
                                     ( { postsInitedModel
                                         | events =
@@ -643,13 +622,28 @@ updateInner shared msg model =
                                       }
                                     , Effect.map EventsMsg eventsEffect
                                     )
+
+                        -- A *refetch* (not just the first load) needs this too --
+                        -- the `Just _ -> (postsInitedModel, Effect.none)` guard
+                        -- above deliberately leaves an already-`init`ed
+                        -- `EventsPage.Model` alone, so its own `availableSyncDestinations`
+                        -- (seeded once, at `init` time) would otherwise go stale
+                        -- after e.g. linking/unlinking a Facebook Page (see
+                        -- `refetch`'s own call sites below). Harmless/redundant on
+                        -- the very first load, where `init` above already got the
+                        -- right value directly.
+                        eventsResyncedModel =
+                            { eventsInitedModel
+                                | events =
+                                    eventsInitedModel.events
+                                        |> Maybe.map (\em -> { em | availableSyncDestinations = Just user.eventSyncDestinations })
+                            }
                     in
-                    ( eventsInitedModel
+                    ( eventsResyncedModel
                     , Effect.batch
                         [ Effect.map ResolverMsg resolverEffect
                         , federatedEffect
                         , eventSyncFetchEffect
-                        , eventSyncDestFetchEffect
                         , postsInitEffect
                         , eventsInitEffect
                         ]
@@ -1482,24 +1476,6 @@ updateInner shared msg model =
                 Nothing ->
                     ( { model | eventSyncSourcesExpanded = expanded }, Effect.none )
 
-        GotEventSyncDestinationsFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
-            let
-                ed =
-                    model.eventSyncDestinations
-            in
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetched, destinations = response.destinations } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
-
-        GotEventSyncDestinationsFetchResult (Err err) ->
-            let
-                ed =
-                    model.eventSyncDestinations
-            in
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed (AccountsPanel.grpcErrorToString err) } }
-            , Effect.none
-            )
-
         EventSyncDestinationsExpandedToggled ->
             let
                 expanded =
@@ -1592,14 +1568,18 @@ updateInner shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, created )) ->
+        GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ed =
                     model.eventSyncDestinations
+
+                loginResetModel =
+                    { model | eventSyncDestinations = { ed | login = FacebookLoginNotStarted } }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared loginResetModel
             in
-            ( { model | eventSyncDestinations = { ed | destinations = ed.destinations ++ [ created ], login = FacebookLoginNotStarted } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
+            ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotFacebookLinkResult (Err err) ->
             ( setEventSyncDestinationsLogin (FacebookLoginFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
@@ -1621,10 +1601,14 @@ updateInner shared msg model =
             let
                 ed =
                     model.eventSyncDestinations
+
+                clearedModel =
+                    { model | eventSyncDestinations = { ed | deleteStatuses = Dict.remove id ed.deleteStatuses } }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared clearedModel
             in
-            ( { model | eventSyncDestinations = { ed | destinations = List.filter (\d -> d.id /= id) ed.destinations, deleteStatuses = Dict.remove id ed.deleteStatuses } }
-            , accountsPanelEffect maybeAccountsPanelMsg
-            )
+            ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotEventSyncDestinationDeleteResult id (Err err) ->
             let
@@ -1920,7 +1904,7 @@ refetchEvents shared model =
         Resolver.Loaded user ->
             let
                 ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True (Just user.eventSyncDestinations)
             in
             ( { model
                 | events =
@@ -1965,28 +1949,6 @@ fetchEventSyncSources shared host targetUserId model =
             )
 
 
-{-| Mirrors `fetchEventSyncSources`, just for destinations -- always fetches the caller's own
-(`targetUserId = user.id` from the page's own resolved profile, same as sources), since
-`eventSyncDestinationsSection` is only ever shown on one's own profile (see `canUseFacebookSync`).
--}
-fetchEventSyncDestinations : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
-fetchEventSyncDestinations shared host targetUserId model =
-    let
-        ed =
-            model.eventSyncDestinations
-    in
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
-        Just account ->
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetching, destinations = [] } }
-            , EventSyncDestinations.getEventSyncDestinations shared.accounts ( Just account.userId, host ) targetUserId
-                |> Task.attempt GotEventSyncDestinationsFetchResult
-                |> Effect.fromCmd
-            )
-
-        Nothing ->
-            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed "You're not signed in on that server.", destinations = [] } }
-            , Effect.none
-            )
 
 
 setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
@@ -3219,29 +3181,24 @@ eventSyncDestinationsSection shared model maybeAccount user =
             "Event Sync Destinations"
             model.eventSyncDestinationsExpanded
             EventSyncDestinationsExpandedToggled
-            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations)
-            , facebookLoginView model.eventSyncDestinations
+            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.eventSyncDestinations)
+            , facebookLoginView model.eventSyncDestinations user.eventSyncDestinations
             ]
 
 
-eventSyncDestinationsContentView : EventSyncDestinationsState -> List (Html Msg)
-eventSyncDestinationsContentView ed =
-    if not (List.isEmpty ed.destinations) then
-        List.map (eventSyncDestinationRowView ed) ed.destinations
+{-| Reads `destinations` straight off the profile's already-resolved `User`
+(`user.eventSyncDestinations`, self-or-Admin gated server-side -- see
+`protos/users.proto`'s own doc on that field) rather than a separately
+fetched/tracked status -- no "Loading…" state needed, same as nothing
+elsewhere shows a "loading permissions" spinner for other `User` fields.
+-}
+eventSyncDestinationsContentView : EventSyncDestinationsState -> List EventSyncDestination -> List (Html Msg)
+eventSyncDestinationsContentView ed destinations =
+    if List.isEmpty destinations then
+        [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
 
     else
-        case ed.status of
-            EventSyncDestinationsNotFetched ->
-                []
-
-            EventSyncDestinationsFetching ->
-                [ div [ class "event-sync-destinations-message" ] [ text "Loading…" ] ]
-
-            EventSyncDestinationsFetchFailed err ->
-                [ div [ class "event-sync-destinations-message" ] [ text err ] ]
-
-            EventSyncDestinationsFetched ->
-                [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
+        List.map (eventSyncDestinationRowView ed) destinations
 
 
 eventSyncDestinationRowView : EventSyncDestinationsState -> EventSyncDestination -> Html Msg
@@ -3300,11 +3257,11 @@ pluralCount count noun =
 `EventSyncDestinationsState`'s own doc for why there's no "add another" flow in this first
 version) and every step of `FacebookLoginStatus` past that.
 -}
-facebookLoginView : EventSyncDestinationsState -> Html Msg
-facebookLoginView ed =
+facebookLoginView : EventSyncDestinationsState -> List EventSyncDestination -> Html Msg
+facebookLoginView ed destinations =
     case ed.login of
         FacebookLoginNotStarted ->
-            if List.isEmpty ed.destinations then
+            if List.isEmpty destinations then
                 button
                     [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
                     [ text "Sign in to Facebook Page" ]

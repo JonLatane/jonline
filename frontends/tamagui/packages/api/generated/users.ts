@@ -232,6 +232,14 @@ export interface User {
    * `Federate`
    */
   federatedProfiles: FederatedAccount[];
+  /**
+   * The target user's own linked EventSyncDestinations (e.g. Facebook Pages).
+   * Only ever populated by `GetUsers`' single-user lookups (by username or by
+   * user_id) when the viewer is the target user themselves (and holds
+   * `SYNC_EVENTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including
+   * via every other `GetUsers` listing type and via `GetCurrentUser`.
+   */
+  eventSyncDestinations: EventSyncDestination[];
   /** The time the user was created. */
   createdAt:
     | string
@@ -255,6 +263,88 @@ export interface Author {
   avatar?: MediaReference | undefined;
   realName?: string | undefined;
   permissions: Permission[];
+}
+
+/** A user-owned source to sync events from. */
+export interface EventSyncSource {
+  /** Unique ID for the synchronization. */
+  id: string;
+  /** The user information for the owner of this event sync. */
+  owner:
+    | Author
+    | undefined;
+  /** How frequently the sync should happen in seconds. */
+  syncIntervalSeconds: number;
+  /** The time the EventSyncSource was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the EventSyncSource was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /** The time the EventSyncSource was last synced. */
+  lastSyncedAt?:
+    | string
+    | undefined;
+  /**
+   * The number of events total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventCount: number;
+  /**
+   * The number of event instances total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventInstanceCount: number;
+  /** The iCal subscription URL for the calendar sync. */
+  icsSubscriptionUrl?: string | undefined;
+}
+
+/**
+ * A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
+ * but for pushing instances out rather than pulling events in.
+ */
+export interface EventSyncDestination {
+  /** Unique ID for the destination. */
+  id: string;
+  /** The user information for the owner of this destination. */
+  owner:
+    | Author
+    | undefined;
+  /** The time the EventSyncDestination was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the EventSyncDestination was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /**
+   * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
+   * request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
+   * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
+   * in bulk on an interval.
+   */
+  syncedEventInstanceCount?:
+    | number
+    | undefined;
+  /** A connected Facebook Page to post EventInstances to. */
+  facebookPage?: FacebookPage | undefined;
+}
+
+/** A Facebook Page connected as an `EventSyncDestination`. */
+export interface FacebookPage {
+  /** The Facebook Page's ID. */
+  pageId: string;
+  /** The Facebook Page's name, populated by the server when the connection is made. */
+  pageName: string;
+  /**
+   * Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token
+   * from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
+   * Never populated in responses.
+   */
+  shortLivedUserAccessToken?: string | undefined;
 }
 
 /** Model for a user's follow of another user. */
@@ -389,6 +479,7 @@ function createBaseUser(): User {
     currentGroupMembership: undefined,
     hasAdvancedData: false,
     federatedProfiles: [],
+    eventSyncDestinations: [],
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -469,6 +560,9 @@ export const User: MessageFns<User> = {
     }
     for (const v of message.federatedProfiles) {
       FederatedAccount.encode(v!, writer.uint32(650).fork()).join();
+    }
+    for (const v of message.eventSyncDestinations) {
+      EventSyncDestination.encode(v!, writer.uint32(658).fork()).join();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(802).fork()).join();
@@ -688,6 +782,14 @@ export const User: MessageFns<User> = {
           message.federatedProfiles.push(FederatedAccount.decode(reader, reader.uint32()));
           continue;
         }
+        case 82: {
+          if (tag !== 658) {
+            break;
+          }
+
+          message.eventSyncDestinations.push(EventSyncDestination.decode(reader, reader.uint32()));
+          continue;
+        }
         case 100: {
           if (tag !== 802) {
             break;
@@ -748,6 +850,9 @@ export const User: MessageFns<User> = {
       hasAdvancedData: isSet(object.hasAdvancedData) ? globalThis.Boolean(object.hasAdvancedData) : false,
       federatedProfiles: globalThis.Array.isArray(object?.federatedProfiles)
         ? object.federatedProfiles.map((e: any) => FederatedAccount.fromJSON(e))
+        : [],
+      eventSyncDestinations: globalThis.Array.isArray(object?.eventSyncDestinations)
+        ? object.eventSyncDestinations.map((e: any) => EventSyncDestination.fromJSON(e))
         : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
@@ -828,6 +933,9 @@ export const User: MessageFns<User> = {
     if (message.federatedProfiles?.length) {
       obj.federatedProfiles = message.federatedProfiles.map((e) => FederatedAccount.toJSON(e));
     }
+    if (message.eventSyncDestinations?.length) {
+      obj.eventSyncDestinations = message.eventSyncDestinations.map((e) => EventSyncDestination.toJSON(e));
+    }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
     }
@@ -880,6 +988,7 @@ export const User: MessageFns<User> = {
         : undefined;
     message.hasAdvancedData = object.hasAdvancedData ?? false;
     message.federatedProfiles = object.federatedProfiles?.map((e) => FederatedAccount.fromPartial(e)) || [];
+    message.eventSyncDestinations = object.eventSyncDestinations?.map((e) => EventSyncDestination.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;
@@ -1022,6 +1131,453 @@ export const Author: MessageFns<Author> = {
       : undefined;
     message.realName = object.realName ?? undefined;
     message.permissions = object.permissions?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseEventSyncSource(): EventSyncSource {
+  return {
+    id: "",
+    owner: undefined,
+    syncIntervalSeconds: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+    lastSyncedAt: undefined,
+    eventCount: 0,
+    eventInstanceCount: 0,
+    icsSubscriptionUrl: undefined,
+  };
+}
+
+export const EventSyncSource: MessageFns<EventSyncSource> = {
+  encode(message: EventSyncSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.owner !== undefined) {
+      Author.encode(message.owner, writer.uint32(18).fork()).join();
+    }
+    if (message.syncIntervalSeconds !== 0) {
+      writer.uint32(24).uint64(message.syncIntervalSeconds);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.lastSyncedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSyncedAt), writer.uint32(50).fork()).join();
+    }
+    if (message.eventCount !== 0) {
+      writer.uint32(56).uint64(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      writer.uint32(64).uint64(message.eventInstanceCount);
+    }
+    if (message.icsSubscriptionUrl !== undefined) {
+      writer.uint32(74).string(message.icsSubscriptionUrl);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSyncSource {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSyncSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.owner = Author.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.syncIntervalSeconds = longToNumber(reader.uint64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lastSyncedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.eventCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.eventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.icsSubscriptionUrl = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSyncSource {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
+      syncIntervalSeconds: isSet(object.syncIntervalSeconds) ? globalThis.Number(object.syncIntervalSeconds) : 0,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      lastSyncedAt: isSet(object.lastSyncedAt) ? globalThis.String(object.lastSyncedAt) : undefined,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
+      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
+      icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
+    };
+  },
+
+  toJSON(message: EventSyncSource): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== undefined) {
+      obj.owner = Author.toJSON(message.owner);
+    }
+    if (message.syncIntervalSeconds !== 0) {
+      obj.syncIntervalSeconds = Math.round(message.syncIntervalSeconds);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.lastSyncedAt !== undefined) {
+      obj.lastSyncedAt = message.lastSyncedAt;
+    }
+    if (message.eventCount !== 0) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
+    }
+    if (message.icsSubscriptionUrl !== undefined) {
+      obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSyncSource>, I>>(base?: I): EventSyncSource {
+    return EventSyncSource.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSyncSource>, I>>(object: I): EventSyncSource {
+    const message = createBaseEventSyncSource();
+    message.id = object.id ?? "";
+    message.owner = (object.owner !== undefined && object.owner !== null)
+      ? Author.fromPartial(object.owner)
+      : undefined;
+    message.syncIntervalSeconds = object.syncIntervalSeconds ?? 0;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.lastSyncedAt = object.lastSyncedAt ?? undefined;
+    message.eventCount = object.eventCount ?? 0;
+    message.eventInstanceCount = object.eventInstanceCount ?? 0;
+    message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
+    return message;
+  },
+};
+
+function createBaseEventSyncDestination(): EventSyncDestination {
+  return {
+    id: "",
+    owner: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+    syncedEventInstanceCount: undefined,
+    facebookPage: undefined,
+  };
+}
+
+export const EventSyncDestination: MessageFns<EventSyncDestination> = {
+  encode(message: EventSyncDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.owner !== undefined) {
+      Author.encode(message.owner, writer.uint32(18).fork()).join();
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.syncedEventInstanceCount !== undefined) {
+      writer.uint32(48).uint64(message.syncedEventInstanceCount);
+    }
+    if (message.facebookPage !== undefined) {
+      FacebookPage.encode(message.facebookPage, writer.uint32(74).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSyncDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSyncDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.owner = Author.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.syncedEventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.facebookPage = FacebookPage.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSyncDestination {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      syncedEventInstanceCount: isSet(object.syncedEventInstanceCount)
+        ? globalThis.Number(object.syncedEventInstanceCount)
+        : undefined,
+      facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
+    };
+  },
+
+  toJSON(message: EventSyncDestination): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== undefined) {
+      obj.owner = Author.toJSON(message.owner);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.syncedEventInstanceCount !== undefined) {
+      obj.syncedEventInstanceCount = Math.round(message.syncedEventInstanceCount);
+    }
+    if (message.facebookPage !== undefined) {
+      obj.facebookPage = FacebookPage.toJSON(message.facebookPage);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSyncDestination>, I>>(base?: I): EventSyncDestination {
+    return EventSyncDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSyncDestination>, I>>(object: I): EventSyncDestination {
+    const message = createBaseEventSyncDestination();
+    message.id = object.id ?? "";
+    message.owner = (object.owner !== undefined && object.owner !== null)
+      ? Author.fromPartial(object.owner)
+      : undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.syncedEventInstanceCount = object.syncedEventInstanceCount ?? undefined;
+    message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
+      ? FacebookPage.fromPartial(object.facebookPage)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseFacebookPage(): FacebookPage {
+  return { pageId: "", pageName: "", shortLivedUserAccessToken: undefined };
+}
+
+export const FacebookPage: MessageFns<FacebookPage> = {
+  encode(message: FacebookPage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.pageId !== "") {
+      writer.uint32(10).string(message.pageId);
+    }
+    if (message.pageName !== "") {
+      writer.uint32(18).string(message.pageName);
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      writer.uint32(26).string(message.shortLivedUserAccessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FacebookPage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFacebookPage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pageId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.shortLivedUserAccessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FacebookPage {
+    return {
+      pageId: isSet(object.pageId) ? globalThis.String(object.pageId) : "",
+      pageName: isSet(object.pageName) ? globalThis.String(object.pageName) : "",
+      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
+        ? globalThis.String(object.shortLivedUserAccessToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: FacebookPage): unknown {
+    const obj: any = {};
+    if (message.pageId !== "") {
+      obj.pageId = message.pageId;
+    }
+    if (message.pageName !== "") {
+      obj.pageName = message.pageName;
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FacebookPage>, I>>(base?: I): FacebookPage {
+    return FacebookPage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FacebookPage>, I>>(object: I): FacebookPage {
+    const message = createBaseFacebookPage();
+    message.pageId = object.pageId ?? "";
+    message.pageName = object.pageName ?? "";
+    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
     return message;
   },
 };
@@ -1659,6 +2215,17 @@ function fromTimestamp(t: Timestamp): string {
   let millis = (t.seconds || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis).toISOString();
+}
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
 }
 
 function isSet(value: any): boolean {
