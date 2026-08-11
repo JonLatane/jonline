@@ -43,8 +43,8 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
-import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, type_, value)
+import Html exposing (Html, a, button, div, h2, h3, input, label, option, p, select, span, text)
+import Html.Attributes exposing (checked, class, classList, disabled, href, placeholder, selected, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode
@@ -53,8 +53,10 @@ import Proto.Google.Protobuf
 import Proto.Jonline exposing (EventSyncDestination, EventSyncSource, FederatedAccount, User, defaultEventSyncDestination, defaultEventSyncSource, defaultMediaReference)
 import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -76,6 +78,9 @@ type alias Model =
     , federatedProfiles : Dict String FederatedProfileStatus
     , realNameEdit : Maybe RealNameEdit
     , avatarEdit : Maybe AvatarEdit
+    , visibilityEdit : Maybe VisibilityEdit
+    , moderationEdit : Maybe ModerationEdit
+    , followModerationStatus : SubmitStatus
     , permissionsEdit : Maybe PermissionsEdit
     , permissionsExpanded : Bool
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
@@ -122,6 +127,18 @@ type Msg
     | AvatarSaveClicked
     | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | BioEditClicked
+    | VisibilityEditClicked
+    | VisibilityChanged String
+    | VisibilityCancelClicked
+    | VisibilitySaveClicked
+    | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | ModerationEditClicked
+    | ModerationChanged String
+    | ModerationCancelClicked
+    | ModerationSaveClicked
+    | GotModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | FollowModerationToggled
+    | GotFollowModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | PermissionsExpandedToggled
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
@@ -214,6 +231,30 @@ button/the `Shared.MyMediaPanel` chooser this opens rather than typing.
 -}
 type alias AvatarEdit =
     { choice : AvatarChoice
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the Visibility picker (see `Model.visibilityEdit`) is
+being edited by the profile's own owner or an Admin (see `canEditProfile`,
+the same gate `backend/src/rpcs/users/update_user.rs`'s `admin || self_update`
+branch enforces server-side, which is also what actually applies
+`visibility`) -- mirrors `Pages.Post.PostId_.VisibilityEdit`.
+-}
+type alias VisibilityEdit =
+    { pending : Visibility
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the Moderation picker (see `Model.moderationEdit`) is
+being edited by an Admin or a `MODERATEUSERS` holder (see `canModerateUser`,
+mirroring `update_user.rs`'s own `admin || moderator` branch, which is also
+what actually applies `moderation`) -- mirrors `VisibilityEdit` exactly, just
+for `Moderation` instead of `Visibility`.
+-}
+type alias ModerationEdit =
+    { pending : Moderation
     , status : SubmitStatus
     }
 
@@ -417,6 +458,9 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , federatedProfiles = Dict.empty
             , realNameEdit = Nothing
             , avatarEdit = Nothing
+            , visibilityEdit = Nothing
+            , moderationEdit = Nothing
+            , followModerationStatus = Idle
             , permissionsEdit = Nothing
             , permissionsExpanded = False
             , federatedProfilesEdit = Nothing
@@ -589,7 +633,16 @@ updateInner shared msg model =
                                         ( eventsModel, eventsEffect ) =
                                             EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True
                                     in
-                                    ( { postsInitedModel | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+                                    ( { postsInitedModel
+                                        | events =
+                                            Just
+                                                { eventsModel
+                                                    | showSyncSources = model.eventSyncSourcesExpanded
+                                                    , showSyncDestinations = model.eventSyncDestinationsExpanded
+                                                }
+                                      }
+                                    , Effect.map EventsMsg eventsEffect
+                                    )
                     in
                     ( eventsInitedModel
                     , Effect.batch
@@ -921,6 +974,124 @@ updateInner shared msg model =
 
                 _ ->
                     ( model, Effect.none )
+
+        VisibilityEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | visibilityEdit = Just { pending = user.visibility, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        VisibilityChanged text ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit
+                        |> Maybe.map (\edit -> { edit | pending = Users.visibilityFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        VisibilityCancelClicked ->
+            ( { model | visibilityEdit = Nothing }, Effect.none )
+
+        VisibilitySaveClicked ->
+            case ( model.resolver.status, model.visibilityEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | visibilityEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | visibility = edit.pending })
+                        |> Task.attempt GotVisibilitySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotVisibilitySaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, visibilityEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotVisibilitySaveResult (Err err) ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        ModerationEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | moderationEdit = Just { pending = user.moderation, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        ModerationChanged text ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit
+                        |> Maybe.map (\edit -> { edit | pending = Users.moderationFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        ModerationCancelClicked ->
+            ( { model | moderationEdit = Nothing }, Effect.none )
+
+        ModerationSaveClicked ->
+            case ( model.resolver.status, model.moderationEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | moderationEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | moderation = edit.pending })
+                        |> Task.attempt GotModerationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, moderationEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotModerationSaveResult (Err err) ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        FollowModerationToggled ->
+            case ( model.resolver.status, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just ( server, account ) ) ->
+                    let
+                        newModeration =
+                            if user.defaultFollowModeration == PENDING then
+                                UNMODERATED
+
+                            else
+                                PENDING
+                    in
+                    ( { model | followModerationStatus = Submitting }
+                    , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | defaultFollowModeration = newModeration })
+                        |> Task.attempt GotFollowModerationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFollowModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, followModerationStatus = Idle }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotFollowModerationSaveResult (Err err) ->
+            ( { model | followModerationStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Effect.none )
 
         PermissionsExpandedToggled ->
             ( { model | permissionsExpanded = not model.permissionsExpanded }, Effect.none )
@@ -1294,7 +1465,22 @@ updateInner shared msg model =
             )
 
         EventSyncSourcesExpandedToggled ->
-            ( { model | eventSyncSourcesExpanded = not model.eventSyncSourcesExpanded }, Effect.none )
+            let
+                expanded =
+                    not model.eventSyncSourcesExpanded
+            in
+            case model.events of
+                Just eventsModel ->
+                    let
+                        ( newEventsModel, eventsEffect ) =
+                            EventsPage.update shared (EventsPage.showSyncSourcesChanged expanded) eventsModel
+                    in
+                    ( { model | eventSyncSourcesExpanded = expanded, events = Just newEventsModel }
+                    , Effect.map EventsMsg eventsEffect
+                    )
+
+                Nothing ->
+                    ( { model | eventSyncSourcesExpanded = expanded }, Effect.none )
 
         GotEventSyncDestinationsFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
             let
@@ -1315,7 +1501,22 @@ updateInner shared msg model =
             )
 
         EventSyncDestinationsExpandedToggled ->
-            ( { model | eventSyncDestinationsExpanded = not model.eventSyncDestinationsExpanded }, Effect.none )
+            let
+                expanded =
+                    not model.eventSyncDestinationsExpanded
+            in
+            case model.events of
+                Just eventsModel ->
+                    let
+                        ( newEventsModel, eventsEffect ) =
+                            EventsPage.update shared (EventsPage.showSyncDestinationsChanged expanded) eventsModel
+                    in
+                    ( { model | eventSyncDestinationsExpanded = expanded, events = Just newEventsModel }
+                    , Effect.map EventsMsg eventsEffect
+                    )
+
+                Nothing ->
+                    ( { model | eventSyncDestinationsExpanded = expanded }, Effect.none )
 
         -- Opens the popup (see `Ports.facebookLoginPopup`'s own doc for why this happens
         -- synchronously here rather than after some other async step) -- the result arrives via
@@ -1721,7 +1922,16 @@ refetchEvents shared model =
                 ( eventsModel, eventsEffect ) =
                     EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
             in
-            ( { model | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+            ( { model
+                | events =
+                    Just
+                        { eventsModel
+                            | showSyncSources = model.eventSyncSourcesExpanded
+                            , showSyncDestinations = model.eventSyncDestinationsExpanded
+                        }
+              }
+            , Effect.map EventsMsg eventsEffect
+            )
 
         _ ->
             ( model, Effect.none )
@@ -2034,16 +2244,16 @@ profileDetail shared model server maybeAccount user =
             ]
         , federatedProfilesSection shared model server (isOwnProfile maybeAccount user) user
         , div [ class "profile-meta" ]
-            [ text
-                (Users.visibilityText user.visibility
-                    ++ " · "
-                    ++ Users.moderationText user.moderation
-                    ++ (user.createdAt
-                            |> Maybe.map (\ts -> " · Joined " ++ SharedTime.formatDate shared.time.browserTimeZone.zone (timestampToPosix ts))
-                            |> Maybe.withDefault ""
-                       )
-                )
-            ]
+            ([ visibilityView canEdit maybeAccount model.visibilityEdit user
+             , moderationView (canModerateUser maybeAccount) model.moderationEdit user
+             ]
+                ++ (user.createdAt
+                        |> Maybe.map (\ts -> text (" · Joined " ++ SharedTime.formatDate shared.time.browserTimeZone.zone (timestampToPosix ts)))
+                        |> Maybe.map List.singleton
+                        |> Maybe.withDefault []
+                   )
+            )
+        , followModerationToggleView canEdit model.followModerationStatus user
         , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
         , case model.events of
@@ -2108,6 +2318,23 @@ isAdminAccount maybeAccount =
     case maybeAccount of
         Just account ->
             List.member ADMIN account.permissions
+
+        Nothing ->
+            False
+
+
+{-| Whether the currently signed-in account on this profile's server may
+moderate `user` -- an `ADMIN`, or a `MODERATEUSERS` holder, matching
+`backend/src/rpcs/users/update_user.rs`'s own `admin || moderator` check
+(the branch that actually applies `moderation`), gating `moderationView`'s
+"Moderate" button. Unlike `canEditProfile`, `user` themself doesn't get a
+pass here unless they also hold one of these permissions.
+-}
+canModerateUser : Maybe AccountsPanel.Account -> Bool
+canModerateUser maybeAccount =
+    case maybeAccount of
+        Just account ->
+            List.member ADMIN account.permissions || List.member MODERATEUSERS account.permissions
 
         Nothing ->
             False
@@ -2230,6 +2457,129 @@ realNameView canEdit maybeEdit user =
                       else
                         text ""
                     ]
+
+
+{-| The Visibility segment of `profileDetail`'s meta line -- plain text
+(`Users.visibilityText`) plus an Edit button when `model.visibilityEdit ==
+Nothing`, shown only to `canEdit` viewers (mirrors `Pages.Post.PostId_.
+visibilityView`'s own `isAuthor`-gated Edit button, just gated on
+`canEditProfile` here instead); an inline `<select>` + Save/Cancel once
+editing, with its options narrowed to whatever `maybeAccount` is actually
+allowed to pick (`Users.allowedVisibilities`, mirroring
+`backend/src/rpcs/users/update_user.rs`'s own `PUBLISHUSERSGLOBALLY` check).
+-}
+visibilityView : Bool -> Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> User -> Html Msg
+visibilityView canEdit maybeAccount maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            let
+                options =
+                    maybeAccount
+                        |> Maybe.map (\account -> Users.allowedVisibilities account.permissions user.visibility)
+                        |> Maybe.withDefault [ edit.pending ]
+            in
+            span [ class "profile-visibility-edit" ]
+                [ select [ onInput VisibilityChanged ]
+                    (options
+                        |> List.map
+                            (\visibility ->
+                                option
+                                    [ value (Users.visibilityText visibility)
+                                    , selected (edit.pending == visibility)
+                                    ]
+                                    [ text (Users.visibilityText visibility) ]
+                            )
+                    )
+                , editSaveButton VisibilitySaveClicked edit.status
+                , editCancelButton VisibilityCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            span [ class "profile-visibility-display" ]
+                [ text (Users.visibilityText user.visibility)
+                , if canEdit then
+                    button [ class "profile-edit-button", onClick VisibilityEditClicked ] [ text "Edit" ]
+
+                  else
+                    text ""
+                ]
+
+
+{-| The Moderation segment of `profileDetail`'s meta line -- mirrors
+`visibilityView` exactly, just for `Moderation` instead of `Visibility`,
+shown to an Admin/`MODERATEUSERS` holder instead of `canEditProfile` (see
+`canModerateUser`), and its own "Edit" button reads "Moderate" instead,
+mirroring `Pages.Post.PostId_.moderationView`'s own convention.
+-}
+moderationView : Bool -> Maybe ModerationEdit -> User -> Html Msg
+moderationView canModerate maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            span [ class "profile-moderation-edit" ]
+                [ text " · "
+                , select [ onInput ModerationChanged ]
+                    (Users.allModerations
+                        |> List.map
+                            (\moderation ->
+                                option
+                                    [ value (Users.moderationText moderation)
+                                    , selected (edit.pending == moderation)
+                                    ]
+                                    [ text (Users.moderationText moderation) ]
+                            )
+                    )
+                , editSaveButton ModerationSaveClicked edit.status
+                , editCancelButton ModerationCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            span [ class "profile-moderation-display" ]
+                [ text (" · " ++ Users.moderationText user.moderation)
+                , if canModerate then
+                    button [ class "profile-edit-button", onClick ModerationEditClicked ] [ text "Moderate" ]
+
+                  else
+                    text ""
+                ]
+
+
+{-| The "Requires permission to follow" toggle -- a bare on/off switch
+(`profileSwitch`) rather than a Save/Cancel edit like `visibilityView`/
+`moderationView`, since it's just one boolean: "on" sets
+`user.defaultFollowModeration` to `PENDING` (a follow request needs
+approval), "off" sets it to `UNMODERATED` (anyone can follow outright).
+Treats any moderation value other than `PENDING` (e.g. a legacy `APPROVED`/
+`REJECTED`) as "off", matching `Components.Users.moderationPasses`' own
+`UNMODERATED`-or-`APPROVED` "in effect" reasoning -- there's no third state
+to round-trip here. Always shown (unlike `visibilityView`/`moderationView`'s
+Edit/Moderate buttons, which disappear entirely for a viewer who can't use
+them), just disabled for a `not canEdit` viewer -- mirrors
+`Components.Pages.ServerInformationPage.switchDisplay`'s "show the state,
+disable the control" treatment for a setting this viewer can see but not
+change.
+-}
+followModerationToggleView : Bool -> SubmitStatus -> User -> Html Msg
+followModerationToggleView canEdit status user =
+    div [ class "profile-follow-moderation-toggle" ]
+        [ span [ class "profile-follow-moderation-label" ] [ text "Requires permission to follow" ]
+        , profileSwitch (user.defaultFollowModeration == PENDING) (not canEdit || status == Submitting) FollowModerationToggled
+        , editErrorView status
+        ]
+
+
+{-| A checkbox styled as a toggle switch -- same `.switch`/`.slider` classes
+as `UI.switchInput`, not reused directly since that function's `toggleMsg` is
+hard-coded to `Shared.Msg` (mirrors `Components.Pages.ServerInformationPage.
+flagSwitch`, which duplicates it for the same reason).
+-}
+profileSwitch : Bool -> Bool -> Msg -> Html Msg
+profileSwitch isChecked isDisabled toggleMsg =
+    label [ classList [ ( "switch", True ), ( "disabled", isDisabled ) ] ]
+        [ input [ type_ "checkbox", checked isChecked, disabled isDisabled, onClick toggleMsg ] []
+        , span [ class "slider" ] []
+        ]
 
 
 {-| The bio, rendered as Markdown, with an Edit button (opening the shared

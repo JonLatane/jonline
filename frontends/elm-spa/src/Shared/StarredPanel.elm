@@ -1168,7 +1168,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
 
                     Nothing ->
                         text ""
-                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current event displayInstance
+                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False event displayInstance
                 ]
 
         Just FetchingEvent ->

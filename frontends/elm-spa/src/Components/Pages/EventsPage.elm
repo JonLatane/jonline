@@ -5,6 +5,8 @@ module Components.Pages.EventsPage exposing
     , fromShared
     , init
     , searchTextChanged
+    , showSyncDestinationsChanged
+    , showSyncSourcesChanged
     , subscriptions
     , update
     , view
@@ -148,6 +150,16 @@ type alias Model =
     -- actually started (see `anyStartedEvents`/`view`) -- nothing to filter,
     -- nothing to show a toggle for.
     , hideStartedUpcomingEvents : Bool
+
+    -- Whether `eventCardView` shows each card's `Events.eventSyncSourceView`/
+    -- `Events.eventSyncDestinationsView` -- both default to `False` (`init`),
+    -- set via `ShowSyncSourcesChanged`/`ShowSyncDestinationsChanged`.
+    -- `Components.Pages.UserProfilePage`'s embedded copy keeps these in sync
+    -- with its own `eventSyncSourcesExpanded`/`eventSyncDestinationsExpanded`
+    -- section toggles; no other caller ever sets them, so they stay `False`
+    -- (and these lines don't render) everywhere else.
+    , showSyncSources : Bool
+    , showSyncDestinations : Bool
     }
 
 
@@ -221,6 +233,13 @@ type Msg
       -- filter over already-fetched data (see `hiddenAsStarted`/
       -- `syncAnimations`), so there's nothing to fetch here.
     | HideStartedEventsToggled
+      -- Sets `model.showSyncSources`/`model.showSyncDestinations` -- driven
+      -- by `Components.Pages.UserProfilePage`'s own "Event Sync Sources"/
+      -- "Event Sync Destinations" section-expanded toggles (see
+      -- `Model.showSyncSources`'s own doc), not by anything in this page's
+      -- own UI.
+    | ShowSyncSourcesChanged Bool
+    | ShowSyncDestinationsChanged Bool
       -- Opens/closes the "Export" button's ICS-subscription-link popover
       -- (see `exportButtonView`).
     | ExportClicked
@@ -387,6 +406,8 @@ init shared author navKey path query embeddedPage =
                 , copyLinkCopied = False
                 , copyLinkGeneration = 0
                 , hideStartedUpcomingEvents = True
+                , showSyncSources = False
+                , showSyncDestinations = False
                 }
     in
     ( fetchedModel
@@ -447,6 +468,24 @@ exactly as if the user had typed it into this module's own search box -- same
 searchTextChanged : String -> Msg
 searchTextChanged =
     SearchTextChanged
+
+
+{-| Lets `Components.Pages.UserProfilePage` keep this page's `showSyncSources`
+in sync with its own "Event Sync Sources" section's `eventSyncSourcesExpanded`
+toggle -- same "expose a `Bool -> Msg`/`String -> Msg` wrapper, round-trip it
+through `update`" convention as `searchTextChanged` itself.
+-}
+showSyncSourcesChanged : Bool -> Msg
+showSyncSourcesChanged =
+    ShowSyncSourcesChanged
+
+
+{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Event Sync
+Destinations" section's `eventSyncDestinationsExpanded` toggle.
+-}
+showSyncDestinationsChanged : Bool -> Msg
+showSyncDestinationsChanged =
+    ShowSyncDestinationsChanged
 
 
 accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
@@ -710,6 +749,12 @@ updateInner shared msg model =
 
         HideStartedEventsToggled ->
             ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
+
+        ShowSyncSourcesChanged showSyncSources ->
+            ( { model | showSyncSources = showSyncSources }, Effect.none )
+
+        ShowSyncDestinationsChanged showSyncDestinations ->
+            ( { model | showSyncDestinations = showSyncDestinations }, Effect.none )
 
         ExportClicked ->
             ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
@@ -1776,7 +1821,7 @@ eventsListView shared model =
             in
             Html.Keyed.node "div"
                 [ class containerClass ]
-                (List.map (eventAnimationView shared model.embeddedPage axis) animations)
+                (List.map (eventAnimationView shared model.embeddedPage model.showSyncSources model.showSyncDestinations axis) animations)
 
 
 {-| Wraps `eventCardView` in a fading/scaling/collapsing animated `<div>`
@@ -1791,8 +1836,8 @@ The inner div's `event-card-move` class (see `events.css`) sets
 `transform-origin: top left` -- see `UI.Flip.startMoveScaled`'s own doc for
 why that's needed alongside a scale.
 -}
-eventAnimationView : Shared.Model -> Bool -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
-eventAnimationView shared embeddedPage axis ( key, anim ) =
+eventAnimationView : Shared.Model -> Bool -> Bool -> Bool -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
+eventAnimationView shared embeddedPage showSyncSources showSyncDestinations axis ( key, anim ) =
     let
         pointerEventsAttr =
             if anim.flip.removing then
@@ -1804,7 +1849,7 @@ eventAnimationView shared embeddedPage axis ( key, anim ) =
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared embeddedPage ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage showSyncSources showSyncDestinations ( anim.host, anim.event, anim.instance ) ]
         ]
     )
 
@@ -1818,8 +1863,8 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared embeddedPage ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView shared embeddedPage showSyncSources showSyncDestinations ( host, event, instance ) =
     let
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
@@ -1875,5 +1920,7 @@ eventCardView shared embeddedPage ( host, event, instance ) =
         starred
         onStarClicked
         False
+        showSyncSources
+        showSyncDestinations
         event
         displayInstance

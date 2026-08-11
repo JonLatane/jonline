@@ -38,7 +38,6 @@ import Page
 import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
-import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Request
@@ -1133,7 +1132,8 @@ eventDetailView shared model event instance =
             Nothing ->
                 text ""
         , instanceMetaView shared model instance
-        , syncedFromView event
+        , Events.eventSyncSourceView event
+        , Events.eventSyncDestinationsView instance
         ]
 
 
@@ -1466,24 +1466,6 @@ instanceMetaView shared model instance =
                 ]
 
         Nothing ->
-            text ""
-
-
-{-| One small-text, clipped-not-wrapped line at the bottom of the event
-detail view, crediting the ICS feed this `Event` was pulled in from (see
-`Components.Pages.UserProfilePage`) -- renders nothing for a normal, non-synced
-event.
--}
-syncedFromView : Event -> Html Msg
-syncedFromView event =
-    case event.eventSyncSource |> Maybe.andThen .configuration of
-        Just (Configuration.IcsSubscriptionUrl url) ->
-            div [ class "event-synced-from" ]
-                [ text "synced from "
-                , a [ href url, class "event-synced-from-link" ] [ text url ]
-                ]
-
-        _ ->
             text ""
 
 

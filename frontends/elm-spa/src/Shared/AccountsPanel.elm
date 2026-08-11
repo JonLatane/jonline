@@ -76,7 +76,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, EventSyncDestination, ExpirableToken, FederatedServer, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -385,6 +385,14 @@ type alias Branding =
     , primary : UI.ServerTheme.ColorMeta
     , nav : UI.ServerTheme.ColorMeta
     }
+
+
+type alias UserEventSyncDestinations =
+    Dict String EventSyncDestination
+
+
+type alias HostnameUserEventSyncDestinations =
+    Dict String UserEventSyncDestinations
 
 
 {-| Where a `Server` lives: enough to build a URL, before we know anything

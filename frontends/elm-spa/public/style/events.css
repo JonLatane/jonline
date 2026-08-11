@@ -156,8 +156,13 @@
 
 /* Credits the ICS feed an `Event` was synced from (see
    `Shared.EventSyncSourcesPanel`) -- one clipped, not wrapped, line at the
-   bottom of the event detail view. */
+   bottom of the event detail view, or `eventCard`. `position: relative`
+   mirrors `.event-card-link`'s own paint-order trick (see that class's doc
+   comment) so it stays independently clickable above
+   `.event-card-link-overlay` when rendered inside a card -- a no-op on the
+   detail view, which has no such overlay. */
 .event-synced-from {
+  position: relative;
   margin-top: 0.4rem;
   font-size: 0.75rem;
   color: var(--muted);
@@ -167,6 +172,28 @@
 }
 
 .event-synced-from-link {
+  color: inherit;
+}
+
+/* Links out to wherever an `EventInstance` was synced to (e.g. the
+   resulting Facebook post) -- see `Components.Events.eventSyncDestinationsView`.
+   One `.event-synced-to-line` per destination with a URL, same "clipped,
+   not wrapped, muted" treatment (and `position: relative` overlay trick,
+   see `.event-synced-from` above) as `.event-synced-from`. */
+.event-synced-to {
+  margin-top: 0.4rem;
+}
+
+.event-synced-to-line {
+  position: relative;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-synced-to-link {
   color: inherit;
 }
 

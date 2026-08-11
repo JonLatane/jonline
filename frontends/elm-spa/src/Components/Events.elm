@@ -3,6 +3,8 @@ module Components.Events exposing
     , eventCard
     , eventInstanceHref
     , eventInstancePairs
+    , eventSyncDestinationsView
+    , eventSyncSourceView
     , fetchEvent
     , fetchEvents
     , fetchEventsByInstancePostIds
@@ -38,6 +40,7 @@ import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
 import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
+import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
@@ -420,6 +423,54 @@ meaningfulPost post =
         Nothing
 
 
+{-| One small-text, clipped-not-wrapped line crediting the source `event` was
+synced from (e.g. an ICS feed) -- see `Components.Pages.UserProfilePage`'s
+"Event Sync Sources" section. Renders nothing for a normal, non-synced event.
+Shared by `Pages.Event.EventId_`'s detail view and `eventCard` (gated on
+`showSyncSource`).
+-}
+eventSyncSourceView : Event -> Html msg
+eventSyncSourceView event =
+    case event.eventSyncSource |> Maybe.andThen .configuration of
+        Just (SyncSourceConfiguration.IcsSubscriptionUrl url) ->
+            div [ class "event-synced-from" ]
+                [ text "synced from "
+                , a [ href url, class "event-synced-from-link" ] [ text url ]
+                ]
+
+        _ ->
+            text ""
+
+
+{-| One line per `instance.syncDestinations` entry with a `destinationUrl`
+set, linking out to wherever `instance` was synced to (e.g. the resulting
+Facebook post) -- see `Components.Pages.UserProfilePage`'s "Event Sync
+Destinations" section. Renders nothing if `instance` has no sync
+destinations with a URL. Shared by `Pages.Event.EventId_`'s detail view and
+`eventCard` (gated on `showSyncDestinations`).
+-}
+eventSyncDestinationsView : EventInstance -> Html msg
+eventSyncDestinationsView instance =
+    let
+        urls =
+            instance.syncDestinations |> List.filterMap .destinationUrl
+    in
+    if List.isEmpty urls then
+        text ""
+
+    else
+        div [ class "event-synced-to" ]
+            (urls
+                |> List.map
+                    (\url ->
+                        div [ class "event-synced-to-line" ]
+                            [ text "synced to "
+                            , a [ href url, target "_blank", rel "noopener noreferrer", class "event-synced-to-link" ] [ text url ]
+                            ]
+                    )
+            )
+
+
 {-| A compact, read-only card for one `(Event, EventInstance)` pair --
 `Components.Pages.EventsPage`'s per-item rendering, centered on `instance`
 (its own start/end/location) the same way `Pages.Event.EventId_`'s detail view
@@ -454,6 +505,12 @@ class, mirroring `post-card-current`) instead of the default
 caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 `Components.Pages.EventsPage`'s own listing always passes `False`.
 
+`showSyncSource`/`showSyncDestinations` gate `eventSyncSourceView event`/
+`eventSyncDestinationsView instance` at the bottom of the card -- mirrors
+`Components.Pages.EventsPage.Model`'s own `showSyncSources`/
+`showSyncDestinations` fields, which `EventsPage.eventCardView` threads
+straight through.
+
 -}
 eventCard :
     SharedTime.Model
@@ -467,10 +524,12 @@ eventCard :
     -> Bool
     -> Maybe msg
     -> Bool
+    -> Bool
+    -> Bool
     -> Event
     -> EventInstance
     -> Html msg
-eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current event instance =
+eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked mediaSizing starred onStarClicked current showSyncSource showSyncDestinations event instance =
     case event.post of
         Nothing ->
             text ""
@@ -564,4 +623,14 @@ eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccou
                         Nothing ->
                             text ""
                     ]
+                , if showSyncSource then
+                    eventSyncSourceView event
+
+                  else
+                    text ""
+                , if showSyncDestinations then
+                    eventSyncDestinationsView instance
+
+                  else
+                    text ""
                 ]
