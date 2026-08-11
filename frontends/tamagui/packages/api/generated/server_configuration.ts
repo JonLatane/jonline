@@ -539,7 +539,11 @@ export interface CustomNavigationTabSet {
   home?:
     | CustomNavigationTab
     | undefined;
-  /** Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. */
+  /**
+   * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+   * Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
+   * `/` is modified via `CustomNavigationTabSet`.home instead.
+   */
   tabs: CustomNavigationTabWithPath[];
 }
 
@@ -553,22 +557,33 @@ export interface CustomNavigationTab {
   postId?:
     | string
     | undefined;
-  /** Emoji shown alongside (or in place of) the tab's icon. */
+  /** Emoji shown as the tab's icon (e.g. "🎪"). */
   emojiIcon?:
+    | string
+    | undefined;
+  /** Media ID (see `Media` APIs) of an image shown as the tab's icon. */
+  iconMediaId?:
     | string
     | undefined;
   /** Title shown for the tab. Defaults to the predefined tab's/Post's title if unset. */
   title?: string | undefined;
 }
 
+/**
+ * A custom navigation tab with an associated path.
+ * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+ * `/` is modified via `CustomNavigationTabSet`.home instead.
+ */
 export interface CustomNavigationTabWithPath {
   /** The tab to show at this path. */
   customTab:
     | CustomNavigationTab
     | undefined;
   /**
-   * e.g. link /gigs or /shows for a band to the "Events" page.
+   * e.g. link `/gigs` or `/shows` for a band to the "Events" page.
    * Or, /weddings to a Post about wedding offerings for a custom business site.
+   * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+   * `/` is modified via `CustomNavigationTabSet`.home instead.
    */
   path: string;
 }
@@ -1875,7 +1890,7 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
 };
 
 function createBaseCustomNavigationTab(): CustomNavigationTab {
-  return { tab: undefined, postId: undefined, emojiIcon: undefined, title: undefined };
+  return { tab: undefined, postId: undefined, emojiIcon: undefined, iconMediaId: undefined, title: undefined };
 }
 
 export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
@@ -1887,7 +1902,10 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
       writer.uint32(18).string(message.postId);
     }
     if (message.emojiIcon !== undefined) {
-      writer.uint32(90).string(message.emojiIcon);
+      writer.uint32(82).string(message.emojiIcon);
+    }
+    if (message.iconMediaId !== undefined) {
+      writer.uint32(90).string(message.iconMediaId);
     }
     if (message.title !== undefined) {
       writer.uint32(98).string(message.title);
@@ -1918,12 +1936,20 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
           message.postId = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.emojiIcon = reader.string();
+          continue;
+        }
         case 11: {
           if (tag !== 90) {
             break;
           }
 
-          message.emojiIcon = reader.string();
+          message.iconMediaId = reader.string();
           continue;
         }
         case 12: {
@@ -1948,6 +1974,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
       tab: isSet(object.tab) ? navigationTabFromJSON(object.tab) : undefined,
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       emojiIcon: isSet(object.emojiIcon) ? globalThis.String(object.emojiIcon) : undefined,
+      iconMediaId: isSet(object.iconMediaId) ? globalThis.String(object.iconMediaId) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : undefined,
     };
   },
@@ -1963,6 +1990,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     if (message.emojiIcon !== undefined) {
       obj.emojiIcon = message.emojiIcon;
     }
+    if (message.iconMediaId !== undefined) {
+      obj.iconMediaId = message.iconMediaId;
+    }
     if (message.title !== undefined) {
       obj.title = message.title;
     }
@@ -1977,6 +2007,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     message.tab = object.tab ?? undefined;
     message.postId = object.postId ?? undefined;
     message.emojiIcon = object.emojiIcon ?? undefined;
+    message.iconMediaId = object.iconMediaId ?? undefined;
     message.title = object.title ?? undefined;
     return message;
   },

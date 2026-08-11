@@ -250,6 +250,8 @@ message CustomNavigationTabSet {
   // Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
   optional CustomNavigationTab home = 1;
   // Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+  // Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
+  // `/` is modified via `CustomNavigationTabSet`.home instead.
   repeated CustomNavigationTabWithPath tabs = 2;
 }
 
@@ -276,17 +278,28 @@ message CustomNavigationTab {
     string post_id = 2;
   }
 
-  // Emoji shown alongside (or in place of) the tab's icon.
-  optional string emoji_icon = 11;
+  oneof icon {
+    // Emoji shown as the tab's icon (e.g. "🎪").
+    string emoji_icon = 10;
+    // Media ID (see `Media` APIs) of an image shown as the tab's icon.
+    string icon_media_id = 11;
+  }
+
   // Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.
   optional string title = 12;
 }
 
+
+// A custom navigation tab with an associated path.
+// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+// `/` is modified via `CustomNavigationTabSet`.home instead.
 message CustomNavigationTabWithPath {
   // The tab to show at this path.
   CustomNavigationTab custom_tab = 1;
-  // e.g. link /gigs or /shows for a band to the "Events" page.
+  // e.g. link `/gigs` or `/shows` for a band to the "Events" page.
   // Or, /weddings to a Post about wedding offerings for a custom business site.
+  // Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+  // `/` is modified via `CustomNavigationTabSet`.home instead.
   string path = 2;
 }
 

@@ -310,7 +310,12 @@ encodeCustomNavigationTabWithPath =
     Proto.Jonline.Internals_.encodeProto__Jonline__CustomNavigationTabWithPath
 
 
-{-| ## Fields
+{-|  A custom navigation tab with an associated path.
+ Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+ `/` is modified via `CustomNavigationTabSet`.home instead.
+
+
+## Fields
 
 ### customTab
 
@@ -319,8 +324,10 @@ encodeCustomNavigationTabWithPath =
 
 ### path
 
- e.g. link /gigs or /shows for a band to the "Events" page.
+ e.g. link `/gigs` or `/shows` for a band to the "Events" page.
  Or, /weddings to a Post about wedding offerings for a custom business site.
+ Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+ `/` is modified via `CustomNavigationTabSet`.home instead.
 
 
 -}
@@ -333,7 +340,7 @@ type alias CustomNavigationTabWithPath =
 -}
 fieldNumbersCustomNavigationTab :
     { target : Proto.Jonline.Internals_.FieldNumbersProto__Jonline__CustomNavigationTab__Target__Target
-    , emojiIcon : Int
+    , icon : Proto.Jonline.Internals_.FieldNumbersProto__Jonline__CustomNavigationTab__Icon__Icon
     , title : Int
     }
 fieldNumbersCustomNavigationTab =
@@ -412,6 +419,8 @@ encodeCustomNavigationTabSet =
 ### tabs
 
  Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+ Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
+ `/` is modified via `CustomNavigationTabSet`.home instead.
 
 
 -}
