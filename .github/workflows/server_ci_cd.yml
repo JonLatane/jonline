@@ -42,7 +42,7 @@ jobs:
     name: Test Proto/Docs Consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install protoc
         run: |
           PROTOC_VERSION=29.6
@@ -53,7 +53,7 @@ jobs:
           protoc --version
       - uses: ts-graphviz/setup-graphviz@v2
       # - uses: subosito/flutter-action@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22.x
 
@@ -64,7 +64,7 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -106,7 +106,7 @@ jobs:
   #   continue-on-error: true
 
   #   steps:
-  #   - uses: actions/checkout@v4
+  #   - uses: actions/checkout@v7
 
   #   - name: Extract Versioning Data
   #     id: vars
@@ -125,7 +125,7 @@ jobs:
   #   - working-directory: frontends/flutter
   #     run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
 
-  #   - uses: actions/cache/save@v4
+  #   - uses: actions/cache/save@v6
   #     id: flutter-app-cache
   #     with:
   #       path: frontends/flutter/build/web
@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -147,7 +147,7 @@ jobs:
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
       - name: Cache Tamagui web build output
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: tamagui-build-cache
         with:
           path: |
@@ -155,7 +155,7 @@ jobs:
             frontends/tamagui/apps/next/out-tamagui
           key: tamagui-web-build-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**', 'protos/**') }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         with:
           node-version: 22.x
@@ -169,7 +169,7 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         # id: yarn-cache
         with:
@@ -191,7 +191,7 @@ jobs:
         if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         run: yarn web:prod:build
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: web-app-cache
         with:
           path: |
@@ -204,7 +204,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -214,12 +214,12 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 18.x
 
       - name: Cache Elm packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.elm
           key: jonline-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
@@ -231,7 +231,7 @@ jobs:
       - working-directory: frontends/elm-spa
         run: make build
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: elm-app-cache
         with:
           path: frontends/elm-spa/public
@@ -244,7 +244,7 @@ jobs:
       CARGO_INCREMENTAL: "0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -273,7 +273,7 @@ jobs:
       - working-directory: backend
         run: cargo build --release
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: rust-app-cache
         with:
           path: backend/target/release
@@ -286,7 +286,7 @@ jobs:
       CARGO_INCREMENTAL: "0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -324,7 +324,7 @@ jobs:
       - working-directory: backend
         run: cargo build --release
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: rust-macos-app-cache
         with:
           path: backend/target/release
@@ -337,7 +337,7 @@ jobs:
       CARGO_INCREMENTAL: "0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -372,7 +372,7 @@ jobs:
       - working-directory: backend
         run: cargo build --release --features static_pq
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: rust-linux-amd64-static-app-cache
         with:
           path: backend/target/release
@@ -385,7 +385,7 @@ jobs:
       CARGO_INCREMENTAL: "0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -415,7 +415,7 @@ jobs:
       - working-directory: backend
         run: cargo build --release --features static_pq
 
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         id: rust-linux-arm64-static-app-cache
         with:
           path: backend/target/release
@@ -450,7 +450,7 @@ jobs:
       MINIO_ACCESS_KEY: ROOTNAME
       MINIO_SECRET_KEY: CHANGEME123
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: Install protoc
         run: |
@@ -498,16 +498,16 @@ jobs:
     name: Test Tamagui Web UI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache Tamagui test result
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: tamagui-test-cache
         with:
           path: frontends/tamagui/.test-passed
           key: tamagui-web-test-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**', 'protos/**') }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         with:
           node-version: 22.x
@@ -520,7 +520,7 @@ jobs:
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         # id: yarn-cache
         with:
@@ -551,7 +551,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   continue-on-error: true
   #   steps:
-  #   - uses: actions/checkout@v4
+  #   - uses: actions/checkout@v7
   #   - uses: subosito/flutter-action@v2
   #     with:
   #       channel: 'stable'
@@ -574,7 +574,7 @@ jobs:
       - test_consistency
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -584,33 +584,33 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: flutter-app-cache
         continue-on-error: true
         with:
           path: frontends/flutter/build/web
           key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       - run: mkdir -p frontends/flutter/build/web
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: web-app-cache
         with:
           path: |
             frontends/tamagui/apps/next/out
             frontends/tamagui/apps/next/out-tamagui
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: elm-app-cache
         with:
           path: frontends/elm-spa/public
           key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rust-app-cache
         with:
           path: backend/target/release
           key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -631,7 +631,7 @@ jobs:
           mv backend/target/release/to_proto_id backend/target/release/to_proto_id__server_release
 
       - name: Build and push jonline image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
@@ -648,7 +648,7 @@ jobs:
       - test_consistency
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -658,14 +658,14 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rust-app-cache
         with:
           path: backend/target/release
           key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -681,7 +681,7 @@ jobs:
           mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
       - name: Build and push jonline_preview_generator image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
@@ -700,7 +700,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -759,7 +759,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -805,7 +805,7 @@ jobs:
       # - test_flutter_ui
       - test_tamagui_ui
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -912,7 +912,7 @@ jobs:
       - test_consistency
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -925,19 +925,19 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: web-app-cache
         with:
           path: |
             frontends/tamagui/apps/next/out
             frontends/tamagui/apps/next/out-tamagui
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: elm-app-cache
         with:
           path: frontends/elm-spa/public
           key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rust-macos-app-cache
         with:
           path: backend/target/release
@@ -1071,7 +1071,7 @@ jobs:
       - test_consistency
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -1084,14 +1084,14 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: web-app-cache
         with:
           path: |
             frontends/tamagui/apps/next/out
             frontends/tamagui/apps/next/out-tamagui
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: elm-app-cache
         with:
           path: frontends/elm-spa/public
@@ -1101,14 +1101,14 @@ jobs:
       # path, so they're restored one at a time and moved aside immediately --
       # restoring both to that path in one job would have the second clobber
       # the first.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rust-linux-amd64-static-app-cache
         with:
           path: backend/target/release
           key: rust-linux-amd64-static-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       - run: mv backend/target/release backend/target/release-amd64
 
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rust-linux-arm64-static-app-cache
         with:
           path: backend/target/release
@@ -1193,7 +1193,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -1240,7 +1240,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
@@ -1287,7 +1287,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract Versioning Data
         id: vars
