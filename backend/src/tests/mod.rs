@@ -9,6 +9,7 @@ mod delete_group_tests;
 mod delete_media_tests;
 mod delete_post_tests;
 mod delete_user_tests;
+mod event_sync_destination_count_tests;
 mod event_sync_destination_rpc_tests;
 mod event_sync_source_rpc_tests;
 mod event_sync_tests;

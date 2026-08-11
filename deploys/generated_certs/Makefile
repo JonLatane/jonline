@@ -3,11 +3,9 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
-# Set these variables when setting up cert generation
-K8S_PROVIDER ?= digitalocean
-CERT_MANAGER_DOMAIN ?= jonline.io
-CERT_MANAGER_EMAIL ?= invalid_email
-CERT_MANAGER_API_TOKEN ?= invalid_token
+# K8S_PROVIDER, CERT_MANAGER_DOMAIN, CERT_MANAGER_EMAIL and CERT_MANAGER_API_TOKEN
+# are no longer configured via environment variables. The targets below that need
+# them prompt for them interactively instead.
 
 # Certificate-related targets
 get_backend_generated_certs:
@@ -21,41 +19,50 @@ deploy_certmanager:
 # Cert-Manager targets: These all revolve around generating a (.gitignored)
 # cert-manager.*.generated.yaml from a cert-manager.*.template.yaml
 deploy_certmanager_credential:
-	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_store_apitoken
-	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_prepare
-	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_apply
+	@read -p "Enter your Kubernetes provider (default: digitalocean): " k8s_provider; \
+	k8s_provider=$${k8s_provider:-digitalocean}; \
+	$(MAKE) deploy_certmanager_credential_$${k8s_provider}_store_apitoken; \
+	$(MAKE) deploy_certmanager_credential_$${k8s_provider}_prepare; \
+	$(MAKE) deploy_certmanager_credential_$${k8s_provider}_apply
 deploy_certmanager_credential_apply:
-	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_apply
+	@read -p "Enter your Kubernetes provider (default: digitalocean): " k8s_provider; \
+	$(MAKE) deploy_certmanager_credential_$${k8s_provider:-digitalocean}_apply
 deploy_certmanager_credential_clean:
-	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_clean
+	@read -p "Enter your Kubernetes provider (default: digitalocean): " k8s_provider; \
+	$(MAKE) deploy_certmanager_credential_$${k8s_provider:-digitalocean}_clean
 
 # DigitalOcean Cert-Manager targets
 deploy_certmanager_credential_digitalocean_clean:
-	rm k8s/cert-manager.digitalocean.*.generated.yaml
+	rm -f k8s/cert-manager.digitalocean.generated.yaml
 deploy_certmanager_credential_digitalocean_store_apitoken:
-	kubectl create secret generic digitalocean-dns --from-literal=access-token=$(CERT_MANAGER_API_TOKEN) -n $(NAMESPACE)
-deploy_certmanager_credential_digitalocean_prepare: k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml
-k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml:
+	@read -s -p "Enter your Cert-Manager API token (hidden): " cert_manager_api_token; \
+	echo; \
+	cert_manager_api_token=$$(echo "$$cert_manager_api_token" | xargs); \
+	kubectl create secret generic digitalocean-dns --from-literal=access-token="$$cert_manager_api_token" -n $(NAMESPACE)
+deploy_certmanager_credential_digitalocean_prepare:
+	@read -p "Enter your Cert-Manager domain: " cert_manager_domain; \
+	read -p "Enter an administrator email for Cert-Manager: " cert_manager_email; \
 	cat k8s/cert-manager.digitalocean.template.yaml | \
-	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
-	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
-	  > k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml
+	  sed "s/\$${CERT_MANAGER_EMAIL}/$$cert_manager_email/g" | \
+	  sed "s/\$${CERT_MANAGER_DOMAIN}/$$cert_manager_domain/g" \
+	  > k8s/cert-manager.digitalocean.generated.yaml
 deploy_certmanager_credential_digitalocean_apply: deploy_ensure_namespace
-	kubectl apply -f k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
 deploy_certmanager_credential_digitalocean_delete: deploy_ensure_namespace
-	kubectl delete -f k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml -n $(NAMESPACE)
+	kubectl delete -f k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
 
 
 # Custom CA certificate generation targets
 certs_generate: certs_ca_generate certs_server_generate
 
 certs_ca_generate:
+	@read -p "Enter your Cert-Manager domain: " cert_manager_domain; \
 	openssl req -x509 \
 	          -sha256 -days 365 \
 	          -nodes \
 	          -newkey rsa:2048 \
-	          -subj '/CN=$(CERT_MANAGER_DOMAIN)/C=US/L=Durham' \
-	          -keyout ca.key -out ca.pem 
+	          -subj "/CN=$$cert_manager_domain/C=US/L=Durham" \
+	          -keyout ca.key -out ca.pem
 
 certs_server_generate:
 	openssl genpkey -out server.key -algorithm RSA -pkeyopt rsa_keygen_bits:2048

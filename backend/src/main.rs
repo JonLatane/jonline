@@ -50,7 +50,9 @@ use ::jonline::{env_var, init_crypto, init_service_logging, report_error};
 use diesel::*;
 use futures::future::join_all;
 use marshaling::ToProtoServerConfiguration;
-use servers::{start_rocket_internal, start_rocket_secure, start_rocket_unsecured, start_tonic_server};
+use servers::{
+    start_rocket_internal, start_rocket_secure, start_rocket_unsecured, start_tonic_server,
+};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 

@@ -3,7 +3,9 @@ use crate::{db_connection::PgPooledConnection, protos::Permission};
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::{marshaling::*, models, protos, rpcs::get_server_configuration_model, rpcs::validations::*};
+use crate::{
+    marshaling::*, models, protos, rpcs::get_server_configuration_model, rpcs::validations::*,
+};
 
 pub fn configure_server(
     request: protos::ServerConfiguration,

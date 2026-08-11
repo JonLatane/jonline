@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use super::{
     Author, Event, EventAttendance, EventInstance, EventInstanceSyncDestination,
     EventSyncDestination, EventSyncSource, Post, User, AUTHOR_COLUMNS, EVENT_INSTANCE_COLUMNS,
     POST_COLUMNS,
 };
 use diesel::{
-    dsl::sql,
+    dsl::{count_star, sql},
     sql_types::{Bool, Text},
     *,
 };
@@ -96,19 +98,31 @@ pub fn get_event_sync_destinations_for_user(
         })
 }
 
-pub fn get_event_sync_destinations_by_ids(
-    ids: Vec<i64>,
+/// The number of EventInstances synced to each of `destination_ids` so far, batched into one
+/// `GROUP BY` query (mirrors `get_events.rs`'s `attach_event_instance_attendances`: fetch the
+/// primary rows first, then attach a derived count/list in a second, batched query rather than
+/// one query per row) -- see `marshaling::attach_synced_event_instance_counts`, which mutates
+/// already-built `EventSyncDestination` protos with this. A destination with zero synced
+/// instances is simply absent from the result map (no row to group), so callers should treat a
+/// missing key as `0`.
+pub fn get_event_sync_destination_synced_counts(
+    destination_ids: Vec<i64>,
     conn: &mut PgPooledConnection,
-) -> Vec<(EventSyncDestination, Author)> {
-    if ids.is_empty() {
-        return vec![];
+) -> HashMap<i64, i64> {
+    if destination_ids.is_empty() {
+        return HashMap::new();
     }
-    event_sync_destinations::table
-        .inner_join(users::table.on(event_sync_destinations::user_id.eq(users::id)))
-        .select((event_sync_destinations::all_columns, AUTHOR_COLUMNS))
-        .filter(event_sync_destinations::id.eq_any(ids))
-        .load::<(EventSyncDestination, Author)>(conn)
+    event_instance_sync_destinations::table
+        .filter(event_instance_sync_destinations::event_sync_destination_id.eq_any(destination_ids))
+        .group_by(event_instance_sync_destinations::event_sync_destination_id)
+        .select((
+            event_instance_sync_destinations::event_sync_destination_id,
+            count_star(),
+        ))
+        .load::<(i64, i64)>(conn)
         .unwrap_or_default()
+        .into_iter()
+        .collect()
 }
 
 /// Loads sync status rows for a set of EventInstances, keyed for `event_marshaling` to group by

@@ -44,7 +44,10 @@ fn self_delete_scrubs_the_post_but_keeps_the_row() {
             .count()
             .get_result(conn)
             .unwrap();
-        assert_eq!(remaining, 1, "delete_post should soft-delete, not remove the row");
+        assert_eq!(
+            remaining, 1,
+            "delete_post should soft-delete, not remove the row"
+        );
 
         Ok(())
     });
@@ -71,7 +74,10 @@ fn delete_rejects_non_owner_non_admin() {
         assert_eq!(err.message(), "permission_ADMIN_required");
 
         let after = models::get_post(post.id, conn).unwrap();
-        assert!(after.user_id.is_some(), "post should survive a rejected delete");
+        assert!(
+            after.user_id.is_some(),
+            "post should survive a rejected delete"
+        );
 
         Ok(())
     });

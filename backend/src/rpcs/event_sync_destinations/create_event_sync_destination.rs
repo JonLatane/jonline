@@ -65,5 +65,7 @@ pub fn create_event_sync_destination(
             Status::new(Code::Internal, "failed_to_create_event_sync_destination")
         })?;
 
-    Ok(MarshalableEventSyncDestination(inserted, current_user.to_author()).to_proto())
+    let mut proto = MarshalableEventSyncDestination(inserted, current_user.to_author()).to_proto();
+    attach_synced_event_instance_counts(std::slice::from_mut(&mut proto), conn);
+    Ok(proto)
 }

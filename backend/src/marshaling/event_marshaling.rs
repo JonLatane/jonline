@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::mem::transmute;
 
 use super::{
-    load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost, ToProtoTime,
+    load_media_lookup, MediaLookup, ToDbId, ToI32Moderation, ToProtoId, ToProtoMarshalablePost,
+    ToProtoTime,
 };
 use crate::db_connection::PgPooledConnection;
 use crate::protos::event_attendance::Attendee;
@@ -98,7 +99,34 @@ impl ToProtoMarshalableEventSyncDestination for MarshalableEventSyncDestination 
             owner: Some(owner.to_proto(None)),
             created_at: Some(destination.created_at.to_proto()),
             updated_at: destination.updated_at.map(|t| t.to_proto()),
+            // Left unset here -- see `attach_synced_event_instance_counts`, which every RPC
+            // handler that returns an `EventSyncDestination` calls as a second pass to fill this
+            // in (mirrors `get_events.rs`'s "build the response, then attach_event_instance_attendances"
+            // shape), rather than every caller of `to_proto` having to supply it up front.
+            synced_event_instance_count: None,
             configuration: destination_configuration_to_proto(&destination.configuration),
+        }
+    }
+}
+
+/// Second-pass attach step for `synced_event_instance_count` -- batches one `GROUP BY` query
+/// (`models::get_event_sync_destination_synced_counts`) across every destination in `destinations`
+/// and mutates each in place, rather than each RPC handler querying per-row. Works the same for
+/// a single freshly created/updated destination (pass a one-element slice, e.g. via
+/// `std::slice::from_mut`) as it does for a whole `GetEventSyncDestinations` page.
+pub fn attach_synced_event_instance_counts(
+    destinations: &mut [EventSyncDestination],
+    conn: &mut PgPooledConnection,
+) {
+    let ids: Vec<i64> = destinations
+        .iter()
+        .filter_map(|d| d.id.to_db_id().ok())
+        .collect();
+    let counts = models::get_event_sync_destination_synced_counts(ids, conn);
+    for destination in destinations.iter_mut() {
+        if let Ok(id) = destination.id.to_db_id() {
+            destination.synced_event_instance_count =
+                Some(counts.get(&id).copied().unwrap_or(0) as u64);
         }
     }
 }
@@ -132,21 +160,18 @@ pub fn load_event_instance_sync_lookup(
 ) -> EventInstanceSyncLookup {
     let mut lookup: EventInstanceSyncLookup = HashMap::new();
     for row in models::get_event_instance_sync_destinations(event_instance_ids, conn) {
-        lookup
-            .entry(row.event_instance_id)
-            .or_default()
-            .push(row);
+        lookup.entry(row.event_instance_id).or_default().push(row);
     }
     lookup
 }
 
-pub trait ToProtoEventInstanceSyncStatus {
-    fn to_proto(&self) -> EventInstanceSyncStatus;
+pub trait ToProtoEventInstanceSyncDestination {
+    fn to_proto(&self) -> EventInstanceSyncDestination;
 }
 
-impl ToProtoEventInstanceSyncStatus for models::EventInstanceSyncDestination {
-    fn to_proto(&self) -> EventInstanceSyncStatus {
-        EventInstanceSyncStatus {
+impl ToProtoEventInstanceSyncDestination for models::EventInstanceSyncDestination {
+    fn to_proto(&self) -> EventInstanceSyncDestination {
+        EventInstanceSyncDestination {
             event_sync_destination_id: self.event_sync_destination_id.to_proto_id(),
             destination_instance_id: self.destination_instance_id.clone(),
             destination_url: self.destination_url.clone(),

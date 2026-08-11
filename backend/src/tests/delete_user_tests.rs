@@ -11,7 +11,9 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::delete_user;
-use crate::schema::{event_instances, event_sync_destinations, event_sync_sources, events, media, users};
+use crate::schema::{
+    event_instances, event_sync_destinations, event_sync_sources, events, media, users,
+};
 use crate::tests::factories::*;
 
 fn unique_path(name: &str) -> String {

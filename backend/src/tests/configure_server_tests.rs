@@ -22,7 +22,10 @@ fn facebook_auth_request(
 ) -> ServerConfiguration {
     let mut config = get_server_configuration_proto(conn).expect("failed to fetch base config");
     config.federation_info = Some(FederationInfo {
-        servers: config.federation_info.map(|f| f.servers).unwrap_or_default(),
+        servers: config
+            .federation_info
+            .map(|f| f.servers)
+            .unwrap_or_default(),
         facebook_auth_config: Some(FacebookAuthConfig {
             app_id: app_id.to_string(),
             app_secret: app_secret.to_string(),

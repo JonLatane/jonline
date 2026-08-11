@@ -17,7 +17,10 @@ use crate::rpcs::{
 use crate::schema::event_sync_destinations;
 use crate::tests::factories::*;
 
-fn facebook_page_request(page_id: &str, short_lived_user_access_token: &str) -> EventSyncDestination {
+fn facebook_page_request(
+    page_id: &str,
+    short_lived_user_access_token: &str,
+) -> EventSyncDestination {
     EventSyncDestination {
         configuration: Some(event_sync_destination::Configuration::FacebookPage(
             FacebookPage {
@@ -56,8 +59,8 @@ fn create_requires_facebook_page_configuration() {
         let user = create_user(conn, "esdt_create_noconfig");
         let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
 
-        let err =
-            create_event_sync_destination(EventSyncDestination::default(), &user, conn).unwrap_err();
+        let err = create_event_sync_destination(EventSyncDestination::default(), &user, conn)
+            .unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
         assert_eq!(
             err.message(),

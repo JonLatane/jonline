@@ -85,7 +85,7 @@
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
     - [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo)
-    - [EventInstanceSyncStatus](#jonline-EventInstanceSyncStatus)
+    - [EventInstanceSyncDestination](#jonline-EventInstanceSyncDestination)
     - [EventSyncDestination](#jonline-EventSyncDestination)
     - [EventSyncSource](#jonline-EventSyncSource)
     - [FacebookPage](#jonline-FacebookPage)
@@ -103,7 +103,6 @@
   
 - [server_configuration.proto](#server_configuration-proto)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
-    - [FacebookAuthConfig](#jonline-FacebookAuthConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
@@ -117,6 +116,7 @@
     - [WebUserInterface](#jonline-WebUserInterface)
   
 - [federation.proto](#federation-proto)
+    - [FacebookAuthConfig](#jonline-FacebookAuthConfig)
     - [FederatedAccount](#jonline-FederatedAccount)
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
@@ -142,11 +142,25 @@
 <a name="jonline-Jonline"></a>
 
 ### Jonline
-A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
-The bulk of these docs involve the [gRPC API](#grpc-api) (the &#34;protocol&#34;), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
-[media files](#jonline-Media), and a [`backend_host` resource for client/host negotiation](#http-based-client-host-negotiation-for-external-cdns).
-Jonline serves up a few other [HTTP endpoints](#http-endpoints), providing a `/sitemap.xml`, `/robots.txt`, iCal/RFC5545 subscription endpoints, and more,
-but these are essentially accessories to the core APIs.
+Jonline is a social media protocol with support for Posts, Events, Users, Groups, Media and Messages. It is designed to be federated, but does not require federation.
+It is designed to be used with a variety of frontends, including web, mobile, and desktop applications. It interoperates across numerous ports, protocols, and formats, including
+gRPC, HTTP, HTTPS, and ICS/iCal, and is designed to link with SMTP via Stalwart (and other SMTP servers/providers), Facebook Page APIs for post ing Events, and more.
+Essentially, your server is your own customizable, self-contained social network.
+
+Jonline is designed to be easy to run and deploy yourself with a [2 minute setup with Homebrew](#2-minute-startup-with-homebrew) and [3 minute setup on Linux](#3-minute-startup-on-linux),
+[images](https://hub.docker.com/r/jonlatane/jonline/tags) on [DockerHub](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags) and deployment to your K8s clusters available via
+a simple but powerful `Makefile`-based design language.
+
+#### Ports
+Jonline servers interact across several ports:
+* [gRPC (27707)](#grpc-api) - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+     * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
+* [HTTP (80, 8000, 27705), HTTPS (443)](#http-endpoints) - The main Jonline HTTP API. This is used for some endpoints, including media upload/download, and for negotiating the gRPC host.
+     * Port 443 will serve up a secure HTTPS server. If it fails to startup, Jonline handles this gracefully and degrades to plain HTTP.
+     * Port 80 will serve up either an unsecured set of Jonline&#39;s HTTP endpoints, or a redirect to the HTTPS/443 server if that one launched successfully.
+     * Port 8000 *always* serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.
+     * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
+         * Currently this just has an `/email` endpoint. It is designed for [email support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 
 #### Authentication
 Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
@@ -159,7 +173,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
-#### Dumfederation
+#### Federation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
 &#34;nice to have&#34; features require it, so it is not used.
@@ -196,6 +210,9 @@ the Events page, and the user profile pages for all users with events in the las
 
 ##### Robots &amp; Sitemap (`GET /robots.txt` and `GET /sitemap.xml`)
 Jonline servers are expected to serve a `robots.txt` file at `/robots.txt` and a `sitemap.xml` file at `/sitemap.xml`.
+
+##### Favicons (`GET /favicon.ico`, `GET /favicon.png`)
+Favicons in a couple of formats.
 
 ##### Media (`GET /media/{id}` and `POST /media`)
 See the [Media](#jonline-Media) section for details on how to upload/download media files.
@@ -620,9 +637,9 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PERMISSION_UNKNOWN | 0 | A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) |
-| VIEW_USERS | 1 | Allow the user to view profiles with `SERVER_PUBLIC` Visbility. Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission). |
-| PUBLISH_USERS_LOCALLY | 2 | Allow the user to publish profiles with `SERVER_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
-| PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
+| VIEW_USERS | 1 | Allow the user to view profiles with `SERVER_PUBLIC` Visibility. Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visibility (when configured as an anonymous user permission). |
+| PUBLISH_USERS_LOCALLY | 2 | Allow the user to publish profiles with `SERVER_PUBLIC` Visibility. This generally only applies to the user&#39;s own profile, except for Admins. |
+| PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility. This generally only applies to the user&#39;s own profile, except for Admins. |
 | MODERATE_USERS | 4 | Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS` and `CREATE_EVENTS` permissions to users. |
 | FOLLOW_USERS | 5 | Allow the user to follow other users. |
 | GRANT_BASIC_PERMISSIONS | 6 | Allow the user to grant Basic Permissions to other users. &#34;Basic Permissions&#34; are defined by your `ServerConfiguration`&#39;s `basic_user_permissions`. |
@@ -1672,7 +1689,7 @@ a `Location`, and an optional `Post` (and discussion thread) specific to this pa
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
-| sync_destinations | [EventInstanceSyncStatus](#jonline-EventInstanceSyncStatus) | repeated | EventSyncDestinations this instance has been synced (cross-posted) to, and their status. |
+| sync_destinations | [EventInstanceSyncDestination](#jonline-EventInstanceSyncDestination) | repeated | EventSyncDestinations this instance has been synced (cross-posted) to, and their status. |
 
 
 
@@ -1719,9 +1736,9 @@ Curently, the `optional` counts below are *never* returned by the API.
 
 
 
-<a name="jonline-EventInstanceSyncStatus"></a>
+<a name="jonline-EventInstanceSyncDestination"></a>
 
-### EventInstanceSyncStatus
+### EventInstanceSyncDestination
 The status of an EventInstance&#39;s sync (cross-post) to one EventSyncDestination.
 
 
@@ -1750,6 +1767,7 @@ but for pushing instances out rather than pulling events in.
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncDestination was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncDestination was last updated. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike `EventSyncSource`&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
 | facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances to. |
 
 
@@ -2038,22 +2056,6 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 
 
 
-<a name="jonline-FacebookAuthConfig"></a>
-
-### FacebookAuthConfig
-Facebook authentication configuration for the server.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| app_id | [string](#string) |  | The Facebook App ID for the server. |
-| app_secret | [string](#string) |  | The Facebook App Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
-
-
-
-
-
-
 <a name="jonline-FeatureSettings"></a>
 
 ### FeatureSettings
@@ -2133,7 +2135,6 @@ Configuration for a Jonline server instance.
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 | web_push_config | [WebPushConfig](#jonline-WebPushConfig) | optional | Web Push (VAPID) configuration for the server. |
-| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
 
 
 
@@ -2254,6 +2255,22 @@ a century ahead of Flutter Web, so it&#39;s the default.
 
 
 
+<a name="jonline-FacebookAuthConfig"></a>
+
+### FacebookAuthConfig
+Facebook authentication configuration for the server.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) |  | The Facebook App ID for the server. |
+| app_secret | [string](#string) |  | The Facebook App Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
+
+
+
+
+
+
 <a name="jonline-FederatedAccount"></a>
 
 ### FederatedAccount
@@ -2298,6 +2315,7 @@ The federation configuration for a Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
+| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
 
 
 

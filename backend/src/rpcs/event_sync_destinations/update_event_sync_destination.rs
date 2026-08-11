@@ -74,5 +74,7 @@ pub fn update_event_sync_destination(
     })?;
 
     let owner = models::get_author(updated.user_id, conn)?;
-    Ok(MarshalableEventSyncDestination(updated, owner).to_proto())
+    let mut proto = MarshalableEventSyncDestination(updated, owner).to_proto();
+    attach_synced_event_instance_counts(std::slice::from_mut(&mut proto), conn);
+    Ok(proto)
 }

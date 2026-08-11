@@ -22,10 +22,10 @@ pub fn get_event_sync_destinations(
     }
 
     let destinations = models::get_event_sync_destinations_for_user(target_user_id, conn)?;
-    Ok(GetEventSyncDestinationsResponse {
-        destinations: destinations
-            .into_iter()
-            .map(|(destination, owner)| MarshalableEventSyncDestination(destination, owner).to_proto())
-            .collect(),
-    })
+    let mut destinations: Vec<EventSyncDestination> = destinations
+        .into_iter()
+        .map(|(destination, owner)| MarshalableEventSyncDestination(destination, owner).to_proto())
+        .collect();
+    attach_synced_event_instance_counts(&mut destinations, conn);
+    Ok(GetEventSyncDestinationsResponse { destinations })
 }

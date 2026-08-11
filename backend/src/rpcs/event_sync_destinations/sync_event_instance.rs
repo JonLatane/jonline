@@ -20,7 +20,9 @@ pub fn sync_event_instance(
 ) -> Result<EventInstance, Status> {
     validate_permission(&Some(current_user), Permission::SyncEventsToFacebook)?;
 
-    let instance_id = request.event_instance_id.to_db_id_or_err("event_instance_id")?;
+    let instance_id = request
+        .event_instance_id
+        .to_db_id_or_err("event_instance_id")?;
     let destination_id = request
         .event_sync_destination_id
         .to_db_id_or_err("event_sync_destination_id")?;
@@ -38,8 +40,13 @@ pub fn sync_event_instance(
     }
 
     let starts_at: DateTime<Utc> = instance.starts_at.into();
-    let (destination_instance_id, destination_url) =
-        post_event_instance(&destination, &post.title, &post.content, &post.link, starts_at)?;
+    let (destination_instance_id, destination_url) = post_event_instance(
+        &destination,
+        &post.title,
+        &post.content,
+        &post.link,
+        starts_at,
+    )?;
 
     let new_row = models::NewEventInstanceSyncDestination {
         event_instance_id: instance.id,

@@ -26,17 +26,6 @@ export interface FederationInfo {
   facebookAuthConfig?: FacebookAuthConfig | undefined;
 }
 
-/** Facebook authentication configuration for the server. */
-export interface FacebookAuthConfig {
-  /** The Facebook App ID for the server. */
-  appId: string;
-  /**
-   * The Facebook App Secret for the server. *Never serialized to the client.*
-   * Admins: Edit this in the database's JSONB column directly.
-   */
-  appSecret: string;
-}
-
 /** A server that this server will federate with. */
 export interface FederatedServer {
   /** The DNS hostname of the server to federate with. */
@@ -62,6 +51,17 @@ export interface FederatedAccount {
   host: string;
   /** The user ID of the user on the server. */
   userId: string;
+}
+
+/** Facebook authentication configuration for the server. */
+export interface FacebookAuthConfig {
+  /** The Facebook App ID for the server. */
+  appId: string;
+  /**
+   * The Facebook App Secret for the server. *Never serialized to the client.*
+   * Admins: Edit this in the database's JSONB column directly.
+   */
+  appSecret: string;
 }
 
 function createBaseGetServiceVersionResponse(): GetServiceVersionResponse {
@@ -200,82 +200,6 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     message.facebookAuthConfig = (object.facebookAuthConfig !== undefined && object.facebookAuthConfig !== null)
       ? FacebookAuthConfig.fromPartial(object.facebookAuthConfig)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseFacebookAuthConfig(): FacebookAuthConfig {
-  return { appId: "", appSecret: "" };
-}
-
-export const FacebookAuthConfig: MessageFns<FacebookAuthConfig> = {
-  encode(message: FacebookAuthConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.appId !== "") {
-      writer.uint32(10).string(message.appId);
-    }
-    if (message.appSecret !== "") {
-      writer.uint32(18).string(message.appSecret);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): FacebookAuthConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFacebookAuthConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.appId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.appSecret = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FacebookAuthConfig {
-    return {
-      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
-      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
-    };
-  },
-
-  toJSON(message: FacebookAuthConfig): unknown {
-    const obj: any = {};
-    if (message.appId !== "") {
-      obj.appId = message.appId;
-    }
-    if (message.appSecret !== "") {
-      obj.appSecret = message.appSecret;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(base?: I): FacebookAuthConfig {
-    return FacebookAuthConfig.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(object: I): FacebookAuthConfig {
-    const message = createBaseFacebookAuthConfig();
-    message.appId = object.appId ?? "";
-    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };
@@ -446,6 +370,82 @@ export const FederatedAccount: MessageFns<FederatedAccount> = {
     const message = createBaseFederatedAccount();
     message.host = object.host ?? "";
     message.userId = object.userId ?? "";
+    return message;
+  },
+};
+
+function createBaseFacebookAuthConfig(): FacebookAuthConfig {
+  return { appId: "", appSecret: "" };
+}
+
+export const FacebookAuthConfig: MessageFns<FacebookAuthConfig> = {
+  encode(message: FacebookAuthConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.appId !== "") {
+      writer.uint32(10).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(18).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FacebookAuthConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFacebookAuthConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FacebookAuthConfig {
+    return {
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: FacebookAuthConfig): unknown {
+    const obj: any = {};
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(base?: I): FacebookAuthConfig {
+    return FacebookAuthConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FacebookAuthConfig>, I>>(object: I): FacebookAuthConfig {
+    const message = createBaseFacebookAuthConfig();
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };

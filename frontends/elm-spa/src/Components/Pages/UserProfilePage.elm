@@ -29,6 +29,7 @@ but none of this module's profile-editing machinery.
 -}
 
 import Browser.Navigation
+import Components.EventSyncDestinations as EventSyncDestinations
 import Components.EventSyncSources as EventSyncSources
 import Components.Markdown as Markdown
 import Components.Pages.EventsPage as EventsPage
@@ -45,8 +46,12 @@ import Grpc
 import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Http
+import Json.Decode as Decode
+import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (EventSyncSource, FederatedAccount, User, defaultEventSyncSource, defaultMediaReference)
+import Proto.Jonline exposing (EventSyncDestination, EventSyncSource, FederatedAccount, User, defaultEventSyncDestination, defaultEventSyncSource, defaultMediaReference)
+import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -61,6 +66,7 @@ import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
+import Url
 
 
 type alias Model =
@@ -75,6 +81,8 @@ type alias Model =
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
     , eventSyncSources : EventSyncSourcesState
     , eventSyncSourcesExpanded : Bool
+    , eventSyncDestinations : EventSyncDestinationsState
+    , eventSyncDestinationsExpanded : Bool
     , followStatusAndButton : FollowStatusAndButton.Model
 
     -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
@@ -142,6 +150,15 @@ type Msg
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
     | EventSyncSourcesExpandedToggled
+    | GotEventSyncDestinationsFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncDestinationsResponse ))
+    | EventSyncDestinationsExpandedToggled
+    | FacebookLoginClicked
+    | GotFacebookLoginResult Decode.Value
+    | GotFacebookPagesResult (Result Http.Error (List FacebookPageOption))
+    | FacebookPageChosen FacebookPageOption
+    | GotFacebookLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncDestination ))
+    | EventSyncDestinationDeleteClicked EventSyncDestination
+    | GotEventSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | DeleteUserClicked
 
 
@@ -302,6 +319,82 @@ initEventSyncSources =
     { status = EventSyncSourcesNotFetched, sources = [], rowEdits = Dict.empty, addForm = defaultEventSyncAddForm }
 
 
+{-| The fetch state of `Model.eventSyncDestinations.destinations` -- mirrors `EventSyncFetchStatus`
+exactly, just for destinations rather than sources.
+-}
+type EventSyncDestinationFetchStatus
+    = EventSyncDestinationsNotFetched
+    | EventSyncDestinationsFetching
+    | EventSyncDestinationsFetchFailed String
+    | EventSyncDestinationsFetched
+
+
+{-| One Facebook Page returned by the Graph API's `/me/accounts` after a successful Facebook
+login (`fetchFacebookPages`) -- `id`/`name` only. The per-page access token that endpoint also
+returns is never used: the backend re-derives its own long-lived Page token server-side from the
+short-lived *user* token this page already has, via `FacebookPage.shortLivedUserAccessToken` (see
+`logic::facebook_sync::connect_facebook_page` on the backend).
+-}
+type alias FacebookPageOption =
+    { id : String
+    , name : String
+    }
+
+
+{-| The "Sign in to Facebook Page" flow's own state machine (see `FacebookLoginClicked` and
+`eventSyncDestinationsSection`). Each step commits straight to the next -- there's no "form" to
+independently edit/cancel the way `RealNameEdit`/`EventSyncAddForm` have:
+
+  - `FacebookLoginNotStarted`: the button is shown, nothing in flight.
+  - `FacebookLoginPopupOpen`: waiting on the `Ports.facebookLoginResult` port (the popup opened
+    by `Ports.facebookLoginPopup` is open, or the user just closed it -- see `GotFacebookLoginResult`).
+  - `FacebookLoginFetchingPages token`: got a short-lived user access token back, now calling the
+    Graph API's `/me/accounts` (`fetchFacebookPages`) to list the Pages it can link.
+  - `FacebookLoginChoosingPage token pages`: `/me/accounts` returned at least one Page --
+    `pages` is shown as a plain clickable list (`FacebookPageChosen`) rather than picking one
+    automatically, even when there's only one, so the user always sees what they're linking.
+  - `FacebookLoginNoPagesFound`: `/me/accounts` returned zero Pages -- nothing to link.
+  - `FacebookLoginLinking token page`: `CreateEventSyncDestination` is in flight for `page`.
+  - `FacebookLoginFailed message`: the popup, the Graph API call, or the create RPC failed.
+-}
+type FacebookLoginStatus
+    = FacebookLoginNotStarted
+    | FacebookLoginPopupOpen
+    | FacebookLoginFetchingPages String
+    | FacebookLoginChoosingPage String (List FacebookPageOption)
+    | FacebookLoginNoPagesFound
+    | FacebookLoginLinking String FacebookPageOption
+    | FacebookLoginFailed String
+
+
+{-| The "Event Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
+(bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
+only mutable-from-here field, in effect, is "does it exist"), so this is just the fetched list
+plus the `FacebookLoginStatus` state machine that creates one, plus a per-destination-id
+`SubmitStatus` for `EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since,
+in principle, more than one delete could be in flight -- e.g. an Admin clicking two rows quickly).
+Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
+a Facebook Page is a low-stakes, easily-reversible action (nothing else gets deleted --
+`deleteSyncedPosts` is always sent `False`, see `Components.EventSyncDestinations`), so there's no
+need for the global "are you sure?" overlay here.
+-}
+type alias EventSyncDestinationsState =
+    { status : EventSyncDestinationFetchStatus
+    , destinations : List EventSyncDestination
+    , login : FacebookLoginStatus
+    , deleteStatuses : Dict String SubmitStatus
+    }
+
+
+initEventSyncDestinations : EventSyncDestinationsState
+initEventSyncDestinations =
+    { status = EventSyncDestinationsNotFetched
+    , destinations = []
+    , login = FacebookLoginNotStarted
+    , deleteStatuses = Dict.empty
+    }
+
+
 {-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` from the calling
 page's own `Request` -- needed for `ConnectClicked` (see `AccountsPanel.connectToServer`),
 but not otherwise derivable from `Shared.Model` alone. `navKey`/`path`/`query` are
@@ -329,6 +422,8 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , federatedProfilesEdit = Nothing
             , eventSyncSources = initEventSyncSources
             , eventSyncSourcesExpanded = False
+            , eventSyncDestinations = initEventSyncDestinations
+            , eventSyncDestinationsExpanded = False
             , followStatusAndButton = FollowStatusAndButton.init
             , posts = Nothing
             , events = Nothing
@@ -356,6 +451,7 @@ subscriptions model =
         [ Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
         , model.posts |> Maybe.map (PostsPage.subscriptions >> Sub.map PostsMsg) |> Maybe.withDefault Sub.none
         , model.events |> Maybe.map (EventsPage.subscriptions >> Sub.map EventsMsg) |> Maybe.withDefault Sub.none
+        , Ports.facebookLoginResult GotFacebookLoginResult
         ]
 
 
@@ -457,20 +553,31 @@ updateInner shared msg model =
                             else
                                 ( federatedModel, Effect.none )
 
+                        -- Only fetched for the caller's own profile, and only when they could
+                        -- actually use the section at all (see `canUseFacebookSync`'s own doc) --
+                        -- no point firing a request that either can't return anything useful or
+                        -- (unlike sources) wouldn't even be shown.
+                        ( eventSyncDestFetchedModel, eventSyncDestFetchEffect ) =
+                            if isOwnProfile maybeAccount user && canUseFacebookSync shared newResolver.targetHost maybeAccount then
+                                fetchEventSyncDestinations shared newResolver.targetHost user.id eventSyncFetchedModel
+
+                            else
+                                ( eventSyncFetchedModel, Effect.none )
+
                         -- Only ever `init`ed once -- see `Model.posts`/`Model.events`'
                         -- own doc for why a later refetch (which re-fires this same
                         -- `Loaded` case) must leave an already-`Just` copy alone.
                         ( postsInitedModel, postsInitEffect ) =
-                            case eventSyncFetchedModel.posts of
+                            case eventSyncDestFetchedModel.posts of
                                 Just _ ->
-                                    ( eventSyncFetchedModel, Effect.none )
+                                    ( eventSyncDestFetchedModel, Effect.none )
 
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncFetchedModel.navKey eventSyncFetchedModel.path eventSyncFetchedModel.query True
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncDestFetchedModel.navKey eventSyncDestFetchedModel.path eventSyncDestFetchedModel.query True
                                     in
-                                    ( { eventSyncFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
+                                    ( { eventSyncDestFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
 
                         ( eventsInitedModel, eventsInitEffect ) =
                             case postsInitedModel.events of
@@ -489,6 +596,7 @@ updateInner shared msg model =
                         [ Effect.map ResolverMsg resolverEffect
                         , federatedEffect
                         , eventSyncFetchEffect
+                        , eventSyncDestFetchEffect
                         , postsInitEffect
                         , eventsInitEffect
                         ]
@@ -1188,6 +1296,144 @@ updateInner shared msg model =
         EventSyncSourcesExpandedToggled ->
             ( { model | eventSyncSourcesExpanded = not model.eventSyncSourcesExpanded }, Effect.none )
 
+        GotEventSyncDestinationsFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetched, destinations = response.destinations } }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotEventSyncDestinationsFetchResult (Err err) ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed (AccountsPanel.grpcErrorToString err) } }
+            , Effect.none
+            )
+
+        EventSyncDestinationsExpandedToggled ->
+            ( { model | eventSyncDestinationsExpanded = not model.eventSyncDestinationsExpanded }, Effect.none )
+
+        -- Opens the popup (see `Ports.facebookLoginPopup`'s own doc for why this happens
+        -- synchronously here rather than after some other async step) -- the result arrives via
+        -- `GotFacebookLoginResult`.
+        FacebookLoginClicked ->
+            case facebookAppId shared model.resolver.targetHost of
+                Just appId ->
+                    ( setEventSyncDestinationsLogin FacebookLoginPopupOpen model
+                    , Ports.facebookLoginPopup appId |> Effect.fromCmd
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        GotFacebookLoginResult value ->
+            case facebookLoginResultDecoder value of
+                Ok accessToken ->
+                    ( setEventSyncDestinationsLogin (FacebookLoginFetchingPages accessToken) model
+                    , fetchFacebookPages accessToken |> Effect.fromCmd
+                    )
+
+                -- The user just closed the popup -- quietly go back to not-logged-in rather
+                -- than showing an "error" for a deliberate cancel (see `Ports.facebookLoginResult`'s
+                -- own doc).
+                Err "cancelled" ->
+                    ( setEventSyncDestinationsLogin FacebookLoginNotStarted model, Effect.none )
+
+                Err message ->
+                    ( setEventSyncDestinationsLogin (FacebookLoginFailed message) model, Effect.none )
+
+        GotFacebookPagesResult (Ok pages) ->
+            case model.eventSyncDestinations.login of
+                FacebookLoginFetchingPages accessToken ->
+                    ( setEventSyncDestinationsLogin
+                        (if List.isEmpty pages then
+                            FacebookLoginNoPagesFound
+
+                         else
+                            FacebookLoginChoosingPage accessToken pages
+                        )
+                        model
+                    , Effect.none
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFacebookPagesResult (Err _) ->
+            ( setEventSyncDestinationsLogin (FacebookLoginFailed "Couldn't load your Facebook Pages.") model, Effect.none )
+
+        FacebookPageChosen page ->
+            case model.eventSyncDestinations.login of
+                FacebookLoginChoosingPage accessToken _ ->
+                    let
+                        newDestination =
+                            { defaultEventSyncDestination
+                                | configuration =
+                                    Just
+                                        (DestinationConfiguration.FacebookPage
+                                            { pageId = page.id
+                                            , pageName = page.name
+                                            , shortLivedUserAccessToken = Just accessToken
+                                            }
+                                        )
+                            }
+                    in
+                    ( setEventSyncDestinationsLogin (FacebookLoginLinking accessToken page) model
+                    , performForOwner shared model (\accountServer -> EventSyncDestinations.createEventSyncDestination shared.accounts accountServer newDestination)
+                        |> Task.attempt GotFacebookLinkResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, created )) ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | destinations = ed.destinations ++ [ created ], login = FacebookLoginNotStarted } }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotFacebookLinkResult (Err err) ->
+            ( setEventSyncDestinationsLogin (FacebookLoginFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
+
+        -- Unlike `EventSyncSourceDeleteClicked`, this deletes immediately rather than opening
+        -- the shared confirmation dialog -- see `EventSyncDestinationsState`'s own doc for why.
+        EventSyncDestinationDeleteClicked destination ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | deleteStatuses = Dict.insert destination.id Submitting ed.deleteStatuses } }
+            , performForOwner shared model (\accountServer -> EventSyncDestinations.deleteEventSyncDestination shared.accounts accountServer destination)
+                |> Task.attempt (GotEventSyncDestinationDeleteResult destination.id)
+                |> Effect.fromCmd
+            )
+
+        GotEventSyncDestinationDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | destinations = List.filter (\d -> d.id /= id) ed.destinations, deleteStatuses = Dict.remove id ed.deleteStatuses } }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotEventSyncDestinationDeleteResult id (Err err) ->
+            let
+                ed =
+                    model.eventSyncDestinations
+            in
+            ( { model | eventSyncDestinations = { ed | deleteStatuses = Dict.insert id (SubmitFailed (AccountsPanel.grpcErrorToString err)) ed.deleteStatuses } }
+            , Effect.none
+            )
+
         -- Same shape as `EventSyncSourceDeleteClicked`: just opens the
         -- shared "are you sure?" dialog -- the actual `DeleteUser` call
         -- happens in `Shared.update`'s `ConfirmDelete` (see
@@ -1509,6 +1755,123 @@ fetchEventSyncSources shared host targetUserId model =
             )
 
 
+{-| Mirrors `fetchEventSyncSources`, just for destinations -- always fetches the caller's own
+(`targetUserId = user.id` from the page's own resolved profile, same as sources), since
+`eventSyncDestinationsSection` is only ever shown on one's own profile (see `canUseFacebookSync`).
+-}
+fetchEventSyncDestinations : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
+fetchEventSyncDestinations shared host targetUserId model =
+    let
+        ed =
+            model.eventSyncDestinations
+    in
+    case AccountsPanel.enabledAccountForServer shared.accounts.accounts host of
+        Just account ->
+            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetching, destinations = [] } }
+            , EventSyncDestinations.getEventSyncDestinations shared.accounts ( Just account.userId, host ) targetUserId
+                |> Task.attempt GotEventSyncDestinationsFetchResult
+                |> Effect.fromCmd
+            )
+
+        Nothing ->
+            ( { model | eventSyncDestinations = { ed | status = EventSyncDestinationsFetchFailed "You're not signed in on that server.", destinations = [] } }
+            , Effect.none
+            )
+
+
+setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
+setEventSyncDestinationsLogin login model =
+    let
+        ed =
+            model.eventSyncDestinations
+    in
+    { model | eventSyncDestinations = { ed | login = login } }
+
+
+{-| Whether the section (and its "Sign in to Facebook Page" button) should be shown at all --
+requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) *and* this server having
+a Facebook App configured (`facebookAppId` resolving to a non-empty id) -- there's no point
+showing a button that would just fail immediately either way.
+-}
+canUseFacebookSync : Shared.Model -> String -> Maybe AccountsPanel.Account -> Bool
+canUseFacebookSync shared host maybeAccount =
+    hasSyncEventsToFacebookPermission maybeAccount && facebookAppId shared host /= Nothing
+
+
+hasSyncEventsToFacebookPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncEventsToFacebookPermission maybeAccount =
+    maybeAccount
+        |> Maybe.map (\account -> List.member SYNCEVENTSTOFACEBOOK account.permissions || List.member ADMIN account.permissions)
+        |> Maybe.withDefault False
+
+
+{-| `host`'s configured Facebook App ID (`Just id`, non-empty), or `Nothing` if that server
+hasn't set one up (`ConfigureServer`'s `federationInfo.facebookAuthConfig`, see
+`Components.Pages.ServerInformationPage`'s Federation tab, where an admin sets this).
+-}
+facebookAppId : Shared.Model -> String -> Maybe String
+facebookAppId shared host =
+    AccountsPanel.serverForHost shared.accounts.servers host
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.andThen .facebookAuthConfig
+        |> Maybe.map .appId
+        |> Maybe.andThen
+            (\id ->
+                if String.isEmpty id then
+                    Nothing
+
+                else
+                    Just id
+            )
+
+
+{-| Decodes a `facebookLoginResult` payload (`{ ok : Bool, value : String }`, see that port's own
+doc) the same way `Shared.FederatedAuth.resultDecoder` does for its own `{ok, value}` ports --
+`Ok accessToken` on success, `Err "cancelled"` or `Err message` otherwise.
+-}
+facebookLoginResultDecoder : Decode.Value -> Result String String
+facebookLoginResultDecoder value =
+    case
+        Decode.decodeValue
+            (Decode.map2 Tuple.pair (Decode.field "ok" Decode.bool) (Decode.field "value" Decode.string))
+            value
+    of
+        Ok ( True, token ) ->
+            Ok token
+
+        Ok ( False, err ) ->
+            Err err
+
+        Err err ->
+            Err (Decode.errorToString err)
+
+
+{-| Lists the Facebook Pages the just-logged-in account manages, straight from the Graph API
+(`GET /me/accounts`) -- a plain client-side HTTP call, not routed through the Jonline backend at
+all, since it's Facebook's own API being asked "which Pages can this token manage," not anything
+Jonline-specific. Only `id`/`name` are read out of each entry (see `FacebookPageOption`'s own doc
+for why the per-page access token Facebook also returns here isn't used).
+-}
+fetchFacebookPages : String -> Cmd Msg
+fetchFacebookPages accessToken =
+    Http.get
+        { url = "https://graph.facebook.com/v19.0/me/accounts?fields=id,name&access_token=" ++ Url.percentEncode accessToken
+        , expect = Http.expectJson GotFacebookPagesResult facebookPagesDecoder
+        }
+
+
+facebookPagesDecoder : Decode.Decoder (List FacebookPageOption)
+facebookPagesDecoder =
+    Decode.field "data"
+        (Decode.list
+            (Decode.map2 FacebookPageOption
+                (Decode.field "id" Decode.string)
+                (Decode.field "name" Decode.string)
+            )
+        )
+
+
 {-| The `EventSyncSourceRowSaveClicked`/`EventSyncSourceRowRefreshClicked`/
 `EventSyncSourceAddClicked` requests' shared "who's acting" resolution --
 mirrors the old `Shared.EventSyncSourcesPanel.performForOwner` exactly, just
@@ -1690,6 +2053,7 @@ profileDetail shared model server maybeAccount user =
             Nothing ->
                 text ""
         , eventSyncSourcesSection shared model canEdit (isOwnProfile maybeAccount user)
+        , eventSyncDestinationsSection shared model maybeAccount user
         , h3 [] [ text (postsHeading model.posts) ]
         , case model.posts of
             Just postsModel ->
@@ -2486,6 +2850,144 @@ eventSyncSourceAddRowView targetHost addForm =
             _ ->
                 text ""
         ]
+
+
+{-| Unlike `eventSyncSourcesSection`, this is shown (or not) as a single all-or-nothing check --
+own profile, holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`), and this server having a Facebook App
+configured (see `canUseFacebookSync`) -- rather than a separate `canManage`/`canAdd` split. There's
+no "view-only for an Admin visiting someone else's profile" case the way sources have: a linked
+Facebook Page is always the *caller's own* (`create_event_sync_destination.rs` always creates for
+`current_user`), so there's nothing for anyone else to usefully see here.
+-}
+eventSyncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
+eventSyncDestinationsSection shared model maybeAccount user =
+    if not (isOwnProfile maybeAccount user && canUseFacebookSync shared model.resolver.targetHost maybeAccount) then
+        text ""
+
+    else
+        expandableProfileSection "event-sync-destinations-section"
+            "Event Sync Destinations"
+            model.eventSyncDestinationsExpanded
+            EventSyncDestinationsExpandedToggled
+            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations)
+            , facebookLoginView model.eventSyncDestinations
+            ]
+
+
+eventSyncDestinationsContentView : EventSyncDestinationsState -> List (Html Msg)
+eventSyncDestinationsContentView ed =
+    if not (List.isEmpty ed.destinations) then
+        List.map (eventSyncDestinationRowView ed) ed.destinations
+
+    else
+        case ed.status of
+            EventSyncDestinationsNotFetched ->
+                []
+
+            EventSyncDestinationsFetching ->
+                [ div [ class "event-sync-destinations-message" ] [ text "Loading…" ] ]
+
+            EventSyncDestinationsFetchFailed err ->
+                [ div [ class "event-sync-destinations-message" ] [ text err ] ]
+
+            EventSyncDestinationsFetched ->
+                [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
+
+
+eventSyncDestinationRowView : EventSyncDestinationsState -> EventSyncDestination -> Html Msg
+eventSyncDestinationRowView ed destination =
+    let
+        pageName =
+            case destination.configuration of
+                Just (DestinationConfiguration.FacebookPage page) ->
+                    page.pageName
+
+                Nothing ->
+                    "Facebook Page"
+
+        count =
+            destination.syncedEventInstanceCount |> Maybe.map Conversions.int64ToInt |> Maybe.withDefault 0
+
+        deleting =
+            Dict.get destination.id ed.deleteStatuses == Just Submitting
+    in
+    div [ class "event-sync-destination-row list-item-bordered-color-primary" ]
+        [ span [ class "event-sync-destination-name" ] [ text pageName ]
+        , span [ class "event-sync-destination-count" ] [ text (pluralCount count "event" ++ " synced") ]
+        , button
+            [ class "event-sync-destination-delete", onClick (EventSyncDestinationDeleteClicked destination), disabled deleting ]
+            [ text
+                (if deleting then
+                    "Unlinking…"
+
+                 else
+                    "Unlink Facebook Page"
+                )
+            ]
+        , case Dict.get destination.id ed.deleteStatuses of
+            Just (SubmitFailed err) ->
+                div [ class "event-sync-destination-error" ] [ text err ]
+
+            _ ->
+                text ""
+        ]
+
+
+pluralCount : Int -> String -> String
+pluralCount count noun =
+    String.fromInt count
+        ++ " "
+        ++ noun
+        ++ (if count == 1 then
+                ""
+
+            else
+                "s"
+           )
+
+
+{-| The "Sign in to Facebook Page" button (only shown once, with no destination linked yet -- see
+`EventSyncDestinationsState`'s own doc for why there's no "add another" flow in this first
+version) and every step of `FacebookLoginStatus` past that.
+-}
+facebookLoginView : EventSyncDestinationsState -> Html Msg
+facebookLoginView ed =
+    case ed.login of
+        FacebookLoginNotStarted ->
+            if List.isEmpty ed.destinations then
+                button
+                    [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick FacebookLoginClicked ]
+                    [ text "Sign in to Facebook Page" ]
+
+            else
+                text ""
+
+        FacebookLoginPopupOpen ->
+            div [ class "event-sync-destinations-message" ] [ text "Waiting for Facebook…" ]
+
+        FacebookLoginFetchingPages _ ->
+            div [ class "event-sync-destinations-message" ] [ text "Loading your Facebook Pages…" ]
+
+        FacebookLoginChoosingPage _ pages ->
+            div [ class "event-sync-destination-page-picker" ]
+                (div [ class "event-sync-destinations-message" ] [ text "Choose a Page to link:" ]
+                    :: List.map
+                        (\page ->
+                            button
+                                [ class "event-sync-destination-page-option", onClick (FacebookPageChosen page) ]
+                                [ text page.name ]
+                        )
+                        pages
+                )
+
+        FacebookLoginNoPagesFound ->
+            div [ class "event-sync-destinations-message" ] [ text "That Facebook account doesn't manage any Pages." ]
+
+        FacebookLoginLinking _ page ->
+            div [ class "event-sync-destinations-message" ] [ text ("Linking " ++ page.name ++ "…") ]
+
+        FacebookLoginFailed err ->
+            div [ class "event-sync-destination-error" ] [ text err ]
 
 
 eventSyncIntervalSelect : (Int -> Msg) -> Int -> Bool -> Html Msg

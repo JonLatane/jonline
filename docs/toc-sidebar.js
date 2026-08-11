@@ -80,6 +80,7 @@
   var jonlineItem = jonlineLink && jonlineLink.closest('li');
   if (jonlineItem) {
     var extraLinks = [
+      ['Ports', '#ports'],
       ['Authentication', '#authentication'],
       ['HTTP Endpoints', '#http-endpoints'],
       ['API Design Notes', '#api-design-notes'],
@@ -122,6 +123,19 @@
       grpcApiItem.appendChild(rpcList);
     }
   }
+
+  sidebar.addEventListener('click', function (e) {
+    var link = e.target.closest('a[href^="#"]');
+    if (!link) return;
+    var id = decodeURIComponent(link.getAttribute('href').slice(1));
+    // Most TOC targets (per-file/message/service headings) are marked with
+    // <a name="..."> rather than a real id, courtesy of protoc-gen-doc.
+    var target = document.getElementById(id) || document.getElementsByName(id)[0];
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.pushState(null, '', link.getAttribute('href'));
+  });
 
   var resizeHandle = document.createElement('div');
   resizeHandle.id = 'toc-resize-handle';

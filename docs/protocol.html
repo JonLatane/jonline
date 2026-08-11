@@ -291,7 +291,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-EventInstanceRsvpInfo">EventInstanceRsvpInfo</a></p>
           </li>
           <li>
-            <p><a href="#jonline-EventInstanceSyncStatus">EventInstanceSyncStatus</a></p>
+            <p><a href="#jonline-EventInstanceSyncDestination">EventInstanceSyncDestination</a></p>
           </li>
           <li>
             <p><a href="#jonline-EventSyncDestination">EventSyncDestination</a></p>
@@ -341,9 +341,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></p>
           </li>
           <li>
-            <p><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></p>
-          </li>
-          <li>
             <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
           </li>
           <li>
@@ -378,6 +375,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <li>
         <p><a href="#federation-proto">federation.proto</a></p>
         <ul>
+          <li><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></li>
           <li><a href="#jonline-FederatedAccount">FederatedAccount</a></li>
           <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
           <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
@@ -394,12 +392,37 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="jonline-Jonline"></a></p>
     <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
     <p>
-      A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
-      The bulk of these docs involve the <a href="#grpc-api">gRPC API</a> (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
-      <a href="#jonline-Media">media files</a>, and a <a href="#http-based-client-host-negotiation-for-external-cdns"><code>backend_host</code> resource for client/host negotiation</a>.
-      Jonline serves up a few other <a href="#http-endpoints">HTTP endpoints</a>, providing a <code>/sitemap.xml</code>, <code>/robots.txt</code>, iCal/RFC5545 subscription endpoints, and more,
-      but these are essentially accessories to the core APIs.
+      Jonline is a social media protocol with support for Posts, Events, Users, Groups, Media and Messages. It is designed to be federated, but does not require federation.
+      It is designed to be used with a variety of frontends, including web, mobile, and desktop applications. It interoperates across numerous ports, protocols, and formats, including
+      gRPC, HTTP, HTTPS, and ICS/iCal, and is designed to link with SMTP via Stalwart (and other SMTP servers/providers), Facebook Page APIs for post ing Events, and more.
+      Essentially, your server is your own customizable, self-contained social network.
     </p>
+    <p>
+      Jonline is designed to be easy to run and deploy yourself with a <a href="#2-minute-startup-with-homebrew">2 minute setup with Homebrew</a> and <a href="#3-minute-startup-on-linux">3 minute setup on Linux</a>,
+      <a href="https://hub.docker.com/r/jonlatane/jonline/tags">images</a> on <a href="https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags">DockerHub</a> and deployment to your K8s clusters available via
+      a simple but powerful <code>Makefile</code>-based design language.
+    </p>
+    <h4 id="ports"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports"><span class="octicon octicon-link"></span></a>Ports</h4>
+    <p>Jonline servers interact across several ports:</p>
+    <ul>
+      <li><a href="#grpc-api">gRPC (27707)</a> - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+        <ul>
+          <li>Clients are expected to negotiate the gRPC host via the <a href="#http-based-client-host-negotiation-for-external-cdns"><code>backend_host</code> HTTP endpoint (see below)</a> on port 80/443.</li>
+        </ul>
+      </li>
+      <li><a href="#http-endpoints">HTTP (80, 8000, 27705), HTTPS (443)</a> - The main Jonline HTTP API. This is used for some endpoints, including media upload/download, and for negotiating the gRPC host.
+        <ul>
+          <li>Port 443 will serve up a secure HTTPS server. If it fails to startup, Jonline handles this gracefully and degrades to plain HTTP.</li>
+          <li>Port 80 will serve up either an unsecured set of Jonline's HTTP endpoints, or a redirect to the HTTPS/443 server if that one launched successfully.</li>
+          <li>Port 8000 <em>always</em> serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.</li>
+          <li>Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
+            <ul>
+              <li>Currently this just has an <code>/email</code> endpoint. It is designed for <a href="https://github.com/JonLatane/jonline/tree/main/deploys/email">email support via an integration with Stalwart</a>.</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
     <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
     <p>
       Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s.
@@ -413,7 +436,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
-    <h4 id="dumfederation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#dumfederation"><span class="octicon octicon-link"></span></a>Dumfederation</h4>
+    <h4 id="federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation"><span class="octicon octicon-link"></span></a>Federation</h4>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
       Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
@@ -453,6 +476,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <h5 id="robots--sitemap-get-robotstxt-and-get-sitemapxml"><a class="anchor" aria-hidden="true" tabindex="-1" href="#robots--sitemap-get-robotstxt-and-get-sitemapxml"><span class="octicon octicon-link"></span></a>Robots &#x26; Sitemap (<code>GET /robots.txt</code> and <code>GET /sitemap.xml</code>)</h5>
     <p>Jonline servers are expected to serve a <code>robots.txt</code> file at <code>/robots.txt</code> and a <code>sitemap.xml</code> file at <code>/sitemap.xml</code>.</p>
+    <h5 id="favicons-get-faviconico-get-faviconpng"><a class="anchor" aria-hidden="true" tabindex="-1" href="#favicons-get-faviconico-get-faviconpng"><span class="octicon octicon-link"></span></a>Favicons (<code>GET /favicon.ico</code>, <code>GET /favicon.png</code>)</h5>
+    <p>Favicons in a couple of formats.</p>
     <h5 id="media-get-mediaid-and-post-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media-get-mediaid-and-post-media"><span class="octicon octicon-link"></span></a>Media (<code>GET /media/{id}</code> and <code>POST /media</code>)</h5>
     <p>See the <a href="#jonline-Media">Media</a> section for details on how to upload/download media files.</p>
     <h5 id="http-based-client-host-negotiation-for-external-cdns-get-backend_host"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs) (<code>GET /backend_host</code>)</h5>
@@ -1412,17 +1437,17 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <tr>
           <td>VIEW_USERS</td>
           <td>1</td>
-          <td>Allow the user to view profiles with <code>SERVER_PUBLIC</code> Visbility. Allow anonymous users to view profiles with <code>GLOBAL_PUBLIC</code> Visbility (when configured as an anonymous user permission).</td>
+          <td>Allow the user to view profiles with <code>SERVER_PUBLIC</code> Visibility. Allow anonymous users to view profiles with <code>GLOBAL_PUBLIC</code> Visibility (when configured as an anonymous user permission).</td>
         </tr>
         <tr>
           <td>PUBLISH_USERS_LOCALLY</td>
           <td>2</td>
-          <td>Allow the user to publish profiles with <code>SERVER_PUBLIC</code> Visbility. This generally only applies to the user's own profile, except for Admins.</td>
+          <td>Allow the user to publish profiles with <code>SERVER_PUBLIC</code> Visibility. This generally only applies to the user's own profile, except for Admins.</td>
         </tr>
         <tr>
           <td>PUBLISH_USERS_GLOBALLY</td>
           <td>3</td>
-          <td>Allow the user to publish profiles with <code>GLOBAL_PUBLIC</code> Visbility. This generally only applies to the user's own profile, except for Admins.</td>
+          <td>Allow the user to publish profiles with <code>GLOBAL_PUBLIC</code> Visibility. This generally only applies to the user's own profile, except for Admins.</td>
         </tr>
         <tr>
           <td>MODERATE_USERS</td>
@@ -3895,7 +3920,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
         <tr>
           <td>sync_destinations</td>
-          <td><a href="#jonline-EventInstanceSyncStatus">EventInstanceSyncStatus</a></td>
+          <td><a href="#jonline-EventInstanceSyncDestination">EventInstanceSyncDestination</a></td>
           <td>repeated</td>
           <td>EventSyncDestinations this instance has been synced (cross-posted) to, and their status.</td>
         </tr>
@@ -3997,8 +4022,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-EventInstanceSyncStatus"></a></p>
-    <h3 id="eventinstancesyncstatus"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstancesyncstatus"><span class="octicon octicon-link"></span></a>EventInstanceSyncStatus</h3>
+    <p><a name="jonline-EventInstanceSyncDestination"></a></p>
+    <h3 id="eventinstancesyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstancesyncdestination"><span class="octicon octicon-link"></span></a>EventInstanceSyncDestination</h3>
     <p>The status of an EventInstance's sync (cross-post) to one EventSyncDestination.</p>
     <table>
       <thead>
@@ -4075,6 +4100,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
           <td>The time the EventSyncDestination was last updated.</td>
+        </tr>
+        <tr>
+          <td>synced_event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td>optional</td>
+          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <code>EventSyncSource</code>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
         </tr>
         <tr>
           <td>facebook_page</td>
@@ -4666,33 +4697,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-FacebookAuthConfig"></a></p>
-    <h3 id="facebookauthconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookauthconfig"><span class="octicon octicon-link"></span></a>FacebookAuthConfig</h3>
-    <p>Facebook authentication configuration for the server.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>app_id</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The Facebook App ID for the server.</td>
-        </tr>
-        <tr>
-          <td>app_secret</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The Facebook App Secret for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
-        </tr>
-      </tbody>
-    </table>
     <p><a name="jonline-FeatureSettings"></a></p>
     <h3 id="featuresettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#featuresettings"><span class="octicon octicon-link"></span></a>FeatureSettings</h3>
     <p>
@@ -4921,12 +4925,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-WebPushConfig">WebPushConfig</a></td>
           <td>optional</td>
           <td>Web Push (VAPID) configuration for the server.</td>
-        </tr>
-        <tr>
-          <td>facebook_auth_config</td>
-          <td><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></td>
-          <td>optional</td>
-          <td>Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.</td>
         </tr>
       </tbody>
     </table>
@@ -5163,6 +5161,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="federation-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="federationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationproto"><span class="octicon octicon-link"></span></a>federation.proto</h2>
+    <p><a name="jonline-FacebookAuthConfig"></a></p>
+    <h3 id="facebookauthconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookauthconfig"><span class="octicon octicon-link"></span></a>FacebookAuthConfig</h3>
+    <p>Facebook authentication configuration for the server.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>app_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook App ID for the server.</td>
+        </tr>
+        <tr>
+          <td>app_secret</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook App Secret for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-FederatedAccount"></a></p>
     <h3 id="federatedaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedaccount"><span class="octicon octicon-link"></span></a>FederatedAccount</h3>
     <p>
@@ -5245,6 +5270,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-FederatedServer">FederatedServer</a></td>
           <td>repeated</td>
           <td>A list of servers that this server will federate with.</td>
+        </tr>
+        <tr>
+          <td>facebook_auth_config</td>
+          <td><a href="#jonline-FacebookAuthConfig">FacebookAuthConfig</a></td>
+          <td>optional</td>
+          <td>Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.</td>
         </tr>
       </tbody>
     </table>
@@ -5545,6 +5576,7 @@ function copied(target, str) {
   var jonlineItem = jonlineLink && jonlineLink.closest('li');
   if (jonlineItem) {
     var extraLinks = [
+      ['Ports', '#ports'],
       ['Authentication', '#authentication'],
       ['HTTP Endpoints', '#http-endpoints'],
       ['API Design Notes', '#api-design-notes'],
@@ -5587,6 +5619,19 @@ function copied(target, str) {
       grpcApiItem.appendChild(rpcList);
     }
   }
+
+  sidebar.addEventListener('click', function (e) {
+    var link = e.target.closest('a[href^="#"]');
+    if (!link) return;
+    var id = decodeURIComponent(link.getAttribute('href').slice(1));
+    // Most TOC targets (per-file/message/service headings) are marked with
+    // <a name="..."> rather than a real id, courtesy of protoc-gen-doc.
+    var target = document.getElementById(id) || document.getElementsByName(id)[0];
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.pushState(null, '', link.getAttribute('href'));
+  });
 
   var resizeHandle = document.createElement('div');
   resizeHandle.id = 'toc-resize-handle';

@@ -46,12 +46,13 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
         // `FacebookAuthConfig.app_secret` is write-only -- never send the real value to a
         // client. See `configure_server`'s merge logic for how a blank incoming value is kept
         // from clobbering the stored secret.
-        federation_info.facebook_auth_config = federation_info
-            .facebook_auth_config
-            .map(|c| FacebookAuthConfig {
-                app_secret: String::new(),
-                ..c
-            });
+        federation_info.facebook_auth_config =
+            federation_info
+                .facebook_auth_config
+                .map(|c| FacebookAuthConfig {
+                    app_secret: String::new(),
+                    ..c
+                });
         let group_settings: FeatureSettings =
             serde_json::from_value(self.group_settings.to_owned()).unwrap();
         let people_settings: FeatureSettings =

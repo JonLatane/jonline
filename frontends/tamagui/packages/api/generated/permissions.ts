@@ -19,17 +19,17 @@ export enum Permission {
   /** PERMISSION_UNKNOWN - A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) */
   PERMISSION_UNKNOWN = 0,
   /**
-   * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
-   * Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).
+   * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visibility.
+   * Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visibility (when configured as an anonymous user permission).
    */
   VIEW_USERS = 1,
   /**
-   * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
+   * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visibility.
    * This generally only applies to the user's own profile, except for Admins.
    */
   PUBLISH_USERS_LOCALLY = 2,
   /**
-   * PUBLISH_USERS_GLOBALLY - Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
+   * PUBLISH_USERS_GLOBALLY - Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility.
    * This generally only applies to the user's own profile, except for Admins.
    */
   PUBLISH_USERS_GLOBALLY = 3,

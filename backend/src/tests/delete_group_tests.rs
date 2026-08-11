@@ -82,7 +82,8 @@ fn site_admin_can_delete_any_group_without_membership() {
         let admin = create_user(conn, "dgt_site_admin_user");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
 
-        delete_group(group.to_proto(conn, &None), &admin, conn).expect("admin delete should succeed");
+        delete_group(group.to_proto(conn, &None), &admin, conn)
+            .expect("admin delete should succeed");
 
         let remaining: i64 = groups::table
             .filter(groups::id.eq(group.id))
@@ -278,8 +279,8 @@ fn delete_rejects_non_sharer_non_admin() {
         create_group_post(conn, &post, &group, &author, Moderation::Approved);
         let bystander = create_user(conn, "dgpt_bystander");
 
-        let err = delete_group_post(group_post_request(&group, &post), &bystander, conn)
-            .unwrap_err();
+        let err =
+            delete_group_post(group_post_request(&group, &post), &bystander, conn).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
         assert_eq!(err.message(), "group_permission_ADMIN_required");
 

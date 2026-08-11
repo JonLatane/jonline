@@ -20,9 +20,14 @@ const TEST_APP_SECRET: &str = "test-app-secret";
 fn connect_succeeds_for_a_page_the_user_manages() {
     let base_url = serve_facebook_graph_api(Some(("123", "Test Page", "page-token")), "unused");
 
-    let connection =
-        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "123")
-            .expect("connect should succeed");
+    let connection = connect_facebook_page_at(
+        &base_url,
+        TEST_APP_ID,
+        TEST_APP_SECRET,
+        "short-lived-token",
+        "123",
+    )
+    .expect("connect should succeed");
     assert_eq!(connection.page_id, "123");
     assert_eq!(connection.page_name, "Test Page");
     assert_eq!(connection.access_token, "page-token");
@@ -32,9 +37,14 @@ fn connect_succeeds_for_a_page_the_user_manages() {
 fn connect_fails_for_a_page_the_user_does_not_manage() {
     let base_url = serve_facebook_graph_api(Some(("123", "Test Page", "page-token")), "unused");
 
-    let err =
-        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "999")
-            .unwrap_err();
+    let err = connect_facebook_page_at(
+        &base_url,
+        TEST_APP_ID,
+        TEST_APP_SECRET,
+        "short-lived-token",
+        "999",
+    )
+    .unwrap_err();
     assert_eq!(err.code(), Code::PermissionDenied);
     assert_eq!(err.message(), "facebook_page_not_managed_by_user");
 }
@@ -43,9 +53,14 @@ fn connect_fails_for_a_page_the_user_does_not_manage() {
 fn connect_fails_when_user_manages_no_pages() {
     let base_url = serve_facebook_graph_api(None, "unused");
 
-    let err =
-        connect_facebook_page_at(&base_url, TEST_APP_ID, TEST_APP_SECRET, "short-lived-token", "123")
-            .unwrap_err();
+    let err = connect_facebook_page_at(
+        &base_url,
+        TEST_APP_ID,
+        TEST_APP_SECRET,
+        "short-lived-token",
+        "123",
+    )
+    .unwrap_err();
     assert_eq!(err.code(), Code::PermissionDenied);
     assert_eq!(err.message(), "facebook_page_not_managed_by_user");
 }

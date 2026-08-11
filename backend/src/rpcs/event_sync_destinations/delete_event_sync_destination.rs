@@ -43,16 +43,18 @@ pub fn delete_event_sync_destination(
         Status::new(Code::Internal, "failed_to_delete_event_sync_destination")
     })?;
 
-    diesel::delete(event_sync_destinations::table.filter(event_sync_destinations::id.eq(existing.id)))
-        .execute(conn)
-        .map_err(|e| {
-            log::error!(
-                "Failed to delete event sync destination {}: {:?}",
-                existing.id,
-                e
-            );
-            Status::new(Code::Internal, "failed_to_delete_event_sync_destination")
-        })?;
+    diesel::delete(
+        event_sync_destinations::table.filter(event_sync_destinations::id.eq(existing.id)),
+    )
+    .execute(conn)
+    .map_err(|e| {
+        log::error!(
+            "Failed to delete event sync destination {}: {:?}",
+            existing.id,
+            e
+        );
+        Status::new(Code::Internal, "failed_to_delete_event_sync_destination")
+    })?;
 
     Ok(())
 }

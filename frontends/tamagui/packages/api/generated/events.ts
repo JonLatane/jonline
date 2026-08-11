@@ -379,6 +379,15 @@ export interface EventSyncDestination {
   updatedAt?:
     | string
     | undefined;
+  /**
+   * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
+   * request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
+   * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
+   * in bulk on an interval.
+   */
+  syncedEventInstanceCount?:
+    | number
+    | undefined;
   /** A connected Facebook Page to post EventInstances to. */
   facebookPage?: FacebookPage | undefined;
 }
@@ -502,11 +511,11 @@ export interface EventInstance {
     | EventAttendance
     | undefined;
   /** EventSyncDestinations this instance has been synced (cross-posted) to, and their status. */
-  syncDestinations: EventInstanceSyncStatus[];
+  syncDestinations: EventInstanceSyncDestination[];
 }
 
 /** The status of an EventInstance's sync (cross-post) to one EventSyncDestination. */
-export interface EventInstanceSyncStatus {
+export interface EventInstanceSyncDestination {
   /** The EventSyncDestination this status is for. */
   eventSyncDestinationId: string;
   /** The ID of the resulting post on the destination (e.g. a Facebook Post ID). */
@@ -1570,7 +1579,14 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
 };
 
 function createBaseEventSyncDestination(): EventSyncDestination {
-  return { id: "", owner: undefined, createdAt: undefined, updatedAt: undefined, facebookPage: undefined };
+  return {
+    id: "",
+    owner: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+    syncedEventInstanceCount: undefined,
+    facebookPage: undefined,
+  };
 }
 
 export const EventSyncDestination: MessageFns<EventSyncDestination> = {
@@ -1586,6 +1602,9 @@ export const EventSyncDestination: MessageFns<EventSyncDestination> = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.syncedEventInstanceCount !== undefined) {
+      writer.uint32(48).uint64(message.syncedEventInstanceCount);
     }
     if (message.facebookPage !== undefined) {
       FacebookPage.encode(message.facebookPage, writer.uint32(74).fork()).join();
@@ -1632,6 +1651,14 @@ export const EventSyncDestination: MessageFns<EventSyncDestination> = {
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.syncedEventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
         case 9: {
           if (tag !== 74) {
             break;
@@ -1655,6 +1682,9 @@ export const EventSyncDestination: MessageFns<EventSyncDestination> = {
       owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      syncedEventInstanceCount: isSet(object.syncedEventInstanceCount)
+        ? globalThis.Number(object.syncedEventInstanceCount)
+        : undefined,
       facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
     };
   },
@@ -1673,6 +1703,9 @@ export const EventSyncDestination: MessageFns<EventSyncDestination> = {
     if (message.updatedAt !== undefined) {
       obj.updatedAt = message.updatedAt;
     }
+    if (message.syncedEventInstanceCount !== undefined) {
+      obj.syncedEventInstanceCount = Math.round(message.syncedEventInstanceCount);
+    }
     if (message.facebookPage !== undefined) {
       obj.facebookPage = FacebookPage.toJSON(message.facebookPage);
     }
@@ -1690,6 +1723,7 @@ export const EventSyncDestination: MessageFns<EventSyncDestination> = {
       : undefined;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.syncedEventInstanceCount = object.syncedEventInstanceCount ?? undefined;
     message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
       ? FacebookPage.fromPartial(object.facebookPage)
       : undefined;
@@ -2206,7 +2240,7 @@ export const EventInstance: MessageFns<EventInstance> = {
       EventAttendance.encode(message.currentUserAttendance, writer.uint32(90).fork()).join();
     }
     for (const v of message.syncDestinations) {
-      EventInstanceSyncStatus.encode(v!, writer.uint32(98).fork()).join();
+      EventInstanceSyncDestination.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -2311,7 +2345,7 @@ export const EventInstance: MessageFns<EventInstance> = {
             break;
           }
 
-          message.syncDestinations.push(EventInstanceSyncStatus.decode(reader, reader.uint32()));
+          message.syncDestinations.push(EventInstanceSyncDestination.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -2341,7 +2375,7 @@ export const EventInstance: MessageFns<EventInstance> = {
         ? EventAttendance.fromJSON(object.currentUserAttendance)
         : undefined,
       syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
-        ? object.syncDestinations.map((e: any) => EventInstanceSyncStatus.fromJSON(e))
+        ? object.syncDestinations.map((e: any) => EventInstanceSyncDestination.fromJSON(e))
         : [],
     };
   },
@@ -2382,7 +2416,7 @@ export const EventInstance: MessageFns<EventInstance> = {
       obj.currentUserAttendance = EventAttendance.toJSON(message.currentUserAttendance);
     }
     if (message.syncDestinations?.length) {
-      obj.syncDestinations = message.syncDestinations.map((e) => EventInstanceSyncStatus.toJSON(e));
+      obj.syncDestinations = message.syncDestinations.map((e) => EventInstanceSyncDestination.toJSON(e));
     }
     return obj;
   },
@@ -2412,12 +2446,12 @@ export const EventInstance: MessageFns<EventInstance> = {
       (object.currentUserAttendance !== undefined && object.currentUserAttendance !== null)
         ? EventAttendance.fromPartial(object.currentUserAttendance)
         : undefined;
-    message.syncDestinations = object.syncDestinations?.map((e) => EventInstanceSyncStatus.fromPartial(e)) || [];
+    message.syncDestinations = object.syncDestinations?.map((e) => EventInstanceSyncDestination.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseEventInstanceSyncStatus(): EventInstanceSyncStatus {
+function createBaseEventInstanceSyncDestination(): EventInstanceSyncDestination {
   return {
     eventSyncDestinationId: "",
     destinationInstanceId: undefined,
@@ -2426,8 +2460,8 @@ function createBaseEventInstanceSyncStatus(): EventInstanceSyncStatus {
   };
 }
 
-export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
-  encode(message: EventInstanceSyncStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EventInstanceSyncDestination: MessageFns<EventInstanceSyncDestination> = {
+  encode(message: EventInstanceSyncDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.eventSyncDestinationId !== "") {
       writer.uint32(10).string(message.eventSyncDestinationId);
     }
@@ -2443,10 +2477,10 @@ export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EventInstanceSyncStatus {
+  decode(input: BinaryReader | Uint8Array, length?: number): EventInstanceSyncDestination {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventInstanceSyncStatus();
+    const message = createBaseEventInstanceSyncDestination();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2491,7 +2525,7 @@ export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
     return message;
   },
 
-  fromJSON(object: any): EventInstanceSyncStatus {
+  fromJSON(object: any): EventInstanceSyncDestination {
     return {
       eventSyncDestinationId: isSet(object.eventSyncDestinationId)
         ? globalThis.String(object.eventSyncDestinationId)
@@ -2504,7 +2538,7 @@ export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
     };
   },
 
-  toJSON(message: EventInstanceSyncStatus): unknown {
+  toJSON(message: EventInstanceSyncDestination): unknown {
     const obj: any = {};
     if (message.eventSyncDestinationId !== "") {
       obj.eventSyncDestinationId = message.eventSyncDestinationId;
@@ -2521,11 +2555,11 @@ export const EventInstanceSyncStatus: MessageFns<EventInstanceSyncStatus> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EventInstanceSyncStatus>, I>>(base?: I): EventInstanceSyncStatus {
-    return EventInstanceSyncStatus.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<EventInstanceSyncDestination>, I>>(base?: I): EventInstanceSyncDestination {
+    return EventInstanceSyncDestination.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInstanceSyncStatus>, I>>(object: I): EventInstanceSyncStatus {
-    const message = createBaseEventInstanceSyncStatus();
+  fromPartial<I extends Exact<DeepPartial<EventInstanceSyncDestination>, I>>(object: I): EventInstanceSyncDestination {
+    const message = createBaseEventInstanceSyncDestination();
     message.eventSyncDestinationId = object.eventSyncDestinationId ?? "";
     message.destinationInstanceId = object.destinationInstanceId ?? undefined;
     message.destinationUrl = object.destinationUrl ?? undefined;

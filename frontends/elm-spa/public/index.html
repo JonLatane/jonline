@@ -224,6 +224,62 @@
       }
     });
 
+    // Facebook Login for `Components.EventSyncDestinations` -- deliberately hand-rolled instead
+    // of loading Facebook's JS SDK: opening the popup here happens synchronously inside the
+    // click's own event handler (the `Cmd` this port fires is processed synchronously by Elm's
+    // runtime), which is what makes browsers -- especially mobile Safari -- reliably allow the
+    // popup at all. Loading a third-party SDK first would introduce an async gap between the
+    // click and the popup call, and popups opened after that gap get silently blocked on some
+    // browsers. `redirectUri` points at our own tiny static `facebook-callback.html` (same
+    // origin, no server round-trip) rather than Facebook's SDK-hosted proxy page.
+    app.ports.facebookLoginPopup.subscribe(function (appId) {
+      var redirectUri = window.location.origin + jonlineBasePath + "/facebook-callback.html";
+      var width = 600, height = 700;
+      var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
+      var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
+
+      var popup = window.open(
+        "https://www.facebook.com/v19.0/dialog/oauth" +
+        "?client_id=" + encodeURIComponent(appId) +
+        "&redirect_uri=" + encodeURIComponent(redirectUri) +
+        "&response_type=token" +
+        "&scope=" + encodeURIComponent("pages_show_list,pages_manage_posts"),
+        "jonline-facebook-login",
+        "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
+      );
+
+      if (!popup) {
+        app.ports.facebookLoginResult.send({ ok: false, value: "Couldn't open the Facebook login popup. Please allow popups for this site." });
+        return;
+      }
+
+      var settled = false;
+      var poll = setInterval(function () {
+        if (popup.closed) {
+          clearInterval(poll);
+          if (!settled) {
+            settled = true;
+            window.removeEventListener("message", onMessage);
+            app.ports.facebookLoginResult.send({ ok: false, value: "cancelled" });
+          }
+        }
+      }, 500);
+
+      function onMessage(e) {
+        if (e.origin !== window.location.origin) { return; }
+        if (!e.data || e.data.source !== "jonline-facebook-login") { return; }
+        settled = true;
+        window.removeEventListener("message", onMessage);
+        clearInterval(poll);
+        if (e.data.accessToken) {
+          app.ports.facebookLoginResult.send({ ok: true, value: e.data.accessToken });
+        } else {
+          app.ports.facebookLoginResult.send({ ok: false, value: e.data.error || "Facebook login failed." });
+        }
+      }
+      window.addEventListener("message", onMessage);
+    });
+
     // See Ports.elm's scrollElementLeft doc comment: Browser.Dom.setViewportOf
     // always assigns scrollLeft from inside a requestAnimationFrame callback,
     // which silently no-ops on an element with `scroll-behavior: smooth` --

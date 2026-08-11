@@ -140,9 +140,7 @@ fn find_page_access_token(
     let page = pages
         .iter()
         .find(|p| p.get("id").and_then(|v| v.as_str()) == Some(page_id))
-        .ok_or_else(|| {
-            Status::new(Code::PermissionDenied, "facebook_page_not_managed_by_user")
-        })?;
+        .ok_or_else(|| Status::new(Code::PermissionDenied, "facebook_page_not_managed_by_user"))?;
 
     let page_name = page
         .get("name")
@@ -213,7 +211,10 @@ pub fn post_event_instance_at(
     let message = format_message(title, content, starts_at);
     let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
 
-    let mut params = vec![("message", message.as_str()), ("access_token", access_token)];
+    let mut params = vec![
+        ("message", message.as_str()),
+        ("access_token", access_token),
+    ];
     if let Some(link) = link.as_ref().filter(|l| !l.trim().is_empty()) {
         params.push(("link", link.as_str()));
     }
@@ -240,7 +241,11 @@ fn format_message(
     if let Some(title) = title.as_ref().filter(|t| !t.trim().is_empty()) {
         lines.push(title.clone());
     }
-    lines.push(starts_at.format("%A, %B %-d, %Y at %-I:%M %p UTC").to_string());
+    lines.push(
+        starts_at
+            .format("%A, %B %-d, %Y at %-I:%M %p UTC")
+            .to_string(),
+    );
     if let Some(content) = content.as_ref().filter(|c| !c.trim().is_empty()) {
         lines.push(content.clone());
     }
@@ -284,7 +289,10 @@ fn graph_request(
         })?;
         if let Some(error) = value.get("error") {
             log::error!("Facebook Graph API returned an error: {:?}", error);
-            return Err(Status::new(Code::FailedPrecondition, "facebook_graph_api_error"));
+            return Err(Status::new(
+                Code::FailedPrecondition,
+                "facebook_graph_api_error",
+            ));
         }
         Ok(value)
     };

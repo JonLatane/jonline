@@ -13,9 +13,9 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{
-    event_attendances, event_instances, event_sync_destinations, event_sync_sources, events,
-    follows, group_posts, groups, media, memberships, messages, posts, server_configurations,
-    users,
+    event_attendances, event_instance_sync_destinations, event_instances, event_sync_destinations,
+    event_sync_sources, events, follows, group_posts, groups, media, memberships, messages, posts,
+    server_configurations, users,
 };
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
@@ -607,6 +607,26 @@ pub fn create_event_sync_destination_row(
         })
         .get_result::<models::EventSyncDestination>(conn)
         .expect("failed to create test event sync destination")
+}
+
+/// Inserts an `event_instance_sync_destinations` row directly -- simulates a successful
+/// `SyncEventInstance` without going through the RPC (which always hits the real Facebook Graph
+/// API -- see `event_sync_destination_rpc_tests`' own note on that).
+pub fn create_event_instance_sync_destination_row(
+    conn: &mut PgPooledConnection,
+    instance: &models::EventInstance,
+    destination: &models::EventSyncDestination,
+) {
+    insert_into(event_instance_sync_destinations::table)
+        .values(&models::NewEventInstanceSyncDestination {
+            event_instance_id: instance.id,
+            event_sync_destination_id: destination.id,
+            destination_instance_id: Some("test-post-id".to_string()),
+            destination_url: Some("https://www.facebook.com/test-post-id".to_string()),
+            synced_at: Some(SystemTime::now()),
+        })
+        .execute(conn)
+        .expect("failed to create test event instance sync destination");
 }
 
 /// Inserts an active `server_configurations` row with `federation_info.facebook_auth_config` set
