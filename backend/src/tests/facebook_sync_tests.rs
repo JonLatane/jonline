@@ -6,7 +6,7 @@
 use chrono::{TimeZone, Utc};
 use tonic::Code;
 
-use crate::logic::{connect_facebook_page_at, post_event_instance_at};
+use crate::logic::{connect_facebook_page_at, post_event_instance_at, EventInstancePost};
 use crate::models;
 use crate::tests::factories::*;
 
@@ -78,14 +78,20 @@ fn post_event_instance_returns_the_new_posts_id_and_url() {
         updated_at: None,
     };
     let starts_at = Utc.with_ymd_and_hms(2099, 1, 1, 9, 0, 0).unwrap();
+    let ends_at = Utc.with_ymd_and_hms(2099, 1, 1, 11, 0, 0).unwrap();
 
     let (post_id, post_url) = post_event_instance_at(
         &base_url,
         &destination,
-        &Some("Test Event".to_string()),
-        &Some("Come join us!".to_string()),
-        &None,
-        starts_at,
+        &EventInstancePost {
+            title: &Some("Test Event".to_string()),
+            content: &Some("Come join us!".to_string()),
+            link: &None,
+            starts_at,
+            ends_at,
+            location: &Some("123 Main St".to_string()),
+            event_url: &Some("https://example.com/event/abc".to_string()),
+        },
     )
     .expect("post should succeed");
     assert_eq!(post_id, "123_456");
@@ -102,14 +108,20 @@ fn post_event_instance_fails_when_destination_is_not_configured() {
         updated_at: None,
     };
     let starts_at = Utc.with_ymd_and_hms(2099, 1, 1, 9, 0, 0).unwrap();
+    let ends_at = Utc.with_ymd_and_hms(2099, 1, 1, 11, 0, 0).unwrap();
 
     let err = post_event_instance_at(
         "http://127.0.0.1:1",
         &destination,
-        &None,
-        &None,
-        &None,
-        starts_at,
+        &EventInstancePost {
+            title: &None,
+            content: &None,
+            link: &None,
+            starts_at,
+            ends_at,
+            location: &None,
+            event_url: &None,
+        },
     )
     .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);
