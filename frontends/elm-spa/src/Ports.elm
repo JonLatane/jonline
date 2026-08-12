@@ -1,5 +1,6 @@
 port module Ports exposing
     ( accountsAndServersUpdated
+    , calendarEventClicked
     , clearFederatedAuthKeyPair
     , copyToClipboard
     , elementsMeasured
@@ -149,6 +150,15 @@ strings of its own. No result comes back over a `Sub`; this is
 fire-and-forget, same as `setNavBarColor`/`copyToClipboard`.
 -}
 port renderCalendar : Encode.Value -> Cmd msg
+
+
+{-| Fires the `id` (an `eventAnimationKey`) of whichever `Calendar`-mode event
+was clicked -- `public/index.html`'s `renderCalendar` subscriber wires this to
+FullCalendar's own `eventClick` callback. See
+`Components.Pages.EventsPage.CalendarEventClicked`, the only current
+subscriber, which opens/scrolls its own preview strip to that event's card.
+-}
+port calendarEventClicked : (String -> msg) -> Sub msg
 
 
 {-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s

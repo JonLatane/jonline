@@ -564,6 +564,80 @@
   background-color: inherit;
 }
 
+/* `Components.Pages.EventsPage.calendarPreviewModalView` -- tapping a
+   `Calendar`-mode event opens this, centered above `UI.Modal.backdrop`
+   (`ui/modal.css`'s `.modal-backdrop`, reused as-is) rather than `UI.Modal`
+   itself, which is a small fixed-width confirm/cancel dialog frame, wrong
+   shape for a wide horizontal card strip. `max-width` leaves room to
+   breathe on a phone-width viewport; `.is-closed` mirrors `.modal.is-closed`'s
+   own "fade out via opacity/scale, zero the box so it can't still catch a
+   click or leave dead scroll space while closed" convention. */
+.calendar-preview-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 34;
+  width: 95vw;
+  max-width: 900px;
+  max-height: calc(100vh - 4rem);
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem 0.5rem 1rem 1rem;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.calendar-preview-modal.is-closed {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  width: 0;
+  max-width: 0;
+  padding: 0;
+  border: none;
+}
+
+.calendar-preview-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+}
+
+/* Mirrors `.events-strip` (below) -- horizontally-scrolling, smoothly (see
+   `scrollToCalendarPreviewCard`'s own doc for why the actual scroll is a
+   port call rather than `Browser.Dom.setViewportOf`, same reasoning as
+   `Pages.Event.EventId_`'s own instance strip). Right-padding leaves room for
+   `.calendar-preview-close` without the last card sitting under it. */
+.calendar-preview-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 0.8rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 2rem 0.5rem 0.5rem 0;
+}
+
+/* Wider than `.events-strip`'s own fixed 280px tile (`.events-grid
+   .flip-animated-item`/`.events-strip .flip-animated-item`, above) -- this
+   modal exists specifically to show one event in more detail than the
+   compact embedded strip does, and (unlike that strip) never needs to
+   animate this width via a FLIP mode-switch, so a plain `width` is enough. */
+.calendar-preview-card {
+  flex: 0 0 auto;
+  width: calc(min(60vw, 420px));
+  scroll-margin-left: -50%;
+}
+
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;

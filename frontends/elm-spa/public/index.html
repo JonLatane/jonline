@@ -355,7 +355,15 @@
           // (from its `classNames`, see Ports.elm's renderCalendar doc) has
           // nothing to visibly paint in month view.
           eventDisplay: "block",
-          events: payload.events
+          events: payload.events,
+          // See Ports.elm's calendarEventClicked doc comment -- our own
+          // events never set a `url`, so there's nothing for a default click
+          // to navigate to anyway, but preventDefault stays cheap insurance
+          // against FullCalendar ever changing that default.
+          eventClick: function (info) {
+            info.jsEvent.preventDefault();
+            app.ports.calendarEventClicked.send(info.event.id);
+          }
         });
         calendar.render();
         jonlineCalendars[payload.id] = { el: el, calendar: calendar };

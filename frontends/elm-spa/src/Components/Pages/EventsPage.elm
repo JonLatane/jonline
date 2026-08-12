@@ -70,6 +70,7 @@ import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
+import UI.Modal
 import Url.Builder
 
 
@@ -93,6 +94,16 @@ type alias Model =
     -- see `eventsListView`'s own doc for how the two dicts render as one
     -- combined list regardless.
     , calendarAnimations : Dict String CalendarAnimation
+
+    -- The `eventAnimationKey` of the `Calendar`-mode event most recently
+    -- tapped (via `Ports.calendarEventClicked`/`CalendarEventClicked`) --
+    -- `Nothing` means `calendarPreviewModalView`'s own modal is closed.
+    -- Doubles as its own scroll target: opening it (or re-tapping a
+    -- different event while it's already open) always re-fires
+    -- `scrollToCalendarPreviewCard` for whatever key this currently is. See
+    -- `calendarPreviewModalView`'s own doc for why this needs no per-card
+    -- animation dict of its own, unlike `eventAnimations`/`calendarAnimations`.
+    , calendarPreview : Maybe String
     , mode : EventsDisplayMode
 
     -- `True` for embedded copies of this model whose own default `mode` is
@@ -301,6 +312,21 @@ type Msg
       -- `Model.pushStatuses` via `pushStatusKey`.
     | PushEventInstanceToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
+      -- FullCalendar's own `eventClick` firing over `Ports.calendarEventClicked`
+      -- -- opens `calendarPreviewModalView`'s modal (`model.calendarPreview`)
+      -- to the tapped event's key and kicks off `scrollToCalendarPreviewCard`.
+      -- A no-op-but-still-rescrolls if the modal's already open to a
+      -- *different* event (just updates which one, see `Model.calendarPreview`'s
+      -- own doc).
+    | CalendarEventClicked String
+      -- Closes `calendarPreviewModalView`'s modal -- its own close button or
+      -- backdrop click.
+    | CalendarPreviewClosed
+      -- `scrollToCalendarPreviewCard`'s measurement resolving -- mirrors
+      -- `Pages.Event.EventId_.GotScrollTarget` exactly, including giving up
+      -- silently (`Err`) if the strip/card aren't found (e.g. the modal was
+      -- closed again before this resolved).
+    | GotCalendarPreviewScrollTarget (Result Dom.Error Float)
 
 
 {-| The four interchangeable layouts `eventsListView` can render its cards
@@ -478,6 +504,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
                 , calendarAnimations = Dict.empty
+                , calendarPreview = Nothing
                 , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedPage)
                 , embeddedPage = embeddedPage
                 , measurementPhase = NotMeasuring
@@ -533,6 +560,7 @@ subscriptions model =
         , Ports.elementsMeasured GotMeasuredRects
         , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations) ++ List.map .flip (Dict.values model.calendarAnimations))
         , UI.Flip.moveSubscription AnimateMove (List.map .move (Dict.values model.eventAnimations))
+        , Ports.calendarEventClicked CalendarEventClicked
         ]
 
 
@@ -942,6 +970,28 @@ updateInner shared msg model =
                     ( { clearedModel | pushStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) clearedModel.pushStatuses }
                     , Effect.none
                     )
+
+        CalendarEventClicked key ->
+            ( { model | calendarPreview = Just key }
+            , scrollToCalendarPreviewCard 60 key
+            )
+
+        CalendarPreviewClosed ->
+            ( { model | calendarPreview = Nothing }, Effect.none )
+
+        GotCalendarPreviewScrollTarget (Ok target) ->
+            ( model
+            , Ports.scrollElementLeft
+                (Encode.object
+                    [ ( "id", Encode.string calendarPreviewStripDomId )
+                    , ( "left", Encode.float (max 0 target) )
+                    ]
+                )
+                |> Effect.fromCmd
+            )
+
+        GotCalendarPreviewScrollTarget (Err _) ->
+            ( model, Effect.none )
 
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
@@ -1709,6 +1759,179 @@ calendarView embeddedPage =
 
 
 
+-- CALENDAR PREVIEW
+
+
+{-| The DOM id `calendarPreviewModalView`'s horizontal strip is rendered with
+-- paired with `calendarPreviewCardDomId` by `scrollToCalendarPreviewCard`,
+mirroring `Pages.Event.EventId_.instanceStripDomId`/`instanceChipDomId`
+exactly.
+-}
+calendarPreviewStripDomId : String
+calendarPreviewStripDomId =
+    "calendar-preview-strip"
+
+
+calendarPreviewCardDomId : String -> String
+calendarPreviewCardDomId key =
+    "calendar-preview-card-" ++ key
+
+
+{-| Scrolls `calendarPreviewStripDomId`'s strip horizontally so `key`'s own
+card is centered in view -- fired whenever `CalendarEventClicked` opens the
+modal (or re-targets it to a different event while already open). Mirrors
+`Pages.Event.EventId_.scrollToInstance` exactly (see its own doc for why this
+measures via `Dom.getElement`/`Dom.getViewportOf` then applies the result via
+`Ports.scrollElementLeft` rather than `Browser.Dom.setViewportOf`), just with
+a much shorter delay: `EventId_`'s own delay is there to let a FLIP
+enter/grow transition clear before measuring, but `calendarPreviewCardView`
+renders its cards directly (no FLIP, no `eventAnimations` involved -- see
+`calendarPreviewModalView`'s own doc for why), so the only thing this delay
+needs to cover is the one frame between `CalendarEventClicked` landing in the
+model and the modal's own `is-open` class (and thus its non-zero layout)
+actually painting.
+-}
+scrollToCalendarPreviewCard : Float -> String -> Effect Msg
+scrollToCalendarPreviewCard delayMs key =
+    Process.sleep delayMs
+        |> Task.andThen
+            (\_ ->
+                Task.map3 (\card strip viewport -> ( card, strip, viewport ))
+                    (Dom.getElement (calendarPreviewCardDomId key))
+                    (Dom.getElement calendarPreviewStripDomId)
+                    (Dom.getViewportOf calendarPreviewStripDomId)
+            )
+        |> Task.map
+            (\( card, strip, viewport ) ->
+                let
+                    cardLeftWithinStrip =
+                        card.element.x - strip.element.x
+                in
+                viewport.viewport.x
+                    + cardLeftWithinStrip
+                    - (viewport.viewport.width / 2)
+                    + (card.element.width / 2)
+            )
+        |> Task.attempt GotCalendarPreviewScrollTarget
+        |> Effect.fromCmd
+
+
+{-| `Calendar` mode's own "tap an event to preview it" modal -- opened by
+`CalendarEventClicked` (`model.calendarPreview`), closed by its own close
+button or backdrop click. Reuses `UI.Modal.backdrop` for the backdrop layer
+(same fade/click-to-close convention as every other modal in the app), but a
+bespoke body rather than `UI.Modal.view` -- that's a small, fixed-width
+dialog frame (confirm/cancel style); this instead wants the
+already-established embedded `HorizontalList` strip look (mirrors
+`.events-strip`/`eventAnimationView`'s own card list), just centered as an
+overlay, with no heading, and with wider cards (`.calendar-preview-card`,
+`events.css`) than that strip's own fixed 280px tile.
+
+Deliberately renders `calendarPreviewEvents model` (a small window around
+whichever card was tapped, not the full `calendarEvents model`) directly via
+`eventCardView` -- not through `eventAnimations`/`UI.Flip`'s enter/leave fade
+the way `eventAnimationView` wraps it for the real card layouts -- because
+this modal's own content never needs that: it isn't reconciling a changing
+server fetch frame to frame the way the live listing is, it's a fixed
+snapshot of "what's nearby", rendered fresh (open or closed -- an empty list
+while closed, see `calendarPreviewEvents`' own doc) each time
+`model.calendarPreview` changes, so `scrollToCalendarPreviewCard` has real,
+measurable card elements to find without waiting on any enter animation to
+clear first.
+-}
+calendarPreviewModalView : Shared.Model -> Model -> Html Msg
+calendarPreviewModalView shared model =
+    let
+        isOpen =
+            model.calendarPreview /= Nothing
+    in
+    div []
+        [ UI.Modal.backdrop isOpen CalendarPreviewClosed
+        , div [ classes [ "calendar-preview-modal", openClosedClass isOpen ] ]
+            [ button
+                [ class "calendar-preview-close"
+                , onClick CalendarPreviewClosed
+                , type_ "button"
+                ]
+                [ text "╳" ]
+            , div [ id calendarPreviewStripDomId, class "calendar-preview-strip" ]
+                (List.map (calendarPreviewCardView shared model) (calendarPreviewEvents model))
+            ]
+        ]
+
+
+{-| How many cards `calendarPreviewEvents` keeps on either side of the tapped
+one -- 5 each way, 11 total. Rendering `calendarEvents model` in full (every
+currently-`Loaded` event, potentially hundreds -- see that function's own
+doc) made `scrollToCalendarPreviewCard` unreliable for anything tapped far
+into a long month: confirmed live, a card deep into a list that size either
+measured wrong or just took long enough to lay out that the scroll fired
+before it settled. A card only ever needs to scroll a *little* into view
+relative to its own near neighbors, never the *whole* list, so bounding how
+much this ever has to render fixes both the measurement and the cost of
+building it in the first place.
+-}
+calendarPreviewWindowRadius : Int
+calendarPreviewWindowRadius =
+    5
+
+
+{-| `calendarEvents model`, sorted chronologically (mirrors `visibleAnimations`'
+own sort key) and windowed down to `calendarPreviewWindowRadius` entries on
+either side of `model.calendarPreview`'s own tapped key -- empty while the
+modal is closed (`Nothing`) or, in the practically-never case the tapped
+event isn't found in the current fetch anymore, empty too (nothing sensible
+to center a window on).
+-}
+calendarPreviewEvents : Model -> List ( String, Event, EventInstance )
+calendarPreviewEvents model =
+    case model.calendarPreview of
+        Nothing ->
+            []
+
+        Just key ->
+            let
+                sorted =
+                    calendarEvents model
+                        |> List.sortBy
+                            (\( _, _, instance ) ->
+                                Events.instanceStartsOrEndsAt instance
+                                    |> Maybe.withDefault (Time.millisToPosix 0)
+                                    |> Time.posixToMillis
+                            )
+
+                targetIndex =
+                    sorted
+                        |> List.indexedMap (\i ( host, _, instance ) -> ( i, eventAnimationKey host instance ))
+                        |> List.filter (\( _, k ) -> k == key)
+                        |> List.head
+                        |> Maybe.map Tuple.first
+            in
+            case targetIndex of
+                Nothing ->
+                    []
+
+                Just idx ->
+                    sorted
+                        |> List.indexedMap Tuple.pair
+                        |> List.filter (\( i, _ ) -> i >= idx - calendarPreviewWindowRadius && i <= idx + calendarPreviewWindowRadius)
+                        |> List.map Tuple.second
+
+
+calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, EventInstance ) -> Html Msg
+calendarPreviewCardView shared model ( host, event, instance ) =
+    let
+        key =
+            eventAnimationKey host instance
+
+        current =
+            model.calendarPreview == Just key
+    in
+    div [ id (calendarPreviewCardDomId key), class "calendar-preview-card" ]
+        [ eventCardView shared False current model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses ( host, event, instance ) ]
+
+
+
 -- VIEW
 
 
@@ -1769,6 +1992,7 @@ view shared showAuthorHeading model =
                     ]
                 ]
         , eventsListView shared model
+        , calendarPreviewModalView shared model
         ]
 
 
@@ -2289,7 +2513,7 @@ eventAnimationView shared embeddedPage showSyncSources showSyncDestinations avai
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage False showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
         ]
     )
 
@@ -2303,8 +2527,8 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
@@ -2373,7 +2597,7 @@ eventCardView shared embeddedPage showSyncSources showSyncDestinations available
         mediaSizing
         starred
         onStarClicked
-        False
+        current
         showSyncSources
         showSyncDestinations
         availableSyncDestinations
