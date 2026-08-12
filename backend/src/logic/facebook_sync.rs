@@ -2,10 +2,12 @@
 //! `EventInstance`s to it via the Graph API.
 //!
 //! This creates a Page **post** formatted to read like an event announcement (title, date/time
-//! range, location, description, and a link back to the event on this Jonline server), not a real
-//! Facebook **Event** object -- the Graph API's `event` node has been creation/update/delete-locked
-//! for third-party apps since v3.3 (2018), restricted to approved Facebook Marketing Partners. See
-//! `docs/facebook_federation.md` for the full rundown of why and what this does instead.
+//! range -- in the event location's local timezone if `logic::resolve_timezone` can geocode it,
+//! else UTC -- location, description, and a link back to the event on this Jonline server), not a
+//! real Facebook **Event** object -- the Graph API's `event` node has been
+//! creation/update/delete-locked for third-party apps since v3.3 (2018), restricted to approved
+//! Facebook Marketing Partners. See `docs/facebook_federation.md` for the full rundown of why and
+//! what this does instead.
 //!
 //! Posting to a user's personal timeline isn't possible via the Graph API (Facebook deprecated
 //! `publish_actions` in 2018) -- only to a Page the user administers, hence `EventSyncDestination`
@@ -180,6 +182,10 @@ pub struct EventInstancePost<'a> {
     pub ends_at: DateTime<Utc>,
     /// `EventInstance.location`'s `uniformly_formatted_address`, if any.
     pub location: &'a Option<String>,
+    /// The IANA timezone `location` resolves to, if `logic::resolve_timezone` could geocode it --
+    /// see that function's doc comment. `starts_at`/`ends_at` are shown in this zone if set,
+    /// otherwise in UTC.
+    pub timezone: Option<chrono_tz::Tz>,
     /// Link to this event on this Jonline server's own frontend. Only buildable when
     /// `ServerConfiguration.external_cdn_config.frontend_host` is configured -- see
     /// `sync_event_instance`'s caller -- so this is `None` on servers without that set up.
@@ -256,7 +262,14 @@ fn format_message(post: &EventInstancePost) -> String {
     if let Some(title) = post.title.as_ref().filter(|t| !t.trim().is_empty()) {
         lines.push(title.clone());
     }
-    lines.push(format_time_range(post.starts_at, post.ends_at));
+    let time_range = match post.timezone {
+        Some(tz) => format_time_range(
+            post.starts_at.with_timezone(&tz),
+            post.ends_at.with_timezone(&tz),
+        ),
+        None => format_time_range(post.starts_at, post.ends_at),
+    };
+    lines.push(time_range);
     if let Some(location) = post.location.as_ref().filter(|l| !l.trim().is_empty()) {
         lines.push(format!("Location: {location}"));
     }
@@ -269,18 +282,24 @@ fn format_message(post: &EventInstancePost) -> String {
     lines.join("\n\n")
 }
 
-fn format_time_range(starts_at: DateTime<Utc>, ends_at: DateTime<Utc>) -> String {
+/// Generic over the timezone (`Utc` or a `chrono_tz::Tz` the caller already converted `starts_at`
+/// and `ends_at` into) so this doesn't need to duplicate itself for each.
+fn format_time_range<Tz: chrono::TimeZone>(starts_at: DateTime<Tz>, ends_at: DateTime<Tz>) -> String
+where
+    Tz::Offset: std::fmt::Display,
+{
     let start_date = starts_at.format("%A, %B %-d, %Y").to_string();
     let start_time = starts_at.format("%-I:%M %p").to_string();
+    let zone = starts_at.format("%Z").to_string();
     if ends_at <= starts_at {
-        return format!("{start_date} at {start_time} UTC");
+        return format!("{start_date} at {start_time} {zone}");
     }
     if starts_at.date_naive() == ends_at.date_naive() {
         let end_time = ends_at.format("%-I:%M %p").to_string();
-        format!("{start_date} at {start_time} \u{2013} {end_time} UTC")
+        format!("{start_date} at {start_time} \u{2013} {end_time} {zone}")
     } else {
-        let end = ends_at.format("%A, %B %-d, %Y at %-I:%M %p").to_string();
-        format!("{start_date} at {start_time} UTC \u{2013} {end} UTC")
+        let end = ends_at.format("%A, %B %-d, %Y at %-I:%M %p %Z").to_string();
+        format!("{start_date} at {start_time} {zone} \u{2013} {end}")
     }
 }
 

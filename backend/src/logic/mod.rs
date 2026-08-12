@@ -16,6 +16,9 @@ pub use event_sync::*;
 mod facebook_sync;
 pub use facebook_sync::*;
 
+mod geocoding;
+pub use geocoding::*;
+
 mod user_counts;
 pub use user_counts::*;
 

@@ -407,7 +407,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="jonline-Jonline"></a></p>
     <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
     <p>
-      Jonline is a social media protocol with support for Posts, Events, Users, Groups, Media and Messages. It is designed to be federated, but does not require federation.
+      <a href="https://github.com/JonLatane/jonline">Jonline</a> is a social media protocol with support for Users (and Follows), Media, Posts, Events, Groups, and Messages. It is designed to be federated,
+      but does not require federation to be a useful next-gen forum type solution.
       It is designed to be used with a variety of frontends, including web, mobile, and desktop applications. It interoperates across numerous ports, protocols, and formats, including
       gRPC, HTTP, HTTPS, and ICS/iCal, and is designed to link with SMTP via Stalwart (and other SMTP servers/providers), Facebook Page APIs for post ing Events, and more.
       Essentially, your server is your own customizable, self-contained social network.
@@ -438,6 +439,188 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
     </ul>
+    <h4 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h4>
+    <h5 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h5>
+    <p>
+      Jonline APIs are designed to support <code>Moderation</code> and <code>Visibility</code> controls at the level of individual entities. However, to keep things
+      DRY, moderation and visibility controls are only implemented for <code>User</code>s, <code>Media</code>, <code>Group</code>s, and <code>Post</code>s.
+    </p>
+    <p>
+      <code>Event</code>s and future <code>Post</code>-like types simply use the same implementation as their contained <code>Post</code>s. The intent here is to maximize
+      both shared code and implementation robustness.
+    </p>
+    <h5 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h5>
+    <p>
+      Jonline's APIs are designed using composition over inheritance. For instance, an <code>Event</code> contains
+      a <code>Post</code> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
+      through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
+    </p>
+    <h5 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h5>
+    <p>
+      The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
+      For instance, <code>UpdatePost</code> is fully atomic.
+    </p>
+    <p>
+      <code>UpdateEvent</code>, however, is non-atomic. Given that an <code>Event</code> has a <code>Post</code> and many <code>EventInstance</code>s,
+      <code>UpdateEvent</code> will first update the <code>Post</code> atomically (literally calling the <code>UpdatePost</code> RPC),
+      then the <code>Event</code> atomically, and then finally process updates to its <code>EventInstance</code>s in a final atomic operation.
+    </p>
+    <p>
+      Because moderation/visibility lives at the <code>Post</code> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
+      visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+      This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
+      moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
+      approach to predictable atomicity.
+    </p>
+    <h4 id="core-types"><a class="anchor" aria-hidden="true" tabindex="-1" href="#core-types"><span class="octicon octicon-link"></span></a>Core Types</h4>
+    <p>
+      Jonline's data model centers around a handful of top-level types, most of which carry their own
+      <a href="#jonline-Visibility"><code>Visibility</code></a> and <a href="#jonline-Moderation"><code>Moderation</code></a> state and can be organized into
+      <a href="#jonline-Group"><code>Group</code></a>s.
+    </p>
+    <h5 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h5>
+    <p>
+      A <a href="#jonline-User"><code>User</code></a> is a Jonline account: username, real name, bio, avatar, contact methods, and
+      <a href="#jonline-Permission"><code>Permission</code></a>s, plus counts (followers, posts, events, etc.) and federation info (see
+      <a href="#federated-profiles">Federated Profiles</a> above). A lighter-weight <a href="#jonline-Author"><code>Author</code></a> (just ID, username,
+      avatar, real name, permissions) is embedded on <a href="#jonline-Post"><code>Post</code></a>s, <a href="#jonline-Message"><code>Message</code></a>s, and similar
+      content types instead of a full <code>User</code>, to keep those payloads small.
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>Follows</strong>: A <a href="#jonline-Follow"><code>Follow</code></a> is one <code>User</code> following another, optionally subject to the target's moderation
+          (i.e. approval). Mutual follows make two users "friends." Follows also drive the <code>FOLLOWING_POSTS</code>/<code>FOLLOWING_EVENTS</code>
+          listing types and <code>LIMITED</code>-visibility content.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <code>User</code>'s membership (or pending join request/invitation)
+          in a <code>Group</code>, tracking the user's <code>Permission</code>s within the group plus separate group-side and user-side <code>Moderation</code>
+          (for join-approval flows). Returned as part of <code>User</code>/<code>Group</code> payloads, and via <code>Member</code> when listing a Group's members.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>EventSyncSources</strong>: A <code>User</code> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
+          pull <code>Event</code>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <code>Event</code>s.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>EventSyncDestinations</strong>: A <code>User</code> can also own many <a href="#jonline-EventSyncDestination"><code>EventSyncDestination</code></a>s -
+          external targets to push <code>EventInstance</code>s out to, e.g. a connected Facebook Page (configured via
+          <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event section below for how these attach to <code>EventInstance</code>s.
+        </p>
+      </li>
+    </ul>
+    <h5 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h5>
+    <p>
+      <a href="#jonline-Media"><code>Media</code></a> represents an uploaded (or server-generated) photo or video. Unlike other types, Media
+      content itself is <em>not</em> served over gRPC - it's uploaded/downloaded via plain HTTP (<code>POST</code>/<code>GET /media</code>) - while
+      its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
+      (like <code>User.avatar</code>, <code>Group.avatar</code>, and <code>Post.media</code>) reference Media via the lightweight <code>MediaReference</code> type.
+    </p>
+    <h5 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h5>
+    <p>
+      <a href="#jonline-Post"><code>Post</code></a> is Jonline's fundamental content/building-block type: it's what actually carries a
+      title/link/content body, visibility, and moderation, and is reused (via <code>PostContext</code>) as the backing data for
+      replies, <a href="#jonline-Event"><code>Event</code></a>s, and <code>EventInstance</code>s alike. Posts can be replied to (threaded via
+      <code>reply_to_post_id</code>), cross-posted to <code>Group</code>s (<code>GroupPost</code>), and shared directly with users (<code>UserPost</code>).
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <code>Post</code> into a <code>Group</code>, carrying the group-specific
+          moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>UserPosts</strong>: A <a href="#jonline-UserPost"><code>UserPost</code></a> is a "direct share" of a <code>Post</code> to a <code>User</code> (see also <code>DIRECT</code>
+          <a href="#jonline-Visibility"><code>Visibility</code></a>). Currently unused/unimplemented.
+        </p>
+      </li>
+    </ul>
+    <h5 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h5>
+    <p>
+      An <a href="#jonline-Event"><code>Event</code></a> is a wrapper for <em>at least two</em> <code>Post</code>s. It always has its own top-level <code>Post</code>
+      (<code>PostContext.EVENT</code>, holding the event's overall title/description) <em>and</em> it must have at least one
+      <a href="#jonline-EventInstance"><code>EventInstance</code></a> (see below), each of which in turn must have its own <code>Post</code>
+      (<code>PostContext.EVENT_INSTANCE</code>, carrying that instance's start/end time, <code>Location</code>, and optional per-instance
+      title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
+      instances back one Post per instance beyond that.
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>EventInstances</strong>: An <a href="#jonline-EventInstance"><code>EventInstance</code></a> is the actual time-boxed occurrence of an <code>Event</code> -
+          it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <code>Location</code> that the parent <code>Event</code> itself does not have.
+          An <code>Event</code> with zero instances is meaningless (no time or place to attach to), so every <code>Event</code> must have at least one.
+        </p>
+        <ul>
+          <li>
+            <p>
+              <strong>EventAttendances</strong>: An <a href="#jonline-EventAttendance"><code>EventAttendance</code></a> (an "RSVP") tracks one attendee's status
+              (<code>INTERESTED</code>, <code>REQUESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>) for a specific <code>EventInstance</code>. Attendees may be logged-in <code>User</code>s
+              or anonymous (tracked via <code>AnonymousAttendee</code> plus an <code>auth_token</code>), and are subject to their own <code>Moderation</code>,
+              independent of the Event's/Instance's own Post moderation.
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>EventSyncSource</strong>: It's actually the parent <code>Event</code> (not the <code>EventInstance</code>) that can be synced <em>in</em> from a
+              user-owned <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> (e.g. an iCal subscription). The relationship is
+              1:(0 or 1): a single source can back many synced <code>Event</code>s, but each <code>Event</code> has <em>at most one</em> source it came from
+              (<code>Event.event_sync_source</code> is a single optional field, not repeated).
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>EventSyncDestinations</strong>: Conversely, it's each <code>EventInstance</code> (not the parent <code>Event</code>) that syncs <em>out</em> to
+              <a href="#jonline-EventSyncDestination"><code>EventSyncDestination</code></a>s (e.g. connected Facebook Pages). Unlike <code>EventSyncSource</code>,
+              this is the outlier's counterpart - a many-to-many relationship: each instance may push to several destinations
+              at once, tracked per-destination via the repeated <code>EventInstance.sync_destinations</code>
+              (each a <a href="#jonline-EventInstanceSyncDestination"><code>EventInstanceSyncDestination</code></a>, carrying the destination's
+              resulting post ID/URL and last-synced time).
+            </p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <h5 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h5>
+    <p>
+      A <a href="#jonline-Group"><code>Group</code></a> organizes <code>User</code>s, <code>Post</code>s, and <code>Event</code>s together under shared visibility, moderation,
+      and permission defaults.
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <code>User</code>'s membership (or pending join request/invitation)
+          in a <code>Group</code>, tracking the user's <code>Permission</code>s within the group plus separate group-side and user-side <code>Moderation</code>
+          (for join-approval flows). Returned as part of <code>User</code>/<code>Group</code> payloads, and via <code>Member</code> when listing a Group's members.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <code>Post</code> into a <code>Group</code>, carrying the group-specific
+          moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
+        </p>
+      </li>
+    </ul>
+    <h5 id="message"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message"><span class="octicon octicon-link"></span></a>Message</h5>
+    <p>
+      <a href="#jonline-Message"><code>Message</code></a> is Jonline's "low trust" messaging/email system, meant to let strangers on a server
+      make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
+      open access to all Messages on a server.
+    </p>
+    <ul>
+      <li>
+        <strong>MessagingGroup</strong>: A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <code>Message</code>
+        belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the <code>Message</code> they receive omits it.
+      </li>
+    </ul>
     <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
     <p>
       Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s.
@@ -445,9 +628,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <code>authorization</code> header (no <code>Bearer </code>prefix).
     </p>
     <p>
-      First, use the <code>CreateAccount</code> or <code>Login</code> RPCs to fetch (and store) an initial
+      First, use the <a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a> or <a href="#grpc-api-Login"><code>Login</code></a> RPCs to fetch (and store) an initial
       <code>refresh_token</code> and <code>access_token</code>. Clients should use the <code>access_token</code> until it expires,
-      then use the <code>refresh_token</code> to call the <code>AccessToken</code> RPC for a new one. (The <code>AccessToken</code> RPC
+      then use the <code>refresh_token</code> to call the <a href="#grpc-api-AccessToken"><code>AccessToken</code></a> RPC for a new one. (The <code>AccessToken</code> RPC
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
@@ -465,7 +648,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
       unless you explicitly allow it.
     </p>
-    <h4 id="federated-profiles"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-profiles"><span class="octicon octicon-link"></span></a>Federated Profiles</h4>
+    <h5 id="federated-profiles"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-profiles"><span class="octicon octicon-link"></span></a>Federated Profiles</h5>
     <p>
       Jonline users can federate with users on any other Jonline server. This works by two-way verification:
       For example, Jon has the user <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a>, <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>,
@@ -516,39 +699,6 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
       80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
       proxy support. With this, both web and gRPC resources can live behind a CDN.
-    </p>
-    <h4 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h4>
-    <h5 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h5>
-    <p>
-      Jonline APIs are designed to support <code>Moderation</code> and <code>Visibility</code> controls at the level of individual entities. However, to keep things
-      DRY, moderation and visibility controls are only implemented for <code>User</code>s, <code>Media</code>, <code>Group</code>s, and <code>Post</code>s.
-    </p>
-    <p>
-      <code>Event</code>s and future <code>Post</code>-like types simply use the same implementation as their contained <code>Post</code>s. The intent here is to maximize
-      both shared code and implementation robustness.
-    </p>
-    <h5 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h5>
-    <p>
-      Jonline's APIs are designed using composition over inheritance. For instance, an <code>Event</code> contains
-      a <code>Post</code> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
-      through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
-    </p>
-    <h5 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h5>
-    <p>
-      The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
-      For instance, <code>UpdatePost</code> is fully atomic.
-    </p>
-    <p>
-      <code>UpdateEvent</code>, however, is non-atomic. Given that an <code>Event</code> has a <code>Post</code> and many <code>EventInstance</code>s,
-      <code>UpdateEvent</code> will first update the <code>Post</code> atomically (literally calling the <code>UpdatePost</code> RPC),
-      then the <code>Event</code> atomically, and then finally process updates to its <code>EventInstance</code>s in a final atomic operation.
-    </p>
-    <p>
-      Because moderation/visibility lives at the <code>Post</code> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
-      visibility and moderation changes from being made in Events, even if there are errors elsewhere.
-      This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
-      moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
-      approach to predictable atomicity.
     </p>
     <h3 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h3>
     <table>
@@ -2089,7 +2239,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-User"></a></p>
-    <h3 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h3>
+    <h3 id="user-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user-1"><span class="octicon octicon-link"></span></a>User</h3>
     <p>
       Model for a Jonline user. This user may have <a href="#jonline-Media"><code>Media</code></a>, <a href="#jonline-Group"><code>Group</code></a> <a href="#jonline-Membership"><code>Membership</code></a>s,
       <a href="#jonline-Post"><code>Post</code></a>s, <a href="#jonline-Event"><code>Event</code></a>s, and other objects associated with them.
@@ -2394,7 +2544,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-Media"></a></p>
-    <h3 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h3>
+    <h3 id="media-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media-1"><span class="octicon octicon-link"></span></a>Media</h3>
     <p>
       A Jonline <code>Media</code> message represents a single media item, such as a photo or video.
       Media data is deliberately <em>not accessible from the gRPC API</em>. Instead, the client
@@ -2658,7 +2808,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-Message"></a></p>
-    <h3 id="message"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message"><span class="octicon octicon-link"></span></a>Message</h3>
+    <h3 id="message-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message-1"><span class="octicon octicon-link"></span></a>Message</h3>
     <p>
       A Jonline <code>Message</code> represents a single message/email sent to one or more recipients
       (really, "zero or more", as the design incorporates undeliverable messages).
@@ -2989,7 +3139,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-Group"></a></p>
-    <h3 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h3>
+    <h3 id="group-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group-1"><span class="octicon octicon-link"></span></a>Group</h3>
     <p><code>Group</code>s are a way to organize users and posts (and thus events). They can be used for many purposes,</p>
     <table>
       <thead>
@@ -3412,7 +3562,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-Post"></a></p>
-    <h3 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h3>
+    <h3 id="post-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-1"><span class="octicon octicon-link"></span></a>Post</h3>
     <p>
       A <code>Post</code> is a message that can be posted to the server. Its <code>visibility</code>
       as well as any associated <code>GroupPost</code>s and <code>UserPost</code>s determine what users
@@ -3797,7 +3947,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-Event"></a></p>
-    <h3 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h3>
+    <h3 id="event-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event-1"><span class="octicon octicon-link"></span></a>Event</h3>
     <p>
       An <code>Event</code> is a top-level type used to organize calendar events, RSVPs, and messaging/posting
       about the <code>Event</code>. Actual time data lies in its <code>EventInstances</code>.
@@ -5710,12 +5860,16 @@ function copied(target, str) {
 //   1. Moves every element from <h2 id="table-of-contents"> through (but not
 //      including) the <p><a name="jonline-proto"> marker into a new
 //      <nav id="toc-sidebar">, which becomes the sidebar's content.
-//   2. Inserts a few extra links (Authentication/HTTP Endpoints/API Design
-//      Notes/gRPC API) into the "jonline.proto" sub-list, since protoc-gen-doc's
-//      generated TOC only includes top-level message/service headings. Every
-//      RPC method from the gRPC API table is then listed as a child of the
-//      "gRPC API" entry, in table order; since the table has no per-row ids
-//      to link to, one is added to each row as it's listed.
+//   2. Auto-discovers every real heading (<h1>-<h6>) between the "Jonline"
+//      service heading and the next top-level section (Ports, Authentication,
+//      Federation, HTTP Endpoints, API Design Notes, gRPC API, and all their
+//      sub-headings) and appends them to the "jonline.proto" sub-list,
+//      mirroring the headings' own nesting -- since protoc-gen-doc's
+//      generated TOC only includes top-level message/service headings and
+//      would otherwise omit these entirely. Every RPC method from the gRPC
+//      API table is then listed as a child of the "gRPC API" entry, in table
+//      order; since the table has no per-row ids to link to, one is added to
+//      each row as it's listed.
 //   3. Appends the sidebar as the LAST child of <body> (not the first) so that
 //      dragging a text selection in the main content can't "bleed" into the
 //      sidebar: browsers extend a selection's focus to whatever DOM node is
@@ -5784,26 +5938,41 @@ function copied(target, str) {
 
   var jonlineLink = sidebar.querySelector('a[href="#jonline-Jonline"]');
   var jonlineItem = jonlineLink && jonlineLink.closest('li');
-  if (jonlineItem) {
-    var extraLinks = [
-      ['Ports', '#ports'],
-      ['Authentication', '#authentication'],
-      ['HTTP Endpoints', '#http-endpoints'],
-      ['API Design Notes', '#api-design-notes'],
-      ['gRPC API', '#grpc-api']
-    ];
-    var afterItem = jonlineItem;
+  var jonlineHeading = document.getElementById('jonline');
+  if (jonlineItem && jonlineHeading) {
+    // Walk every real heading between the "Jonline" heading and the next
+    // top-level (h1/h2) section, mirroring their nesting: each heading is
+    // appended as a child of the nearest preceding heading with a shallower
+    // level, or as a sibling of the "Jonline" TOC entry itself if there is
+    // none (e.g. "Ports", and "gRPC API" which is an h3, same as "Jonline").
+    var rootUl = jonlineItem.parentNode;
+    var stack = [{ level: 3, ul: rootUl, li: null }];
     var grpcApiItem = null;
-    extraLinks.forEach(function (entry) {
-      var item = document.createElement('li');
-      var link = document.createElement('a');
-      link.href = entry[1];
-      link.textContent = entry[0];
-      item.appendChild(link);
-      afterItem.insertAdjacentElement('afterend', item);
-      afterItem = item;
-      if (entry[1] === '#grpc-api') grpcApiItem = item;
-    });
+    var node = jonlineHeading.nextElementSibling;
+    while (node) {
+      var headingMatch = /^H([1-6])$/.exec(node.tagName);
+      if (headingMatch) {
+        var level = parseInt(headingMatch[1], 10);
+        if (level <= 2) break;
+        while (stack.length > 1 && stack[stack.length - 1].level >= level) {
+          stack.pop();
+        }
+        var parentEntry = stack[stack.length - 1];
+        if (!parentEntry.ul) {
+          parentEntry.ul = document.createElement('ul');
+          parentEntry.li.appendChild(parentEntry.ul);
+        }
+        var item = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = '#' + node.id;
+        link.textContent = node.textContent.replace(/\s+/g, ' ').trim();
+        item.appendChild(link);
+        parentEntry.ul.appendChild(item);
+        stack.push({ level: level, ul: null, li: item });
+        if (node.id === 'grpc-api') grpcApiItem = item;
+      }
+      node = node.nextElementSibling;
+    }
 
     // List each RPC method (in the order they appear in the gRPC API table)
     // as children of the "gRPC API" TOC entry. The table has no per-row ids

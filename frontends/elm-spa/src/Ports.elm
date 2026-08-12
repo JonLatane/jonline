@@ -16,6 +16,7 @@ port module Ports exposing
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
+    , renderCalendar
     , scrollElementLeft
     , setNavBarColor
     , setTheme
@@ -130,6 +131,24 @@ id string. `x`/`y` are page (not viewport) coordinates, matching
 `Components.Pages.EventsPage.rectsDecoder`.
 -}
 port elementsMeasured : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Renders (or, for a container `id` it's already rendered into, refreshes)
+a [FullCalendar](https://fullcalendar.io/) view showing `events` --
+`{ id : String, events : List { id, title, start, end, classNames } }`, where
+`id` is the DOM id of the container `div` to render into and each event's own
+`start`/`end` are ISO 8601 UTC strings (`start` omitted for an event with no
+`startsAt`, `end` likewise) -- see `Components.Pages.EventsPage`'s `Calendar`
+display mode, the only current caller. `classNames` (a `List String`) is
+passed straight through to FullCalendar's own `EventInput.classNames` --
+`Components.Pages.EventsPage.calendarEventEncoder` sets it to that event's
+host's `hostnameToCSSClass`/`"background-color-primary"`, so it's colored by
+the same per-server `UI.EmittedStylesheet` rule every other per-server-colored
+element in the app already uses, rather than this port needing raw color hex
+strings of its own. No result comes back over a `Sub`; this is
+fire-and-forget, same as `setNavBarColor`/`copyToClipboard`.
+-}
+port renderCalendar : Encode.Value -> Cmd msg
 
 
 {-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s

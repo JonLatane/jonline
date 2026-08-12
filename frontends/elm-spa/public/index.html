@@ -68,6 +68,13 @@
     document.write('<script src="' + jonlineBasePath + '/vendor/dompurify.min.js"><\/script>');
     document.write('<script src="' + jonlineBasePath + '/markdown.js"><\/script>');
 
+    // Calendar rendering (see `Components.Pages.EventsPage`'s `Calendar`
+    // display mode) -- vendored rather than CDN-loaded, same reasoning as
+    // marked/highlight.js/dompurify above. This is FullCalendar's own
+    // "global" bundle, which injects its own CSS at runtime, so no separate
+    // stylesheet is needed here.
+    document.write('<script src="' + jonlineBasePath + '/vendor/fullcalendar.min.js"><\/script>');
+
     // Same "auto" resolution `Shared.effectiveDarkMode` does in Elm -- kept in
     // sync with it via the `setTheme` port subscription below, which fires
     // once at startup (`Shared.init`) and again on every change. This has to
@@ -312,6 +319,47 @@
         });
       }
       app.ports.elementsMeasured.send(results);
+    });
+
+    // Renders/refreshes a FullCalendar instance inside the given container
+    // id with the given events -- see Ports.elm's renderCalendar doc
+    // comment. Keyed by container id (rather than a single global instance)
+    // so a fresh container -- e.g. after `Components.Pages.EventsPage`
+    // switches away from `Calendar` mode and back, which tears down and
+    // rebuilds the DOM node -- gets a fresh FullCalendar instance instead of
+    // trying to reuse one bound to a now-detached element. Deferred one
+    // frame (`requestAnimationFrame`) since a mode switch's container may
+    // not exist in the DOM yet the instant this fires -- Elm's own
+    // `Browser.application` runtime defers painting a model change to the
+    // next frame rather than doing it synchronously (see measureElements'
+    // own analogous issue for `Components.Pages.EventsPage`'s FLIP
+    // measurements).
+    var jonlineCalendars = {};
+    app.ports.renderCalendar.subscribe(function (payload) {
+      requestAnimationFrame(function () {
+        var el = document.getElementById(payload.id);
+        if (!el) { return; }
+        var existing = jonlineCalendars[payload.id];
+        if (existing && existing.el === el) {
+          existing.calendar.removeAllEventSources();
+          existing.calendar.addEventSource(payload.events);
+          return;
+        }
+        var calendar = new FullCalendar.Calendar(el, {
+          initialView: "dayGridMonth",
+          headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,listMonth" },
+          height: "100%",
+          // Forces every view (including month, whose default is a small
+          // border-color-only dot + plain text) to render events as filled
+          // chips instead -- otherwise each event's own `background-color`
+          // (from its `classNames`, see Ports.elm's renderCalendar doc) has
+          // nothing to visibly paint in month view.
+          eventDisplay: "block",
+          events: payload.events
+        });
+        calendar.render();
+        jonlineCalendars[payload.id] = { el: el, calendar: calendar };
+      });
     });
 
     darkMediaQuery.addEventListener("change", function (e) {

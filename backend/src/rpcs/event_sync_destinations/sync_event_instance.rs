@@ -48,6 +48,7 @@ pub fn sync_event_instance(
         .and_then(|v| v.as_str())
         .filter(|a| !a.trim().is_empty())
         .map(str::to_string);
+    let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
 
     // Only buildable when this server has `external_cdn_config.frontend_host` configured -- this
     // RPC has no HTTP `Host` header to fall back on the way web-facing routes
@@ -69,6 +70,7 @@ pub fn sync_event_instance(
             starts_at,
             ends_at,
             location: &location,
+            timezone,
             event_url: &event_url,
         },
     )?;

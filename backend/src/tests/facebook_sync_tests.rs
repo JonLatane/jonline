@@ -90,6 +90,7 @@ fn post_event_instance_returns_the_new_posts_id_and_url() {
             starts_at,
             ends_at,
             location: &Some("123 Main St".to_string()),
+            timezone: Some(chrono_tz::America::New_York),
             event_url: &Some("https://example.com/event/abc".to_string()),
         },
     )
@@ -120,6 +121,7 @@ fn post_event_instance_fails_when_destination_is_not_configured() {
             starts_at,
             ends_at,
             location: &None,
+            timezone: None,
             event_url: &None,
         },
     )

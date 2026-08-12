@@ -21,6 +21,11 @@ third-party apps:
 - Real integrations that appear to "create a Facebook Event" (e.g. Eventbrite) don't do it via a
   server-side API call either -- they deep-link the user's own browser into Facebook's native
   "Create Event" UI, pre-filled, and the human finishes it themselves.
+- Meta does have an [Official Events API](https://developers.facebook.com/products/official-events-api/)
+  product that *can* create real Events at scale, but it's gated behind a partner application
+  (aimed at large ticketing/event platforms, not individual self-hosted servers) -- and as of this
+  writing that page's own "Apply Now" link (`facebook.com/help/contact/FacebookEventsPartnerInquiryForm`)
+  404s, with stale "pausing onboarding due to COVID-19" copy still up. Not a viable path.
 
 So the Page-post approach here is the best available server-side option, not an oversight.
 
@@ -31,7 +36,8 @@ So the Page-post approach here is the best available server-side option, not an 
 
 1. Title
 2. Date/time range (single timestamp if `ends_at` isn't after `starts_at`, otherwise a `start –
-   end` range; times shown in UTC)
+   end` range; shown in the event location's local timezone if it could be resolved, else UTC --
+   see below)
 3. Location (`EventInstance.location.uniformly_formatted_address`), if set
 4. Content/description
 5. `Details & RSVP: {event_url}`, if a Jonline event link could be built (see below)
@@ -39,6 +45,37 @@ So the Page-post approach here is the best available server-side option, not an 
 The Graph API `link` param (which drives the post's link-preview card) prefers the Jonline event
 URL; if that isn't available it falls back to the arbitrary external `link` the organizer set on
 the `Post` itself (e.g. a ticketing site).
+
+## Local-timezone times via free-text address geocoding
+
+`EventInstance.location` only stores a free-text `uniformly_formatted_address` (no lat/lng --
+see `protos/location.proto`), so showing times in the event's local timezone instead of UTC needs
+resolving that address to a timezone first. `logic::geocoding` (`resolve_timezone`) does this in
+two keyless, free steps, chained on every sync (never cached/persisted -- see "future work"
+below):
+
+1. **Address -> lat/lng**: OpenStreetMap's public Nominatim API (`nominatim.openstreetmap.org`) --
+   the same service the Tamagui frontend's location picker already calls client-side
+   (`packages/app/hooks/use_nominatim.ts`), just used server-side here too. Its response already
+   includes `lat`/`lon`, which the Tamagui picker currently fetches and discards -- only
+   `display_name` gets saved into the `Location`.
+2. **lat/lng -> IANA timezone**: the [`tzf-rs`](https://github.com/ringsaturn/tzf-rs) crate, an
+   offline polygon-based dataset bundled into the binary -- no second network call, no rate limit,
+   actively maintained.
+
+Nominatim's [usage policy](https://operations.osmfoundation.org/policies/nominatim/) caps public
+API use at roughly 1 request/second and requires a descriptive `User-Agent`, which is fine for
+this on-demand, per-sync-click call but not for bulk/automated geocoding.
+
+This is entirely best-effort: any failure (bad address, network error, unparseable response, no
+geocoding match) makes `resolve_timezone` return `None`, and the post just falls back to UTC --
+never a reason to fail the sync itself.
+
+**Possible future work**: since Tamagui's Nominatim call already has `lat`/`lon` in hand at
+location-pick time, persisting those on `Location` (proto + DB + both frontends) would let syncs
+skip the live geocoding call entirely and use `tzf-rs` directly -- faster, no dependency on
+Nominatim's uptime/policy, and it would also cover Elm-created locations if Elm ever gains its own
+address picker (today Elm's location field is plain free text with no geocoding at all).
 
 ## The Jonline event link needs CDN/frontend config
 
