@@ -3539,22 +3539,27 @@ configurationOf server =
 brandingFromConfig : Connection -> ServerConfiguration -> Branding
 brandingFromConfig connection config =
     let
+        info : ServerInfo
         info =
             Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
 
+        name : String
         name =
             info.name
                 |> Maybe.andThen ifNonEmpty
                 |> Maybe.withDefault connection.frontendHost
 
+        logoUrl : Maybe String
         logoUrl =
             info.logo
                 |> Maybe.andThen .squareMediaId
                 |> Maybe.map (\id -> mediaBaseUrl connection ++ "/media/" ++ id)
 
+        primaryArgb : Int
         primaryArgb =
             info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x00424242
 
+        navArgb : Int
         navArgb =
             info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0x00FFFFFF
     in

@@ -458,6 +458,7 @@ routed to `Route.Posts` with a 📝 glyph.
 postsLink : Shared.Model -> Route -> Html Shared.Msg
 postsLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.Posts
     in

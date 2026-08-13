@@ -1184,24 +1184,31 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
     case Dict.get key model.events of
         Just (EventFetchLoaded event instance) ->
             let
+                starred : Bool
                 starred =
                     isStarred host post model
 
+                current : Bool
                 current =
                     currentInstanceId == Just instance.id
 
+                onStarClicked : Maybe Msg
                 onStarClicked =
                     toggleStarMsg accountsPanelModel host post
 
+                maybeServer : Maybe AccountsPanel.Server
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers host
 
+                maybeAccount : Maybe AccountsPanel.Account
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
+                displayInstance : EventInstance
                 displayInstance =
                     { instance | post = Just post }
 
+                onMediaClicked : String -> Msg
                 onMediaClicked mediaId =
                     case event.post of
                         Just eventPost ->
@@ -1399,6 +1406,7 @@ groupStarredOrder model =
         ( events, posts ) =
             List.partition (isEventKey model) model.starOrder
 
+        eventsFirst : List String
         eventsFirst =
             events ++ posts
     in
