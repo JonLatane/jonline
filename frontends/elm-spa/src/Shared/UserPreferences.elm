@@ -8,6 +8,7 @@ Mirrors `Shared.StarredPanel`'s persist-to-localStorage half exactly, minus
 the `BroadcastChannel` live cross-tab push -- see `Ports.persistUserPreferences`'s
 own doc for why these are only ever picked up by other tabs on their next
 load, not pushed into ones already open.
+
 -}
 
 import Json.Decode as Decode
@@ -39,7 +40,7 @@ init : Decode.Value -> Model
 init flags =
     { prefersCalendar =
         Decode.decodeValue (Decode.field "prefersCalendar" Decode.bool) flags
-            |> Result.withDefault False
+            |> Result.withDefault True
     }
 
 

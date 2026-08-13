@@ -62,6 +62,49 @@ export function authenticationFeatureToJSON(object: AuthenticationFeature): stri
   }
 }
 
+/** The Events Calendar's default UI granularity. */
+export enum CalendarDisplayMode {
+  /** CALENDAR_DISPLAY_WEEK - Shows a 7-day week at a time. Good default for most servers. */
+  CALENDAR_DISPLAY_WEEK = 0,
+  /** CALENDAR_DISPLAY_MONTH - Shows a full month at a time. Better for servers with fewer events. */
+  CALENDAR_DISPLAY_MONTH = 1,
+  /** CALENDAR_DISPLAY_DAY - Shows a single day at a time. Better for servers with many events. */
+  CALENDAR_DISPLAY_DAY = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function calendarDisplayModeFromJSON(object: any): CalendarDisplayMode {
+  switch (object) {
+    case 0:
+    case "CALENDAR_DISPLAY_WEEK":
+      return CalendarDisplayMode.CALENDAR_DISPLAY_WEEK;
+    case 1:
+    case "CALENDAR_DISPLAY_MONTH":
+      return CalendarDisplayMode.CALENDAR_DISPLAY_MONTH;
+    case 3:
+    case "CALENDAR_DISPLAY_DAY":
+      return CalendarDisplayMode.CALENDAR_DISPLAY_DAY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CalendarDisplayMode.UNRECOGNIZED;
+  }
+}
+
+export function calendarDisplayModeToJSON(object: CalendarDisplayMode): string {
+  switch (object) {
+    case CalendarDisplayMode.CALENDAR_DISPLAY_WEEK:
+      return "CALENDAR_DISPLAY_WEEK";
+    case CalendarDisplayMode.CALENDAR_DISPLAY_MONTH:
+      return "CALENDAR_DISPLAY_MONTH";
+    case CalendarDisplayMode.CALENDAR_DISPLAY_DAY:
+      return "CALENDAR_DISPLAY_DAY";
+    case CalendarDisplayMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Strategy when a user sets their visibility to `PRIVATE`. */
 export enum PrivateUserStrategy {
   /**
@@ -488,8 +531,19 @@ export interface EventSettings {
   enableReplies?:
     | boolean
     | undefined;
-  /** Server-admin-configurable. */
-  calendarLookbackDays?: number | undefined;
+  /**
+   * How far to look back for the "Upcoming Events" tab in the server's UI. Defaults to `14`.
+   * Servers with fewer events may want to set to a higher value.
+   */
+  calendarLookbackDays?:
+    | number
+    | undefined;
+  /**
+   * What the Events Calendar's default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`.
+   * Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`,
+   * or with more to `CALENDAR_DISPLAY_DAY`.
+   */
+  defaultCalendarDisplayMode: CalendarDisplayMode;
 }
 
 /** User-facing information about the server displayed on the "about" page. */
@@ -1532,6 +1586,7 @@ function createBaseEventSettings(): EventSettings {
     aliasPlural: undefined,
     enableReplies: undefined,
     calendarLookbackDays: undefined,
+    defaultCalendarDisplayMode: 0,
   };
 }
 
@@ -1557,6 +1612,9 @@ export const EventSettings: MessageFns<EventSettings> = {
     }
     if (message.calendarLookbackDays !== undefined) {
       writer.uint32(56).uint32(message.calendarLookbackDays);
+    }
+    if (message.defaultCalendarDisplayMode !== 0) {
+      writer.uint32(64).int32(message.defaultCalendarDisplayMode);
     }
     return writer;
   },
@@ -1624,6 +1682,14 @@ export const EventSettings: MessageFns<EventSettings> = {
           message.calendarLookbackDays = reader.uint32();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.defaultCalendarDisplayMode = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1644,6 +1710,9 @@ export const EventSettings: MessageFns<EventSettings> = {
       calendarLookbackDays: isSet(object.calendarLookbackDays)
         ? globalThis.Number(object.calendarLookbackDays)
         : undefined,
+      defaultCalendarDisplayMode: isSet(object.defaultCalendarDisplayMode)
+        ? calendarDisplayModeFromJSON(object.defaultCalendarDisplayMode)
+        : 0,
     };
   },
 
@@ -1670,6 +1739,9 @@ export const EventSettings: MessageFns<EventSettings> = {
     if (message.calendarLookbackDays !== undefined) {
       obj.calendarLookbackDays = Math.round(message.calendarLookbackDays);
     }
+    if (message.defaultCalendarDisplayMode !== 0) {
+      obj.defaultCalendarDisplayMode = calendarDisplayModeToJSON(message.defaultCalendarDisplayMode);
+    }
     return obj;
   },
 
@@ -1685,6 +1757,7 @@ export const EventSettings: MessageFns<EventSettings> = {
     message.aliasPlural = object.aliasPlural ?? undefined;
     message.enableReplies = object.enableReplies ?? undefined;
     message.calendarLookbackDays = object.calendarLookbackDays ?? undefined;
+    message.defaultCalendarDisplayMode = object.defaultCalendarDisplayMode ?? 0;
     return message;
   },
 };

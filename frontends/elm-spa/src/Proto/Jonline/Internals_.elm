@@ -360,6 +360,7 @@ import Maybe
 import Proto.Google.Protobuf.Internals_
 import Proto.Jonline.AttendanceStatus
 import Proto.Jonline.AuthenticationFeature
+import Proto.Jonline.CalendarDisplayMode
 import Proto.Jonline.CustomNavigationTab.Icon
 import Proto.Jonline.CustomNavigationTab.Target
 import Proto.Jonline.EventAttendance.Attendee
@@ -1109,6 +1110,7 @@ fieldNumbersProto__Jonline__EventSettings :
     , aliasPlural : Int
     , enableReplies : Int
     , calendarLookbackDays : Int
+    , defaultCalendarDisplayMode : Int
     }
 fieldNumbersProto__Jonline__EventSettings =
     { visible = 1
@@ -1118,6 +1120,7 @@ fieldNumbersProto__Jonline__EventSettings =
     , aliasPlural = 5
     , enableReplies = 6
     , calendarLookbackDays = 7
+    , defaultCalendarDisplayMode = 8
     }
 
 
@@ -1133,6 +1136,7 @@ defaultProto__Jonline__EventSettings =
     , aliasPlural = Nothing
     , enableReplies = Nothing
     , calendarLookbackDays = Nothing
+    , defaultCalendarDisplayMode = Proto.Jonline.CalendarDisplayMode.defaultCalendarDisplayMode
     }
 
 
@@ -1156,6 +1160,10 @@ decodeProto__Jonline__EventSettings =
             7
             (Protobuf.Decode.map Just Protobuf.Decode.uint32)
             (\a r -> { r | calendarLookbackDays = a })
+        , Protobuf.Decode.optional
+            8
+            Proto.Jonline.CalendarDisplayMode.decodeCalendarDisplayMode
+            (\a r -> { r | defaultCalendarDisplayMode = a })
         ]
 
 
@@ -1172,6 +1180,7 @@ encodeProto__Jonline__EventSettings value =
         , ( 5, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.aliasPlural )
         , ( 6, (Maybe.map Protobuf.Encode.bool >> Maybe.withDefault Protobuf.Encode.none) value.enableReplies )
         , ( 7, (Maybe.map Protobuf.Encode.uint32 >> Maybe.withDefault Protobuf.Encode.none) value.calendarLookbackDays )
+        , ( 8, Proto.Jonline.CalendarDisplayMode.encodeCalendarDisplayMode value.defaultCalendarDisplayMode )
         ]
 
 
@@ -1186,6 +1195,7 @@ type alias Proto__Jonline__EventSettings =
     , aliasPlural : Maybe String
     , enableReplies : Maybe Bool
     , calendarLookbackDays : Maybe Int
+    , defaultCalendarDisplayMode : Proto.Jonline.CalendarDisplayMode.CalendarDisplayMode
     }
 
 

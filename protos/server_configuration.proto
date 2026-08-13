@@ -206,8 +206,24 @@ message EventSettings {
   // Works the same as for Posts.
   optional bool enable_replies = 6;
 
-  // Server-admin-configurable.
+  // How far to look back for the "Upcoming Events" tab in the server's UI. Defaults to `14`.
+  // Servers with fewer events may want to set to a higher value.
   optional uint32 calendar_lookback_days = 7;
+
+  // What the Events Calendar's default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`.
+  // Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, 
+  // or with more to `CALENDAR_DISPLAY_DAY`.
+  CalendarDisplayMode default_calendar_display_mode = 8;
+}
+
+// The Events Calendar's default UI granularity.
+enum CalendarDisplayMode {
+  // Shows a 7-day week at a time. Good default for most servers.
+  CALENDAR_DISPLAY_WEEK = 0;
+  // Shows a full month at a time. Better for servers with fewer events.
+  CALENDAR_DISPLAY_MONTH = 1;
+  // Shows a single day at a time. Better for servers with many events.
+  CALENDAR_DISPLAY_DAY = 3;
 }
 
 // Strategy when a user sets their visibility to `PRIVATE`.

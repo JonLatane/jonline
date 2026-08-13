@@ -536,6 +536,7 @@ fieldNumbersEventSettings :
     , aliasPlural : Int
     , enableReplies : Int
     , calendarLookbackDays : Int
+    , defaultCalendarDisplayMode : Int
     }
 fieldNumbersEventSettings =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__EventSettings
@@ -590,6 +591,13 @@ encodeEventSettings =
  Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
  if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
  as appropriate.
+
+
+### defaultCalendarDisplayMode
+
+ What the Events Calendar's default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`.
+ Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, 
+ or with more to `CALENDAR_DISPLAY_DAY`.
 
 
 -}

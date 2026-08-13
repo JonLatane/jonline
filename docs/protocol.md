@@ -117,6 +117,7 @@
     - [WebPushConfig](#jonline-WebPushConfig)
   
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
+    - [CalendarDisplayMode](#jonline-CalendarDisplayMode)
     - [NavigationTab](#jonline-NavigationTab)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
     - [WebUserInterface](#jonline-WebUserInterface)
@@ -2203,7 +2204,8 @@ Specific settings for Events.
 | alias_singular | [string](#string) | optional | Can be used to rename, e.g., &#34;Event&#34; to &#34;Gig&#34; or &#34;Performance&#34; |
 | alias_plural | [string](#string) | optional | Can be used to rename, e.g. &#34;Events&#34; to &#34;Show,&#34; &#34;Game,&#34; &#34;Competition&#34; |
 | enable_replies | [bool](#bool) | optional | Works the same as for Posts. |
-| calendar_lookback_days | [uint32](#uint32) | optional | Server-admin-configurable. |
+| calendar_lookback_days | [uint32](#uint32) | optional | How far to look back for the &#34;Upcoming Events&#34; tab in the server&#39;s UI. Defaults to `14`. Servers with fewer events may want to set to a higher value. |
+| default_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | What the Events Calendar&#39;s default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`. Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, or with more to `CALENDAR_DISPLAY_DAY`. |
 
 
 
@@ -2405,6 +2407,19 @@ Authentication features that can be enabled/disabled by the server admin.
 | AUTHENTICATION_FEATURE_UNKNOWN | 0 | An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) |
 | CREATE_ACCOUNT | 1 | Users can sign up for an account. |
 | LOGIN | 2 | Users can sign in with an existing account. |
+
+
+
+<a name="jonline-CalendarDisplayMode"></a>
+
+### CalendarDisplayMode
+The Events Calendar&#39;s default UI granularity.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CALENDAR_DISPLAY_WEEK | 0 | Shows a 7-day week at a time. Good default for most servers. |
+| CALENDAR_DISPLAY_MONTH | 1 | Shows a full month at a time. Better for servers with fewer events. |
+| CALENDAR_DISPLAY_DAY | 3 | Shows a single day at a time. Better for servers with many events. |
 
 
 

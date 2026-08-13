@@ -380,6 +380,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></p>
           </li>
           <li>
+            <p><a href="#jonline-CalendarDisplayMode">CalendarDisplayMode</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-NavigationTab">NavigationTab</a></p>
           </li>
           <li>
@@ -4971,7 +4974,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>calendar_lookback_days</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td>Server-admin-configurable.</td>
+          <td>How far to look back for the "Upcoming Events" tab in the server's UI. Defaults to <code>14</code>. Servers with fewer events may want to set to a higher value.</td>
+        </tr>
+        <tr>
+          <td>default_calendar_display_mode</td>
+          <td><a href="#jonline-CalendarDisplayMode">CalendarDisplayMode</a></td>
+          <td></td>
+          <td>What the Events Calendar's default UI mode will be. Defaults to <code>CALENDAR_DISPLAY_WEEK</code>. Servers with fewer events may want to set <code>CALENDAR_DISPLAY_MONTH</code>, or with more to <code>CALENDAR_DISPLAY_DAY</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -5467,6 +5476,35 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>LOGIN</td>
           <td>2</td>
           <td>Users can sign in with an existing account.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-CalendarDisplayMode"></a></p>
+    <h3 id="calendardisplaymode"><a class="anchor" aria-hidden="true" tabindex="-1" href="#calendardisplaymode"><span class="octicon octicon-link"></span></a>CalendarDisplayMode</h3>
+    <p>The Events Calendar's default UI granularity.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CALENDAR_DISPLAY_WEEK</td>
+          <td>0</td>
+          <td>Shows a 7-day week at a time. Good default for most servers.</td>
+        </tr>
+        <tr>
+          <td>CALENDAR_DISPLAY_MONTH</td>
+          <td>1</td>
+          <td>Shows a full month at a time. Better for servers with fewer events.</td>
+        </tr>
+        <tr>
+          <td>CALENDAR_DISPLAY_DAY</td>
+          <td>3</td>
+          <td>Shows a single day at a time. Better for servers with many events.</td>
         </tr>
       </tbody>
     </table>

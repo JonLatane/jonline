@@ -132,20 +132,23 @@ Your media policy should describe who has ownership of uploaded media, anything 
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::GlobalPublic as i32,
-            custom_title: None,
+            alias_singular: None,
+            alias_plural: None,
         })
         .unwrap(),
         group_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
-            custom_title: None,
+            alias_singular: None,
+            alias_plural: None,
         }).unwrap(),
         post_settings: serde_json::to_value(PostSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
-            custom_title: None,
+            alias_singular: None,
+            alias_plural: None,
             enable_replies: Some(true),
         })
         .unwrap(),
@@ -153,7 +156,8 @@ Your media policy should describe who has ownership of uploaded media, anything 
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
-            custom_title: None,
+            alias_singular: None,
+            alias_plural: None,
             enable_replies: Some(true),
         })
         .unwrap(),
