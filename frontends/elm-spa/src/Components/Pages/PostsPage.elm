@@ -309,6 +309,7 @@ updateInner shared msg model =
     case msg of
         GotServerPosts frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     maybeAccountsPanelMsg
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
@@ -338,6 +339,7 @@ updateInner shared msg model =
 
         Animate animMsg ->
             let
+                step : String -> PostAnimation -> ( Dict String PostAnimation, List (Cmd Msg) ) -> ( Dict String PostAnimation, List (Cmd Msg) )
                 step key anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -367,6 +369,7 @@ updateInner shared msg model =
 
         SearchTextChanged text ->
             let
+                generation : Int
                 generation =
                     model.searchGeneration + 1
             in
@@ -432,6 +435,7 @@ updateInner shared msg model =
 
                 Nothing ->
                     let
+                        newModel : Model
                         newModel =
                             { model | publishedBefore = Just now }
                     in
@@ -456,6 +460,7 @@ updateInner shared msg model =
 
                 Just newPublishedBefore ->
                     let
+                        generation : Int
                         generation =
                             model.publishedBeforeInputGeneration + 1
                     in
@@ -540,13 +545,16 @@ refetchServers shared model serversToFetch =
 
     else
         let
+            enabledServers : List AccountsPanel.Server
             enabledServers =
                 relevantServers shared model
 
+            currentAccountId : AccountsPanel.Server -> Maybe String
             currentAccountId server =
                 AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                     |> Maybe.map AccountsPanel.accountId
 
+            cutoff : Maybe Time.Posix
             cutoff =
                 if model.tab == PostsBeforeDate then
                     model.publishedBefore
@@ -554,6 +562,7 @@ refetchServers shared model serversToFetch =
                 else
                     Nothing
 
+            fetchEffect : AccountsPanel.Server -> Effect Msg
             fetchEffect server =
                 Posts.fetchPosts
                     shared.accounts
@@ -567,14 +576,18 @@ refetchServers shared model serversToFetch =
                     |> Task.attempt (GotServerPosts server.frontendHost)
                     |> Effect.fromCmd
 
+            prunedPostsByServer : Dict String ServerFeed
             prunedPostsByServer =
                 Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
 
+            markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
             markServer server dict =
                 let
+                    accountId : Maybe String
                     accountId =
                         currentAccountId server
 
+                    statusIfSameAccount : Maybe ServerPosts
                     statusIfSameAccount =
                         Dict.get server.frontendHost dict
                             |> Maybe.andThen
@@ -618,10 +631,12 @@ distrustful fallback in case some future state change doesn't route through
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
+        currentAccountId : AccountsPanel.Server -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
+        serversToFetch : List AccountsPanel.Server
         serversToFetch =
             relevantServers shared model
                 |> List.filter
@@ -711,6 +726,7 @@ each silently wipe out whatever the others had just set. Mirrors
 pushUrl : Model -> Effect Msg
 pushUrl model =
     let
+        searchTextParam : List Url.Builder.QueryParameter
         searchTextParam =
             if String.isEmpty (String.trim model.searchText) then
                 []
@@ -718,6 +734,7 @@ pushUrl model =
             else
                 [ Url.Builder.string "search_text" model.searchText ]
 
+        contextParam : List Url.Builder.QueryParameter
         contextParam =
             if model.context == POST then
                 []
@@ -725,6 +742,7 @@ pushUrl model =
             else
                 [ Url.Builder.string "context" (postContextParam model.context) ]
 
+        publishedBeforeParam : List Url.Builder.QueryParameter
         publishedBeforeParam =
             case ( model.tab, model.publishedBefore ) of
                 ( PostsBeforeDate, Just cutoff ) ->
@@ -1061,9 +1079,11 @@ authorHeadingView shared maybeAuthor context =
 
         Just ( host, author ) ->
             let
+                profileUrl : String
                 profileUrl =
                     usernameHref "" shared.accounts.mainFrontendHost host author.username
 
+                headingText : String
                 headingText =
                     case context of
                         REPLY ->
@@ -1095,6 +1115,7 @@ recency here would throw that ranking away. Mirrors
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
     let
+        postsWord : String
         postsWord =
             case model.context of
                 REPLY ->
@@ -1108,6 +1129,7 @@ postsListView shared model =
 
     else
         let
+            sortedAnimations : List ( String, PostAnimation )
             sortedAnimations =
                 model.postAnimations
                     |> Dict.toList
@@ -1143,6 +1165,7 @@ while it's on its way out.
 postAnimationView : Shared.Model -> ( String, PostAnimation ) -> ( String, Html Msg )
 postAnimationView shared ( key, anim ) =
     let
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if anim.flip.removing then
                 [ style "pointer-events" "none" ]
@@ -1159,22 +1182,28 @@ postAnimationView shared ( key, anim ) =
 postCardView : Shared.Model -> ( String, Post ) -> Html Msg
 postCardView shared ( host, post ) =
     let
+        displayPost : Post
         displayPost =
             StarredPanel.freshestPost host post shared.panels.starredPanel
 
+        starred : Bool
         starred =
             StarredPanel.isStarred host displayPost shared.panels.starredPanel
 
+        onStarClicked : Maybe Msg
         onStarClicked =
             StarredPanel.toggleStarMsg shared.accounts host displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 
+        onMediaClicked : String -> Msg
         onMediaClicked mediaId =
             SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
     in

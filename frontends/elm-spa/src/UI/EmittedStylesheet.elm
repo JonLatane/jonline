@@ -48,9 +48,11 @@ view shared =
 css : Shared.Model -> String
 css shared =
     let
+        darkMode : Bool
         darkMode =
             Shared.effectiveDarkMode shared
 
+        mainTheme : UI.ServerTheme.ServerTheme
         mainTheme =
             AccountsPanel.mainServerTheme darkMode shared.accounts
     in
@@ -81,6 +83,7 @@ at all, so they don't need (or get) this override.
 mainFrontendServerRules : UI.ServerTheme.ServerTheme -> AccountsPanel.Model -> String
 mainFrontendServerRules theme accountsPanel =
     let
+        mainHostSelector : String
         mainHostSelector =
             "." ++ hostnameToCSSClass accountsPanel.mainFrontendHost
     in
@@ -97,12 +100,15 @@ mainFrontendServerRules theme accountsPanel =
 serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> AccountsPanel.Server -> String
 serverRules darkMode mainTheme mainFrontendHost server =
     let
+        theme : UI.ServerTheme.ServerTheme
         theme =
             AccountsPanel.serverThemeOf darkMode server
 
+        branding : AccountsPanel.Branding
         branding =
             AccountsPanel.brandingOf server
 
+        selector : String
         selector =
             "." ++ hostnameToCSSClass server.frontendHost
 
@@ -112,6 +118,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
         -- mainFrontendHost.primaryAnchorColor (see `mainFrontendServerRules`)
         -- -- same idea as that rule's `.account-row` override, but keyed off
         -- this server's navColor lightness instead of darkMode.
+        switchOnColor : String
         switchOnColor =
             if branding.nav.isDark then
                 mainTheme.primaryDarkColor
@@ -119,6 +126,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
             else
                 mainTheme.primaryLightColor
 
+        accountRowSwitchRule : String
         accountRowSwitchRule =
             if server.frontendHost == mainFrontendHost then
                 ""
@@ -131,6 +139,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
                     -- already handled by `mainFrontendServerRules`' own `.account-row`
                     -- override, which uses navAnchorColor rather than this
                     -- light/dark-of-primaryColor logic.
+                    accountSwitchOnColor : String
                     accountSwitchOnColor =
                         if branding.primary.isDark then
                             mainTheme.primaryDarkColor
@@ -140,6 +149,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
                 in
                 ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
 
+        listItemColorRule : String
         listItemColorRule =
             withDescendants selector ".list-item-bordered-color-primary" ++ " { border-left: 4px solid " ++ theme.primaryAnchorColor ++ "; border-bottom: 2px solid " ++ theme.primaryAnchorColor ++ "; border-top: 1px solid " ++ theme.navAnchorColor ++ "88; border-right: 1px solid " ++ theme.navAnchorColor ++ "88; border-radius: 4px; }\n"
     in

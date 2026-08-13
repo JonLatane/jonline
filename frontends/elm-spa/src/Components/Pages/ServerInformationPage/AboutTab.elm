@@ -150,9 +150,11 @@ applySharedMsg subMsg model =
 view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> AdminsStatus -> VersionStatus -> Model -> Html Msg
 view shared server maybeAdminAccount adminsStatus versionStatus model =
     let
+        info : Proto.Jonline.ServerInfo
         info =
             AccountsPanel.serverInfoOf server
 
+        name : String
         name =
             Maybe.withDefault server.frontendHost info.name
     in

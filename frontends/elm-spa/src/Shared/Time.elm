@@ -103,6 +103,7 @@ component for `abbreviation` to disambiguate.
 formatDate : Time.Zone -> Time.Posix -> String
 formatDate zone time =
     let
+        pad2 : Int -> String
         pad2 n =
             String.padLeft 2 '0' (String.fromInt n)
     in
@@ -123,6 +124,7 @@ unlike a profile's plain "Joined" date.
 formatDateTime : BrowserTimeZone -> Time.Posix -> String
 formatDateTime browserTimeZone time =
     let
+        pad2 : Int -> String
         pad2 n =
             String.padLeft 2 '0' (String.fromInt n)
     in
@@ -180,9 +182,11 @@ anything about `August 1`'s own time.
 formatRange : Model -> Time.Posix -> Time.Posix -> String
 formatRange time start end =
     let
+        zone : Time.Zone
         zone =
             time.browserTimeZone.zone
 
+        sameDay : Bool
         sameDay =
             ( Time.toYear zone start, Time.toMonth zone start, Time.toDay zone start )
                 == ( Time.toYear zone end, Time.toMonth zone end, Time.toDay zone end )
@@ -218,9 +222,11 @@ own doc.
 formatDateRange : Model -> Time.Posix -> Time.Posix -> String
 formatDateRange time start end =
     let
+        zone : Time.Zone
         zone =
             time.browserTimeZone.zone
 
+        sameDay : Bool
         sameDay =
             ( Time.toYear zone start, Time.toMonth zone start, Time.toDay zone start )
                 == ( Time.toYear zone end, Time.toMonth zone end, Time.toDay zone end )
@@ -258,15 +264,19 @@ label instead of the one `moment` would get on its own.
 dateLabelBase : Model -> Time.Posix -> String
 dateLabelBase time moment =
     let
+        zone : Time.Zone
         zone =
             time.browserTimeZone.zone
 
+        year : Int
         year =
             Time.toYear zone moment
 
+        currentYear : Int
         currentYear =
             Time.toYear zone time.now
 
+        base : String
         base =
             monthName (Time.toMonth zone moment) ++ " " ++ String.fromInt (Time.toDay zone moment)
     in
@@ -312,6 +322,7 @@ both sides in full, e.g. "18:00-19:00".
 timeRangeLabel : BrowserTimeZone -> Time.Posix -> Time.Posix -> String
 timeRangeLabel browserTimeZone start end =
     let
+        zone : Time.Zone
         zone =
             browserTimeZone.zone
     in
@@ -320,9 +331,11 @@ timeRangeLabel browserTimeZone start end =
 
     else
         let
+            startHour : Int
             startHour =
                 Time.toHour zone start
 
+            endHour : Int
             endHour =
                 Time.toHour zone end
         in
@@ -365,6 +378,7 @@ with the suffix attached.
 bareTime12 : Time.Zone -> Time.Posix -> String
 bareTime12 zone time =
     let
+        minute : Int
         minute =
             Time.toMinute zone time
     in
@@ -448,6 +462,7 @@ browser's own native picker widget) sets it to.
 formatDateTimeLocalInput : Time.Zone -> Time.Posix -> String
 formatDateTimeLocalInput zone time =
     let
+        pad2 : Int -> String
         pad2 n =
             String.padLeft 2 '0' (String.fromInt n)
     in
@@ -471,9 +486,11 @@ sides' own relative-day prefix untouched.
 rangeDateLabels : Model -> Time.Posix -> Time.Posix -> ( String, String )
 rangeDateLabels time start end =
     let
+        startRelativeDay : Maybe RelativeDay
         startRelativeDay =
             relativeDay time start
 
+        endRelativeDay : Maybe RelativeDay
         endRelativeDay =
             relativeDay time end
 
@@ -509,12 +526,15 @@ not elapsed duration.
 relativeDay : Model -> Time.Posix -> Maybe RelativeDay
 relativeDay time moment =
     let
+        zone : Time.Zone
         zone =
             time.browserTimeZone.zone
 
+        dayNumber : Time.Posix -> Int
         dayNumber t =
             Conversions.daysFromCivil (Time.toYear zone t) (Conversions.monthToNumber (Time.toMonth zone t)) (Time.toDay zone t)
 
+        dayDiff : Int
         dayDiff =
             dayNumber moment - dayNumber time.now
     in
@@ -608,8 +628,10 @@ not to get it right).
 posixFromDateTimeLocalInput : Time.Zone -> String -> Maybe Time.Posix
 posixFromDateTimeLocalInput zone raw =
     let
+        offsetMinutesAt : Time.Posix -> Int
         offsetMinutesAt posix =
             let
+                localAsUtcMillis : Int
                 localAsUtcMillis =
                     (Conversions.daysFromCivil (Time.toYear zone posix) (Conversions.monthToNumber (Time.toMonth zone posix)) (Time.toDay zone posix)
                         * 86400
@@ -627,15 +649,19 @@ posixFromDateTimeLocalInput zone raw =
             Maybe.map2
                 (\( year, month, day ) ( hour, minute, _ ) ->
                     let
+                        guessMillis : Int
                         guessMillis =
                             (Conversions.daysFromCivil year month day * 86400 + hour * 3600 + minute * 60) * 1000
 
+                        correctFromGuess : Int -> Int
                         correctFromGuess offset =
                             guessMillis - offset * 60000
 
+                        candidate1 : Int
                         candidate1 =
                             correctFromGuess (offsetMinutesAt (Time.millisToPosix guessMillis))
 
+                        candidate2 : Int
                         candidate2 =
                             correctFromGuess (offsetMinutesAt (Time.millisToPosix candidate1))
                     in

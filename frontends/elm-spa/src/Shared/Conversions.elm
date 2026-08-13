@@ -42,6 +42,7 @@ int64ToInt value =
         ( high, low ) =
             Int64.toInts value
 
+        unsignedLow : Int
         unsignedLow =
             if low < 0 then
                 low + 4294967296
@@ -67,6 +68,7 @@ calendar components, via `Time.toYear`/etc.), with no built-in inverse.
 daysFromCivil : Int -> Int -> Int -> Int
 daysFromCivil year month day =
     let
+        y : Int
         y =
             if month <= 2 then
                 year - 1
@@ -74,6 +76,7 @@ daysFromCivil year month day =
             else
                 year
 
+        era : Int
         era =
             (if y >= 0 then
                 y
@@ -83,9 +86,11 @@ daysFromCivil year month day =
             )
                 // 400
 
+        yoe : Int
         yoe =
             y - era * 400
 
+        doy : Int
         doy =
             (153
                 * (if month > 2 then
@@ -100,6 +105,7 @@ daysFromCivil year month day =
                 + day
                 - 1
 
+        doe : Int
         doe =
             yoe * 365 + yoe // 4 - yoe // 100 + doy
     in
@@ -185,6 +191,7 @@ never needs a `Time.Zone` at all, since UTC's own offset is always zero, so
 isoUtcString : Time.Posix -> String
 isoUtcString time =
     let
+        pad : Int -> Int -> String
         pad n width =
             String.padLeft width '0' (String.fromInt n)
     in
@@ -212,6 +219,7 @@ produces.
 posixFromIsoUtcString : String -> Maybe Time.Posix
 posixFromIsoUtcString raw =
     let
+        stripped : String
         stripped =
             if String.endsWith "Z" raw then
                 String.dropRight 1 raw

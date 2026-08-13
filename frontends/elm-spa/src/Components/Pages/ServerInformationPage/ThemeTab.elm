@@ -111,6 +111,7 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        squareMediaId : Maybe String
                         squareMediaId =
                             (AccountsPanel.configurationOf server).serverInfo |> Maybe.andThen .logo |> Maybe.andThen .squareMediaId
                     in
@@ -175,6 +176,7 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        pending : String
                         pending =
                             colorArgbFor field (AccountsPanel.configurationOf server)
                                 |> Maybe.map ServerTheme.colorMetaFromArgb
@@ -252,12 +254,15 @@ re-fetched `ServerConfiguration`'s `serverInfo.logo.squareMediaId`, leaving ever
 applyLogoChoice : LogoChoice -> ServerConfiguration -> ServerConfiguration
 applyLogoChoice choice config =
     let
+        info : Proto.Jonline.ServerInfo
         info =
             Maybe.withDefault defaultServerInfo config.serverInfo
 
+        logo : Proto.Jonline.ServerLogo
         logo =
             Maybe.withDefault defaultServerLogo info.logo
 
+        setSquareMediaId : Maybe String -> ServerConfiguration
         setSquareMediaId squareMediaId =
             { config | serverInfo = Just { info | logo = Just { logo | squareMediaId = squareMediaId } } }
     in
@@ -278,6 +283,7 @@ writer `applyColorFor` just below.
 colorArgbFor : ServerColorField -> ServerConfiguration -> Maybe Int
 colorArgbFor field config =
     let
+        colors : Maybe Proto.Jonline.ServerColors
         colors =
             config.serverInfo |> Maybe.andThen .colors
     in
@@ -292,12 +298,15 @@ colorArgbFor field config =
 applyColorFor : ServerColorField -> Int -> ServerConfiguration -> ServerConfiguration
 applyColorFor field argb config =
     let
+        info : Proto.Jonline.ServerInfo
         info =
             Maybe.withDefault defaultServerInfo config.serverInfo
 
+        colors : Proto.Jonline.ServerColors
         colors =
             Maybe.withDefault defaultServerColors info.colors
 
+        newColors : Proto.Jonline.ServerColors
         newColors =
             case field of
                 PrimaryColor ->
@@ -339,12 +348,15 @@ setColorEditFor field edit model =
 view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
+        info : Proto.Jonline.ServerInfo
         info =
             AccountsPanel.serverInfoOf server
 
+        config : ServerConfiguration
         config =
             AccountsPanel.configurationOf server
 
+        webUi : WebUserInterface
         webUi =
             config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
     in
@@ -402,6 +414,7 @@ colorEditorRow field label_ maybeAdminAccount maybeEdit argb =
 
         Nothing ->
             let
+                colorMeta : ServerTheme.ColorMeta
                 colorMeta =
                     argb |> Maybe.map ServerTheme.colorMetaFromArgb |> Maybe.withDefault ServerTheme.neutralColorMeta
             in

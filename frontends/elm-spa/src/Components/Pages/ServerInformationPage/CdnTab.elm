@@ -73,6 +73,7 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        cdnConfig : Maybe ExternalCDNConfig
                         cdnConfig =
                             (AccountsPanel.configurationOf server).externalCdnConfig
                     in
@@ -140,6 +141,7 @@ applyCdnConfig : CdnConfigEdit -> ServerConfiguration -> ServerConfiguration
 applyCdnConfig edit config =
     if edit.enabled then
         let
+            existing : ExternalCDNConfig
             existing =
                 Maybe.withDefault defaultExternalCDNConfig config.externalCdnConfig
         in
@@ -156,6 +158,7 @@ applyCdnConfig edit config =
 view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
+        cdnConfig : Maybe ExternalCDNConfig
         cdnConfig =
             (AccountsPanel.configurationOf server).externalCdnConfig
     in

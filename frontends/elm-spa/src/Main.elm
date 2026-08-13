@@ -124,9 +124,11 @@ type Msg
 init : Shared.Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
+        basePath : String
         basePath =
             Shared.basePathFromPath url.path
 
+        normalizedUrl : Url
         normalizedUrl =
             Shared.normalizeUrl basePath url
 
@@ -175,6 +177,7 @@ update msg model =
 
         ChangedUrl rawUrl ->
             let
+                url : Url
                 url =
                     Shared.normalizeUrl model.basePath rawUrl
             in
@@ -183,9 +186,11 @@ update msg model =
                     ( page, effect ) =
                         Pages.init (Route.fromUrl url) model.shared url model.key
 
+                    isBackNav : Bool
                     isBackNav =
                         List.head model.backStack == Just url
 
+                    backStack : List Url
                     backStack =
                         if isBackNav then
                             List.drop 1 model.backStack
@@ -246,6 +251,7 @@ update msg model =
                 ( shared, sharedCmd ) =
                     List.foldl applySharedMsg ( model.shared, Cmd.none ) sharedMsgs
 
+                applySharedMsg : Shared.Msg -> ( Shared.Model, Cmd Msg ) -> ( Shared.Model, Cmd Msg )
                 applySharedMsg sharedMsg ( accShared, accCmd ) =
                     let
                         ( newShared, cmd ) =

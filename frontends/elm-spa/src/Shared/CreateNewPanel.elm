@@ -195,6 +195,7 @@ update zone accountsPanelModel msg model =
 
         StartsAtChanged raw ->
             let
+                newStartsAt : Maybe Time.Posix
                 newStartsAt =
                     SharedTime.posixFromDateTimeLocalInput zone raw
 
@@ -205,6 +206,7 @@ update zone accountsPanelModel msg model =
                 -- set yet) default `endsAt` to an hour after the new start,
                 -- so a not-yet-touched end never reads as blank/before the
                 -- start once a start exists.
+                newEndsAt : Maybe Time.Posix
                 newEndsAt =
                     case ( newStartsAt, model.startsAt, model.endsAt ) of
                         ( Just newStart, Just oldStart, Just oldEnd ) ->
@@ -220,6 +222,7 @@ update zone accountsPanelModel msg model =
 
         EndsAtChanged raw ->
             let
+                newEndsAt : Maybe Time.Posix
                 newEndsAt =
                     SharedTime.posixFromDateTimeLocalInput zone raw
 
@@ -228,6 +231,7 @@ update zone accountsPanelModel msg model =
                 -- outright, so picking an end too close to (or before) the
                 -- start still lands on the nearest valid value instead of
                 -- silently not applying the change.
+                clampedEndsAt : Maybe Time.Posix
                 clampedEndsAt =
                     case ( newEndsAt, model.startsAt ) of
                         ( Just newEnd, Just startsAt ) ->
@@ -331,6 +335,7 @@ needs with the account selector.
 resolvedAccount : AccountsPanel.Model -> Model -> Maybe AccountsPanel.Account
 resolvedAccount accountsPanelModel model =
     let
+        eligible : List AccountsPanel.Account
         eligible =
             eligibleAccounts model.mode accountsPanelModel
     in
@@ -492,6 +497,7 @@ resolvedVisibility mode account model =
 nonEmptyTrimmed : String -> Maybe String
 nonEmptyTrimmed value =
     let
+        trimmed : String
         trimmed =
             String.trim value
     in
@@ -519,6 +525,7 @@ saveTask accountsPanelModel resolved model =
         ( Just resolved.account.userId, resolved.server.frontendHost )
         (\server token ->
             let
+                post : Proto.Jonline.Post
                 post =
                     { defaultPost
                         | title = Just (String.trim model.title)
@@ -568,12 +575,15 @@ the server the draft will actually be posted to.
 view : Time.Zone -> AccountsPanel.Model -> Model -> Html Msg
 view zone accountsPanelModel model =
     let
+        host : String
         host =
             postingAsHost accountsPanelModel model
 
+        resolution : Result String Resolved
         resolution =
             resolve accountsPanelModel model
 
+        canSave : Bool
         canSave =
             case resolution of
                 Ok _ ->
@@ -582,6 +592,7 @@ view zone accountsPanelModel model =
                 Err _ ->
                     False
 
+        errorMessage : Maybe String
         errorMessage =
             case model.status of
                 SubmitFailed err ->
@@ -833,9 +844,11 @@ postingAsSelector accountsPanelModel model =
 
         eligible ->
             let
+                selectedAccount : Maybe AccountsPanel.Account
                 selectedAccount =
                     resolvedAccount accountsPanelModel model
 
+                selectedId : String
                 selectedId =
                     selectedAccount |> Maybe.map AccountsPanel.accountId |> Maybe.withDefault ""
             in
@@ -876,6 +889,7 @@ visibilityField accountsPanelModel model =
 
         Just account ->
             let
+                selectedVisibility : Visibility
                 selectedVisibility =
                     resolvedVisibility model.mode account model
             in

@@ -20,7 +20,7 @@ import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (ServerConfiguration, defaultEventSettings, defaultFeatureSettings, defaultMediaSettings, defaultPostSettings)
 import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Proto.Jonline.Moderation exposing (Moderation(..))
-import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.Permission exposing (Permission)
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
@@ -158,6 +158,7 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        currentPermissions : List Permission
                         currentPermissions =
                             permissionsFor set (AccountsPanel.configurationOf server)
                     in
@@ -172,6 +173,7 @@ update shared targetHost maybeServer msg model =
                     |> Maybe.map
                         (\edit ->
                             let
+                                pending : List Permission
                                 pending =
                                     List.filter ((/=) permission) edit.pending
                             in
@@ -197,6 +199,7 @@ update shared targetHost maybeServer msg model =
                             case edit.addSelection of
                                 Just permission ->
                                     let
+                                        pending : List Permission
                                         pending =
                                             edit.pending ++ [ permission ]
                                     in
@@ -247,6 +250,7 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        current : FeatureSettingsSummary
                         current =
                             currentFeatureSettingsFor set (AccountsPanel.configurationOf server)
                     in
@@ -621,6 +625,7 @@ currentFeatureSettingsFor set config =
     case set of
         PeopleFeatureSettings ->
             let
+                s : Proto.Jonline.FeatureSettings
                 s =
                     Maybe.withDefault defaultFeatureSettings config.peopleSettings
             in
@@ -628,6 +633,7 @@ currentFeatureSettingsFor set config =
 
         GroupFeatureSettings ->
             let
+                s : Proto.Jonline.FeatureSettings
                 s =
                     Maybe.withDefault defaultFeatureSettings config.groupSettings
             in
@@ -635,6 +641,7 @@ currentFeatureSettingsFor set config =
 
         PostFeatureSettings ->
             let
+                s : Proto.Jonline.PostSettings
                 s =
                     Maybe.withDefault defaultPostSettings config.postSettings
             in
@@ -642,6 +649,7 @@ currentFeatureSettingsFor set config =
 
         EventFeatureSettings ->
             let
+                s : Proto.Jonline.EventSettings
                 s =
                     Maybe.withDefault defaultEventSettings config.eventSettings
             in
@@ -649,6 +657,7 @@ currentFeatureSettingsFor set config =
 
         MediaFeatureSettings ->
             let
+                s : Proto.Jonline.MediaSettings
                 s =
                     Maybe.withDefault defaultMediaSettings config.mediaSettings
             in
@@ -673,6 +682,7 @@ field on this page's editors (`aliasSingular`/`aliasPlural` here, `FacebookAuthF
 optionalString : String -> Maybe String
 optionalString text =
     let
+        trimmed : String
         trimmed =
             String.trim text
     in
@@ -714,6 +724,7 @@ applyFeatureSettingsFor set edit config =
     case set of
         PeopleFeatureSettings ->
             let
+                updated : Proto.Jonline.FeatureSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.peopleSettings)
             in
@@ -721,6 +732,7 @@ applyFeatureSettingsFor set edit config =
 
         GroupFeatureSettings ->
             let
+                updated : Proto.Jonline.FeatureSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.groupSettings)
             in
@@ -728,6 +740,7 @@ applyFeatureSettingsFor set edit config =
 
         PostFeatureSettings ->
             let
+                updated : Proto.Jonline.PostSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultPostSettings config.postSettings)
             in
@@ -743,6 +756,7 @@ applyFeatureSettingsFor set edit config =
 
         EventFeatureSettings ->
             let
+                updated : Proto.Jonline.EventSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultEventSettings config.eventSettings)
             in
@@ -782,6 +796,7 @@ permission (`Nothing` if every permission's already been added). Mirrors `UserPr
 resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
 resolveAddSelection current pending =
     let
+        available : List Permission
         available =
             addablePermissions pending
     in
@@ -809,6 +824,7 @@ addablePermissions pending =
 view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
+        config : ServerConfiguration
         config =
             AccountsPanel.configurationOf server
     in
@@ -914,6 +930,7 @@ split, just collapsible.
 featureSettingsSection : FeatureSettingsSet -> Maybe AccountsPanel.Account -> Maybe FeatureSettingsEdit -> Bool -> FeatureSettingsSummary -> Html Msg
 featureSettingsSection set maybeAdminAccount maybeEdit collapsed current =
     let
+        expanded : Bool
         expanded =
             not collapsed
     in
@@ -959,9 +976,11 @@ as `permissionsSection`.
 featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.Account -> FeatureSettingsSummary -> Html Msg
 featureSettingsDisplayView set maybeAdminAccount current =
     let
+        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool }
         fields =
             featureSettingsFieldsFor set
 
+        textValue : String -> Html Msg
         textValue text_ =
             span [ Html.Attributes.class "server-details-feature-settings-value" ] [ text text_ ]
     in
@@ -1016,9 +1035,11 @@ editing case. `moderation`/`visibility` are narrowed to `allowedDefaultModeratio
 featureSettingsEditView : FeatureSettingsSet -> FeatureSettingsEdit -> Html Msg
 featureSettingsEditView set edit =
     let
+        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool }
         fields =
             featureSettingsFieldsFor set
 
+        textInput : (String -> Msg) -> String -> Html Msg
         textInput onChange currentValue =
             input
                 [ Html.Attributes.class "server-details-rename-input"

@@ -136,6 +136,7 @@ update shared targetHost isSecure maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        savedServers : List FederatedServer
                         savedServers =
                             (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
                     in
@@ -191,6 +192,7 @@ update shared targetHost isSecure maybeServer msg model =
             case model.federationEdit of
                 Just edit ->
                     let
+                        host : String
                         host =
                             String.trim edit.hostInput
                     in
@@ -236,6 +238,7 @@ update shared targetHost isSecure maybeServer msg model =
                         |> Maybe.map
                             (\edit ->
                                 let
+                                    currentState : UI.Flip.State Msg
                                     currentState =
                                         Dict.get host edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
                                 in
@@ -330,6 +333,7 @@ update shared targetHost isSecure maybeServer msg model =
             case model.federationEdit of
                 Just edit ->
                     let
+                        step : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
                         step key state ( states, stepCmds ) =
                             let
                                 ( newState, cmd ) =
@@ -349,6 +353,7 @@ update shared targetHost isSecure maybeServer msg model =
             case model.federationEdit of
                 Just edit ->
                     let
+                        step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
                         step key state ( states, stepCmds ) =
                             let
                                 ( newState, cmd ) =
@@ -368,6 +373,7 @@ update shared targetHost isSecure maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        currentAppId : String
                         currentAppId =
                             (AccountsPanel.configurationOf server).federationInfo
                                 |> Maybe.andThen .facebookAuthConfig
@@ -471,6 +477,7 @@ so this can never accidentally clobber it.
 applyFacebookAppId : String -> ServerConfiguration -> ServerConfiguration
 applyFacebookAppId appId config =
     let
+        federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
     in
@@ -487,9 +494,11 @@ instead. Keeps whatever `appId` the freshly re-fetched config already has.
 applyFacebookAppSecret : String -> ServerConfiguration -> ServerConfiguration
 applyFacebookAppSecret appSecret config =
     let
+        federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
 
+        existingAppId : String
         existingAppId =
             federationInfo.facebookAuthConfig |> Maybe.map .appId |> Maybe.withDefault ""
     in
@@ -561,6 +570,7 @@ view shared server maybeAdminAccount model =
 
             Nothing ->
                 let
+                    savedServers : List FederatedServer
                     savedServers =
                         (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
                 in
@@ -578,6 +588,7 @@ view shared server maybeAdminAccount model =
 facebookAuthConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
 facebookAuthConfigSection server model maybeAdminAccount =
     let
+        currentAppId : String
         currentAppId =
             (AccountsPanel.configurationOf server).federationInfo
                 |> Maybe.andThen .facebookAuthConfig
@@ -694,9 +705,11 @@ chip look.
 federatedServerDisplayChip : Shared.Model -> FederatedServer -> Html Msg
 federatedServerDisplayChip shared federatedServer =
     let
+        configuredByDefault : Bool
         configuredByDefault =
             Maybe.withDefault False federatedServer.configuredByDefault
 
+        pinnedByDefault : Bool
         pinnedByDefault =
             Maybe.withDefault False federatedServer.pinnedByDefault
     in
@@ -778,12 +791,15 @@ the edit-mode counterpart of `UI.serverChipFlip`, whose doc covers the two-layer
 federatedServerEditChipFlip : Shared.Model -> FederationEdit -> Int -> Int -> FederatedServer -> Html Msg
 federatedServerEditChipFlip shared edit count index federatedServer =
     let
+        flipState : UI.Flip.State Msg
         flipState =
             Dict.get federatedServer.host edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving : Bool
         isMoving =
             Dict.get federatedServer.host edit.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
 
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if flipState.removing then
                 [ Html.Attributes.style "pointer-events" "none" ]
@@ -803,21 +819,27 @@ starting off for a freshly-added server, see `GotFederatedServerAddResult`), and
 federatedServerEditChip : Shared.Model -> FederationEdit -> Int -> Int -> FederatedServer -> Html Msg
 federatedServerEditChip shared edit count index federatedServer =
     let
+        host : String
         host =
             federatedServer.host
 
+        moveAttrs : List (Html.Attribute Msg)
         moveAttrs =
             edit.moveAnimations |> Dict.get host |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
 
+        stopClick : Msg -> Html.Attribute Msg
         stopClick msg =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
+        showBackward : Bool
         showBackward =
             index > 0
 
+        showForward : Bool
         showForward =
             index < count - 1
 
+        reorderPair : { backward : Html Msg, forward : Html Msg }
         reorderPair =
             UI.Flip.reorderButtonPair UI.Flip.Horizontal
                 { moveBackward = stopClick (MoveFederatedServerLeftClicked host)

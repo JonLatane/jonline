@@ -62,6 +62,7 @@ view config render =
 
         Nothing ->
             let
+                connecting : Bool
                 connecting =
                     config.connectStatus == Connecting
             in

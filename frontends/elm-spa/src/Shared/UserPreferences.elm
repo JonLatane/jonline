@@ -49,6 +49,7 @@ update msg model =
     case msg of
         SetPrefersCalendar prefersCalendar ->
             let
+                newModel : Model
                 newModel =
                     { model | prefersCalendar = prefersCalendar }
             in

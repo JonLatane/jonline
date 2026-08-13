@@ -198,6 +198,7 @@ every `update`, a no-op once already in sync via the same equality check.
 setBreadcrumbsHost : Shared.Model -> Effect Msg
 setBreadcrumbsHost shared =
     let
+        host : String
         host =
             shared.accounts.mainFrontendHost
     in

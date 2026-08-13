@@ -124,9 +124,11 @@ inside `postCard`'s own enclosing one.
 link : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Author -> Html msg
 link basePath viewingServerHost hostServerHost maybeServer maybeAccount maybeAuthor =
     let
+        authorName : String
         authorName =
             name maybeAuthor
 
+        content : List (Html msg)
         content =
             avatar authorName (avatarUrl maybeServer maybeAccount maybeAuthor)
                 :: text authorName

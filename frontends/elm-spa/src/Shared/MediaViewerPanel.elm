@@ -165,9 +165,11 @@ the backdrop. Below `swipeThreshold` in both axes, nothing happens.
 applySwipe : ( Float, Float ) -> ( Float, Float ) -> Model -> Model
 applySwipe ( startX, startY ) ( endX, endY ) model =
     let
+        dx : Float
         dx =
             endX - startX
 
+        dy : Float
         dy =
             endY - startY
     in
@@ -191,13 +193,16 @@ applySwipe ( startX, startY ) ( endX, endY ) model =
 view : AccountsPanel.Model -> Model -> Html Msg
 view accountsPanelModel model =
     let
+        currentMedia : Maybe MediaReference
         currentMedia =
             model.currentMediaReference
                 |> Maybe.andThen (\id -> List.filter (\m -> m.id == id) model.media |> List.head)
 
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost
 
+        indexLabel : List (Html Msg)
         indexLabel =
             case ( model.currentMediaReference |> Maybe.andThen (\id -> indexOf id model.media), List.length model.media ) of
                 ( Just index, count ) ->
@@ -216,6 +221,7 @@ view accountsPanelModel model =
         -- bubbling back up to it -- otherwise paging/closing via a button, or
         -- just tapping the media itself, would also immediately re-close the
         -- whole panel. `stopClick` is `onClick` plus that guard.
+        stopClick : Msg -> Html.Attribute Msg
         stopClick msg =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
@@ -228,6 +234,7 @@ view accountsPanelModel model =
                 (Decode.at [ touchList, "0", "clientX" ] Decode.float)
                 (Decode.at [ touchList, "0", "clientY" ] Decode.float)
 
+        navButton : List String -> Msg -> String -> Html Msg
         navButton classNames msg label =
             button [ classes ("media-viewer-panel-nav" :: classNames), stopClick msg ] [ text label ]
     in
@@ -240,6 +247,7 @@ view accountsPanelModel model =
             [ case ( currentMedia, maybeServer ) of
                 ( Just media, Just server ) ->
                     let
+                        maybeAccount : Maybe AccountsPanel.Account
                         maybeAccount =
                             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
                     in
@@ -394,6 +402,7 @@ isImage media =
 adjacent : Int -> Model -> Maybe MediaReference
 adjacent offset model =
     let
+        count : Int
         count =
             List.length model.media
     in

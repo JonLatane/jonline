@@ -106,9 +106,11 @@ fetchUserListing :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
 fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType searchText =
     let
+        trimmedSearchText : String
         trimmedSearchText =
             String.trim searchText
 
+        request : Proto.Jonline.GetUsersRequest
         request =
             if String.isEmpty trimmedSearchText then
                 { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
@@ -647,6 +649,7 @@ newly pick it again) -- mirrors `Components.Posts.allowedVisibilities`.
 allowedVisibilities : List Permission -> Visibility -> List Visibility
 allowedVisibilities permissions currentVisibility =
     let
+        canPublishGlobally : Bool
         canPublishGlobally =
             List.member PUBLISHUSERSGLOBALLY permissions || List.member ADMIN permissions
     in

@@ -58,6 +58,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
+import Proto.Google.Protobuf exposing (Timestamp)
 import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, User)
 import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
@@ -516,6 +517,7 @@ init shared author navKey path query embeddedPage syncsCalendarPreference availa
                 Nothing ->
                     ( UpcomingEvents, Nothing )
 
+        computedDefaultDisplayMode : EventsDisplayMode
         computedDefaultDisplayMode =
             defaultMode embeddedPage shared.userPreferences.prefersCalendar
 
@@ -692,6 +694,7 @@ updateInner shared msg model =
 
         Animate animMsg ->
             let
+                step : String -> { a | flip : UI.Flip.State Msg } -> ( Dict String { a | flip : UI.Flip.State Msg }, List (Cmd Msg) ) -> ( Dict String { a | flip : UI.Flip.State Msg }, List (Cmd Msg) )
                 step key anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -711,6 +714,7 @@ updateInner shared msg model =
 
         AnimateMove animMsg ->
             let
+                step : String -> EventAnimation -> ( Dict String EventAnimation, List (Cmd Msg) ) -> ( Dict String EventAnimation, List (Cmd Msg) )
                 step key anim ( animations, accCmds ) =
                     let
                         ( newMove, cmd ) =
@@ -731,6 +735,7 @@ updateInner shared msg model =
 
         MoveSettled key ->
             let
+                newModel : Model
                 newModel =
                     { model
                         | eventAnimations =
@@ -774,11 +779,13 @@ updateInner shared msg model =
                 -- `Shared.UserPreferences.prefersCalendar` -- see that field's
                 -- own doc.
                 let
+                    newModel : Model
                     newModel =
                         { model | mode = newMode }
                             |> syncAnimations
                             |> syncCalendarAnimations
 
+                    preferenceEffect : Effect Msg
                     preferenceEffect =
                         if model.syncsCalendarPreference then
                             Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar (newMode == Calendar)))
@@ -806,6 +813,7 @@ updateInner shared msg model =
 
                         AwaitingOldRects newMode ->
                             let
+                                newModel : Model
                                 newModel =
                                     { model | mode = newMode, measurementPhase = AwaitingNewRects newMode rects }
                             in
@@ -813,13 +821,16 @@ updateInner shared msg model =
 
                         AwaitingNewRects _ oldRects ->
                             let
+                                startMoveFor : String -> Rect -> Dict String EventAnimation -> Dict String EventAnimation
                                 startMoveFor key oldRect animations =
                                     case ( Dict.get key rects, Dict.get key animations ) of
                                         ( Just newRect, Just anim ) ->
                                             let
+                                                delta : ( Float, Float )
                                                 delta =
                                                     ( oldRect.x - newRect.x, oldRect.y - newRect.y )
 
+                                                scale : ( Float, Float )
                                                 scale =
                                                     ( oldRect.width / newRect.width, oldRect.height / newRect.height )
                                             in
@@ -828,6 +839,7 @@ updateInner shared msg model =
                                         _ ->
                                             animations
 
+                                newModel : Model
                                 newModel =
                                     { model
                                         | eventAnimations = Dict.foldl startMoveFor model.eventAnimations oldRects
@@ -852,6 +864,7 @@ updateInner shared msg model =
 
             else
                 let
+                    newModel : Model
                     newModel =
                         { model | tab = UpcomingEvents }
                 in
@@ -871,6 +884,7 @@ updateInner shared msg model =
                 -- picker off wherever `UpcomingEvents`' live clock last left
                 -- it) so there's nothing to refetch, just the tab/URL.
                 let
+                    newModel : Model
                     newModel =
                         { model | tab = EventsAfterDate }
                 in
@@ -883,6 +897,7 @@ updateInner shared msg model =
 
                 Just newEndsAfter ->
                     let
+                        generation : Int
                         generation =
                             model.endsAfterInputGeneration + 1
                     in
@@ -907,6 +922,7 @@ updateInner shared msg model =
 
         SearchTextChanged text ->
             let
+                generation : Int
                 generation =
                     model.searchGeneration + 1
             in
@@ -945,6 +961,7 @@ updateInner shared msg model =
 
         CopyLinkClicked ->
             let
+                generation : Int
                 generation =
                     model.copyLinkGeneration + 1
             in
@@ -966,9 +983,11 @@ updateInner shared msg model =
 
         PushEventInstanceToDestination host eventInstanceId eventSyncDestinationId ->
             let
+                key : String
                 key =
                     pushStatusKey eventInstanceId eventSyncDestinationId
 
+                maybeAccountServer : ( Maybe String, String )
                 maybeAccountServer =
                     ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
             in
@@ -980,9 +999,11 @@ updateInner shared msg model =
 
         GotPushResult host eventInstanceId eventSyncDestinationId result ->
             let
+                key : String
                 key =
                     pushStatusKey eventInstanceId eventSyncDestinationId
 
+                clearedModel : Model
                 clearedModel =
                     { model | pushStatuses = Dict.remove key model.pushStatuses }
             in
@@ -1042,6 +1063,7 @@ applyMeasurementFailure model =
 
         AwaitingOldRects newMode ->
             let
+                newModel : Model
                 newModel =
                     { model | mode = newMode, measurementPhase = NotMeasuring }
             in
@@ -1049,6 +1071,7 @@ applyMeasurementFailure model =
 
         AwaitingNewRects _ _ ->
             let
+                newModel : Model
                 newModel =
                     { model | measurementPhase = NotMeasuring }
             in
@@ -1318,21 +1341,27 @@ refetchServers shared model serversToFetch =
 
         Just endsAfter ->
             let
+                enabledServers : List AccountsPanel.Server
                 enabledServers =
                     relevantServers shared model
 
+                currentAccountId : AccountsPanel.Server -> Maybe String
                 currentAccountId server =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                         |> Maybe.map AccountsPanel.accountId
 
+                prunedEventsByServer : Dict String ServerFeed
                 prunedEventsByServer =
                     Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.eventsByServer
 
+                markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
                 markServer server dict =
                     let
+                        accountId : Maybe String
                         accountId =
                             currentAccountId server
 
+                        statusIfSameAccount : Maybe ServerEvents
                         statusIfSameAccount =
                             Dict.get server.frontendHost dict
                                 |> Maybe.andThen
@@ -1381,10 +1410,12 @@ against `GetEvents` instead of `GetPosts`.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
+        currentAccountId : AccountsPanel.Server -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
+        serversToFetch : List AccountsPanel.Server
         serversToFetch =
             relevantServers shared model
                 |> List.filter
@@ -1879,14 +1910,17 @@ wouldn't paint.
 calendarEventEncoder : ( String, Event, EventInstance ) -> Encode.Value
 calendarEventEncoder ( host, event, instance ) =
     let
+        title : String
         title =
             event.post
                 |> Maybe.map Posts.postTitleText
                 |> Maybe.withDefault "Event"
 
+        isoField : String -> Maybe Timestamp -> Maybe ( String, Encode.Value )
         isoField fieldName =
             Maybe.map (\ts -> ( fieldName, Encode.string (Conversions.isoUtcString (Conversions.timestampToPosix ts)) ))
 
+        timeFields : List ( String, Encode.Value )
         timeFields =
             List.filterMap identity
                 [ instance.startsAt |> isoField "start"
@@ -2057,6 +2091,7 @@ scrollToCalendarPreviewCard delayMs key =
         |> Task.map
             (\( card, strip, viewport ) ->
                 let
+                    cardLeftWithinStrip : Float
                     cardLeftWithinStrip =
                         card.element.x - strip.element.x
                 in
@@ -2095,6 +2130,7 @@ clear first.
 calendarPreviewModalView : Shared.Model -> Model -> Html Msg
 calendarPreviewModalView shared model =
     let
+        isOpen : Bool
         isOpen =
             model.calendarPreview /= Nothing
     in
@@ -2144,6 +2180,7 @@ calendarPreviewEvents model =
 
         Just key ->
             let
+                sorted : List ( String, Event, EventInstance )
                 sorted =
                     calendarEvents model
                         |> List.sortBy
@@ -2153,6 +2190,7 @@ calendarPreviewEvents model =
                                     |> Time.posixToMillis
                             )
 
+                targetIndex : Maybe Int
                 targetIndex =
                     sorted
                         |> List.indexedMap (\i ( host, _, instance ) -> ( i, eventAnimationKey host instance ))
@@ -2174,9 +2212,11 @@ calendarPreviewEvents model =
 calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, EventInstance ) -> Html Msg
 calendarPreviewCardView shared model ( host, event, instance ) =
     let
+        key : String
         key =
             eventAnimationKey host instance
 
+        current : Bool
         current =
             model.calendarPreview == Just key
     in
@@ -2264,6 +2304,7 @@ authorHeadingView shared maybeAuthor =
 
         Just ( host, author ) ->
             let
+                profileUrl : String
                 profileUrl =
                     usernameHref "" shared.accounts.mainFrontendHost host author.username
             in
@@ -2494,6 +2535,7 @@ see `view`'s own doc) and the "Show all event layouts" admin setting
 modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
 modeButtonsView shared embeddedPage current =
     let
+        visibleModes : List EventsDisplayMode
         visibleModes =
             if shared.accounts.debugTab.showAllEventLayouts then
                 [ VerticalList, Grid, HorizontalList, Calendar ]
@@ -2666,9 +2708,11 @@ eventsListView shared model =
 
     else
         let
+            animations : List ( String, EventAnimation )
             animations =
                 visibleAnimations model
 
+            calendarItems : List ( String, CalendarAnimation )
             calendarItems =
                 Dict.toList model.calendarAnimations
         in
@@ -2685,6 +2729,7 @@ eventsListView shared model =
 
         else
             let
+                transitioning : Bool
                 transitioning =
                     List.any (\( _, anim ) -> anim.move.moving) animations
 
@@ -2708,6 +2753,7 @@ eventsListView shared model =
                             -- class of its own).
                             ( "events-list flip-animated-column", UI.Flip.Vertical )
 
+                containerClass : String
                 containerClass =
                     if transitioning then
                         modeClass ++ " events-mode-transitioning"
@@ -2769,6 +2815,7 @@ why that's needed alongside a scale.
 eventAnimationView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
 eventAnimationView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses axis ( key, anim ) =
     let
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if anim.flip.removing then
                 [ style "pointer-events" "none" ]
@@ -2796,12 +2843,15 @@ the rendered count doesn't yet.
 eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
 eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 
+        onMediaClicked : String -> Msg
         onMediaClicked mediaId =
             case event.post of
                 Just eventPost ->
@@ -2810,6 +2860,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
                 Nothing ->
                     SharedMsg Shared.NoOp
 
+        displayInstance : EventInstance
         displayInstance =
             case instance.post of
                 Just instancePost ->
@@ -2818,6 +2869,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
                 Nothing ->
                     instance
 
+        starred : Bool
         starred =
             case displayInstance.post of
                 Just instancePost ->
@@ -2826,11 +2878,13 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
                 Nothing ->
                     False
 
+        onStarClicked : Maybe Msg
         onStarClicked =
             displayInstance.post
                 |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accounts host)
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
+        mediaSizing : MediaRenderer.MediaSize
         mediaSizing =
             if embeddedPage then
                 MediaRenderer.ExtraSmall
@@ -2838,9 +2892,11 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
             else
                 MediaRenderer.Small
 
+        isPushing : String -> Bool
         isPushing destinationId =
             Dict.get (pushStatusKey instance.id destinationId) pushStatuses == Just Submitting
 
+        pushError : String -> Maybe String
         pushError destinationId =
             case Dict.get (pushStatusKey instance.id destinationId) pushStatuses of
                 Just (SubmitFailed err) ->
@@ -2849,6 +2905,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
                 _ ->
                     Nothing
 
+        onPush : String -> Msg
         onPush destinationId =
             PushEventInstanceToDestination host instance.id destinationId
     in

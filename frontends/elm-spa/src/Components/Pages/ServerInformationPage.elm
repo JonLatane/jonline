@@ -191,6 +191,7 @@ reopens on the same tab.
 init : Shared.Model -> Bool -> String -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
 init shared pageIsSecure targetHost navKey path query =
     let
+        model0 : Model
         model0 =
             { targetHost = targetHost
             , isSecure = pageIsSecure
@@ -261,6 +262,7 @@ updateInner shared msg model =
     case msg of
         TabSelected tab ->
             let
+                newModel : Model
                 newModel =
                     { model | activeTab = tab }
             in
@@ -397,6 +399,7 @@ default (`TabAbout`), so the common case keeps a clean URL. Mirrors
 pushTabUrl : Model -> Effect Msg
 pushTabUrl model =
     let
+        tabParams : List Url.Builder.QueryParameter
         tabParams =
             if model.activeTab == TabAbout then
                 []
@@ -513,6 +516,7 @@ tabButton model ( tab, label_ ) =
 tabContent : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
 tabContent shared model server =
     let
+        maybeAdminAccount : Maybe AccountsPanel.Account
         maybeAdminAccount =
             Common.adminAccountFor shared model.targetHost
     in

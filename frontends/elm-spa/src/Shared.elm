@@ -288,35 +288,43 @@ build hrefs.
 init : String -> Request -> Flags -> ( Model, Cmd Msg )
 init basePath req flags =
     let
+        accountsPanelFlags : Decode.Value
         accountsPanelFlags =
             Decode.decodeValue (Decode.field "state" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        starredPostsFlags : Decode.Value
         starredPostsFlags =
             Decode.decodeValue (Decode.field "starredPosts" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        federatedAuthFlags : Decode.Value
         federatedAuthFlags =
             Decode.decodeValue (Decode.field "federatedAuthKeyPair" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        userPreferencesFlags : Decode.Value
         userPreferencesFlags =
             Decode.decodeValue (Decode.field "userPreferences" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        systemPrefersDark : Bool
         systemPrefersDark =
             Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
                 |> Result.withDefault False
 
+        themePreference : ThemePreference
         themePreference =
             Decode.decodeValue (Decode.field "themePreference" Decode.string) flags
                 |> Result.map themePreferenceFromString
                 |> Result.withDefault ThemeAuto
 
+        timeZoneAbbreviation : String
         timeZoneAbbreviation =
             Decode.decodeValue (Decode.field "timeZoneAbbreviation" Decode.string) flags
                 |> Result.withDefault ""
 
+        uses24HourTime : Bool
         uses24HourTime =
             Decode.decodeValue (Decode.field "uses24HourTime" Decode.bool) flags
                 |> Result.withDefault False
@@ -327,6 +335,7 @@ init basePath req flags =
         ( federatedAuthModel, federatedAuthCmd ) =
             FederatedAuth.init federatedAuthFlags
 
+        model : Model
         model =
             { accounts = accountsPanelModel
             , panels =
@@ -429,12 +438,14 @@ sharedUpdate req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
                 ( subModel, subCmd ) =
                     AccountsPanel.update req subMsg model.accounts
 
+                changedHosts : List String
                 changedHosts =
                     starredPostsRefreshHosts model.accounts subModel
 
@@ -444,6 +455,7 @@ sharedUpdate req msg model =
                 -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
                 -- `UI.Responsive`), so opening one closes the other there.
+                shouldCloseStarredPanel : Bool
                 shouldCloseStarredPanel =
                     case subMsg of
                         AccountsPanel.ToggleAccountsPanel ->
@@ -470,6 +482,7 @@ sharedUpdate req msg model =
                 -- one of `.navbar`'s own dropdowns, so the two would
                 -- visually collide at any width. Mirrors `CreateNewPanelMsg`'s
                 -- own `shouldCloseAccountsPanel`, in the other direction.
+                shouldCloseCreateNewPanel : Bool
                 shouldCloseCreateNewPanel =
                     case subMsg of
                         AccountsPanel.ToggleAccountsPanel ->
@@ -500,6 +513,7 @@ sharedUpdate req msg model =
 
         FederatedAuthMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
@@ -510,6 +524,7 @@ sharedUpdate req msg model =
 
         StarredPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
@@ -524,6 +539,7 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( model.accounts, Cmd.none )
 
+                mediaViewerPanelModel : MediaViewerPanel.Model
                 mediaViewerPanelModel =
                     case maybeMediaViewerPanelMsg of
                         Just mediaViewerPanelMsg ->
@@ -534,6 +550,7 @@ sharedUpdate req msg model =
 
                 -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
                 -- branch, above -- see `UI.Responsive`.
+                shouldCloseAccountsPanel : Bool
                 shouldCloseAccountsPanel =
                     case subMsg of
                         StarredPanel.ToggleStarredPanel ->
@@ -555,6 +572,7 @@ sharedUpdate req msg model =
                 -- create_new_panel.css's own `top` comment) rather than as
                 -- one of `.navbar`'s own dropdowns, so the two would visually
                 -- collide at any width.
+                shouldCloseCreateNewPanel : Bool
                 shouldCloseCreateNewPanel =
                     case subMsg of
                         StarredPanel.ToggleStarredPanel ->
@@ -600,6 +618,7 @@ sharedUpdate req msg model =
 
         MediaViewerPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
             in
@@ -607,6 +626,7 @@ sharedUpdate req msg model =
 
         BreadcrumbsMsg subMsg ->
             let
+                breadcrumbsModel : Model
                 breadcrumbsModel =
                     { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }
             in
@@ -619,6 +639,7 @@ sharedUpdate req msg model =
 
         MarkdownPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
@@ -630,6 +651,7 @@ sharedUpdate req msg model =
                 -- itself has no Post to save this to (see `TargetType`'s own
                 -- doc on `NewPostContent`) and so never hands it back on its
                 -- own `Msg`.
+                savedNewPostContent : Maybe String
                 savedNewPostContent =
                     case ( subMsg, panels.markdownPanel.target ) of
                         ( MarkdownPanel.SaveClicked, Just (MarkdownPanel.NewPostContent _) ) ->
@@ -649,6 +671,7 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( model.accounts, Cmd.none )
 
+                scrollPreserverCmd : Cmd Msg
                 scrollPreserverCmd =
                     if showScrollPreserver then
                         Task.perform (\() -> ShowScrollPreserver) (Task.succeed ())
@@ -679,6 +702,7 @@ sharedUpdate req msg model =
 
         MyMediaPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
@@ -689,6 +713,7 @@ sharedUpdate req msg model =
                 -- `Pages.Post.PostId_.mediaEditActive` uses for its own,
                 -- page-level `MultiSelect` consumer (see `MyMediaPanel`'s own
                 -- module doc).
+                savedMedia : Maybe (List Proto.Jonline.MediaReference)
                 savedMedia =
                     case subMsg of
                         MyMediaPanel.SaveMediaClicked media ->
@@ -718,6 +743,7 @@ sharedUpdate req msg model =
                 -- `accountRow`) would fire directly, just routed through this
                 -- panel's own `Msg` space instead since its `view` is fully
                 -- `Html.map`-wrapped (see `UI.myMediaPanel`).
+                confirmingDeleteFor : Maybe DeleteConfirmation
                 confirmingDeleteFor =
                     case maybeDeleteRequest of
                         Just media ->
@@ -751,6 +777,7 @@ sharedUpdate req msg model =
 
         CreateNewPanelMsg subMsg ->
             let
+                panels : Panels
                 panels =
                     model.panels
 
@@ -797,6 +824,7 @@ sharedUpdate req msg model =
                 -- Mirrors `StarredPanelMsg`'s own
                 -- `shouldCloseCreateNewPanel`, in the other direction --
                 -- unconditional (not narrow-screen-gated), same reasoning.
+                shouldCloseStarredPanel : Bool
                 shouldCloseStarredPanel =
                     case subMsg of
                         CreateNewPanel.ToggleOpen ->
@@ -818,6 +846,7 @@ sharedUpdate req msg model =
 
                 -- Mirrors `AccountsPanelMsg`'s own `shouldCloseCreateNewPanel`,
                 -- in the other direction -- see its own doc.
+                shouldCloseAccountsPanel : Bool
                 shouldCloseAccountsPanel =
                     case subMsg of
                         CreateNewPanel.ToggleOpen ->
@@ -862,6 +891,7 @@ sharedUpdate req msg model =
             -- (`AccountsPanel.ToggleAccountEnabled`), rather than silently
             -- browsing an account the Accounts Panel still shows as off.
             let
+                host : String
                 host =
                     account.server
 
@@ -892,9 +922,11 @@ sharedUpdate req msg model =
 
         ThemePreferenceClicked ->
             let
+                theme : Theme
                 theme =
                     model.theme
 
+                newPreference : ThemePreference
                 newPreference =
                     nextThemePreference theme.preference
             in
@@ -907,6 +939,7 @@ sharedUpdate req msg model =
 
         SystemPrefersDarkChanged prefersDark ->
             let
+                theme : Theme
                 theme =
                     model.theme
             in
@@ -914,6 +947,7 @@ sharedUpdate req msg model =
 
         RequestDelete confirmation ->
             let
+                panels : Panels
                 panels =
                     model.panels
             in
@@ -921,6 +955,7 @@ sharedUpdate req msg model =
 
         CancelDelete ->
             let
+                panels : Panels
                 panels =
                     model.panels
             in
@@ -928,6 +963,7 @@ sharedUpdate req msg model =
 
         ConfirmDelete ->
             let
+                panels : Panels
                 panels =
                     model.panels
             in
@@ -1132,6 +1168,7 @@ sharedUpdate req msg model =
 
         UncollapseHome ->
             let
+                navAnimationState : NavAnimationState
                 navAnimationState =
                     model.navAnimationState
             in
@@ -1153,9 +1190,11 @@ sharedUpdate req msg model =
                     else
                         ( closedModel, Cmd.none )
 
+                navAnimationState : NavAnimationState
                 navAnimationState =
                     scrolledModel.navAnimationState
 
+                uncollapsedHomeModel : Model
                 uncollapsedHomeModel =
                     { scrolledModel
                         | navAnimationState =
@@ -1187,9 +1226,11 @@ sharedUpdate req msg model =
 
         GotTimeZone zone ->
             let
+                time : SharedTime.Model
                 time =
                     model.time
 
+                browserTimeZone : SharedTime.BrowserTimeZone
                 browserTimeZone =
                     time.browserTimeZone
             in
@@ -1197,6 +1238,7 @@ sharedUpdate req msg model =
 
         GotNow now ->
             let
+                time : SharedTime.Model
                 time =
                     model.time
             in
@@ -1226,6 +1268,7 @@ vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
 navBarColorCmd : Model -> Model -> Cmd Msg
 navBarColorCmd before after =
     let
+        colorOf : Model -> String
         colorOf model_ =
             (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accounts).primaryColor
     in
@@ -1376,6 +1419,7 @@ clearing/refetching.
 starredPostsRefreshHosts : AccountsPanel.Model -> AccountsPanel.Model -> List String
 starredPostsRefreshHosts before after =
     let
+        dedupe : List String -> List String
         dedupe list =
             List.foldl
                 (\host acc ->
@@ -1388,6 +1432,7 @@ starredPostsRefreshHosts before after =
                 []
                 list
 
+        hosts : List String
         hosts =
             dedupe
                 ((before.accounts |> List.map .server)
@@ -1396,6 +1441,7 @@ starredPostsRefreshHosts before after =
                     ++ (after.servers |> List.map .frontendHost)
                 )
 
+        identity : AccountsPanel.Model -> String -> ( Maybe String, Maybe Bool )
         identity model_ host =
             ( AccountsPanel.enabledAccountForServer model_.accounts host
                 |> Maybe.map AccountsPanel.accountId

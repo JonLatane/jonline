@@ -89,6 +89,7 @@ replies at all (`replyCount`/`responseCount` > 0), kicks off a fetch
 init : AccountsPanel.Model -> Maybe String -> String -> Post -> ( Model, Effect Msg )
 init accountsPanelModel maybeUserId host post =
     let
+        model : Model
         model =
             syncAnimations
                 { root = post
@@ -118,11 +119,13 @@ update accountsPanelModel maybeUserId msg model =
 
         GotReplies postId (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     maybeAccountsPanelMsg
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
 
+                newModel : Model
                 newModel =
                     { model
                         | root = setRepliesAt postId response.posts model.root
@@ -137,6 +140,7 @@ update accountsPanelModel maybeUserId msg model =
 
         Animate animMsg ->
             let
+                step : String -> ReplyAnimation -> ( Dict String ReplyAnimation, List (Cmd Msg) ) -> ( Dict String ReplyAnimation, List (Cmd Msg) )
                 step key anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -154,6 +158,7 @@ update accountsPanelModel maybeUserId msg model =
 
         ToggleCollapsed postId ->
             let
+                collapsedReplies : Set String
                 collapsedReplies =
                     if Set.member postId model.collapsedReplies then
                         Set.remove postId model.collapsedReplies
@@ -204,6 +209,7 @@ syncAnimations model =
                 |> List.map (\( depth, post ) -> ( post.id, ( depth, post ) ))
                 |> Dict.fromList
 
+        addOrRefresh : String -> ( Int, Post ) -> Dict String ReplyAnimation -> Dict String ReplyAnimation
         addOrRefresh key ( depth, post ) animations =
             case Dict.get key animations of
                 Nothing ->
@@ -216,9 +222,11 @@ syncAnimations model =
                     else
                         Dict.insert key { anim | post = post, depth = depth } animations
 
+        withCurrent : Dict String ReplyAnimation
         withCurrent =
             Dict.foldl addOrRefresh model.replyAnimations current
 
+        startRemovingIfGone : String -> ReplyAnimation -> Dict String ReplyAnimation -> Dict String ReplyAnimation
         startRemovingIfGone key anim animations =
             if anim.flip.removing || Dict.member key current then
                 animations
@@ -254,6 +262,7 @@ view :
     -> Html msg
 view config model =
     let
+        items : List ( Int, Post, Flip.State Msg )
         items =
             flattenReplies model.collapsedReplies model.root
                 |> List.filterMap
@@ -297,15 +306,19 @@ replyAnimationView :
     -> ( String, Html msg )
 replyAnimationView config model ( depth, post, flip ) =
     let
+        loaded : Bool
         loaded =
             Dict.get post.id model.statuses == Just ReplyLoaded
 
+        loading : Bool
         loading =
             Dict.get post.id model.statuses == Just ReplyLoading
 
+        collapsed : Bool
         collapsed =
             Set.member post.id model.collapsedReplies
 
+        pointerEventsAttr : List (Html.Attribute msg)
         pointerEventsAttr =
             if flip.removing then
                 [ style "pointer-events" "none" ]
