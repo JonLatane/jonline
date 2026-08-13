@@ -2191,7 +2191,7 @@ calendarPreviewCardView shared model ( host, event, instance ) =
 {-| `model.embeddedPage` (`True` only for `Pages.Home_`'s and
 `Components.Pages.UserProfilePage`'s own copies of this view, fixed to
 `HorizontalList`/"Row" -- see `Model.embeddedPage`) together with
-`shared.panels.adminPanel.showAllEventLayouts` decides which (if any) of
+`shared.accounts.debugTab.showAllEventLayouts` decides which (if any) of
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
 
@@ -2475,7 +2475,7 @@ of control sharing one row) for `current`, and pushed to the row's right edge
 
 Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
 see `view`'s own doc) and the "Show all event layouts" admin setting
-(`shared.panels.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
+(`shared.accounts.debugTab.showAllEventLayouts`, see `Shared.AccountsPanel.DebugTab`):
 
   - The setting on: all 4, everywhere -- the same as this used to always
     render (`VerticalList`/`Grid`/`HorizontalList`) before `embeddedPage`/the
@@ -2495,7 +2495,7 @@ modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
 modeButtonsView shared embeddedPage current =
     let
         visibleModes =
-            if shared.panels.adminPanel.showAllEventLayouts then
+            if shared.accounts.debugTab.showAllEventLayouts then
                 [ VerticalList, Grid, HorizontalList, Calendar ]
 
             else if embeddedPage then

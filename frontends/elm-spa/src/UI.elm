@@ -18,7 +18,8 @@ import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AdminPanel as AdminPanel
+import Shared.AccountsPanel.AdminTab as AdminTab
+import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
@@ -820,13 +821,13 @@ accountsPanel shared currentRoute =
     div [ classes [ "accounts-panel", "nav-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ accountsPanelTabBar shared
         , case activeTab shared of
-            AdminPanel.AccountsAndServersTab ->
+            AccountsPanel.TabAccountsAndServers ->
                 accountsAndServersTab shared currentRoute
 
-            AdminPanel.SettingsTab ->
-                settingsTab shared
+            AccountsPanel.TabDebug ->
+                debugTab shared
 
-            AdminPanel.AdminTab ->
+            AccountsPanel.TabAdmin ->
                 adminTab shared
         ]
 
@@ -841,14 +842,14 @@ accountsPanelTabBar shared =
     div [ class "accounts-panel-tab-bar" ]
         [ div [ class "accounts-panel-tabs" ]
             (List.filterMap identity
-                [ Just (accountsPanelTab shared AdminPanel.AccountsAndServersTab "Accounts & Servers" False)
-                , if settingsCount shared > 0 then
-                    Just (accountsPanelTab shared AdminPanel.SettingsTab "⚙️" True)
+                [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" False)
+                , if debugCount shared > 0 then
+                    Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" True)
 
                   else
                     Nothing
                 , if AccountsPanel.hasAdminAccount shared.accounts then
-                    Just (accountsPanelTab shared AdminPanel.AdminTab "🛡️" True)
+                    Just (accountsPanelTab shared AccountsPanel.TabAdmin "🛡️" True)
 
                   else
                     Nothing
@@ -858,7 +859,7 @@ accountsPanelTabBar shared =
         ]
 
 
-accountsPanelTab : Shared.Model -> AdminPanel.AccountsPanelTab -> String -> Bool -> Html Shared.Msg
+accountsPanelTab : Shared.Model -> AccountsPanel.Tab -> String -> Bool -> Html Shared.Msg
 accountsPanelTab shared tab label isNarrow =
     button
         [ classes
@@ -876,19 +877,19 @@ accountsPanelTab shared tab label isNarrow =
                         []
                    )
             )
-        , onClick (Shared.AdminPanelMsg (AdminPanel.TabSelected tab))
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.TabSelected tab))
         ]
         [ text label ]
 
 
-{-| How many Settings the Settings tab currently holds -- the "switch main
+{-| How many debug settings the Debug tab currently holds -- the "switch main
 server by tapping servers", "Sign into other hosts with username/password",
 and "Show all event layouts" toggles (all admin-only) for now, but tracked as
 a count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
 settings later without changing how its visibility is decided.
 -}
-settingsCount : Shared.Model -> Int
-settingsCount shared =
+debugCount : Shared.Model -> Int
+debugCount shared =
     if AccountsPanel.hasAdminAccount shared.accounts then
         3
 
@@ -896,31 +897,31 @@ settingsCount shared =
         0
 
 
-{-| `shared.panels.adminPanel.activeTab`, falling back to `AccountsAndServersTab`
+{-| `shared.accounts.activeTab`, falling back to `TabAccountsAndServers`
 whenever the selected tab isn't actually visible right now (e.g. the signed-in
 admin account was just removed while the Admin tab was showing) -- so the
 panel never ends up rendering a tab's content with no matching tab button
 selected.
 -}
-activeTab : Shared.Model -> AdminPanel.AccountsPanelTab
+activeTab : Shared.Model -> AccountsPanel.Tab
 activeTab shared =
-    case shared.panels.adminPanel.activeTab of
-        AdminPanel.SettingsTab ->
-            if settingsCount shared > 0 then
-                AdminPanel.SettingsTab
+    case shared.accounts.activeTab of
+        AccountsPanel.TabDebug ->
+            if debugCount shared > 0 then
+                AccountsPanel.TabDebug
 
             else
-                AdminPanel.AccountsAndServersTab
+                AccountsPanel.TabAccountsAndServers
 
-        AdminPanel.AdminTab ->
+        AccountsPanel.TabAdmin ->
             if AccountsPanel.hasAdminAccount shared.accounts then
-                AdminPanel.AdminTab
+                AccountsPanel.TabAdmin
 
             else
-                AdminPanel.AccountsAndServersTab
+                AccountsPanel.TabAccountsAndServers
 
-        AdminPanel.AccountsAndServersTab ->
-            AdminPanel.AccountsAndServersTab
+        AccountsPanel.TabAccountsAndServers ->
+            AccountsPanel.TabAccountsAndServers
 
 
 {-| The current UI of the Accounts Panel, minus the info/brightness buttons
@@ -942,22 +943,22 @@ accountsAndServersTab shared currentRoute =
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
 into other hosts with username/password" (see `addAccountForm`), and "Show
 all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`)
-toggles -- only shown (via `settingsCount`) while an admin account is signed
+toggles -- only shown (via `debugCount`) while an admin account is signed
 in.
 -}
-settingsTab : Shared.Model -> Html Shared.Msg
-settingsTab shared =
+debugTab : Shared.Model -> Html Shared.Msg
+debugTab shared =
     div [ class "accounts-panel-tab-content" ]
         [ label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            [ switchInput shared.accounts.debugTab.allowMainServerSwitch False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleAllowMainServerSwitch))
             , span [] [ text "Switch main server by tapping servers" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            [ switchInput shared.accounts.debugTab.allowUsernamePasswordForOtherHosts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleAllowUsernamePasswordForOtherHosts))
             , span [] [ text "Sign into other hosts with username/password" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.showAllEventLayouts False (Shared.AdminPanelMsg AdminPanel.ToggleShowAllEventLayouts)
+            [ switchInput shared.accounts.debugTab.showAllEventLayouts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleShowAllEventLayouts))
             , span [] [ text "Show all event layouts" ]
             ]
         ]
@@ -1042,8 +1043,8 @@ already open here), and the delete button sit in a bottom portion using
 The top portion is always clickable: tapping it fills the Account form's
 Server field with this server's `frontendHost` (`ServerChipClicked`), so
 switching which known server you're logging into/adding an account on is a
-single tap. When the Server Admin Panel's "switch main server" toggle is also
-on (see `Shared.AdminPanel`), that tap additionally sets this server as
+single tap. When the Settings tab's "switch main server" toggle is also
+on (see `Shared.AccountsPanel.DebugTab`), that tap additionally sets this server as
 `mainFrontendHost` (`MainServerSelected`, which fills the Server field too --
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 
@@ -1067,7 +1068,7 @@ serverChip shared count index server =
             not hasAccounts && not isMainServer
 
         canSelectMain =
-            shared.panels.adminPanel.allowMainServerSwitch
+            shared.accounts.debugTab.allowMainServerSwitch
 
         topClasses =
             [ "server-chip-top", "selectable", hostnameToCSSClass server.frontendHost, "background-color-primary" ]
@@ -1594,11 +1595,11 @@ addAccountForm shared currentRoute =
 
         -- Username/password auth is only ever offered for our own main
         -- server, unless an admin has flipped
-        -- `AdminPanel.allowUsernamePasswordForOtherHosts` -- see
+        -- `DebugTab.allowUsernamePasswordForOtherHosts` -- see
         -- `AccountsPanel.isMainServer`.
         showUsernamePasswordFields =
             AccountsPanel.isMainServer accountsPanelModel form.server
-                || shared.panels.adminPanel.allowUsernamePasswordForOtherHosts
+                || shared.accounts.debugTab.allowUsernamePasswordForOtherHosts
 
         serverEnterMsg =
             if not knownServer then
@@ -1928,7 +1929,7 @@ Only shown once the Server field names a host other than our own
 (`AccountsPanel.isMainServer`) -- username/password auth (see
 `addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
 server, and this SSO hand-off is (ordinarily) the only way into anywhere
-else. `AdminPanel.allowUsernamePasswordForOtherHosts` can additionally enable
+else. `DebugTab.allowUsernamePasswordForOtherHosts` can additionally enable
 username/password for other hosts too, but never suppresses this button for
 `browsingHost`/`mainFrontendHost` themselves.
 
@@ -2337,7 +2338,7 @@ adminAccountPanel shared account =
             AccountsPanel.accountId account
 
         isOpen =
-            AdminPanel.isAccountPanelOpen id shared.panels.adminPanel
+            AdminTab.isAccountPanelOpen id shared.accounts.adminTab
 
         adminServer =
             findServer shared account.server
@@ -2362,7 +2363,7 @@ adminAccountPanel shared account =
     div [ class "admin-account-panel" ]
         [ button
             [ class "admin-account-toggle"
-            , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
+            , onClick (Shared.AccountsPanelMsg (AccountsPanel.AdminTabMsg (AdminTab.ToggleAccountPanel id)))
             ]
             [ div [ class "admin-account-toggle-content" ]
                 [ div [ class "admin-account-server-row" ]

@@ -9,7 +9,7 @@ instance, opened from wherever a `Post`'s media is tapped (`Pages.Home_`,
 owning its own viewer state, same reasoning as `Shared.MarkdownPanel`.
 
 Doesn't need `AccountsPanel.Model` in `update` (no RPCs to make, nothing to
-forward -- see `Shared.AdminPanel` for the same minimal shape); `view` still
+forward -- see `Shared.AccountsPanel.DebugTab` for the same minimal shape); `view` still
 takes it, to resolve `targetHost` into the `Server`/`Account` needed to build
 each media item's URL, the same way `Components.MultiMediaRenderer`'s callers
 do.

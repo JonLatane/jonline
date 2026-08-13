@@ -15,9 +15,10 @@ module Shared exposing
     )
 
 {-| The app-wide state: composes `Shared.AccountsPanel` (known servers,
-signed-into accounts, login/add-server forms) and `Shared.AdminPanel` (the
-Server Admin Panel, shown when any signed-in account has `ADMIN`), plus the
-appearance (dark/light/auto) setting that doesn't belong to either.
+signed-into accounts, login/add-server forms, and -- via
+`Shared.AccountsPanel.DebugTab`/`Shared.AccountsPanel.AdminTab` -- the Accounts
+Panel's Debug/Admin tabs, shown when any signed-in account has `ADMIN`), plus the
+appearance (dark/light/auto) setting that doesn't belong to it.
 -}
 
 import Browser.Dom as Dom
@@ -36,7 +37,6 @@ import Proto.Google.Protobuf
 import Proto.Jonline exposing (Event, EventSyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
@@ -112,7 +112,6 @@ type alias Model =
 
 type Msg
     = AccountsPanelMsg AccountsPanel.Msg
-    | AdminPanelMsg AdminPanel.Msg
     | FederatedAuthMsg FederatedAuth.Msg
     | StarredPanelMsg StarredPanel.Msg
     | UserPreferencesMsg UserPreferences.Msg
@@ -254,8 +253,7 @@ it's "effectively a Panel" from the UI's point of view -- see
 `DeleteConfirmation`.
 -}
 type alias Panels =
-    { adminPanel : AdminPanel.Model
-    , federatedAuth : FederatedAuth.Model
+    { federatedAuth : FederatedAuth.Model
     , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
@@ -332,8 +330,7 @@ init basePath req flags =
         model =
             { accounts = accountsPanelModel
             , panels =
-                { adminPanel = AdminPanel.init
-                , federatedAuth = federatedAuthModel
+                { federatedAuth = federatedAuthModel
                 , starredPanel = StarredPanel.init starredPostsFlags
                 , markdownPanel = MarkdownPanel.init
                 , mediaViewerPanel = MediaViewerPanel.init
@@ -500,13 +497,6 @@ sharedUpdate req msg model =
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
-
-        AdminPanelMsg subMsg ->
-            let
-                panels =
-                    model.panels
-            in
-            ( { model | panels = { panels | adminPanel = AdminPanel.update subMsg panels.adminPanel } }, Cmd.none )
 
         FederatedAuthMsg subMsg ->
             let

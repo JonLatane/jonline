@@ -13,6 +13,7 @@ module Shared.AccountsPanel exposing
     , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
+    , Tab(..)
     , Token
     , accountAvatarUrl
     , accountDecoder
@@ -82,6 +83,8 @@ import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Set
+import Shared.AccountsPanel.AdminTab as AdminTab
+import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
@@ -232,11 +235,24 @@ type alias Model =
     -- (see `finishStartupUnit`) once this reaches zero. Meaningless (never
     -- read) once `accessTokenRefreshChecked` is `True`.
     , pendingServerChecks : Int
+
+    -- Which of the Accounts Panel's tabs is showing (see `Tab`), plus the
+    -- Debug/Admin tabs' own state -- see `Shared.AccountsPanel.DebugTab`/
+    -- `Shared.AccountsPanel.AdminTab`. There's no `accountsAndServersTab` field
+    -- alongside these two, since that tab's content is everything else in this
+    -- `Model` -- the Accounts & Servers tab *is* the Accounts Panel, as far as
+    -- this module's concerned.
+    , activeTab : Tab
+    , debugTab : DebugTab.Model
+    , adminTab : AdminTab.Model
     }
 
 
 type Msg
-    = ServerChanged String
+    = TabSelected Tab
+    | DebugTabMsg DebugTab.Msg
+    | AdminTabMsg AdminTab.Msg
+    | ServerChanged String
     | UsernameChanged String
     | PasswordChanged String
     | PasswordVisibilityToggled
@@ -413,6 +429,20 @@ passwords offered) autofill.
 type NewAccountType
     = CreateNewAccount
     | LoginToAccount
+
+
+{-| Which of the Accounts Panel's tabs (see `UI.elm`'s `accountsPanel`/
+`accountsPanelTabBar`) is showing -- `TabAccountsAndServers` is the default (and only
+one always shown; the other two only appear once `UI.elm`'s `debugCount`/
+`hasAdminAccount` say there's something to show). Named inverted from
+`Shared.AccountsPanel.DebugTab`/`Shared.AccountsPanel.AdminTab` (`TabDebug`/
+`TabAdmin`, not `DebugTab`/`AdminTab`), mirroring
+`Components.Pages.ServerInformationPage`'s own `Tab`/`TabAbout`/`TabTheme`/etc.
+-}
+type Tab
+    = TabAccountsAndServers
+    | TabDebug
+    | TabAdmin
 
 
 type alias AccountForm =
@@ -1238,6 +1268,9 @@ init req flags =
       , serverAnimations = persisted.servers |> List.map (\server -> ( server.frontendHost, UI.Flip.restingState )) |> Dict.fromList
       , accessTokenRefreshChecked = initialPendingServerChecks <= 0
       , pendingServerChecks = initialPendingServerChecks
+      , activeTab = TabAccountsAndServers
+      , debugTab = DebugTab.init
+      , adminTab = AdminTab.init
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1287,6 +1320,15 @@ syncItemAnimations model =
 sendUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
 sendUpdate req msg model =
     case msg of
+        TabSelected tab ->
+            ( { model | activeTab = tab }, Cmd.none )
+
+        DebugTabMsg subMsg ->
+            ( { model | debugTab = DebugTab.update subMsg model.debugTab }, Cmd.none )
+
+        AdminTabMsg subMsg ->
+            ( { model | adminTab = AdminTab.update subMsg model.adminTab }, Cmd.none )
+
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
 
@@ -2549,7 +2591,7 @@ recommendedFederatedServers model =
 Username/password auth (Login/Create Account) is only ever offered for one of
 these -- everywhere else, `signInFromButton`'s cross-server SSO hand-off is
 the only way in, unless an admin has flipped
-`AdminPanel.allowUsernamePasswordForOtherHosts`.
+`DebugTab.allowUsernamePasswordForOtherHosts` (`model.debugTab`).
 -}
 isMainServer : Model -> String -> Bool
 isMainServer model frontendHost =
