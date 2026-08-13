@@ -152,13 +152,15 @@ Your media policy should describe who has ownership of uploaded media, anything 
             enable_replies: Some(true),
         })
         .unwrap(),
-        event_settings: serde_json::to_value(PostSettings {
+        event_settings: serde_json::to_value(EventSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
             alias_singular: None,
             alias_plural: None,
             enable_replies: Some(true),
+            calendar_lookback_days: None,
+            default_calendar_display_mode: CalendarDisplayMode::CalendarDisplayWeek as i32,
         })
         .unwrap(),
         external_cdn_config: None,

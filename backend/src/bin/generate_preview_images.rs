@@ -132,8 +132,13 @@ fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Err
         new_window: Some(true),
         width: Some(1080),
         height: Some(1080),
+        left: None,
+        top: None,
+        window_state: None,
         browser_context_id: None,
         enable_begin_frame_control: None,
+        for_tab: None,
+        hidden: None,
     })?;
     tab.navigate_to(&url)?;
     tab.wait_until_navigated()?;
