@@ -18,7 +18,8 @@ import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AdminPanel as AdminPanel
+import Shared.AccountsPanel.AdminTab as AdminTab
+import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
@@ -326,12 +327,15 @@ undesired when navigating away instead).
 navLink : Shared.Model -> Route -> Html Shared.Msg -> Route -> Html Shared.Msg
 navLink shared currentRoute content linkRoute =
     let
+        isCurrent : Bool
         isCurrent =
             linkRoute == currentRoute
 
+        isHome : Bool
         isHome =
             linkRoute == Route.Home_
 
+        isHomeWithLogo : Bool
         isHomeWithLogo =
             isHome && mainServer shared /= Nothing
     in
@@ -400,6 +404,7 @@ panel toggle.
 peopleLink : Shared.Model -> Route -> Html Shared.Msg
 peopleLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.People
     in
@@ -426,6 +431,7 @@ next to `peopleLink` -- same styling/highlighting convention, just routed to
 eventsLink : Shared.Model -> Route -> Html Shared.Msg
 eventsLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.Events
     in
@@ -452,6 +458,7 @@ routed to `Route.Posts` with a 📝 glyph.
 postsLink : Shared.Model -> Route -> Html Shared.Msg
 postsLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.Posts
     in
@@ -550,6 +557,7 @@ serverInfoButton shared server =
     let
         -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
         -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
+        serverIdentifier : String
         serverIdentifier =
             (if server.connected |> Maybe.map .tls |> Maybe.withDefault True then
                 "https:"
@@ -574,6 +582,7 @@ serverInfoButton shared server =
 themeToggle : Shared.Model -> Html Shared.Msg
 themeToggle shared =
     let
+        icon : String
         icon =
             case shared.theme.preference of
                 Shared.ThemeAuto ->
@@ -600,6 +609,7 @@ themeToggle shared =
 accountsMenu : Shared.Model -> Route -> Html Shared.Msg
 accountsMenu shared currentRoute =
     let
+        enabledAccounts : List AccountsPanel.Account
         enabledAccounts =
             AccountsPanel.enabledAccounts shared.accounts
 
@@ -609,6 +619,7 @@ accountsMenu shared currentRoute =
         -- case: there's no second avatar to stack and no server count worth
         -- a subtitle, so the toggle becomes one larger avatar circle instead
         -- of the usual pill (see `.accounts-menu-toggle.single-avatar`).
+        singleAccountSingleServer : Bool
         singleAccountSingleServer =
             case ( AccountsPanel.enabledServers shared.accounts, enabledAccounts ) of
                 ( [ _ ], [ _ ] ) ->
@@ -617,6 +628,7 @@ accountsMenu shared currentRoute =
                 _ ->
                     False
 
+        toggleClasses : List String
         toggleClasses =
             "accounts-menu-toggle"
                 :: openClosedClass shared.accounts.showAccountsPanel
@@ -691,15 +703,19 @@ toggled/reconnected) directly off `AccountsPanel.enabledServers` and
 accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
 accountsMenuServerSummary accountsPanelModel =
     let
+        servers : List AccountsPanel.Server
         servers =
             AccountsPanel.enabledServers accountsPanelModel
 
+        count : Int
         count =
             List.length servers
 
+        hasUnreachableServers : Bool
         hasUnreachableServers =
             not (List.isEmpty (AccountsPanel.unreachableAccountHosts accountsPanelModel))
 
+        serversText : String
         serversText =
             String.fromInt count
                 ++ " server"
@@ -740,9 +756,11 @@ doesn't show a border at all.
 accountsMenuAvatar : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 accountsMenuAvatar shared account =
     let
+        accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
             shared.accounts
 
+        avatarClasses : List String
         avatarClasses =
             "accounts-menu-avatar"
                 :: (if account.server /= accountsPanelModel.mainFrontendHost then
@@ -771,6 +789,7 @@ hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
     if hostMismatch shared then
         let
+            accountsPanelModel : AccountsPanel.Model
             accountsPanelModel =
                 shared.accounts
         in
@@ -814,19 +833,20 @@ outright -- see `.nav-panel`/`.nav-panel.is-closed` in main.css.
 accountsPanel : Shared.Model -> Route -> Html Shared.Msg
 accountsPanel shared currentRoute =
     let
+        accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
             shared.accounts
     in
     div [ classes [ "accounts-panel", "nav-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ accountsPanelTabBar shared
         , case activeTab shared of
-            AdminPanel.AccountsAndServersTab ->
+            AccountsPanel.TabAccountsAndServers ->
                 accountsAndServersTab shared currentRoute
 
-            AdminPanel.SettingsTab ->
-                settingsTab shared
+            AccountsPanel.TabDebug ->
+                debugTab shared
 
-            AdminPanel.AdminTab ->
+            AccountsPanel.TabAdmin ->
                 adminTab shared
         ]
 
@@ -841,14 +861,14 @@ accountsPanelTabBar shared =
     div [ class "accounts-panel-tab-bar" ]
         [ div [ class "accounts-panel-tabs" ]
             (List.filterMap identity
-                [ Just (accountsPanelTab shared AdminPanel.AccountsAndServersTab "Accounts & Servers" False)
-                , if settingsCount shared > 0 then
-                    Just (accountsPanelTab shared AdminPanel.SettingsTab "⚙️" True)
+                [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" False)
+                , if debugCount shared > 0 then
+                    Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" True)
 
                   else
                     Nothing
                 , if AccountsPanel.hasAdminAccount shared.accounts then
-                    Just (accountsPanelTab shared AdminPanel.AdminTab "🛡️" True)
+                    Just (accountsPanelTab shared AccountsPanel.TabAdmin "🛡️" True)
 
                   else
                     Nothing
@@ -858,7 +878,7 @@ accountsPanelTabBar shared =
         ]
 
 
-accountsPanelTab : Shared.Model -> AdminPanel.AccountsPanelTab -> String -> Bool -> Html Shared.Msg
+accountsPanelTab : Shared.Model -> AccountsPanel.Tab -> String -> Bool -> Html Shared.Msg
 accountsPanelTab shared tab label isNarrow =
     button
         [ classes
@@ -876,19 +896,19 @@ accountsPanelTab shared tab label isNarrow =
                         []
                    )
             )
-        , onClick (Shared.AdminPanelMsg (AdminPanel.TabSelected tab))
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.TabSelected tab))
         ]
         [ text label ]
 
 
-{-| How many Settings the Settings tab currently holds -- the "switch main
+{-| How many debug settings the Debug tab currently holds -- the "switch main
 server by tapping servers", "Sign into other hosts with username/password",
 and "Show all event layouts" toggles (all admin-only) for now, but tracked as
 a count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
 settings later without changing how its visibility is decided.
 -}
-settingsCount : Shared.Model -> Int
-settingsCount shared =
+debugCount : Shared.Model -> Int
+debugCount shared =
     if AccountsPanel.hasAdminAccount shared.accounts then
         3
 
@@ -896,31 +916,31 @@ settingsCount shared =
         0
 
 
-{-| `shared.panels.adminPanel.activeTab`, falling back to `AccountsAndServersTab`
+{-| `shared.accounts.activeTab`, falling back to `TabAccountsAndServers`
 whenever the selected tab isn't actually visible right now (e.g. the signed-in
 admin account was just removed while the Admin tab was showing) -- so the
 panel never ends up rendering a tab's content with no matching tab button
 selected.
 -}
-activeTab : Shared.Model -> AdminPanel.AccountsPanelTab
+activeTab : Shared.Model -> AccountsPanel.Tab
 activeTab shared =
-    case shared.panels.adminPanel.activeTab of
-        AdminPanel.SettingsTab ->
-            if settingsCount shared > 0 then
-                AdminPanel.SettingsTab
+    case shared.accounts.activeTab of
+        AccountsPanel.TabDebug ->
+            if debugCount shared > 0 then
+                AccountsPanel.TabDebug
 
             else
-                AdminPanel.AccountsAndServersTab
+                AccountsPanel.TabAccountsAndServers
 
-        AdminPanel.AdminTab ->
+        AccountsPanel.TabAdmin ->
             if AccountsPanel.hasAdminAccount shared.accounts then
-                AdminPanel.AdminTab
+                AccountsPanel.TabAdmin
 
             else
-                AdminPanel.AccountsAndServersTab
+                AccountsPanel.TabAccountsAndServers
 
-        AdminPanel.AccountsAndServersTab ->
-            AdminPanel.AccountsAndServersTab
+        AccountsPanel.TabAccountsAndServers ->
+            AccountsPanel.TabAccountsAndServers
 
 
 {-| The current UI of the Accounts Panel, minus the info/brightness buttons
@@ -942,22 +962,22 @@ accountsAndServersTab shared currentRoute =
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
 into other hosts with username/password" (see `addAccountForm`), and "Show
 all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`)
-toggles -- only shown (via `settingsCount`) while an admin account is signed
+toggles -- only shown (via `debugCount`) while an admin account is signed
 in.
 -}
-settingsTab : Shared.Model -> Html Shared.Msg
-settingsTab shared =
+debugTab : Shared.Model -> Html Shared.Msg
+debugTab shared =
     div [ class "accounts-panel-tab-content" ]
         [ label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            [ switchInput shared.accounts.debugTab.allowMainServerSwitch False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleAllowMainServerSwitch))
             , span [] [ text "Switch main server by tapping servers" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            [ switchInput shared.accounts.debugTab.allowUsernamePasswordForOtherHosts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleAllowUsernamePasswordForOtherHosts))
             , span [] [ text "Sign into other hosts with username/password" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.panels.adminPanel.showAllEventLayouts False (Shared.AdminPanelMsg AdminPanel.ToggleShowAllEventLayouts)
+            [ switchInput shared.accounts.debugTab.showAllEventLayouts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleShowAllEventLayouts))
             , span [] [ text "Show all event layouts" ]
             ]
         ]
@@ -969,6 +989,7 @@ standalone Admin Panel.
 adminTab : Shared.Model -> Html Shared.Msg
 adminTab shared =
     let
+        adminAccounts : List AccountsPanel.Account
         adminAccounts =
             List.filter AccountsPanel.isAdmin shared.accounts.accounts
     in
@@ -988,9 +1009,11 @@ adminTab shared =
 serversStrip : Shared.Model -> Html Shared.Msg
 serversStrip shared =
     let
+        servers : List AccountsPanel.Server
         servers =
             shared.accounts.servers
 
+        count : Int
         count =
             List.length servers
     in
@@ -1012,15 +1035,18 @@ full.
 serverChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
 serverChipFlip shared count index server =
     let
+        flipState : UI.Flip.State AccountsPanel.Msg
         flipState =
             Dict.get server.frontendHost shared.accounts.serverAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving : Bool
         isMoving =
             Dict.get server.frontendHost shared.accounts.serverMoveAnimations
                 |> Maybe.map .moving
                 |> Maybe.withDefault False
 
+        pointerEventsAttr : List (Html.Attribute Shared.Msg)
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -1042,8 +1068,8 @@ already open here), and the delete button sit in a bottom portion using
 The top portion is always clickable: tapping it fills the Account form's
 Server field with this server's `frontendHost` (`ServerChipClicked`), so
 switching which known server you're logging into/adding an account on is a
-single tap. When the Server Admin Panel's "switch main server" toggle is also
-on (see `Shared.AdminPanel`), that tap additionally sets this server as
+single tap. When the Settings tab's "switch main server" toggle is also
+on (see `Shared.AccountsPanel.DebugTab`), that tap additionally sets this server as
 `mainFrontendHost` (`MainServerSelected`, which fills the Server field too --
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 
@@ -1051,27 +1077,35 @@ see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 serverChip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
 serverChip shared count index server =
     let
+        accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
             shared.accounts
 
+        isMainServer : Bool
         isMainServer =
             server.frontendHost == accountsPanelModel.mainFrontendHost
 
+        isDisconnected : Bool
         isDisconnected =
             server.connected == Nothing
 
+        hasAccounts : Bool
         hasAccounts =
             AccountsPanel.serverHasAccounts accountsPanelModel.accounts server.frontendHost
 
+        removable : Bool
         removable =
             not hasAccounts && not isMainServer
 
+        canSelectMain : Bool
         canSelectMain =
-            shared.panels.adminPanel.allowMainServerSwitch
+            shared.accounts.debugTab.allowMainServerSwitch
 
+        topClasses : List String
         topClasses =
             [ "server-chip-top", "selectable", hostnameToCSSClass server.frontendHost, "background-color-primary" ]
 
+        topAttrs : List (Html.Attribute Shared.Msg)
         topAttrs =
             [ classes topClasses
             , onClick
@@ -1092,6 +1126,7 @@ serverChip shared count index server =
                 )
             ]
 
+        moveAttrs : List (Html.Attribute Shared.Msg)
         moveAttrs =
             accountsPanelModel.serverMoveAnimations
                 |> Dict.get server.frontendHost
@@ -1102,6 +1137,7 @@ serverChip shared count index server =
         -- `topAttrs`'s own "select this server" click target (see
         -- `reorderButtonPair`'s doc), so a plain `onClick` here would also
         -- fire that.
+        stopClick : Shared.Msg -> Attribute Shared.Msg
         stopClick msg =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
@@ -1116,12 +1152,15 @@ serverChip shared count index server =
         -- render (`reorder-arrow-hidden` just fades/no-ops them) rather than
         -- disappearing, so the chip's width/layout doesn't jump around
         -- depending on position.
+        showBackward : Bool
         showBackward =
             index > 1
 
+        showForward : Bool
         showForward =
             index > 0 && index < count - 1
 
+        reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
         reorderPair =
             UI.Flip.reorderButtonPair UI.Flip.Horizontal
                 { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
@@ -1224,6 +1263,7 @@ nothing (name/logo/theme) to render for a server we can't currently reach.
 unreachableServersWarning : Shared.Model -> Html msg
 unreachableServersWarning shared =
     let
+        hosts : List String
         hosts =
             AccountsPanel.unreachableAccountHosts shared.accounts
     in
@@ -1250,6 +1290,7 @@ it. Renders nothing at all once there's nothing left to recommend.
 recommendedServersStrip : Shared.Model -> Html Shared.Msg
 recommendedServersStrip shared =
     let
+        recommended : List FederatedServer
         recommended =
             AccountsPanel.recommendedFederatedServers shared.accounts
     in
@@ -1285,13 +1326,16 @@ resolves (or if it hasn't been kicked off yet at all).
 recommendedServerChip : Shared.Model -> FederatedServer -> Html Shared.Msg
 recommendedServerChip shared federatedServer =
     let
+        host : String
         host =
             federatedServer.host
 
+        server : AccountsPanel.Server
         server =
             Dict.get host shared.accounts.recommendedServerConnections
                 |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
 
+        isDisconnected : Bool
         isDisconnected =
             server.connected == Nothing
     in
@@ -1316,6 +1360,7 @@ recommendedServerChip shared federatedServer =
 accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
     let
+        accounts : List AccountsPanel.Account
         accounts =
             shared.accounts.accounts
     in
@@ -1324,6 +1369,7 @@ accountsList shared =
 
     else
         let
+            count : Int
             count =
                 List.length accounts
 
@@ -1331,6 +1377,7 @@ accountsList shared =
             -- `AccountsPanel.sortMainServerAccountsFirst`), so they're exactly
             -- the leading `mainCount` accounts here -- `accountRow` uses this to
             -- hide any arrow that would cross that group boundary.
+            mainCount : Int
             mainCount =
                 accounts
                     |> List.filter (\a -> a.server == shared.accounts.mainFrontendHost)
@@ -1356,15 +1403,18 @@ different elements and never fight over the same `transform`.
 accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
 accountRowFlip shared count mainCount index account =
     let
+        flipState : UI.Flip.State AccountsPanel.Msg
         flipState =
             Dict.get (AccountsPanel.accountId account) shared.accounts.accountAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving : Bool
         isMoving =
             Dict.get (AccountsPanel.accountId account) shared.accounts.moveAnimations
                 |> Maybe.map .moving
                 |> Maybe.withDefault False
 
+        pointerEventsAttr : List (Html.Attribute Shared.Msg)
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -1398,21 +1448,26 @@ just checking this account's own position against the list's two ends.
 accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
 accountRow shared count mainCount index account =
     let
+        accId : String
         accId =
             AccountsPanel.accountId account
 
+        branding : AccountsPanel.Branding
         branding =
             AccountsPanel.brandingFor shared.accounts.servers account.server
 
+        moveAttrs : List (Html.Attribute Shared.Msg)
         moveAttrs =
             shared.accounts.moveAnimations
                 |> Dict.get accId
                 |> Maybe.map UI.Flip.moveAttributes
                 |> Maybe.withDefault []
 
+        isMainServerAccount : Bool
         isMainServerAccount =
             account.server == shared.accounts.mainFrontendHost
 
+        canMoveUp : Bool
         canMoveUp =
             if isMainServerAccount then
                 index > 0
@@ -1420,6 +1475,7 @@ accountRow shared count mainCount index account =
             else
                 index > mainCount
 
+        canMoveDown : Bool
         canMoveDown =
             if isMainServerAccount then
                 index < mainCount - 1
@@ -1427,6 +1483,7 @@ accountRow shared count mainCount index account =
             else
                 index < count - 1
 
+        reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
         reorderPair =
             UI.Flip.reorderButtonPair UI.Flip.Vertical
                 { moveBackward = onClick (Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId))
@@ -1472,6 +1529,7 @@ accountRow shared count mainCount index account =
                         -- server we're actually browsing from -- clicking it still routes
                         -- through `PasswordNeededClicked`, but the wording makes clear it's
                         -- logging back into a different server, not this one.
+                        needsPasswordLabel : String
                         needsPasswordLabel =
                             if account.server /= shared.accounts.browsingHost then
                                 "Reauthentication Required"
@@ -1561,6 +1619,7 @@ typed, or naming an unknown host -- see `AccountsPanel.AddServerClicked`).
 formThemeHost : AccountsPanel.Model -> String
 formThemeHost accountsPanelModel =
     let
+        form : AccountsPanel.AccountForm
         form =
             accountsPanelModel.accountForm
     in
@@ -1574,32 +1633,40 @@ formThemeHost accountsPanelModel =
 addAccountForm : Shared.Model -> Route -> Html Shared.Msg
 addAccountForm shared currentRoute =
     let
+        accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
             shared.accounts
 
+        form : AccountsPanel.AccountForm
         form =
             accountsPanelModel.accountForm
 
+        addForm : AccountsPanel.AddServerForm
         addForm =
             accountsPanelModel.addServerForm
 
+        knownServer : Bool
         knownServer =
             AccountsPanel.isKnownServer accountsPanelModel form.server
 
+        submitting : Bool
         submitting =
             form.status == AccountsPanel.Submitting
 
+        accountFieldsDisabled : Bool
         accountFieldsDisabled =
             not knownServer || submitting
 
         -- Username/password auth is only ever offered for our own main
         -- server, unless an admin has flipped
-        -- `AdminPanel.allowUsernamePasswordForOtherHosts` -- see
+        -- `DebugTab.allowUsernamePasswordForOtherHosts` -- see
         -- `AccountsPanel.isMainServer`.
+        showUsernamePasswordFields : Bool
         showUsernamePasswordFields =
             AccountsPanel.isMainServer accountsPanelModel form.server
-                || shared.panels.adminPanel.allowUsernamePasswordForOtherHosts
+                || shared.accounts.debugTab.allowUsernamePasswordForOtherHosts
 
+        serverEnterMsg : AccountsPanel.Msg
         serverEnterMsg =
             if not knownServer then
                 AccountsPanel.AddServerClicked
@@ -1616,12 +1683,14 @@ addAccountForm shared currentRoute =
         -- modal's been accepted (`AccountsPanel.ConfirmCreateAccountClicked`)
         -- -- either way, this is also when the Password field first renders --
         -- see `AccountsPanel.Model.newAccountType`.
+        newAccountType : Maybe AccountsPanel.NewAccountType
         newAccountType =
             accountsPanelModel.newAccountType
 
         -- Submitting for real (rather than just picking a flow) is the same
         -- message either way -- it's what the one visible button (alongside
         -- "<- Back") now does once `newAccountType` is set.
+        submitMsg : AccountsPanel.Msg
         submitMsg =
             if newAccountType == Just AccountsPanel.CreateNewAccount then
                 AccountsPanel.CreateAccountClicked
@@ -1691,6 +1760,7 @@ addAccountForm shared currentRoute =
 
           else
             let
+                addingServer : Bool
                 addingServer =
                     addForm.status == AccountsPanel.Submitting
             in
@@ -1928,7 +1998,7 @@ Only shown once the Server field names a host other than our own
 (`AccountsPanel.isMainServer`) -- username/password auth (see
 `addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
 server, and this SSO hand-off is (ordinarily) the only way into anywhere
-else. `AdminPanel.allowUsernamePasswordForOtherHosts` can additionally enable
+else. `DebugTab.allowUsernamePasswordForOtherHosts` can additionally enable
 username/password for other hosts too, but never suppresses this button for
 `browsingHost`/`mainFrontendHost` themselves.
 
@@ -1936,9 +2006,11 @@ username/password for other hosts too, but never suppresses this button for
 signInFromButton : Shared.Model -> Route -> Bool -> Html Shared.Msg
 signInFromButton shared currentRoute accountFieldsDisabled =
     let
+        accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
             shared.accounts
 
+        server : String
         server =
             String.trim accountsPanelModel.accountForm.server
     in
@@ -2010,6 +2082,7 @@ createAccountConfirmationModal shared =
 
         Just pending ->
             let
+                info : Proto.Jonline.ServerInfo
                 info =
                     AccountsPanel.serverInfoOf pending.server
             in
@@ -2099,6 +2172,7 @@ deleteConfirmationModal shared =
 
                         Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
                             let
+                                sourceLabel : String
                                 sourceLabel =
                                     case source.configuration of
                                         Just (Configuration.IcsSubscriptionUrl url) ->
@@ -2333,24 +2407,30 @@ active".
 adminAccountPanel : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 adminAccountPanel shared account =
     let
+        id : String
         id =
             AccountsPanel.accountId account
 
+        isOpen : Bool
         isOpen =
-            AdminPanel.isAccountPanelOpen id shared.panels.adminPanel
+            AdminTab.isAccountPanelOpen id shared.accounts.adminTab
 
+        adminServer : Maybe AccountsPanel.Server
         adminServer =
             findServer shared account.server
 
+        adminServerName : String
         adminServerName =
             adminServer
                 |> Maybe.map (AccountsPanel.brandingOf >> .name)
                 |> Maybe.withDefault ""
 
+        adminServerLogo : Html Shared.Msg
         adminServerLogo =
             case adminServer of
                 Just s ->
                     let
+                        branding : AccountsPanel.Branding
                         branding =
                             AccountsPanel.brandingOf s
                     in
@@ -2362,7 +2442,7 @@ adminAccountPanel shared account =
     div [ class "admin-account-panel" ]
         [ button
             [ class "admin-account-toggle"
-            , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
+            , onClick (Shared.AccountsPanelMsg (AccountsPanel.AdminTabMsg (AdminTab.ToggleAccountPanel id)))
             ]
             [ div [ class "admin-account-toggle-content" ]
                 [ div [ class "admin-account-server-row" ]
@@ -2390,6 +2470,7 @@ adminAccountPanel shared account =
             ]
         , if isOpen then
             let
+                currentUi : WebUserInterface
                 currentUi =
                     adminServer
                         |> Maybe.map AccountsPanel.serverInfoOf

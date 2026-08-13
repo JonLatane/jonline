@@ -86,6 +86,7 @@ patch up itself.
 update : Shared.Model -> AccountsPanel.Server -> AccountsPanel.Account -> User -> Msg -> Model -> ( Model, Effect Msg )
 update shared server account user msg model =
     let
+        maybeAccountServer : AccountsPanel.MaybeAccountServer
         maybeAccountServer =
             ( Just account.userId, server.frontendHost )
     in
@@ -109,6 +110,7 @@ update shared server account user msg model =
             , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
+                    follow : Follow
                     follow =
                         targetCurrentUserFollowOf account user
                  in
@@ -123,6 +125,7 @@ update shared server account user msg model =
             , Users.updateFollow shared.accounts
                 maybeAccountServer
                 (let
+                    follow : Follow
                     follow =
                         targetCurrentUserFollowOf account user
                  in
@@ -182,27 +185,34 @@ view model maybeAccount user =
 viewFor : Model -> User -> Html Msg
 viewFor model user =
     let
+        currentUserFollowModeration : Maybe Moderation
         currentUserFollowModeration =
             Maybe.map .targetUserModeration user.currentUserFollow
 
+        targetCurrentUserFollowModeration : Maybe Moderation
         targetCurrentUserFollowModeration =
             Maybe.map .targetUserModeration user.targetCurrentUserFollow
 
+        following : Bool
         following =
             Maybe.map Users.moderationPasses currentUserFollowModeration |> Maybe.withDefault False
 
+        followingPending : Bool
         followingPending =
             Maybe.map Users.moderationPending currentUserFollowModeration |> Maybe.withDefault False
 
+        followedByPasses : Bool
         followedByPasses =
             Maybe.map Users.moderationPasses targetCurrentUserFollowModeration |> Maybe.withDefault False
 
+        statusText : String
         statusText =
             if following && followedByPasses then
                 "Friends"
 
             else
                 let
+                    followedByPending : Bool
                     followedByPending =
                         Maybe.map Users.moderationPending targetCurrentUserFollowModeration |> Maybe.withDefault False
                 in
@@ -224,25 +234,32 @@ viewFor model user =
                 else
                     ""
 
+        showFollow : Bool
         showFollow =
             not following && not followingPending
 
+        showCancelFollowRequest : Bool
         showCancelFollowRequest =
             followingPending
 
+        showUnfollow : Bool
         showUnfollow =
             following
 
+        showRejectFollower : Bool
         showRejectFollower =
             user.targetCurrentUserFollow /= Nothing && not (Maybe.map Users.moderationRejected targetCurrentUserFollowModeration |> Maybe.withDefault False)
 
+        showUnrejectFollower : Bool
         showUnrejectFollower =
             user.targetCurrentUserFollow /= Nothing && not followedByPasses
 
+        buttons : List (Html Msg)
         buttons =
             List.concat
                 [ if showFollow then
                     let
+                        requiresApproval : Bool
                         requiresApproval =
                             Users.moderationPending user.defaultFollowModeration
                     in

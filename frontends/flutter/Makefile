@@ -9,9 +9,9 @@ protos_generate:
 	protoc --dart_out=grpc:lib/generated -I../../protos ../../protos/*.proto google/protobuf/timestamp.proto google/protobuf/field_mask.proto google/protobuf/empty.proto
 
 routegen_watch:
-	flutter packages pub run build_runner watch
+	fvm flutter packages pub run build_runner watch
 routegen_regenerate: routegen_delete routegen_generate
 routegen_delete:
 	- rm lib/router/router.gr.dart
 routegen_generate:
-	flutter packages pub run build_runner build
+	fvm flutter packages pub run build_runner build

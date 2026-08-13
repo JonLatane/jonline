@@ -2,9 +2,14 @@ export
 
 .NOTPARALLEL:
 
-# Local FE dev targets
+run:
+	yarn web
+
 run_dev_server:
 	yarn web
+
+test:
+	yarn test
 
 upgrade_tamagui:
 	yarn upgrade:tamagui

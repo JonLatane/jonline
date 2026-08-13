@@ -66,6 +66,7 @@ type Status
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
+        startPath : Maybe String
         startPath =
             Dict.get "start_path" req.query
     in
@@ -158,12 +159,15 @@ statusView shared model =
 
         Decrypted account ->
             let
+                avatarUrl : Maybe String
                 avatarUrl =
                     AccountsPanel.accountAvatarUrl shared.accounts.servers account
 
+                branding : AccountsPanel.Branding
                 branding =
                     AccountsPanel.brandingFor shared.accounts.servers account.server
 
+                nameAndHost : String
                 nameAndHost =
                     account.username
                         ++ (if String.isEmpty (String.trim account.realName) then

@@ -203,6 +203,7 @@ handed down from `Shared.init`, un-decoded -- same convention as
 init : Decode.Value -> Model
 init flags =
     let
+        persistedOrder : List String
         persistedOrder =
             Decode.decodeValue (Decode.list Decode.string) flags
                 |> Result.withDefault []
@@ -285,6 +286,7 @@ update accountsPanelModel msg model =
         ( newModel, cmd, maybeAccountsPanelMsg ) =
             sendUpdate accountsPanelModel msg model
 
+        maybeMediaViewerPanelMsg : Maybe MediaViewerPanel.Msg
         maybeMediaViewerPanelMsg =
             case msg of
                 MediaClicked host post mediaId ->
@@ -301,12 +303,15 @@ sendUpdate accountsPanelModel msg model =
     case msg of
         ToggleStar server post ->
             let
+                key : String
                 key =
                     starKey server.frontendHost post
 
+                starring : Bool
                 starring =
                     not (Set.member key model.starredPostIds)
 
+                rpc : Grpc.Rpc Post Post
                 rpc =
                     if starring then
                         Jonline.starPost
@@ -314,6 +319,7 @@ sendUpdate accountsPanelModel msg model =
                     else
                         Jonline.unstarPost
 
+                rpcCmd : Cmd Msg
                 rpcCmd =
                     Grpc.new rpc post
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
@@ -322,14 +328,17 @@ sendUpdate accountsPanelModel msg model =
 
                 -- We already have this Post in hand -- cache it so the panel can show
                 -- it immediately without a redundant fetch.
+                newPosts : Dict String PostFetchStatus
                 newPosts =
                     Dict.insert key (PostFetchLoaded server.frontendHost post) model.posts
             in
             if starring then
                 let
+                    newStarredPostIds : Set String
                     newStarredPostIds =
                         Set.insert key model.starredPostIds
 
+                    newStarOrder : List String
                     newStarOrder =
                         key :: model.starOrder
                 in
@@ -344,6 +353,7 @@ sendUpdate accountsPanelModel msg model =
                 -- which sends `FinishUnstar` once that finishes to do the real
                 -- removal. The RPC itself still fires immediately either way.
                 let
+                    currentState : UI.Flip.State Msg
                     currentState =
                         Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
                 in
@@ -357,6 +367,7 @@ sendUpdate accountsPanelModel msg model =
 
         GotStarResult key _ (Ok updatedPost) ->
             let
+                newPosts : Dict String PostFetchStatus
                 newPosts =
                     case parseStarKey key of
                         Just ( _, host ) ->
@@ -371,9 +382,11 @@ sendUpdate accountsPanelModel msg model =
             if starring then
                 -- Starring failed -- we DID optimistically add it, so revert that.
                 let
+                    revertedStarredPostIds : Set String
                     revertedStarredPostIds =
                         Set.remove key model.starredPostIds
 
+                    revertedStarOrder : List String
                     revertedStarOrder =
                         List.filter ((/=) key) model.starOrder
                 in
@@ -401,9 +414,11 @@ sendUpdate accountsPanelModel msg model =
                         -- finished before this reply arrived -- re-add it, same as
                         -- if freshly starred again.
                         let
+                            revertedStarredPostIds : Set String
                             revertedStarredPostIds =
                                 Set.insert key model.starredPostIds
 
+                            revertedStarOrder : List String
                             revertedStarOrder =
                                 key :: model.starOrder
                         in
@@ -414,9 +429,11 @@ sendUpdate accountsPanelModel msg model =
 
         FinishUnstar key ->
             let
+                newStarredPostIds : Set String
                 newStarredPostIds =
                     Set.remove key model.starredPostIds
 
+                newStarOrder : List String
                 newStarOrder =
                     List.filter ((/=) key) model.starOrder
             in
@@ -427,6 +444,7 @@ sendUpdate accountsPanelModel msg model =
 
         AnimateItemFlip animMsg ->
             let
+                step : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
                 step key state ( states, accCmds ) =
                     let
                         ( newState, cmd ) =
@@ -441,6 +459,7 @@ sendUpdate accountsPanelModel msg model =
 
         ToggleStarredPanel ->
             let
+                toggledModel : Model
                 toggledModel =
                     { model | showStarredPanel = not model.showStarredPanel }
             in
@@ -510,6 +529,7 @@ sendUpdate accountsPanelModel msg model =
 
                         AwaitingOldGroupRects newOrder ->
                             let
+                                newModel : Model
                                 newModel =
                                     { model | starOrder = newOrder, groupMeasurementPhase = AwaitingNewGroupRects rects }
                             in
@@ -523,6 +543,7 @@ sendUpdate accountsPanelModel msg model =
 
                         AwaitingNewGroupRects oldRects ->
                             let
+                                startMoveFor : String -> UI.Flip.Rect -> Dict String (UI.Flip.MoveState Msg) -> Dict String (UI.Flip.MoveState Msg)
                                 startMoveFor key oldRect anims =
                                     case Dict.get key rects of
                                         Just newRect ->
@@ -562,6 +583,7 @@ sendUpdate accountsPanelModel msg model =
 
         GotStarredPost key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                newStatus : PostFetchStatus
                 newStatus =
                     case ( parseStarKey key, List.head response.posts ) of
                         ( Just ( _, host ), Just post ) ->
@@ -589,6 +611,7 @@ sendUpdate accountsPanelModel msg model =
                             )
                         |> Dict.fromList
 
+                newEvents : Dict String EventFetchStatus
                 newEvents =
                     List.foldl
                         (\postId events ->
@@ -623,6 +646,7 @@ sendUpdate accountsPanelModel msg model =
             -- back to reordering without a slide animation, same end state
             -- either way.
             let
+                newOrder : List String
                 newOrder =
                     UI.Flip.moveListItemBy identity offset key model.starOrder
             in
@@ -637,9 +661,11 @@ sendUpdate accountsPanelModel msg model =
             -- very same update as the reorder, so there's no frame where the
             -- reordered list renders at rest before the animation kicks in.
             let
+                newOrder : List String
                 newOrder =
                     UI.Flip.moveListItemBy identity offset key model.starOrder
 
+                newModel : Model
                 newModel =
                     { model | starOrder = newOrder }
             in
@@ -653,6 +679,7 @@ sendUpdate accountsPanelModel msg model =
 
         AnimateMove animMsg ->
             let
+                step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
                 step key state ( states, cmds ) =
                     let
                         ( newState, cmd ) =
@@ -686,6 +713,7 @@ sendUpdate accountsPanelModel msg model =
         -- place.
         PostUpdated frontendHost post ->
             let
+                key : String
                 key =
                     starKey frontendHost post
             in
@@ -704,6 +732,7 @@ sendUpdate accountsPanelModel msg model =
 
                 Ok newOrder ->
                     let
+                        stillStarred : String -> a -> Bool
                         stillStarred key _ =
                             List.member key newOrder
 
@@ -746,6 +775,7 @@ just without any `LIMITED`/`PRIVATE` visibility they'd need an account for.
 kickOffFetches : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 kickOffFetches accountsPanelModel model =
     let
+        pending : List ( String, String )
         pending =
             model.starredPostIds
                 |> Set.toList
@@ -776,6 +806,7 @@ own `event_instance_post_ids` batch RPC. Doesn't need `fetchGroup`'s own
 kickOffEventFetches : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 kickOffEventFetches accountsPanelModel model =
     let
+        pending : List ( String, String )
         pending =
             model.posts
                 |> Dict.toList
@@ -816,9 +847,11 @@ refreshHosts accountsPanelModel hosts model =
 
     else
         let
+            hostSet : Set String
             hostSet =
                 Set.fromList hosts
 
+            notOnRefreshedHost : String -> Bool
             notOnRefreshedHost key =
                 case parseStarKey key of
                     Just ( _, host ) ->
@@ -827,9 +860,11 @@ refreshHosts accountsPanelModel hosts model =
                     Nothing ->
                         True
 
+            clearedPosts : Dict String PostFetchStatus
             clearedPosts =
                 Dict.filter (\key _ -> notOnRefreshedHost key) model.posts
 
+            clearedEvents : Dict String EventFetchStatus
             clearedEvents =
                 Dict.filter (\key _ -> notOnRefreshedHost key) model.events
         in
@@ -852,6 +887,7 @@ applyGroupMeasurementFailure model =
 
         AwaitingOldGroupRects newOrder ->
             let
+                newModel : Model
                 newModel =
                     { model | starOrder = newOrder, groupMeasurementPhase = NotMeasuringGroup }
             in
@@ -887,9 +923,11 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
 
         Just _ ->
             let
+                maybeAccountServer : AccountsPanel.MaybeAccountServer
                 maybeAccountServer =
                     ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
+                fetchCmds : List (Cmd Msg)
                 fetchCmds =
                     List.map
                         (\postId ->
@@ -918,9 +956,11 @@ fetchEventGroup :
     -> ( Dict String EventFetchStatus, List (Cmd Msg) )
 fetchEventGroup accountsPanelModel ( host, postIds ) ( events, cmds ) =
     let
+        maybeAccountServer : AccountsPanel.MaybeAccountServer
         maybeAccountServer =
             ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
+        fetchCmd : Cmd Msg
         fetchCmd =
             Events.fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer postIds
                 |> Task.attempt (GotStarredEvents host postIds)
@@ -945,6 +985,7 @@ itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 view : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
 view time basePath accountsPanelModel currentPostKey currentInstanceId model =
     let
+        stateClass : String
         stateClass =
             openClosedClass model.showStarredPanel
     in
@@ -1143,24 +1184,31 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
     case Dict.get key model.events of
         Just (EventFetchLoaded event instance) ->
             let
+                starred : Bool
                 starred =
                     isStarred host post model
 
+                current : Bool
                 current =
                     currentInstanceId == Just instance.id
 
+                onStarClicked : Maybe Msg
                 onStarClicked =
                     toggleStarMsg accountsPanelModel host post
 
+                maybeServer : Maybe AccountsPanel.Server
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers host
 
+                maybeAccount : Maybe AccountsPanel.Account
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
+                displayInstance : EventInstance
                 displayInstance =
                     { instance | post = Just post }
 
+                onMediaClicked : String -> Msg
                 onMediaClicked mediaId =
                     case event.post of
                         Just eventPost ->
@@ -1358,6 +1406,7 @@ groupStarredOrder model =
         ( events, posts ) =
             List.partition (isEventKey model) model.starOrder
 
+        eventsFirst : List String
         eventsFirst =
             events ++ posts
     in

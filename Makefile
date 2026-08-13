@@ -1,10 +1,24 @@
 .NOTPARALLEL:
 .PHONY: protos docs
 .DEFAULT_GOAL := default
+
+
 default: protos docs graphs
 
-# Configure these variables to deploy/test the official Jonline images on your own cluster.
-NAMESPACE ?= jonline
+run_backend:
+	$(MAKE) -C backend run
+run_elm:
+	$(MAKE) -C frontends/elm-spa run
+run_tamagui:
+	$(MAKE) -C frontends/tamagui run
+
+test_backend:
+	$(MAKE) -C backend test
+test_elm:
+	$(MAKE) -C frontends/elm-spa test
+test_tamagui:
+	$(MAKE) -C frontends/tamagui test
+
 
 ############################################################################
 # DEPLOYMENT-RELATED TARGETS: More in deploys/Makefile

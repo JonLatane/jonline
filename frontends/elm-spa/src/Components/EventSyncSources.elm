@@ -32,9 +32,11 @@ dialog for the same source, so it lives here rather than on either caller.
 syncedCountsLabel : EventSyncSource -> String
 syncedCountsLabel source =
     let
+        eventCount : Int
         eventCount =
             Conversions.int64ToInt source.eventCount
 
+        instanceCount : Int
         instanceCount =
             Conversions.int64ToInt source.eventInstanceCount
     in

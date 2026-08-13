@@ -108,6 +108,7 @@
     - [EventSettings](#jonline-EventSettings)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
+    - [MediaSettings](#jonline-MediaSettings)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
     - [ServerConfiguration](#jonline-ServerConfiguration)
@@ -116,6 +117,7 @@
     - [WebPushConfig](#jonline-WebPushConfig)
   
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
+    - [CalendarDisplayMode](#jonline-CalendarDisplayMode)
     - [NavigationTab](#jonline-NavigationTab)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
     - [WebUserInterface](#jonline-WebUserInterface)
@@ -159,7 +161,7 @@ a simple but powerful `Makefile`-based design language.
 
 #### Ports
 Jonline servers interact across several ports:
-* [gRPC (27707)](#grpc-api) - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+* [gRPC (27707)](#grpc-api) - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
      * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
 * [HTTP (80, 8000, 27705), HTTPS (443)](#http-endpoints) - The main Jonline HTTP API. This is used for some endpoints, including media upload/download, and for negotiating the gRPC host.
      * Port 443 will serve up a secure HTTPS server. If it fails to startup, Jonline handles this gracefully and degrades to plain HTTP.
@@ -2199,8 +2201,11 @@ Specific settings for Events.
 | visible | [bool](#bool) |  | Hide the Events tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
-| enable_replies | [bool](#bool) | optional | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
+| alias_singular | [string](#string) | optional | Can be used to rename, e.g., &#34;Event&#34; to &#34;Gig&#34; or &#34;Performance&#34; |
+| alias_plural | [string](#string) | optional | Can be used to rename, e.g. &#34;Events&#34; to &#34;Show,&#34; &#34;Game,&#34; &#34;Competition&#34; |
+| enable_replies | [bool](#bool) | optional | Works the same as for Posts. |
+| calendar_lookback_days | [uint32](#uint32) | optional | How far to look back for the &#34;Upcoming Events&#34; tab in the server&#39;s UI. Defaults to `14`. Servers with fewer events may want to set to a higher value. |
+| default_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | What the Events Calendar&#39;s default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`. Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, or with more to `CALENDAR_DISPLAY_DAY`. |
 
 
 
@@ -2241,7 +2246,25 @@ Encompasses both the feature&#39;s visibility and moderation settings.
 | visible | [bool](#bool) |  | Hide the Posts or Events tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
+| alias_singular | [string](#string) | optional | Can be used to rename, e.g., &#34;Person&#34; to &#34;Contributor&#34; or &#34;Group&#34; to &#34;Community&#34; |
+| alias_plural | [string](#string) | optional | Can be used to rename, e.g. &#34;Groups&#34; to &#34;Subtwaddits&#34; or &#34;People&#34; to &#34;Folks&#34; |
+
+
+
+
+
+
+<a name="jonline-MediaSettings"></a>
+
+### MediaSettings
+Media is a special type and less customizable than &#34;Features.&#34;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| visible | [bool](#bool) |  | Hide the Posts or Events tab from the user with this flag. |
+| default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
+| default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
 
 
 
@@ -2259,7 +2282,8 @@ Specific settings for Posts.
 | visible | [bool](#bool) |  | Hide the Posts tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Squawks&#34;s instead of &#34;Posts&#34;. This is more an idea; internationalization is obviously problematic here. |
+| alias_singular | [string](#string) | optional | Can be used to rename, e.g., &#34;Post&#34; &#34;Highlight&#34; or &#34;Squirt&#34; |
+| alias_plural | [string](#string) | optional | Can be used to rename, e.g. &#34;Posts&#34; to &#34;Splurts&#34; or &#34;Memories&#34; |
 | enable_replies | [bool](#bool) | optional | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
 
 
@@ -2303,7 +2327,7 @@ Configuration for a Jonline server instance.
 | group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for groups on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
 | post_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for posts on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
 | event_settings | [EventSettings](#jonline-EventSettings) |  | Configuration for events on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
-| media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for media on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_MEDIA_GLOBALLY`. |
+| media_settings | [MediaSettings](#jonline-MediaSettings) |  | Configuration for media on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_MEDIA_GLOBALLY`. |
 | external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN. See ExternalCDNConfig for more details on securing this setup. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
@@ -2383,6 +2407,19 @@ Authentication features that can be enabled/disabled by the server admin.
 | AUTHENTICATION_FEATURE_UNKNOWN | 0 | An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) |
 | CREATE_ACCOUNT | 1 | Users can sign up for an account. |
 | LOGIN | 2 | Users can sign in with an existing account. |
+
+
+
+<a name="jonline-CalendarDisplayMode"></a>
+
+### CalendarDisplayMode
+The Events Calendar&#39;s default UI granularity.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CALENDAR_DISPLAY_WEEK | 0 | Shows a 7-day week at a time. Good default for most servers. |
+| CALENDAR_DISPLAY_MONTH | 1 | Shows a full month at a time. Better for servers with fewer events. |
+| CALENDAR_DISPLAY_DAY | 3 | Shows a single day at a time. Better for servers with many events. |
 
 
 

@@ -192,6 +192,7 @@ updateInner shared msg model =
     case msg of
         GotServerUsers frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     maybeAccountsPanelMsg
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
@@ -221,6 +222,7 @@ updateInner shared msg model =
 
         Animate animMsg ->
             let
+                step : String -> UserAnimation -> ( Dict String UserAnimation, List (Cmd Msg) ) -> ( Dict String UserAnimation, List (Cmd Msg) )
                 step key anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -260,9 +262,11 @@ updateInner shared msg model =
                                 subMsg
                                 (Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init)
 
+                        newModel : Model
                         newModel =
                             { model | followStatusAndButtons = Dict.insert key newFollowStatusAndButton model.followStatusAndButtons }
 
+                        mappedFollowEffect : Effect Msg
                         mappedFollowEffect =
                             Effect.map (FollowStatusAndButtonMsg key) followEffect
                     in
@@ -284,6 +288,7 @@ updateInner shared msg model =
 
         SearchTextChanged text ->
             let
+                generation : Int
                 generation =
                     model.searchGeneration + 1
             in
@@ -368,24 +373,31 @@ than flickering every card out and back in via `syncAnimations`).
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
     let
+        servers : List AccountsPanel.Server
         servers =
             candidateServers shared model
 
+        currentAccountId : AccountsPanel.Server -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
+        fetchEffect : AccountsPanel.Server -> Effect Msg
         fetchEffect server =
             fetchServerEffect shared model server
 
+        prunedUsersByServer : Dict String ServerFeed
         prunedUsersByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
 
+        markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
         markServer server dict =
             let
+                accountId : Maybe String
                 accountId =
                     currentAccountId server
 
+                statusIfSameAccount : Maybe ServerUsers
                 statusIfSameAccount =
                     Dict.get server.frontendHost dict
                         |> Maybe.andThen
@@ -418,13 +430,16 @@ rather than unconditionally every enabled server.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
+        servers : List AccountsPanel.Server
         servers =
             candidateServers shared model
 
+        currentAccountId : AccountsPanel.Server -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
+        serversToFetch : List AccountsPanel.Server
         serversToFetch =
             servers
                 |> List.filter
@@ -492,6 +507,7 @@ the common case keeps a clean URL. Mirrors
 pushSearchUrl : Model -> Effect Msg
 pushSearchUrl model =
     let
+        searchTextParam : List Url.Builder.QueryParameter
         searchTextParam =
             if String.isEmpty (String.trim model.searchText) then
                 []
@@ -630,6 +646,7 @@ targetHeadingView shared maybeTarget =
 
         Just ( host, targetUser, listingType ) ->
             let
+                profileUrl : String
                 profileUrl =
                     Users.usernameHref "" shared.accounts.mainFrontendHost host targetUser.username
             in
@@ -669,6 +686,7 @@ usersListView shared model =
 
     else
         let
+            sortedAnimations : List ( String, UserAnimation )
             sortedAnimations =
                 model.userAnimations
                     |> Dict.toList
@@ -692,6 +710,7 @@ way out.
 userAnimationView : Shared.Model -> Model -> ( String, UserAnimation ) -> ( String, Html Msg )
 userAnimationView shared model ( key, anim ) =
     let
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if anim.flip.removing then
                 [ style "pointer-events" "none" ]
@@ -710,12 +729,15 @@ userCardView shared model ( host, user ) =
     case AccountsPanel.serverForHost shared.accounts.servers host of
         Just server ->
             let
+                key : String
                 key =
                     followStatusAndButtonKey host user
 
+                followStatusAndButtonModel : FollowStatusAndButton.Model
                 followStatusAndButtonModel =
                     Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init
 
+                maybeAccount : Maybe AccountsPanel.Account
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts host
             in

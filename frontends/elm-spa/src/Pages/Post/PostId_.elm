@@ -204,9 +204,11 @@ update shared req msg model =
     case msg of
         GotPost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     accountsPanelEffect maybeAccountsPanelMsg
 
+                maybeUserId : Maybe String
                 maybeUserId =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
@@ -234,6 +236,7 @@ update shared req msg model =
                 -- still shows a `hostSegment` server chip when it's on a
                 -- server other than `mainFrontendHost` (see
                 -- `Shared.Breadcrumbs.bar`) -- not just cleared outright.
+                breadcrumbsEffect : Effect Msg
                 breadcrumbsEffect =
                     case List.head response.posts of
                         Just post ->
@@ -268,6 +271,7 @@ update shared req msg model =
 
         GotBreadcrumbAncestors post (Ok ( maybeAccountsPanelMsg, ancestors )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     accountsPanelEffect maybeAccountsPanelMsg
 
@@ -277,9 +281,11 @@ update shared req msg model =
                 -- only ever kicked off for a `REPLY`-context Post), and
                 -- everything after it, plus `post` itself, is the rest of the
                 -- chain shown as reply segments.
+                root : Post
                 root =
                     List.head ancestors |> Maybe.withDefault post
 
+                replies : List Post
                 replies =
                     List.drop 1 ancestors ++ [ post ]
             in
@@ -298,6 +304,7 @@ update shared req msg model =
             case model.repliesModel of
                 Just repliesModel ->
                     let
+                        maybeUserId : Maybe String
                         maybeUserId =
                             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
@@ -659,22 +666,28 @@ bodyView shared model =
 postDetailView : Shared.Model -> Model -> Post -> Html Msg
 postDetailView shared model post =
     let
+        displayPost : Post
         displayPost =
             StarredPanel.freshestPost model.targetHost post shared.panels.starredPanel
 
+        starred : Bool
         starred =
             StarredPanel.isStarred model.targetHost displayPost shared.panels.starredPanel
 
+        onStarClicked : Maybe Msg
         onStarClicked =
             StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
 
+        onMediaClicked : String -> Msg
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
     in
@@ -709,6 +722,7 @@ visibilityView maybeAccount maybeEdit post =
     case ( maybeEdit, maybeAccount ) of
         ( Just edit, Just account ) ->
             let
+                options : List Visibility
                 options =
                     Posts.allowedVisibilities account.permissions post.context post.visibility
             in
@@ -897,6 +911,7 @@ repliesView shared model =
 titleFor : Shared.Model -> Model -> String
 titleFor shared model =
     let
+        subtitle : String
         subtitle =
             case model.postStatus of
                 PostLoaded post ->

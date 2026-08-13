@@ -204,9 +204,11 @@ problem with that (`resolve`) inline, before the user even taps Save.
 view : AccountsPanel.Model -> Model -> Html Msg
 view accountsPanelModel model =
     let
+        resolution : Maybe (Result String Resolved)
         resolution =
             model.target |> Maybe.map (\target -> resolve accountsPanelModel target model.targetHost)
 
+        canSave : Bool
         canSave =
             case resolution of
                 Just (Ok _) ->
@@ -215,6 +217,7 @@ view accountsPanelModel model =
                 _ ->
                     False
 
+        errorMessage : Maybe String
         errorMessage =
             case model.status of
                 SubmitFailed err ->
@@ -597,6 +600,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
                 |> Task.andThen
                     (\freshConfig ->
                         let
+                            info : ServerInfo
                             info =
                                 Maybe.withDefault defaultServerInfo freshConfig.serverInfo
                         in

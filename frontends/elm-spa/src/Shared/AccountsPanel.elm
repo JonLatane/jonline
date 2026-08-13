@@ -13,6 +13,7 @@ module Shared.AccountsPanel exposing
     , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
+    , Tab(..)
     , Token
     , accountAvatarUrl
     , accountDecoder
@@ -82,6 +83,8 @@ import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Set
+import Shared.AccountsPanel.AdminTab as AdminTab
+import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
@@ -232,11 +235,24 @@ type alias Model =
     -- (see `finishStartupUnit`) once this reaches zero. Meaningless (never
     -- read) once `accessTokenRefreshChecked` is `True`.
     , pendingServerChecks : Int
+
+    -- Which of the Accounts Panel's tabs is showing (see `Tab`), plus the
+    -- Debug/Admin tabs' own state -- see `Shared.AccountsPanel.DebugTab`/
+    -- `Shared.AccountsPanel.AdminTab`. There's no `accountsAndServersTab` field
+    -- alongside these two, since that tab's content is everything else in this
+    -- `Model` -- the Accounts & Servers tab *is* the Accounts Panel, as far as
+    -- this module's concerned.
+    , activeTab : Tab
+    , debugTab : DebugTab.Model
+    , adminTab : AdminTab.Model
     }
 
 
 type Msg
-    = ServerChanged String
+    = TabSelected Tab
+    | DebugTabMsg DebugTab.Msg
+    | AdminTabMsg AdminTab.Msg
+    | ServerChanged String
     | UsernameChanged String
     | PasswordChanged String
     | PasswordVisibilityToggled
@@ -413,6 +429,20 @@ passwords offered) autofill.
 type NewAccountType
     = CreateNewAccount
     | LoginToAccount
+
+
+{-| Which of the Accounts Panel's tabs (see `UI.elm`'s `accountsPanel`/
+`accountsPanelTabBar`) is showing -- `TabAccountsAndServers` is the default (and only
+one always shown; the other two only appear once `UI.elm`'s `debugCount`/
+`hasAdminAccount` say there's something to show). Named inverted from
+`Shared.AccountsPanel.DebugTab`/`Shared.AccountsPanel.AdminTab` (`TabDebug`/
+`TabAdmin`, not `DebugTab`/`AdminTab`), mirroring
+`Components.Pages.ServerInformationPage`'s own `Tab`/`TabAbout`/`TabTheme`/etc.
+-}
+type Tab
+    = TabAccountsAndServers
+    | TabDebug
+    | TabAdmin
 
 
 type alias AccountForm =
@@ -597,6 +627,7 @@ accountSwapRange offset id accounts =
         |> Maybe.andThen
             (\i ->
                 let
+                    neighborIdx : Int
                     neighborIdx =
                         i + offset
                 in
@@ -607,6 +638,7 @@ accountSwapRange offset id accounts =
 
                         else
                             let
+                                walk : Int -> String -> Int -> Int
                                 walk step server idx =
                                     if (accountAt (idx + step) accounts |> Maybe.map .server) == Just server then
                                         walk step server (idx + step)
@@ -614,9 +646,11 @@ accountSwapRange offset id accounts =
                                     else
                                         idx
 
+                                movedEdge : Int
                                 movedEdge =
                                     walk -offset clicked.server i
 
+                                neighborEdge : Int
                                 neighborEdge =
                                     walk offset neighbor.server neighborIdx
                             in
@@ -668,21 +702,27 @@ beginAccountMove offset id accounts =
 
         Just ( ( lo, hi ), ( nlo, nhi ) ) ->
             let
+                movedIds : List String
                 movedIds =
                     slice lo hi accounts |> List.map accountId
 
+                neighborIds : List String
                 neighborIds =
                     slice nlo nhi accounts |> List.map accountId
 
+                movedFirstId : String
                 movedFirstId =
                     List.head movedIds |> Maybe.withDefault id
 
+                movedLastId : String
                 movedLastId =
                     List.reverse movedIds |> List.head |> Maybe.withDefault id
 
+                neighborFirstId : String
                 neighborFirstId =
                     List.head neighborIds |> Maybe.withDefault id
 
+                neighborLastId : String
                 neighborLastId =
                     List.reverse neighborIds |> List.head |> Maybe.withDefault id
             in
@@ -839,6 +879,7 @@ to call on every render.
 serverThemeOf : Bool -> Server -> UI.ServerTheme.ServerTheme
 serverThemeOf darkMode server =
     let
+        branding : Branding
         branding =
             brandingOf server
     in
@@ -851,6 +892,7 @@ account's `server` field).
 serverThemeFor : Bool -> Model -> String -> UI.ServerTheme.ServerTheme
 serverThemeFor darkMode model frontendHost =
     let
+        branding : Branding
         branding =
             brandingFor model.servers frontendHost
     in
@@ -892,15 +934,18 @@ type ServerLogoSize
 serverNameAndLogo : Server -> ServerLogoSize -> Html msg
 serverNameAndLogo server size =
     let
+        branding : Branding
         branding =
             brandingOf server
 
         ( namePrefix, emoji, nameSuffix ) =
             splitOnFirstEmoji True branding.name
 
+        largeName : Bool
         largeName =
             String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
 
+        logo : Html msg
         logo =
             case branding.logoUrl of
                 Just url ->
@@ -908,6 +953,7 @@ serverNameAndLogo server size =
 
                 Nothing ->
                     let
+                        hasEmoji : Bool
                         hasEmoji =
                             case emoji of
                                 Just e ->
@@ -929,6 +975,7 @@ serverNameAndLogo server size =
         -- need font-fallback shaping that the intrinsic-sizing pass
         -- under-measures vs. their actual painted width), causing the name
         -- to truncate early even with plenty of room on screen.
+        primaryLine : String
         primaryLine =
             namePrefix
 
@@ -936,9 +983,11 @@ serverNameAndLogo server size =
         -- larger glyph size and "large" primary-line/secondary-line logic --
         -- they differ only in layout (stacked+centered vs. row+left-aligned,
         -- both via `sizeClass` below), not sizing.
+        isBig : Bool
         isBig =
             True
 
+        primaryClasses : List String
         primaryClasses =
             "server-name-primary"
                 :: (if isBig && largeName then
@@ -948,6 +997,7 @@ serverNameAndLogo server size =
                         []
                    )
 
+        secondaryLine : Html msg
         secondaryLine =
             case nameSuffix of
                 Just suffix ->
@@ -960,6 +1010,7 @@ serverNameAndLogo server size =
                 Nothing ->
                     text ""
 
+        sizeClass : String
         sizeClass =
             case size of
                 RegularServerLogo ->
@@ -1001,9 +1052,11 @@ segmenter, but close enough for the short server names this is applied to.
 splitOnFirstEmoji : Bool -> String -> ( String, Maybe String, Maybe String )
 splitOnFirstEmoji supportPipe fullText =
     let
+        chars : List Char
         chars =
             String.toList fullText
 
+        isSplitChar : Char -> Bool
         isSplitChar c =
             isPictographic c || (supportPipe && c == '|')
     in
@@ -1013,9 +1066,11 @@ splitOnFirstEmoji supportPipe fullText =
 
         Just idx ->
             let
+                before : String
                 before =
                     List.take idx chars |> String.fromList |> String.trim
 
+                atSplit : List Char
                 atSplit =
                     List.drop idx chars
             in
@@ -1090,6 +1145,7 @@ isZeroWidthJoiner c =
 isSkinToneModifier : Char -> Bool
 isSkinToneModifier c =
     let
+        code : Int
         code =
             Char.toCode c
     in
@@ -1099,6 +1155,7 @@ isSkinToneModifier c =
 isRegionalIndicator : Char -> Bool
 isRegionalIndicator c =
     let
+        code : Int
         code =
             Char.toCode c
     in
@@ -1112,6 +1169,7 @@ the vast majority of emoji actually used in server names.
 isPictographic : Char -> Bool
 isPictographic c =
     let
+        code : Int
         code =
             Char.toCode c
     in
@@ -1125,13 +1183,16 @@ isPictographic c =
 init : Request -> Flags -> ( Model, Cmd Msg )
 init req flags =
     let
+        persisted : PersistedState
         persisted =
             Decode.decodeValue persistedStateDecoder flags
                 |> Result.withDefault emptyPersistedState
 
+        pageIsSecure : Bool
         pageIsSecure =
             isSecure req
 
+        browsingHost : String
         browsingHost =
             req.url.host
 
@@ -1140,9 +1201,11 @@ init req flags =
         -- server. If it's already a known server, this is a no-op -- the persisted
         -- entry (and its enabled flag) wins, and we already know it's not a
         -- backend-only host (see `GotMainServerResult`), so no correction is needed.
+        browsingHostAlreadyKnown : Bool
         browsingHostAlreadyKnown =
             List.any (\s -> s.frontendHost == browsingHost) persisted.servers
 
+        mainServerCmd : Cmd Msg
         mainServerCmd =
             if browsingHostAlreadyKnown then
                 Cmd.none
@@ -1151,6 +1214,7 @@ init req flags =
                 negotiateServerConfig pageIsSecure browsingHost
                     |> Task.attempt GotMainServerResult
 
+        reconnectCmds : List (Cmd Msg)
         reconnectCmds =
             List.map
                 (\ps ->
@@ -1167,6 +1231,7 @@ init req flags =
         -- enabling it if any of its accounts are themselves enabled -- mirrors
         -- `ToggleAccountEnabled` bringing a disabled server along with an account
         -- being re-enabled.
+        missingServerHosts : List String
         missingServerHosts =
             persisted.accounts
                 |> List.map .server
@@ -1174,6 +1239,7 @@ init req flags =
                 |> Set.fromList
                 |> Set.toList
 
+        missingServerCmds : List (Cmd Msg)
         missingServerCmds =
             List.map
                 (\host ->
@@ -1184,6 +1250,7 @@ init req flags =
 
         -- One "unit" per reconnect attempt just dispatched above -- see
         -- `pendingServerChecks`/`finishStartupUnit`.
+        initialPendingServerChecks : Int
         initialPendingServerChecks =
             (if browsingHostAlreadyKnown then
                 0
@@ -1238,6 +1305,9 @@ init req flags =
       , serverAnimations = persisted.servers |> List.map (\server -> ( server.frontendHost, UI.Flip.restingState )) |> Dict.fromList
       , accessTokenRefreshChecked = initialPendingServerChecks <= 0
       , pendingServerChecks = initialPendingServerChecks
+      , activeTab = TabAccountsAndServers
+      , debugTab = DebugTab.init
+      , adminTab = AdminTab.init
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1287,6 +1357,15 @@ syncItemAnimations model =
 sendUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
 sendUpdate req msg model =
     case msg of
+        TabSelected tab ->
+            ( { model | activeTab = tab }, Cmd.none )
+
+        DebugTabMsg subMsg ->
+            ( { model | debugTab = DebugTab.update subMsg model.debugTab }, Cmd.none )
+
+        AdminTabMsg subMsg ->
+            ( { model | adminTab = AdminTab.update subMsg model.adminTab }, Cmd.none )
+
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
 
@@ -1315,6 +1394,7 @@ sendUpdate req msg model =
 
         ChooseCreateAccountClicked ->
             let
+                form : AccountForm
                 form =
                     model.accountForm
             in
@@ -1333,9 +1413,11 @@ sendUpdate req msg model =
 
         LoginClicked ->
             let
+                form : AccountForm
                 form =
                     model.accountForm
 
+                server : String
                 server =
                     String.trim form.server
             in
@@ -1372,6 +1454,7 @@ sendUpdate req msg model =
                     case ( connectionOf accepted.server, accepted.server.connected ) of
                         ( Just connection, Just { configuration } ) ->
                             let
+                                form : AccountForm
                                 form =
                                     model.accountForm
                             in
@@ -1399,9 +1482,11 @@ sendUpdate req msg model =
 
         GotCreateAccountServerInfo (Ok ( connection, config )) ->
             let
+                form : AccountForm
                 form =
                     model.accountForm
 
+                newModel : Model
                 newModel =
                     { model
                         | createAccountConfirmation =
@@ -1481,6 +1566,7 @@ sendUpdate req msg model =
             case ( resp.user, resp.refreshToken, resp.accessToken ) of
                 ( Just user, Just refreshToken, Just accessToken ) ->
                     let
+                        account : Account
                         account =
                             { server = connection.frontendHost
                             , userId = user.id
@@ -1494,6 +1580,7 @@ sendUpdate req msg model =
                             , needsPassword = False
                             }
 
+                        newModel : Model
                         newModel =
                             { model
                                 | accounts =
@@ -1504,6 +1591,7 @@ sendUpdate req msg model =
                                         |> enableServerFor connection.frontendHost
                                 , accountForm =
                                     let
+                                        form : AccountForm
                                         form =
                                             model.accountForm
                                     in
@@ -1531,9 +1619,11 @@ sendUpdate req msg model =
             -- enabled once accepted, regardless of what `enabled` it carried
             -- across the wire.
             let
+                enabledAccount : Account
                 enabledAccount =
                     { account | enabled = True }
 
+                newModel : Model
                 newModel =
                     { model
                         | accounts =
@@ -1546,6 +1636,7 @@ sendUpdate req msg model =
                 -- disconnected) on this origin yet -- same situation `init`'s
                 -- `missingServerHosts` handles for accounts surviving from stale/
                 -- corrupted localStorage.
+                reconnectCmd : Cmd Msg
                 reconnectCmd =
                     if List.any (\s -> s.frontendHost == enabledAccount.server && s.connected /= Nothing) model.servers then
                         Cmd.none
@@ -1558,6 +1649,7 @@ sendUpdate req msg model =
 
         AccessTokenResponseReceived account accessTokenResponse ->
             let
+                newModel : Model
                 newModel =
                     { model
                         | accounts =
@@ -1590,6 +1682,7 @@ sendUpdate req msg model =
 
         GotReconnectResult frontendHost enabled appendToEnd result ->
             let
+                insert : Server -> List Server -> List Server
                 insert =
                     if appendToEnd then
                         upsertServerAppend
@@ -1600,9 +1693,11 @@ sendUpdate req msg model =
             case result of
                 Ok ( connection, config ) ->
                     let
+                        server : Server
                         server =
                             serverFrom connection enabled config
 
+                        newModel : Model
                         newModel =
                             { model | servers = insert server model.servers }
                     in
@@ -1631,6 +1726,7 @@ sendUpdate req msg model =
                     -- untouched. Still settles this server's startup-sweep unit, if one's
                     -- pending -- see `settleStartupUnit`.
                     let
+                        newModel : Model
                         newModel =
                             if List.any (\s -> s.frontendHost == frontendHost) model.servers then
                                 model
@@ -1649,15 +1745,19 @@ sendUpdate req msg model =
                         -- jonline.io.getj.online, a CDN's backend, when jonline.io is the
                         -- real front door), treat *that* as the main server instead --
                         -- exactly as if the user had typed it in directly.
+                        resolvedFrontend : String
                         resolvedFrontend =
                             resolvedFrontendHost model.browsingHost config
 
+                        correctedConnection : Connection
                         correctedConnection =
                             { connection | frontendHost = resolvedFrontend }
 
+                        server : Server
                         server =
                             serverFrom correctedConnection True config
 
+                        newModel : Model
                         newModel =
                             { model
                                 | mainFrontendHost = resolvedFrontend
@@ -1675,6 +1775,7 @@ sendUpdate req msg model =
                         -- they shouldn't jump ahead of any server already in the list.
                         -- `pinnedByDefault` ones are enabled immediately, the rest added
                         -- disabled for the user to opt into.
+                        federatedServerCmds : List (Cmd Msg)
                         federatedServerCmds =
                             config.federationInfo
                                 |> Maybe.map .servers
@@ -1714,6 +1815,7 @@ sendUpdate req msg model =
                         -- added in another tab this one hasn't reconnected to yet -- mirrors
                         -- `init`'s own seeding). Drops any host this tab knows about that the
                         -- broadcast no longer lists (removed there via `RemoveServerClicked`).
+                        keptServers : List Server
                         keptServers =
                             persisted.servers
                                 |> List.map
@@ -1728,9 +1830,11 @@ sendUpdate req msg model =
                         -- Hosts already connected -- no need to attempt another reconnect for
                         -- those; anything else (never known, or known but still disconnected)
                         -- gets one, mirroring `init`'s `reconnectCmds`.
+                        connectedHosts : List String
                         connectedHosts =
                             keptServers |> List.filter (\s -> s.connected /= Nothing) |> List.map .frontendHost
 
+                        newServerCmds : List (Cmd Msg)
                         newServerCmds =
                             persisted.servers
                                 |> List.filter (\ps -> not (List.member ps.frontendHost connectedHosts))
@@ -1744,6 +1848,7 @@ sendUpdate req msg model =
                         -- whose server host isn't in `persisted.servers` at all (stale/
                         -- corrupted state in the broadcasting tab) still deserve a reconnect
                         -- attempt here.
+                        missingServerHosts : List String
                         missingServerHosts =
                             persisted.accounts
                                 |> List.map .server
@@ -1751,6 +1856,7 @@ sendUpdate req msg model =
                                 |> Set.fromList
                                 |> Set.toList
 
+                        missingServerCmds : List (Cmd Msg)
                         missingServerCmds =
                             List.map
                                 (\host ->
@@ -1759,6 +1865,7 @@ sendUpdate req msg model =
                                 )
                                 missingServerHosts
 
+                        newModel : Model
                         newModel =
                             { model
                                 | accounts = persisted.accounts
@@ -1769,6 +1876,7 @@ sendUpdate req msg model =
 
         ToggleAccountEnabled id ->
             let
+                toggledAccounts : List Account
                 toggledAccounts =
                     List.map
                         (\account ->
@@ -1780,6 +1888,7 @@ sendUpdate req msg model =
                         )
                         model.accounts
 
+                justEnabledAccount : Maybe Account
                 justEnabledAccount =
                     toggledAccounts
                         |> List.filter (\a -> accountId a == id && a.enabled)
@@ -1788,6 +1897,7 @@ sendUpdate req msg model =
                 -- Only one account per server may be enabled (signed in) at a time --
                 -- enabling this one disables any other account already enabled on the
                 -- same server.
+                exclusiveAccounts : List Account
                 exclusiveAccounts =
                     case justEnabledAccount of
                         Just account ->
@@ -1796,6 +1906,7 @@ sendUpdate req msg model =
                         Nothing ->
                             toggledAccounts
 
+                newServers : List Server
                 newServers =
                     case justEnabledAccount of
                         Just account ->
@@ -1804,9 +1915,11 @@ sendUpdate req msg model =
                         Nothing ->
                             model.servers
 
+                newModel : Model
                 newModel =
                     { model | accounts = exclusiveAccounts, servers = newServers }
 
+                refreshCmd : Cmd Msg
                 refreshCmd =
                     justEnabledAccount
                         |> Maybe.andThen
@@ -1823,6 +1936,7 @@ sendUpdate req msg model =
             -- (see `accountAnimations`), which sends `FinishRemoveAccount` once
             -- that finishes to do the real removal.
             let
+                currentState : UI.Flip.State Msg
                 currentState =
                     Dict.get id model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
             in
@@ -1832,6 +1946,7 @@ sendUpdate req msg model =
 
         FinishRemoveAccount id ->
             let
+                newModel : Model
                 newModel =
                     { model
                         | accounts = List.filter (\account -> accountId account /= id) model.accounts
@@ -1850,6 +1965,7 @@ sendUpdate req msg model =
             -- Couldn't measure -- e.g. a row not actually mounted -- fall back to
             -- swapping without a slide animation, same end state either way.
             let
+                newModel : Model
                 newModel =
                     { model | accounts = moveAccountBy offset id model.accounts }
             in
@@ -2549,7 +2665,7 @@ recommendedFederatedServers model =
 Username/password auth (Login/Create Account) is only ever offered for one of
 these -- everywhere else, `signInFromButton`'s cross-server SSO hand-off is
 the only way in, unless an admin has flipped
-`AdminPanel.allowUsernamePasswordForOtherHosts`.
+`DebugTab.allowUsernamePasswordForOtherHosts` (`model.debugTab`).
 -}
 isMainServer : Model -> String -> Bool
 isMainServer model frontendHost =
@@ -3423,22 +3539,27 @@ configurationOf server =
 brandingFromConfig : Connection -> ServerConfiguration -> Branding
 brandingFromConfig connection config =
     let
+        info : ServerInfo
         info =
             Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
 
+        name : String
         name =
             info.name
                 |> Maybe.andThen ifNonEmpty
                 |> Maybe.withDefault connection.frontendHost
 
+        logoUrl : Maybe String
         logoUrl =
             info.logo
                 |> Maybe.andThen .squareMediaId
                 |> Maybe.map (\id -> mediaBaseUrl connection ++ "/media/" ++ id)
 
+        primaryArgb : Int
         primaryArgb =
             info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x00424242
 
+        navArgb : Int
         navArgb =
             info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0x00FFFFFF
     in

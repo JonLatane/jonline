@@ -82,11 +82,13 @@ update shared msg model =
     case msg of
         GotUser (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     maybeAccountsPanelMsg
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
 
+                newStatus : Status
                 newStatus =
                     response.users
                         |> List.head
@@ -162,6 +164,7 @@ fetchTask shared model =
         |> Maybe.map
             (\_ ->
                 let
+                    maybeAccountServer : AccountsPanel.MaybeAccountServer
                     maybeAccountServer =
                         ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
                         , model.targetHost

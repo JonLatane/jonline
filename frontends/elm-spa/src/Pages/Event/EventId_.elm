@@ -305,9 +305,11 @@ update shared req msg model =
     case msg of
         GotEvent (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     accountsPanelEffect maybeAccountsPanelMsg
 
+                newStatus : EventStatus
                 newStatus =
                     case List.head response.events of
                         Just event ->
@@ -327,12 +329,14 @@ update shared req msg model =
                 -- `Pages.Post.PostId_` does for a non-`REPLY` Post: shows a
                 -- server chip in the trail when `targetHost` isn't
                 -- `mainFrontendHost`, nothing more.
+                breadcrumbsEffect : Effect Msg
                 breadcrumbsEffect =
                     Effect.fromShared
                         (Shared.BreadcrumbsMsg
                             (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost model.targetHost) model.targetHost [])
                         )
 
+                scrollEffect : Effect Msg
                 scrollEffect =
                     case newStatus of
                         EventLoaded _ _ ->
@@ -341,9 +345,11 @@ update shared req msg model =
                         _ ->
                             Effect.none
 
+                modelWithNewStatus : Model
                 modelWithNewStatus =
                     { model | eventStatus = newStatus }
 
+                clampedModel : Model
                 clampedModel =
                     case newStatus of
                         EventLoaded _ loadedInstance ->
@@ -428,6 +434,7 @@ update shared req msg model =
 
         GotPostFieldSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
             let
+                updatedModel : Model
                 updatedModel =
                     applyUpdatedEventPost model updatedPost
             in
@@ -484,6 +491,7 @@ update shared req msg model =
 
         GotModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
             let
+                updatedModel : Model
                 updatedModel =
                     applyUpdatedEventPost model updatedPost
             in
@@ -547,6 +555,7 @@ update shared req msg model =
 
         AnimateItemFlip animMsg ->
             let
+                step : String -> InstanceAnimation -> ( Dict String InstanceAnimation, List (Cmd Msg) ) -> ( Dict String InstanceAnimation, List (Cmd Msg) )
                 step id anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -865,6 +874,7 @@ actually needs. `now` is `Shared.Model.time.now` -- see its own doc.
 clampHistoryDisplay : Time.Posix -> EventInstance -> Model -> Model
 clampHistoryDisplay now instance model =
     let
+        minimum : InstanceHistoryDisplay
         minimum =
             minimumHistoryDisplayFor now instance
     in
@@ -972,6 +982,7 @@ scrollToInstance delayMs instanceId =
         |> Task.map
             (\( chip, strip, viewport ) ->
                 let
+                    chipLeftWithinStrip : Float
                     chipLeftWithinStrip =
                         chip.element.x - strip.element.x
                 in
@@ -994,6 +1005,7 @@ view shared req model =
 titleFor : Shared.Model -> Model -> String
 titleFor shared model =
     let
+        subtitle : String
         subtitle =
             case model.eventStatus of
                 EventLoaded event _ ->
@@ -1039,9 +1051,11 @@ bodyView shared model =
 eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
 eventDetailView shared model event instance =
     let
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
     in
@@ -1053,6 +1067,7 @@ eventDetailView shared model event instance =
                     -- (`Event`) post section below -- the currently-viewed
                     -- `EventInstance`'s own start/end/location, then (below that) the
                     -- date-picker strip to switch to a sibling one.
+                    instanceDetailAndStrip : Html Msg
                     instanceDetailAndStrip =
                         div [ class "event-instance-detail-and-strip" ]
                             [ div [ class "event-instance-detail" ]
@@ -1457,12 +1472,15 @@ instanceMetaView shared model instance =
     case instance.post of
         Just instancePost ->
             let
+                displayPost : Post
                 displayPost =
                     StarredPanel.freshestPost model.targetHost instancePost shared.panels.starredPanel
 
+                starred : Bool
                 starred =
                     StarredPanel.isStarred model.targetHost displayPost shared.panels.starredPanel
 
+                onStarClicked : Maybe Msg
                 onStarClicked =
                     StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                         |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
@@ -1493,9 +1511,11 @@ instanceHistoryView shared model event instance =
 
     else
         let
+            minimumRank : Int
             minimumRank =
                 historyDisplayRank (minimumHistoryDisplayFor shared.time.now instance)
 
+            showLayoutToggle : Bool
             showLayoutToggle =
                 List.length event.instances > 3
         in
@@ -1586,6 +1606,7 @@ switching to it would hide `instance`, the very one this page is showing.
 historyButtonView : Model -> Int -> ( InstanceHistoryDisplay, Int ) -> Html Msg
 historyButtonView model minimumRank ( mode, count ) =
     let
+        isCurrent : Bool
         isCurrent =
             mode == model.instanceHistoryDisplay
     in
@@ -1608,6 +1629,7 @@ historyButtonView model minimumRank ( mode, count ) =
 historyButtonLabel : InstanceHistoryDisplay -> Int -> String
 historyButtonLabel mode count =
     let
+        dateWord : String
         dateWord =
             if count == 1 then
                 "date"
@@ -1636,6 +1658,7 @@ own doc.
 historyButtons : Time.Posix -> Event -> List ( InstanceHistoryDisplay, Int )
 historyButtons now event =
     let
+        countFor : InstanceHistoryDisplay -> Int
         countFor mode =
             event.instances |> List.filter (instanceMatchesHistoryDisplay now mode) |> List.length
     in
@@ -1657,6 +1680,7 @@ selects (see `syncInstanceAnimations`).
 instanceChipView : Shared.Model -> Model -> EventInstance -> InstanceAnimation -> Html Msg
 instanceChipView shared model currentInstance { instance, flip } =
     let
+        isCurrent : Bool
         isCurrent =
             instance.id == model.eventInstanceId
     in

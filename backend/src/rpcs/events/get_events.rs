@@ -21,7 +21,7 @@ use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::*;
 use prost_wkt_types::Timestamp;
 
-const LISTING_EVENT_INSTANCE_LIMIT: i64 = 80;
+const LISTING_EVENT_INSTANCE_LIMIT: i64 = 160;
 const SINGLE_EVENT_INSTANCE_LIMIT: i64 = 1000;
 
 type EventLoadData = (

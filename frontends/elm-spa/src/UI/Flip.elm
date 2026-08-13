@@ -251,6 +251,7 @@ syncEnter idOf items animations =
     List.foldl
         (\item acc ->
             let
+                key : String
                 key =
                     idOf item
             in
@@ -301,6 +302,7 @@ syncAnimations :
     -> Dict String { r | flip : State msg }
 syncAnimations onRemoved buildEntering refresh currentItems animations =
     let
+        addOrRefresh : String -> data -> Dict String { r | flip : State msg } -> Dict String { r | flip : State msg }
         addOrRefresh id data acc =
             case Dict.get id acc of
                 Nothing ->
@@ -313,9 +315,11 @@ syncAnimations onRemoved buildEntering refresh currentItems animations =
                     else
                         Dict.insert id (refresh data anim) acc
 
+        withCurrent : Dict String { r | flip : State msg }
         withCurrent =
             Dict.foldl addOrRefresh animations currentItems
 
+        startRemovingIfGone : String -> { r | flip : State msg } -> Dict String { r | flip : State msg } -> Dict String { r | flip : State msg }
         startRemovingIfGone id anim acc =
             if anim.flip.removing || Dict.member id currentItems then
                 acc
@@ -464,12 +468,15 @@ swapDeltas axis moved neighbor =
         ( movedDelta1D, neighborDelta1D ) =
             if movedPos < neighborPos then
                 let
+                    gap : Float
                     gap =
                         neighborPos - movedPos - movedSize
 
+                    newNeighborPos : Float
                     newNeighborPos =
                         movedPos
 
+                    newMovedPos : Float
                     newMovedPos =
                         newNeighborPos + neighborSize + gap
                 in
@@ -477,17 +484,21 @@ swapDeltas axis moved neighbor =
 
             else
                 let
+                    gap : Float
                     gap =
                         movedPos - neighborPos - neighborSize
 
+                    newMovedPos : Float
                     newMovedPos =
                         neighborPos
 
+                    newNeighborPos : Float
                     newNeighborPos =
                         newMovedPos + movedSize + gap
                 in
                 ( movedPos - newMovedPos, neighborPos - newNeighborPos )
 
+        toXY : Float -> ( Float, Float )
         toXY delta1D =
             case axis of
                 Vertical ->
@@ -545,9 +556,11 @@ moveListItemBy idOf offset id items =
 
         Just i ->
             let
+                j : Int
                 j =
                     i + offset
 
+                elementAt : Int -> Maybe a
                 elementAt idx =
                     List.drop idx items |> List.head
             in
@@ -609,6 +622,7 @@ beginReorder idOf domId toMsg offset id items =
 
                 Just neighbor ->
                     let
+                        neighborId : String
                         neighborId =
                             idOf neighbor
                     in
@@ -638,6 +652,7 @@ applyReorder axis onSettled id neighborId movedEl neighborEl animations =
         ( movedDelta, neighborDelta ) =
             swapDeltas axis movedEl neighborEl
 
+        startOrRestart : String -> ( Float, Float ) -> Dict String (MoveState msg) -> Dict String (MoveState msg)
         startOrRestart key delta anims =
             Dict.insert key (startMove (onSettled key) delta (Dict.get key anims |> Maybe.withDefault atRest)) anims
     in
@@ -764,6 +779,7 @@ left of that row's own content.
 reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg
 reorderButtons { moveUp, moveDown, canMoveUp, canMoveDown } =
     let
+        pair : { backward : Html msg, forward : Html msg }
         pair =
             reorderButtonPair Vertical
                 { moveBackward = onClick moveUp

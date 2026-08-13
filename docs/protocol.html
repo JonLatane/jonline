@@ -356,6 +356,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
           </li>
           <li>
+            <p><a href="#jonline-MediaSettings">MediaSettings</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-PostSettings">PostSettings</a></p>
           </li>
           <li>
@@ -375,6 +378,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-CalendarDisplayMode">CalendarDisplayMode</a></p>
           </li>
           <li>
             <p><a href="#jonline-NavigationTab">NavigationTab</a></p>
@@ -421,7 +427,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h4 id="ports"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports"><span class="octicon octicon-link"></span></a>Ports</h4>
     <p>Jonline servers interact across several ports:</p>
     <ul>
-      <li><a href="#grpc-api">gRPC (27707)</a> - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+      <li><a href="#grpc-api">gRPC (27707)</a> - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
         <ul>
           <li>Clients are expected to negotiate the gRPC host via the <a href="#http-based-client-host-negotiation-for-external-cdns"><code>backend_host</code> HTTP endpoint (see below)</a> on port 80/443.</li>
         </ul>
@@ -4947,16 +4953,34 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
         </tr>
         <tr>
-          <td>custom_title</td>
+          <td>alias_singular</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+          <td>Can be used to rename, e.g., "Event" to "Gig" or "Performance"</td>
+        </tr>
+        <tr>
+          <td>alias_plural</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Can be used to rename, e.g. "Events" to "Show," "Game," "Competition"</td>
         </tr>
         <tr>
           <td>enable_replies</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Controls whether replies are shown in the UI. Note that users' ability to reply is controlled by the <code>REPLY_TO_POSTS</code> permission.</td>
+          <td>Works the same as for Posts.</td>
+        </tr>
+        <tr>
+          <td>calendar_lookback_days</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>How far to look back for the "Upcoming Events" tab in the server's UI. Defaults to <code>14</code>. Servers with fewer events may want to set to a higher value.</td>
+        </tr>
+        <tr>
+          <td>default_calendar_display_mode</td>
+          <td><a href="#jonline-CalendarDisplayMode">CalendarDisplayMode</a></td>
+          <td></td>
+          <td>What the Events Calendar's default UI mode will be. Defaults to <code>CALENDAR_DISPLAY_WEEK</code>. Servers with fewer events may want to set <code>CALENDAR_DISPLAY_MONTH</code>, or with more to <code>CALENDAR_DISPLAY_DAY</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -5050,10 +5074,49 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
         </tr>
         <tr>
-          <td>custom_title</td>
+          <td>alias_singular</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
+          <td>Can be used to rename, e.g., "Person" to "Contributor" or "Group" to "Community"</td>
+        </tr>
+        <tr>
+          <td>alias_plural</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Can be used to rename, e.g. "Groups" to "Subtwaddits" or "People" to "Folks"</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MediaSettings"></a></p>
+    <h3 id="mediasettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediasettings"><span class="octicon octicon-link"></span></a>MediaSettings</h3>
+    <p>Media is a special type and less customizable than "Features."</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>visible</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Hide the Posts or Events tab from the user with this flag.</td>
+        </tr>
+        <tr>
+          <td>default_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only <code>UNMODERATED</code> and <code>PENDING</code> are valid. When <code>UNMODERATED</code>, user reports may transition status to <code>PENDING</code>. When <code>PENDING</code>, users' SERVER_PUBLIC or <code>GLOBAL_PUBLIC</code> posts will not be visible until a moderator approves them. <code>LIMITED</code> visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation.</td>
+        </tr>
+        <tr>
+          <td>default_visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
         </tr>
       </tbody>
     </table>
@@ -5089,10 +5152,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
         </tr>
         <tr>
-          <td>custom_title</td>
+          <td>alias_singular</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Custom title, like "Squawks"s instead of "Posts". This is more an idea; internationalization is obviously problematic here.</td>
+          <td>Can be used to rename, e.g., "Post" "Highlight" or "Squirt"</td>
+        </tr>
+        <tr>
+          <td>alias_plural</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Can be used to rename, e.g. "Posts" to "Splurts" or "Memories"</td>
         </tr>
         <tr>
           <td>enable_replies</td>
@@ -5216,7 +5285,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
         <tr>
           <td>media_settings</td>
-          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td><a href="#jonline-MediaSettings">MediaSettings</a></td>
           <td></td>
           <td>Configuration for media on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_MEDIA_GLOBALLY</code>.</td>
         </tr>
@@ -5407,6 +5476,35 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>LOGIN</td>
           <td>2</td>
           <td>Users can sign in with an existing account.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-CalendarDisplayMode"></a></p>
+    <h3 id="calendardisplaymode"><a class="anchor" aria-hidden="true" tabindex="-1" href="#calendardisplaymode"><span class="octicon octicon-link"></span></a>CalendarDisplayMode</h3>
+    <p>The Events Calendar's default UI granularity.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CALENDAR_DISPLAY_WEEK</td>
+          <td>0</td>
+          <td>Shows a 7-day week at a time. Good default for most servers.</td>
+        </tr>
+        <tr>
+          <td>CALENDAR_DISPLAY_MONTH</td>
+          <td>1</td>
+          <td>Shows a full month at a time. Better for servers with fewer events.</td>
+        </tr>
+        <tr>
+          <td>CALENDAR_DISPLAY_DAY</td>
+          <td>3</td>
+          <td>Shows a single day at a time. Better for servers with many events.</td>
         </tr>
       </tbody>
     </table>

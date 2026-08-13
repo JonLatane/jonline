@@ -73,6 +73,7 @@ width across the strip.
 render : Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 render previewSizing server maybeAccount onImageClicked media =
     let
+        previewClasses : List String
         previewClasses =
             case previewSizing of
                 Just _ ->
@@ -87,6 +88,7 @@ render previewSizing server maybeAccount onImageClicked media =
 
         [ single ] ->
             let
+                singleSizing : MediaRenderer.MediaSize
                 singleSizing =
                     Maybe.withDefault MediaRenderer.Natural previewSizing
             in
@@ -97,6 +99,7 @@ render previewSizing server maybeAccount onImageClicked media =
 
         _ ->
             let
+                stripSizing : MediaRenderer.MediaSize
                 stripSizing =
                     Maybe.withDefault MediaRenderer.Small previewSizing
             in

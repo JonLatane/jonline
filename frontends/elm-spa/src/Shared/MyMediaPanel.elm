@@ -368,6 +368,7 @@ update accountsPanelModel msg model =
     case msg of
         Open selectionType host ->
             let
+                initialSelection : List MediaReference
                 initialSelection =
                     case selectionType of
                         Just (MultiSelect multiSelect) ->
@@ -381,6 +382,7 @@ update accountsPanelModel msg model =
                         Nothing ->
                             []
 
+                opened : Model
                 opened =
                     { targetHost = host
                     , selectionType = selectionType
@@ -441,13 +443,16 @@ update accountsPanelModel msg model =
             -- type) that id refers to, needed to prepend it to
             -- `selectedMedia` the same as a tapped grid item.
             let
+                syncedModel : Model
                 syncedModel =
                     syncMediaAnimations { model | status = Fetched response.media }
 
+                selectedModel : Model
                 selectedModel =
                     case syncedModel.pendingUploadSelection of
                         Just uploadedId ->
                             let
+                                withoutPending : Model
                                 withoutPending =
                                     { syncedModel | pendingUploadSelection = Nothing }
                             in
@@ -522,6 +527,7 @@ update accountsPanelModel msg model =
             -- `selectedMedia` -- a freshly-uploaded item should land in the
             -- selection the same as tapping an already-there grid item would.
             let
+                pendingUploadSelection : Maybe String
                 pendingUploadSelection =
                     case model.selectionType of
                         Just (MultiSelect _) ->
@@ -572,6 +578,7 @@ update accountsPanelModel msg model =
             -- (see `GotMediaResult`'s doc) instead of the whole grid
             -- unmounting to "Loading…" and back around it.
             let
+                clearedModel : Model
                 clearedModel =
                     { model | deletingIds = Set.remove media.id model.deletingIds }
             in
@@ -596,6 +603,7 @@ update accountsPanelModel msg model =
 
         AnimateItemFlip animMsg ->
             let
+                step : String -> MediaAnimation -> ( Dict String MediaAnimation, List (Cmd Msg) ) -> ( Dict String MediaAnimation, List (Cmd Msg) )
                 step id anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -609,6 +617,7 @@ update accountsPanelModel msg model =
                 -- Steps `selectedMediaAnimations` forward in the same pass --
                 -- mirrors `AccountsPanel.AnimateItemFlip` stepping both
                 -- `accountAnimations` and `serverAnimations` off one `Sub`.
+                stepFlip : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
                 stepFlip id flip ( flips, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -653,6 +662,7 @@ update accountsPanelModel msg model =
 
         GotPreMoveSelectedMediaPositions mediaId neighborId offset (Ok ( movedEl, neighborEl )) ->
             let
+                newModel : Model
                 newModel =
                     { model | selectedMedia = UI.Flip.moveListItemBy .id offset mediaId model.selectedMedia }
             in
@@ -666,6 +676,7 @@ update accountsPanelModel msg model =
 
         AnimateSelectedMediaMove animMsg ->
             let
+                step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
                 step key state ( states, accCmds ) =
                     let
                         ( newState, cmd ) =
@@ -1166,6 +1177,7 @@ contentView accountsPanelModel model =
 
         Ok resolved ->
             let
+                orderedAnimations : List ( String, MediaAnimation )
                 orderedAnimations =
                     mediaAnimationsInOrder model
                         |> List.filter (\( _, anim ) -> mediaAllowed model.selectionType anim.media)
@@ -1273,6 +1285,7 @@ doc). Mirrors `UI.serverChipFlip` -- see its own doc.
 mediaAnimationView : AccountsPanel.Server -> AccountsPanel.Account -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
 mediaAnimationView server account model ( mediaId, anim ) =
     let
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if anim.flip.removing then
                 [ style "pointer-events" "none" ]
@@ -1280,6 +1293,7 @@ mediaAnimationView server account model ( mediaId, anim ) =
             else
                 []
 
+        selected : Bool
         selected =
             List.any (\m -> m.id == mediaId) model.selectedMedia
     in
@@ -1318,9 +1332,11 @@ into this same handler and select/re-add the very item just deleted.
 mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> String -> Set String -> Bool -> Media -> Html Msg
 mediaItemView server account targetHost deletingIds selected media =
     let
+        deleting : Bool
         deleting =
             Set.member media.id deletingIds
 
+        itemClasses : List String
         itemClasses =
             "my-media-panel-item"
                 :: (if selected then
@@ -1372,6 +1388,7 @@ selectedMediaStripView accountsPanelModel model =
     case ( model.selectionType, resolve accountsPanelModel model.targetHost ) of
         ( Just (MultiSelect _), Ok resolved ) ->
             let
+                count : Int
                 count =
                     List.length model.selectedMedia
             in
@@ -1396,12 +1413,15 @@ flow.
 selectedMediaItemFlip : AccountsPanel.Server -> AccountsPanel.Account -> Model -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemFlip server account model count index media =
     let
+        flipState : UI.Flip.State Msg
         flipState =
             Dict.get media.id model.selectedMediaAnimations |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving : Bool
         isMoving =
             Dict.get media.id model.selectedMediaMoveAnimations |> Maybe.map .moving |> Maybe.withDefault False
 
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -1425,15 +1445,19 @@ that message's own doc for why.
 selectedMediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemView server account moveAnimations count index media =
     let
+        moveAttrs : List (Html.Attribute Msg)
         moveAttrs =
             moveAnimations |> Dict.get media.id |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
 
+        canMoveBackward : Bool
         canMoveBackward =
             index > 0
 
+        canMoveForward : Bool
         canMoveForward =
             index < count - 1
 
+        reorderPair : { backward : Html Msg, forward : Html Msg }
         reorderPair =
             UI.Flip.reorderButtonPair UI.Flip.Horizontal
                 { moveBackward = onClick (MoveSelectedMediaLeftClicked media.id)

@@ -100,6 +100,7 @@ assumes an unsigned input in `[0, 2^32)`, not a pre-negated bit pattern).
 argbFromHex : String -> Int
 argbFromHex hex =
     let
+        rgb : { r : Int, g : Int, b : Int }
         rgb =
             rgbFromHex hex
     in
@@ -109,12 +110,15 @@ argbFromHex hex =
 colorMetaFromRgb : { r : Int, g : Int, b : Int } -> ColorMeta
 colorMetaFromRgb rgb =
     let
+        color : String
         color =
             toHex rgb
 
+        luma : Float
         luma =
             lumaOfRgb rgb
 
+        isDark : Bool
         isDark =
             luma > 0.5
     in
@@ -232,6 +236,7 @@ darkenHelper color iterations =
 
     else
         let
+            shaded : String
             shaded =
                 shade color -20
         in
@@ -257,6 +262,7 @@ lightenHelper color iterations =
 
     else
         let
+            shaded : String
             shaded =
                 shade color 20
         in
@@ -285,20 +291,26 @@ lightened colors keep reading as the same color.
 shade : String -> Int -> String
 shade colorHex percent =
     let
+        rgb : { r : Int, g : Int, b : Int }
         rgb =
             rgbFromHex colorHex
 
+        multiplier : Float
         multiplier =
             (100 + toFloat percent) / 100
 
+        adjust : Int -> Int
         adjust n0 =
             let
+                n : Float
                 n =
                     toFloat n0
 
+                result : Float
                 result =
                     n * multiplier
 
+                nudged : Float
                 nudged =
                     if round result == round n then
                         if multiplier > 1 then
@@ -340,6 +352,7 @@ toHex { r, g, b } =
 toHexByte : Int -> String
 toHexByte n =
     let
+        hexDigit : Int -> String
         hexDigit d =
             String.slice d (d + 1) "0123456789abcdef"
     in

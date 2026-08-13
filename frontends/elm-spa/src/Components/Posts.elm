@@ -120,9 +120,11 @@ fetchPosts :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
 fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context publishedOrCreatedBefore =
     let
+        trimmedSearchText : String
         trimmedSearchText =
             String.trim searchText
 
+        baseRequest : Proto.Jonline.GetPostsRequest
         baseRequest =
             if String.isEmpty trimmedSearchText then
                 { defaultGetPostsRequest | authorUserId = authorUserId, context = Just context }
@@ -135,6 +137,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
                     , context = Just context
                 }
 
+        request : Proto.Jonline.GetPostsRequest
         request =
             { baseRequest
                 | publishedOrCreatedBefore = Maybe.map posixToTimestamp publishedOrCreatedBefore
@@ -344,15 +347,19 @@ year"/"current day".
 timestampsText : SharedTime.Model -> Post -> Html msg
 timestampsText time post =
     let
+        createdText : Maybe String
         createdText =
             Maybe.map (timestampToPosix >> whenText time) post.createdAt
 
+        updatedText : Maybe String
         updatedText =
             Maybe.map (timestampToPosix >> whenText time) post.updatedAt
 
+        publishedText : Maybe String
         publishedText =
             Maybe.map (timestampToPosix >> whenText time) post.publishedAt
 
+        createdEqualsPublished : Bool
         createdEqualsPublished =
             createdText /= Nothing && createdText == publishedText
 
@@ -698,9 +705,11 @@ formatting) in each of its three states:
 replyStatusButton : Bool -> Bool -> Bool -> Maybe msg -> Maybe msg -> Post -> Html msg
 replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post =
     let
+        fullyLoaded : Bool
         fullyLoaded =
             loaded || List.length post.replies == post.replyCount
 
+        countText : String
         countText =
             "💬 " ++ repliesCountText post
     in
@@ -843,6 +852,7 @@ as plain `/post/:id`; anything else includes its host, `/post/:id@host`, so
 postHref : String -> String -> String -> Post -> String
 postHref basePath viewingServerHost postServerHost post =
     let
+        postId : String
         postId =
             if postServerHost == viewingServerHost then
                 post.id
@@ -1099,12 +1109,15 @@ the post's already-current one.
 allowedVisibilities : List Permission -> PostContext -> Visibility -> List Visibility
 allowedVisibilities permissions context currentVisibility =
     let
+        isEventContext : Bool
         isEventContext =
             context == EVENT || context == EVENTINSTANCE
 
+        has : Permission -> Bool
         has permission =
             List.member permission permissions || List.member ADMIN permissions
 
+        canPublishLocally : Bool
         canPublishLocally =
             has
                 (if isEventContext then
@@ -1114,6 +1127,7 @@ allowedVisibilities permissions context currentVisibility =
                     PUBLISHPOSTSLOCALLY
                 )
 
+        canPublishGlobally : Bool
         canPublishGlobally =
             has
                 (if isEventContext then

@@ -149,12 +149,17 @@ port elementsMeasured : (Encode.Value -> msg) -> Sub msg
 
 {-| Renders (or, for a container `id` it's already rendered into, refreshes)
 a [FullCalendar](https://fullcalendar.io/) view showing `events` --
-`{ id : String, events : List { id, title, start, end, classNames } }`, where
-`id` is the DOM id of the container `div` to render into and each event's own
-`start`/`end` are ISO 8601 UTC strings (`start` omitted for an event with no
-`startsAt`, `end` likewise) -- see `Components.Pages.EventsPage`'s `Calendar`
-display mode, the only current caller. `classNames` (a `List String`) is
-passed straight through to FullCalendar's own `EventInput.classNames` --
+`{ id : String, initialView : String, events : List { id, title, start, end, classNames } }`,
+where `id` is the DOM id of the container `div` to render into and each
+event's own `start`/`end` are ISO 8601 UTC strings (`start` omitted for an
+event with no `startsAt`, `end` likewise) -- see `Components.Pages.EventsPage`'s
+`Calendar` display mode, the only current caller. `initialView` is a
+FullCalendar view name (`"dayGridMonth"`/`"timeGridWeek"`/`"timeGridDay"` --
+see `Components.Pages.EventsPage.fullCalendarInitialView`) only actually read
+the first time a given container mounts; `public/index.html`'s
+reused-container branch (refreshing `events` on an already-mounted calendar)
+never re-reads it. `classNames` (a `List String`) is passed straight through
+to FullCalendar's own `EventInput.classNames` --
 `Components.Pages.EventsPage.calendarEventEncoder` sets it to that event's
 host's `hostnameToCSSClass`/`"background-color-primary"`, so it's colored by
 the same per-server `UI.EmittedStylesheet` rule every other per-server-colored

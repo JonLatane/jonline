@@ -443,6 +443,7 @@ init shared pageIsSecure targetHost lookup navKey path query =
         ( resolverModel, resolverEffect ) =
             Resolver.init shared targetHost lookup
 
+        model : Model
         model =
             { resolver = resolverModel
             , connectStatus = ServerDependentView.NotConnected
@@ -547,6 +548,7 @@ update shared msg model =
 setBreadcrumbsHost : Shared.Model -> Model -> Effect Msg
 setBreadcrumbsHost shared model =
     let
+        host : String
         host =
             model.resolver.targetHost
     in
@@ -565,6 +567,7 @@ updateInner shared msg model =
                 ( newResolver, resolverEffect ) =
                     Resolver.update shared subMsg model.resolver
 
+                newModel : Model
                 newModel =
                     { model | resolver = newResolver }
             in
@@ -579,6 +582,7 @@ updateInner shared msg model =
                         -- `get_event_sync_sources.rs`'s own gate) -- no point
                         -- firing a request every other visitor's just going
                         -- to get a `PermissionDenied` back from.
+                        maybeAccount : Maybe AccountsPanel.Account
                         maybeAccount =
                             AccountsPanel.enabledAccountForServer shared.accounts.accounts newResolver.targetHost
 
@@ -634,6 +638,7 @@ updateInner shared msg model =
                         -- `refetch`'s own call sites below). Harmless/redundant on
                         -- the very first load, where `init` above already got the
                         -- right value directly.
+                        eventsResyncedModel : Model
                         eventsResyncedModel =
                             { eventsInitedModel
                                 | events =
@@ -782,9 +787,11 @@ updateInner shared msg model =
                         -- page's own `Msg`, not routed through `Shared`.)
                         Shared.GotEventSyncSourceDeleteResult id (Ok _) ->
                             let
+                                es : EventSyncSourcesState
                                 es =
                                     resolvedModel.eventSyncSources
 
+                                deletedModel : Model
                                 deletedModel =
                                     { resolvedModel | eventSyncSources = { es | sources = List.filter (\s -> s.id /= id) es.sources } }
                             in
@@ -1065,6 +1072,7 @@ updateInner shared msg model =
             case ( model.resolver.status, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just ( server, account ) ) ->
                     let
+                        newModeration : Moderation
                         newModeration =
                             if user.defaultFollowModeration == PENDING then
                                 UNMODERATED
@@ -1107,6 +1115,7 @@ updateInner shared msg model =
                         |> Maybe.map
                             (\edit ->
                                 let
+                                    pending : List Permission
                                     pending =
                                         List.filter ((/=) permission) edit.pending
                                 in
@@ -1133,6 +1142,7 @@ updateInner shared msg model =
                                 case edit.addSelection of
                                     Just permission ->
                                         let
+                                            pending : List Permission
                                             pending =
                                                 edit.pending ++ [ permission ]
                                         in
@@ -1220,6 +1230,7 @@ updateInner shared msg model =
 
         GotFederatedProfileAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
+                clearedModel : Model
                 clearedModel =
                     { model
                         | federatedProfilesEdit =
@@ -1259,6 +1270,7 @@ updateInner shared msg model =
 
         GotFederatedProfileRemoveResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
+                clearedModel : Model
                 clearedModel =
                     { model
                         | federatedProfilesEdit =
@@ -1291,9 +1303,11 @@ updateInner shared msg model =
                         ( newFollowStatusAndButton, followEffect ) =
                             FollowStatusAndButton.update shared server account user subMsg model.followStatusAndButton
 
+                        newModel : Model
                         newModel =
                             { model | followStatusAndButton = newFollowStatusAndButton }
 
+                        mappedFollowEffect : Effect Msg
                         mappedFollowEffect =
                             Effect.map FollowStatusAndButtonMsg followEffect
                     in
@@ -1315,6 +1329,7 @@ updateInner shared msg model =
 
         GotEventSyncSourcesFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
             in
@@ -1324,6 +1339,7 @@ updateInner shared msg model =
 
         GotEventSyncSourcesFetchResult (Err err) ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
             in
@@ -1333,9 +1349,11 @@ updateInner shared msg model =
 
         EventSyncSourceRowUrlChanged source url ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
 
+                edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
             in
@@ -1343,9 +1361,11 @@ updateInner shared msg model =
 
         EventSyncSourceRowIntervalChanged source seconds ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
 
+                edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
             in
@@ -1353,12 +1373,15 @@ updateInner shared msg model =
 
         EventSyncSourceRowSaveClicked source ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
 
+                edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
 
+                updated : EventSyncSource
                 updated =
                     { source
                         | configuration = Just (Configuration.IcsSubscriptionUrl edit.pendingUrl)
@@ -1373,6 +1396,7 @@ updateInner shared msg model =
 
         EventSyncSourceRowRefreshClicked source ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
             in
@@ -1392,9 +1416,11 @@ updateInner shared msg model =
 
         GotEventSyncSourceRowSaveResult id (Ok ( maybeAccountsPanelMsg, updated )) ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
 
+                savedModel : Model
                 savedModel =
                     { model | eventSyncSources = { es | sources = replaceEventSyncSource updated es.sources, rowEdits = Dict.remove id es.rowEdits } }
 
@@ -1405,6 +1431,7 @@ updateInner shared msg model =
 
         GotEventSyncSourceRowSaveResult id (Err err) ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
             in
@@ -1420,9 +1447,11 @@ updateInner shared msg model =
 
         EventSyncSourceAddClicked ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
 
+                newSource : EventSyncSource
                 newSource =
                     { defaultEventSyncSource
                         | configuration = Just (Configuration.IcsSubscriptionUrl es.addForm.url)
@@ -1437,6 +1466,7 @@ updateInner shared msg model =
 
         GotEventSyncSourceAddResult (Ok ( maybeAccountsPanelMsg, created )) ->
             let
+                es : EventSyncSourcesState
                 es =
                     model.eventSyncSources
             in
@@ -1462,6 +1492,7 @@ updateInner shared msg model =
 
         EventSyncSourcesExpandedToggled ->
             let
+                expanded : Bool
                 expanded =
                     not model.eventSyncSourcesExpanded
             in
@@ -1480,6 +1511,7 @@ updateInner shared msg model =
 
         EventSyncDestinationsExpandedToggled ->
             let
+                expanded : Bool
                 expanded =
                     not model.eventSyncDestinationsExpanded
             in
@@ -1549,6 +1581,7 @@ updateInner shared msg model =
             case model.eventSyncDestinations.login of
                 FacebookLoginChoosingPage accessToken _ ->
                     let
+                        newDestination : EventSyncDestination
                         newDestination =
                             { defaultEventSyncDestination
                                 | configuration =
@@ -1572,9 +1605,11 @@ updateInner shared msg model =
 
         GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
+                ed : EventSyncDestinationsState
                 ed =
                     model.eventSyncDestinations
 
+                loginResetModel : Model
                 loginResetModel =
                     { model | eventSyncDestinations = { ed | login = FacebookLoginNotStarted } }
 
@@ -1590,6 +1625,7 @@ updateInner shared msg model =
         -- the shared confirmation dialog -- see `EventSyncDestinationsState`'s own doc for why.
         EventSyncDestinationDeleteClicked destination ->
             let
+                ed : EventSyncDestinationsState
                 ed =
                     model.eventSyncDestinations
             in
@@ -1601,9 +1637,11 @@ updateInner shared msg model =
 
         GotEventSyncDestinationDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
             let
+                ed : EventSyncDestinationsState
                 ed =
                     model.eventSyncDestinations
 
+                clearedModel : Model
                 clearedModel =
                     { model | eventSyncDestinations = { ed | deleteStatuses = Dict.remove id ed.deleteStatuses } }
 
@@ -1614,6 +1652,7 @@ updateInner shared msg model =
 
         GotEventSyncDestinationDeleteResult id (Err err) ->
             let
+                ed : EventSyncDestinationsState
                 ed =
                     model.eventSyncDestinations
             in
@@ -1655,9 +1694,11 @@ updateInner shared msg model =
 
         GotFederatedUser key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                accountEffect : Effect Msg
                 accountEffect =
                     accountsPanelEffect maybeAccountsPanelMsg
 
+                newStatus : FederatedProfileStatus
                 newStatus =
                     response.users
                         |> List.head
@@ -1704,6 +1745,7 @@ every permission's already been added).
 resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
 resolveAddSelection current pending =
     let
+        available : List Permission
         available =
             addablePermissions pending
     in
@@ -1820,6 +1862,7 @@ rarely lists more than a couple of federated accounts, and each is on its own
 kickOffFederatedFetches : Shared.Model -> User -> Model -> ( Model, Effect Msg )
 kickOffFederatedFetches shared user model =
     let
+        pending : List FederatedAccount
         pending =
             user.federatedProfiles
                 |> List.filter (\account -> not (Dict.member (federatedKey account) model.federatedProfiles))
@@ -1843,6 +1886,7 @@ fetchFederated :
     -> ( Dict String FederatedProfileStatus, List (Effect Msg) )
 fetchFederated shared pageIsSecure account ( statuses, effects ) =
     let
+        newStatuses : Dict String FederatedProfileStatus
         newStatuses =
             Dict.insert (federatedKey account) FederatedProfileLoading statuses
     in
@@ -1934,6 +1978,7 @@ no longer needed here).
 fetchEventSyncSources : Shared.Model -> String -> String -> Model -> ( Model, Effect Msg )
 fetchEventSyncSources shared host targetUserId model =
     let
+        es : EventSyncSourcesState
         es =
             model.eventSyncSources
     in
@@ -1954,6 +1999,7 @@ fetchEventSyncSources shared host targetUserId model =
 setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
 setEventSyncDestinationsLogin login model =
     let
+        ed : EventSyncDestinationsState
         ed =
             model.eventSyncDestinations
     in
@@ -2161,33 +2207,42 @@ view shared model =
 profileDetail : Shared.Model -> Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html Msg
 profileDetail shared model server maybeAccount user =
     let
+        canEdit : Bool
         canEdit =
             canEditProfile maybeAccount user
 
+        isAdmin : Bool
         isAdmin =
             isAdminAccount maybeAccount
 
+        baseHref : String
         baseHref =
             Users.profileHref shared.basePath
                 shared.accounts.mainFrontendHost
                 server.frontendHost
                 { userId = user.id, username = user.username }
 
+        postsHref : String
         postsHref =
             baseHref ++ "/posts"
 
+        repliesHref : String
         repliesHref =
             baseHref ++ "/posts?context=reply"
 
+        followersHref : String
         followersHref =
             baseHref ++ "/followers"
 
+        followingHref : String
         followingHref =
             baseHref ++ "/following"
 
+        friendsHref : String
         friendsHref =
             baseHref ++ "/friends"
 
+        eventsHref : String
         eventsHref =
             baseHref ++ "/events"
     in
@@ -2435,6 +2490,7 @@ visibilityView canEdit maybeAccount maybeEdit user =
     case maybeEdit of
         Just edit ->
             let
+                options : List Visibility
                 options =
                     maybeAccount
                         |> Maybe.map (\account -> Users.allowedVisibilities account.permissions user.visibility)
@@ -2610,6 +2666,7 @@ own (yet) to link to.
 profileCounts : String -> String -> String -> String -> String -> String -> User -> Html Msg
 profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user =
     let
+        counts : List ( String, Int, Maybe String )
         counts =
             [ ( "Followers", user.followerCount, Just followersHref )
             , ( "Following", user.followingCount, Just followingHref )
@@ -2632,6 +2689,7 @@ profileCounts postsHref repliesHref followersHref followingHref friendsHref even
 profileCountView : ( String, Int, Maybe String ) -> Html Msg
 profileCountView ( label, count, maybeHref ) =
     let
+        content : List (Html Msg)
         content =
             [ div [ class "profile-count-value" ] [ text (String.fromInt count) ]
             , div [ class "profile-count-label" ] [ text label ]
@@ -2837,6 +2895,7 @@ federatedProfilesEditControls shared model server canEdit user =
         case model.federatedProfilesEdit of
             Just edit ->
                 let
+                    available : List AccountsPanel.Account
                     available =
                         federableAccounts shared server user
                 in
@@ -2884,9 +2943,11 @@ set), a `crossCheckBadge`, and -- via `federatedServer`'s CSS class, see
 federatedProfileLink : Shared.Model -> Model -> AccountsPanel.Server -> User -> FederatedAccount -> Html Msg
 federatedProfileLink shared model server user account =
     let
+        maybeFederatedServer : Maybe AccountsPanel.Server
         maybeFederatedServer =
             AccountsPanel.serverForHost shared.accounts.servers account.host
 
+        colorClasses : List String
         colorClasses =
             case maybeFederatedServer of
                 Just federatedServer ->
@@ -2937,6 +2998,7 @@ side, or never confirmed).
 crossCheckBadge : AccountsPanel.Server -> User -> User -> Html Msg
 crossCheckBadge server user federatedUser =
     let
+        reciprocated : Bool
         reciprocated =
             List.any (\account -> account.host == server.frontendHost && account.userId == user.id)
                 federatedUser.federatedProfiles
@@ -3060,15 +3122,19 @@ eventSyncSourcesContentView targetHost browserTimeZone es =
 eventSyncSourceRowView : String -> SharedTime.BrowserTimeZone -> EventSyncSourcesState -> EventSyncSource -> Html Msg
 eventSyncSourceRowView targetHost browserTimeZone es source =
     let
+        edit : EventSyncRowEdit
         edit =
             eventSyncRowEditFor source es
 
+        dirty : Bool
         dirty =
             eventSyncSourceIsDirty source edit
 
+        submitting : Bool
         submitting =
             edit.status == Submitting
 
+        lastSyncedText : String
         lastSyncedText =
             case source.lastSyncedAt of
                 Just ts ->
@@ -3204,6 +3270,7 @@ eventSyncDestinationsContentView ed destinations =
 eventSyncDestinationRowView : EventSyncDestinationsState -> EventSyncDestination -> Html Msg
 eventSyncDestinationRowView ed destination =
     let
+        pageName : String
         pageName =
             case destination.configuration of
                 Just (DestinationConfiguration.FacebookPage page) ->
@@ -3212,9 +3279,11 @@ eventSyncDestinationRowView ed destination =
                 Nothing ->
                     "Facebook Page"
 
+        count : Int
         count =
             destination.syncedEventInstanceCount |> Maybe.map Conversions.int64ToInt |> Maybe.withDefault 0
 
+        deleting : Bool
         deleting =
             Dict.get destination.id ed.deleteStatuses == Just Submitting
     in

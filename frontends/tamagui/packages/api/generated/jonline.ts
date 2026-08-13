@@ -67,7 +67,7 @@ export const protobufPackage = "jonline";
  *
  * #### Ports
  * Jonline servers interact across several ports:
- * * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API, typically served from the Jonline. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
+ * * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
  *      * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
  * * [HTTP (80, 8000, 27705), HTTPS (443)](#http-endpoints) - The main Jonline HTTP API. This is used for some endpoints, including media upload/download, and for negotiating the gRPC host.
  *      * Port 443 will serve up a secure HTTPS server. If it fails to startup, Jonline handles this gracefully and degrades to plain HTTP.

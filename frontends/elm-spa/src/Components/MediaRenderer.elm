@@ -62,9 +62,11 @@ type SizeConstraint
 view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
 view mediaSize sizeConstraint server maybeAccount onImageClicked media =
     let
+        mediaUrl : String
         mediaUrl =
             url mediaSize server maybeAccount media
 
+        sizeClass : String
         sizeClass =
             mediaSizeClass mediaSize ++ " " ++ sizeConstraintClass sizeConstraint
     in
@@ -144,9 +146,11 @@ size.
 url : MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> String
 url mediaSize server maybeAccount media =
     let
+        base : String
         base =
             AccountsPanel.mediaUrl server media.id |> Maybe.withDefault ""
 
+        sizeParam : List String
         sizeParam =
             case mediaSize of
                 Natural ->
@@ -158,6 +162,7 @@ url mediaSize server maybeAccount media =
                 ExtraSmall ->
                     []
 
+        authParam : List String
         authParam =
             case maybeAccount of
                 Just account ->

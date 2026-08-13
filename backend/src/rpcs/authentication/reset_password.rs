@@ -17,7 +17,7 @@ pub fn reset_password(
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let user_id = match &request.user_id {
-        Some(ref id) => id.to_db_id_or_err("user_id")?,
+        Some(id) => id.to_db_id_or_err("user_id")?,
         None => current_user.id,
     };
     let self_delete = user_id == current_user.id;

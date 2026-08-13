@@ -118,11 +118,13 @@ init shared req =
                 _ ->
                     ( Nothing, "" )
 
+        browsingHost : String
         browsingHost =
             shared.accounts.browsingHost
 
         -- Pre-filled only when there's exactly one candidate to guess --
         -- see `usernameField`'s quick-fill buttons for the ambiguous case.
+        defaultUsername : String
         defaultUsername =
             case AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost of
                 Just _ ->
@@ -175,6 +177,7 @@ update shared msg model =
 
         SignInClicked ->
             let
+                browsingHost : String
                 browsingHost =
                     shared.accounts.browsingHost
             in
@@ -195,6 +198,7 @@ update shared msg model =
         GotLoginResult (Ok ( Just account, publicKey )) ->
             if model.alsoSignInHere then
                 let
+                    browsingHost : String
                     browsingHost =
                         shared.accounts.browsingHost
                 in
@@ -326,21 +330,27 @@ signInView shared model =
 
         ( Just _, False ) ->
             let
+                browsingHost : String
                 browsingHost =
                     shared.accounts.browsingHost
 
+                signedInAccount : Maybe Account
                 signedInAccount =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost
 
+                accountsOnHost : List Account
                 accountsOnHost =
                     List.filter (\a -> a.server == browsingHost) shared.accounts.accounts
 
+                username : String
                 username =
                     effectiveUsername shared model
 
+                accountForUsername : Maybe Account
                 accountForUsername =
                     accountsOnHost |> List.filter (\a -> a.username == username) |> List.head
 
+                submitting : Bool
                 submitting =
                     model.status == Submitting
             in
@@ -393,9 +403,11 @@ signInView shared model =
 currentAccountBadge : Shared.Model -> Account -> Html Msg
 currentAccountBadge shared account =
     let
+        avatarUrl : Maybe String
         avatarUrl =
             AccountsPanel.accountAvatarUrl shared.accounts.servers account
 
+        nameAndHost : String
         nameAndHost =
             account.username
                 ++ (if String.isEmpty (String.trim account.realName) then

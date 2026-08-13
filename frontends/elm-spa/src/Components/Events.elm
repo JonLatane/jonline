@@ -40,7 +40,7 @@ import Grpc
 import Html exposing (Html, a, button, div, span, text)
 import Html.Attributes exposing (attribute, class, disabled, href, rel, target)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, GetEventsRequest, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
@@ -163,15 +163,18 @@ fetchEvents :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
 fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAfter =
     let
+        trimmedSearchText : String
         trimmedSearchText =
             String.trim searchText
 
+        baseRequest : GetEventsRequest
         baseRequest =
             { defaultGetEventsRequest
                 | authorUserId = authorUserId
                 , timeFilter = Just { defaultTimeFilter | endsAfter = Just (posixToTimestamp endsAfter) }
             }
 
+        request : GetEventsRequest
         request =
             if String.isEmpty trimmedSearchText then
                 baseRequest
@@ -282,6 +285,7 @@ sibling `EventInstance`s of the same `Event`.
 eventInstanceHref : String -> String -> String -> EventInstance -> String
 eventInstanceHref basePath viewingServerHost eventServerHost instance =
     let
+        routeId : String
         routeId =
             if eventServerHost == viewingServerHost then
                 instance.id
@@ -379,12 +383,15 @@ irregular one-off that moved to a different hour).
 siblingInstanceWhenText : SharedTime.Model -> EventInstance -> EventInstance -> String
 siblingInstanceWhenText time currentInstance instance =
     let
+        zone : Time.Zone
         zone =
             time.browserTimeZone.zone
 
+        sameTimeOfDay : Time.Posix -> Time.Posix -> Bool
         sameTimeOfDay a b =
             Time.toHour zone a == Time.toHour zone b && Time.toMinute zone a == Time.toMinute zone b
 
+        sharesCurrentTimeOfDay : Bool
         sharesCurrentTimeOfDay =
             case ( currentInstance.startsAt, currentInstance.endsAt ) of
                 ( Just currentStartTs, Just currentEndTs ) ->
@@ -413,6 +420,7 @@ convention as `Components.Posts.postLinkText`.
 locationText : Location -> Maybe String
 locationText location =
     let
+        trimmed : String
         trimmed =
             String.trim location.uniformlyFormattedAddress
     in
@@ -433,15 +441,19 @@ uses this to skip its own secondary post section entirely for one of these;
 meaningfulPost : Post -> Maybe Post
 meaningfulPost post =
     let
+        hasTitle : Bool
         hasTitle =
             post.title |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
 
+        hasContent : Bool
         hasContent =
             post.content |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
 
+        hasLink : Bool
         hasLink =
             Posts.postLinkText post /= Nothing
 
+        hasMedia : Bool
         hasMedia =
             not (List.isEmpty post.media)
     in
@@ -497,6 +509,7 @@ eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush i
     case availableSyncDestinations of
         Nothing ->
             let
+                urls : List String
                 urls =
                     instance.syncDestinations |> List.filterMap .destinationUrl
             in
@@ -517,6 +530,7 @@ eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush i
 
         Just availableDestinations ->
             let
+                destinationName : String -> Maybe String
                 destinationName id =
                     availableDestinations
                         |> List.filter (\d -> d.id == id)
@@ -524,18 +538,22 @@ eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush i
                         |> Maybe.andThen .configuration
                         |> Maybe.map (\(DestinationConfiguration.FacebookPage page) -> page.pageName)
 
+                syncedRows : List { id : String, url : Maybe String }
                 syncedRows =
                     instance.syncDestinations
                         |> List.map (\sd -> { id = sd.eventSyncDestinationId, url = sd.destinationUrl })
 
+                syncedIds : List String
                 syncedIds =
                     syncedRows |> List.map .id
 
+                notYetSyncedRows : List { id : String, url : Maybe String }
                 notYetSyncedRows =
                     availableDestinations
                         |> List.filter (\d -> not (List.member d.id syncedIds))
                         |> List.map (\d -> { id = d.id, url = Nothing })
 
+                rows : List { id : String, url : Maybe String }
                 rows =
                     syncedRows ++ notYetSyncedRows
             in
@@ -556,9 +574,11 @@ eventCardSyncDestinationRowView :
     -> Html msg
 eventCardSyncDestinationRowView destinationName isPushing pushError onPush row =
     let
+        pushing : Bool
         pushing =
             isPushing row.id
 
+        label : String
         label =
             if pushing then
                 "Pushing…"

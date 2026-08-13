@@ -6,6 +6,10 @@ export
 # Local BE dev targets
 run:
 	cargo run
+
+test:
+	cargo test
+
 build:
 	cargo build
 

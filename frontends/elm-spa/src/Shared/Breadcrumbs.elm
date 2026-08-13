@@ -149,6 +149,7 @@ bar accountsPanelModel model =
 
         Just root ->
             let
+                isForUser : Bool
                 isForUser =
                     case root of
                         FromUser _ ->
@@ -214,9 +215,11 @@ rootSegment accountsPanelModel model root =
 
         FromUser user ->
             let
+                maybeServer : Maybe AccountsPanel.Server
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
+                name : String
                 name =
                     if String.isEmpty user.realName then
                         user.username
@@ -232,6 +235,7 @@ rootSegment accountsPanelModel model root =
                     (Maybe.andThen
                         (\server ->
                             let
+                                maybeAccount : Maybe AccountsPanel.Account
                                 maybeAccount =
                                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
                             in
@@ -264,6 +268,7 @@ serverSegment accountsPanelModel host viewingHost =
     case AccountsPanel.serverForHost accountsPanelModel.servers host of
         Just server ->
             let
+                branding : AccountsPanel.Branding
                 branding =
                     AccountsPanel.brandingOf server
             in
@@ -306,12 +311,15 @@ serverSegmentLogo branding =
 replySegment : AccountsPanel.Model -> Model -> Post -> Html Msg
 replySegment accountsPanelModel model post =
     let
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
 
+        name : String
         name =
             Authors.name post.author
     in
@@ -382,6 +390,7 @@ serverOverviewView basePath accountsPanelModel model =
     case AccountsPanel.serverForHost accountsPanelModel.servers model.host of
         Just server ->
             let
+                info : Proto.Jonline.ServerInfo
                 info =
                     AccountsPanel.serverInfoOf server
             in
@@ -413,6 +422,7 @@ serverOverviewInfoButton basePath server =
     let
         -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
         -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
+        serverIdentifier : String
         serverIdentifier =
             (if server.connected |> Maybe.map .tls |> Maybe.withDefault True then
                 "https:"
@@ -434,9 +444,11 @@ serverOverviewInfoButton basePath server =
 replyCardView : String -> AccountsPanel.Model -> Model -> Post -> Html Msg
 replyCardView basePath accountsPanelModel model post =
     let
+        maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
+        maybeAccount : Maybe AccountsPanel.Account
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
     in
