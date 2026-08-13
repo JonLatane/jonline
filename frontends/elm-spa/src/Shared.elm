@@ -45,6 +45,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import Task
 import Time
 import TimeZone
@@ -65,6 +66,9 @@ type alias Model =
 
     -- See `Theme` for `preference`/`systemPrefersDark` themselves.
     , theme : Theme
+
+    -- See `Shared.UserPreferences` for `prefersCalendar` itself.
+    , userPreferences : UserPreferences.Model
 
     -- The path prefix the app is being served under -- "" from `/`, "/elm"
     -- from `/elm` (see `backend/src/web/elm_web.rs`) -- immutable for the
@@ -111,6 +115,7 @@ type Msg
     | AdminPanelMsg AdminPanel.Msg
     | FederatedAuthMsg FederatedAuth.Msg
     | StarredPanelMsg StarredPanel.Msg
+    | UserPreferencesMsg UserPreferences.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
@@ -297,6 +302,10 @@ init basePath req flags =
             Decode.decodeValue (Decode.field "federatedAuthKeyPair" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        userPreferencesFlags =
+            Decode.decodeValue (Decode.field "userPreferences" Decode.value) flags
+                |> Result.withDefault Encode.null
+
         systemPrefersDark =
             Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
                 |> Result.withDefault False
@@ -334,6 +343,7 @@ init basePath req flags =
                 }
             , breadcrumbs = Breadcrumbs.init
             , theme = { preference = themePreference, systemPrefersDark = systemPrefersDark }
+            , userPreferences = UserPreferences.init userPreferencesFlags
             , basePath = basePath
             , scrollPreserverVisible = False
             , navAnimationState =
@@ -590,6 +600,13 @@ sharedUpdate req msg model =
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
+
+        UserPreferencesMsg subMsg ->
+            let
+                ( subModel, subCmd ) =
+                    UserPreferences.update subMsg model.userPreferences
+            in
+            ( { model | userPreferences = subModel }, Cmd.map UserPreferencesMsg subCmd )
 
         MediaViewerPanelMsg subMsg ->
             let

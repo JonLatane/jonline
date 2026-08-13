@@ -75,7 +75,7 @@ update shared req msg model =
                 Resolver.Loaded user ->
                     let
                         ( eventsModel, eventsEffect ) =
-                            EventsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False Nothing
+                            EventsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False False Nothing
                     in
                     ( Events eventsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map EventsMsg eventsEffect ] )
 

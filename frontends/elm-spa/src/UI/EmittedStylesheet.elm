@@ -89,6 +89,8 @@ mainFrontendServerRules theme accountsPanel =
         , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
         , ".nav-link:hover { background-color:" ++ theme.navColor ++ "88; }\n"
+        , colorRule ".events-calendar .fc .fc-button-primary:not(:disabled).fc-button-active" theme.navColor theme.navTextColor
+        , ":root { --calendar-accent: " ++ theme.navColor ++ "; }\n"
         ]
 
 

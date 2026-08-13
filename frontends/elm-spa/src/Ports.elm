@@ -17,6 +17,7 @@ port module Ports exposing
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
+    , persistUserPreferences
     , renderCalendar
     , scrollElementLeft
     , setNavBarColor
@@ -64,6 +65,18 @@ itself) whenever one tab's starred posts change, carrying the same value
 same as `Shared.StarredPanel.init`'s flags.
 -}
 port starredPostsUpdated : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Persists `Shared.UserPreferences.Model` (currently just `{ prefersCalendar
+: Bool }`) to its own localStorage key -- kept independent of `persist`/
+`persistStarredPosts` for the same reason those are: `Shared.UserPreferences`
+doesn't need to know any other module's persisted shape, or vice versa.
+Unlike `persistStarredPosts`/`persistAccountsAndServers`, this doesn't
+broadcast to other tabs via a `BroadcastChannel` -- these preferences are read
+back out at `Shared.init` (a fresh page load) rather than needing to update
+an already-open tab live, so there's no counterpart `Sub` for this one.
+-}
+port persistUserPreferences : Encode.Value -> Cmd msg
 
 
 {-| Persists the appearance ("auto"/"light"/"dark") preference to its own

@@ -7,6 +7,15 @@
   --danger: #c0392b;
   --chip-bg: #f4f5f7;
 
+  /* FullCalendar's accent (`events.css`'s `.events-calendar .fc`
+     custom-property skin) -- overridden per-render to `mainFrontendHost`'s
+     own `theme.primaryColor` by `UI.EmittedStylesheet`'s `:root` rule (same
+     "stand in for a static var" pattern as that module's `a { color }`
+     rule), same as every other server-branded color. This is only the
+     pre-hydration/no-server-yet fallback, so it rides `--muted` rather than
+     a fixed color. */
+  --calendar-accent: var(--muted);
+
   /* The nav's Login/Accounts toggle button is always this tall (and thus
      this wide when it's a circle -- see accounts_panel.css's
      `.accounts-menu-toggle`), whether it's showing "Login" text, a "Login" +

@@ -156,6 +156,14 @@
       console.error("Failed to read stored federated auth keypair", e);
     }
 
+    var storedUserPreferences = null;
+    try {
+      var rawUserPreferences = localStorage.getItem("jonlineUserPreferences");
+      storedUserPreferences = rawUserPreferences ? JSON.parse(rawUserPreferences) : null;
+    } catch (e) {
+      console.error("Failed to read stored user preferences", e);
+    }
+
     var app = Elm.Main.init({
       flags: {
         state: storedState,
@@ -164,7 +172,8 @@
         timeZoneAbbreviation: timeZoneAbbreviation,
         uses24HourTime: uses24HourTime,
         starredPosts: storedStarredPosts,
-        federatedAuthKeyPair: storedFederatedAuthKeyPair
+        federatedAuthKeyPair: storedFederatedAuthKeyPair,
+        userPreferences: storedUserPreferences
       }
     });
 
@@ -190,6 +199,14 @@
 
     app.ports.persistThemePreference.subscribe(function (preference) {
       localStorage.setItem("jonlineThemePreference", preference);
+    });
+
+    // Unlike `starredPostsChannel`/`accountsAndServersChannel`, no
+    // `BroadcastChannel` here -- see `Ports.persistUserPreferences`'s own doc
+    // for why these are only ever read back at a fresh page load, not pushed
+    // live into already-open tabs.
+    app.ports.persistUserPreferences.subscribe(function (preferences) {
+      localStorage.setItem("jonlineUserPreferences", JSON.stringify(preferences));
     });
 
     // Same cross-tab sync as `accountsAndServersChannel`, above.
@@ -346,9 +363,13 @@
           return;
         }
         var calendar = new FullCalendar.Calendar(el, {
-          initialView: "dayGridMonth",
-          headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,listMonth" },
+          initialView: "timeGridWeek",
+          headerToolbar: { left: "prev,next today", center: "title", right: "multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay" },
           height: "100%",
+          // Makes day-of-month numbers (Month/Year views) and day-column
+          // headers (Week view) clickable, jumping to that day's Day view --
+          // off by default in FullCalendar.
+          navLinks: true,
           // Forces every view (including month, whose default is a small
           // border-color-only dot + plain text) to render events as filled
           // chips instead -- otherwise each event's own `background-color`

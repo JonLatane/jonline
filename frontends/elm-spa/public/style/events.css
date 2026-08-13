@@ -519,7 +519,7 @@
    without ever needing its own scrollbar -- FullCalendar scrolls its own
    internal grid instead. */
 .events-calendar {
-  height: calc(100vh - 200px);
+  height: calc(max(320px, 100vh - 200px));
 }
 
 /* An embedded copy (`model.embeddedPage` -- `Pages.Home_`/
@@ -531,6 +531,94 @@
    `!important` needed. */
 .events-calendar.embedded {
   height: 320px;
+}
+
+@media(min-height: 1000px) {
+  .events-calendar.embedded {
+    height: 480px;
+  }
+}
+
+/* Skins FullCalendar's default (Bootstrap-blue-ish) chrome to match the
+   app's own flat, bordered, neutral-token look ("shadcn"-style) plus a
+   server-branded accent (`--calendar-accent`, main.css -- set per-render to
+   `mainFrontendHost`'s own `theme.primaryColor` by `UI.EmittedStylesheet`'s
+   `:root` rule) for the active view button and today's cell -- everything
+   else (grid lines, idle buttons, the toolbar title) rides the same
+   `--border`/`--chip-bg`/`--fg`/`--muted` tokens as the rest of the app
+   rather than FullCalendar's own defaults. FullCalendar's CSS custom
+   properties (documented under "CSS Customization" in its docs) are the
+   supported way to do this without fighting its stylesheet's own
+   specificity. */
+.events-calendar .fc {
+  --fc-border-color: var(--border);
+  --fc-neutral-bg-color: var(--chip-bg);
+  --fc-page-bg-color: transparent;
+  --fc-today-bg-color: color-mix(in srgb, var(--calendar-accent) 12%, transparent);
+  --fc-button-text-color: var(--fg);
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: var(--border);
+  --fc-button-hover-bg-color: var(--chip-bg);
+  --fc-button-hover-border-color: var(--border);
+  --fc-button-active-bg-color: var(--calendar-accent);
+  --fc-button-active-border-color: var(--calendar-accent);
+  --fc-list-event-hover-bg-color: var(--chip-bg);
+  font-family: inherit;
+}
+
+.events-calendar .fc .fc-button {
+  border-radius: 6px;
+  text-transform: none;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+
+.events-calendar .fc .fc-toolbar {
+  flex-wrap: wrap;
+}
+
+.events-calendar .fc .fc-toolbar .fc-toolbar-chunk:has(>.fc-toolbar-title) {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.events-calendar .fc .fc-toolbar .fc-toolbar-chunk:last-child {
+  margin-left: auto;
+}
+
+.events-calendar .fc button.fc-button {
+  padding: .2em;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: capitalize;
+}
+
+.events-calendar .fc button.fc-button:first-child,
+.events-calendar .fc .fc-button-group+button.fc-button {
+  border-top-left-radius: 25px;
+  border-bottom-left-radius: 25px;
+}
+
+.events-calendar .fc button.fc-button:last-child {
+  border-top-right-radius: 25px;
+  border-bottom-right-radius: 25px;
+}
+
+.events-calendar .fc-media-screen .fc-multimonth-singlecol .fc-multimonth-header,
+.events-calendar .fc-popover {
+  backdrop-filter: blur(4px);
+  background-color: #42424233;
+}
+
+
+.events-calendar .fc-direction-ltr .fc-toolbar>*> :not(:first-child) {
+  margin-left: .2em;
+}
+
+.events-calendar .fc .fc-toolbar-title {
+  font-size: 1.0rem;
+  font-weight: 600;
 }
 
 /* FullCalendar renders several of its own UI bits (day-of-week header

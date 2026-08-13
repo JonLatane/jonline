@@ -66,6 +66,7 @@ import Shared.Conversions as Conversions
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -106,6 +107,15 @@ type alias Model =
     , calendarPreview : Maybe String
     , mode : EventsDisplayMode
 
+    -- The `EventsDisplayMode` `mode` defaults to absent an explicit
+    -- `?display=` -- computed once, at `init` (see `defaultMode`), from
+    -- `embeddedPage` and the then-current `Shared.UserPreferences.prefersCalendar`,
+    -- and kept around (rather than re-derived from those on every call) so
+    -- `queryParams` can compare `mode` against exactly the default `init`
+    -- actually seeded it with, even if `prefersCalendar` itself changes
+    -- later in this same session (see `DisplayModeChanged`).
+    , defaultDisplayMode : EventsDisplayMode
+
     -- `True` for embedded copies of this model whose own default `mode` is
     -- `HorizontalList`/"row" rather than `VerticalList`/"list" (currently
     -- `Pages.Home_`'s and `Components.Pages.UserProfilePage`'s, passed via
@@ -118,6 +128,17 @@ type alias Model =
     -- own on every `update` (including every animation tick, e.g. from
     -- `eventAnimations`) would otherwise fight the real owner for it.
     , embeddedPage : Bool
+
+    -- Whether switching `mode` into/out of `Calendar` (see `DisplayModeChanged`)
+    -- writes `Shared.UserPreferences.prefersCalendar` -- `True` only for
+    -- `Pages.Home_`'s and `Pages.Events`' own copies (passed via `init`'s own
+    -- `syncsCalendarPreference` argument), so switching layouts while looking
+    -- at just one user's events (`Components.Pages.UserProfilePage`,
+    -- `Pages.Username_.Events`, `Pages.User.UserId_.Events`) never overwrites
+    -- the preference every copy's own `defaultMode` reads back (see that
+    -- field's own doc) -- it's still *read* there regardless of this flag,
+    -- just never *written*.
+    , syncsCalendarPreference : Bool
     , measurementPhase : MeasurementPhase
     , author : Maybe ( String, User )
     , navKey : Browser.Navigation.Key
@@ -479,17 +500,21 @@ for why that matters.
 
 `embeddedPage` is `True` only for `Pages.Home_`'s and
 `Components.Pages.UserProfilePage`'s own embedded copies of this model (see
-`Model.embeddedPage`'s own doc for why it's tracked at all) -- `True` also
-flips `mode`'s own default to `HorizontalList` here (absent an explicit
-`?display=`), matching the layout those copies are fixed to.
+`Model.embeddedPage`'s own doc for why it's tracked at all) -- absent an
+explicit `?display=`, it (together with the current
+`Shared.UserPreferences.prefersCalendar`) decides `mode`'s own default here,
+via `defaultMode`/`Model.defaultDisplayMode`.
+
+`syncsCalendarPreference` is `True` only for `Pages.Home_`'s and `Pages.Events`'
+own copies -- see `Model.syncsCalendarPreference`'s own doc.
 
 `availableSyncDestinations` seeds `Model.availableSyncDestinations` directly
 -- `Nothing` for every caller except `Components.Pages.UserProfilePage`,
 which passes `Just user.eventSyncDestinations` (see that field's own doc).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage syncsCalendarPreference availableSyncDestinations =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -499,14 +524,19 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 Nothing ->
                     ( UpcomingEvents, Nothing )
 
+        computedDefaultDisplayMode =
+            defaultMode embeddedPage shared.userPreferences.prefersCalendar
+
         ( fetchedModel, fetchEffect ) =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
                 , calendarAnimations = Dict.empty
                 , calendarPreview = Nothing
-                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedPage)
+                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault computedDefaultDisplayMode
+                , defaultDisplayMode = computedDefaultDisplayMode
                 , embeddedPage = embeddedPage
+                , syncsCalendarPreference = syncsCalendarPreference
                 , measurementPhase = NotMeasuring
                 , author = author
                 , navKey = navKey
@@ -746,14 +776,25 @@ updateInner shared msg model =
                 -- see `eventsListView`'s own doc for how the two dicts render
                 -- as one combined, cross-fading list. `update`'s own
                 -- `calendarRenderEffect` separately picks up actually
-                -- rendering the calendar's contents.
+                -- rendering the calendar's contents. Also, if
+                -- `model.syncsCalendarPreference` (`Pages.Home_`/`Pages.Events`
+                -- only), persists this switch into/out of `Calendar` as
+                -- `Shared.UserPreferences.prefersCalendar` -- see that field's
+                -- own doc.
                 let
                     newModel =
                         { model | mode = newMode }
                             |> syncAnimations
                             |> syncCalendarAnimations
+
+                    preferenceEffect =
+                        if model.syncsCalendarPreference then
+                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar (newMode == Calendar)))
+
+                        else
+                            Effect.none
                 in
-                ( newModel, pushUrl newModel )
+                ( newModel, Effect.batch [ pushUrl newModel, preferenceEffect ] )
 
             else
                 ( { model | measurementPhase = AwaitingOldRects newMode }
@@ -1068,15 +1109,22 @@ displayModeFromParam param =
             Nothing
 
 
-{-| The `EventsDisplayMode` an `embeddedPage` copy of this model defaults to
-absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
-embedded copy (`embeddedPage = True`), `VerticalList` everywhere else. Shared
-by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
-round-trips to/from absence entirely) so the two never drift apart.
+{-| The `EventsDisplayMode` a copy of this model defaults to absent an
+explicit `?display=` -- `Calendar` if `prefersCalendar` (the current
+`Shared.UserPreferences.prefersCalendar`) is set, regardless of `embeddedPage`
+(every copy -- including ones that never themselves write that preference,
+see `Model.syncsCalendarPreference` -- still reads it back here); otherwise
+`HorizontalList` for `Pages.Home_`'s own embedded copy (`embeddedPage = True`),
+`VerticalList` everywhere else. Only ever called once, from `init` -- see
+`Model.defaultDisplayMode`'s own doc for why the result is cached there rather
+than re-derived later (`prefersCalendar` can itself change mid-session).
 -}
-defaultMode : Bool -> EventsDisplayMode
-defaultMode embeddedPage =
-    if embeddedPage then
+defaultMode : Bool -> Bool -> EventsDisplayMode
+defaultMode embeddedPage prefersCalendar =
+    if prefersCalendar then
+        Calendar
+
+    else if embeddedPage then
         HorizontalList
 
     else
@@ -1084,10 +1132,9 @@ defaultMode embeddedPage =
 
 
 {-| Every query param this page persists, read fresh off `model` -- `display`
-(see `displayModeParam`; omitted while `model.mode` is whichever
-`EventsDisplayMode` `model.embeddedPage` makes _this_ copy's own default --
-`HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
-everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
+(see `displayModeParam`; omitted while `model.mode` is still exactly
+`model.defaultDisplayMode`, the default `init` seeded it with -- see that
+field's own doc), `search_text`
 (mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
 `ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
 `Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
@@ -1101,7 +1148,7 @@ out whatever the others had just set.
 -}
 queryParams : Model -> List Url.Builder.QueryParameter
 queryParams model =
-    (if model.mode == defaultMode model.embeddedPage then
+    (if model.mode == model.defaultDisplayMode then
         []
 
      else
