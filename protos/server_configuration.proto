@@ -51,7 +51,7 @@ message ServerConfiguration {
   // Configuration for media on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_MEDIA_GLOBALLY`.
-  FeatureSettings media_settings = 24;
+  MediaSettings media_settings = 24;
 
   // If set, enables External CDN support for the server. This means that the
   // non-secure HTTP server (on port 80) will *not* redirect to the secure server,
@@ -116,6 +116,23 @@ enum AuthenticationFeature {
   LOGIN = 2;
 }
 
+// Media is a special type and less customizable than "Features."
+message MediaSettings {
+  // Hide the Posts or Events tab from the user with this flag.
+  bool visible = 1;
+  // Only `UNMODERATED` and `PENDING` are valid.
+  // When `UNMODERATED`, user reports may transition status to `PENDING`.
+  // When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  // be visible until a moderator approves them. `LIMITED` visiblity
+  // posts are always visible to targeted users (who have not blocked 
+  // the author) regardless of default_moderation.
+  Moderation default_moderation = 2;
+  // Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
+  // as appropriate.
+  Visibility default_visibility = 3;
+}
+
 // Settings for a feature (e.g. People, Groups, Posts, Events, Media).
 // Encompasses both the feature's visibility and moderation settings.
 message FeatureSettings {
@@ -132,9 +149,11 @@ message FeatureSettings {
   // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
-  // (TODO) Custom title, like "Section"s instead of "Group"s.
-  // This is more an idea; internationalization is obviously problematic here.
-  optional string custom_title = 4;
+  
+  // Can be used to rename, e.g., "Person" to "Contributor" or "Group" to "Community"
+  optional string alias_singular = 4;
+  // Can be used to rename, e.g. "Groups" to "Subtwaddits" or "People" to "Folks"
+  optional string alias_plural = 5;
 }
 
 // Specific settings for Posts.
@@ -152,12 +171,15 @@ message PostSettings {
   // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
-  // (TODO) Custom title, like "Squawks"s instead of "Posts".
-  // This is more an idea; internationalization is obviously problematic here.
-  optional string custom_title = 4;
+
+  // Can be used to rename, e.g., "Post" "Highlight" or "Squirt"
+  optional string alias_singular = 4;
+  // Can be used to rename, e.g. "Posts" to "Splurts" or "Memories"
+  optional string alias_plural = 5;
+
   // Controls whether replies are shown in the UI. Note that users' ability to reply
   // is controlled by the `REPLY_TO_POSTS` permission.
-  optional bool enable_replies = 5;
+  optional bool enable_replies = 6;
 }
 
 // Specific settings for Events.
@@ -175,12 +197,17 @@ message EventSettings {
   // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
-  // (TODO) Custom title, like "Section"s instead of "Group"s.
-  // This is more an idea; internationalization is obviously problematic here.
-  optional string custom_title = 4;
-  // Controls whether replies are shown in the UI. Note that users' ability to reply
-  // is controlled by the `REPLY_TO_POSTS` permission.
-  optional bool enable_replies = 5;
+
+  // Can be used to rename, e.g., "Event" to "Gig" or "Performance"
+  optional string alias_singular = 4;
+  // Can be used to rename, e.g. "Events" to "Show," "Game," "Competition"
+  optional string alias_plural = 5;
+
+  // Works the same as for Posts.
+  optional bool enable_replies = 6;
+
+  // Server-admin-configurable.
+  optional uint32 calendar_lookback_days = 7;
 }
 
 // Strategy when a user sets their visibility to `PRIVATE`.

@@ -299,7 +299,7 @@ export interface ServerConfiguration {
    * contain `PUBLISH_MEDIA_GLOBALLY`.
    */
   mediaSettings:
-    | FeatureSettings
+    | MediaSettings
     | undefined;
   /**
    * If set, enables External CDN support for the server. This means that the
@@ -372,6 +372,27 @@ export interface ExternalCDNConfig {
   cdnGrpc: boolean;
 }
 
+/** Media is a special type and less customizable than "Features." */
+export interface MediaSettings {
+  /** Hide the Posts or Events tab from the user with this flag. */
+  visible: boolean;
+  /**
+   * Only `UNMODERATED` and `PENDING` are valid.
+   * When `UNMODERATED`, user reports may transition status to `PENDING`.
+   * When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+   * be visible until a moderator approves them. `LIMITED` visiblity
+   * posts are always visible to targeted users (who have not blocked
+   * the author) regardless of default_moderation.
+   */
+  defaultModeration: Moderation;
+  /**
+   * Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+   * if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+   * as appropriate.
+   */
+  defaultVisibility: Visibility;
+}
+
 /**
  * Settings for a feature (e.g. People, Groups, Posts, Events, Media).
  * Encompasses both the feature's visibility and moderation settings.
@@ -394,11 +415,12 @@ export interface FeatureSettings {
    * as appropriate.
    */
   defaultVisibility: Visibility;
-  /**
-   * (TODO) Custom title, like "Section"s instead of "Group"s.
-   * This is more an idea; internationalization is obviously problematic here.
-   */
-  customTitle?: string | undefined;
+  /** Can be used to rename, e.g., "Person" to "Contributor" or "Group" to "Community" */
+  aliasSingular?:
+    | string
+    | undefined;
+  /** Can be used to rename, e.g. "Groups" to "Subtwaddits" or "People" to "Folks" */
+  aliasPlural?: string | undefined;
 }
 
 /** Specific settings for Posts. */
@@ -420,11 +442,12 @@ export interface PostSettings {
    * as appropriate.
    */
   defaultVisibility: Visibility;
-  /**
-   * (TODO) Custom title, like "Squawks"s instead of "Posts".
-   * This is more an idea; internationalization is obviously problematic here.
-   */
-  customTitle?:
+  /** Can be used to rename, e.g., "Post" "Highlight" or "Squirt" */
+  aliasSingular?:
+    | string
+    | undefined;
+  /** Can be used to rename, e.g. "Posts" to "Splurts" or "Memories" */
+  aliasPlural?:
     | string
     | undefined;
   /**
@@ -453,18 +476,20 @@ export interface EventSettings {
    * as appropriate.
    */
   defaultVisibility: Visibility;
-  /**
-   * (TODO) Custom title, like "Section"s instead of "Group"s.
-   * This is more an idea; internationalization is obviously problematic here.
-   */
-  customTitle?:
+  /** Can be used to rename, e.g., "Event" to "Gig" or "Performance" */
+  aliasSingular?:
     | string
     | undefined;
-  /**
-   * Controls whether replies are shown in the UI. Note that users' ability to reply
-   * is controlled by the `REPLY_TO_POSTS` permission.
-   */
-  enableReplies?: boolean | undefined;
+  /** Can be used to rename, e.g. "Events" to "Show," "Game," "Competition" */
+  aliasPlural?:
+    | string
+    | undefined;
+  /** Works the same as for Posts. */
+  enableReplies?:
+    | boolean
+    | undefined;
+  /** Server-admin-configurable. */
+  calendarLookbackDays?: number | undefined;
 }
 
 /** User-facing information about the server displayed on the "about" page. */
@@ -676,7 +701,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       EventSettings.encode(message.eventSettings, writer.uint32(186).fork()).join();
     }
     if (message.mediaSettings !== undefined) {
-      FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).join();
+      MediaSettings.encode(message.mediaSettings, writer.uint32(194).fork()).join();
     }
     if (message.externalCdnConfig !== undefined) {
       ExternalCDNConfig.encode(message.externalCdnConfig, writer.uint32(722).fork()).join();
@@ -809,7 +834,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
             break;
           }
 
-          message.mediaSettings = FeatureSettings.decode(reader, reader.uint32());
+          message.mediaSettings = MediaSettings.decode(reader, reader.uint32());
           continue;
         }
         case 90: {
@@ -880,7 +905,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
       eventSettings: isSet(object.eventSettings) ? EventSettings.fromJSON(object.eventSettings) : undefined,
-      mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
+      mediaSettings: isSet(object.mediaSettings) ? MediaSettings.fromJSON(object.mediaSettings) : undefined,
       externalCdnConfig: isSet(object.externalCdnConfig)
         ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
         : undefined,
@@ -924,7 +949,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       obj.eventSettings = EventSettings.toJSON(message.eventSettings);
     }
     if (message.mediaSettings !== undefined) {
-      obj.mediaSettings = FeatureSettings.toJSON(message.mediaSettings);
+      obj.mediaSettings = MediaSettings.toJSON(message.mediaSettings);
     }
     if (message.externalCdnConfig !== undefined) {
       obj.externalCdnConfig = ExternalCDNConfig.toJSON(message.externalCdnConfig);
@@ -968,7 +993,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       ? EventSettings.fromPartial(object.eventSettings)
       : undefined;
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
-      ? FeatureSettings.fromPartial(object.mediaSettings)
+      ? MediaSettings.fromPartial(object.mediaSettings)
       : undefined;
     message.externalCdnConfig = (object.externalCdnConfig !== undefined && object.externalCdnConfig !== null)
       ? ExternalCDNConfig.fromPartial(object.externalCdnConfig)
@@ -1129,8 +1154,106 @@ export const ExternalCDNConfig: MessageFns<ExternalCDNConfig> = {
   },
 };
 
+function createBaseMediaSettings(): MediaSettings {
+  return { visible: false, defaultModeration: 0, defaultVisibility: 0 };
+}
+
+export const MediaSettings: MessageFns<MediaSettings> = {
+  encode(message: MediaSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.visible !== false) {
+      writer.uint32(8).bool(message.visible);
+    }
+    if (message.defaultModeration !== 0) {
+      writer.uint32(16).int32(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      writer.uint32(24).int32(message.defaultVisibility);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MediaSettings {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMediaSettings();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.visible = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.defaultModeration = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.defaultVisibility = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MediaSettings {
+    return {
+      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
+      defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
+      defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
+    };
+  },
+
+  toJSON(message: MediaSettings): unknown {
+    const obj: any = {};
+    if (message.visible !== false) {
+      obj.visible = message.visible;
+    }
+    if (message.defaultModeration !== 0) {
+      obj.defaultModeration = moderationToJSON(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MediaSettings>, I>>(base?: I): MediaSettings {
+    return MediaSettings.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MediaSettings>, I>>(object: I): MediaSettings {
+    const message = createBaseMediaSettings();
+    message.visible = object.visible ?? false;
+    message.defaultModeration = object.defaultModeration ?? 0;
+    message.defaultVisibility = object.defaultVisibility ?? 0;
+    return message;
+  },
+};
+
 function createBaseFeatureSettings(): FeatureSettings {
-  return { visible: false, defaultModeration: 0, defaultVisibility: 0, customTitle: undefined };
+  return {
+    visible: false,
+    defaultModeration: 0,
+    defaultVisibility: 0,
+    aliasSingular: undefined,
+    aliasPlural: undefined,
+  };
 }
 
 export const FeatureSettings: MessageFns<FeatureSettings> = {
@@ -1144,8 +1267,11 @@ export const FeatureSettings: MessageFns<FeatureSettings> = {
     if (message.defaultVisibility !== 0) {
       writer.uint32(24).int32(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      writer.uint32(34).string(message.customTitle);
+    if (message.aliasSingular !== undefined) {
+      writer.uint32(34).string(message.aliasSingular);
+    }
+    if (message.aliasPlural !== undefined) {
+      writer.uint32(42).string(message.aliasPlural);
     }
     return writer;
   },
@@ -1186,7 +1312,15 @@ export const FeatureSettings: MessageFns<FeatureSettings> = {
             break;
           }
 
-          message.customTitle = reader.string();
+          message.aliasSingular = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.aliasPlural = reader.string();
           continue;
         }
       }
@@ -1203,7 +1337,8 @@ export const FeatureSettings: MessageFns<FeatureSettings> = {
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
-      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      aliasSingular: isSet(object.aliasSingular) ? globalThis.String(object.aliasSingular) : undefined,
+      aliasPlural: isSet(object.aliasPlural) ? globalThis.String(object.aliasPlural) : undefined,
     };
   },
 
@@ -1218,8 +1353,11 @@ export const FeatureSettings: MessageFns<FeatureSettings> = {
     if (message.defaultVisibility !== 0) {
       obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      obj.customTitle = message.customTitle;
+    if (message.aliasSingular !== undefined) {
+      obj.aliasSingular = message.aliasSingular;
+    }
+    if (message.aliasPlural !== undefined) {
+      obj.aliasPlural = message.aliasPlural;
     }
     return obj;
   },
@@ -1232,7 +1370,8 @@ export const FeatureSettings: MessageFns<FeatureSettings> = {
     message.visible = object.visible ?? false;
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;
-    message.customTitle = object.customTitle ?? undefined;
+    message.aliasSingular = object.aliasSingular ?? undefined;
+    message.aliasPlural = object.aliasPlural ?? undefined;
     return message;
   },
 };
@@ -1242,7 +1381,8 @@ function createBasePostSettings(): PostSettings {
     visible: false,
     defaultModeration: 0,
     defaultVisibility: 0,
-    customTitle: undefined,
+    aliasSingular: undefined,
+    aliasPlural: undefined,
     enableReplies: undefined,
   };
 }
@@ -1258,11 +1398,14 @@ export const PostSettings: MessageFns<PostSettings> = {
     if (message.defaultVisibility !== 0) {
       writer.uint32(24).int32(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      writer.uint32(34).string(message.customTitle);
+    if (message.aliasSingular !== undefined) {
+      writer.uint32(34).string(message.aliasSingular);
+    }
+    if (message.aliasPlural !== undefined) {
+      writer.uint32(42).string(message.aliasPlural);
     }
     if (message.enableReplies !== undefined) {
-      writer.uint32(40).bool(message.enableReplies);
+      writer.uint32(48).bool(message.enableReplies);
     }
     return writer;
   },
@@ -1303,11 +1446,19 @@ export const PostSettings: MessageFns<PostSettings> = {
             break;
           }
 
-          message.customTitle = reader.string();
+          message.aliasSingular = reader.string();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.aliasPlural = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
             break;
           }
 
@@ -1328,7 +1479,8 @@ export const PostSettings: MessageFns<PostSettings> = {
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
-      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      aliasSingular: isSet(object.aliasSingular) ? globalThis.String(object.aliasSingular) : undefined,
+      aliasPlural: isSet(object.aliasPlural) ? globalThis.String(object.aliasPlural) : undefined,
       enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : undefined,
     };
   },
@@ -1344,8 +1496,11 @@ export const PostSettings: MessageFns<PostSettings> = {
     if (message.defaultVisibility !== 0) {
       obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      obj.customTitle = message.customTitle;
+    if (message.aliasSingular !== undefined) {
+      obj.aliasSingular = message.aliasSingular;
+    }
+    if (message.aliasPlural !== undefined) {
+      obj.aliasPlural = message.aliasPlural;
     }
     if (message.enableReplies !== undefined) {
       obj.enableReplies = message.enableReplies;
@@ -1361,7 +1516,8 @@ export const PostSettings: MessageFns<PostSettings> = {
     message.visible = object.visible ?? false;
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;
-    message.customTitle = object.customTitle ?? undefined;
+    message.aliasSingular = object.aliasSingular ?? undefined;
+    message.aliasPlural = object.aliasPlural ?? undefined;
     message.enableReplies = object.enableReplies ?? undefined;
     return message;
   },
@@ -1372,8 +1528,10 @@ function createBaseEventSettings(): EventSettings {
     visible: false,
     defaultModeration: 0,
     defaultVisibility: 0,
-    customTitle: undefined,
+    aliasSingular: undefined,
+    aliasPlural: undefined,
     enableReplies: undefined,
+    calendarLookbackDays: undefined,
   };
 }
 
@@ -1388,11 +1546,17 @@ export const EventSettings: MessageFns<EventSettings> = {
     if (message.defaultVisibility !== 0) {
       writer.uint32(24).int32(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      writer.uint32(34).string(message.customTitle);
+    if (message.aliasSingular !== undefined) {
+      writer.uint32(34).string(message.aliasSingular);
+    }
+    if (message.aliasPlural !== undefined) {
+      writer.uint32(42).string(message.aliasPlural);
     }
     if (message.enableReplies !== undefined) {
-      writer.uint32(40).bool(message.enableReplies);
+      writer.uint32(48).bool(message.enableReplies);
+    }
+    if (message.calendarLookbackDays !== undefined) {
+      writer.uint32(56).uint32(message.calendarLookbackDays);
     }
     return writer;
   },
@@ -1433,15 +1597,31 @@ export const EventSettings: MessageFns<EventSettings> = {
             break;
           }
 
-          message.customTitle = reader.string();
+          message.aliasSingular = reader.string();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.aliasPlural = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
             break;
           }
 
           message.enableReplies = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.calendarLookbackDays = reader.uint32();
           continue;
         }
       }
@@ -1458,8 +1638,12 @@ export const EventSettings: MessageFns<EventSettings> = {
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
-      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      aliasSingular: isSet(object.aliasSingular) ? globalThis.String(object.aliasSingular) : undefined,
+      aliasPlural: isSet(object.aliasPlural) ? globalThis.String(object.aliasPlural) : undefined,
       enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : undefined,
+      calendarLookbackDays: isSet(object.calendarLookbackDays)
+        ? globalThis.Number(object.calendarLookbackDays)
+        : undefined,
     };
   },
 
@@ -1474,11 +1658,17 @@ export const EventSettings: MessageFns<EventSettings> = {
     if (message.defaultVisibility !== 0) {
       obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
     }
-    if (message.customTitle !== undefined) {
-      obj.customTitle = message.customTitle;
+    if (message.aliasSingular !== undefined) {
+      obj.aliasSingular = message.aliasSingular;
+    }
+    if (message.aliasPlural !== undefined) {
+      obj.aliasPlural = message.aliasPlural;
     }
     if (message.enableReplies !== undefined) {
       obj.enableReplies = message.enableReplies;
+    }
+    if (message.calendarLookbackDays !== undefined) {
+      obj.calendarLookbackDays = Math.round(message.calendarLookbackDays);
     }
     return obj;
   },
@@ -1491,8 +1681,10 @@ export const EventSettings: MessageFns<EventSettings> = {
     message.visible = object.visible ?? false;
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;
-    message.customTitle = object.customTitle ?? undefined;
+    message.aliasSingular = object.aliasSingular ?? undefined;
+    message.aliasPlural = object.aliasPlural ?? undefined;
     message.enableReplies = object.enableReplies ?? undefined;
+    message.calendarLookbackDays = object.calendarLookbackDays ?? undefined;
     return message;
   },
 };

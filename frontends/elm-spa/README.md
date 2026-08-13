@@ -151,9 +151,9 @@ The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simpl
 Every module's top-level declarations follow the same order, so the shape of
 a file tells you where to look before you've read a line of it:
 
-1. `main` (only relevant in `Main.elm`) or `page` method (only relevant in `Pages` module), if present (in that order, if both happened to somehow be present, but there's really no reason to use either of these method names outside their respective contexts)
-2. `Model`
-3. `Msg`
+1. `main`/`page`: only relevant in `Main.elm` & the `Pages` module; not in most files.
+2. `Model` is really at the top of the vast majority of files (since they won't have a `main` or `page`)
+3. `Msg` should *always be immediately after `Model`*.
 4. Every other type/type alias declared in the file (in whatever order makes
    sense together — see `Shared.elm`'s `Flags`/`Theme`/`ThemePreference`/
    `DeleteConfirmation`/`Panels`/`NavAnimationState` block)
