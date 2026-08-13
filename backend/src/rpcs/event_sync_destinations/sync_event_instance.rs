@@ -5,12 +5,12 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::post_event_instance;
+use crate::logic::{post_event_instance, EventInstancePost};
 use crate::marshaling::*;
 use crate::models;
 use crate::models::POST_COLUMNS;
 use crate::protos::*;
-use crate::rpcs::validate_permission;
+use crate::rpcs::{get_server_configuration_proto, validate_permission};
 use crate::schema::{event_instance_sync_destinations, posts};
 
 pub fn sync_event_instance(
@@ -40,12 +40,39 @@ pub fn sync_event_instance(
     }
 
     let starts_at: DateTime<Utc> = instance.starts_at.into();
+    let ends_at: DateTime<Utc> = instance.ends_at.into();
+    let location = instance
+        .location
+        .as_ref()
+        .and_then(|l| l.get("uniformly_formatted_address"))
+        .and_then(|v| v.as_str())
+        .filter(|a| !a.trim().is_empty())
+        .map(str::to_string);
+    let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
+
+    // Only buildable when this server has `external_cdn_config.frontend_host` configured -- this
+    // RPC has no HTTP `Host` header to fall back on the way web-facing routes
+    // (`configured_frontend_domain`) do, so the link is simply omitted otherwise. See
+    // `docs/facebook_federation.md`.
+    let frontend_host = get_server_configuration_proto(conn)?
+        .external_cdn_config
+        .map(|c| c.frontend_host)
+        .filter(|h| !h.trim().is_empty());
+    let event_url =
+        frontend_host.map(|host| format!("https://{host}/event/{}", instance.id.to_proto_id()));
+
     let (destination_instance_id, destination_url) = post_event_instance(
         &destination,
-        &post.title,
-        &post.content,
-        &post.link,
-        starts_at,
+        &EventInstancePost {
+            title: &post.title,
+            content: &post.content,
+            link: &post.link,
+            starts_at,
+            ends_at,
+            location: &location,
+            timezone,
+            event_url: &event_url,
+        },
     )?;
 
     let new_row = models::NewEventInstanceSyncDestination {

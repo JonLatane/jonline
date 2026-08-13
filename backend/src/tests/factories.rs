@@ -791,3 +791,39 @@ pub fn serve_facebook_graph_api(page: Option<(&str, &str, &str)>, post_id: &str)
     });
     format!("http://127.0.0.1:{port}")
 }
+
+/// A minimal mock of Nominatim's `/search` endpoint for `logic::geocoding` specs. Always returns
+/// `result` (if `Some`) as the single element of the JSON array Nominatim's real API returns, or
+/// `[]` (simulating "no results found") if `None`. Returns the `http://127.0.0.1:<port>` base URL
+/// to pass as `logic::resolve_timezone_at`'s `base_url` param.
+pub fn serve_nominatim_api(result: Option<(&str, &str)>) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test Nominatim server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Nominatim server port")
+        .port();
+    let result = result.map(|(lat, lon)| (lat.to_string(), lon.to_string()));
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let _ = stream.read(&mut buf).unwrap_or(0);
+
+            let body = match &result {
+                Some((lat, lon)) => serde_json::json!([{ "lat": lat, "lon": lon }]),
+                None => serde_json::json!([]),
+            };
+            let body = body.to_string();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}

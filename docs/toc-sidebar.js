@@ -7,12 +7,16 @@
 //   1. Moves every element from <h2 id="table-of-contents"> through (but not
 //      including) the <p><a name="jonline-proto"> marker into a new
 //      <nav id="toc-sidebar">, which becomes the sidebar's content.
-//   2. Inserts a few extra links (Authentication/HTTP Endpoints/API Design
-//      Notes/gRPC API) into the "jonline.proto" sub-list, since protoc-gen-doc's
-//      generated TOC only includes top-level message/service headings. Every
-//      RPC method from the gRPC API table is then listed as a child of the
-//      "gRPC API" entry, in table order; since the table has no per-row ids
-//      to link to, one is added to each row as it's listed.
+//   2. Auto-discovers every real heading (<h1>-<h6>) between the "Jonline"
+//      service heading and the next top-level section (Ports, Authentication,
+//      Federation, HTTP Endpoints, API Design Notes, gRPC API, and all their
+//      sub-headings) and appends them to the "jonline.proto" sub-list,
+//      mirroring the headings' own nesting -- since protoc-gen-doc's
+//      generated TOC only includes top-level message/service headings and
+//      would otherwise omit these entirely. Every RPC method from the gRPC
+//      API table is then listed as a child of the "gRPC API" entry, in table
+//      order; since the table has no per-row ids to link to, one is added to
+//      each row as it's listed.
 //   3. Appends the sidebar as the LAST child of <body> (not the first) so that
 //      dragging a text selection in the main content can't "bleed" into the
 //      sidebar: browsers extend a selection's focus to whatever DOM node is
@@ -81,26 +85,41 @@
 
   var jonlineLink = sidebar.querySelector('a[href="#jonline-Jonline"]');
   var jonlineItem = jonlineLink && jonlineLink.closest('li');
-  if (jonlineItem) {
-    var extraLinks = [
-      ['Ports', '#ports'],
-      ['Authentication', '#authentication'],
-      ['HTTP Endpoints', '#http-endpoints'],
-      ['API Design Notes', '#api-design-notes'],
-      ['gRPC API', '#grpc-api']
-    ];
-    var afterItem = jonlineItem;
+  var jonlineHeading = document.getElementById('jonline');
+  if (jonlineItem && jonlineHeading) {
+    // Walk every real heading between the "Jonline" heading and the next
+    // top-level (h1/h2) section, mirroring their nesting: each heading is
+    // appended as a child of the nearest preceding heading with a shallower
+    // level, or as a sibling of the "Jonline" TOC entry itself if there is
+    // none (e.g. "Ports", and "gRPC API" which is an h3, same as "Jonline").
+    var rootUl = jonlineItem.parentNode;
+    var stack = [{ level: 3, ul: rootUl, li: null }];
     var grpcApiItem = null;
-    extraLinks.forEach(function (entry) {
-      var item = document.createElement('li');
-      var link = document.createElement('a');
-      link.href = entry[1];
-      link.textContent = entry[0];
-      item.appendChild(link);
-      afterItem.insertAdjacentElement('afterend', item);
-      afterItem = item;
-      if (entry[1] === '#grpc-api') grpcApiItem = item;
-    });
+    var node = jonlineHeading.nextElementSibling;
+    while (node) {
+      var headingMatch = /^H([1-6])$/.exec(node.tagName);
+      if (headingMatch) {
+        var level = parseInt(headingMatch[1], 10);
+        if (level <= 2) break;
+        while (stack.length > 1 && stack[stack.length - 1].level >= level) {
+          stack.pop();
+        }
+        var parentEntry = stack[stack.length - 1];
+        if (!parentEntry.ul) {
+          parentEntry.ul = document.createElement('ul');
+          parentEntry.li.appendChild(parentEntry.ul);
+        }
+        var item = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = '#' + node.id;
+        link.textContent = node.textContent.replace(/\s+/g, ' ').trim();
+        item.appendChild(link);
+        parentEntry.ul.appendChild(item);
+        stack.push({ level: level, ul: null, li: item });
+        if (node.id === 'grpc-api') grpcApiItem = item;
+      }
+      node = node.nextElementSibling;
+    }
 
     // List each RPC method (in the order they appear in the gRPC API table)
     // as children of the "gRPC API" TOC entry. The table has no per-row ids

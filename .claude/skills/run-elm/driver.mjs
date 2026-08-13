@@ -121,6 +121,12 @@ async function main() {
           await page.waitForTimeout(parseInt(rest, 10) || 500);
           break;
 
+        case "viewport": {
+          const [w, h] = rest.split(" ").map(Number);
+          await page.setViewportSize({ width: w, height: h });
+          break;
+        }
+
         case "screenshot":
           await page.screenshot({ path: rest || "screenshot.png" });
           break;

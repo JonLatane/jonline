@@ -44,6 +44,7 @@ import Browser.Dom as Dom
 import Browser.Navigation
 import Components.Events as Events
 import Components.MediaRenderer as MediaRenderer
+import Components.Posts as Posts
 import Components.Users exposing (usernameHref)
 import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
@@ -69,6 +70,7 @@ import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
+import UI.Modal
 import Url.Builder
 
 
@@ -79,6 +81,29 @@ import Url.Builder
 type alias Model =
     { eventsByServer : Dict String ServerFeed
     , eventAnimations : Dict String EventAnimation
+
+    -- `Calendar` mode's own single-item enter/leave fade, alongside
+    -- `eventAnimations`' per-card ones -- always either empty or a single
+    -- entry keyed `calendarAnimationKey`, reconciled by
+    -- `syncCalendarAnimations` (mirrors `syncAnimations` exactly, just via
+    -- `UI.Flip.syncAnimations`' own generic form instead of a bespoke one,
+    -- since there's no per-item data to thread through here) whenever
+    -- `mode` changes. Kept as its own dict (rather than folded into
+    -- `eventAnimations`) because `EventAnimation` is typed around a real
+    -- `(Event, EventInstance)` pair, which a calendar view has none of --
+    -- see `eventsListView`'s own doc for how the two dicts render as one
+    -- combined list regardless.
+    , calendarAnimations : Dict String CalendarAnimation
+
+    -- The `eventAnimationKey` of the `Calendar`-mode event most recently
+    -- tapped (via `Ports.calendarEventClicked`/`CalendarEventClicked`) --
+    -- `Nothing` means `calendarPreviewModalView`'s own modal is closed.
+    -- Doubles as its own scroll target: opening it (or re-tapping a
+    -- different event while it's already open) always re-fires
+    -- `scrollToCalendarPreviewCard` for whatever key this currently is. See
+    -- `calendarPreviewModalView`'s own doc for why this needs no per-card
+    -- animation dict of its own, unlike `eventAnimations`/`calendarAnimations`.
+    , calendarPreview : Maybe String
     , mode : EventsDisplayMode
 
     -- `True` for embedded copies of this model whose own default `mode` is
@@ -199,6 +224,7 @@ type Msg
     | Animate Animation.Msg
     | AnimateMove Animation.Msg
     | RemoveEvent String
+    | RemoveCalendarAnimation
     | MoveSettled String
     | SharedMsg Shared.Msg
       -- Switches `model.mode` -- see this branch's own handling below for
@@ -286,23 +312,48 @@ type Msg
       -- `Model.pushStatuses` via `pushStatusKey`.
     | PushEventInstanceToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
+      -- FullCalendar's own `eventClick` firing over `Ports.calendarEventClicked`
+      -- -- opens `calendarPreviewModalView`'s modal (`model.calendarPreview`)
+      -- to the tapped event's key and kicks off `scrollToCalendarPreviewCard`.
+      -- A no-op-but-still-rescrolls if the modal's already open to a
+      -- *different* event (just updates which one, see `Model.calendarPreview`'s
+      -- own doc).
+    | CalendarEventClicked String
+      -- Closes `calendarPreviewModalView`'s modal -- its own close button or
+      -- backdrop click.
+    | CalendarPreviewClosed
+      -- `scrollToCalendarPreviewCard`'s measurement resolving -- mirrors
+      -- `Pages.Event.EventId_.GotScrollTarget` exactly, including giving up
+      -- silently (`Err`) if the strip/card aren't found (e.g. the modal was
+      -- closed again before this resolved).
+    | GotCalendarPreviewScrollTarget (Result Dom.Error Float)
 
 
-{-| The three interchangeable layouts `eventsListView` can render its cards
+{-| The four interchangeable layouts `eventsListView` can render its cards
 in -- `VerticalList` (the default, a single full-width column, mirroring
 `PostsPage.postsListView`'s `.flip-animated-column`), `Grid` (a wrapping
 fixed-tile-width grid, reusing `flip.css`'s existing `.flip-animated-grid`,
-built for `Shared.MyMediaPanel`'s media tiles), and `HorizontalList` (a
+built for `Shared.MyMediaPanel`'s media tiles), `HorizontalList` (a
 single horizontally-scrolling row of that same fixed tile width, mirroring
-`Pages.Event.EventId_`'s own date-picker strip). `Grid`/`HorizontalList`
-share one card size, but `VerticalList`'s is genuinely different (full-width
-vs. a fixed tile), so switching to/from it is a position-_and_-resize FLIP,
-not just a reflow -- see `DisplayModeChanged`.
+`Pages.Event.EventId_`'s own date-picker strip), and `Calendar` (a
+[FullCalendar](https://fullcalendar.io/) view rendered by JS via
+`Ports.renderCalendar` -- see `calendarView`/`calendarEvents`). `Grid`/
+`HorizontalList` share one card size, but `VerticalList`'s is genuinely
+different (full-width vs. a fixed tile), so switching to/from it is a
+position-_and_-resize FLIP, not just a reflow -- see `DisplayModeChanged`.
+`Calendar` isn't a card layout at all -- switching to/from it skips
+`DisplayModeChanged`'s move-slide FLIP (nothing sized/positioned like a card
+to measure), but still renders as `VerticalList`'s own single-column
+container, holding the real cards (fading out, via `eventAnimations`/
+`syncAnimations`) alongside one more item: the calendar view itself, fading
+in the opposite direction via its own `Model.calendarAnimations`/
+`syncCalendarAnimations` -- see `eventsListView`'s own doc.
 -}
 type EventsDisplayMode
     = HorizontalList
     | VerticalList
     | Grid
+    | Calendar
 
 
 type ServerEvents
@@ -338,6 +389,28 @@ type alias EventAnimation =
     , flip : UI.Flip.State Msg
     , move : UI.Flip.MoveState Msg
     }
+
+
+{-| `Model.calendarAnimations`' own per-entry type -- just a `flip` (no
+`move`, unlike `EventAnimation`: `Calendar` mode never slides position/size
+the way a card layout switch does, it only ever fades in/out, see
+`eventsListView`'s own doc) and none of `EventAnimation`'s per-card data,
+since there's only ever at most one entry (keyed `calendarAnimationKey`) and
+nothing about it varies per-instance.
+-}
+type alias CalendarAnimation =
+    { flip : UI.Flip.State Msg
+    }
+
+
+{-| `Model.calendarAnimations`' one and only possible key -- mirrors
+`eventAnimationKey`'s role for `eventAnimations`, just constant rather than
+derived, since `Calendar` mode has exactly one "item" to animate (the whole
+calendar view), not one per `(host, EventInstance)`.
+-}
+calendarAnimationKey : String
+calendarAnimationKey =
+    "calendar"
 
 
 {-| Which of `tabsView`'s two tabs is active -- `UpcomingEvents` (the
@@ -430,6 +503,8 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
+                , calendarAnimations = Dict.empty
+                , calendarPreview = Nothing
                 , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedPage)
                 , embeddedPage = embeddedPage
                 , measurementPhase = NotMeasuring
@@ -450,6 +525,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 , availableSyncDestinations = availableSyncDestinations
                 , pushStatuses = Dict.empty
                 }
+                |> Tuple.mapFirst syncCalendarAnimations
     in
     ( fetchedModel
       -- Closes any open panel (Accounts, Starred, etc.) unconditionally
@@ -482,8 +558,9 @@ subscriptions model =
     Sub.batch
         [ Time.every 60000 (\_ -> Poll)
         , Ports.elementsMeasured GotMeasuredRects
-        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations))
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations) ++ List.map .flip (Dict.values model.calendarAnimations))
         , UI.Flip.moveSubscription AnimateMove (List.map .move (Dict.values model.eventAnimations))
+        , Ports.calendarEventClicked CalendarEventClicked
         ]
 
 
@@ -542,7 +619,7 @@ update shared msg model =
         ( newModel, effect ) =
             updateInner shared msg model
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, calendarRenderEffect model newModel ] )
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -602,8 +679,13 @@ updateInner shared msg model =
 
                 ( newAnimations, cmds ) =
                     Dict.foldl step ( Dict.empty, [] ) model.eventAnimations
+
+                ( newCalendarAnimations, calendarCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.calendarAnimations
             in
-            ( { model | eventAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+            ( { model | eventAnimations = newAnimations, calendarAnimations = newCalendarAnimations }
+            , Effect.batch (List.map Effect.fromCmd (cmds ++ calendarCmds))
+            )
 
         AnimateMove animMsg ->
             let
@@ -621,6 +703,9 @@ updateInner shared msg model =
 
         RemoveEvent key ->
             ( { model | eventAnimations = Dict.remove key model.eventAnimations }, Effect.none )
+
+        RemoveCalendarAnimation ->
+            ( { model | calendarAnimations = Dict.remove calendarAnimationKey model.calendarAnimations }, Effect.none )
 
         MoveSettled key ->
             let
@@ -647,6 +732,28 @@ updateInner shared msg model =
         DisplayModeChanged newMode ->
             if newMode == model.mode then
                 ( model, Effect.none )
+
+            else if newMode == Calendar || model.mode == Calendar then
+                -- `Calendar` isn't a card layout -- switching to/from it has
+                -- nothing to measure/slide via `measureElementsEffect`'s FLIP
+                -- round-trip (that's still exactly what the `else` branch
+                -- below handles, for a switch among `VerticalList`/`Grid`/
+                -- `HorizontalList`). Instead this re-syncs both animation
+                -- dicts against the new `mode` -- `syncAnimations` fades every
+                -- real card out (`Calendar` becoming active) or back in
+                -- (`Calendar` becoming inactive), `syncCalendarAnimations`
+                -- fades the calendar view itself in/out the opposite way --
+                -- see `eventsListView`'s own doc for how the two dicts render
+                -- as one combined, cross-fading list. `update`'s own
+                -- `calendarRenderEffect` separately picks up actually
+                -- rendering the calendar's contents.
+                let
+                    newModel =
+                        { model | mode = newMode }
+                            |> syncAnimations
+                            |> syncCalendarAnimations
+                in
+                ( newModel, pushUrl newModel )
 
             else
                 ( { model | measurementPhase = AwaitingOldRects newMode }
@@ -864,6 +971,28 @@ updateInner shared msg model =
                     , Effect.none
                     )
 
+        CalendarEventClicked key ->
+            ( { model | calendarPreview = Just key }
+            , scrollToCalendarPreviewCard 60 key
+            )
+
+        CalendarPreviewClosed ->
+            ( { model | calendarPreview = Nothing }, Effect.none )
+
+        GotCalendarPreviewScrollTarget (Ok target) ->
+            ( model
+            , Ports.scrollElementLeft
+                (Encode.object
+                    [ ( "id", Encode.string calendarPreviewStripDomId )
+                    , ( "left", Encode.float (max 0 target) )
+                    ]
+                )
+                |> Effect.fromCmd
+            )
+
+        GotCalendarPreviewScrollTarget (Err _) ->
+            ( model, Effect.none )
+
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
@@ -913,6 +1042,9 @@ displayModeParam mode =
         VerticalList ->
             "list"
 
+        Calendar ->
+            "calendar"
+
 
 {-| Case-insensitive inverse of `displayModeParam` -- mirrors
 `PostsPage.postContextFromParam`.
@@ -928,6 +1060,9 @@ displayModeFromParam param =
 
         "list" ->
             Just VerticalList
+
+        "calendar" ->
+            Just Calendar
 
         _ ->
             Nothing
@@ -1286,31 +1421,42 @@ currently `Loaded` in `eventsByServer` -- mirrors
 `Components.Pages.PostsPage.syncAnimations` exactly (starts a fade-in for
 newly-seen instances, a fade-out for ones that dropped out, leaves `move`
 alone either way -- a content refresh never needs a position slide, only
-`DisplayModeChanged` does), with one addition: an instance `hiddenAsStarted`
+`DisplayModeChanged` does), with two additions: an instance `hiddenAsStarted`
 is treated the same as one the server stopped returning -- excluded from
 `currentEvents`, so it fades out (or, symmetrically, fades back in via
 `reappear` if `hiddenAsStarted` stops being true for it before its fade-out
-finishes) exactly like any other add/remove this function already handles.
+finishes) exactly like any other add/remove this function already handles --
+and, while `model.mode == Calendar`, `currentEvents` is unconditionally empty
+regardless of what's actually `Loaded`, so every card fades out (per
+`eventsListView`'s own "cards fade out as the calendar fades in" doc) the
+moment `Calendar` becomes active, and fades back in the moment it stops being
+active (`currentEvents` becoming non-empty again is itself already a
+`reappear`, no different from any other card reappearing before its own
+fade-out finished).
 -}
 syncAnimations : Model -> Model
 syncAnimations model =
     let
         currentEvents : Dict String ( String, Event, EventInstance )
         currentEvents =
-            model.eventsByServer
-                |> Dict.toList
-                |> List.concatMap
-                    (\( host, feed ) ->
-                        case feed.status of
-                            Loaded pairs ->
-                                pairs
-                                    |> List.filter (\( _, instance ) -> not (hiddenAsStarted model instance))
-                                    |> List.map (\( event, instance ) -> ( eventAnimationKey host instance, ( host, event, instance ) ))
+            if model.mode == Calendar then
+                Dict.empty
 
-                            _ ->
-                                []
-                    )
-                |> Dict.fromList
+            else
+                model.eventsByServer
+                    |> Dict.toList
+                    |> List.concatMap
+                        (\( host, feed ) ->
+                            case feed.status of
+                                Loaded pairs ->
+                                    pairs
+                                        |> List.filter (\( _, instance ) -> not (hiddenAsStarted model instance))
+                                        |> List.map (\( event, instance ) -> ( eventAnimationKey host instance, ( host, event, instance ) ))
+
+                                _ ->
+                                    []
+                        )
+                    |> Dict.fromList
     in
     { model
         | eventAnimations =
@@ -1320,6 +1466,40 @@ syncAnimations model =
                 (\( host, event, instance ) anim -> { anim | host = host, event = event, instance = instance })
                 currentEvents
                 model.eventAnimations
+    }
+
+
+{-| `Model.calendarAnimations`' own reconciler -- mirrors `syncAnimations`
+exactly (fade in a newly-`Just`-appeared item, fade out one that's gone),
+just via `UI.Flip.syncAnimations`'s own fully generic form directly, rather
+than a bespoke wrapper, since there's no per-item data to refresh here beyond
+`flip` itself: `currentCalendar` is a single-entry `Dict` (keyed
+`calendarAnimationKey`) while `model.mode == Calendar`, empty otherwise, so
+this only ever holds 0 or 1 entries. Called from `DisplayModeChanged` (mode
+is the only thing this ever depends on) and once more from `init` (a page
+loaded straight into `?display=calendar` needs this seeded before its very
+first render, same reasoning as `fetchNewServers`' own initial `syncAnimations`
+call for `eventAnimations`).
+-}
+syncCalendarAnimations : Model -> Model
+syncCalendarAnimations model =
+    let
+        currentCalendar : Dict String ()
+        currentCalendar =
+            if model.mode == Calendar then
+                Dict.singleton calendarAnimationKey ()
+
+            else
+                Dict.empty
+    in
+    { model
+        | calendarAnimations =
+            UI.Flip.syncAnimations
+                (\_ -> RemoveCalendarAnimation)
+                (\_ -> { flip = UI.Flip.enter })
+                (\_ anim -> anim)
+                currentCalendar
+                model.calendarAnimations
     }
 
 
@@ -1417,6 +1597,341 @@ measureElementsEffect keys =
 
 
 
+-- CALENDAR
+
+
+{-| The DOM `id` of `calendarView`'s container `div` -- the element
+`Ports.renderCalendar`'s JS side looks up (and, on a later call, reuses if
+it's still the same element) to actually mount/refresh FullCalendar.
+-}
+calendarContainerId : String
+calendarContainerId =
+    "events-calendar"
+
+
+{-| Every `(host, Event, EventInstance)` `Calendar` mode should plot -- reads
+straight off `model.eventsByServer` (unlike `visibleAnimations`, this has no
+`eventAnimations`/FLIP dict to go through, since `Calendar` isn't a card
+layout -- see `EventsDisplayMode`'s own doc) and, unlike `visibleAnimations`'
+own `maxDisplayedEvents` cap (a FLIP measurement/render cost concern that
+doesn't apply here), includes every currently `Loaded` instance -- "show all
+events", per this mode's own purpose. Filters out `hiddenAsStarted` instances
+same as `syncAnimations`' own `currentEvents`, so toggling "hide started
+events" affects `Calendar` mode the same way it affects the card layouts.
+-}
+calendarEvents : Model -> List ( String, Event, EventInstance )
+calendarEvents model =
+    model.eventsByServer
+        |> Dict.toList
+        |> List.concatMap
+            (\( host, feed ) ->
+                case feed.status of
+                    Loaded pairs ->
+                        pairs
+                            |> List.filter (\( _, instance ) -> not (hiddenAsStarted model instance))
+                            |> List.map (\( event, instance ) -> ( host, event, instance ))
+
+                    _ ->
+                        []
+            )
+
+
+{-| One `calendarEvents` entry as a FullCalendar
+[`EventInput`](https://fullcalendar.io/docs/event-parsing) object -- `id` is
+`eventAnimationKey` (unique across servers, mirrors the card layouts' own DOM
+id convention), `title` is `event.post`'s own display title (via
+`Posts.postTitleText`, same title the card layouts show as
+`.event-card-title` -- see `eventCardView`'s doc for why that's `event.post`,
+not `instance.post`), falling back to a plain "Event" for the
+practically-never case `event.post` is unset. `start`/`end` are ISO 8601 UTC
+strings (via `Conversions.isoUtcString`), omitted individually when unset --
+at least one of `instance.startsAt`/`instance.endsAt` should always be set in
+practice, but neither is required by FullCalendar itself.
+
+`classNames` is `[ hostnameToCSSClass host, "background-color-primary" ]` --
+the same two-class combo every other per-server-colored element in this app
+uses (see `UI.EmittedStylesheet`'s own doc), rather than computing/encoding
+color hex strings here: `UI.EmittedStylesheet.view` (rendered once, app-wide,
+in `UI.layout`) already emits `.server-X.background-color-primary {
+background-color: ...; color: ...; }` for every connected server, kept fresh
+with dark/light mode and any live branding changes, so this just opts each
+event into that existing rule instead of duplicating `AccountsPanel`/
+`UI.ServerTheme` color math into this port payload. `Ports.renderCalendar`'s
+JS side passes `classNames` straight through to FullCalendar's own
+`EventInput.classNames`, and `public/index.html`'s `eventDisplay: "block"`
+option (set once, calendar-wide) is what makes those classes' `background-color`
+actually visible -- FullCalendar's default month-view style is a small
+`border-color`-only dot otherwise, which a `background-color` class alone
+wouldn't paint.
+-}
+calendarEventEncoder : ( String, Event, EventInstance ) -> Encode.Value
+calendarEventEncoder ( host, event, instance ) =
+    let
+        title =
+            event.post
+                |> Maybe.map Posts.postTitleText
+                |> Maybe.withDefault "Event"
+
+        isoField fieldName =
+            Maybe.map (\ts -> ( fieldName, Encode.string (Conversions.isoUtcString (Conversions.timestampToPosix ts)) ))
+
+        timeFields =
+            List.filterMap identity
+                [ instance.startsAt |> isoField "start"
+                , instance.endsAt |> isoField "end"
+                ]
+    in
+    Encode.object
+        ([ ( "id", Encode.string (eventAnimationKey host instance) )
+         , ( "title", Encode.string title )
+         , ( "classNames", Encode.list Encode.string [ hostnameToCSSClass host, "background-color-primary" ] )
+         ]
+            ++ timeFields
+        )
+
+
+{-| Fires `Ports.renderCalendar` with `calendarEvents newModel`, but only
+when that could actually differ from what's already on screen -- `Calendar`
+mode is (or was) newly active (`oldModel.mode /= Calendar`, covering both
+`DisplayModeChanged` into it and this page's very first `init`-driven
+render), or the underlying data `calendarEvents` reads from changed
+(`eventsByServer`/`hideStartedUpcomingEvents`). Deliberately compares those
+two fields rather than gating on `Msg` identity -- `update` calls this
+unconditionally on every message (mirroring `setBreadcrumbsRoot`'s own
+"recompute and let equality no-op it" convention), and `eventAnimations`
+(unlike `eventsByServer`) changes on every single `Animate`/`AnimateMove`
+tick, so keying off that instead would re-send the whole event list to JS 60
+times a second while any card animation is running.
+-}
+calendarRenderEffect : Model -> Model -> Effect Msg
+calendarRenderEffect oldModel newModel =
+    if
+        newModel.mode
+            == Calendar
+            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.hideStartedUpcomingEvents /= newModel.hideStartedUpcomingEvents)
+    then
+        Ports.renderCalendar
+            (Encode.object
+                [ ( "id", Encode.string calendarContainerId )
+                , ( "events", Encode.list calendarEventEncoder (calendarEvents newModel) )
+                ]
+            )
+            |> Effect.fromCmd
+
+    else
+        Effect.none
+
+
+{-| `Calendar` mode's container -- an outer `div` sized to span the full
+width of the page (mirrors `.events-grid`/`.events-strip`'s own
+`.container`-breakout convention, see `events.css`'s `.events-calendar`) and,
+for a standalone page, `calc(100vh - 72px)` tall -- an embedded copy
+(`embeddedPage`, `Pages.Home_`/`Components.Pages.UserProfilePage`, see
+`modeButtonsView`'s own doc) instead gets a fixed, widget-sized 320px (the
+`"embedded"` class, `events.css`), since `100vh` there would blow the
+embedding page's own layout up to full viewport height for what's meant to
+be one card-sized section among several. Either way this wraps a single
+empty inner `div` (this is the one whose id `Ports.renderCalendar`'s JS side
+actually mounts FullCalendar into, via `calendarContainerId`). Two nested
+elements, not one, because FullCalendar's own `height: "100%"` option (set in
+`public/index.html`) sets an inline `style="height: 100%"` directly on
+whichever element it mounts into -- inline style always wins over
+`events.css`'s own height rules regardless of specificity, so putting both on
+the same element would leave FullCalendar's `100%` resolving against a parent
+with no definite height of its own (collapsing to just its toolbar's
+intrinsic height, confirmed live). The outer `div` carries the real, CSS-set
+height instead, so the inner one's `100%` has something concrete to fill.
+-}
+calendarView : Bool -> Html Msg
+calendarView embeddedPage =
+    div
+        [ classes
+            ("events-calendar"
+                :: (if embeddedPage then
+                        [ "embedded" ]
+
+                    else
+                        []
+                   )
+            )
+        ]
+        [ div [ id calendarContainerId ] [] ]
+
+
+
+-- CALENDAR PREVIEW
+
+
+{-| The DOM id `calendarPreviewModalView`'s horizontal strip is rendered with
+-- paired with `calendarPreviewCardDomId` by `scrollToCalendarPreviewCard`,
+mirroring `Pages.Event.EventId_.instanceStripDomId`/`instanceChipDomId`
+exactly.
+-}
+calendarPreviewStripDomId : String
+calendarPreviewStripDomId =
+    "calendar-preview-strip"
+
+
+calendarPreviewCardDomId : String -> String
+calendarPreviewCardDomId key =
+    "calendar-preview-card-" ++ key
+
+
+{-| Scrolls `calendarPreviewStripDomId`'s strip horizontally so `key`'s own
+card is centered in view -- fired whenever `CalendarEventClicked` opens the
+modal (or re-targets it to a different event while already open). Mirrors
+`Pages.Event.EventId_.scrollToInstance` exactly (see its own doc for why this
+measures via `Dom.getElement`/`Dom.getViewportOf` then applies the result via
+`Ports.scrollElementLeft` rather than `Browser.Dom.setViewportOf`), just with
+a much shorter delay: `EventId_`'s own delay is there to let a FLIP
+enter/grow transition clear before measuring, but `calendarPreviewCardView`
+renders its cards directly (no FLIP, no `eventAnimations` involved -- see
+`calendarPreviewModalView`'s own doc for why), so the only thing this delay
+needs to cover is the one frame between `CalendarEventClicked` landing in the
+model and the modal's own `is-open` class (and thus its non-zero layout)
+actually painting.
+-}
+scrollToCalendarPreviewCard : Float -> String -> Effect Msg
+scrollToCalendarPreviewCard delayMs key =
+    Process.sleep delayMs
+        |> Task.andThen
+            (\_ ->
+                Task.map3 (\card strip viewport -> ( card, strip, viewport ))
+                    (Dom.getElement (calendarPreviewCardDomId key))
+                    (Dom.getElement calendarPreviewStripDomId)
+                    (Dom.getViewportOf calendarPreviewStripDomId)
+            )
+        |> Task.map
+            (\( card, strip, viewport ) ->
+                let
+                    cardLeftWithinStrip =
+                        card.element.x - strip.element.x
+                in
+                viewport.viewport.x
+                    + cardLeftWithinStrip
+                    - (viewport.viewport.width / 2)
+                    + (card.element.width / 2)
+            )
+        |> Task.attempt GotCalendarPreviewScrollTarget
+        |> Effect.fromCmd
+
+
+{-| `Calendar` mode's own "tap an event to preview it" modal -- opened by
+`CalendarEventClicked` (`model.calendarPreview`), closed by its own close
+button or backdrop click. Reuses `UI.Modal.backdrop` for the backdrop layer
+(same fade/click-to-close convention as every other modal in the app), but a
+bespoke body rather than `UI.Modal.view` -- that's a small, fixed-width
+dialog frame (confirm/cancel style); this instead wants the
+already-established embedded `HorizontalList` strip look (mirrors
+`.events-strip`/`eventAnimationView`'s own card list), just centered as an
+overlay, with no heading, and with wider cards (`.calendar-preview-card`,
+`events.css`) than that strip's own fixed 280px tile.
+
+Deliberately renders `calendarPreviewEvents model` (a small window around
+whichever card was tapped, not the full `calendarEvents model`) directly via
+`eventCardView` -- not through `eventAnimations`/`UI.Flip`'s enter/leave fade
+the way `eventAnimationView` wraps it for the real card layouts -- because
+this modal's own content never needs that: it isn't reconciling a changing
+server fetch frame to frame the way the live listing is, it's a fixed
+snapshot of "what's nearby", rendered fresh (open or closed -- an empty list
+while closed, see `calendarPreviewEvents`' own doc) each time
+`model.calendarPreview` changes, so `scrollToCalendarPreviewCard` has real,
+measurable card elements to find without waiting on any enter animation to
+clear first.
+-}
+calendarPreviewModalView : Shared.Model -> Model -> Html Msg
+calendarPreviewModalView shared model =
+    let
+        isOpen =
+            model.calendarPreview /= Nothing
+    in
+    div []
+        [ UI.Modal.backdrop isOpen CalendarPreviewClosed
+        , div [ classes [ "calendar-preview-modal", openClosedClass isOpen ] ]
+            [ button
+                [ class "calendar-preview-close"
+                , onClick CalendarPreviewClosed
+                , type_ "button"
+                ]
+                [ text "╳" ]
+            , div [ id calendarPreviewStripDomId, class "calendar-preview-strip" ]
+                (List.map (calendarPreviewCardView shared model) (calendarPreviewEvents model))
+            ]
+        ]
+
+
+{-| How many cards `calendarPreviewEvents` keeps on either side of the tapped
+one -- 5 each way, 11 total. Rendering `calendarEvents model` in full (every
+currently-`Loaded` event, potentially hundreds -- see that function's own
+doc) made `scrollToCalendarPreviewCard` unreliable for anything tapped far
+into a long month: confirmed live, a card deep into a list that size either
+measured wrong or just took long enough to lay out that the scroll fired
+before it settled. A card only ever needs to scroll a *little* into view
+relative to its own near neighbors, never the *whole* list, so bounding how
+much this ever has to render fixes both the measurement and the cost of
+building it in the first place.
+-}
+calendarPreviewWindowRadius : Int
+calendarPreviewWindowRadius =
+    5
+
+
+{-| `calendarEvents model`, sorted chronologically (mirrors `visibleAnimations`'
+own sort key) and windowed down to `calendarPreviewWindowRadius` entries on
+either side of `model.calendarPreview`'s own tapped key -- empty while the
+modal is closed (`Nothing`) or, in the practically-never case the tapped
+event isn't found in the current fetch anymore, empty too (nothing sensible
+to center a window on).
+-}
+calendarPreviewEvents : Model -> List ( String, Event, EventInstance )
+calendarPreviewEvents model =
+    case model.calendarPreview of
+        Nothing ->
+            []
+
+        Just key ->
+            let
+                sorted =
+                    calendarEvents model
+                        |> List.sortBy
+                            (\( _, _, instance ) ->
+                                Events.instanceStartsOrEndsAt instance
+                                    |> Maybe.withDefault (Time.millisToPosix 0)
+                                    |> Time.posixToMillis
+                            )
+
+                targetIndex =
+                    sorted
+                        |> List.indexedMap (\i ( host, _, instance ) -> ( i, eventAnimationKey host instance ))
+                        |> List.filter (\( _, k ) -> k == key)
+                        |> List.head
+                        |> Maybe.map Tuple.first
+            in
+            case targetIndex of
+                Nothing ->
+                    []
+
+                Just idx ->
+                    sorted
+                        |> List.indexedMap Tuple.pair
+                        |> List.filter (\( i, _ ) -> i >= idx - calendarPreviewWindowRadius && i <= idx + calendarPreviewWindowRadius)
+                        |> List.map Tuple.second
+
+
+calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, EventInstance ) -> Html Msg
+calendarPreviewCardView shared model ( host, event, instance ) =
+    let
+        key =
+            eventAnimationKey host instance
+
+        current =
+            model.calendarPreview == Just key
+    in
+    div [ id (calendarPreviewCardDomId key), class "calendar-preview-card" ]
+        [ eventCardView shared False current model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses ( host, event, instance ) ]
+
+
+
 -- VIEW
 
 
@@ -1477,6 +1992,7 @@ view shared showAuthorHeading model =
                     ]
                 ]
         , eventsListView shared model
+        , calendarPreviewModalView shared model
         ]
 
 
@@ -1695,15 +2211,18 @@ Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
 see `view`'s own doc) and the "Show all event layouts" admin setting
 (`shared.panels.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
 
-  - The setting on: all 3, everywhere -- the same as this used to always
-    render, before `embeddedPage`/the setting existed.
+  - The setting on: all 4, everywhere -- the same as this used to always
+    render (`VerticalList`/`Grid`/`HorizontalList`) before `embeddedPage`/the
+    setting existed, plus `Calendar`.
   - An embedded copy (`Pages.Home_`, `Components.Pages.UserProfilePage`),
-    setting off: none at all -- those copies are fixed to
-    `HorizontalList`/"Row" (see `init`'s own `embeddedPage` argument), so
-    there's nothing useful to switch between.
-  - Every other (standalone) page, setting off: `VerticalList`/`Grid` only --
-    "Row" is the embedded copies' own look; hidden elsewhere so it doesn't
-    read as an equally-supported standalone layout.
+    setting off: `HorizontalList`/`Calendar` -- those copies default to (and
+    can't switch away from) `HorizontalList`/"Row" for their card layout (see
+    `init`'s own `embeddedPage` argument), but can still switch to `Calendar`,
+    which renders at a fixed, embed-sized 320px tall there rather than
+    `calc(100vh - 72px)` -- see `calendarView`'s own doc.
+  - Every other (standalone) page, setting off: `VerticalList`/`Grid`/
+    `Calendar` -- "Row" is the embedded copies' own look; hidden elsewhere so
+    it doesn't read as an equally-supported standalone layout.
 
 -}
 modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
@@ -1711,13 +2230,13 @@ modeButtonsView shared embeddedPage current =
     let
         visibleModes =
             if shared.panels.adminPanel.showAllEventLayouts then
-                [ VerticalList, Grid, HorizontalList ]
+                [ VerticalList, Grid, HorizontalList, Calendar ]
 
             else if embeddedPage then
-                []
+                [ HorizontalList, Calendar ]
 
             else
-                [ VerticalList, Grid ]
+                [ VerticalList, Grid, Calendar ]
     in
     if List.isEmpty visibleModes then
         text ""
@@ -1755,6 +2274,9 @@ modeLabel mode =
 
         HorizontalList ->
             "Row"
+
+        Calendar ->
+            "Calendar"
 
 
 {-| The backend's iCalendar/RFC5545 subscription endpoint
@@ -1847,6 +2369,21 @@ other axis to clip too (just optionally with a scrollbar) -- only `visible`
 on both actually avoids clipping a card mid-flight. See `maxDisplayedEvents`'
 own doc for how this was diagnosed.
 
+The rendered `Html.Keyed.node` list itself is `animations` (real cards, via
+`eventAnimationView`) followed by `calendarItems` (`Model.calendarAnimations`,
+via `calendarAnimationView`) -- normally one or the other is empty (cards
+while `model.mode /= Calendar`, the calendar item while it is), but both can
+be simultaneously non-empty for the short window `syncAnimations`/
+`syncCalendarAnimations` are cross-fading them (`DisplayModeChanged`'s own
+handling for any transition to/from `Calendar` calls both): switching *into*
+`Calendar`, every real card starts its own `remove` fade-out (`currentEvents`
+going empty) at the same moment the calendar item starts its `enter` fade-in,
+so they're both present -- one shrinking away, one growing in -- sharing this
+same single-column list/container the whole time, which is what makes it
+read as one list cross-fading rather than two unrelated views hard-cutting.
+Switching *out* of `Calendar` runs the same thing in reverse (cards
+`reappear`, the calendar item `remove`s).
+
 -}
 eventsListView : Shared.Model -> Model -> Html Msg
 eventsListView shared model =
@@ -1865,8 +2402,11 @@ eventsListView shared model =
         let
             animations =
                 visibleAnimations model
+
+            calendarItems =
+                Dict.toList model.calendarAnimations
         in
-        if List.isEmpty animations then
+        if List.isEmpty animations && List.isEmpty calendarItems then
             p [ class "posts-empty" ]
                 [ text <|
                     case model.tab of
@@ -1893,6 +2433,15 @@ eventsListView shared model =
                         HorizontalList ->
                             ( "events-strip flip-animated-row", UI.Flip.Horizontal )
 
+                        Calendar ->
+                            -- `Calendar` reuses `VerticalList`'s own
+                            -- container class/axis outright (per this
+                            -- module's own doc on `Calendar` -- "just use
+                            -- `VerticalList`, with the calendar as its one
+                            -- member" -- rather than a bespoke `.events-*`
+                            -- class of its own).
+                            ( "events-list flip-animated-column", UI.Flip.Vertical )
+
                 containerClass =
                     if transitioning then
                         modeClass ++ " events-mode-transitioning"
@@ -1905,7 +2454,38 @@ eventsListView shared model =
                 (List.map
                     (eventAnimationView shared model.embeddedPage model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses axis)
                     animations
+                    ++ List.map (calendarAnimationView model.embeddedPage) calendarItems
                 )
+
+
+{-| `calendarView` wrapped in the same fading/scaling/collapsing animated
+`<div>` convention as a real card (`eventAnimationView`'s own outer layer,
+via `anim.flip`/`UI.Flip.itemAttributes`) -- no inner `moveAttributes` layer
+though, unlike a card: `Calendar` never needs a position/size *slide* the way
+switching among `VerticalList`/`Grid`/`HorizontalList` does (there's nothing
+for it to slide relative to, it's the container's only item -- see
+`eventsListView`'s own `Calendar ->` branch), just the fade/collapse `flip`
+already gives it entering/leaving.
+
+Always `UI.Flip.Vertical` regardless of the container's own current `axis` --
+unlike a real card (which shares whatever axis `eventsListView` derives from
+`model.mode` for the whole container), this can still be rendering while
+`model.mode` has already moved on to `Grid`/`HorizontalList` (mid fade-out,
+via `syncCalendarAnimations`), and `flip.css`'s row-axis collapse/`flex-shrink:0`
+rules are aimed at fixed-width tiles, not this full-height view -- hardcoding
+`Vertical` here sidesteps that regardless of which container it's
+transiently sitting inside (the *container's* own ancestor class, not this
+item's, is what actually picks which grid axis collapses -- see
+`flip.css`'s `.flip-animated-row .flip-animated-item.flip-collapsed`/
+`.flip-animated-column .flip-animated-item.flip-collapsed`, so this still
+collapses correctly along whichever axis the container it's inside actually
+is).
+-}
+calendarAnimationView : Bool -> ( String, CalendarAnimation ) -> ( String, Html Msg )
+calendarAnimationView embeddedPage ( key, anim ) =
+    ( key
+    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False) [ calendarView embeddedPage ]
+    )
 
 
 {-| Wraps `eventCardView` in a fading/scaling/collapsing animated `<div>`
@@ -1933,7 +2513,7 @@ eventAnimationView shared embeddedPage showSyncSources showSyncDestinations avai
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage False showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
         ]
     )
 
@@ -1947,8 +2527,8 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
@@ -2017,7 +2597,7 @@ eventCardView shared embeddedPage showSyncSources showSyncDestinations available
         mediaSizing
         starred
         onStarClicked
-        False
+        current
         showSyncSources
         showSyncDestinations
         availableSyncDestinations

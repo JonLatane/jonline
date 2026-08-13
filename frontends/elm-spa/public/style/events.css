@@ -470,30 +470,172 @@
   margin: 0;
 }
 
-/* `.events-grid`/`.events-strip` (below) both deliberately "break out" past
-   `.container`'s own 800px max-width, up to 95% of the viewport -- the
-   filters rows above (`.filter-tabs-bar`/`.filter-controls-row`, or embedded
-   copies' own `.events-controls-row`) and, on `Pages.Home_`, the post
-   listing below both stay at `.container`'s normal 800px/centered, only the
-   actual card grid/strip goes wide, so more tiles fit per row without the
-   rest of the page's text-focused content stretching to match. `width: 98vw`
-   sets the box's actual size (viewport-relative, so ancestor padding/max-width
-   doesn't factor in); `margin-left`'s `-49vw` (half of `98vw`) shifts that
-   box left by a fixed viewport fraction while `+ 50%` (a *containing-block*-
-   relative percentage, unlike `vw`) shifts it back right by half of whatever
-   `.container`'s narrower box actually measures here -- together they land
-   this box's left edge at "2.5vw from the viewport's own left edge" no
-   matter how wide `.container` currently is, *as long as* every ancestor
-   between this element and `body` (`.container` itself, `main`'s `padding`)
-   stays horizontally centered/symmetric, which they are. This only works
-   because `.container` no longer clips horizontal overflow (see main.css's
-   own `.container`/`body` comments) -- `overflow-x: hidden` there would've
-   clipped this breakout right back down to 800px. */
+/* `.events-grid`/`.events-strip`/`.events-calendar` (below) all deliberately
+   "break out" past `.container`'s own 800px max-width (`main.css`), up to
+   ~95% of the viewport -- the filters rows above (`.filter-tabs-bar`/
+   `.filter-controls-row`, or embedded copies' own `.events-controls-row`)
+   and, on `Pages.Home_`, the post listing below both stay at `.container`'s
+   normal 800px/centered, only the actual card grid/strip/calendar goes wide,
+   so more tiles fit per row (or, for the calendar, more of the week fits)
+   without the rest of the page's text-focused content stretching to match.
+   Negative `margin-left`/`margin-right` (rather than an explicit `width`)
+   so the box's actual width still falls out of the normal box model (its
+   containing block's width minus these two margins) -- `-49vw` (half of a
+   98vw-wide box) pulls each edge out by a fixed viewport fraction, `+ 400px`
+   (half of `.container`'s own fixed 800px max-width, i.e. how far
+   `.container`'s edge already sits from centered) pulls it back by that same
+   fixed amount, landing each edge at "2.5vw past the viewport's own edge, or
+   `.container`'s own edge, whichever is narrower" -- narrower, because a
+   *negative* margin can only ever pull an edge *out* past its containing
+   block, so on a viewport where `.container` hasn't hit its 800px cap yet,
+   the two calcs still land past `.container`'s own actual edge (rather than
+   inside it), just without needing a term that tracks `.container`'s live
+   width to do it. Deliberately `400px` (a fixed literal), not `50%` -- a
+   `%` margin resolves against *this element's own* containing block, which
+   is only reliably "half of `.container`'s 800px" when this sits directly
+   under `.container` itself; `.events-calendar` (unlike `.events-grid`/
+   `.events-strip`) sits nested inside `Calendar` mode's own `.flip-animated-item`/
+   `.events-list` wrapper (see `Components.Pages.EventsPage.calendarAnimationView`),
+   one more level down inside `main`'s own padded content box -- confirmed
+   live, a `%` term there resolved against that narrower box instead,
+   overflowing past the viewport's own right edge at wide window widths. The
+   fixed `400px` sidesteps needing this to track any particular ancestor's
+   width at all. This only works because `.container` no longer clips
+   horizontal overflow (see main.css's own `.container`/`body` comments) --
+   `overflow-x: hidden` there would've clipped this breakout right back down
+   to 800px. */
 .events-grid,
-.events-strip {
-  width: 98vw;
-  max-width: 98vw;
-  margin-left: calc(-49vw + 50%);
+.events-strip,
+.events-calendar {
+  margin-left: calc(min(0px, -49vw + 400px));
+  margin-right: calc(min(0px, -49vw + 400px));
+}
+
+
+/* `Components.Pages.EventsPage`'s `Calendar` display mode -- the FullCalendar
+   instance (`Ports.renderCalendar`, `public/index.html`) sizes itself to
+   `height: "100%"` of this box, so this is the one place that height is
+   actually set. Fills most of the viewport below the navbar/filter controls
+   without ever needing its own scrollbar -- FullCalendar scrolls its own
+   internal grid instead. */
+.events-calendar {
+  height: calc(100vh - 200px);
+}
+
+/* An embedded copy (`model.embeddedPage` -- `Pages.Home_`/
+   `Components.Pages.UserProfilePage`, see `Components.Pages.EventsPage.calendarView`'s
+   own doc) gets a fixed, widget-sized height instead -- `100vh`-relative
+   sizing there would blow the embedding page's own layout up to full
+   viewport height for what's meant to be one card-sized section among
+   several. Higher specificity than `.events-calendar` alone, so no
+   `!important` needed. */
+.events-calendar.embedded {
+  height: 320px;
+}
+
+/* FullCalendar renders several of its own UI bits (day-of-week header
+   cells, the "+N more" popover link, ...) as a plain `<a>` with no `href` --
+   never meant to look like a hyperlink, just markup FullCalendar happens to
+   reuse for its own click handling. FullCalendar's own CSS (see
+   `.fc-col-header-cell-cushion`) never sets a `color` on these at all,
+   relying on them just inheriting whatever's ambient -- but this app's own
+   global `a { color: ...; }` rule (`UI.EmittedStylesheet.mainFrontendServerRules`,
+   scoped to the *whole* app, not just real links, since it stands in for the
+   old static `--accent` var) matches any `<a>`, `href` or not, and paints
+   these the same brand-link color as a real link. `:not([href])` scopes this
+   back down to exactly the ones that aren't -- `:not(.fc-event)` further
+   excludes FullCalendar's own events, which (per FullCalendar's own source)
+   are *also* rendered as a href-less `<a>` (`elTag: "a"`) yet deliberately
+   colored via their own `background-color-primary`/`hostnameToCSSClass`
+   classes instead (see `Components.Pages.EventsPage.calendarEventEncoder`'s
+   own doc) -- without this exclusion, this rule's extra `a` element
+   selector would outrank that two-class rule's specificity and override it
+   back to plain inherited text. */
+.events-calendar .fc a:not([href]):not(.fc-event, .fc-list-day-text),
+.events-calendar .fc-list-event-title>a {
+  color: inherit;
+}
+
+.events-calendar .fc-list-day-text {
+  color: black;
+}
+
+.events-calendar .fc .fc-list-event:hover td {
+  background-color: inherit;
+}
+
+/* `Components.Pages.EventsPage.calendarPreviewModalView` -- tapping a
+   `Calendar`-mode event opens this, centered above `UI.Modal.backdrop`
+   (`ui/modal.css`'s `.modal-backdrop`, reused as-is) rather than `UI.Modal`
+   itself, which is a small fixed-width confirm/cancel dialog frame, wrong
+   shape for a wide horizontal card strip. `max-width` leaves room to
+   breathe on a phone-width viewport; `.is-closed` mirrors `.modal.is-closed`'s
+   own "fade out via opacity/scale, zero the box so it can't still catch a
+   click or leave dead scroll space while closed" convention. */
+.calendar-preview-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 34;
+  width: 95vw;
+  max-width: 900px;
+  max-height: calc(100vh - 4rem);
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem 0.5rem 1rem 1rem;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.calendar-preview-modal.is-closed {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  width: 0;
+  max-width: 0;
+  padding: 0;
+  border: none;
+}
+
+.calendar-preview-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+}
+
+/* Mirrors `.events-strip` (below) -- horizontally-scrolling, smoothly (see
+   `scrollToCalendarPreviewCard`'s own doc for why the actual scroll is a
+   port call rather than `Browser.Dom.setViewportOf`, same reasoning as
+   `Pages.Event.EventId_`'s own instance strip). Right-padding leaves room for
+   `.calendar-preview-close` without the last card sitting under it. */
+.calendar-preview-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 0.8rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 2rem 0.5rem 0.5rem 0;
+}
+
+/* Wider than `.events-strip`'s own fixed 280px tile (`.events-grid
+   .flip-animated-item`/`.events-strip .flip-animated-item`, above) -- this
+   modal exists specifically to show one event in more detail than the
+   compact embedded strip does, and (unlike that strip) never needs to
+   animate this width via a FLIP mode-switch, so a plain `width` is enough. */
+.calendar-preview-card {
+  flex: 0 0 auto;
+  width: calc(min(60vw, 420px));
+  scroll-margin-left: -50%;
 }
 
 /* Mirrors `.event-instance-strip` (above). */

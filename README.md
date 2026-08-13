@@ -11,7 +11,7 @@
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
 
-Jonline is an open-source, community-scale social network designed to be capable of "[dumfederating](#dumfederation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Elm app, Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
+Jonline is an open-source, community-scale social network designed to be capable of "[delightfully federating](#delightful-federation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Elm app, Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
 
 Meanwhile, in support of media creators/providers who might want to self-host Jonline for themselves or in a consortium (whether in lieu of or in addition to monolithic social media presence like YouTube or Twitch), Jonline's CORS support does still afford private media holders a basic way to control who can see their content. Further, better Media permission/visibility controls could definitely be added, should, say, video creators or streamers want to migrate to self-hosting using a Jonline instance as their decentralized video platform to charge for premium content.
 
@@ -200,7 +200,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [GroupPost](#grouppost)
     - [Events](#events)
     - [Potential future features](#potential-future-features)
-    - [Dumfederation](#dumfederation)
+    - [Delightful Federation](#delightful-federation)
     - [Protocol Documentation](#protocol-documentation)
     - [Project Components](#project-components)
       - [Documentation](#documentation)
@@ -263,7 +263,7 @@ The goal of all this is to make it as easy as possible for local businesses to:
 
 Jonline is also a protocol, much like ActivityPub. It's worth skimming both the [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/) and the [Jonline Protocol Docs](https://jonline.io/docs/protocol), but this is a brief breakdown.
 
-Notably, while ActivityPub specifies a server-to-server federation protocol, Jonline simply lets servers "recommend" other servers by hostname, with the "federation" done on the client side by communicating with the recommended servers based on user authorization. (Yes, this could barely defined as "federation" at all - but it's cheaper and effectively the same to users. The Jonline protocol simply calls this [dumfederation](https://jonline.io/docs/protocol#dumfederation).)
+Notably, while ActivityPub specifies a server-to-server federation protocol, Jonline simply lets servers "recommend" other servers by hostname, with the "federation" done on the client side by communicating with the recommended servers based on user authorization. (Yes, this could barely defined as "federation" at all - but it's cheaper and effectively the same to users. The Jonline protocol simply calls this [delightful federation](https://jonline.io/docs/protocol#delightful-federation).)
 
 While ActivityPub is defined using HTTP(S) and JSON, Jonline is defined with gRPC (on port 27707, with optional TLS), using HTTP(S) for media and CDN-based host negotiation only (no JSON, anywhere). Broadly speaking, Jonline may be called "more opinionated" than ActivityPub as a social networking protocol, and covers more things than just social activity (including things like user-facing server configuration data, privacy policy, etc.).
 
@@ -365,7 +365,7 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 
 If you want these features prioritized, or have ideas about how they would fit into Jonline's design philosophy, reach out to me in any way, but especially with those payment buttons above 🙏
 
-### Dumfederation
+### Delightful Federation
 
 A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication supported is via [protocol-defined federated servers](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedserver), allowing, for instance, [jonline.io](https://jonline.io)'s UI to automatcally integrate posts and events from [bullcity.social](https://bullcity.social) and [oakcity.social](https://oakcity.social). (To limit this sort of external access, bullcity.social and oakcity.social admins can always use CORS.)
 

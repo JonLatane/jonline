@@ -2,6 +2,7 @@
   "dependencies": {
     "dompurify": "^3.4.12",
     "elm-spa": "^6.0.6",
+    "fullcalendar": "^6.1.21",
     "highlight.js": "^11.11.1",
     "marked": "^18.0.6"
   },

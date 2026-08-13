@@ -1,6 +1,14 @@
 //! Connects an `EventSyncDestination` to a Facebook Page (OAuth token exchange) and posts
 //! `EventInstance`s to it via the Graph API.
 //!
+//! This creates a Page **post** formatted to read like an event announcement (title, date/time
+//! range -- in the event location's local timezone if `logic::resolve_timezone` can geocode it,
+//! else UTC -- location, description, and a link back to the event on this Jonline server), not a
+//! real Facebook **Event** object -- the Graph API's `event` node has been
+//! creation/update/delete-locked for third-party apps since v3.3 (2018), restricted to approved
+//! Facebook Marketing Partners. See `docs/facebook_federation.md` for the full rundown of why and
+//! what this does instead.
+//!
 //! Posting to a user's personal timeline isn't possible via the Graph API (Facebook deprecated
 //! `publish_actions` in 2018) -- only to a Page the user administers, hence `EventSyncDestination`
 //! only supports `FacebookPage`, not a personal profile.
@@ -160,23 +168,38 @@ fn find_page_access_token(
     })
 }
 
-/// Posts an `EventInstance`'s title/content/link/start time to `destination`'s connected
-/// Facebook Page's feed. Returns the new post's ID and a link to it.
+/// Content for the Facebook Page post representing an `EventInstance` -- see `post_event_instance`.
+/// Grouped into one struct (rather than more positional args) since several fields share the same
+/// `Option<String>` shape and are easy to transpose by accident.
+pub struct EventInstancePost<'a> {
+    pub title: &'a Option<String>,
+    pub content: &'a Option<String>,
+    /// Arbitrary external link the organizer set on the underlying `Post` (e.g. a ticketing site).
+    /// Used as the Graph API `link` (and thus the post's link-preview card) only if `event_url`
+    /// isn't set.
+    pub link: &'a Option<String>,
+    pub starts_at: DateTime<Utc>,
+    pub ends_at: DateTime<Utc>,
+    /// `EventInstance.location`'s `uniformly_formatted_address`, if any.
+    pub location: &'a Option<String>,
+    /// The IANA timezone `location` resolves to, if `logic::resolve_timezone` could geocode it --
+    /// see that function's doc comment. `starts_at`/`ends_at` are shown in this zone if set,
+    /// otherwise in UTC.
+    pub timezone: Option<chrono_tz::Tz>,
+    /// Link to this event on this Jonline server's own frontend. Only buildable when
+    /// `ServerConfiguration.external_cdn_config.frontend_host` is configured -- see
+    /// `sync_event_instance`'s caller -- so this is `None` on servers without that set up.
+    pub event_url: &'a Option<String>,
+}
+
+/// Posts an `EventInstance`'s details to `destination`'s connected Facebook Page's feed (there is
+/// no real Facebook "Event" created -- see the module doc). Returns the new post's ID and a link
+/// to it.
 pub fn post_event_instance(
     destination: &models::EventSyncDestination,
-    title: &Option<String>,
-    content: &Option<String>,
-    link: &Option<String>,
-    starts_at: DateTime<Utc>,
+    post: &EventInstancePost,
 ) -> Result<(String, String), Status> {
-    post_event_instance_at(
-        DEFAULT_GRAPH_API_BASE_URL,
-        destination,
-        title,
-        content,
-        link,
-        starts_at,
-    )
+    post_event_instance_at(DEFAULT_GRAPH_API_BASE_URL, destination, post)
 }
 
 /// Same as `post_event_instance`, but against an arbitrary `base_url` -- see
@@ -184,10 +207,7 @@ pub fn post_event_instance(
 pub fn post_event_instance_at(
     base_url: &str,
     destination: &models::EventSyncDestination,
-    title: &Option<String>,
-    content: &Option<String>,
-    link: &Option<String>,
-    starts_at: DateTime<Utc>,
+    post: &EventInstancePost,
 ) -> Result<(String, String), Status> {
     let not_configured = || {
         Status::new(
@@ -208,14 +228,19 @@ pub fn post_event_instance_at(
         .and_then(|v| v.as_str())
         .ok_or_else(not_configured)?;
 
-    let message = format_message(title, content, starts_at);
+    let message = format_message(post);
     let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
 
     let mut params = vec![
         ("message", message.as_str()),
         ("access_token", access_token),
     ];
-    if let Some(link) = link.as_ref().filter(|l| !l.trim().is_empty()) {
+    let link = post
+        .event_url
+        .as_ref()
+        .filter(|l| !l.trim().is_empty())
+        .or_else(|| post.link.as_ref().filter(|l| !l.trim().is_empty()));
+    if let Some(link) = link {
         params.push(("link", link.as_str()));
     }
 
@@ -232,24 +257,50 @@ pub fn post_event_instance_at(
     Ok((post_id, post_url))
 }
 
-fn format_message(
-    title: &Option<String>,
-    content: &Option<String>,
-    starts_at: DateTime<Utc>,
-) -> String {
+fn format_message(post: &EventInstancePost) -> String {
     let mut lines = vec![];
-    if let Some(title) = title.as_ref().filter(|t| !t.trim().is_empty()) {
+    if let Some(title) = post.title.as_ref().filter(|t| !t.trim().is_empty()) {
         lines.push(title.clone());
     }
-    lines.push(
-        starts_at
-            .format("%A, %B %-d, %Y at %-I:%M %p UTC")
-            .to_string(),
-    );
-    if let Some(content) = content.as_ref().filter(|c| !c.trim().is_empty()) {
+    let time_range = match post.timezone {
+        Some(tz) => format_time_range(
+            post.starts_at.with_timezone(&tz),
+            post.ends_at.with_timezone(&tz),
+        ),
+        None => format_time_range(post.starts_at, post.ends_at),
+    };
+    lines.push(time_range);
+    if let Some(location) = post.location.as_ref().filter(|l| !l.trim().is_empty()) {
+        lines.push(format!("Location: {location}"));
+    }
+    if let Some(content) = post.content.as_ref().filter(|c| !c.trim().is_empty()) {
         lines.push(content.clone());
     }
+    if let Some(event_url) = post.event_url.as_ref().filter(|l| !l.trim().is_empty()) {
+        lines.push(format!("Details & RSVP: {event_url}"));
+    }
     lines.join("\n\n")
+}
+
+/// Generic over the timezone (`Utc` or a `chrono_tz::Tz` the caller already converted `starts_at`
+/// and `ends_at` into) so this doesn't need to duplicate itself for each.
+fn format_time_range<Tz: chrono::TimeZone>(starts_at: DateTime<Tz>, ends_at: DateTime<Tz>) -> String
+where
+    Tz::Offset: std::fmt::Display,
+{
+    let start_date = starts_at.format("%A, %B %-d, %Y").to_string();
+    let start_time = starts_at.format("%-I:%M %p").to_string();
+    let zone = starts_at.format("%Z").to_string();
+    if ends_at <= starts_at {
+        return format!("{start_date} at {start_time} {zone}");
+    }
+    if starts_at.date_naive() == ends_at.date_naive() {
+        let end_time = ends_at.format("%-I:%M %p").to_string();
+        format!("{start_date} at {start_time} \u{2013} {end_time} {zone}")
+    } else {
+        let end = ends_at.format("%A, %B %-d, %Y at %-I:%M %p %Z").to_string();
+        format!("{start_date} at {start_time} {zone} \u{2013} {end}")
+    }
 }
 
 fn graph_get(url: &str, params: &[(&str, &str)]) -> Result<Value, Status> {
