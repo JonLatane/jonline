@@ -59,6 +59,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, User)
+import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -640,7 +641,7 @@ update shared msg model =
         ( newModel, effect ) =
             updateInner shared msg model
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, calendarRenderEffect model newModel ] )
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, calendarRenderEffect shared model newModel ] )
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -1219,19 +1220,36 @@ relevantServers shared model =
             AccountsPanel.enabledServers shared.accounts
 
 
-{-| How many weeks before "now" `queryEndsAfter` widens `UpcomingEvents`-tab
-queries, so `Calendar` mode has something to actually show for the days
-before today -- a plain `Int` (rather than, say, a `Time.Posix` offset baked
-directly into `queryEndsAfter`) so it reads as the one obviously-adjustable
-knob here.
+{-| `calendarLookbackDays`'s fallback -- 14 days (2 weeks), used whenever
+`shared.accounts`' main server hasn't set `event_settings.calendar_lookback_days`
+(or hasn't finished connecting yet) -- the same default `server_configuration.proto`
+itself documents for that field.
 -}
-calendarLookbackWeeks : Int
-calendarLookbackWeeks =
-    2
+calendarLookbackDaysDefault : Int
+calendarLookbackDaysDefault =
+    14
+
+
+{-| How many days before "now" `queryEndsAfter` widens `UpcomingEvents`-tab
+queries, so `Calendar` mode has something to actually show for the days
+before today -- reads `shared.accounts`' main server's own
+`event_settings.calendar_lookback_days` (mirroring
+`Shared.AccountsPanel.recommendedFederatedServers`'s own
+`serverForHost .. mainFrontendHost |> Maybe.map configurationOf` idiom),
+falling back to `calendarLookbackDaysDefault` if that server, its
+configuration, or `eventSettings` itself isn't known yet.
+-}
+calendarLookbackDays : Shared.Model -> Int
+calendarLookbackDays shared =
+    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .eventSettings
+        |> Maybe.andThen .calendarLookbackDays
+        |> Maybe.withDefault calendarLookbackDaysDefault
 
 
 {-| The cutoff actually sent as `Components.Events.fetchEvents`' own
-`endsAfter` -- widens `endsAfter` back `calendarLookbackWeeks` while
+`endsAfter` -- widens `endsAfter` back `calendarLookbackDays` while
 `UpcomingEvents` is the active tab, _regardless_ of `model.mode`: switching
 `mode` (`DisplayModeChanged`) never itself refetches, so a query scoped to
 just `Calendar`-mode-only would leave `Calendar` with nothing to show for the
@@ -1243,10 +1261,10 @@ non-`Calendar` layout in the meantime. `EventsAfterDate`'s own fixed,
 user-picked cutoff is never widened -- "look back from today" has no meaning
 against a cutoff that isn't "today" to begin with.
 -}
-queryEndsAfter : Model -> Time.Posix -> Time.Posix
-queryEndsAfter model endsAfter =
+queryEndsAfter : Shared.Model -> Model -> Time.Posix -> Time.Posix
+queryEndsAfter shared model endsAfter =
     if model.tab == UpcomingEvents then
-        Time.millisToPosix (Time.posixToMillis endsAfter - calendarLookbackWeeks * 7 * 24 * 60 * 60 * 1000)
+        Time.millisToPosix (Time.posixToMillis endsAfter - calendarLookbackDays shared * 24 * 60 * 60 * 1000)
 
     else
         endsAfter
@@ -1269,7 +1287,7 @@ fetchServerEffect shared model endsAfter server =
         )
         (model.author |> Maybe.map (Tuple.second >> .id))
         model.searchText
-        (queryEndsAfter model endsAfter)
+        (queryEndsAfter shared model endsAfter)
         |> Task.attempt (GotServerEvents server.frontendHost)
         |> Effect.fromCmd
 
@@ -1460,7 +1478,7 @@ instanceHasStarted model instance =
 (the field that prefers `endsAt`) instead of `instanceStartsOrEndsAt`. Only
 ever relevant while `UpcomingEvents` is active: `queryEndsAfter` is the only
 thing that ever asks a server for an already-ended instance in the first
-place (widening that tab's query back `calendarLookbackWeeks` for `Calendar`
+place (widening that tab's query back `calendarLookbackDays` for `Calendar`
 mode's sake), so this is what `hiddenAsEnded` reads to keep those extra
 instances out of every other layout.
 -}
@@ -1495,7 +1513,7 @@ hiddenAsStarted model instance =
 {-| Whether `instance` should be treated as absent from `syncAnimations`' own
 `currentEvents` because it's already ended -- unlike `hiddenAsStarted`, not
 gated on any toggle: `queryEndsAfter` widens every `UpcomingEvents`-tab query
-`calendarLookbackWeeks` back regardless of `model.mode` (see its own doc for
+`calendarLookbackDays` back regardless of `model.mode` (see its own doc for
 why), so every non-`Calendar` layout needs this to claw back out the past,
 already-ended instances that widening pulled in purely for `Calendar` mode's
 benefit -- restoring the pre-lookback "only ever shows events that haven't
@@ -1759,7 +1777,7 @@ calendarAnimationKey =
 {-| How many hours long `instanceIsLong` treats as the threshold for "too
 long to usefully show on `Calendar` mode's day-by-day grid" -- a plain `Int`
 (hours, not milliseconds) so it reads as the one obviously-adjustable knob
-here, mirroring `calendarLookbackWeeks`.
+here, mirroring `calendarLookbackDaysDefault`.
 -}
 longEventThresholdHours : Int
 longEventThresholdHours =
@@ -1810,7 +1828,7 @@ way a card listing arguably does, so here the same toggle means "hide
 instances spanning more than `longEventThresholdHours`" instead. Also
 deliberately doesn't filter `hiddenAsEnded`, which is unconditionally `False`
 while `model.mode == Calendar` anyway (see its own doc): `Calendar` is meant
-to show its whole `queryEndsAfter`/`calendarLookbackWeeks` window, including
+to show its whole `queryEndsAfter`/`calendarLookbackDays` window, including
 already-ended instances, regardless of anything else on screen.
 -}
 calendarEvents : Model -> List ( String, Event, EventInstance )
@@ -1884,6 +1902,43 @@ calendarEventEncoder ( host, event, instance ) =
         )
 
 
+{-| `shared.accounts`' main server's `event_settings.default_calendar_display_mode`
+-- mirrors `calendarLookbackDays`'s own `serverForHost .. mainFrontendHost |>
+Maybe.map configurationOf` lookup, but falls back to
+`CalendarDisplayMode.defaultCalendarDisplayMode` (`CALENDARDISPLAYWEEK`)
+rather than a locally-defined constant, since that field (unlike
+`calendar_lookback_days`) isn't `optional` in the proto -- every server
+config already carries a real value once `eventSettings` itself is known.
+-}
+calendarDisplayMode : Shared.Model -> CalendarDisplayMode
+calendarDisplayMode shared =
+    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .eventSettings
+        |> Maybe.map .defaultCalendarDisplayMode
+        |> Maybe.withDefault CalendarDisplayMode.defaultCalendarDisplayMode
+
+
+{-| `calendarDisplayMode`'s value, as the FullCalendar `initialView` string
+`public/index.html`'s `renderCalendar` subscriber passes straight to
+`FullCalendar.Calendar`'s own `initialView` option -- names match that same
+subscriber's `headerToolbar` buttons (`dayGridMonth`/`timeGridWeek`/
+`timeGridDay`), so switching view via this default vs. clicking a header
+button lands on the identical FullCalendar view either way.
+-}
+fullCalendarInitialView : CalendarDisplayMode -> String
+fullCalendarInitialView mode =
+    case mode of
+        CALENDARDISPLAYMONTH ->
+            "dayGridMonth"
+
+        CALENDARDISPLAYDAY ->
+            "timeGridDay"
+
+        _ ->
+            "timeGridWeek"
+
+
 {-| Fires `Ports.renderCalendar` with `calendarEvents newModel`, but only
 when that could actually differ from what's already on screen -- `Calendar`
 mode is (or was) newly active (`oldModel.mode /= Calendar`, covering both
@@ -1895,10 +1950,13 @@ unconditionally on every message (mirroring `setBreadcrumbsRoot`'s own
 "recompute and let equality no-op it" convention), and `eventAnimations`
 (unlike `eventsByServer`) changes on every single `Animate`/`AnimateMove`
 tick, so keying off that instead would re-send the whole event list to JS 60
-times a second while any card animation is running.
+times a second while any card animation is running. `initialView` (via
+`calendarDisplayMode`/`fullCalendarInitialView`) only actually matters the
+first time a given container mounts -- `public/index.html`'s reused-element
+branch never re-reads it -- but is sent on every call anyway, same as `id`.
 -}
-calendarRenderEffect : Model -> Model -> Effect Msg
-calendarRenderEffect oldModel newModel =
+calendarRenderEffect : Shared.Model -> Model -> Model -> Effect Msg
+calendarRenderEffect shared oldModel newModel =
     if
         newModel.mode
             == Calendar
@@ -1908,6 +1966,7 @@ calendarRenderEffect oldModel newModel =
             (Encode.object
                 [ ( "id", Encode.string calendarContainerId )
                 , ( "events", Encode.list calendarEventEncoder (calendarEvents newModel) )
+                , ( "initialView", Encode.string (fullCalendarInitialView (calendarDisplayMode shared)) )
                 ]
             )
             |> Effect.fromCmd

@@ -691,7 +691,15 @@ error).
 -}
 optionalNonNegativeInt : String -> Maybe Int
 optionalNonNegativeInt text =
-    String.toInt (String.trim text) |> Maybe.andThen (\n -> if n >= 0 then Just n else Nothing)
+    String.toInt (String.trim text)
+        |> Maybe.andThen
+            (\n ->
+                if n >= 0 then
+                    Just n
+
+                else
+                    Nothing
+            )
 
 
 {-| `FeatureSettingsSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same
@@ -981,7 +989,7 @@ featureSettingsDisplayView set maybeAdminAccount current =
               else
                 []
             , if fields.calendarDisplayMode then
-                [ Common.settingsRow "Calendar Display Mode" (textValue (current.calendarDisplayMode |> Maybe.map calendarDisplayModeText |> Maybe.withDefault "—")) ]
+                [ Common.settingsRow "Default Calendar Display Mode" (textValue (current.calendarDisplayMode |> Maybe.map calendarDisplayModeText |> Maybe.withDefault "—")) ]
 
               else
                 []
@@ -1075,7 +1083,7 @@ featureSettingsEditView set edit =
               else
                 []
             , if fields.calendarDisplayMode then
-                [ Common.settingsRow "Calendar Display Mode"
+                [ Common.settingsRow "Default Calendar Display Mode"
                     (select [ onInput (FeatureSettingsCalendarDisplayModeChanged set) ]
                         (allCalendarDisplayModes
                             |> List.map
