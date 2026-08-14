@@ -452,7 +452,7 @@ match on except state carried in the `Model` -- this is that state. See
 type MeasurementPhase
     = NotMeasuring
     | AwaitingOldRects EventsDisplayMode
-    | AwaitingNewRects EventsDisplayMode (Dict String Rect)
+    | AwaitingNewRects (Dict String Rect)
 
 
 {-| A card's measured position/size (page coordinates, matching
@@ -751,6 +751,21 @@ updateInner shared msg model =
                         Shared.AccountsPanelMsg _ ->
                             fetchNewServers shared model
 
+                        -- The Delete button on a card's sync destination row
+                        -- (`Shared.RequestDelete`/`Shared.ConfirmEventInstanceSyncDestinationDelete`,
+                        -- see `eventCardView`'s own `onDelete`) resolving --
+                        -- mirrors `GotPushResult`'s own Ok branch (re-scoped
+                        -- refetch of just `host`'s server), since a
+                        -- successful un-sync changes `instance.syncDestinations`
+                        -- behind this already-fetched copy's back the same way.
+                        Shared.GotEventInstanceSyncDestinationDeleteResult host (Ok _) ->
+                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                                Just server ->
+                                    refetchServers shared model [ server ]
+
+                                Nothing ->
+                                    ( model, Effect.none )
+
                         _ ->
                             ( model, Effect.none )
             in
@@ -815,11 +830,11 @@ updateInner shared msg model =
                             let
                                 newModel : Model
                                 newModel =
-                                    { model | mode = newMode, measurementPhase = AwaitingNewRects newMode rects }
+                                    { model | mode = newMode, measurementPhase = AwaitingNewRects rects }
                             in
                             ( newModel, Task.attempt (\_ -> ReadyToMeasureNew) Dom.getViewport |> Effect.fromCmd )
 
-                        AwaitingNewRects _ oldRects ->
+                        AwaitingNewRects oldRects ->
                             let
                                 startMoveFor : String -> Rect -> Dict String EventAnimation -> Dict String EventAnimation
                                 startMoveFor key oldRect animations =
@@ -850,7 +865,7 @@ updateInner shared msg model =
 
         ReadyToMeasureNew ->
             case model.measurementPhase of
-                AwaitingNewRects _ oldRects ->
+                AwaitingNewRects oldRects ->
                     ( model, measureElementsEffect (Dict.keys oldRects) )
 
                 _ ->
@@ -1069,7 +1084,7 @@ applyMeasurementFailure model =
             in
             ( newModel, pushUrlWhenIdle newModel )
 
-        AwaitingNewRects _ _ ->
+        AwaitingNewRects _ ->
             let
                 newModel : Model
                 newModel =
@@ -2908,6 +2923,10 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
         onPush : String -> Msg
         onPush destinationId =
             PushEventInstanceToDestination host instance.id destinationId
+
+        onDelete : String -> String -> Msg
+        onDelete destinationId destinationLabel =
+            SharedMsg (Shared.RequestDelete (Shared.ConfirmEventInstanceSyncDestinationDelete instance destinationId destinationLabel host))
     in
     Events.eventCard
         shared.time
@@ -2927,5 +2946,6 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
         isPushing
         pushError
         onPush
+        onDelete
         event
         displayInstance

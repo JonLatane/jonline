@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from events.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: events.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -59,102 +57,18 @@ final $typed_data.Uint8List attendanceStatusDescriptor = $convert.base64Decode(
 const GetEventsRequest$json = {
   '1': 'GetEventsRequest',
   '2': [
-    {
-      '1': 'event_id',
-      '3': 1,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'eventId',
-      '17': true
-    },
-    {
-      '1': 'author_user_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'authorUserId',
-      '17': true
-    },
-    {
-      '1': 'group_id',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'groupId',
-      '17': true
-    },
-    {
-      '1': 'event_instance_id',
-      '3': 4,
-      '4': 1,
-      '5': 9,
-      '9': 3,
-      '10': 'eventInstanceId',
-      '17': true
-    },
-    {
-      '1': 'time_filter',
-      '3': 5,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.TimeFilter',
-      '9': 4,
-      '10': 'timeFilter',
-      '17': true
-    },
-    {
-      '1': 'attendee_id',
-      '3': 6,
-      '4': 1,
-      '5': 9,
-      '9': 5,
-      '10': 'attendeeId',
-      '17': true
-    },
-    {
-      '1': 'attendance_statuses',
-      '3': 7,
-      '4': 3,
-      '5': 14,
-      '6': '.jonline.AttendanceStatus',
-      '10': 'attendanceStatuses'
-    },
-    {
-      '1': 'post_id',
-      '3': 8,
-      '4': 1,
-      '5': 9,
-      '9': 6,
-      '10': 'postId',
-      '17': true
-    },
-    {
-      '1': 'listing_type',
-      '3': 10,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.EventListingType',
-      '10': 'listingType'
-    },
-    {
-      '1': 'search_text',
-      '3': 11,
-      '4': 1,
-      '5': 9,
-      '9': 7,
-      '10': 'searchText',
-      '17': true
-    },
-    {
-      '1': 'event_instance_post_ids',
-      '3': 12,
-      '4': 3,
-      '5': 9,
-      '10': 'eventInstancePostIds'
-    },
+    {'1': 'event_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'eventId', '17': true},
+    {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'authorUserId', '17': true},
+    {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
+    {'1': 'event_instance_id', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'eventInstanceId', '17': true},
+    {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 4, '10': 'timeFilter', '17': true},
+    {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 5, '10': 'attendeeId', '17': true},
+    {'1': 'attendance_statuses', '3': 7, '4': 3, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'attendanceStatuses'},
+    {'1': 'post_id', '3': 8, '4': 1, '5': 9, '9': 6, '10': 'postId', '17': true},
+    {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
+    {'1': 'search_text', '3': 11, '4': 1, '5': 9, '9': 7, '10': 'searchText', '17': true},
+    {'1': 'event_instance_post_ids', '3': 12, '4': 3, '5': 9, '10': 'eventInstancePostIds'},
+    {'1': 'anonymous_attendee_auth_token', '3': 13, '4': 1, '5': 9, '9': 8, '10': 'anonymousAttendeeAuthToken', '17': true},
   ],
   '8': [
     {'1': '_event_id'},
@@ -165,6 +79,7 @@ const GetEventsRequest$json = {
     {'1': '_attendee_id'},
     {'1': '_post_id'},
     {'1': '_search_text'},
+    {'1': '_anonymous_attendee_auth_token'},
   ],
 };
 
@@ -179,54 +94,20 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESPAoMbGlzdGluZ1'
     '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtz'
     'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBEjUKF2V2ZW50X2luc3RhbmNlX3Bvc3'
-    'RfaWRzGAwgAygJUhRldmVudEluc3RhbmNlUG9zdElkc0ILCglfZXZlbnRfaWRCEQoPX2F1dGhv'
-    'cl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZm'
-    'lsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZEIOCgxfc2VhcmNoX3RleHQ=');
+    'RfaWRzGAwgAygJUhRldmVudEluc3RhbmNlUG9zdElkcxJGCh1hbm9ueW1vdXNfYXR0ZW5kZWVf'
+    'YXV0aF90b2tlbhgNIAEoCUgIUhphbm9ueW1vdXNBdHRlbmRlZUF1dGhUb2tlbogBAUILCglfZX'
+    'ZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFu'
+    'Y2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZEIOCgxfc2'
+    'VhcmNoX3RleHRCIAoeX2Fub255bW91c19hdHRlbmRlZV9hdXRoX3Rva2Vu');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {
   '1': 'TimeFilter',
   '2': [
-    {
-      '1': 'starts_after',
-      '3': 1,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 0,
-      '10': 'startsAfter',
-      '17': true
-    },
-    {
-      '1': 'ends_after',
-      '3': 2,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 1,
-      '10': 'endsAfter',
-      '17': true
-    },
-    {
-      '1': 'starts_before',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 2,
-      '10': 'startsBefore',
-      '17': true
-    },
-    {
-      '1': 'ends_before',
-      '3': 4,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 3,
-      '10': 'endsBefore',
-      '17': true
-    },
+    {'1': 'starts_after', '3': 1, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'startsAfter', '17': true},
+    {'1': 'ends_after', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'endsAfter', '17': true},
+    {'1': 'starts_before', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'startsBefore', '17': true},
+    {'1': 'ends_before', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 3, '10': 'endsBefore', '17': true},
   ],
   '8': [
     {'1': '_starts_after'},
@@ -250,14 +131,7 @@ final $typed_data.Uint8List timeFilterDescriptor = $convert.base64Decode(
 const GetEventsResponse$json = {
   '1': 'GetEventsResponse',
   '2': [
-    {
-      '1': 'events',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Event',
-      '10': 'events'
-    },
+    {'1': 'events', '3': 1, '4': 3, '5': 11, '6': '.jonline.Event', '10': 'events'},
   ],
 };
 
@@ -272,32 +146,9 @@ const Event$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
-    {
-      '1': 'info',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.EventInfo',
-      '10': 'info'
-    },
-    {
-      '1': 'instances',
-      '3': 4,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.EventInstance',
-      '10': 'instances'
-    },
-    {
-      '1': 'event_sync_source',
-      '3': 5,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.EventSyncSource',
-      '9': 0,
-      '10': 'eventSyncSource',
-      '17': true
-    },
+    {'1': 'info', '3': 3, '4': 1, '5': 11, '6': '.jonline.EventInfo', '10': 'info'},
+    {'1': 'instances', '3': 4, '4': 3, '5': 11, '6': '.jonline.EventInstance', '10': 'instances'},
+    {'1': 'event_sync_source', '3': 5, '4': 1, '5': 11, '6': '.jonline.EventSyncSource', '9': 0, '10': 'eventSyncSource', '17': true},
   ],
   '8': [
     {'1': '_event_sync_source'},
@@ -312,191 +163,101 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     '9zb3VyY2UYBSABKAsyGC5qb25saW5lLkV2ZW50U3luY1NvdXJjZUgAUg9ldmVudFN5bmNTb3Vy'
     'Y2WIAQFCFAoSX2V2ZW50X3N5bmNfc291cmNl');
 
-@$core.Deprecated('Use eventSyncSourceDescriptor instead')
-const EventSyncSource$json = {
-  '1': 'EventSyncSource',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {
-      '1': 'owner',
-      '3': 2,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Author',
-      '10': 'owner'
-    },
-    {
-      '1': 'sync_interval_seconds',
-      '3': 3,
-      '4': 1,
-      '5': 4,
-      '10': 'syncIntervalSeconds'
-    },
-    {
-      '1': 'created_at',
-      '3': 4,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
-    {
-      '1': 'updated_at',
-      '3': 5,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 1,
-      '10': 'updatedAt',
-      '17': true
-    },
-    {
-      '1': 'last_synced_at',
-      '3': 6,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 2,
-      '10': 'lastSyncedAt',
-      '17': true
-    },
-    {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
-    {
-      '1': 'event_instance_count',
-      '3': 8,
-      '4': 1,
-      '5': 4,
-      '10': 'eventInstanceCount'
-    },
-    {
-      '1': 'ics_subscription_url',
-      '3': 9,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'icsSubscriptionUrl'
-    },
-  ],
-  '8': [
-    {'1': 'configuration'},
-    {'1': '_updated_at'},
-    {'1': '_last_synced_at'},
-  ],
-};
-
-/// Descriptor for `EventSyncSource`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List eventSyncSourceDescriptor = $convert.base64Decode(
-    'Cg9FdmVudFN5bmNTb3VyY2USDgoCaWQYASABKAlSAmlkEiUKBW93bmVyGAIgASgLMg8uam9ubG'
-    'luZS5BdXRob3JSBW93bmVyEjIKFXN5bmNfaW50ZXJ2YWxfc2Vjb25kcxgDIAEoBFITc3luY0lu'
-    'dGVydmFsU2Vjb25kcxI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
-    'VzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYu'
-    'VGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJFCg5sYXN0X3N5bmNlZF9hdBgGIAEoCzIaLmdvb2'
-    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEh8KC2V2ZW50X2NvdW50'
-    'GAcgASgEUgpldmVudENvdW50EjAKFGV2ZW50X2luc3RhbmNlX2NvdW50GAggASgEUhJldmVudE'
-    'luc3RhbmNlQ291bnQSMgoUaWNzX3N1YnNjcmlwdGlvbl91cmwYCSABKAlIAFISaWNzU3Vic2Ny'
-    'aXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2'
-    'VkX2F0');
-
 @$core.Deprecated('Use getEventSyncSourcesResponseDescriptor instead')
 const GetEventSyncSourcesResponse$json = {
   '1': 'GetEventSyncSourcesResponse',
   '2': [
-    {
-      '1': 'sources',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.EventSyncSource',
-      '10': 'sources'
-    },
+    {'1': 'sources', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventSyncSource', '10': 'sources'},
   ],
 };
 
 /// Descriptor for `GetEventSyncSourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getEventSyncSourcesResponseDescriptor =
-    $convert.base64Decode(
-        'ChtHZXRFdmVudFN5bmNTb3VyY2VzUmVzcG9uc2USMgoHc291cmNlcxgBIAMoCzIYLmpvbmxpbm'
-        'UuRXZlbnRTeW5jU291cmNlUgdzb3VyY2Vz');
+final $typed_data.Uint8List getEventSyncSourcesResponseDescriptor = $convert.base64Decode(
+    'ChtHZXRFdmVudFN5bmNTb3VyY2VzUmVzcG9uc2USMgoHc291cmNlcxgBIAMoCzIYLmpvbmxpbm'
+    'UuRXZlbnRTeW5jU291cmNlUgdzb3VyY2Vz');
 
 @$core.Deprecated('Use deleteEventSyncSourceRequestDescriptor instead')
 const DeleteEventSyncSourceRequest$json = {
   '1': 'DeleteEventSyncSourceRequest',
   '2': [
-    {
-      '1': 'source',
-      '3': 1,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.EventSyncSource',
-      '10': 'source'
-    },
-    {
-      '1': 'delete_synced_events',
-      '3': 2,
-      '4': 1,
-      '5': 8,
-      '10': 'deleteSyncedEvents'
-    },
+    {'1': 'source', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventSyncSource', '10': 'source'},
+    {'1': 'delete_synced_events', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedEvents'},
   ],
 };
 
 /// Descriptor for `DeleteEventSyncSourceRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List deleteEventSyncSourceRequestDescriptor =
-    $convert.base64Decode(
-        'ChxEZWxldGVFdmVudFN5bmNTb3VyY2VSZXF1ZXN0EjAKBnNvdXJjZRgBIAEoCzIYLmpvbmxpbm'
-        'UuRXZlbnRTeW5jU291cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhS'
-        'EmRlbGV0ZVN5bmNlZEV2ZW50cw==');
+final $typed_data.Uint8List deleteEventSyncSourceRequestDescriptor = $convert.base64Decode(
+    'ChxEZWxldGVFdmVudFN5bmNTb3VyY2VSZXF1ZXN0EjAKBnNvdXJjZRgBIAEoCzIYLmpvbmxpbm'
+    'UuRXZlbnRTeW5jU291cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhS'
+    'EmRlbGV0ZVN5bmNlZEV2ZW50cw==');
+
+@$core.Deprecated('Use getEventSyncDestinationsResponseDescriptor instead')
+const GetEventSyncDestinationsResponse$json = {
+  '1': 'GetEventSyncDestinationsResponse',
+  '2': [
+    {'1': 'destinations', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventSyncDestination', '10': 'destinations'},
+  ],
+};
+
+/// Descriptor for `GetEventSyncDestinationsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getEventSyncDestinationsResponseDescriptor = $convert.base64Decode(
+    'CiBHZXRFdmVudFN5bmNEZXN0aW5hdGlvbnNSZXNwb25zZRJBCgxkZXN0aW5hdGlvbnMYASADKA'
+    'syHS5qb25saW5lLkV2ZW50U3luY0Rlc3RpbmF0aW9uUgxkZXN0aW5hdGlvbnM=');
+
+@$core.Deprecated('Use deleteEventSyncDestinationRequestDescriptor instead')
+const DeleteEventSyncDestinationRequest$json = {
+  '1': 'DeleteEventSyncDestinationRequest',
+  '2': [
+    {'1': 'destination', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventSyncDestination', '10': 'destination'},
+    {'1': 'delete_synced_posts', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedPosts'},
+  ],
+};
+
+/// Descriptor for `DeleteEventSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEventSyncDestinationRequestDescriptor = $convert.base64Decode(
+    'CiFEZWxldGVFdmVudFN5bmNEZXN0aW5hdGlvblJlcXVlc3QSPwoLZGVzdGluYXRpb24YASABKA'
+    'syHS5qb25saW5lLkV2ZW50U3luY0Rlc3RpbmF0aW9uUgtkZXN0aW5hdGlvbhIuChNkZWxldGVf'
+    'c3luY2VkX3Bvc3RzGAIgASgIUhFkZWxldGVTeW5jZWRQb3N0cw==');
+
+@$core.Deprecated('Use syncEventInstanceRequestDescriptor instead')
+const SyncEventInstanceRequest$json = {
+  '1': 'SyncEventInstanceRequest',
+  '2': [
+    {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
+    {'1': 'event_sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+  ],
+};
+
+/// Descriptor for `SyncEventInstanceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List syncEventInstanceRequestDescriptor = $convert.base64Decode(
+    'ChhTeW5jRXZlbnRJbnN0YW5jZVJlcXVlc3QSKgoRZXZlbnRfaW5zdGFuY2VfaWQYASABKAlSD2'
+    'V2ZW50SW5zdGFuY2VJZBI5ChlldmVudF9zeW5jX2Rlc3RpbmF0aW9uX2lkGAIgASgJUhZldmVu'
+    'dFN5bmNEZXN0aW5hdGlvbklk');
+
+@$core.Deprecated('Use deleteEventInstanceSyncDestinationRequestDescriptor instead')
+const DeleteEventInstanceSyncDestinationRequest$json = {
+  '1': 'DeleteEventInstanceSyncDestinationRequest',
+  '2': [
+    {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
+    {'1': 'event_sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+  ],
+};
+
+/// Descriptor for `DeleteEventInstanceSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEventInstanceSyncDestinationRequestDescriptor = $convert.base64Decode(
+    'CilEZWxldGVFdmVudEluc3RhbmNlU3luY0Rlc3RpbmF0aW9uUmVxdWVzdBIqChFldmVudF9pbn'
+    'N0YW5jZV9pZBgBIAEoCVIPZXZlbnRJbnN0YW5jZUlkEjkKGWV2ZW50X3N5bmNfZGVzdGluYXRp'
+    'b25faWQYAiABKAlSFmV2ZW50U3luY0Rlc3RpbmF0aW9uSWQ=');
 
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
   '1': 'EventInfo',
   '2': [
-    {
-      '1': 'allows_rsvps',
-      '3': 1,
-      '4': 1,
-      '5': 8,
-      '9': 0,
-      '10': 'allowsRsvps',
-      '17': true
-    },
-    {
-      '1': 'allows_anonymous_rsvps',
-      '3': 2,
-      '4': 1,
-      '5': 8,
-      '9': 1,
-      '10': 'allowsAnonymousRsvps',
-      '17': true
-    },
-    {
-      '1': 'max_attendees',
-      '3': 3,
-      '4': 1,
-      '5': 13,
-      '9': 2,
-      '10': 'maxAttendees',
-      '17': true
-    },
-    {
-      '1': 'hide_location_until_rsvp_approved',
-      '3': 4,
-      '4': 1,
-      '5': 8,
-      '9': 3,
-      '10': 'hideLocationUntilRsvpApproved',
-      '17': true
-    },
-    {
-      '1': 'default_rsvp_moderation',
-      '3': 5,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Moderation',
-      '9': 4,
-      '10': 'defaultRsvpModeration',
-      '17': true
-    },
+    {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
+    {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
+    {'1': 'max_attendees', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'maxAttendees', '17': true},
+    {'1': 'hide_location_until_rsvp_approved', '3': 4, '4': 1, '5': 8, '9': 3, '10': 'hideLocationUntilRsvpApproved', '17': true},
+    {'1': 'default_rsvp_moderation', '3': 5, '4': 1, '5': 14, '6': '.jonline.Moderation', '9': 4, '10': 'defaultRsvpModeration', '17': true},
   ],
   '8': [
     {'1': '_allows_rsvps'},
@@ -525,53 +286,22 @@ const EventInstance$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'event_id', '3': 2, '4': 1, '5': 9, '10': 'eventId'},
     {'1': 'post', '3': 3, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
-    {
-      '1': 'info',
-      '3': 4,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.EventInstanceInfo',
-      '10': 'info'
-    },
-    {
-      '1': 'starts_at',
-      '3': 5,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'startsAt'
-    },
-    {
-      '1': 'ends_at',
-      '3': 6,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'endsAt'
-    },
-    {
-      '1': 'location',
-      '3': 7,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Location',
-      '9': 0,
-      '10': 'location',
-      '17': true
-    },
-    {
-      '1': 'event_sync_source_instance_id',
-      '3': 8,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'eventSyncSourceInstanceId',
-      '17': true
-    },
+    {'1': 'info', '3': 4, '4': 1, '5': 11, '6': '.jonline.EventInstanceInfo', '10': 'info'},
+    {'1': 'starts_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startsAt'},
+    {'1': 'ends_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endsAt'},
+    {'1': 'location', '3': 7, '4': 1, '5': 11, '6': '.jonline.Location', '9': 0, '10': 'location', '17': true},
+    {'1': 'event_sync_source_instance_id', '3': 8, '4': 1, '5': 9, '9': 1, '10': 'eventSyncSourceInstanceId', '17': true},
+    {'1': 'sync_missing_since', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'syncMissingSince', '17': true},
+    {'1': 'attendances', '3': 10, '4': 1, '5': 11, '6': '.jonline.EventAttendances', '9': 3, '10': 'attendances', '17': true},
+    {'1': 'current_user_attendance', '3': 11, '4': 1, '5': 11, '6': '.jonline.EventAttendance', '9': 4, '10': 'currentUserAttendance', '17': true},
+    {'1': 'sync_destinations', '3': 12, '4': 3, '5': 11, '6': '.jonline.EventInstanceSyncDestination', '10': 'syncDestinations'},
   ],
   '8': [
     {'1': '_location'},
     {'1': '_event_sync_source_instance_id'},
+    {'1': '_sync_missing_since'},
+    {'1': '_attendances'},
+    {'1': '_current_user_attendance'},
   ],
 };
 
@@ -583,23 +313,46 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCHN0YXJ0c0F0EjMKB2VuZHNfYXQYBiABKAsyGi5nb29n'
     'bGUucHJvdG9idWYuVGltZXN0YW1wUgZlbmRzQXQSMgoIbG9jYXRpb24YByABKAsyES5qb25saW'
     '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBEkUKHWV2ZW50X3N5bmNfc291cmNlX2luc3RhbmNl'
-    'X2lkGAggASgJSAFSGWV2ZW50U3luY1NvdXJjZUluc3RhbmNlSWSIAQFCCwoJX2xvY2F0aW9uQi'
-    'AKHl9ldmVudF9zeW5jX3NvdXJjZV9pbnN0YW5jZV9pZA==');
+    'X2lkGAggASgJSAFSGWV2ZW50U3luY1NvdXJjZUluc3RhbmNlSWSIAQESTQoSc3luY19taXNzaW'
+    '5nX3NpbmNlGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUhBzeW5jTWlzc2lu'
+    'Z1NpbmNliAEBEkAKC2F0dGVuZGFuY2VzGAogASgLMhkuam9ubGluZS5FdmVudEF0dGVuZGFuY2'
+    'VzSANSC2F0dGVuZGFuY2VziAEBElUKF2N1cnJlbnRfdXNlcl9hdHRlbmRhbmNlGAsgASgLMhgu'
+    'am9ubGluZS5FdmVudEF0dGVuZGFuY2VIBFIVY3VycmVudFVzZXJBdHRlbmRhbmNliAEBElIKEX'
+    'N5bmNfZGVzdGluYXRpb25zGAwgAygLMiUuam9ubGluZS5FdmVudEluc3RhbmNlU3luY0Rlc3Rp'
+    'bmF0aW9uUhBzeW5jRGVzdGluYXRpb25zQgsKCV9sb2NhdGlvbkIgCh5fZXZlbnRfc3luY19zb3'
+    'VyY2VfaW5zdGFuY2VfaWRCFQoTX3N5bmNfbWlzc2luZ19zaW5jZUIOCgxfYXR0ZW5kYW5jZXNC'
+    'GgoYX2N1cnJlbnRfdXNlcl9hdHRlbmRhbmNl');
+
+@$core.Deprecated('Use eventInstanceSyncDestinationDescriptor instead')
+const EventInstanceSyncDestination$json = {
+  '1': 'EventInstanceSyncDestination',
+  '2': [
+    {'1': 'event_sync_destination_id', '3': 1, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+    {'1': 'destination_instance_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'destinationInstanceId', '17': true},
+    {'1': 'destination_url', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'destinationUrl', '17': true},
+    {'1': 'synced_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'syncedAt', '17': true},
+  ],
+  '8': [
+    {'1': '_destination_instance_id'},
+    {'1': '_destination_url'},
+    {'1': '_synced_at'},
+  ],
+};
+
+/// Descriptor for `EventInstanceSyncDestination`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventInstanceSyncDestinationDescriptor = $convert.base64Decode(
+    'ChxFdmVudEluc3RhbmNlU3luY0Rlc3RpbmF0aW9uEjkKGWV2ZW50X3N5bmNfZGVzdGluYXRpb2'
+    '5faWQYASABKAlSFmV2ZW50U3luY0Rlc3RpbmF0aW9uSWQSOwoXZGVzdGluYXRpb25faW5zdGFu'
+    'Y2VfaWQYAiABKAlIAFIVZGVzdGluYXRpb25JbnN0YW5jZUlkiAEBEiwKD2Rlc3RpbmF0aW9uX3'
+    'VybBgDIAEoCUgBUg5kZXN0aW5hdGlvblVybIgBARI8CglzeW5jZWRfYXQYBCABKAsyGi5nb29n'
+    'bGUucHJvdG9idWYuVGltZXN0YW1wSAJSCHN5bmNlZEF0iAEBQhoKGF9kZXN0aW5hdGlvbl9pbn'
+    'N0YW5jZV9pZEISChBfZGVzdGluYXRpb25fdXJsQgwKCl9zeW5jZWRfYXQ=');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {
   '1': 'EventInstanceInfo',
   '2': [
-    {
-      '1': 'rsvp_info',
-      '3': 1,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.EventInstanceRsvpInfo',
-      '9': 0,
-      '10': 'rsvpInfo',
-      '17': true
-    },
+    {'1': 'rsvp_info', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventInstanceRsvpInfo', '9': 0, '10': 'rsvpInfo', '17': true},
   ],
   '8': [
     {'1': '_rsvp_info'},
@@ -615,87 +368,15 @@ final $typed_data.Uint8List eventInstanceInfoDescriptor = $convert.base64Decode(
 const EventInstanceRsvpInfo$json = {
   '1': 'EventInstanceRsvpInfo',
   '2': [
-    {
-      '1': 'allows_rsvps',
-      '3': 1,
-      '4': 1,
-      '5': 8,
-      '9': 0,
-      '10': 'allowsRsvps',
-      '17': true
-    },
-    {
-      '1': 'allows_anonymous_rsvps',
-      '3': 2,
-      '4': 1,
-      '5': 8,
-      '9': 1,
-      '10': 'allowsAnonymousRsvps',
-      '17': true
-    },
-    {
-      '1': 'max_attendees',
-      '3': 3,
-      '4': 1,
-      '5': 13,
-      '9': 2,
-      '10': 'maxAttendees',
-      '17': true
-    },
-    {
-      '1': 'going_rsvps',
-      '3': 4,
-      '4': 1,
-      '5': 13,
-      '9': 3,
-      '10': 'goingRsvps',
-      '17': true
-    },
-    {
-      '1': 'going_attendees',
-      '3': 5,
-      '4': 1,
-      '5': 13,
-      '9': 4,
-      '10': 'goingAttendees',
-      '17': true
-    },
-    {
-      '1': 'interested_rsvps',
-      '3': 6,
-      '4': 1,
-      '5': 13,
-      '9': 5,
-      '10': 'interestedRsvps',
-      '17': true
-    },
-    {
-      '1': 'interested_attendees',
-      '3': 7,
-      '4': 1,
-      '5': 13,
-      '9': 6,
-      '10': 'interestedAttendees',
-      '17': true
-    },
-    {
-      '1': 'invited_rsvps',
-      '3': 8,
-      '4': 1,
-      '5': 13,
-      '9': 7,
-      '10': 'invitedRsvps',
-      '17': true
-    },
-    {
-      '1': 'invited_attendees',
-      '3': 9,
-      '4': 1,
-      '5': 13,
-      '9': 8,
-      '10': 'invitedAttendees',
-      '17': true
-    },
+    {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
+    {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
+    {'1': 'max_attendees', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'maxAttendees', '17': true},
+    {'1': 'going_rsvps', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'goingRsvps', '17': true},
+    {'1': 'going_attendees', '3': 5, '4': 1, '5': 13, '9': 4, '10': 'goingAttendees', '17': true},
+    {'1': 'interested_rsvps', '3': 6, '4': 1, '5': 13, '9': 5, '10': 'interestedRsvps', '17': true},
+    {'1': 'interested_attendees', '3': 7, '4': 1, '5': 13, '9': 6, '10': 'interestedAttendees', '17': true},
+    {'1': 'invited_rsvps', '3': 8, '4': 1, '5': 13, '9': 7, '10': 'invitedRsvps', '17': true},
+    {'1': 'invited_attendees', '3': 9, '4': 1, '5': 13, '9': 8, '10': 'invitedAttendees', '17': true},
   ],
   '8': [
     {'1': '_allows_rsvps'},
@@ -730,15 +411,7 @@ const GetEventAttendancesRequest$json = {
   '1': 'GetEventAttendancesRequest',
   '2': [
     {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
-    {
-      '1': 'anonymous_attendee_auth_token',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'anonymousAttendeeAuthToken',
-      '17': true
-    },
+    {'1': 'anonymous_attendee_auth_token', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'anonymousAttendeeAuthToken', '17': true},
   ],
   '8': [
     {'1': '_anonymous_attendee_auth_token'},
@@ -756,24 +429,8 @@ final $typed_data.Uint8List getEventAttendancesRequestDescriptor = $convert.base
 const EventAttendances$json = {
   '1': 'EventAttendances',
   '2': [
-    {
-      '1': 'attendances',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.EventAttendance',
-      '10': 'attendances'
-    },
-    {
-      '1': 'hidden_location',
-      '3': 2,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Location',
-      '9': 0,
-      '10': 'hiddenLocation',
-      '17': true
-    },
+    {'1': 'attendances', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventAttendance', '10': 'attendances'},
+    {'1': 'hidden_location', '3': 2, '4': 1, '5': 11, '6': '.jonline.Location', '9': 0, '10': 'hiddenLocation', '17': true},
   ],
   '8': [
     {'1': '_hidden_location'},
@@ -792,70 +449,16 @@ const EventAttendance$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'event_instance_id', '3': 2, '4': 1, '5': 9, '10': 'eventInstanceId'},
-    {
-      '1': 'user_attendee',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.UserAttendee',
-      '9': 0,
-      '10': 'userAttendee'
-    },
-    {
-      '1': 'anonymous_attendee',
-      '3': 4,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.AnonymousAttendee',
-      '9': 0,
-      '10': 'anonymousAttendee'
-    },
+    {'1': 'user_attendee', '3': 3, '4': 1, '5': 11, '6': '.jonline.UserAttendee', '9': 0, '10': 'userAttendee'},
+    {'1': 'anonymous_attendee', '3': 4, '4': 1, '5': 11, '6': '.jonline.AnonymousAttendee', '9': 0, '10': 'anonymousAttendee'},
     {'1': 'number_of_guests', '3': 5, '4': 1, '5': 13, '10': 'numberOfGuests'},
-    {
-      '1': 'status',
-      '3': 6,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.AttendanceStatus',
-      '10': 'status'
-    },
-    {
-      '1': 'inviting_user_id',
-      '3': 7,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'invitingUserId',
-      '17': true
-    },
+    {'1': 'status', '3': 6, '4': 1, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'status'},
+    {'1': 'inviting_user_id', '3': 7, '4': 1, '5': 9, '9': 1, '10': 'invitingUserId', '17': true},
     {'1': 'private_note', '3': 8, '4': 1, '5': 9, '10': 'privateNote'},
     {'1': 'public_note', '3': 9, '4': 1, '5': 9, '10': 'publicNote'},
-    {
-      '1': 'moderation',
-      '3': 10,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Moderation',
-      '10': 'moderation'
-    },
-    {
-      '1': 'created_at',
-      '3': 11,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
-    {
-      '1': 'updated_at',
-      '3': 12,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 2,
-      '10': 'updatedAt',
-      '17': true
-    },
+    {'1': 'moderation', '3': 10, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    {'1': 'created_at', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'updated_at', '3': 12, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
   ],
   '8': [
     {'1': 'attendee'},
@@ -884,23 +487,8 @@ const AnonymousAttendee$json = {
   '1': 'AnonymousAttendee',
   '2': [
     {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
-    {
-      '1': 'contact_methods',
-      '3': 2,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.ContactMethod',
-      '10': 'contactMethods'
-    },
-    {
-      '1': 'auth_token',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'authToken',
-      '17': true
-    },
+    {'1': 'contact_methods', '3': 2, '4': 3, '5': 11, '6': '.jonline.ContactMethod', '10': 'contactMethods'},
+    {'1': 'auth_token', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'authToken', '17': true},
   ],
   '8': [
     {'1': '_auth_token'},
@@ -918,42 +506,10 @@ const UserAttendee$json = {
   '1': 'UserAttendee',
   '2': [
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
-    {
-      '1': 'username',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'username',
-      '17': true
-    },
-    {
-      '1': 'avatar',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.MediaReference',
-      '9': 1,
-      '10': 'avatar',
-      '17': true
-    },
-    {
-      '1': 'real_name',
-      '3': 4,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'realName',
-      '17': true
-    },
-    {
-      '1': 'permissions',
-      '3': 5,
-      '4': 3,
-      '5': 14,
-      '6': '.jonline.Permission',
-      '10': 'permissions'
-    },
+    {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
+    {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
+    {'1': 'real_name', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'realName', '17': true},
+    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
   ],
   '8': [
     {'1': '_username'},
@@ -969,3 +525,4 @@ final $typed_data.Uint8List userAttendeeDescriptor = $convert.base64Decode(
     'Y2VIAVIGYXZhdGFyiAEBEiAKCXJlYWxfbmFtZRgEIAEoCUgCUghyZWFsTmFtZYgBARI1CgtwZX'
     'JtaXNzaW9ucxgFIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnNCCwoJX3Vz'
     'ZXJuYW1lQgkKB19hdmF0YXJCDAoKX3JlYWxfbmFtZQ==');
+

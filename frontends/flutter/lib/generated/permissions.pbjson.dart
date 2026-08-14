@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from permissions.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: permissions.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -46,11 +44,14 @@ const Permission$json = {
     {'1': 'MODERATE_EVENTS', '2': 34},
     {'1': 'RSVP_TO_EVENTS', '2': 35},
     {'1': 'SYNCHRONIZE_EVENTS', '2': 36},
+    {'1': 'SYNC_EVENTS_TO_FACEBOOK', '2': 37},
     {'1': 'VIEW_MEDIA', '2': 40},
     {'1': 'CREATE_MEDIA', '2': 41},
     {'1': 'PUBLISH_MEDIA_LOCALLY', '2': 42},
     {'1': 'PUBLISH_MEDIA_GLOBALLY', '2': 43},
     {'1': 'MODERATE_MEDIA', '2': 44},
+    {'1': 'READ_PERSONAL_MESSAGES', '2': 50},
+    {'1': 'READ_ALL_SYSTEM_MESSAGES', '2': 51},
     {'1': 'BUSINESS', '2': 9998},
     {'1': 'RUN_BOTS', '2': 9999},
     {'1': 'ADMIN', '2': 10000},
@@ -71,7 +72,10 @@ final $typed_data.Uint8List permissionDescriptor = $convert.base64Decode(
     'UkVQTFlfVE9fUE9TVFMQGRIPCgtWSUVXX0VWRU5UUxAeEhEKDUNSRUFURV9FVkVOVFMQHxIaCh'
     'ZQVUJMSVNIX0VWRU5UU19MT0NBTExZECASGwoXUFVCTElTSF9FVkVOVFNfR0xPQkFMTFkQIRIT'
     'Cg9NT0RFUkFURV9FVkVOVFMQIhISCg5SU1ZQX1RPX0VWRU5UUxAjEhYKElNZTkNIUk9OSVpFX0'
-    'VWRU5UUxAkEg4KClZJRVdfTUVESUEQKBIQCgxDUkVBVEVfTUVESUEQKRIZChVQVUJMSVNIX01F'
-    'RElBX0xPQ0FMTFkQKhIaChZQVUJMSVNIX01FRElBX0dMT0JBTExZECsSEgoOTU9ERVJBVEVfTU'
-    'VESUEQLBINCghCVVNJTkVTUxCOThINCghSVU5fQk9UUxCPThIKCgVBRE1JThCQThIhChxWSUVX'
-    'X1BSSVZBVEVfQ09OVEFDVF9NRVRIT0RTEJFO');
+    'VWRU5UUxAkEhsKF1NZTkNfRVZFTlRTX1RPX0ZBQ0VCT09LECUSDgoKVklFV19NRURJQRAoEhAK'
+    'DENSRUFURV9NRURJQRApEhkKFVBVQkxJU0hfTUVESUFfTE9DQUxMWRAqEhoKFlBVQkxJU0hfTU'
+    'VESUFfR0xPQkFMTFkQKxISCg5NT0RFUkFURV9NRURJQRAsEhoKFlJFQURfUEVSU09OQUxfTUVT'
+    'U0FHRVMQMhIcChhSRUFEX0FMTF9TWVNURU1fTUVTU0FHRVMQMxINCghCVVNJTkVTUxCOThINCg'
+    'hSVU5fQk9UUxCPThIKCgVBRE1JThCQThIhChxWSUVXX1BSSVZBVEVfQ09OVEFDVF9NRVRIT0RT'
+    'EJFO');
+

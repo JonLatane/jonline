@@ -34,7 +34,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventSyncSource, Media, Post, User)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -141,6 +141,13 @@ type Msg
     | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- `ConfirmEventInstanceSyncDestinationDelete`'s own result -- `host`
+      -- mirrors `Components.Pages.EventsPage.GotPushResult`'s own (this is
+      -- the Delete button's counterpart to that Push button's result), so
+      -- whichever page is active (currently only
+      -- `Components.Pages.UserProfilePage`'s embedded `EventsPage` copy) can
+      -- re-scope its refetch to just `host`'s server the same way.
+    | GotEventInstanceSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
       -- The trailing `User`/`String` are the deleted user/acting `targetHost`
       -- (mirroring `ConfirmUserDelete`'s own two extra fields) -- unlike
       -- `GotPostDeleteResult`/`GotEventDeleteResult`, this needs them back:
@@ -241,6 +248,18 @@ type DeleteConfirmation
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
     | ConfirmUserDelete User String
+      -- Un-syncs `instance` from the `EventSyncDestination` (`String`) whose
+      -- display name is the trailing-but-one `String` (for the confirmation
+      -- message only -- see `UI.deleteConfirmationModal`), acting on
+      -- `targetHost` (the final `String`, mirroring the other three's own
+      -- trailing host). Fired from a card's Delete button beside its "Push
+      -- again" button (`Components.Events.eventSyncDestinationsView`'s
+      -- `onDelete`) -- follows the same "list of deletable things shown on
+      -- one page" shape as the four above: `ConfirmDelete` fires
+      -- `DeleteEventInstanceSyncDestination` directly, and the result
+      -- (`GotEventInstanceSyncDestinationDeleteResult`) is forwarded to
+      -- whichever page is active the same as any other `Shared.Msg`.
+    | ConfirmEventInstanceSyncDestinationDelete EventInstance String String String
 
 
 {-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
@@ -1072,6 +1091,16 @@ sharedUpdate req msg model =
                         |> Task.attempt (GotUserDeleteResult user host)
                     )
 
+                Just (ConfirmEventInstanceSyncDestinationDelete instance eventSyncDestinationId _ host) ->
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
+                    , Events.deleteEventInstanceSyncDestination
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        instance.id
+                        eventSyncDestinationId
+                        |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
+                    )
+
                 Nothing ->
                     ( model, Cmd.none )
 
@@ -1088,6 +1117,21 @@ sharedUpdate req msg model =
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventSyncSourceDeleteResult _ (Err _) ->
+            ( model, Cmd.none )
+
+        GotEventInstanceSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+            in
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventInstanceSyncDestinationDeleteResult _ (Err _) ->
             ( model, Cmd.none )
 
         GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->

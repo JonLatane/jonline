@@ -153,7 +153,7 @@ type Msg
     | FederatedProfileAddClicked
     | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
     | FederatedProfileRemoveClicked FederatedAccount
-    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
+    | GotFederatedProfileRemoveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
     | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
     | GotEventSyncSourcesFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncSourcesResponse ))
     | EventSyncSourceRowUrlChanged EventSyncSource String
@@ -384,7 +384,7 @@ independently edit/cancel the way `RealNameEdit`/`EventSyncAddForm` have:
     `pages` is shown as a plain clickable list (`FacebookPageChosen`) rather than picking one
     automatically, even when there's only one, so the user always sees what they're linking.
   - `FacebookLoginNoPagesFound`: `/me/accounts` returned zero Pages -- nothing to link.
-  - `FacebookLoginLinking token page`: `CreateEventSyncDestination` is in flight for `page`.
+  - `FacebookLoginLinking page`: `CreateEventSyncDestination` is in flight for `page`.
   - `FacebookLoginFailed message`: the popup, the Graph API call, or the create RPC failed.
 
 -}
@@ -394,7 +394,7 @@ type FacebookLoginStatus
     | FacebookLoginFetchingPages String
     | FacebookLoginChoosingPage String (List FacebookPageOption)
     | FacebookLoginNoPagesFound
-    | FacebookLoginLinking String FacebookPageOption
+    | FacebookLoginLinking FacebookPageOption
     | FacebookLoginFailed String
 
 
@@ -1261,14 +1261,14 @@ updateInner shared msg model =
                 ( Just edit, Just ( server, signedInAccount ) ) ->
                     ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
                     , Users.defederateProfile shared.accounts ( Just signedInAccount.userId, server.frontendHost ) account
-                        |> Task.attempt (GotFederatedProfileRemoveResult account)
+                        |> Task.attempt GotFederatedProfileRemoveResult
                         |> Effect.fromCmd
                     )
 
                 _ ->
                     ( model, Effect.none )
 
-        GotFederatedProfileRemoveResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotFederatedProfileRemoveResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 clearedModel : Model
                 clearedModel =
@@ -1288,7 +1288,7 @@ updateInner shared msg model =
                 ]
             )
 
-        GotFederatedProfileRemoveResult _ (Err err) ->
+        GotFederatedProfileRemoveResult (Err err) ->
             ( { model
                 | federatedProfilesEdit =
                     model.federatedProfilesEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
@@ -1594,7 +1594,7 @@ updateInner shared msg model =
                                         )
                             }
                     in
-                    ( setEventSyncDestinationsLogin (FacebookLoginLinking accessToken page) model
+                    ( setEventSyncDestinationsLogin (FacebookLoginLinking page) model
                     , performForOwner shared model (\accountServer -> EventSyncDestinations.createEventSyncDestination shared.accounts accountServer newDestination)
                         |> Task.attempt GotFacebookLinkResult
                         |> Effect.fromCmd
@@ -3358,7 +3358,7 @@ facebookLoginView ed =
         FacebookLoginNoPagesFound ->
             div [ class "event-sync-destinations-message" ] [ text "That Facebook account doesn't manage any Pages." ]
 
-        FacebookLoginLinking _ page ->
+        FacebookLoginLinking page ->
             div [ class "event-sync-destinations-message" ] [ text ("Linking " ++ page.name ++ "…") ]
 
         FacebookLoginFailed err ->

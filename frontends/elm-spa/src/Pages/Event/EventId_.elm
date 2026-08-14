@@ -1149,15 +1149,15 @@ eventDetailView shared model event instance =
         , instanceMetaView shared model instance
         , Events.eventSyncSourceView event
 
-        -- `availableSyncDestinations` is always `Nothing` here -- push UI is
-        -- only wired up on `Components.Pages.UserProfilePage`'s embedded
+        -- `availableSyncDestinations` is always `Nothing` here -- push/delete
+        -- UI is only wired up on `Components.Pages.UserProfilePage`'s embedded
         -- events feed for now (see `Components.Events.eventSyncDestinationsView`'s
-        -- own doc). The `isPushing`/`pushError`/`onPush` placeholders below
-        -- are never actually invoked (no button renders when `Nothing`), so
-        -- this needs no new `Msg`/`update`/state here -- just enough shape to
-        -- type-check against the shared function's signature, ready for a
-        -- future session to wire up real push here.
-        , Events.eventSyncDestinationsView Nothing (\_ -> False) (\_ -> Nothing) (\_ -> SharedMsg Shared.NoOp) instance
+        -- own doc). The `isPushing`/`pushError`/`onPush`/`onDelete` placeholders
+        -- below are never actually invoked (no button renders when `Nothing`),
+        -- so this needs no new `Msg`/`update`/state here -- just enough shape
+        -- to type-check against the shared function's signature, ready for a
+        -- future session to wire up real push/delete here.
+        , Events.eventSyncDestinationsView Nothing (\_ -> False) (\_ -> Nothing) (\_ -> SharedMsg Shared.NoOp) (\_ _ -> SharedMsg Shared.NoOp) instance
         ]
 
 

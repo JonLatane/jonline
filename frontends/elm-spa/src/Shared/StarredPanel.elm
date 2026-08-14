@@ -146,10 +146,11 @@ type Msg
     | MediaClicked String Post String
     | StarredPostsBroadcastReceived Decode.Value
     | PostUpdated String Post
-      -- Unreachable placeholder passed as `Events.eventCard`'s `onPush` --
-      -- this panel always passes `Nothing` for `availableSyncDestinations`
-      -- (see `starredPostView`'s own `eventCard` call), so no Push button
-      -- ever renders to actually produce this.
+      -- Unreachable placeholder passed as `Events.eventCard`'s `onPush`/
+      -- `onDelete` -- this panel always passes `Nothing` for
+      -- `availableSyncDestinations` (see `starredPostView`'s own `eventCard`
+      -- call), so no Push/Delete button ever renders to actually produce
+      -- this.
     | NoOp
 
 
@@ -1009,6 +1010,7 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
 
                 else
                     let
+                        count : Int
                         count =
                             List.length model.starOrder
                     in
@@ -1034,12 +1036,15 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
 starredPostRowFlip : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
 starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
+        flipState : UI.Flip.State Msg
         flipState =
             Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving : Bool
         isMoving =
             Dict.get key model.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
 
+        pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -1058,6 +1063,7 @@ equivalent for Accounts.
 starredPostRow : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
 starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
+        moveAttrs : List (Html.Attribute Msg)
         moveAttrs =
             model.moveAnimations
                 |> Dict.get key
@@ -1088,21 +1094,27 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
 
             else
                 let
+                    starred : Bool
                     starred =
                         isStarred host post model
 
+                    current : Bool
                     current =
                         currentPostKey == Just key
 
+                    onStarClicked : Maybe Msg
                     onStarClicked =
                         toggleStarMsg accountsPanelModel host post
 
+                    maybeServer : Maybe AccountsPanel.Server
                     maybeServer =
                         AccountsPanel.serverForHost accountsPanelModel.servers host
 
+                    maybeAccount : Maybe AccountsPanel.Account
                     maybeAccount =
                         AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
+                    onMediaClicked : String -> Msg
                     onMediaClicked mediaId =
                         MediaClicked host post mediaId
                 in
@@ -1121,6 +1133,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
 
         Just PostFetchFailed ->
             let
+                host : String
                 host =
                     String.split "@" key
                         |> List.reverse
@@ -1139,6 +1152,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
                 -- use of `ServerDependentView.availableServer`) -- only the
                 -- latter has anything to offer a button for, so re-derive the
                 -- actual `Server` (if disabled) from `key`'s host.
+                maybeDisabledServer : Maybe AccountsPanel.Server
                 maybeDisabledServer =
                     parseStarKey key
                         |> Maybe.andThen (\( _, host ) -> AccountsPanel.serverForHost accountsPanelModel.servers host)
@@ -1224,7 +1238,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
 
                     Nothing ->
                         text ""
-                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) event displayInstance
+                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event displayInstance
                 ]
 
         Just FetchingEvent ->

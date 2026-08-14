@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from posts.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: posts.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -58,79 +56,16 @@ final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode(
 const GetPostsRequest$json = {
   '1': 'GetPostsRequest',
   '2': [
-    {
-      '1': 'post_id',
-      '3': 1,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'postId',
-      '17': true
-    },
-    {
-      '1': 'author_user_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'authorUserId',
-      '17': true
-    },
-    {
-      '1': 'group_id',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'groupId',
-      '17': true
-    },
-    {
-      '1': 'reply_depth',
-      '3': 4,
-      '4': 1,
-      '5': 13,
-      '9': 3,
-      '10': 'replyDepth',
-      '17': true
-    },
-    {
-      '1': 'context',
-      '3': 5,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.PostContext',
-      '9': 4,
-      '10': 'context',
-      '17': true
-    },
-    {
-      '1': 'post_ids',
-      '3': 9,
-      '4': 1,
-      '5': 9,
-      '9': 5,
-      '10': 'postIds',
-      '17': true
-    },
-    {
-      '1': 'listing_type',
-      '3': 10,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.PostListingType',
-      '10': 'listingType'
-    },
+    {'1': 'post_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'postId', '17': true},
+    {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'authorUserId', '17': true},
+    {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
+    {'1': 'reply_depth', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'replyDepth', '17': true},
+    {'1': 'context', '3': 5, '4': 1, '5': 14, '6': '.jonline.PostContext', '9': 4, '10': 'context', '17': true},
+    {'1': 'post_ids', '3': 9, '4': 1, '5': 9, '9': 5, '10': 'postIds', '17': true},
+    {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.PostListingType', '10': 'listingType'},
     {'1': 'page', '3': 15, '4': 1, '5': 13, '10': 'page'},
-    {
-      '1': 'search_text',
-      '3': 7,
-      '4': 1,
-      '5': 9,
-      '9': 6,
-      '10': 'searchText',
-      '17': true
-    },
+    {'1': 'search_text', '3': 7, '4': 1, '5': 9, '9': 6, '10': 'searchText', '17': true},
+    {'1': 'published_or_created_before', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'publishedOrCreatedBefore', '17': true},
   ],
   '8': [
     {'1': '_post_id'},
@@ -140,6 +75,7 @@ const GetPostsRequest$json = {
     {'1': '_context'},
     {'1': '_post_ids'},
     {'1': '_search_text'},
+    {'1': '_published_or_created_before'},
   ],
 };
 
@@ -151,22 +87,17 @@ final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode(
     '50ZXh0GAUgASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dEgEUgdjb250ZXh0iAEBEh4KCHBvc3Rf'
     'aWRzGAkgASgJSAVSB3Bvc3RJZHOIAQESOwoMbGlzdGluZ190eXBlGAogASgOMhguam9ubGluZS'
     '5Qb3N0TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEhIKBHBhZ2UYDyABKA1SBHBhZ2USJAoLc2Vh'
-    'cmNoX3RleHQYByABKAlIBlIKc2VhcmNoVGV4dIgBAUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3'
-    'VzZXJfaWRCCwoJX2dyb3VwX2lkQg4KDF9yZXBseV9kZXB0aEIKCghfY29udGV4dEILCglfcG9z'
-    'dF9pZHNCDgoMX3NlYXJjaF90ZXh0');
+    'cmNoX3RleHQYByABKAlIBlIKc2VhcmNoVGV4dIgBARJeChtwdWJsaXNoZWRfb3JfY3JlYXRlZF'
+    '9iZWZvcmUYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAdSGHB1Ymxpc2hlZE9y'
+    'Q3JlYXRlZEJlZm9yZYgBAUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3'
+    'VwX2lkQg4KDF9yZXBseV9kZXB0aEIKCghfY29udGV4dEILCglfcG9zdF9pZHNCDgoMX3NlYXJj'
+    'aF90ZXh0Qh4KHF9wdWJsaXNoZWRfb3JfY3JlYXRlZF9iZWZvcmU=');
 
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = {
   '1': 'GetPostsResponse',
   '2': [
-    {
-      '1': 'posts',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Post',
-      '10': 'posts'
-    },
+    {'1': 'posts', '3': 1, '4': 3, '5': 11, '6': '.jonline.Post', '10': 'posts'},
   ],
 };
 
@@ -180,135 +111,28 @@ const Post$json = {
   '1': 'Post',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {
-      '1': 'author',
-      '3': 2,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Author',
-      '9': 0,
-      '10': 'author',
-      '17': true
-    },
-    {
-      '1': 'reply_to_post_id',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'replyToPostId',
-      '17': true
-    },
+    {'1': 'author', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '9': 0, '10': 'author', '17': true},
+    {'1': 'reply_to_post_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'replyToPostId', '17': true},
     {'1': 'title', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'title', '17': true},
     {'1': 'link', '3': 5, '4': 1, '5': 9, '9': 3, '10': 'link', '17': true},
-    {
-      '1': 'content',
-      '3': 6,
-      '4': 1,
-      '5': 9,
-      '9': 4,
-      '10': 'content',
-      '17': true
-    },
+    {'1': 'content', '3': 6, '4': 1, '5': 9, '9': 4, '10': 'content', '17': true},
     {'1': 'response_count', '3': 7, '4': 1, '5': 5, '10': 'responseCount'},
     {'1': 'reply_count', '3': 8, '4': 1, '5': 5, '10': 'replyCount'},
     {'1': 'group_count', '3': 9, '4': 1, '5': 5, '10': 'groupCount'},
-    {
-      '1': 'media',
-      '3': 10,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.MediaReference',
-      '10': 'media'
-    },
+    {'1': 'media', '3': 10, '4': 3, '5': 11, '6': '.jonline.MediaReference', '10': 'media'},
     {'1': 'media_generated', '3': 11, '4': 1, '5': 8, '10': 'mediaGenerated'},
     {'1': 'embed_link', '3': 12, '4': 1, '5': 8, '10': 'embedLink'},
     {'1': 'shareable', '3': 13, '4': 1, '5': 8, '10': 'shareable'},
-    {
-      '1': 'context',
-      '3': 14,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.PostContext',
-      '10': 'context'
-    },
-    {
-      '1': 'visibility',
-      '3': 15,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Visibility',
-      '10': 'visibility'
-    },
-    {
-      '1': 'moderation',
-      '3': 16,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Moderation',
-      '10': 'moderation'
-    },
-    {
-      '1': 'current_group_post',
-      '3': 18,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.GroupPost',
-      '9': 5,
-      '10': 'currentGroupPost',
-      '17': true
-    },
-    {
-      '1': 'replies',
-      '3': 19,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Post',
-      '10': 'replies'
-    },
-    {
-      '1': 'created_at',
-      '3': 20,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
-    {
-      '1': 'updated_at',
-      '3': 21,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 6,
-      '10': 'updatedAt',
-      '17': true
-    },
-    {
-      '1': 'published_at',
-      '3': 22,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 7,
-      '10': 'publishedAt',
-      '17': true
-    },
-    {
-      '1': 'last_activity_at',
-      '3': 23,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'lastActivityAt'
-    },
-    {
-      '1': 'unauthenticated_star_count',
-      '3': 24,
-      '4': 1,
-      '5': 3,
-      '10': 'unauthenticatedStarCount'
-    },
+    {'1': 'context', '3': 14, '4': 1, '5': 14, '6': '.jonline.PostContext', '10': 'context'},
+    {'1': 'visibility', '3': 15, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
+    {'1': 'moderation', '3': 16, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    {'1': 'current_group_post', '3': 18, '4': 1, '5': 11, '6': '.jonline.GroupPost', '9': 5, '10': 'currentGroupPost', '17': true},
+    {'1': 'replies', '3': 19, '4': 3, '5': 11, '6': '.jonline.Post', '10': 'replies'},
+    {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 6, '10': 'updatedAt', '17': true},
+    {'1': 'published_at', '3': 22, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'publishedAt', '17': true},
+    {'1': 'last_activity_at', '3': 23, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'lastActivityAt'},
+    {'1': 'unauthenticated_star_count', '3': 24, '4': 1, '5': 3, '10': 'unauthenticatedStarCount'},
   ],
   '8': [
     {'1': '_author'},
@@ -360,30 +184,9 @@ const GroupPost$json = {
       '8': {'3': true},
       '10': 'userId',
     },
-    {
-      '1': 'group_moderation',
-      '3': 4,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Moderation',
-      '10': 'groupModeration'
-    },
-    {
-      '1': 'created_at',
-      '3': 5,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
-    {
-      '1': 'shared_by',
-      '3': 6,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Author',
-      '10': 'sharedBy'
-    },
+    {'1': 'group_moderation', '3': 4, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'groupModeration'},
+    {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'shared_by', '3': 6, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'sharedBy'},
   ],
 };
 
@@ -401,14 +204,7 @@ const UserPost$json = {
   '2': [
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '10': 'postId'},
-    {
-      '1': 'created_at',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
+    {'1': 'created_at', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
 };
 
@@ -423,15 +219,7 @@ const GetGroupPostsRequest$json = {
   '1': 'GetGroupPostsRequest',
   '2': [
     {'1': 'post_id', '3': 1, '4': 1, '5': 9, '10': 'postId'},
-    {
-      '1': 'group_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'groupId',
-      '17': true
-    },
+    {'1': 'group_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'groupId', '17': true},
   ],
   '8': [
     {'1': '_group_id'},
@@ -447,14 +235,7 @@ final $typed_data.Uint8List getGroupPostsRequestDescriptor = $convert.base64Deco
 const GetGroupPostsResponse$json = {
   '1': 'GetGroupPostsResponse',
   '2': [
-    {
-      '1': 'group_posts',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.GroupPost',
-      '10': 'groupPosts'
-    },
+    {'1': 'group_posts', '3': 1, '4': 3, '5': 11, '6': '.jonline.GroupPost', '10': 'groupPosts'},
   ],
 };
 
@@ -462,3 +243,4 @@ const GetGroupPostsResponse$json = {
 final $typed_data.Uint8List getGroupPostsResponseDescriptor = $convert.base64Decode(
     'ChVHZXRHcm91cFBvc3RzUmVzcG9uc2USMwoLZ3JvdXBfcG9zdHMYASADKAsyEi5qb25saW5lLk'
     'dyb3VwUG9zdFIKZ3JvdXBQb3N0cw==');
+

@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from media.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: media.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -20,60 +18,17 @@ const Media$json = {
   '1': 'Media',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {
-      '1': 'user_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'userId',
-      '17': true
-    },
+    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'userId', '17': true},
     {'1': 'content_type', '3': 3, '4': 1, '5': 9, '10': 'contentType'},
     {'1': 'name', '3': 4, '4': 1, '5': 9, '9': 1, '10': 'name', '17': true},
-    {
-      '1': 'description',
-      '3': 5,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'description',
-      '17': true
-    },
-    {
-      '1': 'visibility',
-      '3': 6,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Visibility',
-      '10': 'visibility'
-    },
-    {
-      '1': 'moderation',
-      '3': 7,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.Moderation',
-      '10': 'moderation'
-    },
+    {'1': 'description', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
+    {'1': 'visibility', '3': 6, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
+    {'1': 'moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
     {'1': 'generated', '3': 8, '4': 1, '5': 8, '10': 'generated'},
     {'1': 'processed', '3': 9, '4': 1, '5': 8, '10': 'processed'},
-    {
-      '1': 'created_at',
-      '3': 15,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
-    {
-      '1': 'updated_at',
-      '3': 16,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'updatedAt'
-    },
+    {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'updatedAt'},
+    {'1': 'metadata', '3': 17, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
   ],
   '8': [
     {'1': '_user_id'},
@@ -91,8 +46,25 @@ final $typed_data.Uint8List mediaDescriptor = $convert.base64Decode(
     'ASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEhwKCWdlbmVyYXRlZBgIIAEoCF'
     'IJZ2VuZXJhdGVkEhwKCXByb2Nlc3NlZBgJIAEoCFIJcHJvY2Vzc2VkEjkKCmNyZWF0ZWRfYXQY'
     'DyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF'
-    '9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdEIKCghfdXNl'
-    'cl9pZEIHCgVfbmFtZUIOCgxfZGVzY3JpcHRpb24=');
+    '9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdBIyCghtZXRh'
+    'ZGF0YRgRIAEoCzIWLmpvbmxpbmUuTWVkaWFNZXRhZGF0YVIIbWV0YWRhdGFCCgoIX3VzZXJfaW'
+    'RCBwoFX25hbWVCDgoMX2Rlc2NyaXB0aW9u');
+
+@$core.Deprecated('Use mediaMetadataDescriptor instead')
+const MediaMetadata$json = {
+  '1': 'MediaMetadata',
+  '2': [
+    {'1': 'video_preview_time_ms', '3': 1, '4': 1, '5': 13, '9': 0, '10': 'videoPreviewTimeMs', '17': true},
+  ],
+  '8': [
+    {'1': '_video_preview_time_ms'},
+  ],
+};
+
+/// Descriptor for `MediaMetadata`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List mediaMetadataDescriptor = $convert.base64Decode(
+    'Cg1NZWRpYU1ldGFkYXRhEjYKFXZpZGVvX3ByZXZpZXdfdGltZV9tcxgBIAEoDUgAUhJ2aWRlb1'
+    'ByZXZpZXdUaW1lTXOIAQFCGAoWX3ZpZGVvX3ByZXZpZXdfdGltZV9tcw==');
 
 @$core.Deprecated('Use mediaReferenceDescriptor instead')
 const MediaReference$json = {
@@ -102,6 +74,7 @@ const MediaReference$json = {
     {'1': 'id', '3': 2, '4': 1, '5': 9, '10': 'id'},
     {'1': 'name', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'name', '17': true},
     {'1': 'generated', '3': 4, '4': 1, '5': 8, '10': 'generated'},
+    {'1': 'metadata', '3': 5, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
   ],
   '8': [
     {'1': '_name'},
@@ -112,30 +85,15 @@ const MediaReference$json = {
 final $typed_data.Uint8List mediaReferenceDescriptor = $convert.base64Decode(
     'Cg5NZWRpYVJlZmVyZW5jZRIhCgxjb250ZW50X3R5cGUYASABKAlSC2NvbnRlbnRUeXBlEg4KAm'
     'lkGAIgASgJUgJpZBIXCgRuYW1lGAMgASgJSABSBG5hbWWIAQESHAoJZ2VuZXJhdGVkGAQgASgI'
-    'UglnZW5lcmF0ZWRCBwoFX25hbWU=');
+    'UglnZW5lcmF0ZWQSMgoIbWV0YWRhdGEYBSABKAsyFi5qb25saW5lLk1lZGlhTWV0YWRhdGFSCG'
+    '1ldGFkYXRhQgcKBV9uYW1l');
 
 @$core.Deprecated('Use getMediaRequestDescriptor instead')
 const GetMediaRequest$json = {
   '1': 'GetMediaRequest',
   '2': [
-    {
-      '1': 'media_id',
-      '3': 1,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'mediaId',
-      '17': true
-    },
-    {
-      '1': 'user_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'userId',
-      '17': true
-    },
+    {'1': 'media_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'mediaId', '17': true},
+    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'userId', '17': true},
     {'1': 'page', '3': 11, '4': 1, '5': 13, '10': 'page'},
   ],
   '8': [
@@ -154,14 +112,7 @@ final $typed_data.Uint8List getMediaRequestDescriptor = $convert.base64Decode(
 const GetMediaResponse$json = {
   '1': 'GetMediaResponse',
   '2': [
-    {
-      '1': 'media',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Media',
-      '10': 'media'
-    },
+    {'1': 'media', '3': 1, '4': 3, '5': 11, '6': '.jonline.Media', '10': 'media'},
     {'1': 'has_next_page', '3': 2, '4': 1, '5': 8, '10': 'hasNextPage'},
   ],
 };
@@ -170,3 +121,4 @@ const GetMediaResponse$json = {
 final $typed_data.Uint8List getMediaResponseDescriptor = $convert.base64Decode(
     'ChBHZXRNZWRpYVJlc3BvbnNlEiQKBW1lZGlhGAEgAygLMg4uam9ubGluZS5NZWRpYVIFbWVkaW'
     'ESIgoNaGFzX25leHRfcGFnZRgCIAEoCFILaGFzTmV4dFBhZ2U=');
+

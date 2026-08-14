@@ -95,42 +95,66 @@ jobs:
       - name: Install protoc-gen-elm
         run: yarn global add protoc-gen-elm
 
+      - name: Install FVM
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
+
+      - name: Cache pinned Flutter SDK (FVM)
+        uses: actions/cache@v6
+        with:
+          path: ~/fvm/versions
+          key: fvm-flutter-${{ hashFiles('frontends/flutter/.fvmrc') }}
+
+      - working-directory: frontends/flutter
+        run: fvm install
+
       - name: Build Protos
         run: make protos
 
       - name: Check for changes
         run: git diff --exit-code --ignore-matching-lines='//   protoc +v[\\.0-9]+' --ignore-matching-lines='- `protoc` [0-9]'
 
-  # build_flutter_ui:
-  #   name: Build Flutter Web UI
-  #   runs-on: ubuntu-latest
-  #   continue-on-error: true
+  build_flutter_ui:
+    name: Build Flutter Web UI
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #   - uses: actions/checkout@v7
+    steps:
+      - uses: actions/checkout@v7
 
-  #   - name: Extract Versioning Data
-  #     id: vars
-  #     run: |-
-  #       echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-  #       echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-  #   - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-  #     run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-  #   - uses: subosito/flutter-action@v2
+      # frontends/flutter is frozen and pinned via FVM (see frontends/flutter/.fvmrc
+      # and frontends/flutter/README.md) rather than tracking the `stable` channel,
+      # so it's set up here instead of via subosito/flutter-action.
+      - name: Install FVM
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
 
-  #   - working-directory: frontends/flutter
-  #     run: flutter pub get
-  #   # - working-directory: frontends/flutter
-  #   #   run: flutter test
-  #   - working-directory: frontends/flutter
-  #     run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
+      - name: Cache pinned Flutter SDK (FVM)
+        uses: actions/cache@v6
+        with:
+          path: ~/fvm/versions
+          key: fvm-flutter-${{ hashFiles('frontends/flutter/.fvmrc') }}
 
-  #   - uses: actions/cache/save@v6
-  #     id: flutter-app-cache
-  #     with:
-  #       path: frontends/flutter/build/web
-  #       key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - working-directory: frontends/flutter
+        run: fvm install
+
+      - name: Build Flutter Web UI
+        run: make -C frontends/flutter build_web
+
+      - uses: actions/cache/save@v6
+        id: flutter-app-cache
+        with:
+          path: frontends/flutter/build/web
+          key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_tamagui_ui:
     name: Build Tamagui Web UI
@@ -201,7 +225,7 @@ jobs:
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_elm_ui:
-    name: Build Elm SPA Web UI
+    name: Test & Build Elm SPA Web UI
     runs-on: ubuntu-latest
 
     steps:
@@ -217,7 +241,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 18.x
+          node-version: 22.x
 
       - name: Cache Elm packages
         uses: actions/cache@v6
@@ -228,6 +252,9 @@ jobs:
             jonline-elm-build-${{ runner.os }}-
 
       - run: npm install --global elm elm-spa
+
+      - working-directory: frontends/elm-spa
+        run: make test
 
       - working-directory: frontends/elm-spa
         run: make build
@@ -547,60 +574,35 @@ jobs:
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: touch frontends/tamagui/.test-passed
 
-  # test_elm_ui:
-  #   name: Test Elm SPA Web UI
-  #   runs-on: ubuntu-latest
+  test_flutter_ui:
+    name: Test Flutter Web UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-  #   steps:
-  #     - uses: actions/checkout@v7
+      - name: Install FVM
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
 
-  #     - name: Extract Versioning Data
-  #       id: vars
-  #       run: |-
-  #         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-  #         echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-  #     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-  #       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Cache pinned Flutter SDK (FVM)
+        uses: actions/cache@v6
+        with:
+          path: ~/fvm/versions
+          key: fvm-flutter-${{ hashFiles('frontends/flutter/.fvmrc') }}
 
-  #     - uses: actions/setup-node@v7
-  #       with:
-  #         node-version: 18.x
+      - working-directory: frontends/flutter
+        run: fvm install
 
-  #     - name: Cache Elm packages
-  #       uses: actions/cache@v6
-  #       with:
-  #         path: ~/.elm
-  #         key: jonline-elm-test-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
-  #         restore-keys: |
-  #           jonline-elm-test-${{ runner.os }}-
-
-  #     - run: npm install --global elm elm-spa
-
-  #     - working-directory: frontends/elm-spa
-  #       run: make test
-
-  # test_flutter_ui:
-  #   name: Test Flutter Web UI
-  #   runs-on: ubuntu-latest
-  #   continue-on-error: true
-  #   steps:
-  #   - uses: actions/checkout@v7
-  #   - uses: subosito/flutter-action@v2
-  #     with:
-  #       channel: 'stable'
-  #   - working-directory: frontends/flutter
-  #     run: flutter pub get
-  #   - working-directory: frontends/flutter
-  #     run: flutter test
-  #   - working-directory: frontends/flutter
-  #     run: flutter build web
+      - name: Test Flutter Web UI
+        run: make -C frontends/flutter test
 
   push_server:
     name: "DockerHub: Server"
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/experiments/elm-spa'
     runs-on: ubuntu-latest
     needs:
-      # - build_flutter_ui
+      - build_flutter_ui
       - build_tamagui_ui
       - build_elm_ui
       - build_rust_binaries
@@ -619,11 +621,9 @@ jobs:
 
       - uses: actions/cache/restore@v6
         id: flutter-app-cache
-        continue-on-error: true
         with:
           path: frontends/flutter/build/web
           key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      - run: mkdir -p frontends/flutter/build/web
       - uses: actions/cache/restore@v6
         id: web-app-cache
         with:
@@ -727,7 +727,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - test_rust_binaries
-      # - test_flutter_ui
+      - test_flutter_ui
       - test_tamagui_ui
       - push_server
     runs-on: ubuntu-latest
@@ -825,9 +825,8 @@ jobs:
       - push_preview_generator
       - test_consistency
       - test_rust_binaries
-      # - test_flutter_ui
+      - test_flutter_ui
       - test_tamagui_ui
-      # - test_elm_ui
     steps:
       - uses: actions/checkout@v7
         with:
@@ -931,6 +930,7 @@ jobs:
     needs:
       - create_github_release
       - build_rust_binaries_macos
+      - build_flutter_ui
       - build_tamagui_ui
       - build_elm_ui
       - test_consistency
@@ -961,6 +961,11 @@ jobs:
         with:
           path: frontends/elm-spa/public
           key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v6
+        id: flutter-app-cache
+        with:
+          path: frontends/flutter/build/web
+          key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       - uses: actions/cache/restore@v6
         id: rust-macos-app-cache
         with:
@@ -994,12 +999,13 @@ jobs:
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
-          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web"
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web"
           cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/opt/docs/protocol.html"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
           cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
+          cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # osx_arm64 build, matching the version pinned there.
@@ -1090,6 +1096,7 @@ jobs:
       - create_github_release
       - build_rust_binaries_linux_amd64_static
       - build_rust_binaries_linux_arm64_static
+      - build_flutter_ui
       - build_tamagui_ui
       - build_elm_ui
       - test_consistency
@@ -1120,6 +1127,11 @@ jobs:
         with:
           path: frontends/elm-spa/public
           key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v6
+        id: flutter-app-cache
+        with:
+          path: frontends/flutter/build/web
+          key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
       # Both cached builds were saved from the same "backend/target/release"
       # path, so they're restored one at a time and moved aside immediately --
@@ -1172,12 +1184,13 @@ jobs:
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
-          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web"
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web"
           cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/opt/docs/protocol.html"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
           cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
+          cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # one per architecture, matching the version pinned there.

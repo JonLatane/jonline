@@ -527,6 +527,7 @@ the same serif-italic "i" styling, layered on top of `nav-link`'s own sizing.
 aboutLink : Shared.Model -> Route -> Html Shared.Msg
 aboutLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.About
     in
@@ -2214,6 +2215,13 @@ deleteConfirmationModal shared =
                             , "Delete "
                                 ++ Users.titleName user
                                 ++ "'s account? This can't be undone."
+                            )
+
+                        Shared.ConfirmEventInstanceSyncDestinationDelete _ _ destinationLabel _ ->
+                            ( "Delete Sync?"
+                            , "Stop syncing this event to "
+                                ++ destinationLabel
+                                ++ "? This won't delete the post already made there."
                             )
             in
             UI.Modal.view

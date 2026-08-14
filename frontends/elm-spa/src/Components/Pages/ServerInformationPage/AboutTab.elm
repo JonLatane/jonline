@@ -127,10 +127,10 @@ applySharedMsg subMsg model =
     { model
         | renameStatus =
             case subMsg of
-                Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult _ (Ok _)) ->
+                Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult (Ok _)) ->
                     NotRenaming
 
-                Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult _ (Err err)) ->
+                Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult (Err err)) ->
                     case model.renameStatus of
                         Renaming pending _ ->
                             Renaming pending (AccountsPanel.Errored (AccountsPanel.grpcErrorToString err))

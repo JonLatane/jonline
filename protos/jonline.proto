@@ -360,6 +360,8 @@ service Jonline {
   rpc DeleteEventSyncDestination(DeleteEventSyncDestinationRequest) returns (google.protobuf.Empty) {}
   // Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin).
   rpc SyncEventInstance(SyncEventInstanceRequest) returns (EventInstance) {}
+  // Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin).
+  rpc DeleteEventInstanceSyncDestination(DeleteEventInstanceSyncDestinationRequest) returns (google.protobuf.Empty) {}
 
   // Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.*
   rpc GetEventAttendances(GetEventAttendancesRequest) returns (EventAttendances) {}

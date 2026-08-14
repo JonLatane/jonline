@@ -1,14 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from posts.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: posts.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:core' as $core;
 
@@ -16,43 +15,16 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 /// A high-level enumeration of general ways of requesting posts.
 class PostListingType extends $pb.ProtobufEnum {
-  /// Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
-  /// Also usable for getting replies anywhere.
-  static const PostListingType ALL_ACCESSIBLE_POSTS =
-      PostListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_POSTS');
+  static const PostListingType ALL_ACCESSIBLE_POSTS = PostListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_POSTS');
+  static const PostListingType FOLLOWING_POSTS = PostListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_POSTS');
+  static const PostListingType MY_GROUPS_POSTS = PostListingType._(2, _omitEnumNames ? '' : 'MY_GROUPS_POSTS');
+  static const PostListingType DIRECT_POSTS = PostListingType._(3, _omitEnumNames ? '' : 'DIRECT_POSTS');
+  static const PostListingType POSTS_PENDING_MODERATION = PostListingType._(4, _omitEnumNames ? '' : 'POSTS_PENDING_MODERATION');
+  static const PostListingType TEXT_SEARCH = PostListingType._(5, _omitEnumNames ? '' : 'TEXT_SEARCH');
+  static const PostListingType GROUP_POSTS = PostListingType._(10, _omitEnumNames ? '' : 'GROUP_POSTS');
+  static const PostListingType GROUP_POSTS_PENDING_MODERATION = PostListingType._(11, _omitEnumNames ? '' : 'GROUP_POSTS_PENDING_MODERATION');
 
-  /// Returns posts from users the user is following.
-  static const PostListingType FOLLOWING_POSTS =
-      PostListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_POSTS');
-
-  /// Returns posts from any group the user is a member of.
-  static const PostListingType MY_GROUPS_POSTS =
-      PostListingType._(2, _omitEnumNames ? '' : 'MY_GROUPS_POSTS');
-
-  /// Returns `DIRECT` posts that are directly addressed to the user.
-  static const PostListingType DIRECT_POSTS =
-      PostListingType._(3, _omitEnumNames ? '' : 'DIRECT_POSTS');
-
-  /// Returns posts pending moderation by the server-level mods/admins.
-  static const PostListingType POSTS_PENDING_MODERATION =
-      PostListingType._(4, _omitEnumNames ? '' : 'POSTS_PENDING_MODERATION');
-
-  /// Returns posts matching the full-text `search_text` query, scoped the same way
-  /// ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
-  static const PostListingType TEXT_SEARCH =
-      PostListingType._(5, _omitEnumNames ? '' : 'TEXT_SEARCH');
-
-  /// Returns posts from a specific group. Requires group_id parameter.
-  static const PostListingType GROUP_POSTS =
-      PostListingType._(10, _omitEnumNames ? '' : 'GROUP_POSTS');
-
-  /// Returns pending_moderation posts from a specific group. Requires group_id
-  /// parameter and user must have group (or server) admin permissions.
-  static const PostListingType GROUP_POSTS_PENDING_MODERATION =
-      PostListingType._(
-          11, _omitEnumNames ? '' : 'GROUP_POSTS_PENDING_MODERATION');
-
-  static const $core.List<PostListingType> values = <PostListingType>[
+  static const $core.List<PostListingType> values = <PostListingType> [
     ALL_ACCESSIBLE_POSTS,
     FOLLOWING_POSTS,
     MY_GROUPS_POSTS,
@@ -63,46 +35,21 @@ class PostListingType extends $pb.ProtobufEnum {
     GROUP_POSTS_PENDING_MODERATION,
   ];
 
-  static final $core.Map<$core.int, PostListingType> _byValue =
-      $pb.ProtobufEnum.initByValue(values);
+  static final $core.Map<$core.int, PostListingType> _byValue = $pb.ProtobufEnum.initByValue(values);
   static PostListingType? valueOf($core.int value) => _byValue[value];
 
-  const PostListingType._(super.value, super.name);
+  const PostListingType._($core.int v, $core.String n) : super(v, n);
 }
 
 /// Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
 class PostContext extends $pb.ProtobufEnum {
-  /// "Standard" or "Top-Level" Post. Can have media, a link, a title, and/or content.
-  /// If provided, its `link` and `title` are permanent.
-  static const PostContext POST =
-      PostContext._(0, _omitEnumNames ? '' : 'POST');
+  static const PostContext POST = PostContext._(0, _omitEnumNames ? '' : 'POST');
+  static const PostContext REPLY = PostContext._(1, _omitEnumNames ? '' : 'REPLY');
+  static const PostContext EVENT = PostContext._(2, _omitEnumNames ? '' : 'EVENT');
+  static const PostContext EVENT_INSTANCE = PostContext._(3, _omitEnumNames ? '' : 'EVENT_INSTANCE');
+  static const PostContext FEDERATED_REPLY = PostContext._(10, _omitEnumNames ? '' : 'FEDERATED_REPLY');
 
-  /// Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
-  /// Does not support a `link`. Requires a `reply_to_post_id`.
-  static const PostContext REPLY =
-      PostContext._(1, _omitEnumNames ? '' : 'REPLY');
-
-  /// Post behind an "Event" (which does not actually have a start/end time -
-  /// it's a group of EventInstances, at least one, which each do).
-  /// The Events table should have a row for this Post.
-  /// Never created by the CreatePost RPC (this is an error); use CreateEvent.
-  /// These Posts' `link` and `title` fields are modifiable.
-  static const PostContext EVENT =
-      PostContext._(2, _omitEnumNames ? '' : 'EVENT');
-
-  /// An "Event Instance" Post (which relates to an event with a start and end time).
-  /// The EventInstances table should have a row for this Post.
-  /// Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly.
-  /// These Posts' `link` and `title` fields are modifiable.
-  static const PostContext EVENT_INSTANCE =
-      PostContext._(3, _omitEnumNames ? '' : 'EVENT_INSTANCE');
-
-  /// A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
-  /// in its `link` field. It will not have a `reply_to_post_id` value.
-  static const PostContext FEDERATED_REPLY =
-      PostContext._(10, _omitEnumNames ? '' : 'FEDERATED_REPLY');
-
-  static const $core.List<PostContext> values = <PostContext>[
+  static const $core.List<PostContext> values = <PostContext> [
     POST,
     REPLY,
     EVENT,
@@ -110,12 +57,11 @@ class PostContext extends $pb.ProtobufEnum {
     FEDERATED_REPLY,
   ];
 
-  static final $core.Map<$core.int, PostContext> _byValue =
-      $pb.ProtobufEnum.initByValue(values);
+  static final $core.Map<$core.int, PostContext> _byValue = $pb.ProtobufEnum.initByValue(values);
   static PostContext? valueOf($core.int value) => _byValue[value];
 
-  const PostContext._(super.value, super.name);
+  const PostContext._($core.int v, $core.String n) : super(v, n);
 }
 
-const $core.bool _omitEnumNames =
-    $core.bool.fromEnvironment('protobuf.omit_enum_names');
+
+const _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');
