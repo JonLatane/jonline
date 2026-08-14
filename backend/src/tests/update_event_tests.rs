@@ -25,11 +25,17 @@ use crate::tests::factories::*;
 /// truncating the expected value too. Building already-whole-second timestamps up front keeps the
 /// round trip lossless and the assertions exact.
 fn whole_second_instant(offset_secs: u64) -> SystemTime {
-    let now_secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let now_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     UNIX_EPOCH + Duration::from_secs(now_secs + offset_secs)
 }
 
-fn event_instance_row(conn: &mut crate::db_connection::PgPooledConnection, id: i64) -> Option<models::EventInstance> {
+fn event_instance_row(
+    conn: &mut crate::db_connection::PgPooledConnection,
+    id: i64,
+) -> Option<models::EventInstance> {
     event_instances::table
         .select(models::EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::id.eq(id))
@@ -56,7 +62,10 @@ fn updating_an_existing_instance_in_place_preserves_its_id_and_persists_changed_
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_inplace_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (instance, _instance_post) = create_event_instance(
             conn,
             &event,
@@ -127,7 +136,10 @@ fn an_instance_omitted_from_the_request_is_deleted_but_its_post_survives() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_omit_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (kept, _kept_post) =
             create_event_instance(conn, &event, Some(&author), EventInstanceOpts::default());
         let (removed, removed_post) =
@@ -182,7 +194,10 @@ fn an_instance_with_no_id_in_the_request_creates_a_new_instance() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_create_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (existing, _existing_post) =
             create_event_instance(conn, &event, Some(&author), EventInstanceOpts::default());
 
@@ -259,7 +274,10 @@ fn a_single_call_can_update_create_and_delete_instances_together() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_merge_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (updated_instance, _) =
             create_event_instance(conn, &event, Some(&author), EventInstanceOpts::default());
         let (removed_a, _) =
@@ -335,8 +353,14 @@ fn an_instance_id_belonging_to_a_different_event_is_not_reassigned() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_crossevent_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event_a, event_a_post) = create_event(conn, &author, EventOpts::default());
-        let (event_b, _event_b_post) = create_event(conn, &author, EventOpts::default());
+        let (event_a, event_a_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
+        let (event_b, _event_b_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (instance_b, _) =
             create_event_instance(conn, &event_b, Some(&author), EventInstanceOpts::default());
 
@@ -400,7 +424,10 @@ fn omitting_an_existing_instances_post_resets_its_visibility_to_private() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_visibility_author");
         let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
         let (instance, instance_post) = create_event_instance(
             conn,
             &event,
@@ -444,7 +471,9 @@ fn omitting_an_existing_instances_post_resets_its_visibility_to_private() {
 /// The comment at `update_event.rs`'s `removed_instance_owner_ids` explains why this matters: an
 /// instance's own Post can be owned by someone other than the event's author (e.g. an admin
 /// editing another user's event), and deleting that instance -- via omission -- needs to refresh
-/// *that* owner's `event_instance_count`, not just the acting user's.
+/// *that* owner's `event_instance_count`, not just the acting user's. A second, kept instance
+/// (owned by `event_author`) keeps the event from being left with zero instances, which is its
+/// own separate edge case -- see `deleting_the_only_instance_leaves_the_event_unretrievable`.
 #[test]
 fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_instance_count() {
     let mut conn = test_conn();
@@ -454,8 +483,17 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
         let admin = create_user(conn, "uet_owner_admin");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
 
-        let (event, event_post) = create_event(conn, &event_author, EventOpts::default());
-        let (instance, _) = create_event_instance(
+        let (event, event_post) = create_event(conn, &event_author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
+        let (kept, _) = create_event_instance(
+            conn,
+            &event,
+            Some(&event_author),
+            EventInstanceOpts::default(),
+        );
+        let (removed, _) = create_event_instance(
             conn,
             &event,
             Some(&instance_owner),
@@ -476,9 +514,25 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
+                    // `update_post` unconditionally overwrites moderation with this field
+                    // whenever the caller is an admin/moderator (see `update_post.rs`'s
+                    // `if admin || moderator { existing_post.moderation = ... }`), regardless of
+                    // whether it's otherwise a moderator-accessible value -- an admin submitting
+                    // the proto default here would flip the post to `MODERATION_UNKNOWN` and make
+                    // it invisible to `get_events`' `PASSING_MODERATIONS` filter.
+                    moderation: Moderation::Unmoderated as i32,
                     ..Default::default()
                 }),
-                instances: vec![], // omits `instance` -> deleted
+                instances: vec![EventInstance {
+                    id: kept.id.to_proto_id(),
+                    starts_at: Some(kept.starts_at.to_proto()),
+                    ends_at: Some(kept.ends_at.to_proto()),
+                    post: Some(Post {
+                        visibility: Visibility::ServerPublic as i32,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }], // omits `removed` -> deleted
                 ..Default::default()
             },
             &admin,
@@ -486,12 +540,63 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
         )
         .expect("admin update_event should succeed");
 
-        assert!(event_instance_row(conn, instance.id).is_none());
+        assert!(event_instance_row(conn, removed.id).is_none());
         let instance_owner = models::get_user(instance_owner.id, conn)?;
         assert_eq!(
             instance_owner.event_instance_count, 0,
             "should be recomputed to the true count, not left at the drifted value"
         );
+
+        Ok(())
+    });
+}
+
+/// A sharp edge of the merge behavior: `get_events`' visibility query (`query_visible_events!` in
+/// `get_events.rs`) starts from an `INNER JOIN` on `event_instances`, so an event with zero
+/// instances simply cannot be selected by it. `update_event` re-reads the event via that same
+/// query as its last step (to build the response), so omitting an event's only instance -- which
+/// the merge itself handles fine, deleting the row and refreshing counts -- makes the overall RPC
+/// call fail with `event_not_found`, even though the event (and its container Post) still exist.
+#[test]
+fn deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let author = create_user(conn, "uet_lastinstance_author");
+        let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
+        let (only_instance, _) =
+            create_event_instance(conn, &event, Some(&author), EventInstanceOpts::default());
+
+        let err = update_event(
+            Event {
+                id: event.id.to_proto_id(),
+                post: Some(Post {
+                    id: event_post.id.to_proto_id(),
+                    visibility: Visibility::ServerPublic as i32,
+                    ..Default::default()
+                }),
+                instances: vec![], // omits `only_instance` -> deleted
+                ..Default::default()
+            },
+            &author,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.message(), "event_not_found");
+
+        // The merge itself still committed, despite the RPC returning an error.
+        assert!(event_instance_row(conn, only_instance.id).is_none());
+        let surviving_event: i64 = crate::schema::events::table
+            .filter(crate::schema::events::id.eq(event.id))
+            .count()
+            .get_result(conn)
+            .unwrap();
+        assert_eq!(surviving_event, 1, "the event row itself is not deleted");
+        let surviving_post = post_row(conn, event_post.id);
+        assert_eq!(surviving_post.id, event_post.id);
 
         Ok(())
     });

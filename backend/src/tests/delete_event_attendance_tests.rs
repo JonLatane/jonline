@@ -16,7 +16,14 @@ fn event_owner_can_delete_any_attendance() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "deat_owner");
-        let (event, _post) = create_event(conn, &owner, EventOpts::default());
+        let (event, _post) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _instance_post) =
             create_event_instance(conn, &event, Some(&owner), EventInstanceOpts::default());
         let attendee = create_user(conn, "deat_attendee");
@@ -59,7 +66,14 @@ fn attendee_can_delete_their_own_attendance() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "deat_owner2");
-        let (event, _post) = create_event(conn, &owner, EventOpts::default());
+        let (event, _post) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _instance_post) =
             create_event_instance(conn, &event, Some(&owner), EventInstanceOpts::default());
         let attendee = create_user(conn, "deat_attendee2");
@@ -102,7 +116,14 @@ fn delete_rejects_an_unrelated_user() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "deat_owner3");
-        let (event, _post) = create_event(conn, &owner, EventOpts::default());
+        let (event, _post) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _instance_post) =
             create_event_instance(conn, &event, Some(&owner), EventInstanceOpts::default());
         let attendee = create_user(conn, "deat_attendee3");
@@ -148,7 +169,14 @@ fn anonymous_attendance_is_deleted_with_a_matching_auth_token() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "deat_owner4");
-        let (event, _post) = create_event(conn, &owner, EventOpts::default());
+        let (event, _post) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _instance_post) =
             create_event_instance(conn, &event, Some(&owner), EventInstanceOpts::default());
         create_event_attendance(
@@ -195,7 +223,14 @@ fn anonymous_attendance_delete_fails_with_the_wrong_auth_token() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "deat_owner5");
-        let (event, _post) = create_event(conn, &owner, EventOpts::default());
+        let (event, _post) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _instance_post) =
             create_event_instance(conn, &event, Some(&owner), EventInstanceOpts::default());
         create_event_attendance(

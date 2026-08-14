@@ -395,6 +395,16 @@ pub struct EventOpts {
     /// `EventInfo` JSON, e.g. `json!({"hide_location_until_rsvp_approved": true})` -- see
     /// `EventInfo`'s proto doc for the full set of recognized keys.
     pub info: serde_json::Value,
+    /// An `Event` with zero `EventInstance`s can't actually exist in production -- `create_event`
+    /// (the RPC) rejects `instances: vec![]` with `at_least_one_instance_required`, and
+    /// `get_events`' own visibility query (`query_visible_events!`) starts from an `INNER JOIN` on
+    /// `event_instances`, so a zero-instance event is unqueryable even if it existed. Defaults to
+    /// `Some(EventInstanceOpts::default())` so `create_event` always seeds one, owned by the same
+    /// `author`, keeping every fixture built from this factory realistic without callers having to
+    /// remember to add one themselves. Pass `None` when a test wants full control over its own
+    /// instance(s) instead (custom `EventInstanceOpts`, a different owner, etc.) -- see
+    /// `get_events_tests::create_simple_event`.
+    pub default_instance: Option<EventInstanceOpts>,
 }
 
 impl Default for EventOpts {
@@ -404,18 +414,24 @@ impl Default for EventOpts {
             moderation: Moderation::Unmoderated,
             title: Some("Test Post".to_string()),
             info: serde_json::json!({}),
+            default_instance: Some(EventInstanceOpts::default()),
         }
     }
 }
 
 /// Inserts an `events` row directly (bypassing `rpcs::create_event`) along with its container
-/// `Post` (context `EVENT`, per `create_event.rs`). Returns both since `get_events` filters on
-/// the container post's visibility/moderation/user_id independently of any instance's own post.
+/// `Post` (context `EVENT`, per `create_event.rs`), plus -- unless `opts.default_instance` is
+/// `None` -- one `EventInstance` (see that field's doc for why). Returns just the event/its own
+/// post, matching `rpcs::create_event`'s own `(Event, Post)`-shaped read path (`get_events`
+/// filters on the container post's visibility/moderation/user_id independently of any instance's
+/// own post); callers that need to reference the seeded instance itself should pass
+/// `default_instance: None` and call `create_event_instance` directly instead.
 pub fn create_event(
     conn: &mut PgPooledConnection,
     author: &models::User,
     opts: EventOpts,
 ) -> (models::Event, models::Post) {
+    let default_instance = opts.default_instance;
     let post = create_post(
         conn,
         Some(author),
@@ -435,6 +451,9 @@ pub fn create_event(
         })
         .get_result::<models::Event>(conn)
         .expect("failed to create test event");
+    if let Some(instance_opts) = default_instance {
+        create_event_instance(conn, &event, Some(author), instance_opts);
+    }
     (event, post)
 }
 
