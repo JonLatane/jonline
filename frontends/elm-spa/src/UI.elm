@@ -1392,6 +1392,32 @@ accountsList shared =
             )
 
 
+{-| Whether the New Account/Login flow (`Password Required` included -- see
+`AccountsPanel.ReauthenticateButtonClicked`) is currently active --
+`accountRowFlip`/`accountRow` use this to collapse every account row out of
+the way except whichever one `accountMatchesForm` says the Server/Username
+fields are actually naming, so the account list doesn't crowd out that flow
+with rows unrelated to it.
+-}
+newAccountFlowActive : Shared.Model -> Bool
+newAccountFlowActive shared =
+    shared.accounts.newAccountType /= Nothing
+
+
+{-| Whether `account` is the one the Server/Username fields (see
+`AccountsPanel.AccountForm`) currently name -- the one row `newAccountFlowActive`
+leaves visible.
+-}
+accountMatchesForm : Shared.Model -> AccountsPanel.Account -> Bool
+accountMatchesForm shared account =
+    let
+        form : AccountsPanel.AccountForm
+        form =
+            shared.accounts.accountForm
+    in
+    String.trim form.server == account.server && String.trim form.username == account.username
+
+
 {-| Wraps `accountRow` in a fading/scaling/collapsing animated outer `div`
 (entering when freshly added, removing when deleted -- see
 `AccountsPanel.accountAnimations`/`UI.Flip`), mirroring `Pages.Home_`'s
@@ -1400,6 +1426,12 @@ holds the FLIP-collapse's own `padding-bottom` spacing; `accountRow` itself --
 with its _own_, independent reorder-slide `moveAttrs` -- lives one layer
 further in, so the two animations (fade/collapse vs. reorder-slide) apply to
 different elements and never fight over the same `transform`.
+
+Also collapsed (same `flip-collapsed` FLIP treatment as a real removal, via
+`newAccountFlowActive`/`accountMatchesForm`) for every account other than the
+one the New Account/Login flow's Server/Username fields currently name, while
+that flow is active -- reusing the same collapsing-grid-track CSS transition
+rather than a separate ad hoc show/hide animation.
 -}
 accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
 accountRowFlip shared count mainCount index account =
@@ -1409,6 +1441,14 @@ accountRowFlip shared count mainCount index account =
             Dict.get (AccountsPanel.accountId account) shared.accounts.accountAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
+        hiddenByNewAccountFlow : Bool
+        hiddenByNewAccountFlow =
+            newAccountFlowActive shared && not (accountMatchesForm shared account)
+
+        effectiveFlipState : UI.Flip.State AccountsPanel.Msg
+        effectiveFlipState =
+            { flipState | removing = flipState.removing || hiddenByNewAccountFlow }
+
         isMoving : Bool
         isMoving =
             Dict.get (AccountsPanel.accountId account) shared.accounts.moveAnimations
@@ -1417,13 +1457,13 @@ accountRowFlip shared count mainCount index account =
 
         pointerEventsAttr : List (Html.Attribute Shared.Msg)
         pointerEventsAttr =
-            if flipState.removing then
+            if effectiveFlipState.removing then
                 [ style "pointer-events" "none" ]
 
             else
                 []
     in
-    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
+    div (UI.Flip.itemAttributes UI.Flip.Vertical effectiveFlipState isMoving)
         [ div pointerEventsAttr [ accountRow shared count mainCount index account ] ]
 
 
@@ -1468,21 +1508,34 @@ accountRow shared count mainCount index account =
         isMainServerAccount =
             account.server == shared.accounts.mainFrontendHost
 
+        -- Move buttons are hidden (not just disabled) for every account row
+        -- while the New Account/Login flow is active (see
+        -- `newAccountFlowActive`) -- reordering a list that's mostly
+        -- collapsed down to one row makes no sense, and the still-visible
+        -- matching row shouldn't invite a reorder mid-flow either.
+        showMoveButtons : Bool
+        showMoveButtons =
+            not (newAccountFlowActive shared)
+
         canMoveUp : Bool
         canMoveUp =
-            if isMainServerAccount then
-                index > 0
+            showMoveButtons
+                && (if isMainServerAccount then
+                        index > 0
 
-            else
-                index > mainCount
+                    else
+                        index > mainCount
+                   )
 
         canMoveDown : Bool
         canMoveDown =
-            if isMainServerAccount then
-                index < mainCount - 1
+            showMoveButtons
+                && (if isMainServerAccount then
+                        index < mainCount - 1
 
-            else
-                index < count - 1
+                    else
+                        index < count - 1
+                   )
 
         reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
         reorderPair =
