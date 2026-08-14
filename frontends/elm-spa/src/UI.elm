@@ -2216,6 +2216,13 @@ deleteConfirmationModal shared =
                                 ++ Users.titleName user
                                 ++ "'s account? This can't be undone."
                             )
+
+                        Shared.ConfirmEventInstanceSyncDestinationDelete _ _ destinationLabel _ ->
+                            ( "Delete Sync?"
+                            , "Stop syncing this event to "
+                                ++ destinationLabel
+                                ++ "? This won't delete the post already made there."
+                            )
             in
             UI.Modal.view
                 { class = "confirm-delete-modal"

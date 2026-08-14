@@ -234,6 +234,21 @@ final $typed_data.Uint8List syncEventInstanceRequestDescriptor = $convert.base64
     'V2ZW50SW5zdGFuY2VJZBI5ChlldmVudF9zeW5jX2Rlc3RpbmF0aW9uX2lkGAIgASgJUhZldmVu'
     'dFN5bmNEZXN0aW5hdGlvbklk');
 
+@$core.Deprecated('Use deleteEventInstanceSyncDestinationRequestDescriptor instead')
+const DeleteEventInstanceSyncDestinationRequest$json = {
+  '1': 'DeleteEventInstanceSyncDestinationRequest',
+  '2': [
+    {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
+    {'1': 'event_sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+  ],
+};
+
+/// Descriptor for `DeleteEventInstanceSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEventInstanceSyncDestinationRequestDescriptor = $convert.base64Decode(
+    'CilEZWxldGVFdmVudEluc3RhbmNlU3luY0Rlc3RpbmF0aW9uUmVxdWVzdBIqChFldmVudF9pbn'
+    'N0YW5jZV9pZBgBIAEoCVIPZXZlbnRJbnN0YW5jZUlkEjkKGWV2ZW50X3N5bmNfZGVzdGluYXRp'
+    'b25faWQYAiABKAlSFmV2ZW50U3luY0Rlc3RpbmF0aW9uSWQ=');
+
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
   '1': 'EventInfo',

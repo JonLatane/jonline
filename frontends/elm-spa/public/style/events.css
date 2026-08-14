@@ -195,9 +195,10 @@
 
 /* The `Just availableSyncDestinations` (push-enabled) branch of
    `Components.Events.eventSyncDestinationsView` -- one row per destination
-   relevant to an `EventInstance`, each with a Push/Push again button.
-   Currently only ever rendered inside `Components.Pages.UserProfilePage`'s
-   embedded events feed (see that function's own doc). Named
+   relevant to an `EventInstance`, each with a Push/Push again button, plus a
+   Delete button for already-synced rows. Currently only ever rendered inside
+   `Components.Pages.UserProfilePage`'s embedded events feed (see that
+   function's own doc). Named
    `.event-card-sync-destination-*` (not `.event-sync-destination-*`) to
    avoid colliding with `profiles.css`'s own identically-shaped classes for
    the unrelated Event Sync Destinations *management* rows on
@@ -241,6 +242,15 @@
   border-radius: 4px;
   background: var(--bg);
   color: var(--fg);
+  font-size: 0.75rem;
+}
+
+.event-card-sync-destination-delete {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--danger);
   font-size: 0.75rem;
 }
 

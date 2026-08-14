@@ -222,6 +222,10 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/SyncEventInstance',
       ($9.SyncEventInstanceRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.EventInstance.fromBuffer(value));
+  static final _$deleteEventInstanceSyncDestination = $grpc.ClientMethod<$9.DeleteEventInstanceSyncDestinationRequest, $0.Empty>(
+      '/jonline.Jonline/DeleteEventInstanceSyncDestination',
+      ($9.DeleteEventInstanceSyncDestinationRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getEventAttendances = $grpc.ClientMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
       '/jonline.Jonline/GetEventAttendances',
       ($9.GetEventAttendancesRequest value) => value.writeToBuffer(),
@@ -451,6 +455,10 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$9.EventInstance> syncEventInstance($9.SyncEventInstanceRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$syncEventInstance, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteEventInstanceSyncDestination($9.DeleteEventInstanceSyncDestinationRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteEventInstanceSyncDestination, request, options: options);
   }
 
   $grpc.ResponseFuture<$9.EventAttendances> getEventAttendances($9.GetEventAttendancesRequest request, {$grpc.CallOptions? options}) {
@@ -827,6 +835,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $9.SyncEventInstanceRequest.fromBuffer(value),
         ($9.EventInstance value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.DeleteEventInstanceSyncDestinationRequest, $0.Empty>(
+        'DeleteEventInstanceSyncDestination',
+        deleteEventInstanceSyncDestination_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $9.DeleteEventInstanceSyncDestinationRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
         'GetEventAttendances',
         getEventAttendances_Pre,
@@ -1077,6 +1092,10 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return syncEventInstance(call, await request);
   }
 
+  $async.Future<$0.Empty> deleteEventInstanceSyncDestination_Pre($grpc.ServiceCall call, $async.Future<$9.DeleteEventInstanceSyncDestinationRequest> request) async {
+    return deleteEventInstanceSyncDestination(call, await request);
+  }
+
   $async.Future<$9.EventAttendances> getEventAttendances_Pre($grpc.ServiceCall call, $async.Future<$9.GetEventAttendancesRequest> request) async {
     return getEventAttendances(call, await request);
   }
@@ -1157,6 +1176,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$4.EventSyncDestination> updateEventSyncDestination($grpc.ServiceCall call, $4.EventSyncDestination request);
   $async.Future<$0.Empty> deleteEventSyncDestination($grpc.ServiceCall call, $9.DeleteEventSyncDestinationRequest request);
   $async.Future<$9.EventInstance> syncEventInstance($grpc.ServiceCall call, $9.SyncEventInstanceRequest request);
+  $async.Future<$0.Empty> deleteEventInstanceSyncDestination($grpc.ServiceCall call, $9.DeleteEventInstanceSyncDestinationRequest request);
   $async.Future<$9.EventAttendances> getEventAttendances($grpc.ServiceCall call, $9.GetEventAttendancesRequest request);
   $async.Future<$9.EventAttendance> upsertEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);
   $async.Future<$0.Empty> deleteEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);

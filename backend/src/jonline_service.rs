@@ -391,6 +391,12 @@ impl Jonline for JonlineService {
     ) -> Result<Response<EventInstance>, Status> {
         authenticated_rpc!(self, rpcs::sync_event_instance, request)
     }
+    async fn delete_event_instance_sync_destination(
+        &self,
+        request: Request<DeleteEventInstanceSyncDestinationRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::delete_event_instance_sync_destination, request)
+    }
 
     async fn upsert_event_attendance(
         &self,

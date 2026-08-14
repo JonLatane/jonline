@@ -347,6 +347,17 @@ export interface SyncEventInstanceRequest {
 }
 
 /**
+ * Removes a single EventInstance's sync (cross-post) to one EventSyncDestination -- the reverse of `SyncEventInstance`.
+ * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
+ */
+export interface DeleteEventInstanceSyncDestinationRequest {
+  /** The EventInstance to un-sync. */
+  eventInstanceId: string;
+  /** The EventSyncDestination to un-sync it from. */
+  eventSyncDestinationId: string;
+}
+
+/**
  * To be used for ticketing, RSVPs, etc.
  * Stored as JSON in the database.
  */
@@ -1516,6 +1527,88 @@ export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<SyncEventInstanceRequest>, I>>(object: I): SyncEventInstanceRequest {
     const message = createBaseSyncEventInstanceRequest();
+    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.eventSyncDestinationId = object.eventSyncDestinationId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteEventInstanceSyncDestinationRequest(): DeleteEventInstanceSyncDestinationRequest {
+  return { eventInstanceId: "", eventSyncDestinationId: "" };
+}
+
+export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventInstanceSyncDestinationRequest> = {
+  encode(message: DeleteEventInstanceSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventInstanceId !== "") {
+      writer.uint32(10).string(message.eventInstanceId);
+    }
+    if (message.eventSyncDestinationId !== "") {
+      writer.uint32(18).string(message.eventSyncDestinationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteEventInstanceSyncDestinationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteEventInstanceSyncDestinationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventInstanceId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.eventSyncDestinationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteEventInstanceSyncDestinationRequest {
+    return {
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      eventSyncDestinationId: isSet(object.eventSyncDestinationId)
+        ? globalThis.String(object.eventSyncDestinationId)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteEventInstanceSyncDestinationRequest): unknown {
+    const obj: any = {};
+    if (message.eventInstanceId !== "") {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    if (message.eventSyncDestinationId !== "") {
+      obj.eventSyncDestinationId = message.eventSyncDestinationId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteEventInstanceSyncDestinationRequest>, I>>(
+    base?: I,
+  ): DeleteEventInstanceSyncDestinationRequest {
+    return DeleteEventInstanceSyncDestinationRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteEventInstanceSyncDestinationRequest>, I>>(
+    object: I,
+  ): DeleteEventInstanceSyncDestinationRequest {
+    const message = createBaseDeleteEventInstanceSyncDestinationRequest();
     message.eventInstanceId = object.eventInstanceId ?? "";
     message.eventSyncDestinationId = object.eventSyncDestinationId ?? "";
     return message;

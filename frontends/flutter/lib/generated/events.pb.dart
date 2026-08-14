@@ -822,6 +822,74 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   void clearEventSyncDestinationId() => clearField(2);
 }
 
+/// Removes a single EventInstance's sync (cross-post) to one EventSyncDestination -- the reverse of `SyncEventInstance`.
+/// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
+class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
+  factory DeleteEventInstanceSyncDestinationRequest({
+    $core.String? eventInstanceId,
+    $core.String? eventSyncDestinationId,
+  }) {
+    final $result = create();
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (eventSyncDestinationId != null) {
+      $result.eventSyncDestinationId = eventSyncDestinationId;
+    }
+    return $result;
+  }
+  DeleteEventInstanceSyncDestinationRequest._() : super();
+  factory DeleteEventInstanceSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteEventInstanceSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventInstanceSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
+    ..aOS(2, _omitFieldNames ? '' : 'eventSyncDestinationId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DeleteEventInstanceSyncDestinationRequest clone() => DeleteEventInstanceSyncDestinationRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DeleteEventInstanceSyncDestinationRequest copyWith(void Function(DeleteEventInstanceSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteEventInstanceSyncDestinationRequest)) as DeleteEventInstanceSyncDestinationRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteEventInstanceSyncDestinationRequest create() => DeleteEventInstanceSyncDestinationRequest._();
+  DeleteEventInstanceSyncDestinationRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteEventInstanceSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteEventInstanceSyncDestinationRequest>();
+  @$core.pragma('dart2js:noInline')
+  static DeleteEventInstanceSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteEventInstanceSyncDestinationRequest>(create);
+  static DeleteEventInstanceSyncDestinationRequest? _defaultInstance;
+
+  /// The EventInstance to un-sync.
+  @$pb.TagNumber(1)
+  $core.String get eventInstanceId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set eventInstanceId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasEventInstanceId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEventInstanceId() => clearField(1);
+
+  /// The EventSyncDestination to un-sync it from.
+  @$pb.TagNumber(2)
+  $core.String get eventSyncDestinationId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set eventSyncDestinationId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasEventSyncDestinationId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEventSyncDestinationId() => clearField(2);
+}
+
 /// To be used for ticketing, RSVPs, etc.
 /// Stored as JSON in the database.
 class EventInfo extends $pb.GeneratedMessage {

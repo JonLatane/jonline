@@ -15,6 +15,7 @@ import {
   ResetPasswordRequest,
 } from "./authentication";
 import {
+  DeleteEventInstanceSyncDestinationRequest,
   DeleteEventSyncDestinationRequest,
   DeleteEventSyncSourceRequest,
   Event,
@@ -756,6 +757,15 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    deleteEventInstanceSyncDestination: {
+      name: "DeleteEventInstanceSyncDestination",
+      requestType: DeleteEventInstanceSyncDestinationRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
@@ -1036,6 +1046,11 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: SyncEventInstanceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<EventInstance>>;
+  /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  deleteEventInstanceSyncDestination(
+    request: DeleteEventInstanceSyncDestinationRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
@@ -1271,6 +1286,11 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<SyncEventInstanceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<EventInstance>;
+  /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  deleteEventInstanceSyncDestination(
+    request: DeepPartial<DeleteEventInstanceSyncDestinationRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: DeepPartial<GetEventAttendancesRequest>,
