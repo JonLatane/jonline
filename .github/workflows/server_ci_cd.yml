@@ -95,6 +95,20 @@ jobs:
       - name: Install protoc-gen-elm
         run: yarn global add protoc-gen-elm
 
+      - name: Install FVM
+        run: |
+          curl -fsSL https://fvm.app/install.sh | bash
+          echo "$HOME/fvm/bin" >> $GITHUB_PATH
+
+      - name: Cache pinned Flutter SDK (FVM)
+        uses: actions/cache@v6
+        with:
+          path: ~/fvm/versions
+          key: fvm-flutter-${{ hashFiles('frontends/flutter/.fvmrc') }}
+
+      - working-directory: frontends/flutter
+        run: fvm install
+
       - name: Build Protos
         run: make protos
 
