@@ -679,9 +679,16 @@
   flex-shrink: 0;
 }
 
-.accounts-list .flip-animated-item.flip-moving>* {
-  /* TODO*/
-  /* max-width: 292px; */
+.accounts-list .flip-animated-item {
+  transition: margin 0.2s ease;
+  margin: 0px;
+}
+
+.accounts-list .flip-animated-item.flip-collapsed {
+  grid-template-rows: 0fr;
+  grid-template-columns: 0fr;
+  margin-top: -5px;
+  margin-bottom: -5px;
 }
 
 

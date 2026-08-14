@@ -21,5 +21,6 @@ mod get_messages_tests;
 mod get_posts_tests;
 mod get_users_tests;
 mod send_message_tests;
+mod update_event_tests;
 mod update_post_tests;
 mod user_counts_tests;

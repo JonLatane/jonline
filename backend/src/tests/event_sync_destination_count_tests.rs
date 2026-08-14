@@ -36,7 +36,14 @@ fn counts_synced_instances_for_the_right_destination_only() {
         let destination_a = create_event_sync_destination_row(conn, &owner, "123");
         let destination_b = create_event_sync_destination_row(conn, &owner, "456");
 
-        let (event, _) = create_event(conn, &owner, Default::default());
+        let (event, _) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance_1, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
         let (instance_2, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
 

@@ -20,7 +20,14 @@ fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let author = create_user(conn, "det_self");
-        let (event, event_post) = create_event(conn, &author, EventOpts::default());
+        let (event, event_post) = create_event(
+            conn,
+            &author,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, instance_post) =
             create_event_instance(conn, &event, Some(&author), EventInstanceOpts::default());
 

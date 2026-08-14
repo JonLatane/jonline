@@ -84,6 +84,10 @@
   opacity: 0.3;
 }
 
+.reorder-arrow {
+  transition: opacity 0.2s ease;
+}
+
 .reorder-arrow-hidden {
   opacity: 0;
   pointer-events: none;

@@ -302,7 +302,14 @@ fn sync_event_instance_requires_sync_events_to_facebook_permission() {
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esdt_sync_noperm");
         let destination = create_event_sync_destination_row(conn, &owner, "123");
-        let (event, _) = create_event(conn, &owner, Default::default());
+        let (event, _) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
 
         let err = sync_event_instance(
@@ -327,7 +334,14 @@ fn sync_event_instance_rejects_non_owner_non_admin_of_the_destination() {
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esdt_sync_owner");
         let destination = create_event_sync_destination_row(conn, &owner, "123");
-        let (event, _) = create_event(conn, &owner, Default::default());
+        let (event, _) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
 
         let other = create_user(conn, "esdt_sync_other");

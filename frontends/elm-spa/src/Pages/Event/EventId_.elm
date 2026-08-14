@@ -1063,6 +1063,18 @@ eventDetailView shared model event instance =
         [ case event.post of
             Just eventPost ->
                 let
+                    -- An `Event` pulled in from an ICS/iCal subscription (see
+                    -- `Events.hasIcsSyncSource`) gets re-synced from that feed
+                    -- on every run of the backend's `sync_event_sync_sources`
+                    -- job, which would silently clobber any local edit to its
+                    -- title/link/content -- so `titleView`/`linkView`/
+                    -- `contentDisplayView` hide their own "Edit X" buttons
+                    -- entirely for such an `Event` rather than letting one
+                    -- through only to have it discarded on the next sync.
+                    editable : Bool
+                    editable =
+                        not (Events.hasIcsSyncSource event)
+
                     -- Slotted between the byline and the media display in the primary
                     -- (`Event`) post section below -- the currently-viewed
                     -- `EventInstance`'s own start/end/location, then (below that) the
@@ -1084,8 +1096,8 @@ eventDetailView shared model event instance =
                 in
                 div []
                     [ div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-primary" ] ]
-                        [ h1 [ class "event-post-title" ] [ titleView model.postFieldEdit maybeAccount eventPost ]
-                        , linkView model.postFieldEdit maybeAccount eventPost
+                        [ h1 [ class "event-post-title" ] [ titleView editable model.postFieldEdit maybeAccount eventPost ]
+                        , linkView editable model.postFieldEdit maybeAccount eventPost
                         , div [ class "event-post-meta" ]
                             [ text "by "
                             , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount eventPost.author
@@ -1102,7 +1114,7 @@ eventDetailView shared model event instance =
 
                             Nothing ->
                                 text ""
-                        , contentDisplayView maybeAccount eventPost
+                        , contentDisplayView editable maybeAccount eventPost
                         ]
                     , div [ class "post-detail-edit-row" ] [ deleteButtonView maybeAccount event eventPost ]
                     ]
@@ -1172,28 +1184,34 @@ out among the three -- see its own doc for why it needs no analogous
 editable fields, so it renders its title as plain text directly instead of
 going through this.
 -}
-titleView : Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
-titleView maybeEdit maybeAccount post =
+titleView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+titleView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
             if edit.field == TitleField then
                 postFieldEditFormView edit post
 
             else
-                titleDisplayView maybeAccount post
+                titleDisplayView editable maybeAccount post
 
         Nothing ->
-            titleDisplayView maybeAccount post
+            titleDisplayView editable maybeAccount post
 
 
 {-| The title text plus its own "Edit Title" button, shown whenever the
-title itself isn't the field currently being edited (see `titleView`).
+title itself isn't the field currently being edited (see `titleView`) --
+`editable` (see `eventDetailView`) hides the button entirely for an
+ICS-synced `Event`.
 -}
-titleDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
-titleDisplayView maybeAccount post =
+titleDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+titleDisplayView editable maybeAccount post =
     span [ class "event-post-title-display" ]
         [ text (Posts.postTitleText post)
-        , postFieldEditButtonView TitleField "Edit Title" maybeAccount post
+        , if editable then
+            postFieldEditButtonView TitleField "Edit Title" maybeAccount post
+
+          else
+            text ""
         ]
 
 
@@ -1202,27 +1220,28 @@ mirrors `titleView` exactly, just for the link:
 its own "Edit Link" button sits right after the link (or, if `post` has none
 set, right where the link would otherwise sit -- see `linkDisplayView`).
 -}
-linkView : Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
-linkView maybeEdit maybeAccount post =
+linkView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+linkView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
             if edit.field == LinkField then
                 postFieldEditFormView edit post
 
             else
-                linkDisplayView maybeAccount post
+                linkDisplayView editable maybeAccount post
 
         Nothing ->
-            linkDisplayView maybeAccount post
+            linkDisplayView editable maybeAccount post
 
 
 {-| The link (if `post` has one) plus its own "Edit Link" button, shown
 whenever the link itself isn't the field currently being edited (see
 `linkView`) -- the button renders regardless of whether `post` actually has
-a link set, so there's still something to click to add one.
+a link set, so there's still something to click to add one. `editable` (see
+`eventDetailView`) hides the button entirely for an ICS-synced `Event`.
 -}
-linkDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
-linkDisplayView maybeAccount post =
+linkDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+linkDisplayView editable maybeAccount post =
     span [ class "event-post-link-display" ]
         [ case Posts.postLinkText post of
             Just link ->
@@ -1236,7 +1255,11 @@ linkDisplayView maybeAccount post =
 
             Nothing ->
                 text ""
-        , postFieldEditButtonView LinkField "Edit Link" maybeAccount post
+        , if editable then
+            postFieldEditButtonView LinkField "Edit Link" maybeAccount post
+
+          else
+            text ""
         ]
 
 
@@ -1249,8 +1272,8 @@ this is always just the display half. The button renders regardless of
 whether `post` actually has content set, so there's still something to click
 to add some.
 -}
-contentDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
-contentDisplayView maybeAccount post =
+contentDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+contentDisplayView editable maybeAccount post =
     div [ class "event-post-content-display" ]
         [ case post.content of
             Just content ->
@@ -1258,7 +1281,11 @@ contentDisplayView maybeAccount post =
 
             Nothing ->
                 text ""
-        , editButtonView "Edit Content" (EditContentClicked post) maybeAccount post
+        , if editable then
+            editButtonView "Edit Content" (EditContentClicked post) maybeAccount post
+
+          else
+            text ""
         ]
 
 

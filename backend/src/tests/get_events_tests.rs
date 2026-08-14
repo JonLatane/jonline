@@ -42,7 +42,14 @@ fn create_simple_event(
     event_opts: EventOpts,
     instance_opts: EventInstanceOpts,
 ) -> (crate::models::Event, crate::models::EventInstance) {
-    let (event, _event_post) = create_event(conn, author, event_opts);
+    let (event, _event_post) = create_event(
+        conn,
+        author,
+        EventOpts {
+            default_instance: None,
+            ..event_opts
+        },
+    );
     let (instance, _instance_post) =
         create_event_instance(conn, &event, Some(author), instance_opts);
     (event, instance)

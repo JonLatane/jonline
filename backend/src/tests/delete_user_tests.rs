@@ -130,7 +130,14 @@ fn delete_cascades_events_posts_media_and_sync_config() {
         // `event_instances` rows, not their container Posts (PostContext::Event/EventInstance),
         // so those survive as orphaned rows once the user's own row (and thus the `ON DELETE SET
         // NULL` FK) is gone.
-        let (event, event_post) = create_event(conn, &user, EventOpts::default());
+        let (event, event_post) = create_event(
+            conn,
+            &user,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
         let (instance, instance_post) =
             create_event_instance(conn, &event, Some(&user), EventInstanceOpts::default());
 
