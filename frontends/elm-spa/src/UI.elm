@@ -527,6 +527,7 @@ the same serif-italic "i" styling, layered on top of `nav-link`'s own sizing.
 aboutLink : Shared.Model -> Route -> Html Shared.Msg
 aboutLink shared currentRoute =
     let
+        isCurrent : Bool
         isCurrent =
             currentRoute == Route.About
     in

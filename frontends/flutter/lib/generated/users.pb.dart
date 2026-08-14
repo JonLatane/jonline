@@ -12,6 +12,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $2;
@@ -54,6 +55,7 @@ class User extends $pb.GeneratedMessage {
     Membership? currentGroupMembership,
     $core.bool? hasAdvancedData,
     $core.Iterable<$1.FederatedAccount>? federatedProfiles,
+    $core.Iterable<EventSyncDestination>? eventSyncDestinations,
     $2.Timestamp? createdAt,
     $2.Timestamp? updatedAt,
   }) {
@@ -87,6 +89,8 @@ class User extends $pb.GeneratedMessage {
     if (hasAdvancedData != null) result.hasAdvancedData = hasAdvancedData;
     if (federatedProfiles != null)
       result.federatedProfiles.addAll(federatedProfiles);
+    if (eventSyncDestinations != null)
+      result.eventSyncDestinations.addAll(eventSyncDestinations);
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     return result;
@@ -143,6 +147,9 @@ class User extends $pb.GeneratedMessage {
     ..aOB(80, _omitFieldNames ? '' : 'hasAdvancedData')
     ..pPM<$1.FederatedAccount>(81, _omitFieldNames ? '' : 'federatedProfiles',
         subBuilder: $1.FederatedAccount.create)
+    ..pPM<EventSyncDestination>(
+        82, _omitFieldNames ? '' : 'eventSyncDestinations',
+        subBuilder: EventSyncDestination.create)
     ..aOM<$2.Timestamp>(100, _omitFieldNames ? '' : 'createdAt',
         subBuilder: $2.Timestamp.create)
     ..aOM<$2.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt',
@@ -419,29 +426,37 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(81)
   $pb.PbList<$1.FederatedAccount> get federatedProfiles => $_getList(23);
 
+  /// The target user's own linked EventSyncDestinations (e.g. Facebook Pages).
+  /// Only ever populated by `GetUsers`' single-user lookups (by username or by
+  /// user_id) when the viewer is the target user themselves (and holds
+  /// `SYNC_EVENTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including
+  /// via every other `GetUsers` listing type and via `GetCurrentUser`.
+  @$pb.TagNumber(82)
+  $pb.PbList<EventSyncDestination> get eventSyncDestinations => $_getList(24);
+
   /// The time the user was created.
   @$pb.TagNumber(100)
-  $2.Timestamp get createdAt => $_getN(24);
+  $2.Timestamp get createdAt => $_getN(25);
   @$pb.TagNumber(100)
   set createdAt($2.Timestamp value) => $_setField(100, value);
   @$pb.TagNumber(100)
-  $core.bool hasCreatedAt() => $_has(24);
+  $core.bool hasCreatedAt() => $_has(25);
   @$pb.TagNumber(100)
   void clearCreatedAt() => $_clearField(100);
   @$pb.TagNumber(100)
-  $2.Timestamp ensureCreatedAt() => $_ensure(24);
+  $2.Timestamp ensureCreatedAt() => $_ensure(25);
 
   /// The time the user was last updated.
   @$pb.TagNumber(101)
-  $2.Timestamp get updatedAt => $_getN(25);
+  $2.Timestamp get updatedAt => $_getN(26);
   @$pb.TagNumber(101)
   set updatedAt($2.Timestamp value) => $_setField(101, value);
   @$pb.TagNumber(101)
-  $core.bool hasUpdatedAt() => $_has(25);
+  $core.bool hasUpdatedAt() => $_has(26);
   @$pb.TagNumber(101)
   void clearUpdatedAt() => $_clearField(101);
   @$pb.TagNumber(101)
-  $2.Timestamp ensureUpdatedAt() => $_ensure(25);
+  $2.Timestamp ensureUpdatedAt() => $_ensure(26);
 }
 
 /// Post/authorship-centric version of User. UI can cross-reference user details
@@ -549,6 +564,440 @@ class Author extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(5)
   $pb.PbList<$3.Permission> get permissions => $_getList(4);
+}
+
+enum EventSyncSource_Configuration { icsSubscriptionUrl, notSet }
+
+/// A user-owned source to sync events from.
+class EventSyncSource extends $pb.GeneratedMessage {
+  factory EventSyncSource({
+    $core.String? id,
+    Author? owner,
+    $fixnum.Int64? syncIntervalSeconds,
+    $2.Timestamp? createdAt,
+    $2.Timestamp? updatedAt,
+    $2.Timestamp? lastSyncedAt,
+    $fixnum.Int64? eventCount,
+    $fixnum.Int64? eventInstanceCount,
+    $core.String? icsSubscriptionUrl,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (owner != null) result.owner = owner;
+    if (syncIntervalSeconds != null)
+      result.syncIntervalSeconds = syncIntervalSeconds;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    if (lastSyncedAt != null) result.lastSyncedAt = lastSyncedAt;
+    if (eventCount != null) result.eventCount = eventCount;
+    if (eventInstanceCount != null)
+      result.eventInstanceCount = eventInstanceCount;
+    if (icsSubscriptionUrl != null)
+      result.icsSubscriptionUrl = icsSubscriptionUrl;
+    return result;
+  }
+
+  EventSyncSource._();
+
+  factory EventSyncSource.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventSyncSource.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, EventSyncSource_Configuration>
+      _EventSyncSource_ConfigurationByTag = {
+    9: EventSyncSource_Configuration.icsSubscriptionUrl,
+    0: EventSyncSource_Configuration.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventSyncSource',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..oo(0, [9])
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOM<Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: Author.create)
+    ..a<$fixnum.Int64>(
+        3, _omitFieldNames ? '' : 'syncIntervalSeconds', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOM<$2.Timestamp>(4, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(6, _omitFieldNames ? '' : 'lastSyncedAt',
+        subBuilder: $2.Timestamp.create)
+    ..a<$fixnum.Int64>(
+        7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSyncSource clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSyncSource copyWith(void Function(EventSyncSource) updates) =>
+      super.copyWith((message) => updates(message as EventSyncSource))
+          as EventSyncSource;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EventSyncSource create() => EventSyncSource._();
+  @$core.override
+  EventSyncSource createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static EventSyncSource getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventSyncSource>(create);
+  static EventSyncSource? _defaultInstance;
+
+  @$pb.TagNumber(9)
+  EventSyncSource_Configuration whichConfiguration() =>
+      _EventSyncSource_ConfigurationByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(9)
+  void clearConfiguration() => $_clearField($_whichOneof(0));
+
+  /// Unique ID for the synchronization.
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  /// The user information for the owner of this event sync.
+  @$pb.TagNumber(2)
+  Author get owner => $_getN(1);
+  @$pb.TagNumber(2)
+  set owner(Author value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOwner() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOwner() => $_clearField(2);
+  @$pb.TagNumber(2)
+  Author ensureOwner() => $_ensure(1);
+
+  /// How frequently the sync should happen in seconds.
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get syncIntervalSeconds => $_getI64(2);
+  @$pb.TagNumber(3)
+  set syncIntervalSeconds($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSyncIntervalSeconds() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSyncIntervalSeconds() => $_clearField(3);
+
+  /// The time the EventSyncSource was created.
+  @$pb.TagNumber(4)
+  $2.Timestamp get createdAt => $_getN(3);
+  @$pb.TagNumber(4)
+  set createdAt($2.Timestamp value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCreatedAt() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCreatedAt() => $_clearField(4);
+  @$pb.TagNumber(4)
+  $2.Timestamp ensureCreatedAt() => $_ensure(3);
+
+  /// The time the EventSyncSource was last updated.
+  @$pb.TagNumber(5)
+  $2.Timestamp get updatedAt => $_getN(4);
+  @$pb.TagNumber(5)
+  set updatedAt($2.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUpdatedAt() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearUpdatedAt() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $2.Timestamp ensureUpdatedAt() => $_ensure(4);
+
+  /// The time the EventSyncSource was last synced.
+  @$pb.TagNumber(6)
+  $2.Timestamp get lastSyncedAt => $_getN(5);
+  @$pb.TagNumber(6)
+  set lastSyncedAt($2.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasLastSyncedAt() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearLastSyncedAt() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $2.Timestamp ensureLastSyncedAt() => $_ensure(5);
+
+  /// The number of events total associated with this EventSyncSource. Recomputed
+  /// on each sync.
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get eventCount => $_getI64(6);
+  @$pb.TagNumber(7)
+  set eventCount($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasEventCount() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearEventCount() => $_clearField(7);
+
+  /// The number of event instances total associated with this EventSyncSource. Recomputed
+  /// on each sync.
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get eventInstanceCount => $_getI64(7);
+  @$pb.TagNumber(8)
+  set eventInstanceCount($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasEventInstanceCount() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearEventInstanceCount() => $_clearField(8);
+
+  /// The iCal subscription URL for the calendar sync.
+  @$pb.TagNumber(9)
+  $core.String get icsSubscriptionUrl => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set icsSubscriptionUrl($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasIcsSubscriptionUrl() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearIcsSubscriptionUrl() => $_clearField(9);
+}
+
+enum EventSyncDestination_Configuration { facebookPage, notSet }
+
+/// A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
+/// but for pushing instances out rather than pulling events in.
+class EventSyncDestination extends $pb.GeneratedMessage {
+  factory EventSyncDestination({
+    $core.String? id,
+    Author? owner,
+    $2.Timestamp? createdAt,
+    $2.Timestamp? updatedAt,
+    $fixnum.Int64? syncedEventInstanceCount,
+    FacebookPage? facebookPage,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (owner != null) result.owner = owner;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    if (syncedEventInstanceCount != null)
+      result.syncedEventInstanceCount = syncedEventInstanceCount;
+    if (facebookPage != null) result.facebookPage = facebookPage;
+    return result;
+  }
+
+  EventSyncDestination._();
+
+  factory EventSyncDestination.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventSyncDestination.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, EventSyncDestination_Configuration>
+      _EventSyncDestination_ConfigurationByTag = {
+    9: EventSyncDestination_Configuration.facebookPage,
+    0: EventSyncDestination_Configuration.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventSyncDestination',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..oo(0, [9])
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOM<Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: Author.create)
+    ..aOM<$2.Timestamp>(4, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $2.Timestamp.create)
+    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedEventInstanceCount',
+        $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOM<FacebookPage>(9, _omitFieldNames ? '' : 'facebookPage',
+        subBuilder: FacebookPage.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSyncDestination clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSyncDestination copyWith(void Function(EventSyncDestination) updates) =>
+      super.copyWith((message) => updates(message as EventSyncDestination))
+          as EventSyncDestination;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EventSyncDestination create() => EventSyncDestination._();
+  @$core.override
+  EventSyncDestination createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static EventSyncDestination getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventSyncDestination>(create);
+  static EventSyncDestination? _defaultInstance;
+
+  @$pb.TagNumber(9)
+  EventSyncDestination_Configuration whichConfiguration() =>
+      _EventSyncDestination_ConfigurationByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(9)
+  void clearConfiguration() => $_clearField($_whichOneof(0));
+
+  /// Unique ID for the destination.
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  /// The user information for the owner of this destination.
+  @$pb.TagNumber(2)
+  Author get owner => $_getN(1);
+  @$pb.TagNumber(2)
+  set owner(Author value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOwner() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOwner() => $_clearField(2);
+  @$pb.TagNumber(2)
+  Author ensureOwner() => $_ensure(1);
+
+  /// The time the EventSyncDestination was created.
+  @$pb.TagNumber(4)
+  $2.Timestamp get createdAt => $_getN(2);
+  @$pb.TagNumber(4)
+  set createdAt($2.Timestamp value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCreatedAt() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearCreatedAt() => $_clearField(4);
+  @$pb.TagNumber(4)
+  $2.Timestamp ensureCreatedAt() => $_ensure(2);
+
+  /// The time the EventSyncDestination was last updated.
+  @$pb.TagNumber(5)
+  $2.Timestamp get updatedAt => $_getN(3);
+  @$pb.TagNumber(5)
+  set updatedAt($2.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUpdatedAt() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUpdatedAt() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $2.Timestamp ensureUpdatedAt() => $_ensure(3);
+
+  /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
+  /// request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
+  /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
+  /// in bulk on an interval.
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get syncedEventInstanceCount => $_getI64(4);
+  @$pb.TagNumber(6)
+  set syncedEventInstanceCount($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSyncedEventInstanceCount() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearSyncedEventInstanceCount() => $_clearField(6);
+
+  /// A connected Facebook Page to post EventInstances to.
+  @$pb.TagNumber(9)
+  FacebookPage get facebookPage => $_getN(5);
+  @$pb.TagNumber(9)
+  set facebookPage(FacebookPage value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasFacebookPage() => $_has(5);
+  @$pb.TagNumber(9)
+  void clearFacebookPage() => $_clearField(9);
+  @$pb.TagNumber(9)
+  FacebookPage ensureFacebookPage() => $_ensure(5);
+}
+
+/// A Facebook Page connected as an `EventSyncDestination`.
+class FacebookPage extends $pb.GeneratedMessage {
+  factory FacebookPage({
+    $core.String? pageId,
+    $core.String? pageName,
+    $core.String? shortLivedUserAccessToken,
+  }) {
+    final result = create();
+    if (pageId != null) result.pageId = pageId;
+    if (pageName != null) result.pageName = pageName;
+    if (shortLivedUserAccessToken != null)
+      result.shortLivedUserAccessToken = shortLivedUserAccessToken;
+    return result;
+  }
+
+  FacebookPage._();
+
+  factory FacebookPage.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FacebookPage.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FacebookPage',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'pageId')
+    ..aOS(2, _omitFieldNames ? '' : 'pageName')
+    ..aOS(3, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FacebookPage clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FacebookPage copyWith(void Function(FacebookPage) updates) =>
+      super.copyWith((message) => updates(message as FacebookPage))
+          as FacebookPage;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FacebookPage create() => FacebookPage._();
+  @$core.override
+  FacebookPage createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static FacebookPage getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FacebookPage>(create);
+  static FacebookPage? _defaultInstance;
+
+  /// The Facebook Page's ID.
+  @$pb.TagNumber(1)
+  $core.String get pageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set pageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPageId() => $_clearField(1);
+
+  /// The Facebook Page's name, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get pageName => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set pageName($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPageName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageName() => $_clearField(2);
+
+  /// Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token
+  /// from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
+  /// Never populated in responses.
+  @$pb.TagNumber(3)
+  $core.String get shortLivedUserAccessToken => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set shortLivedUserAccessToken($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasShortLivedUserAccessToken() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearShortLivedUserAccessToken() => $_clearField(3);
 }
 
 /// Model for a user's follow of another user.

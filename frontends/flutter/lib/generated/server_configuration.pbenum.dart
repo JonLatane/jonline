@@ -44,6 +44,34 @@ class AuthenticationFeature extends $pb.ProtobufEnum {
   const AuthenticationFeature._(super.value, super.name);
 }
 
+/// The Events Calendar's default UI granularity.
+class CalendarDisplayMode extends $pb.ProtobufEnum {
+  /// Shows a 7-day week at a time. Good default for most servers.
+  static const CalendarDisplayMode CALENDAR_DISPLAY_WEEK =
+      CalendarDisplayMode._(0, _omitEnumNames ? '' : 'CALENDAR_DISPLAY_WEEK');
+
+  /// Shows a full month at a time. Better for servers with fewer events.
+  static const CalendarDisplayMode CALENDAR_DISPLAY_MONTH =
+      CalendarDisplayMode._(1, _omitEnumNames ? '' : 'CALENDAR_DISPLAY_MONTH');
+
+  /// Shows a single day at a time. Better for servers with many events.
+  static const CalendarDisplayMode CALENDAR_DISPLAY_DAY =
+      CalendarDisplayMode._(3, _omitEnumNames ? '' : 'CALENDAR_DISPLAY_DAY');
+
+  static const $core.List<CalendarDisplayMode> values = <CalendarDisplayMode>[
+    CALENDAR_DISPLAY_WEEK,
+    CALENDAR_DISPLAY_MONTH,
+    CALENDAR_DISPLAY_DAY,
+  ];
+
+  static final $core.List<CalendarDisplayMode?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static CalendarDisplayMode? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CalendarDisplayMode._(super.value, super.name);
+}
+
 /// Strategy when a user sets their visibility to `PRIVATE`.
 class PrivateUserStrategy extends $pb.ProtobufEnum {
   /// `PRIVATE` Users can't see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events).
@@ -108,6 +136,43 @@ class WebUserInterface extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const WebUserInterface._(super.value, super.name);
+}
+
+/// The default navigation tabs in Jonline's Elm UI.
+class NavigationTab extends $pb.ProtobufEnum {
+  /// The home/landing tab.
+  static const NavigationTab HOME_TAB =
+      NavigationTab._(0, _omitEnumNames ? '' : 'HOME_TAB');
+
+  /// The Events tab.
+  static const NavigationTab EVENTS_TAB =
+      NavigationTab._(10, _omitEnumNames ? '' : 'EVENTS_TAB');
+
+  /// The Posts tab.
+  static const NavigationTab POSTS_TAB =
+      NavigationTab._(11, _omitEnumNames ? '' : 'POSTS_TAB');
+
+  /// The People tab.
+  static const NavigationTab PEOPLE_TAB =
+      NavigationTab._(12, _omitEnumNames ? '' : 'PEOPLE_TAB');
+
+  /// The About tab.
+  static const NavigationTab ABOUT_TAB =
+      NavigationTab._(15, _omitEnumNames ? '' : 'ABOUT_TAB');
+
+  static const $core.List<NavigationTab> values = <NavigationTab>[
+    HOME_TAB,
+    EVENTS_TAB,
+    POSTS_TAB,
+    PEOPLE_TAB,
+    ABOUT_TAB,
+  ];
+
+  static final $core.Map<$core.int, NavigationTab> _byValue =
+      $pb.ProtobufEnum.initByValue(values);
+  static NavigationTab? valueOf($core.int value) => _byValue[value];
+
+  const NavigationTab._(super.value, super.name);
 }
 
 const $core.bool _omitEnumNames =

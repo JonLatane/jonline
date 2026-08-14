@@ -571,7 +571,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
               MultiSelectChipDisplay<Permission>(
                 chipColor: appState.navColor,
                 textStyle: TextStyle(color: appState.navColor.textColor),
-                items: (config?.defaultUserPermissions ?? [])
+                items: (config?.defaultUserPermissions ?? <Permission>[])
                     .map((p) => MultiSelectItem(p, p.displayName))
                     .toList(),
               ),

@@ -34,8 +34,8 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
     PostSettings? postSettings,
-    PostSettings? eventSettings,
-    FeatureSettings? mediaSettings,
+    EventSettings? eventSettings,
+    MediaSettings? mediaSettings,
     ExternalCDNConfig? externalCdnConfig,
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
@@ -102,10 +102,10 @@ class ServerConfiguration extends $pb.GeneratedMessage {
         subBuilder: FeatureSettings.create)
     ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings',
         subBuilder: PostSettings.create)
-    ..aOM<PostSettings>(23, _omitFieldNames ? '' : 'eventSettings',
-        subBuilder: PostSettings.create)
-    ..aOM<FeatureSettings>(24, _omitFieldNames ? '' : 'mediaSettings',
-        subBuilder: FeatureSettings.create)
+    ..aOM<EventSettings>(23, _omitFieldNames ? '' : 'eventSettings',
+        subBuilder: EventSettings.create)
+    ..aOM<MediaSettings>(24, _omitFieldNames ? '' : 'mediaSettings',
+        subBuilder: MediaSettings.create)
     ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig',
         subBuilder: ExternalCDNConfig.create)
     ..aE<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy',
@@ -231,29 +231,29 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(23)
-  PostSettings get eventSettings => $_getN(8);
+  EventSettings get eventSettings => $_getN(8);
   @$pb.TagNumber(23)
-  set eventSettings(PostSettings value) => $_setField(23, value);
+  set eventSettings(EventSettings value) => $_setField(23, value);
   @$pb.TagNumber(23)
   $core.bool hasEventSettings() => $_has(8);
   @$pb.TagNumber(23)
   void clearEventSettings() => $_clearField(23);
   @$pb.TagNumber(23)
-  PostSettings ensureEventSettings() => $_ensure(8);
+  EventSettings ensureEventSettings() => $_ensure(8);
 
   /// Configuration for media on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_MEDIA_GLOBALLY`.
   @$pb.TagNumber(24)
-  FeatureSettings get mediaSettings => $_getN(9);
+  MediaSettings get mediaSettings => $_getN(9);
   @$pb.TagNumber(24)
-  set mediaSettings(FeatureSettings value) => $_setField(24, value);
+  set mediaSettings(MediaSettings value) => $_setField(24, value);
   @$pb.TagNumber(24)
   $core.bool hasMediaSettings() => $_has(9);
   @$pb.TagNumber(24)
   void clearMediaSettings() => $_clearField(24);
   @$pb.TagNumber(24)
-  FeatureSettings ensureMediaSettings() => $_ensure(9);
+  MediaSettings ensureMediaSettings() => $_ensure(9);
 
   /// If set, enables External CDN support for the server. This means that the
   /// non-secure HTTP server (on port 80) will *not* redirect to the secure server,
@@ -438,6 +438,97 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   void clearCdnGrpc() => $_clearField(6);
 }
 
+/// Media is a special type and less customizable than "Features."
+class MediaSettings extends $pb.GeneratedMessage {
+  factory MediaSettings({
+    $core.bool? visible,
+    $2.Moderation? defaultModeration,
+    $2.Visibility? defaultVisibility,
+  }) {
+    final result = create();
+    if (visible != null) result.visible = visible;
+    if (defaultModeration != null) result.defaultModeration = defaultModeration;
+    if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
+    return result;
+  }
+
+  MediaSettings._();
+
+  factory MediaSettings.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory MediaSettings.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MediaSettings',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'visible')
+    ..aE<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration',
+        enumValues: $2.Moderation.values)
+    ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
+        enumValues: $2.Visibility.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MediaSettings clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MediaSettings copyWith(void Function(MediaSettings) updates) =>
+      super.copyWith((message) => updates(message as MediaSettings))
+          as MediaSettings;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MediaSettings create() => MediaSettings._();
+  @$core.override
+  MediaSettings createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static MediaSettings getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MediaSettings>(create);
+  static MediaSettings? _defaultInstance;
+
+  /// Hide the Posts or Events tab from the user with this flag.
+  @$pb.TagNumber(1)
+  $core.bool get visible => $_getBF(0);
+  @$pb.TagNumber(1)
+  set visible($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasVisible() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVisible() => $_clearField(1);
+
+  /// Only `UNMODERATED` and `PENDING` are valid.
+  /// When `UNMODERATED`, user reports may transition status to `PENDING`.
+  /// When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  /// be visible until a moderator approves them. `LIMITED` visiblity
+  /// posts are always visible to targeted users (who have not blocked
+  /// the author) regardless of default_moderation.
+  @$pb.TagNumber(2)
+  $2.Moderation get defaultModeration => $_getN(1);
+  @$pb.TagNumber(2)
+  set defaultModeration($2.Moderation value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDefaultModeration() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDefaultModeration() => $_clearField(2);
+
+  /// Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+  /// as appropriate.
+  @$pb.TagNumber(3)
+  $2.Visibility get defaultVisibility => $_getN(2);
+  @$pb.TagNumber(3)
+  set defaultVisibility($2.Visibility value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDefaultVisibility() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDefaultVisibility() => $_clearField(3);
+}
+
 /// Settings for a feature (e.g. People, Groups, Posts, Events, Media).
 /// Encompasses both the feature's visibility and moderation settings.
 class FeatureSettings extends $pb.GeneratedMessage {
@@ -445,13 +536,15 @@ class FeatureSettings extends $pb.GeneratedMessage {
     $core.bool? visible,
     $2.Moderation? defaultModeration,
     $2.Visibility? defaultVisibility,
-    $core.String? customTitle,
+    $core.String? aliasSingular,
+    $core.String? aliasPlural,
   }) {
     final result = create();
     if (visible != null) result.visible = visible;
     if (defaultModeration != null) result.defaultModeration = defaultModeration;
     if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
-    if (customTitle != null) result.customTitle = customTitle;
+    if (aliasSingular != null) result.aliasSingular = aliasSingular;
+    if (aliasPlural != null) result.aliasPlural = aliasPlural;
     return result;
   }
 
@@ -473,7 +566,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
         enumValues: $2.Moderation.values)
     ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
         enumValues: $2.Visibility.values)
-    ..aOS(4, _omitFieldNames ? '' : 'customTitle')
+    ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
+    ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -532,32 +626,43 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearDefaultVisibility() => $_clearField(3);
 
-  /// (TODO) Custom title, like "Section"s instead of "Group"s.
-  /// This is more an idea; internationalization is obviously problematic here.
+  /// Can be used to rename, e.g., "Person" to "Contributor" or "Group" to "Community"
   @$pb.TagNumber(4)
-  $core.String get customTitle => $_getSZ(3);
+  $core.String get aliasSingular => $_getSZ(3);
   @$pb.TagNumber(4)
-  set customTitle($core.String value) => $_setString(3, value);
+  set aliasSingular($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasCustomTitle() => $_has(3);
+  $core.bool hasAliasSingular() => $_has(3);
   @$pb.TagNumber(4)
-  void clearCustomTitle() => $_clearField(4);
+  void clearAliasSingular() => $_clearField(4);
+
+  /// Can be used to rename, e.g. "Groups" to "Subtwaddits" or "People" to "Folks"
+  @$pb.TagNumber(5)
+  $core.String get aliasPlural => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set aliasPlural($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAliasPlural() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearAliasPlural() => $_clearField(5);
 }
 
-/// Specific settings for Posts and Events.
+/// Specific settings for Posts.
 class PostSettings extends $pb.GeneratedMessage {
   factory PostSettings({
     $core.bool? visible,
     $2.Moderation? defaultModeration,
     $2.Visibility? defaultVisibility,
-    $core.String? customTitle,
+    $core.String? aliasSingular,
+    $core.String? aliasPlural,
     $core.bool? enableReplies,
   }) {
     final result = create();
     if (visible != null) result.visible = visible;
     if (defaultModeration != null) result.defaultModeration = defaultModeration;
     if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
-    if (customTitle != null) result.customTitle = customTitle;
+    if (aliasSingular != null) result.aliasSingular = aliasSingular;
+    if (aliasPlural != null) result.aliasPlural = aliasPlural;
     if (enableReplies != null) result.enableReplies = enableReplies;
     return result;
   }
@@ -580,8 +685,9 @@ class PostSettings extends $pb.GeneratedMessage {
         enumValues: $2.Moderation.values)
     ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
         enumValues: $2.Visibility.values)
-    ..aOS(4, _omitFieldNames ? '' : 'customTitle')
-    ..aOB(5, _omitFieldNames ? '' : 'enableReplies')
+    ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
+    ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
+    ..aOB(6, _omitFieldNames ? '' : 'enableReplies')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -603,7 +709,7 @@ class PostSettings extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<PostSettings>(create);
   static PostSettings? _defaultInstance;
 
-  /// Hide the Posts or Events tab from the user with this flag.
+  /// Hide the Posts tab from the user with this flag.
   @$pb.TagNumber(1)
   $core.bool get visible => $_getBF(0);
   @$pb.TagNumber(1)
@@ -640,27 +746,201 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearDefaultVisibility() => $_clearField(3);
 
-  /// (TODO) Custom title, like "Section"s instead of "Group"s.
-  /// This is more an idea; internationalization is obviously problematic here.
+  /// Can be used to rename, e.g., "Post" "Highlight" or "Squirt"
   @$pb.TagNumber(4)
-  $core.String get customTitle => $_getSZ(3);
+  $core.String get aliasSingular => $_getSZ(3);
   @$pb.TagNumber(4)
-  set customTitle($core.String value) => $_setString(3, value);
+  set aliasSingular($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasCustomTitle() => $_has(3);
+  $core.bool hasAliasSingular() => $_has(3);
   @$pb.TagNumber(4)
-  void clearCustomTitle() => $_clearField(4);
+  void clearAliasSingular() => $_clearField(4);
+
+  /// Can be used to rename, e.g. "Posts" to "Splurts" or "Memories"
+  @$pb.TagNumber(5)
+  $core.String get aliasPlural => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set aliasPlural($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAliasPlural() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearAliasPlural() => $_clearField(5);
 
   /// Controls whether replies are shown in the UI. Note that users' ability to reply
   /// is controlled by the `REPLY_TO_POSTS` permission.
+  @$pb.TagNumber(6)
+  $core.bool get enableReplies => $_getBF(5);
+  @$pb.TagNumber(6)
+  set enableReplies($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasEnableReplies() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearEnableReplies() => $_clearField(6);
+}
+
+/// Specific settings for Events.
+class EventSettings extends $pb.GeneratedMessage {
+  factory EventSettings({
+    $core.bool? visible,
+    $2.Moderation? defaultModeration,
+    $2.Visibility? defaultVisibility,
+    $core.String? aliasSingular,
+    $core.String? aliasPlural,
+    $core.bool? enableReplies,
+    $core.int? calendarLookbackDays,
+    CalendarDisplayMode? defaultCalendarDisplayMode,
+  }) {
+    final result = create();
+    if (visible != null) result.visible = visible;
+    if (defaultModeration != null) result.defaultModeration = defaultModeration;
+    if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
+    if (aliasSingular != null) result.aliasSingular = aliasSingular;
+    if (aliasPlural != null) result.aliasPlural = aliasPlural;
+    if (enableReplies != null) result.enableReplies = enableReplies;
+    if (calendarLookbackDays != null)
+      result.calendarLookbackDays = calendarLookbackDays;
+    if (defaultCalendarDisplayMode != null)
+      result.defaultCalendarDisplayMode = defaultCalendarDisplayMode;
+    return result;
+  }
+
+  EventSettings._();
+
+  factory EventSettings.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventSettings.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventSettings',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'visible')
+    ..aE<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration',
+        enumValues: $2.Moderation.values)
+    ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
+        enumValues: $2.Visibility.values)
+    ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
+    ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
+    ..aOB(6, _omitFieldNames ? '' : 'enableReplies')
+    ..aI(7, _omitFieldNames ? '' : 'calendarLookbackDays',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aE<CalendarDisplayMode>(
+        8, _omitFieldNames ? '' : 'defaultCalendarDisplayMode',
+        enumValues: CalendarDisplayMode.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSettings clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EventSettings copyWith(void Function(EventSettings) updates) =>
+      super.copyWith((message) => updates(message as EventSettings))
+          as EventSettings;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EventSettings create() => EventSettings._();
+  @$core.override
+  EventSettings createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static EventSettings getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventSettings>(create);
+  static EventSettings? _defaultInstance;
+
+  /// Hide the Events tab from the user with this flag.
+  @$pb.TagNumber(1)
+  $core.bool get visible => $_getBF(0);
+  @$pb.TagNumber(1)
+  set visible($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasVisible() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVisible() => $_clearField(1);
+
+  /// Only `UNMODERATED` and `PENDING` are valid.
+  /// When `UNMODERATED`, user reports may transition status to `PENDING`.
+  /// When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  /// be visible until a moderator approves them. `LIMITED` visiblity
+  /// posts are always visible to targeted users (who have not blocked
+  /// the author) regardless of default_moderation.
+  @$pb.TagNumber(2)
+  $2.Moderation get defaultModeration => $_getN(1);
+  @$pb.TagNumber(2)
+  set defaultModeration($2.Moderation value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDefaultModeration() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDefaultModeration() => $_clearField(2);
+
+  /// Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+  /// as appropriate.
+  @$pb.TagNumber(3)
+  $2.Visibility get defaultVisibility => $_getN(2);
+  @$pb.TagNumber(3)
+  set defaultVisibility($2.Visibility value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDefaultVisibility() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDefaultVisibility() => $_clearField(3);
+
+  /// Can be used to rename, e.g., "Event" to "Gig" or "Performance"
+  @$pb.TagNumber(4)
+  $core.String get aliasSingular => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set aliasSingular($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAliasSingular() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAliasSingular() => $_clearField(4);
+
+  /// Can be used to rename, e.g. "Events" to "Show," "Game," "Competition"
   @$pb.TagNumber(5)
-  $core.bool get enableReplies => $_getBF(4);
+  $core.String get aliasPlural => $_getSZ(4);
   @$pb.TagNumber(5)
-  set enableReplies($core.bool value) => $_setBool(4, value);
+  set aliasPlural($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
-  $core.bool hasEnableReplies() => $_has(4);
+  $core.bool hasAliasPlural() => $_has(4);
   @$pb.TagNumber(5)
-  void clearEnableReplies() => $_clearField(5);
+  void clearAliasPlural() => $_clearField(5);
+
+  /// Works the same as for Posts.
+  @$pb.TagNumber(6)
+  $core.bool get enableReplies => $_getBF(5);
+  @$pb.TagNumber(6)
+  set enableReplies($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasEnableReplies() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearEnableReplies() => $_clearField(6);
+
+  /// How far to look back for the "Upcoming Events" tab in the server's UI. Defaults to `14`.
+  /// Servers with fewer events may want to set to a higher value.
+  @$pb.TagNumber(7)
+  $core.int get calendarLookbackDays => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set calendarLookbackDays($core.int value) => $_setUnsignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCalendarLookbackDays() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCalendarLookbackDays() => $_clearField(7);
+
+  /// What the Events Calendar's default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`.
+  /// Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`,
+  /// or with more to `CALENDAR_DISPLAY_DAY`.
+  @$pb.TagNumber(8)
+  CalendarDisplayMode get defaultCalendarDisplayMode => $_getN(7);
+  @$pb.TagNumber(8)
+  set defaultCalendarDisplayMode(CalendarDisplayMode value) =>
+      $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDefaultCalendarDisplayMode() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearDefaultCalendarDisplayMode() => $_clearField(8);
 }
 
 /// User-facing information about the server displayed on the "about" page.
@@ -922,6 +1202,299 @@ class ServerLogo extends $pb.GeneratedMessage {
   $core.bool hasWideMediaIdDark() => $_has(3);
   @$pb.TagNumber(4)
   void clearWideMediaIdDark() => $_clearField(4);
+}
+
+/// If set, should override the default tab set for the Elm navigation on a Jonline instance.
+class CustomNavigationTabSet extends $pb.GeneratedMessage {
+  factory CustomNavigationTabSet({
+    CustomNavigationTab? home,
+    $core.Iterable<CustomNavigationTabWithPath>? tabs,
+  }) {
+    final result = create();
+    if (home != null) result.home = home;
+    if (tabs != null) result.tabs.addAll(tabs);
+    return result;
+  }
+
+  CustomNavigationTabSet._();
+
+  factory CustomNavigationTabSet.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CustomNavigationTabSet.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CustomNavigationTabSet',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'home',
+        subBuilder: CustomNavigationTab.create)
+    ..pPM<CustomNavigationTabWithPath>(2, _omitFieldNames ? '' : 'tabs',
+        subBuilder: CustomNavigationTabWithPath.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTabSet clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTabSet copyWith(
+          void Function(CustomNavigationTabSet) updates) =>
+      super.copyWith((message) => updates(message as CustomNavigationTabSet))
+          as CustomNavigationTabSet;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTabSet create() => CustomNavigationTabSet._();
+  @$core.override
+  CustomNavigationTabSet createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTabSet getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabSet>(create);
+  static CustomNavigationTabSet? _defaultInstance;
+
+  /// Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+  @$pb.TagNumber(1)
+  CustomNavigationTab get home => $_getN(0);
+  @$pb.TagNumber(1)
+  set home(CustomNavigationTab value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasHome() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearHome() => $_clearField(1);
+  @$pb.TagNumber(1)
+  CustomNavigationTab ensureHome() => $_ensure(0);
+
+  /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
+  /// Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
+  /// `/` is modified via `CustomNavigationTabSet`.home instead.
+  @$pb.TagNumber(2)
+  $pb.PbList<CustomNavigationTabWithPath> get tabs => $_getList(1);
+}
+
+enum CustomNavigationTab_Target { tab, postId, notSet }
+
+enum CustomNavigationTab_Icon { emojiIcon, iconMediaId, notSet }
+
+/// Either one of the app's predefined tabs, or a Post
+class CustomNavigationTab extends $pb.GeneratedMessage {
+  factory CustomNavigationTab({
+    NavigationTab? tab,
+    $core.String? postId,
+    $core.String? emojiIcon,
+    $core.String? iconMediaId,
+    $core.String? title,
+  }) {
+    final result = create();
+    if (tab != null) result.tab = tab;
+    if (postId != null) result.postId = postId;
+    if (emojiIcon != null) result.emojiIcon = emojiIcon;
+    if (iconMediaId != null) result.iconMediaId = iconMediaId;
+    if (title != null) result.title = title;
+    return result;
+  }
+
+  CustomNavigationTab._();
+
+  factory CustomNavigationTab.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CustomNavigationTab.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, CustomNavigationTab_Target>
+      _CustomNavigationTab_TargetByTag = {
+    1: CustomNavigationTab_Target.tab,
+    2: CustomNavigationTab_Target.postId,
+    0: CustomNavigationTab_Target.notSet
+  };
+  static const $core.Map<$core.int, CustomNavigationTab_Icon>
+      _CustomNavigationTab_IconByTag = {
+    10: CustomNavigationTab_Icon.emojiIcon,
+    11: CustomNavigationTab_Icon.iconMediaId,
+    0: CustomNavigationTab_Icon.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CustomNavigationTab',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..oo(1, [10, 11])
+    ..aE<NavigationTab>(1, _omitFieldNames ? '' : 'tab',
+        enumValues: NavigationTab.values)
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
+    ..aOS(10, _omitFieldNames ? '' : 'emojiIcon')
+    ..aOS(11, _omitFieldNames ? '' : 'iconMediaId')
+    ..aOS(12, _omitFieldNames ? '' : 'title')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTab clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTab copyWith(void Function(CustomNavigationTab) updates) =>
+      super.copyWith((message) => updates(message as CustomNavigationTab))
+          as CustomNavigationTab;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTab create() => CustomNavigationTab._();
+  @$core.override
+  CustomNavigationTab createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTab getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CustomNavigationTab>(create);
+  static CustomNavigationTab? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  CustomNavigationTab_Target whichTarget() =>
+      _CustomNavigationTab_TargetByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearTarget() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(10)
+  @$pb.TagNumber(11)
+  CustomNavigationTab_Icon whichIcon() =>
+      _CustomNavigationTab_IconByTag[$_whichOneof(1)]!;
+  @$pb.TagNumber(10)
+  @$pb.TagNumber(11)
+  void clearIcon() => $_clearField($_whichOneof(1));
+
+  /// Links to one of the app's predefined tabs/pages.
+  @$pb.TagNumber(1)
+  NavigationTab get tab => $_getN(0);
+  @$pb.TagNumber(1)
+  set tab(NavigationTab value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTab() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTab() => $_clearField(1);
+
+  /// Links to a specific Post (e.g. for a custom business site's page).
+  @$pb.TagNumber(2)
+  $core.String get postId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set postId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPostId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPostId() => $_clearField(2);
+
+  /// Emoji shown as the tab's icon (e.g. "🎪").
+  @$pb.TagNumber(10)
+  $core.String get emojiIcon => $_getSZ(2);
+  @$pb.TagNumber(10)
+  set emojiIcon($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(10)
+  $core.bool hasEmojiIcon() => $_has(2);
+  @$pb.TagNumber(10)
+  void clearEmojiIcon() => $_clearField(10);
+
+  /// Media ID (see `Media` APIs) of an image shown as the tab's icon.
+  @$pb.TagNumber(11)
+  $core.String get iconMediaId => $_getSZ(3);
+  @$pb.TagNumber(11)
+  set iconMediaId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(11)
+  $core.bool hasIconMediaId() => $_has(3);
+  @$pb.TagNumber(11)
+  void clearIconMediaId() => $_clearField(11);
+
+  /// Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.
+  @$pb.TagNumber(12)
+  $core.String get title => $_getSZ(4);
+  @$pb.TagNumber(12)
+  set title($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(12)
+  $core.bool hasTitle() => $_has(4);
+  @$pb.TagNumber(12)
+  void clearTitle() => $_clearField(12);
+}
+
+/// A custom navigation tab with an associated path.
+/// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+/// `/` is modified via `CustomNavigationTabSet`.home instead.
+class CustomNavigationTabWithPath extends $pb.GeneratedMessage {
+  factory CustomNavigationTabWithPath({
+    CustomNavigationTab? customTab,
+    $core.String? path,
+  }) {
+    final result = create();
+    if (customTab != null) result.customTab = customTab;
+    if (path != null) result.path = path;
+    return result;
+  }
+
+  CustomNavigationTabWithPath._();
+
+  factory CustomNavigationTabWithPath.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CustomNavigationTabWithPath.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CustomNavigationTabWithPath',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'customTab',
+        subBuilder: CustomNavigationTab.create)
+    ..aOS(2, _omitFieldNames ? '' : 'path')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTabWithPath clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CustomNavigationTabWithPath copyWith(
+          void Function(CustomNavigationTabWithPath) updates) =>
+      super.copyWith(
+              (message) => updates(message as CustomNavigationTabWithPath))
+          as CustomNavigationTabWithPath;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTabWithPath create() =>
+      CustomNavigationTabWithPath._();
+  @$core.override
+  CustomNavigationTabWithPath createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CustomNavigationTabWithPath getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabWithPath>(create);
+  static CustomNavigationTabWithPath? _defaultInstance;
+
+  /// The tab to show at this path.
+  @$pb.TagNumber(1)
+  CustomNavigationTab get customTab => $_getN(0);
+  @$pb.TagNumber(1)
+  set customTab(CustomNavigationTab value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCustomTab() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCustomTab() => $_clearField(1);
+  @$pb.TagNumber(1)
+  CustomNavigationTab ensureCustomTab() => $_ensure(0);
+
+  /// e.g. link `/gigs` or `/shows` for a band to the "Events" page.
+  /// Or, /weddings to a Post about wedding offerings for a custom business site.
+  /// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
+  /// `/` is modified via `CustomNavigationTabSet`.home instead.
+  @$pb.TagNumber(2)
+  $core.String get path => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set path($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPath() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPath() => $_clearField(2);
 }
 
 /// Color in ARGB hex format (i.e `0xAARRGGBB`).

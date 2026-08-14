@@ -54,6 +54,7 @@ class Media extends $pb.GeneratedMessage {
     $core.bool? processed,
     $0.Timestamp? createdAt,
     $0.Timestamp? updatedAt,
+    MediaMetadata? metadata,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -67,6 +68,7 @@ class Media extends $pb.GeneratedMessage {
     if (processed != null) result.processed = processed;
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
+    if (metadata != null) result.metadata = metadata;
     return result;
   }
 
@@ -98,6 +100,8 @@ class Media extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOM<$0.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt',
         subBuilder: $0.Timestamp.create)
+    ..aOM<MediaMetadata>(17, _omitFieldNames ? '' : 'metadata',
+        subBuilder: MediaMetadata.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -230,6 +234,78 @@ class Media extends $pb.GeneratedMessage {
   void clearUpdatedAt() => $_clearField(16);
   @$pb.TagNumber(16)
   $0.Timestamp ensureUpdatedAt() => $_ensure(10);
+
+  @$pb.TagNumber(17)
+  MediaMetadata get metadata => $_getN(11);
+  @$pb.TagNumber(17)
+  set metadata(MediaMetadata value) => $_setField(17, value);
+  @$pb.TagNumber(17)
+  $core.bool hasMetadata() => $_has(11);
+  @$pb.TagNumber(17)
+  void clearMetadata() => $_clearField(17);
+  @$pb.TagNumber(17)
+  MediaMetadata ensureMetadata() => $_ensure(11);
+}
+
+/// Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
+/// own columns.
+class MediaMetadata extends $pb.GeneratedMessage {
+  factory MediaMetadata({
+    $core.int? videoPreviewTimeMs,
+  }) {
+    final result = create();
+    if (videoPreviewTimeMs != null)
+      result.videoPreviewTimeMs = videoPreviewTimeMs;
+    return result;
+  }
+
+  MediaMetadata._();
+
+  factory MediaMetadata.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory MediaMetadata.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MediaMetadata',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'videoPreviewTimeMs',
+        fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MediaMetadata clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MediaMetadata copyWith(void Function(MediaMetadata) updates) =>
+      super.copyWith((message) => updates(message as MediaMetadata))
+          as MediaMetadata;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MediaMetadata create() => MediaMetadata._();
+  @$core.override
+  MediaMetadata createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static MediaMetadata getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MediaMetadata>(create);
+  static MediaMetadata? _defaultInstance;
+
+  /// For video media, how far into the video (in milliseconds) its preview/poster frame should be
+  /// taken from, via a `#t=<seconds>` Media Fragments URI on the `<video>` element's `src`.
+  /// Unset means use the browser's default first-frame preview.
+  @$pb.TagNumber(1)
+  $core.int get videoPreviewTimeMs => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set videoPreviewTimeMs($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasVideoPreviewTimeMs() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVideoPreviewTimeMs() => $_clearField(1);
 }
 
 /// A reference to a media item, designed to be included in other messages as a reference.
@@ -241,12 +317,14 @@ class MediaReference extends $pb.GeneratedMessage {
     $core.String? id,
     $core.String? name,
     $core.bool? generated,
+    MediaMetadata? metadata,
   }) {
     final result = create();
     if (contentType != null) result.contentType = contentType;
     if (id != null) result.id = id;
     if (name != null) result.name = name;
     if (generated != null) result.generated = generated;
+    if (metadata != null) result.metadata = metadata;
     return result;
   }
 
@@ -267,6 +345,8 @@ class MediaReference extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'id')
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aOB(4, _omitFieldNames ? '' : 'generated')
+    ..aOM<MediaMetadata>(5, _omitFieldNames ? '' : 'metadata',
+        subBuilder: MediaMetadata.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -327,6 +407,17 @@ class MediaReference extends $pb.GeneratedMessage {
   $core.bool hasGenerated() => $_has(3);
   @$pb.TagNumber(4)
   void clearGenerated() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  MediaMetadata get metadata => $_getN(4);
+  @$pb.TagNumber(5)
+  set metadata(MediaMetadata value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasMetadata() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearMetadata() => $_clearField(5);
+  @$pb.TagNumber(5)
+  MediaMetadata ensureMetadata() => $_ensure(4);
 }
 
 /// Valid GetMediaRequest formats:

@@ -15,11 +15,11 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
-    as $2;
+    as $0;
 
-import 'media.pb.dart' as $1;
+import 'media.pb.dart' as $2;
 import 'posts.pbenum.dart';
-import 'users.pb.dart' as $0;
+import 'users.pb.dart' as $1;
 import 'visibility_moderation.pbenum.dart' as $3;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -53,6 +53,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.int? replyDepth,
     PostContext? context,
     $core.String? searchText,
+    $0.Timestamp? publishedOrCreatedBefore,
     $core.String? postIds,
     PostListingType? listingType,
     $core.int? page,
@@ -64,6 +65,8 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     if (replyDepth != null) result.replyDepth = replyDepth;
     if (context != null) result.context = context;
     if (searchText != null) result.searchText = searchText;
+    if (publishedOrCreatedBefore != null)
+      result.publishedOrCreatedBefore = publishedOrCreatedBefore;
     if (postIds != null) result.postIds = postIds;
     if (listingType != null) result.listingType = listingType;
     if (page != null) result.page = page;
@@ -90,6 +93,8 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aE<PostContext>(5, _omitFieldNames ? '' : 'context',
         enumValues: PostContext.values)
     ..aOS(7, _omitFieldNames ? '' : 'searchText')
+    ..aOM<$0.Timestamp>(8, _omitFieldNames ? '' : 'publishedOrCreatedBefore',
+        subBuilder: $0.Timestamp.create)
     ..aOS(9, _omitFieldNames ? '' : 'postIds')
     ..aE<PostListingType>(10, _omitFieldNames ? '' : 'listingType',
         enumValues: PostListingType.values)
@@ -176,33 +181,45 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearSearchText() => $_clearField(7);
 
+  /// Request to only return posts that were published or created before the given timestamp.
+  @$pb.TagNumber(8)
+  $0.Timestamp get publishedOrCreatedBefore => $_getN(6);
+  @$pb.TagNumber(8)
+  set publishedOrCreatedBefore($0.Timestamp value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasPublishedOrCreatedBefore() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearPublishedOrCreatedBefore() => $_clearField(8);
+  @$pb.TagNumber(8)
+  $0.Timestamp ensurePublishedOrCreatedBefore() => $_ensure(6);
+
   /// Returns expanded posts with the given IDs.
   @$pb.TagNumber(9)
-  $core.String get postIds => $_getSZ(6);
+  $core.String get postIds => $_getSZ(7);
   @$pb.TagNumber(9)
-  set postIds($core.String value) => $_setString(6, value);
+  set postIds($core.String value) => $_setString(7, value);
   @$pb.TagNumber(9)
-  $core.bool hasPostIds() => $_has(6);
+  $core.bool hasPostIds() => $_has(7);
   @$pb.TagNumber(9)
   void clearPostIds() => $_clearField(9);
 
   /// The listing type of the request. See `PostListingType` for more info.
   @$pb.TagNumber(10)
-  PostListingType get listingType => $_getN(7);
+  PostListingType get listingType => $_getN(8);
   @$pb.TagNumber(10)
   set listingType(PostListingType value) => $_setField(10, value);
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(7);
+  $core.bool hasListingType() => $_has(8);
   @$pb.TagNumber(10)
   void clearListingType() => $_clearField(10);
 
   /// The page of results to return. Defaults to 0.
   @$pb.TagNumber(15)
-  $core.int get page => $_getIZ(8);
+  $core.int get page => $_getIZ(9);
   @$pb.TagNumber(15)
-  set page($core.int value) => $_setUnsignedInt32(8, value);
+  set page($core.int value) => $_setUnsignedInt32(9, value);
   @$pb.TagNumber(15)
-  $core.bool hasPage() => $_has(8);
+  $core.bool hasPage() => $_has(9);
   @$pb.TagNumber(15)
   void clearPage() => $_clearField(15);
 }
@@ -267,7 +284,7 @@ class GetPostsResponse extends $pb.GeneratedMessage {
 class Post extends $pb.GeneratedMessage {
   factory Post({
     $core.String? id,
-    $0.Author? author,
+    $1.Author? author,
     $core.String? replyToPostId,
     $core.String? title,
     $core.String? link,
@@ -275,7 +292,7 @@ class Post extends $pb.GeneratedMessage {
     $core.int? responseCount,
     $core.int? replyCount,
     $core.int? groupCount,
-    $core.Iterable<$1.MediaReference>? media,
+    $core.Iterable<$2.MediaReference>? media,
     $core.bool? mediaGenerated,
     $core.bool? embedLink,
     $core.bool? shareable,
@@ -284,10 +301,10 @@ class Post extends $pb.GeneratedMessage {
     $3.Moderation? moderation,
     GroupPost? currentGroupPost,
     $core.Iterable<Post>? replies,
-    $2.Timestamp? createdAt,
-    $2.Timestamp? updatedAt,
-    $2.Timestamp? publishedAt,
-    $2.Timestamp? lastActivityAt,
+    $0.Timestamp? createdAt,
+    $0.Timestamp? updatedAt,
+    $0.Timestamp? publishedAt,
+    $0.Timestamp? lastActivityAt,
     $fixnum.Int64? unauthenticatedStarCount,
   }) {
     final result = create();
@@ -332,8 +349,8 @@ class Post extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$0.Author>(2, _omitFieldNames ? '' : 'author',
-        subBuilder: $0.Author.create)
+    ..aOM<$1.Author>(2, _omitFieldNames ? '' : 'author',
+        subBuilder: $1.Author.create)
     ..aOS(3, _omitFieldNames ? '' : 'replyToPostId')
     ..aOS(4, _omitFieldNames ? '' : 'title')
     ..aOS(5, _omitFieldNames ? '' : 'link')
@@ -341,8 +358,8 @@ class Post extends $pb.GeneratedMessage {
     ..aI(7, _omitFieldNames ? '' : 'responseCount')
     ..aI(8, _omitFieldNames ? '' : 'replyCount')
     ..aI(9, _omitFieldNames ? '' : 'groupCount')
-    ..pPM<$1.MediaReference>(10, _omitFieldNames ? '' : 'media',
-        subBuilder: $1.MediaReference.create)
+    ..pPM<$2.MediaReference>(10, _omitFieldNames ? '' : 'media',
+        subBuilder: $2.MediaReference.create)
     ..aOB(11, _omitFieldNames ? '' : 'mediaGenerated')
     ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
@@ -355,14 +372,14 @@ class Post extends $pb.GeneratedMessage {
     ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost',
         subBuilder: GroupPost.create)
     ..pPM<Post>(19, _omitFieldNames ? '' : 'replies', subBuilder: Post.create)
-    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt',
-        subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt',
-        subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt',
-        subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt',
-        subBuilder: $2.Timestamp.create)
+    ..aOM<$0.Timestamp>(20, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt',
+        subBuilder: $0.Timestamp.create)
     ..aInt64(24, _omitFieldNames ? '' : 'unauthenticatedStarCount')
     ..hasRequiredFields = false;
 
@@ -396,15 +413,15 @@ class Post extends $pb.GeneratedMessage {
 
   /// The author of the post. This is a smaller version of User.
   @$pb.TagNumber(2)
-  $0.Author get author => $_getN(1);
+  $1.Author get author => $_getN(1);
   @$pb.TagNumber(2)
-  set author($0.Author value) => $_setField(2, value);
+  set author($1.Author value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasAuthor() => $_has(1);
   @$pb.TagNumber(2)
   void clearAuthor() => $_clearField(2);
   @$pb.TagNumber(2)
-  $0.Author ensureAuthor() => $_ensure(1);
+  $1.Author ensureAuthor() => $_ensure(1);
 
   /// If this is a reply, this is the ID of the post it's replying to.
   @$pb.TagNumber(3)
@@ -478,7 +495,7 @@ class Post extends $pb.GeneratedMessage {
 
   /// List of Media IDs associated with this post. Order is preserved.
   @$pb.TagNumber(10)
-  $pb.PbList<$1.MediaReference> get media => $_getList(9);
+  $pb.PbList<$2.MediaReference> get media => $_getList(9);
 
   /// Flag indicating whether Media has been generated for this Post.
   /// Currently previews are generated for any Link post.
@@ -564,51 +581,51 @@ class Post extends $pb.GeneratedMessage {
 
   /// The time the post was created.
   @$pb.TagNumber(20)
-  $2.Timestamp get createdAt => $_getN(18);
+  $0.Timestamp get createdAt => $_getN(18);
   @$pb.TagNumber(20)
-  set createdAt($2.Timestamp value) => $_setField(20, value);
+  set createdAt($0.Timestamp value) => $_setField(20, value);
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(18);
   @$pb.TagNumber(20)
   void clearCreatedAt() => $_clearField(20);
   @$pb.TagNumber(20)
-  $2.Timestamp ensureCreatedAt() => $_ensure(18);
+  $0.Timestamp ensureCreatedAt() => $_ensure(18);
 
   /// The time the post was last updated.
   @$pb.TagNumber(21)
-  $2.Timestamp get updatedAt => $_getN(19);
+  $0.Timestamp get updatedAt => $_getN(19);
   @$pb.TagNumber(21)
-  set updatedAt($2.Timestamp value) => $_setField(21, value);
+  set updatedAt($0.Timestamp value) => $_setField(21, value);
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(19);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => $_clearField(21);
   @$pb.TagNumber(21)
-  $2.Timestamp ensureUpdatedAt() => $_ensure(19);
+  $0.Timestamp ensureUpdatedAt() => $_ensure(19);
 
   /// The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   @$pb.TagNumber(22)
-  $2.Timestamp get publishedAt => $_getN(20);
+  $0.Timestamp get publishedAt => $_getN(20);
   @$pb.TagNumber(22)
-  set publishedAt($2.Timestamp value) => $_setField(22, value);
+  set publishedAt($0.Timestamp value) => $_setField(22, value);
   @$pb.TagNumber(22)
   $core.bool hasPublishedAt() => $_has(20);
   @$pb.TagNumber(22)
   void clearPublishedAt() => $_clearField(22);
   @$pb.TagNumber(22)
-  $2.Timestamp ensurePublishedAt() => $_ensure(20);
+  $0.Timestamp ensurePublishedAt() => $_ensure(20);
 
   /// The time the post was last interacted with (replied to, etc.)
   @$pb.TagNumber(23)
-  $2.Timestamp get lastActivityAt => $_getN(21);
+  $0.Timestamp get lastActivityAt => $_getN(21);
   @$pb.TagNumber(23)
-  set lastActivityAt($2.Timestamp value) => $_setField(23, value);
+  set lastActivityAt($0.Timestamp value) => $_setField(23, value);
   @$pb.TagNumber(23)
   $core.bool hasLastActivityAt() => $_has(21);
   @$pb.TagNumber(23)
   void clearLastActivityAt() => $_clearField(23);
   @$pb.TagNumber(23)
-  $2.Timestamp ensureLastActivityAt() => $_ensure(21);
+  $0.Timestamp ensureLastActivityAt() => $_ensure(21);
 
   /// The number of unauthenticated stars on the post.
   @$pb.TagNumber(24)
@@ -630,8 +647,8 @@ class GroupPost extends $pb.GeneratedMessage {
     $core.String? postId,
     @$core.Deprecated('This field is deprecated.') $core.String? userId,
     $3.Moderation? groupModeration,
-    $2.Timestamp? createdAt,
-    $0.Author? sharedBy,
+    $0.Timestamp? createdAt,
+    $1.Author? sharedBy,
   }) {
     final result = create();
     if (groupId != null) result.groupId = groupId;
@@ -661,10 +678,10 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'userId')
     ..aE<$3.Moderation>(4, _omitFieldNames ? '' : 'groupModeration',
         enumValues: $3.Moderation.values)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
-        subBuilder: $2.Timestamp.create)
-    ..aOM<$0.Author>(6, _omitFieldNames ? '' : 'sharedBy',
-        subBuilder: $0.Author.create)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$1.Author>(6, _omitFieldNames ? '' : 'sharedBy',
+        subBuilder: $1.Author.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -731,27 +748,27 @@ class GroupPost extends $pb.GeneratedMessage {
 
   /// The time the post was cross-posted.
   @$pb.TagNumber(5)
-  $2.Timestamp get createdAt => $_getN(4);
+  $0.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($2.Timestamp value) => $_setField(5, value);
+  set createdAt($0.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $2.Timestamp ensureCreatedAt() => $_ensure(4);
+  $0.Timestamp ensureCreatedAt() => $_ensure(4);
 
   /// Author info for the user who cross-posted the post.
   @$pb.TagNumber(6)
-  $0.Author get sharedBy => $_getN(5);
+  $1.Author get sharedBy => $_getN(5);
   @$pb.TagNumber(6)
-  set sharedBy($0.Author value) => $_setField(6, value);
+  set sharedBy($1.Author value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasSharedBy() => $_has(5);
   @$pb.TagNumber(6)
   void clearSharedBy() => $_clearField(6);
   @$pb.TagNumber(6)
-  $0.Author ensureSharedBy() => $_ensure(5);
+  $1.Author ensureSharedBy() => $_ensure(5);
 }
 
 /// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
@@ -760,7 +777,7 @@ class UserPost extends $pb.GeneratedMessage {
   factory UserPost({
     $core.String? userId,
     $core.String? postId,
-    $2.Timestamp? createdAt,
+    $0.Timestamp? createdAt,
   }) {
     final result = create();
     if (userId != null) result.userId = userId;
@@ -784,8 +801,8 @@ class UserPost extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
-    ..aOM<$2.Timestamp>(3, _omitFieldNames ? '' : 'createdAt',
-        subBuilder: $2.Timestamp.create)
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -828,15 +845,15 @@ class UserPost extends $pb.GeneratedMessage {
 
   /// The time the post was shared.
   @$pb.TagNumber(3)
-  $2.Timestamp get createdAt => $_getN(2);
+  $0.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(3)
-  set createdAt($2.Timestamp value) => $_setField(3, value);
+  set createdAt($0.Timestamp value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(3)
   void clearCreatedAt() => $_clearField(3);
   @$pb.TagNumber(3)
-  $2.Timestamp ensureCreatedAt() => $_ensure(2);
+  $0.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
 /// Used for getting context about `GroupPost`s of an existing `Post`.

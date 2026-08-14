@@ -131,6 +131,16 @@ const GetPostsRequest$json = {
       '10': 'searchText',
       '17': true
     },
+    {
+      '1': 'published_or_created_before',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 7,
+      '10': 'publishedOrCreatedBefore',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_post_id'},
@@ -140,6 +150,7 @@ const GetPostsRequest$json = {
     {'1': '_context'},
     {'1': '_post_ids'},
     {'1': '_search_text'},
+    {'1': '_published_or_created_before'},
   ],
 };
 
@@ -151,9 +162,11 @@ final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode(
     '50ZXh0GAUgASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dEgEUgdjb250ZXh0iAEBEh4KCHBvc3Rf'
     'aWRzGAkgASgJSAVSB3Bvc3RJZHOIAQESOwoMbGlzdGluZ190eXBlGAogASgOMhguam9ubGluZS'
     '5Qb3N0TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEhIKBHBhZ2UYDyABKA1SBHBhZ2USJAoLc2Vh'
-    'cmNoX3RleHQYByABKAlIBlIKc2VhcmNoVGV4dIgBAUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3'
-    'VzZXJfaWRCCwoJX2dyb3VwX2lkQg4KDF9yZXBseV9kZXB0aEIKCghfY29udGV4dEILCglfcG9z'
-    'dF9pZHNCDgoMX3NlYXJjaF90ZXh0');
+    'cmNoX3RleHQYByABKAlIBlIKc2VhcmNoVGV4dIgBARJeChtwdWJsaXNoZWRfb3JfY3JlYXRlZF'
+    '9iZWZvcmUYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAdSGHB1Ymxpc2hlZE9y'
+    'Q3JlYXRlZEJlZm9yZYgBAUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3'
+    'VwX2lkQg4KDF9yZXBseV9kZXB0aEIKCghfY29udGV4dEILCglfcG9zdF9pZHNCDgoMX3NlYXJj'
+    'aF90ZXh0Qh4KHF9wdWJsaXNoZWRfb3JfY3JlYXRlZF9iZWZvcmU=');
 
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = {

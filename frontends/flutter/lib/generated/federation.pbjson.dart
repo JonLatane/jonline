@@ -40,13 +40,28 @@ const FederationInfo$json = {
       '6': '.jonline.FederatedServer',
       '10': 'servers'
     },
+    {
+      '1': 'facebook_auth_config',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.FacebookAuthConfig',
+      '9': 0,
+      '10': 'facebookAuthConfig',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_facebook_auth_config'},
   ],
 };
 
 /// Descriptor for `FederationInfo`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List federationInfoDescriptor = $convert.base64Decode(
     'Cg5GZWRlcmF0aW9uSW5mbxIyCgdzZXJ2ZXJzGAEgAygLMhguam9ubGluZS5GZWRlcmF0ZWRTZX'
-    'J2ZXJSB3NlcnZlcnM=');
+    'J2ZXJSB3NlcnZlcnMSUgoUZmFjZWJvb2tfYXV0aF9jb25maWcYAiABKAsyGy5qb25saW5lLkZh'
+    'Y2Vib29rQXV0aENvbmZpZ0gAUhJmYWNlYm9va0F1dGhDb25maWeIAQFCFwoVX2ZhY2Vib29rX2'
+    'F1dGhfY29uZmln');
 
 @$core.Deprecated('Use federatedServerDescriptor instead')
 const FederatedServer$json = {
@@ -98,3 +113,17 @@ const FederatedAccount$json = {
 final $typed_data.Uint8List federatedAccountDescriptor = $convert.base64Decode(
     'ChBGZWRlcmF0ZWRBY2NvdW50EhIKBGhvc3QYASABKAlSBGhvc3QSFwoHdXNlcl9pZBgCIAEoCV'
     'IGdXNlcklk');
+
+@$core.Deprecated('Use facebookAuthConfigDescriptor instead')
+const FacebookAuthConfig$json = {
+  '1': 'FacebookAuthConfig',
+  '2': [
+    {'1': 'app_id', '3': 1, '4': 1, '5': 9, '10': 'appId'},
+    {'1': 'app_secret', '3': 2, '4': 1, '5': 9, '10': 'appSecret'},
+  ],
+};
+
+/// Descriptor for `FacebookAuthConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List facebookAuthConfigDescriptor = $convert.base64Decode(
+    'ChJGYWNlYm9va0F1dGhDb25maWcSFQoGYXBwX2lkGAEgASgJUgVhcHBJZBIdCgphcHBfc2Vjcm'
+    'V0GAIgASgJUglhcHBTZWNyZXQ=');

@@ -452,7 +452,7 @@ match on except state carried in the `Model` -- this is that state. See
 type MeasurementPhase
     = NotMeasuring
     | AwaitingOldRects EventsDisplayMode
-    | AwaitingNewRects EventsDisplayMode (Dict String Rect)
+    | AwaitingNewRects (Dict String Rect)
 
 
 {-| A card's measured position/size (page coordinates, matching
@@ -815,11 +815,11 @@ updateInner shared msg model =
                             let
                                 newModel : Model
                                 newModel =
-                                    { model | mode = newMode, measurementPhase = AwaitingNewRects newMode rects }
+                                    { model | mode = newMode, measurementPhase = AwaitingNewRects rects }
                             in
                             ( newModel, Task.attempt (\_ -> ReadyToMeasureNew) Dom.getViewport |> Effect.fromCmd )
 
-                        AwaitingNewRects _ oldRects ->
+                        AwaitingNewRects oldRects ->
                             let
                                 startMoveFor : String -> Rect -> Dict String EventAnimation -> Dict String EventAnimation
                                 startMoveFor key oldRect animations =
@@ -850,7 +850,7 @@ updateInner shared msg model =
 
         ReadyToMeasureNew ->
             case model.measurementPhase of
-                AwaitingNewRects _ oldRects ->
+                AwaitingNewRects oldRects ->
                     ( model, measureElementsEffect (Dict.keys oldRects) )
 
                 _ ->
@@ -1069,7 +1069,7 @@ applyMeasurementFailure model =
             in
             ( newModel, pushUrlWhenIdle newModel )
 
-        AwaitingNewRects _ _ ->
+        AwaitingNewRects _ ->
             let
                 newModel : Model
                 newModel =

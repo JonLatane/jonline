@@ -24,17 +24,17 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PERMISSION_UNKNOWN =
       Permission._(0, _omitEnumNames ? '' : 'PERMISSION_UNKNOWN');
 
-  /// Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
-  /// Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).
+  /// Allow the user to view profiles with `SERVER_PUBLIC` Visibility.
+  /// Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visibility (when configured as an anonymous user permission).
   static const Permission VIEW_USERS =
       Permission._(1, _omitEnumNames ? '' : 'VIEW_USERS');
 
-  /// Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
+  /// Allow the user to publish profiles with `SERVER_PUBLIC` Visibility.
   /// This generally only applies to the user's own profile, except for Admins.
   static const Permission PUBLISH_USERS_LOCALLY =
       Permission._(2, _omitEnumNames ? '' : 'PUBLISH_USERS_LOCALLY');
 
-  /// Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
+  /// Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility.
   /// This generally only applies to the user's own profile, except for Admins.
   static const Permission PUBLISH_USERS_GLOBALLY =
       Permission._(3, _omitEnumNames ? '' : 'PUBLISH_USERS_GLOBALLY');
@@ -141,6 +141,11 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission SYNCHRONIZE_EVENTS =
       Permission._(36, _omitEnumNames ? '' : 'SYNCHRONIZE_EVENTS');
 
+  /// Allow the user to create/update `EventSyncDestination`s that cross-post EventInstances to a
+  /// connected Facebook Page, and to sync EventInstances to them.
+  static const Permission SYNC_EVENTS_TO_FACEBOOK =
+      Permission._(37, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
+
   /// Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
   /// Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
   static const Permission VIEW_MEDIA =
@@ -161,6 +166,10 @@ class Permission extends $pb.ProtobufEnum {
   /// Allow the user to moderate events.
   static const Permission MODERATE_MEDIA =
       Permission._(44, _omitEnumNames ? '' : 'MODERATE_MEDIA');
+  static const Permission READ_PERSONAL_MESSAGES =
+      Permission._(50, _omitEnumNames ? '' : 'READ_PERSONAL_MESSAGES');
+  static const Permission READ_ALL_SYSTEM_MESSAGES =
+      Permission._(51, _omitEnumNames ? '' : 'READ_ALL_SYSTEM_MESSAGES');
 
   /// Indicates the user is a business. Used purely for display purposes.
   static const Permission BUSINESS =
@@ -210,11 +219,14 @@ class Permission extends $pb.ProtobufEnum {
     MODERATE_EVENTS,
     RSVP_TO_EVENTS,
     SYNCHRONIZE_EVENTS,
+    SYNC_EVENTS_TO_FACEBOOK,
     VIEW_MEDIA,
     CREATE_MEDIA,
     PUBLISH_MEDIA_LOCALLY,
     PUBLISH_MEDIA_GLOBALLY,
     MODERATE_MEDIA,
+    READ_PERSONAL_MESSAGES,
+    READ_ALL_SYSTEM_MESSAGES,
     BUSINESS,
     RUN_BOTS,
     ADMIN,

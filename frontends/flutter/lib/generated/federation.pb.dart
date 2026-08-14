@@ -78,9 +78,12 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
 class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo({
     $core.Iterable<FederatedServer>? servers,
+    FacebookAuthConfig? facebookAuthConfig,
   }) {
     final result = create();
     if (servers != null) result.servers.addAll(servers);
+    if (facebookAuthConfig != null)
+      result.facebookAuthConfig = facebookAuthConfig;
     return result;
   }
 
@@ -99,6 +102,8 @@ class FederationInfo extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..pPM<FederatedServer>(1, _omitFieldNames ? '' : 'servers',
         subBuilder: FederatedServer.create)
+    ..aOM<FacebookAuthConfig>(2, _omitFieldNames ? '' : 'facebookAuthConfig',
+        subBuilder: FacebookAuthConfig.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -123,6 +128,18 @@ class FederationInfo extends $pb.GeneratedMessage {
   /// A list of servers that this server will federate with.
   @$pb.TagNumber(1)
   $pb.PbList<FederatedServer> get servers => $_getList(0);
+
+  /// Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.
+  @$pb.TagNumber(2)
+  FacebookAuthConfig get facebookAuthConfig => $_getN(1);
+  @$pb.TagNumber(2)
+  set facebookAuthConfig(FacebookAuthConfig value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasFacebookAuthConfig() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFacebookAuthConfig() => $_clearField(2);
+  @$pb.TagNumber(2)
+  FacebookAuthConfig ensureFacebookAuthConfig() => $_ensure(1);
 }
 
 /// A server that this server will federate with.
@@ -278,6 +295,76 @@ class FederatedAccount extends $pb.GeneratedMessage {
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
   void clearUserId() => $_clearField(2);
+}
+
+/// Facebook authentication configuration for the server.
+class FacebookAuthConfig extends $pb.GeneratedMessage {
+  factory FacebookAuthConfig({
+    $core.String? appId,
+    $core.String? appSecret,
+  }) {
+    final result = create();
+    if (appId != null) result.appId = appId;
+    if (appSecret != null) result.appSecret = appSecret;
+    return result;
+  }
+
+  FacebookAuthConfig._();
+
+  factory FacebookAuthConfig.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FacebookAuthConfig.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FacebookAuthConfig',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'appId')
+    ..aOS(2, _omitFieldNames ? '' : 'appSecret')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FacebookAuthConfig clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FacebookAuthConfig copyWith(void Function(FacebookAuthConfig) updates) =>
+      super.copyWith((message) => updates(message as FacebookAuthConfig))
+          as FacebookAuthConfig;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FacebookAuthConfig create() => FacebookAuthConfig._();
+  @$core.override
+  FacebookAuthConfig createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static FacebookAuthConfig getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FacebookAuthConfig>(create);
+  static FacebookAuthConfig? _defaultInstance;
+
+  /// The Facebook App ID for the server.
+  @$pb.TagNumber(1)
+  $core.String get appId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set appId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasAppId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAppId() => $_clearField(1);
+
+  /// The Facebook App Secret for the server. *Never serialized to the client.*
+  /// Admins: Edit this in the database's JSONB column directly.
+  @$pb.TagNumber(2)
+  $core.String get appSecret => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set appSecret($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAppSecret() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAppSecret() => $_clearField(2);
 }
 
 const $core.bool _omitFieldNames =

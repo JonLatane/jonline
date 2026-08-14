@@ -289,14 +289,14 @@ type Msg
     | ShowAddAccountFormClicked
     | ReauthenticateButtonClicked Account
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
-    | GotServerPermissionsRefresh String (List ( String, Result Grpc.Error ( Account, User ) ))
+    | GotServerPermissionsRefresh (List ( String, Result Grpc.Error ( Account, User ) ))
     | MainServerSelected String
     | ResetMainFrontendHost
     | ServerChipClicked String
     | SetWebUserInterfaceClicked String WebUserInterface
-    | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
+    | GotSetWebUserInterfaceResult (Result Grpc.Error ( Account, ServerConfiguration ))
     | RenameServerClicked String String
-    | GotRenameServerResult String (Result Grpc.Error ( Account, ServerConfiguration ))
+    | GotRenameServerResult (Result Grpc.Error ( Account, ServerConfiguration ))
     | GotServerConfigSaveResult String ServerConfiguration
     | FocusInput String
     | ClearFieldClicked String Msg
@@ -1981,6 +1981,7 @@ sendUpdate req msg model =
             -- update as the swap, so there's no frame where the swapped
             -- list renders at rest before the animation kicks in.
             let
+                newModel : Model
                 newModel =
                     { model | accounts = moveAccountBy offset id model.accounts }
 
@@ -1989,6 +1990,7 @@ sendUpdate req msg model =
                 -- each whole group, so `UI.Flip.swapDeltas` (built for a
                 -- plain two-item swap) can compute one shared slide delta
                 -- for each side.
+                span : Dom.Element -> Dom.Element -> Dom.Element
                 span firstEl lastEl =
                     { firstEl
                         | element =
@@ -2002,9 +2004,11 @@ sendUpdate req msg model =
                 ( movedDelta, neighborDelta ) =
                     UI.Flip.swapDeltas UI.Flip.Vertical (span movedFirstEl movedLastEl) (span neighborFirstEl neighborLastEl)
 
+                startOrRestart : ( Float, Float ) -> String -> Dict String (UI.Flip.MoveState Msg) -> Dict String (UI.Flip.MoveState Msg)
                 startOrRestart delta key anims =
                     Dict.insert key (UI.Flip.startMove (MoveSettled key) delta (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)) anims
 
+                newMoveAnimations : Dict String (UI.Flip.MoveState Msg)
                 newMoveAnimations =
                     newModel.moveAnimations
                         |> (\anims -> List.foldl (startOrRestart movedDelta) anims movedIds)
@@ -2020,6 +2024,7 @@ sendUpdate req msg model =
 
         GotPreMoveServerPositions id _ offset (Err _) ->
             let
+                newModel : Model
                 newModel =
                     { model | servers = moveServerBy offset id model.servers }
             in
@@ -2027,6 +2032,7 @@ sendUpdate req msg model =
 
         GotPreMoveServerPositions id neighborId offset (Ok ( chipEl, neighborEl )) ->
             let
+                newModel : Model
                 newModel =
                     { model | servers = moveServerBy offset id model.servers }
             in
@@ -2039,6 +2045,7 @@ sendUpdate req msg model =
 
         AnimateMove animMsg ->
             let
+                step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
                 step key state ( states, cmds ) =
                     let
                         ( newState, cmd ) =
@@ -2068,6 +2075,7 @@ sendUpdate req msg model =
 
         AnimateItemFlip animMsg ->
             let
+                step : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
                 step key state ( states, cmds ) =
                     let
                         ( newState, cmd ) =
@@ -2087,11 +2095,13 @@ sendUpdate req msg model =
 
         ToggleServerEnabled frontendHost ->
             let
+                wasEnabled : Bool
                 wasEnabled =
                     serverForHost model.servers frontendHost
                         |> Maybe.map .enabled
                         |> Maybe.withDefault False
 
+                newModel : Model
                 newModel =
                     { model
                         | servers =
@@ -2137,6 +2147,7 @@ sendUpdate req msg model =
             -- in place (preserving its position) on success, or leaves it
             -- disconnected on failure.
             let
+                enabled : Bool
                 enabled =
                     serverForHost model.servers frontendHost
                         |> Maybe.map .enabled
@@ -2149,6 +2160,7 @@ sendUpdate req msg model =
 
         AddServerClicked ->
             let
+                host : String
                 host =
                     String.trim model.accountForm.server
             in
@@ -2178,6 +2190,7 @@ sendUpdate req msg model =
             case result of
                 Ok ( connection, config ) ->
                     let
+                        newModel : Model
                         newModel =
                             { model
                                 | servers = upsertServer (serverFrom connection True config) model.servers
@@ -2198,6 +2211,7 @@ sendUpdate req msg model =
 
         ToggleRecommendedServersExpanded ->
             let
+                newlyExpanded : Bool
                 newlyExpanded =
                     not model.recommendedServersExpanded
 
@@ -2205,6 +2219,7 @@ sendUpdate req msg model =
                 -- `recommendedServerConnections`'s own doc) -- reopening the
                 -- strip after having already expanded it once this session
                 -- shouldn't re-fetch everything from scratch.
+                hostsToFetch : List String
                 hostsToFetch =
                     if newlyExpanded then
                         recommendedFederatedServers model
@@ -2214,6 +2229,7 @@ sendUpdate req msg model =
                     else
                         []
 
+                newModel : Model
                 newModel =
                     { model
                         | recommendedServersExpanded = newlyExpanded
@@ -2270,6 +2286,7 @@ sendUpdate req msg model =
                         -- same kind of deliberate "add this server" action as
                         -- `GotNewServerResult`'s manual Add Server flow -- enabled
                         -- immediately, same as that.
+                        newModel : Model
                         newModel =
                             { model
                                 | servers = upsertServer (serverFrom connection True config) model.servers
@@ -2289,6 +2306,7 @@ sendUpdate req msg model =
 
             else
                 let
+                    currentState : UI.Flip.State Msg
                     currentState =
                         Dict.get frontendHost model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
                 in
@@ -2298,6 +2316,7 @@ sendUpdate req msg model =
 
         FinishRemoveServer frontendHost ->
             let
+                removedModel : Model
                 removedModel =
                     { model
                         | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers
@@ -2315,10 +2334,12 @@ sendUpdate req msg model =
                 -- back on screen (it just became "recommended" again) -- refetch its
                 -- branding immediately instead of waiting on a collapse/re-expand,
                 -- mirroring `ToggleRecommendedServersExpanded`'s own fetch.
+                needsRefetch : Bool
                 needsRefetch =
                     removedModel.recommendedServersExpanded
                         && List.any (\fs -> fs.host == frontendHost) (recommendedFederatedServers removedModel)
 
+                newModel : Model
                 newModel =
                     if needsRefetch then
                         { removedModel
@@ -2345,9 +2366,11 @@ sendUpdate req msg model =
 
         ToggleAccountsPanel ->
             let
+                newlyShown : Bool
                 newlyShown =
                     not model.showAccountsPanel
 
+                newModel : Model
                 newModel =
                     { model | showAccountsPanel = newlyShown }
             in
@@ -2389,13 +2412,15 @@ sendUpdate req msg model =
 
         GotPermissionsRefresh accId result ->
             let
+                newModel : Model
                 newModel =
                     { model | accounts = applyPermissionsRefreshResult accId result model.accounts }
             in
             ( newModel, persist newModel )
 
-        GotServerPermissionsRefresh _ results ->
+        GotServerPermissionsRefresh results ->
             let
+                newModel : Model
                 newModel =
                     { model
                         | accounts =
@@ -2416,6 +2441,7 @@ sendUpdate req msg model =
         MainServerSelected frontendHost ->
             if List.any (\s -> s.frontendHost == frontendHost) model.servers then
                 let
+                    newModel : Model
                     newModel =
                         { model | mainFrontendHost = frontendHost }
                             |> setServerField frontendHost
@@ -2427,6 +2453,7 @@ sendUpdate req msg model =
 
         ResetMainFrontendHost ->
             let
+                newModel : Model
                 newModel =
                     { model | mainFrontendHost = model.browsingHost }
             in
@@ -2437,9 +2464,11 @@ sendUpdate req msg model =
 
         SetWebUserInterfaceClicked id ui ->
             let
+                maybeAccount : Maybe Account
                 maybeAccount =
                     model.accounts |> List.filter (\a -> accountId a == id) |> List.head
 
+                maybeServer : Maybe Server
                 maybeServer =
                     maybeAccount
                         |> Maybe.andThen (\a -> serverForHost model.servers a.server)
@@ -2451,10 +2480,11 @@ sendUpdate req msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        GotSetWebUserInterfaceResult _ result ->
+        GotSetWebUserInterfaceResult result ->
             case result of
                 Ok ( refreshedAccount, newConfig ) ->
                     let
+                        newModel : Model
                         newModel =
                             { model
                                 | accounts = upsertAccount refreshedAccount model.accounts
@@ -2479,9 +2509,11 @@ sendUpdate req msg model =
 
         RenameServerClicked id newName ->
             let
+                maybeAccount : Maybe Account
                 maybeAccount =
                     model.accounts |> List.filter (\a -> accountId a == id) |> List.head
 
+                maybeServer : Maybe Server
                 maybeServer =
                     maybeAccount
                         |> Maybe.andThen (\a -> serverForHost model.servers a.server)
@@ -2493,10 +2525,11 @@ sendUpdate req msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        GotRenameServerResult _ result ->
+        GotRenameServerResult result ->
             case result of
                 Ok ( refreshedAccount, newConfig ) ->
                     let
+                        newModel : Model
                         newModel =
                             { model
                                 | accounts = upsertAccount refreshedAccount model.accounts
@@ -2522,6 +2555,7 @@ sendUpdate req msg model =
 
         GotServerConfigSaveResult host newConfig ->
             let
+                newModel : Model
                 newModel =
                     { model
                         | servers =
@@ -2558,6 +2592,7 @@ sendUpdate req msg model =
 
             else
                 let
+                    newModel : Model
                     newModel =
                         { model | servers = upsertServer server model.servers }
                 in
@@ -2670,6 +2705,7 @@ the only way in, unless an admin has flipped
 isMainServer : Model -> String -> Bool
 isMainServer model frontendHost =
     let
+        trimmed : String
         trimmed =
             String.trim frontendHost
     in
@@ -2698,6 +2734,7 @@ closing -- see `collapseAddAccountFormIfIdle`.
 hasInProgressAddAccountInput : Model -> Bool
 hasInProgressAddAccountInput model =
     let
+        form : AccountForm
         form =
             model.accountForm
     in
@@ -3185,7 +3222,7 @@ refreshPermissionsForServer server accounts =
                     |> Task.map (Tuple.pair (accountId account))
             )
         |> Task.sequence
-        |> Task.perform (GotServerPermissionsRefresh server.frontendHost)
+        |> Task.perform GotServerPermissionsRefresh
 
 
 {-| Sets which frontend (`/`, `/flutter`, or `/elm`) `server` serves at its
@@ -3205,9 +3242,11 @@ setWebUserInterface server account ui =
     case ( connectionOf server, server.connected ) of
         ( Just connection, Just { configuration } ) ->
             let
+                info : ServerInfo
                 info =
                     Maybe.withDefault Proto.Jonline.defaultServerInfo configuration.serverInfo
 
+                newConfig : ServerConfiguration
                 newConfig =
                     { configuration | serverInfo = Just { info | webUserInterface = Just ui } }
             in
@@ -3220,7 +3259,7 @@ setWebUserInterface server account ui =
                         |> withAccessToken (Just accessToken)
                         |> Grpc.toTask
                 )
-                |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
+                |> Task.attempt GotSetWebUserInterfaceResult
 
         -- `server` is disconnected (see `Server.connected`) -- callers only ever
         -- reach this for a server the account panel shows as connected, so
@@ -3262,9 +3301,11 @@ renameServer server account newName =
                         |> Task.andThen
                             (\freshConfig ->
                                 let
+                                    info : ServerInfo
                                     info =
                                         Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
 
+                                    newConfig : ServerConfiguration
                                     newConfig =
                                         { freshConfig | serverInfo = Just { info | name = Just newName } }
                                 in
@@ -3274,7 +3315,7 @@ renameServer server account newName =
                                     |> Grpc.toTask
                             )
                 )
-                |> Task.attempt (GotRenameServerResult (accountId account))
+                |> Task.attempt GotRenameServerResult
 
 
 {-| Re-fetches `maybeAccountServer`'s server configuration fresh
@@ -3342,6 +3383,7 @@ gRPC port, then 80, then 8000, for local/dev servers.
 candidatePorts : Bool -> List ( Int, Bool )
 candidatePorts pageIsSecure =
     let
+        secure : List ( Int, Bool )
         secure =
             [ ( 27707, True ), ( 443, True ) ]
     in
@@ -3350,6 +3392,7 @@ candidatePorts pageIsSecure =
 
     else
         let
+            insecure : List ( Int, Bool )
             insecure =
                 [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
         in
@@ -3400,6 +3443,7 @@ negotiateServerConfig pageIsSecure frontendHost =
         |> Task.andThen
             (\backendHost ->
                 let
+                    tryCandidates : List ( Int, Bool ) -> Task Grpc.Error ( Connection, ServerConfiguration )
                     tryCandidates candidates =
                         case candidates of
                             [] ->
@@ -3407,6 +3451,7 @@ negotiateServerConfig pageIsSecure frontendHost =
 
                             ( port_, tls ) :: rest ->
                                 let
+                                    connection : Connection
                                     connection =
                                         { frontendHost = frontendHost, backendHost = backendHost, port_ = port_, tls = tls }
                                 in
@@ -3431,6 +3476,7 @@ page itself isn't secure) HTTP/80. Falls back to `frontendHost` itself
 discoverBackendHost : Bool -> String -> Task x String
 discoverBackendHost pageIsSecure frontendHost =
     let
+        tryTls : List Bool -> Task x String
         tryTls tlsFlags =
             case tlsFlags of
                 [] ->
@@ -3651,6 +3697,7 @@ finishStartupUnit model =
 
     else
         let
+            stillPending : Int
             stillPending =
                 model.pendingServerChecks - 1
         in
@@ -3672,6 +3719,7 @@ others are still pending, so `persist` would just no-op anyway (see
 settleStartupUnit : Model -> ( Model, Cmd Msg )
 settleStartupUnit model =
     let
+        newModel : Model
         newModel =
             finishStartupUnit model
     in
