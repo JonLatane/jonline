@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from visibility_moderation.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: visibility_moderation.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -50,3 +48,4 @@ const Moderation$json = {
 final $typed_data.Uint8List moderationDescriptor = $convert.base64Decode(
     'CgpNb2RlcmF0aW9uEhYKEk1PREVSQVRJT05fVU5LTk9XThAAEg8KC1VOTU9ERVJBVEVEEAESCw'
     'oHUEVORElORxACEgwKCEFQUFJPVkVEEAMSDAoIUkVKRUNURUQQBA==');
+

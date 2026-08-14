@@ -1,15 +1,13 @@
-// This is a generated file - do not edit.
 //
-// Generated from messages.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: messages.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
-// ignore_for_file: unused_import
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -37,57 +35,16 @@ const Message$json = {
   '1': 'Message',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {
-      '1': 'sender',
-      '3': 2,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.Author',
-      '9': 0,
-      '10': 'sender',
-      '17': true
-    },
-    {
-      '1': 'messaging_group',
-      '3': 3,
-      '4': 1,
-      '5': 11,
-      '6': '.jonline.MessagingGroup',
-      '9': 1,
-      '10': 'messagingGroup',
-      '17': true
-    },
+    {'1': 'sender', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '9': 0, '10': 'sender', '17': true},
+    {'1': 'messaging_group', '3': 3, '4': 1, '5': 11, '6': '.jonline.MessagingGroup', '9': 1, '10': 'messagingGroup', '17': true},
     {'1': 'body_text', '3': 4, '4': 1, '5': 9, '10': 'bodyText'},
-    {
-      '1': 'subject',
-      '3': 5,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'subject',
-      '17': true
-    },
-    {
-      '1': 'email_message_id',
-      '3': 6,
-      '4': 1,
-      '5': 9,
-      '9': 3,
-      '10': 'emailMessageId',
-      '17': true
-    },
+    {'1': 'subject', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'subject', '17': true},
+    {'1': 'email_message_id', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'emailMessageId', '17': true},
     {'1': 'from', '3': 7, '4': 1, '5': 9, '9': 4, '10': 'from', '17': true},
     {'1': 'to', '3': 8, '4': 1, '5': 9, '9': 5, '10': 'to', '17': true},
     {'1': 'cc', '3': 9, '4': 1, '5': 9, '9': 6, '10': 'cc', '17': true},
     {'1': 'bcc', '3': 10, '4': 1, '5': 9, '9': 7, '10': 'bcc', '17': true},
-    {
-      '1': 'created_at',
-      '3': 20,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
+    {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
   '8': [
     {'1': '_sender'},
@@ -118,24 +75,8 @@ const SendMessageRequest$json = {
   '1': 'SendMessageRequest',
   '2': [
     {'1': 'to_user_ids', '3': 1, '4': 3, '5': 9, '10': 'toUserIds'},
-    {
-      '1': 'subject',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'subject',
-      '17': true
-    },
-    {
-      '1': 'body_text',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'bodyText',
-      '17': true
-    },
+    {'1': 'subject', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'subject', '17': true},
+    {'1': 'body_text', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'bodyText', '17': true},
   ],
   '8': [
     {'1': '_subject'},
@@ -154,22 +95,8 @@ const MessagingGroup$json = {
   '1': 'MessagingGroup',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {
-      '1': 'members',
-      '3': 2,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Author',
-      '10': 'members'
-    },
-    {
-      '1': 'created_at',
-      '3': 10,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '10': 'createdAt'
-    },
+    {'1': 'members', '3': 2, '4': 3, '5': 11, '6': '.jonline.Author', '10': 'members'},
+    {'1': 'created_at', '3': 10, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
 };
 
@@ -183,51 +110,11 @@ final $typed_data.Uint8List messagingGroupDescriptor = $convert.base64Decode(
 const GetMessagesRequest$json = {
   '1': 'GetMessagesRequest',
   '2': [
-    {
-      '1': 'listing_type',
-      '3': 1,
-      '4': 1,
-      '5': 14,
-      '6': '.jonline.MessageListingType',
-      '10': 'listingType'
-    },
-    {
-      '1': 'message_id',
-      '3': 2,
-      '4': 1,
-      '5': 9,
-      '9': 0,
-      '10': 'messageId',
-      '17': true
-    },
-    {
-      '1': 'message_group_id',
-      '3': 3,
-      '4': 1,
-      '5': 9,
-      '9': 1,
-      '10': 'messageGroupId',
-      '17': true
-    },
-    {
-      '1': 'search_text',
-      '3': 7,
-      '4': 1,
-      '5': 9,
-      '9': 2,
-      '10': 'searchText',
-      '17': true
-    },
-    {
-      '1': 'sent_before',
-      '3': 8,
-      '4': 1,
-      '5': 11,
-      '6': '.google.protobuf.Timestamp',
-      '9': 3,
-      '10': 'sentBefore',
-      '17': true
-    },
+    {'1': 'listing_type', '3': 1, '4': 1, '5': 14, '6': '.jonline.MessageListingType', '10': 'listingType'},
+    {'1': 'message_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'messageId', '17': true},
+    {'1': 'message_group_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'messageGroupId', '17': true},
+    {'1': 'search_text', '3': 7, '4': 1, '5': 9, '9': 2, '10': 'searchText', '17': true},
+    {'1': 'sent_before', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 3, '10': 'sentBefore', '17': true},
   ],
   '8': [
     {'1': '_message_id'},
@@ -251,14 +138,7 @@ final $typed_data.Uint8List getMessagesRequestDescriptor = $convert.base64Decode
 const GetMessagesResponse$json = {
   '1': 'GetMessagesResponse',
   '2': [
-    {
-      '1': 'messages',
-      '3': 1,
-      '4': 3,
-      '5': 11,
-      '6': '.jonline.Message',
-      '10': 'messages'
-    },
+    {'1': 'messages', '3': 1, '4': 3, '5': 11, '6': '.jonline.Message', '10': 'messages'},
   ],
 };
 
@@ -266,3 +146,4 @@ const GetMessagesResponse$json = {
 final $typed_data.Uint8List getMessagesResponseDescriptor = $convert.base64Decode(
     'ChNHZXRNZXNzYWdlc1Jlc3BvbnNlEiwKCG1lc3NhZ2VzGAEgAygLMhAuam9ubGluZS5NZXNzYW'
     'dlUghtZXNzYWdlcw==');
+

@@ -1,46 +1,42 @@
-// This is a generated file - do not edit.
 //
-// Generated from events.proto.
-
-// @dart = 3.3
+//  Generated code. Do not modify.
+//  source: events.proto
+//
+// @dart = 2.12
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names
-// ignore_for_file: curly_braces_in_flow_control_structures
-// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
-import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
-    as $0;
 
 import 'events.pbenum.dart';
-import 'location.pb.dart' as $3;
-import 'media.pb.dart' as $4;
-import 'permissions.pbenum.dart' as $6;
-import 'posts.pb.dart' as $1;
-import 'users.pb.dart' as $2;
-import 'visibility_moderation.pbenum.dart' as $5;
-
-export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
+import 'google/protobuf/timestamp.pb.dart' as $10;
+import 'location.pb.dart' as $13;
+import 'media.pb.dart' as $5;
+import 'permissions.pbenum.dart' as $12;
+import 'posts.pb.dart' as $8;
+import 'users.pb.dart' as $4;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'events.pbenum.dart';
 
-/// Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
-/// if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
+///  if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
 ///
-/// These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 ///
-/// Valid GetEventsRequest formats:
-/// - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
-/// - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-/// - `{event_id:}`                                    (TODO: get single event including preview data)
-/// - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
-///                                                    (TODO: get events/events needing moderation for a group)
-/// - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
-/// - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
+///  Valid GetEventsRequest formats:
+///  - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+///  - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+///  - `{event_id:}`                                    (TODO: get single event including preview data)
+///  - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+///                                                     (TODO: get events/events needing moderation for a group)
+///  - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+///  - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest({
     $core.String? eventId,
@@ -56,126 +52,135 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.Iterable<$core.String>? eventInstancePostIds,
     $core.String? anonymousAttendeeAuthToken,
   }) {
-    final result = create();
-    if (eventId != null) result.eventId = eventId;
-    if (authorUserId != null) result.authorUserId = authorUserId;
-    if (groupId != null) result.groupId = groupId;
-    if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
-    if (timeFilter != null) result.timeFilter = timeFilter;
-    if (attendeeId != null) result.attendeeId = attendeeId;
-    if (attendanceStatuses != null)
-      result.attendanceStatuses.addAll(attendanceStatuses);
-    if (postId != null) result.postId = postId;
-    if (listingType != null) result.listingType = listingType;
-    if (searchText != null) result.searchText = searchText;
-    if (eventInstancePostIds != null)
-      result.eventInstancePostIds.addAll(eventInstancePostIds);
-    if (anonymousAttendeeAuthToken != null)
-      result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
-    return result;
+    final $result = create();
+    if (eventId != null) {
+      $result.eventId = eventId;
+    }
+    if (authorUserId != null) {
+      $result.authorUserId = authorUserId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (timeFilter != null) {
+      $result.timeFilter = timeFilter;
+    }
+    if (attendeeId != null) {
+      $result.attendeeId = attendeeId;
+    }
+    if (attendanceStatuses != null) {
+      $result.attendanceStatuses.addAll(attendanceStatuses);
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (listingType != null) {
+      $result.listingType = listingType;
+    }
+    if (searchText != null) {
+      $result.searchText = searchText;
+    }
+    if (eventInstancePostIds != null) {
+      $result.eventInstancePostIds.addAll(eventInstancePostIds);
+    }
+    if (anonymousAttendeeAuthToken != null) {
+      $result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
+    }
+    return $result;
   }
+  GetEventsRequest._() : super();
+  factory GetEventsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetEventsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  GetEventsRequest._();
-
-  factory GetEventsRequest.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory GetEventsRequest.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'GetEventsRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventId')
     ..aOS(2, _omitFieldNames ? '' : 'authorUserId')
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..aOS(4, _omitFieldNames ? '' : 'eventInstanceId')
-    ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter',
-        subBuilder: TimeFilter.create)
+    ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
     ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
-    ..pc<AttendanceStatus>(
-        7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE,
-        valueOf: AttendanceStatus.valueOf,
-        enumValues: AttendanceStatus.values,
-        defaultEnumValue: AttendanceStatus.INTERESTED)
+    ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
     ..aOS(8, _omitFieldNames ? '' : 'postId')
-    ..aE<EventListingType>(10, _omitFieldNames ? '' : 'listingType',
-        enumValues: EventListingType.values)
+    ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..aOS(11, _omitFieldNames ? '' : 'searchText')
     ..pPS(12, _omitFieldNames ? '' : 'eventInstancePostIds')
     ..aOS(13, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsRequest clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsRequest copyWith(void Function(GetEventsRequest) updates) =>
-      super.copyWith((message) => updates(message as GetEventsRequest))
-          as GetEventsRequest;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetEventsRequest clone() => GetEventsRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetEventsRequest copyWith(void Function(GetEventsRequest) updates) => super.copyWith((message) => updates(message as GetEventsRequest)) as GetEventsRequest;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetEventsRequest create() => GetEventsRequest._();
-  @$core.override
   GetEventsRequest createEmptyInstance() => create();
+  static $pb.PbList<GetEventsRequest> createRepeated() => $pb.PbList<GetEventsRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetEventsRequest getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
+  static GetEventsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
   static GetEventsRequest? _defaultInstance;
 
   /// Returns the single event with the given ID.
   @$pb.TagNumber(1)
   $core.String get eventId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventId($core.String value) => $_setString(0, value);
+  set eventId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasEventId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventId() => $_clearField(1);
+  void clearEventId() => clearField(1);
 
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
   $core.String get authorUserId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set authorUserId($core.String value) => $_setString(1, value);
+  set authorUserId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasAuthorUserId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAuthorUserId() => $_clearField(2);
+  void clearAuthorUserId() => clearField(2);
 
   /// Limits results to those in the given group ID (via `GroupPost` association's for the Event's internal `Post`).
   @$pb.TagNumber(3)
   $core.String get groupId => $_getSZ(2);
   @$pb.TagNumber(3)
-  set groupId($core.String value) => $_setString(2, value);
+  set groupId($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
   $core.bool hasGroupId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearGroupId() => $_clearField(3);
+  void clearGroupId() => clearField(3);
 
   /// Limits results to those with the given event instance ID.
   @$pb.TagNumber(4)
   $core.String get eventInstanceId => $_getSZ(3);
   @$pb.TagNumber(4)
-  set eventInstanceId($core.String value) => $_setString(3, value);
+  set eventInstanceId($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(4)
   $core.bool hasEventInstanceId() => $_has(3);
   @$pb.TagNumber(4)
-  void clearEventInstanceId() => $_clearField(4);
+  void clearEventInstanceId() => clearField(4);
 
   /// Filters returned `EventInstance`s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(4);
   @$pb.TagNumber(5)
-  set timeFilter(TimeFilter value) => $_setField(5, value);
+  set timeFilter(TimeFilter v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasTimeFilter() => $_has(4);
   @$pb.TagNumber(5)
-  void clearTimeFilter() => $_clearField(5);
+  void clearTimeFilter() => clearField(5);
   @$pb.TagNumber(5)
   TimeFilter ensureTimeFilter() => $_ensure(4);
 
@@ -184,52 +189,52 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.String get attendeeId => $_getSZ(5);
   @$pb.TagNumber(6)
-  set attendeeId($core.String value) => $_setString(5, value);
+  set attendeeId($core.String v) { $_setString(5, v); }
   @$pb.TagNumber(6)
   $core.bool hasAttendeeId() => $_has(5);
   @$pb.TagNumber(6)
-  void clearAttendeeId() => $_clearField(6);
+  void clearAttendeeId() => clearField(6);
 
   /// If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   /// only returns events where the given user's status matches one of the given statuses.
   @$pb.TagNumber(7)
-  $pb.PbList<AttendanceStatus> get attendanceStatuses => $_getList(6);
+  $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
   /// Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
   $core.String get postId => $_getSZ(7);
   @$pb.TagNumber(8)
-  set postId($core.String value) => $_setString(7, value);
+  set postId($core.String v) { $_setString(7, v); }
   @$pb.TagNumber(8)
   $core.bool hasPostId() => $_has(7);
   @$pb.TagNumber(8)
-  void clearPostId() => $_clearField(8);
+  void clearPostId() => clearField(8);
 
   /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
   EventListingType get listingType => $_getN(8);
   @$pb.TagNumber(10)
-  set listingType(EventListingType value) => $_setField(10, value);
+  set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasListingType() => $_has(8);
   @$pb.TagNumber(10)
-  void clearListingType() => $_clearField(10);
+  void clearListingType() => clearField(10);
 
   /// Search text for full-text search.
   @$pb.TagNumber(11)
   $core.String get searchText => $_getSZ(9);
   @$pb.TagNumber(11)
-  set searchText($core.String value) => $_setString(9, value);
+  set searchText($core.String v) { $_setString(9, v); }
   @$pb.TagNumber(11)
   $core.bool hasSearchText() => $_has(9);
   @$pb.TagNumber(11)
-  void clearSearchText() => $_clearField(11);
+  void clearSearchText() => clearField(11);
 
   /// Loads multiple events by their event instances' Post IDs -- returns one
   /// Event per matching EventInstance (see GetEventsResponse's own doc), not
   /// the requested EventInstance's whole parent Event's full instance list.
   @$pb.TagNumber(12)
-  $pb.PbList<$core.String> get eventInstancePostIds => $_getList(10);
+  $core.List<$core.String> get eventInstancePostIds => $_getList(10);
 
   /// Auth token proving ownership of an anonymous RSVP, mirroring
   /// `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
@@ -240,550 +245,514 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   $core.String get anonymousAttendeeAuthToken => $_getSZ(11);
   @$pb.TagNumber(13)
-  set anonymousAttendeeAuthToken($core.String value) => $_setString(11, value);
+  set anonymousAttendeeAuthToken($core.String v) { $_setString(11, v); }
   @$pb.TagNumber(13)
   $core.bool hasAnonymousAttendeeAuthToken() => $_has(11);
   @$pb.TagNumber(13)
-  void clearAnonymousAttendeeAuthToken() => $_clearField(13);
+  void clearAnonymousAttendeeAuthToken() => clearField(13);
 }
 
 /// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
-    $0.Timestamp? startsAfter,
-    $0.Timestamp? endsAfter,
-    $0.Timestamp? startsBefore,
-    $0.Timestamp? endsBefore,
+    $10.Timestamp? startsAfter,
+    $10.Timestamp? endsAfter,
+    $10.Timestamp? startsBefore,
+    $10.Timestamp? endsBefore,
   }) {
-    final result = create();
-    if (startsAfter != null) result.startsAfter = startsAfter;
-    if (endsAfter != null) result.endsAfter = endsAfter;
-    if (startsBefore != null) result.startsBefore = startsBefore;
-    if (endsBefore != null) result.endsBefore = endsBefore;
-    return result;
+    final $result = create();
+    if (startsAfter != null) {
+      $result.startsAfter = startsAfter;
+    }
+    if (endsAfter != null) {
+      $result.endsAfter = endsAfter;
+    }
+    if (startsBefore != null) {
+      $result.startsBefore = startsBefore;
+    }
+    if (endsBefore != null) {
+      $result.endsBefore = endsBefore;
+    }
+    return $result;
   }
+  TimeFilter._() : super();
+  factory TimeFilter.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory TimeFilter.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  TimeFilter._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<$10.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $10.Timestamp.create)
+    ..aOM<$10.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $10.Timestamp.create)
+    ..aOM<$10.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $10.Timestamp.create)
+    ..aOM<$10.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $10.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory TimeFilter.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory TimeFilter.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  TimeFilter clone() => TimeFilter()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  TimeFilter copyWith(void Function(TimeFilter) updates) => super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'TimeFilter',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore',
-        subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  TimeFilter clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  TimeFilter copyWith(void Function(TimeFilter) updates) =>
-      super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static TimeFilter create() => TimeFilter._();
-  @$core.override
   TimeFilter createEmptyInstance() => create();
+  static $pb.PbList<TimeFilter> createRepeated() => $pb.PbList<TimeFilter>();
   @$core.pragma('dart2js:noInline')
-  static TimeFilter getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
+  static TimeFilter getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
   static TimeFilter? _defaultInstance;
 
   /// Filter to events that start after the given time.
   @$pb.TagNumber(1)
-  $0.Timestamp get startsAfter => $_getN(0);
+  $10.Timestamp get startsAfter => $_getN(0);
   @$pb.TagNumber(1)
-  set startsAfter($0.Timestamp value) => $_setField(1, value);
+  set startsAfter($10.Timestamp v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasStartsAfter() => $_has(0);
   @$pb.TagNumber(1)
-  void clearStartsAfter() => $_clearField(1);
+  void clearStartsAfter() => clearField(1);
   @$pb.TagNumber(1)
-  $0.Timestamp ensureStartsAfter() => $_ensure(0);
+  $10.Timestamp ensureStartsAfter() => $_ensure(0);
 
   /// Filter to events that end after the given time.
   @$pb.TagNumber(2)
-  $0.Timestamp get endsAfter => $_getN(1);
+  $10.Timestamp get endsAfter => $_getN(1);
   @$pb.TagNumber(2)
-  set endsAfter($0.Timestamp value) => $_setField(2, value);
+  set endsAfter($10.Timestamp v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasEndsAfter() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEndsAfter() => $_clearField(2);
+  void clearEndsAfter() => clearField(2);
   @$pb.TagNumber(2)
-  $0.Timestamp ensureEndsAfter() => $_ensure(1);
+  $10.Timestamp ensureEndsAfter() => $_ensure(1);
 
   /// Filter to events that start before the given time.
   @$pb.TagNumber(3)
-  $0.Timestamp get startsBefore => $_getN(2);
+  $10.Timestamp get startsBefore => $_getN(2);
   @$pb.TagNumber(3)
-  set startsBefore($0.Timestamp value) => $_setField(3, value);
+  set startsBefore($10.Timestamp v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasStartsBefore() => $_has(2);
   @$pb.TagNumber(3)
-  void clearStartsBefore() => $_clearField(3);
+  void clearStartsBefore() => clearField(3);
   @$pb.TagNumber(3)
-  $0.Timestamp ensureStartsBefore() => $_ensure(2);
+  $10.Timestamp ensureStartsBefore() => $_ensure(2);
 
   /// Filter to events that end before the given time.
   @$pb.TagNumber(4)
-  $0.Timestamp get endsBefore => $_getN(3);
+  $10.Timestamp get endsBefore => $_getN(3);
   @$pb.TagNumber(4)
-  set endsBefore($0.Timestamp value) => $_setField(4, value);
+  set endsBefore($10.Timestamp v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasEndsBefore() => $_has(3);
   @$pb.TagNumber(4)
-  void clearEndsBefore() => $_clearField(4);
+  void clearEndsBefore() => clearField(4);
   @$pb.TagNumber(4)
-  $0.Timestamp ensureEndsBefore() => $_ensure(3);
+  $10.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
-/// A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+///  A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
 ///
-/// Note that `GetEventsResponse` may often include duplicate Events with the same ID.
-/// I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
-/// This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
-/// The client should be able to handle this.
+///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
+///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
+///  This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+///  The client should be able to handle this.
 ///
-/// In the React/Tamagui client, this is handled by the Redux store, which
-/// effectively "compacts" all response into its own internal Events store, in a form something like:
-/// `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
-/// (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
+///  In the React/Tamagui client, this is handled by the Redux store, which
+///  effectively "compacts" all response into its own internal Events store, in a form something like:
+///  `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+///  (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 class GetEventsResponse extends $pb.GeneratedMessage {
   factory GetEventsResponse({
     $core.Iterable<Event>? events,
   }) {
-    final result = create();
-    if (events != null) result.events.addAll(events);
-    return result;
+    final $result = create();
+    if (events != null) {
+      $result.events.addAll(events);
+    }
+    return $result;
   }
+  GetEventsResponse._() : super();
+  factory GetEventsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetEventsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  GetEventsResponse._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<Event>(1, _omitFieldNames ? '' : 'events', $pb.PbFieldType.PM, subBuilder: Event.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory GetEventsResponse.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory GetEventsResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetEventsResponse clone() => GetEventsResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetEventsResponse copyWith(void Function(GetEventsResponse) updates) => super.copyWith((message) => updates(message as GetEventsResponse)) as GetEventsResponse;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'GetEventsResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..pPM<Event>(1, _omitFieldNames ? '' : 'events', subBuilder: Event.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsResponse copyWith(void Function(GetEventsResponse) updates) =>
-      super.copyWith((message) => updates(message as GetEventsResponse))
-          as GetEventsResponse;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetEventsResponse create() => GetEventsResponse._();
-  @$core.override
   GetEventsResponse createEmptyInstance() => create();
+  static $pb.PbList<GetEventsResponse> createRepeated() => $pb.PbList<GetEventsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetEventsResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<GetEventsResponse>(create);
+  static GetEventsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsResponse>(create);
   static GetEventsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<Event> get events => $_getList(0);
+  $core.List<Event> get events => $_getList(0);
 }
 
-/// An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
-/// about the `Event`. Actual time data lies in its `EventInstances`.
+///  An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
+///  about the `Event`. Actual time data lies in its `EventInstances`.
 ///
-/// (Eventually, Jonline Events should also support ticketing.)
+///  (Eventually, Jonline Events should also support ticketing.)
 class Event extends $pb.GeneratedMessage {
   factory Event({
     $core.String? id,
-    $1.Post? post,
+    $8.Post? post,
     EventInfo? info,
     $core.Iterable<EventInstance>? instances,
-    $2.EventSyncSource? eventSyncSource,
+    $4.EventSyncSource? eventSyncSource,
   }) {
-    final result = create();
-    if (id != null) result.id = id;
-    if (post != null) result.post = post;
-    if (info != null) result.info = info;
-    if (instances != null) result.instances.addAll(instances);
-    if (eventSyncSource != null) result.eventSyncSource = eventSyncSource;
-    return result;
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    if (info != null) {
+      $result.info = info;
+    }
+    if (instances != null) {
+      $result.instances.addAll(instances);
+    }
+    if (eventSyncSource != null) {
+      $result.eventSyncSource = eventSyncSource;
+    }
+    return $result;
   }
+  Event._() : super();
+  factory Event.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Event.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  Event._();
-
-  factory Event.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory Event.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'Event',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$1.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
-    ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info',
-        subBuilder: EventInfo.create)
-    ..pPM<EventInstance>(4, _omitFieldNames ? '' : 'instances',
-        subBuilder: EventInstance.create)
-    ..aOM<$2.EventSyncSource>(5, _omitFieldNames ? '' : 'eventSyncSource',
-        subBuilder: $2.EventSyncSource.create)
-    ..hasRequiredFields = false;
+    ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
+    ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
+    ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
+    ..aOM<$4.EventSyncSource>(5, _omitFieldNames ? '' : 'eventSyncSource', subBuilder: $4.EventSyncSource.create)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Event clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Event copyWith(void Function(Event) updates) =>
-      super.copyWith((message) => updates(message as Event)) as Event;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Event clone() => Event()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Event copyWith(void Function(Event) updates) => super.copyWith((message) => updates(message as Event)) as Event;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Event create() => Event._();
-  @$core.override
   Event createEmptyInstance() => create();
+  static $pb.PbList<Event> createRepeated() => $pb.PbList<Event>();
   @$core.pragma('dart2js:noInline')
-  static Event getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
+  static Event getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
   static Event? _defaultInstance;
 
   /// Unique ID for the event generated by the Jonline BE.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String value) => $_setString(0, value);
+  set id($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => $_clearField(1);
+  void clearId() => clearField(1);
 
   /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its `PostContext` should be `EVENT`.
   @$pb.TagNumber(2)
-  $1.Post get post => $_getN(1);
+  $8.Post get post => $_getN(1);
   @$pb.TagNumber(2)
-  set post($1.Post value) => $_setField(2, value);
+  set post($8.Post v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPost() => $_clearField(2);
+  void clearPost() => clearField(2);
   @$pb.TagNumber(2)
-  $1.Post ensurePost() => $_ensure(1);
+  $8.Post ensurePost() => $_ensure(1);
 
   /// Event configuration like whether to allow (anonymous) RSVPs, etc.
   @$pb.TagNumber(3)
   EventInfo get info => $_getN(2);
   @$pb.TagNumber(3)
-  set info(EventInfo value) => $_setField(3, value);
+  set info(EventInfo v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasInfo() => $_has(2);
   @$pb.TagNumber(3)
-  void clearInfo() => $_clearField(3);
+  void clearInfo() => clearField(3);
   @$pb.TagNumber(3)
   EventInfo ensureInfo() => $_ensure(2);
 
   /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   @$pb.TagNumber(4)
-  $pb.PbList<EventInstance> get instances => $_getList(3);
+  $core.List<EventInstance> get instances => $_getList(3);
 
   /// If the event was synced from a source (meaning only its media should not be editable),
   /// this is the source it was synced from.
   @$pb.TagNumber(5)
-  $2.EventSyncSource get eventSyncSource => $_getN(4);
+  $4.EventSyncSource get eventSyncSource => $_getN(4);
   @$pb.TagNumber(5)
-  set eventSyncSource($2.EventSyncSource value) => $_setField(5, value);
+  set eventSyncSource($4.EventSyncSource v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasEventSyncSource() => $_has(4);
   @$pb.TagNumber(5)
-  void clearEventSyncSource() => $_clearField(5);
+  void clearEventSyncSource() => clearField(5);
   @$pb.TagNumber(5)
-  $2.EventSyncSource ensureEventSyncSource() => $_ensure(4);
+  $4.EventSyncSource ensureEventSyncSource() => $_ensure(4);
 }
 
 class GetEventSyncSourcesResponse extends $pb.GeneratedMessage {
   factory GetEventSyncSourcesResponse({
-    $core.Iterable<$2.EventSyncSource>? sources,
+    $core.Iterable<$4.EventSyncSource>? sources,
   }) {
-    final result = create();
-    if (sources != null) result.sources.addAll(sources);
-    return result;
+    final $result = create();
+    if (sources != null) {
+      $result.sources.addAll(sources);
+    }
+    return $result;
   }
+  GetEventSyncSourcesResponse._() : super();
+  factory GetEventSyncSourcesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetEventSyncSourcesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  GetEventSyncSourcesResponse._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventSyncSourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<$4.EventSyncSource>(1, _omitFieldNames ? '' : 'sources', $pb.PbFieldType.PM, subBuilder: $4.EventSyncSource.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory GetEventSyncSourcesResponse.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory GetEventSyncSourcesResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetEventSyncSourcesResponse clone() => GetEventSyncSourcesResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetEventSyncSourcesResponse copyWith(void Function(GetEventSyncSourcesResponse) updates) => super.copyWith((message) => updates(message as GetEventSyncSourcesResponse)) as GetEventSyncSourcesResponse;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'GetEventSyncSourcesResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..pPM<$2.EventSyncSource>(1, _omitFieldNames ? '' : 'sources',
-        subBuilder: $2.EventSyncSource.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventSyncSourcesResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventSyncSourcesResponse copyWith(
-          void Function(GetEventSyncSourcesResponse) updates) =>
-      super.copyWith(
-              (message) => updates(message as GetEventSyncSourcesResponse))
-          as GetEventSyncSourcesResponse;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncSourcesResponse create() =>
-      GetEventSyncSourcesResponse._();
-  @$core.override
+  static GetEventSyncSourcesResponse create() => GetEventSyncSourcesResponse._();
   GetEventSyncSourcesResponse createEmptyInstance() => create();
+  static $pb.PbList<GetEventSyncSourcesResponse> createRepeated() => $pb.PbList<GetEventSyncSourcesResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncSourcesResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<GetEventSyncSourcesResponse>(create);
+  static GetEventSyncSourcesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventSyncSourcesResponse>(create);
   static GetEventSyncSourcesResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$2.EventSyncSource> get sources => $_getList(0);
+  $core.List<$4.EventSyncSource> get sources => $_getList(0);
 }
 
 /// Request to delete an EventSyncSource.
 class DeleteEventSyncSourceRequest extends $pb.GeneratedMessage {
   factory DeleteEventSyncSourceRequest({
-    $2.EventSyncSource? source,
+    $4.EventSyncSource? source,
     $core.bool? deleteSyncedEvents,
   }) {
-    final result = create();
-    if (source != null) result.source = source;
-    if (deleteSyncedEvents != null)
-      result.deleteSyncedEvents = deleteSyncedEvents;
-    return result;
+    final $result = create();
+    if (source != null) {
+      $result.source = source;
+    }
+    if (deleteSyncedEvents != null) {
+      $result.deleteSyncedEvents = deleteSyncedEvents;
+    }
+    return $result;
   }
+  DeleteEventSyncSourceRequest._() : super();
+  factory DeleteEventSyncSourceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteEventSyncSourceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  DeleteEventSyncSourceRequest._();
-
-  factory DeleteEventSyncSourceRequest.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory DeleteEventSyncSourceRequest.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DeleteEventSyncSourceRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..aOM<$2.EventSyncSource>(1, _omitFieldNames ? '' : 'source',
-        subBuilder: $2.EventSyncSource.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventSyncSourceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<$4.EventSyncSource>(1, _omitFieldNames ? '' : 'source', subBuilder: $4.EventSyncSource.create)
     ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedEvents')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DeleteEventSyncSourceRequest clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DeleteEventSyncSourceRequest copyWith(
-          void Function(DeleteEventSyncSourceRequest) updates) =>
-      super.copyWith(
-              (message) => updates(message as DeleteEventSyncSourceRequest))
-          as DeleteEventSyncSourceRequest;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DeleteEventSyncSourceRequest clone() => DeleteEventSyncSourceRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DeleteEventSyncSourceRequest copyWith(void Function(DeleteEventSyncSourceRequest) updates) => super.copyWith((message) => updates(message as DeleteEventSyncSourceRequest)) as DeleteEventSyncSourceRequest;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncSourceRequest create() =>
-      DeleteEventSyncSourceRequest._();
-  @$core.override
+  static DeleteEventSyncSourceRequest create() => DeleteEventSyncSourceRequest._();
   DeleteEventSyncSourceRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteEventSyncSourceRequest> createRepeated() => $pb.PbList<DeleteEventSyncSourceRequest>();
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncSourceRequest getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<DeleteEventSyncSourceRequest>(create);
+  static DeleteEventSyncSourceRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteEventSyncSourceRequest>(create);
   static DeleteEventSyncSourceRequest? _defaultInstance;
 
   /// The source to be deleted.
   @$pb.TagNumber(1)
-  $2.EventSyncSource get source => $_getN(0);
+  $4.EventSyncSource get source => $_getN(0);
   @$pb.TagNumber(1)
-  set source($2.EventSyncSource value) => $_setField(1, value);
+  set source($4.EventSyncSource v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasSource() => $_has(0);
   @$pb.TagNumber(1)
-  void clearSource() => $_clearField(1);
+  void clearSource() => clearField(1);
   @$pb.TagNumber(1)
-  $2.EventSyncSource ensureSource() => $_ensure(0);
+  $4.EventSyncSource ensureSource() => $_ensure(0);
 
   /// Whether to delete synced events.
   @$pb.TagNumber(2)
   $core.bool get deleteSyncedEvents => $_getBF(1);
   @$pb.TagNumber(2)
-  set deleteSyncedEvents($core.bool value) => $_setBool(1, value);
+  set deleteSyncedEvents($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasDeleteSyncedEvents() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDeleteSyncedEvents() => $_clearField(2);
+  void clearDeleteSyncedEvents() => clearField(2);
 }
 
 class GetEventSyncDestinationsResponse extends $pb.GeneratedMessage {
   factory GetEventSyncDestinationsResponse({
-    $core.Iterable<$2.EventSyncDestination>? destinations,
+    $core.Iterable<$4.EventSyncDestination>? destinations,
   }) {
-    final result = create();
-    if (destinations != null) result.destinations.addAll(destinations);
-    return result;
+    final $result = create();
+    if (destinations != null) {
+      $result.destinations.addAll(destinations);
+    }
+    return $result;
   }
+  GetEventSyncDestinationsResponse._() : super();
+  factory GetEventSyncDestinationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetEventSyncDestinationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  GetEventSyncDestinationsResponse._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventSyncDestinationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<$4.EventSyncDestination>(1, _omitFieldNames ? '' : 'destinations', $pb.PbFieldType.PM, subBuilder: $4.EventSyncDestination.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory GetEventSyncDestinationsResponse.fromBuffer(
-          $core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory GetEventSyncDestinationsResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetEventSyncDestinationsResponse clone() => GetEventSyncDestinationsResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetEventSyncDestinationsResponse copyWith(void Function(GetEventSyncDestinationsResponse) updates) => super.copyWith((message) => updates(message as GetEventSyncDestinationsResponse)) as GetEventSyncDestinationsResponse;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'GetEventSyncDestinationsResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..pPM<$2.EventSyncDestination>(1, _omitFieldNames ? '' : 'destinations',
-        subBuilder: $2.EventSyncDestination.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventSyncDestinationsResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventSyncDestinationsResponse copyWith(
-          void Function(GetEventSyncDestinationsResponse) updates) =>
-      super.copyWith(
-              (message) => updates(message as GetEventSyncDestinationsResponse))
-          as GetEventSyncDestinationsResponse;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncDestinationsResponse create() =>
-      GetEventSyncDestinationsResponse._();
-  @$core.override
+  static GetEventSyncDestinationsResponse create() => GetEventSyncDestinationsResponse._();
   GetEventSyncDestinationsResponse createEmptyInstance() => create();
+  static $pb.PbList<GetEventSyncDestinationsResponse> createRepeated() => $pb.PbList<GetEventSyncDestinationsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncDestinationsResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<GetEventSyncDestinationsResponse>(
-          create);
+  static GetEventSyncDestinationsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventSyncDestinationsResponse>(create);
   static GetEventSyncDestinationsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$2.EventSyncDestination> get destinations => $_getList(0);
+  $core.List<$4.EventSyncDestination> get destinations => $_getList(0);
 }
 
 /// Request to delete an EventSyncDestination.
 class DeleteEventSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeleteEventSyncDestinationRequest({
-    $2.EventSyncDestination? destination,
+    $4.EventSyncDestination? destination,
     $core.bool? deleteSyncedPosts,
   }) {
-    final result = create();
-    if (destination != null) result.destination = destination;
-    if (deleteSyncedPosts != null) result.deleteSyncedPosts = deleteSyncedPosts;
-    return result;
+    final $result = create();
+    if (destination != null) {
+      $result.destination = destination;
+    }
+    if (deleteSyncedPosts != null) {
+      $result.deleteSyncedPosts = deleteSyncedPosts;
+    }
+    return $result;
   }
+  DeleteEventSyncDestinationRequest._() : super();
+  factory DeleteEventSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteEventSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  DeleteEventSyncDestinationRequest._();
-
-  factory DeleteEventSyncDestinationRequest.fromBuffer(
-          $core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory DeleteEventSyncDestinationRequest.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DeleteEventSyncDestinationRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..aOM<$2.EventSyncDestination>(1, _omitFieldNames ? '' : 'destination',
-        subBuilder: $2.EventSyncDestination.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<$4.EventSyncDestination>(1, _omitFieldNames ? '' : 'destination', subBuilder: $4.EventSyncDestination.create)
     ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedPosts')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DeleteEventSyncDestinationRequest clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DeleteEventSyncDestinationRequest copyWith(
-          void Function(DeleteEventSyncDestinationRequest) updates) =>
-      super.copyWith((message) =>
-              updates(message as DeleteEventSyncDestinationRequest))
-          as DeleteEventSyncDestinationRequest;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DeleteEventSyncDestinationRequest clone() => DeleteEventSyncDestinationRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DeleteEventSyncDestinationRequest copyWith(void Function(DeleteEventSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteEventSyncDestinationRequest)) as DeleteEventSyncDestinationRequest;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncDestinationRequest create() =>
-      DeleteEventSyncDestinationRequest._();
-  @$core.override
+  static DeleteEventSyncDestinationRequest create() => DeleteEventSyncDestinationRequest._();
   DeleteEventSyncDestinationRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteEventSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteEventSyncDestinationRequest>();
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncDestinationRequest getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<DeleteEventSyncDestinationRequest>(
-          create);
+  static DeleteEventSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteEventSyncDestinationRequest>(create);
   static DeleteEventSyncDestinationRequest? _defaultInstance;
 
   /// The destination to be deleted.
   @$pb.TagNumber(1)
-  $2.EventSyncDestination get destination => $_getN(0);
+  $4.EventSyncDestination get destination => $_getN(0);
   @$pb.TagNumber(1)
-  set destination($2.EventSyncDestination value) => $_setField(1, value);
+  set destination($4.EventSyncDestination v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasDestination() => $_has(0);
   @$pb.TagNumber(1)
-  void clearDestination() => $_clearField(1);
+  void clearDestination() => clearField(1);
   @$pb.TagNumber(1)
-  $2.EventSyncDestination ensureDestination() => $_ensure(0);
+  $4.EventSyncDestination ensureDestination() => $_ensure(0);
 
   /// Whether to also delete posts already made on the destination (e.g. the Facebook Page posts).
   @$pb.TagNumber(2)
   $core.bool get deleteSyncedPosts => $_getBF(1);
   @$pb.TagNumber(2)
-  set deleteSyncedPosts($core.bool value) => $_setBool(1, value);
+  set deleteSyncedPosts($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasDeleteSyncedPosts() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDeleteSyncedPosts() => $_clearField(2);
+  void clearDeleteSyncedPosts() => clearField(2);
 }
 
 /// Syncs (cross-posts) a single EventInstance to one EventSyncDestination.
@@ -792,69 +761,65 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
     $core.String? eventInstanceId,
     $core.String? eventSyncDestinationId,
   }) {
-    final result = create();
-    if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
-    if (eventSyncDestinationId != null)
-      result.eventSyncDestinationId = eventSyncDestinationId;
-    return result;
+    final $result = create();
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (eventSyncDestinationId != null) {
+      $result.eventSyncDestinationId = eventSyncDestinationId;
+    }
+    return $result;
   }
+  SyncEventInstanceRequest._() : super();
+  factory SyncEventInstanceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncEventInstanceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  SyncEventInstanceRequest._();
-
-  factory SyncEventInstanceRequest.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory SyncEventInstanceRequest.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'SyncEventInstanceRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncEventInstanceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'eventSyncDestinationId')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  SyncEventInstanceRequest clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  SyncEventInstanceRequest copyWith(
-          void Function(SyncEventInstanceRequest) updates) =>
-      super.copyWith((message) => updates(message as SyncEventInstanceRequest))
-          as SyncEventInstanceRequest;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SyncEventInstanceRequest clone() => SyncEventInstanceRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SyncEventInstanceRequest copyWith(void Function(SyncEventInstanceRequest) updates) => super.copyWith((message) => updates(message as SyncEventInstanceRequest)) as SyncEventInstanceRequest;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static SyncEventInstanceRequest create() => SyncEventInstanceRequest._();
-  @$core.override
   SyncEventInstanceRequest createEmptyInstance() => create();
+  static $pb.PbList<SyncEventInstanceRequest> createRepeated() => $pb.PbList<SyncEventInstanceRequest>();
   @$core.pragma('dart2js:noInline')
-  static SyncEventInstanceRequest getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<SyncEventInstanceRequest>(create);
+  static SyncEventInstanceRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncEventInstanceRequest>(create);
   static SyncEventInstanceRequest? _defaultInstance;
 
   /// The EventInstance to sync.
   @$pb.TagNumber(1)
   $core.String get eventInstanceId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventInstanceId($core.String value) => $_setString(0, value);
+  set eventInstanceId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasEventInstanceId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => $_clearField(1);
+  void clearEventInstanceId() => clearField(1);
 
   /// The EventSyncDestination to sync it to.
   @$pb.TagNumber(2)
   $core.String get eventSyncDestinationId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set eventSyncDestinationId($core.String value) => $_setString(1, value);
+  set eventSyncDestinationId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasEventSyncDestinationId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventSyncDestinationId() => $_clearField(2);
+  void clearEventSyncDestinationId() => clearField(2);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -865,89 +830,89 @@ class EventInfo extends $pb.GeneratedMessage {
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
     $core.bool? hideLocationUntilRsvpApproved,
-    $5.Moderation? defaultRsvpModeration,
+    $11.Moderation? defaultRsvpModeration,
   }) {
-    final result = create();
-    if (allowsRsvps != null) result.allowsRsvps = allowsRsvps;
-    if (allowsAnonymousRsvps != null)
-      result.allowsAnonymousRsvps = allowsAnonymousRsvps;
-    if (maxAttendees != null) result.maxAttendees = maxAttendees;
-    if (hideLocationUntilRsvpApproved != null)
-      result.hideLocationUntilRsvpApproved = hideLocationUntilRsvpApproved;
-    if (defaultRsvpModeration != null)
-      result.defaultRsvpModeration = defaultRsvpModeration;
-    return result;
+    final $result = create();
+    if (allowsRsvps != null) {
+      $result.allowsRsvps = allowsRsvps;
+    }
+    if (allowsAnonymousRsvps != null) {
+      $result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    }
+    if (maxAttendees != null) {
+      $result.maxAttendees = maxAttendees;
+    }
+    if (hideLocationUntilRsvpApproved != null) {
+      $result.hideLocationUntilRsvpApproved = hideLocationUntilRsvpApproved;
+    }
+    if (defaultRsvpModeration != null) {
+      $result.defaultRsvpModeration = defaultRsvpModeration;
+    }
+    return $result;
   }
+  EventInfo._() : super();
+  factory EventInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventInfo._();
-
-  factory EventInfo.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventInfo.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventInfo',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
-    ..aI(3, _omitFieldNames ? '' : 'maxAttendees',
-        fieldType: $pb.PbFieldType.OU3)
+    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
-    ..aE<$5.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration',
-        enumValues: $5.Moderation.values)
-    ..hasRequiredFields = false;
+    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInfo clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInfo copyWith(void Function(EventInfo) updates) =>
-      super.copyWith((message) => updates(message as EventInfo)) as EventInfo;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInfo clone() => EventInfo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInfo copyWith(void Function(EventInfo) updates) => super.copyWith((message) => updates(message as EventInfo)) as EventInfo;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventInfo create() => EventInfo._();
-  @$core.override
   EventInfo createEmptyInstance() => create();
+  static $pb.PbList<EventInfo> createRepeated() => $pb.PbList<EventInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInfo getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
+  static EventInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
   static EventInfo? _defaultInstance;
 
   /// Whether to allow RSVPs for the event.
   @$pb.TagNumber(1)
   $core.bool get allowsRsvps => $_getBF(0);
   @$pb.TagNumber(1)
-  set allowsRsvps($core.bool value) => $_setBool(0, value);
+  set allowsRsvps($core.bool v) { $_setBool(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasAllowsRsvps() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAllowsRsvps() => $_clearField(1);
+  void clearAllowsRsvps() => clearField(1);
 
   /// Whether to allow anonymous RSVPs for the event.
   @$pb.TagNumber(2)
   $core.bool get allowsAnonymousRsvps => $_getBF(1);
   @$pb.TagNumber(2)
-  set allowsAnonymousRsvps($core.bool value) => $_setBool(1, value);
+  set allowsAnonymousRsvps($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasAllowsAnonymousRsvps() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAllowsAnonymousRsvps() => $_clearField(2);
+  void clearAllowsAnonymousRsvps() => clearField(2);
 
   /// Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)
-  set maxAttendees($core.int value) => $_setUnsignedInt32(2, value);
+  set maxAttendees($core.int v) { $_setUnsignedInt32(2, v); }
   @$pb.TagNumber(3)
   $core.bool hasMaxAttendees() => $_has(2);
   @$pb.TagNumber(3)
-  void clearMaxAttendees() => $_clearField(3);
+  void clearMaxAttendees() => clearField(3);
 
   /// Hide the location until the user RSVPs (and it's accepted).
   /// From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
@@ -956,22 +921,22 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool get hideLocationUntilRsvpApproved => $_getBF(3);
   @$pb.TagNumber(4)
-  set hideLocationUntilRsvpApproved($core.bool value) => $_setBool(3, value);
+  set hideLocationUntilRsvpApproved($core.bool v) { $_setBool(3, v); }
   @$pb.TagNumber(4)
   $core.bool hasHideLocationUntilRsvpApproved() => $_has(3);
   @$pb.TagNumber(4)
-  void clearHideLocationUntilRsvpApproved() => $_clearField(4);
+  void clearHideLocationUntilRsvpApproved() => clearField(4);
 
   /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
-  $5.Moderation get defaultRsvpModeration => $_getN(4);
+  $11.Moderation get defaultRsvpModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set defaultRsvpModeration($5.Moderation value) => $_setField(5, value);
+  set defaultRsvpModeration($11.Moderation v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasDefaultRsvpModeration() => $_has(4);
   @$pb.TagNumber(5)
-  void clearDefaultRsvpModeration() => $_clearField(5);
+  void clearDefaultRsvpModeration() => clearField(5);
 }
 
 /// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
@@ -981,203 +946,209 @@ class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
     $core.String? id,
     $core.String? eventId,
-    $1.Post? post,
+    $8.Post? post,
     EventInstanceInfo? info,
-    $0.Timestamp? startsAt,
-    $0.Timestamp? endsAt,
-    $3.Location? location,
+    $10.Timestamp? startsAt,
+    $10.Timestamp? endsAt,
+    $13.Location? location,
     $core.String? eventSyncSourceInstanceId,
-    $0.Timestamp? syncMissingSince,
+    $10.Timestamp? syncMissingSince,
     EventAttendances? attendances,
     EventAttendance? currentUserAttendance,
     $core.Iterable<EventInstanceSyncDestination>? syncDestinations,
   }) {
-    final result = create();
-    if (id != null) result.id = id;
-    if (eventId != null) result.eventId = eventId;
-    if (post != null) result.post = post;
-    if (info != null) result.info = info;
-    if (startsAt != null) result.startsAt = startsAt;
-    if (endsAt != null) result.endsAt = endsAt;
-    if (location != null) result.location = location;
-    if (eventSyncSourceInstanceId != null)
-      result.eventSyncSourceInstanceId = eventSyncSourceInstanceId;
-    if (syncMissingSince != null) result.syncMissingSince = syncMissingSince;
-    if (attendances != null) result.attendances = attendances;
-    if (currentUserAttendance != null)
-      result.currentUserAttendance = currentUserAttendance;
-    if (syncDestinations != null)
-      result.syncDestinations.addAll(syncDestinations);
-    return result;
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (eventId != null) {
+      $result.eventId = eventId;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    if (info != null) {
+      $result.info = info;
+    }
+    if (startsAt != null) {
+      $result.startsAt = startsAt;
+    }
+    if (endsAt != null) {
+      $result.endsAt = endsAt;
+    }
+    if (location != null) {
+      $result.location = location;
+    }
+    if (eventSyncSourceInstanceId != null) {
+      $result.eventSyncSourceInstanceId = eventSyncSourceInstanceId;
+    }
+    if (syncMissingSince != null) {
+      $result.syncMissingSince = syncMissingSince;
+    }
+    if (attendances != null) {
+      $result.attendances = attendances;
+    }
+    if (currentUserAttendance != null) {
+      $result.currentUserAttendance = currentUserAttendance;
+    }
+    if (syncDestinations != null) {
+      $result.syncDestinations.addAll(syncDestinations);
+    }
+    return $result;
   }
+  EventInstance._() : super();
+  factory EventInstance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInstance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventInstance._();
-
-  factory EventInstance.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventInstance.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventInstance',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
-    ..aOM<$1.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
-    ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info',
-        subBuilder: EventInstanceInfo.create)
-    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'startsAt',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'endsAt',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$3.Location>(7, _omitFieldNames ? '' : 'location',
-        subBuilder: $3.Location.create)
+    ..aOM<$8.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
+    ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
+    ..aOM<$10.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$10.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$13.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $13.Location.create)
     ..aOS(8, _omitFieldNames ? '' : 'eventSyncSourceInstanceId')
-    ..aOM<$0.Timestamp>(9, _omitFieldNames ? '' : 'syncMissingSince',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<EventAttendances>(10, _omitFieldNames ? '' : 'attendances',
-        subBuilder: EventAttendances.create)
-    ..aOM<EventAttendance>(11, _omitFieldNames ? '' : 'currentUserAttendance',
-        subBuilder: EventAttendance.create)
-    ..pPM<EventInstanceSyncDestination>(
-        12, _omitFieldNames ? '' : 'syncDestinations',
-        subBuilder: EventInstanceSyncDestination.create)
-    ..hasRequiredFields = false;
+    ..aOM<$10.Timestamp>(9, _omitFieldNames ? '' : 'syncMissingSince', subBuilder: $10.Timestamp.create)
+    ..aOM<EventAttendances>(10, _omitFieldNames ? '' : 'attendances', subBuilder: EventAttendances.create)
+    ..aOM<EventAttendance>(11, _omitFieldNames ? '' : 'currentUserAttendance', subBuilder: EventAttendance.create)
+    ..pc<EventInstanceSyncDestination>(12, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: EventInstanceSyncDestination.create)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstance clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstance copyWith(void Function(EventInstance) updates) =>
-      super.copyWith((message) => updates(message as EventInstance))
-          as EventInstance;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInstance clone() => EventInstance()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInstance copyWith(void Function(EventInstance) updates) => super.copyWith((message) => updates(message as EventInstance)) as EventInstance;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventInstance create() => EventInstance._();
-  @$core.override
   EventInstance createEmptyInstance() => create();
+  static $pb.PbList<EventInstance> createRepeated() => $pb.PbList<EventInstance>();
   @$core.pragma('dart2js:noInline')
-  static EventInstance getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
+  static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
   static EventInstance? _defaultInstance;
 
   /// Unique ID for the event instance generated by the Jonline BE.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String value) => $_setString(0, value);
+  set id($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => $_clearField(1);
+  void clearId() => clearField(1);
 
   /// ID of the parent `Event`.
   @$pb.TagNumber(2)
   $core.String get eventId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set eventId($core.String value) => $_setString(1, value);
+  set eventId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasEventId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventId() => $_clearField(2);
+  void clearEventId() => clearField(2);
 
   /// Optional `Post` containing alternate title/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
   @$pb.TagNumber(3)
-  $1.Post get post => $_getN(2);
+  $8.Post get post => $_getN(2);
   @$pb.TagNumber(3)
-  set post($1.Post value) => $_setField(3, value);
+  set post($8.Post v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasPost() => $_has(2);
   @$pb.TagNumber(3)
-  void clearPost() => $_clearField(3);
+  void clearPost() => clearField(3);
   @$pb.TagNumber(3)
-  $1.Post ensurePost() => $_ensure(2);
+  $8.Post ensurePost() => $_ensure(2);
 
   /// Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
   @$pb.TagNumber(4)
   EventInstanceInfo get info => $_getN(3);
   @$pb.TagNumber(4)
-  set info(EventInstanceInfo value) => $_setField(4, value);
+  set info(EventInstanceInfo v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasInfo() => $_has(3);
   @$pb.TagNumber(4)
-  void clearInfo() => $_clearField(4);
+  void clearInfo() => clearField(4);
   @$pb.TagNumber(4)
   EventInstanceInfo ensureInfo() => $_ensure(3);
 
   /// The time the event starts (UTC/Timestamp format).
   @$pb.TagNumber(5)
-  $0.Timestamp get startsAt => $_getN(4);
+  $10.Timestamp get startsAt => $_getN(4);
   @$pb.TagNumber(5)
-  set startsAt($0.Timestamp value) => $_setField(5, value);
+  set startsAt($10.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasStartsAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearStartsAt() => $_clearField(5);
+  void clearStartsAt() => clearField(5);
   @$pb.TagNumber(5)
-  $0.Timestamp ensureStartsAt() => $_ensure(4);
+  $10.Timestamp ensureStartsAt() => $_ensure(4);
 
   /// The time the event ends (UTC/Timestamp format).
   @$pb.TagNumber(6)
-  $0.Timestamp get endsAt => $_getN(5);
+  $10.Timestamp get endsAt => $_getN(5);
   @$pb.TagNumber(6)
-  set endsAt($0.Timestamp value) => $_setField(6, value);
+  set endsAt($10.Timestamp v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasEndsAt() => $_has(5);
   @$pb.TagNumber(6)
-  void clearEndsAt() => $_clearField(6);
+  void clearEndsAt() => clearField(6);
   @$pb.TagNumber(6)
-  $0.Timestamp ensureEndsAt() => $_ensure(5);
+  $10.Timestamp ensureEndsAt() => $_ensure(5);
 
   /// The location of the event.
   @$pb.TagNumber(7)
-  $3.Location get location => $_getN(6);
+  $13.Location get location => $_getN(6);
   @$pb.TagNumber(7)
-  set location($3.Location value) => $_setField(7, value);
+  set location($13.Location v) { setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasLocation() => $_has(6);
   @$pb.TagNumber(7)
-  void clearLocation() => $_clearField(7);
+  void clearLocation() => clearField(7);
   @$pb.TagNumber(7)
-  $3.Location ensureLocation() => $_ensure(6);
+  $13.Location ensureLocation() => $_ensure(6);
 
   /// The "iCal ID" (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`.
   @$pb.TagNumber(8)
   $core.String get eventSyncSourceInstanceId => $_getSZ(7);
   @$pb.TagNumber(8)
-  set eventSyncSourceInstanceId($core.String value) => $_setString(7, value);
+  set eventSyncSourceInstanceId($core.String v) { $_setString(7, v); }
   @$pb.TagNumber(8)
   $core.bool hasEventSyncSourceInstanceId() => $_has(7);
   @$pb.TagNumber(8)
-  void clearEventSyncSourceInstanceId() => $_clearField(8);
+  void clearEventSyncSourceInstanceId() => clearField(8);
 
   /// The time since this event "disappeared" from the sync source.
   /// It is up to the owner whether this means it should be deleted.
   @$pb.TagNumber(9)
-  $0.Timestamp get syncMissingSince => $_getN(8);
+  $10.Timestamp get syncMissingSince => $_getN(8);
   @$pb.TagNumber(9)
-  set syncMissingSince($0.Timestamp value) => $_setField(9, value);
+  set syncMissingSince($10.Timestamp v) { setField(9, v); }
   @$pb.TagNumber(9)
   $core.bool hasSyncMissingSince() => $_has(8);
   @$pb.TagNumber(9)
-  void clearSyncMissingSince() => $_clearField(9);
+  void clearSyncMissingSince() => clearField(9);
   @$pb.TagNumber(9)
-  $0.Timestamp ensureSyncMissingSince() => $_ensure(8);
+  $10.Timestamp ensureSyncMissingSince() => $_ensure(8);
 
   /// RSVP + invite data for this instance.
   @$pb.TagNumber(10)
   EventAttendances get attendances => $_getN(9);
   @$pb.TagNumber(10)
-  set attendances(EventAttendances value) => $_setField(10, value);
+  set attendances(EventAttendances v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasAttendances() => $_has(9);
   @$pb.TagNumber(10)
-  void clearAttendances() => $_clearField(10);
+  void clearAttendances() => clearField(10);
   @$pb.TagNumber(10)
   EventAttendances ensureAttendances() => $_ensure(9);
 
@@ -1185,18 +1156,17 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   EventAttendance get currentUserAttendance => $_getN(10);
   @$pb.TagNumber(11)
-  set currentUserAttendance(EventAttendance value) => $_setField(11, value);
+  set currentUserAttendance(EventAttendance v) { setField(11, v); }
   @$pb.TagNumber(11)
   $core.bool hasCurrentUserAttendance() => $_has(10);
   @$pb.TagNumber(11)
-  void clearCurrentUserAttendance() => $_clearField(11);
+  void clearCurrentUserAttendance() => clearField(11);
   @$pb.TagNumber(11)
   EventAttendance ensureCurrentUserAttendance() => $_ensure(10);
 
   /// EventSyncDestinations this instance has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(12)
-  $pb.PbList<EventInstanceSyncDestination> get syncDestinations =>
-      $_getList(11);
+  $core.List<EventInstanceSyncDestination> get syncDestinations => $_getList(11);
 }
 
 /// The status of an EventInstance's sync (cross-post) to one EventSyncDestination.
@@ -1205,101 +1175,97 @@ class EventInstanceSyncDestination extends $pb.GeneratedMessage {
     $core.String? eventSyncDestinationId,
     $core.String? destinationInstanceId,
     $core.String? destinationUrl,
-    $0.Timestamp? syncedAt,
+    $10.Timestamp? syncedAt,
   }) {
-    final result = create();
-    if (eventSyncDestinationId != null)
-      result.eventSyncDestinationId = eventSyncDestinationId;
-    if (destinationInstanceId != null)
-      result.destinationInstanceId = destinationInstanceId;
-    if (destinationUrl != null) result.destinationUrl = destinationUrl;
-    if (syncedAt != null) result.syncedAt = syncedAt;
-    return result;
+    final $result = create();
+    if (eventSyncDestinationId != null) {
+      $result.eventSyncDestinationId = eventSyncDestinationId;
+    }
+    if (destinationInstanceId != null) {
+      $result.destinationInstanceId = destinationInstanceId;
+    }
+    if (destinationUrl != null) {
+      $result.destinationUrl = destinationUrl;
+    }
+    if (syncedAt != null) {
+      $result.syncedAt = syncedAt;
+    }
+    return $result;
   }
+  EventInstanceSyncDestination._() : super();
+  factory EventInstanceSyncDestination.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInstanceSyncDestination.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventInstanceSyncDestination._();
-
-  factory EventInstanceSyncDestination.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventInstanceSyncDestination.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventInstanceSyncDestination',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceSyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventSyncDestinationId')
     ..aOS(2, _omitFieldNames ? '' : 'destinationInstanceId')
     ..aOS(3, _omitFieldNames ? '' : 'destinationUrl')
-    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'syncedAt',
-        subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false;
+    ..aOM<$10.Timestamp>(4, _omitFieldNames ? '' : 'syncedAt', subBuilder: $10.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceSyncDestination clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceSyncDestination copyWith(
-          void Function(EventInstanceSyncDestination) updates) =>
-      super.copyWith(
-              (message) => updates(message as EventInstanceSyncDestination))
-          as EventInstanceSyncDestination;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInstanceSyncDestination clone() => EventInstanceSyncDestination()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInstanceSyncDestination copyWith(void Function(EventInstanceSyncDestination) updates) => super.copyWith((message) => updates(message as EventInstanceSyncDestination)) as EventInstanceSyncDestination;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EventInstanceSyncDestination create() =>
-      EventInstanceSyncDestination._();
-  @$core.override
+  static EventInstanceSyncDestination create() => EventInstanceSyncDestination._();
   EventInstanceSyncDestination createEmptyInstance() => create();
+  static $pb.PbList<EventInstanceSyncDestination> createRepeated() => $pb.PbList<EventInstanceSyncDestination>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceSyncDestination getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventInstanceSyncDestination>(create);
+  static EventInstanceSyncDestination getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceSyncDestination>(create);
   static EventInstanceSyncDestination? _defaultInstance;
 
   /// The EventSyncDestination this status is for.
   @$pb.TagNumber(1)
   $core.String get eventSyncDestinationId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventSyncDestinationId($core.String value) => $_setString(0, value);
+  set eventSyncDestinationId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasEventSyncDestinationId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventSyncDestinationId() => $_clearField(1);
+  void clearEventSyncDestinationId() => clearField(1);
 
   /// The ID of the resulting post on the destination (e.g. a Facebook Post ID).
   @$pb.TagNumber(2)
   $core.String get destinationInstanceId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set destinationInstanceId($core.String value) => $_setString(1, value);
+  set destinationInstanceId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasDestinationInstanceId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDestinationInstanceId() => $_clearField(2);
+  void clearDestinationInstanceId() => clearField(2);
 
   /// A link to the resulting post on the destination, if available.
   @$pb.TagNumber(3)
   $core.String get destinationUrl => $_getSZ(2);
   @$pb.TagNumber(3)
-  set destinationUrl($core.String value) => $_setString(2, value);
+  set destinationUrl($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
   $core.bool hasDestinationUrl() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDestinationUrl() => $_clearField(3);
+  void clearDestinationUrl() => clearField(3);
 
   /// The time this instance was last successfully synced to the destination.
   @$pb.TagNumber(4)
-  $0.Timestamp get syncedAt => $_getN(3);
+  $10.Timestamp get syncedAt => $_getN(3);
   @$pb.TagNumber(4)
-  set syncedAt($0.Timestamp value) => $_setField(4, value);
+  set syncedAt($10.Timestamp v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasSyncedAt() => $_has(3);
   @$pb.TagNumber(4)
-  void clearSyncedAt() => $_clearField(4);
+  void clearSyncedAt() => clearField(4);
   @$pb.TagNumber(4)
-  $0.Timestamp ensureSyncedAt() => $_ensure(3);
+  $10.Timestamp ensureSyncedAt() => $_ensure(3);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -1308,56 +1274,51 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   factory EventInstanceInfo({
     EventInstanceRsvpInfo? rsvpInfo,
   }) {
-    final result = create();
-    if (rsvpInfo != null) result.rsvpInfo = rsvpInfo;
-    return result;
+    final $result = create();
+    if (rsvpInfo != null) {
+      $result.rsvpInfo = rsvpInfo;
+    }
+    return $result;
   }
+  EventInstanceInfo._() : super();
+  factory EventInstanceInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInstanceInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventInstanceInfo._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: EventInstanceRsvpInfo.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory EventInstanceInfo.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventInstanceInfo.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInstanceInfo clone() => EventInstanceInfo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) => super.copyWith((message) => updates(message as EventInstanceInfo)) as EventInstanceInfo;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventInstanceInfo',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo',
-        subBuilder: EventInstanceRsvpInfo.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceInfo clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) =>
-      super.copyWith((message) => updates(message as EventInstanceInfo))
-          as EventInstanceInfo;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventInstanceInfo create() => EventInstanceInfo._();
-  @$core.override
   EventInstanceInfo createEmptyInstance() => create();
+  static $pb.PbList<EventInstanceInfo> createRepeated() => $pb.PbList<EventInstanceInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceInfo getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
+  static EventInstanceInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
   static EventInstanceInfo? _defaultInstance;
 
   /// RSVP configuration and metadata for the event instance.
   @$pb.TagNumber(1)
   EventInstanceRsvpInfo get rsvpInfo => $_getN(0);
   @$pb.TagNumber(1)
-  set rsvpInfo(EventInstanceRsvpInfo value) => $_setField(1, value);
+  set rsvpInfo(EventInstanceRsvpInfo v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasRsvpInfo() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRsvpInfo() => $_clearField(1);
+  void clearRsvpInfo() => clearField(1);
   @$pb.TagNumber(1)
   EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
@@ -1376,160 +1337,163 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
     $core.int? invitedRsvps,
     $core.int? invitedAttendees,
   }) {
-    final result = create();
-    if (allowsRsvps != null) result.allowsRsvps = allowsRsvps;
-    if (allowsAnonymousRsvps != null)
-      result.allowsAnonymousRsvps = allowsAnonymousRsvps;
-    if (maxAttendees != null) result.maxAttendees = maxAttendees;
-    if (goingRsvps != null) result.goingRsvps = goingRsvps;
-    if (goingAttendees != null) result.goingAttendees = goingAttendees;
-    if (interestedRsvps != null) result.interestedRsvps = interestedRsvps;
-    if (interestedAttendees != null)
-      result.interestedAttendees = interestedAttendees;
-    if (invitedRsvps != null) result.invitedRsvps = invitedRsvps;
-    if (invitedAttendees != null) result.invitedAttendees = invitedAttendees;
-    return result;
+    final $result = create();
+    if (allowsRsvps != null) {
+      $result.allowsRsvps = allowsRsvps;
+    }
+    if (allowsAnonymousRsvps != null) {
+      $result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    }
+    if (maxAttendees != null) {
+      $result.maxAttendees = maxAttendees;
+    }
+    if (goingRsvps != null) {
+      $result.goingRsvps = goingRsvps;
+    }
+    if (goingAttendees != null) {
+      $result.goingAttendees = goingAttendees;
+    }
+    if (interestedRsvps != null) {
+      $result.interestedRsvps = interestedRsvps;
+    }
+    if (interestedAttendees != null) {
+      $result.interestedAttendees = interestedAttendees;
+    }
+    if (invitedRsvps != null) {
+      $result.invitedRsvps = invitedRsvps;
+    }
+    if (invitedAttendees != null) {
+      $result.invitedAttendees = invitedAttendees;
+    }
+    return $result;
   }
+  EventInstanceRsvpInfo._() : super();
+  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInstanceRsvpInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventInstanceRsvpInfo._();
-
-  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventInstanceRsvpInfo.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventInstanceRsvpInfo',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
-    ..aI(3, _omitFieldNames ? '' : 'maxAttendees',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aI(4, _omitFieldNames ? '' : 'goingRsvps', fieldType: $pb.PbFieldType.OU3)
-    ..aI(5, _omitFieldNames ? '' : 'goingAttendees',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aI(6, _omitFieldNames ? '' : 'interestedRsvps',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aI(7, _omitFieldNames ? '' : 'interestedAttendees',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aI(8, _omitFieldNames ? '' : 'invitedRsvps',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aI(9, _omitFieldNames ? '' : 'invitedAttendees',
-        fieldType: $pb.PbFieldType.OU3)
-    ..hasRequiredFields = false;
+    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(4, _omitFieldNames ? '' : 'goingRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(5, _omitFieldNames ? '' : 'goingAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(6, _omitFieldNames ? '' : 'interestedRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(7, _omitFieldNames ? '' : 'interestedAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(8, _omitFieldNames ? '' : 'invitedRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(9, _omitFieldNames ? '' : 'invitedAttendees', $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceRsvpInfo clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceRsvpInfo copyWith(
-          void Function(EventInstanceRsvpInfo) updates) =>
-      super.copyWith((message) => updates(message as EventInstanceRsvpInfo))
-          as EventInstanceRsvpInfo;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInstanceRsvpInfo clone() => EventInstanceRsvpInfo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInstanceRsvpInfo copyWith(void Function(EventInstanceRsvpInfo) updates) => super.copyWith((message) => updates(message as EventInstanceRsvpInfo)) as EventInstanceRsvpInfo;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventInstanceRsvpInfo create() => EventInstanceRsvpInfo._();
-  @$core.override
   EventInstanceRsvpInfo createEmptyInstance() => create();
+  static $pb.PbList<EventInstanceRsvpInfo> createRepeated() => $pb.PbList<EventInstanceRsvpInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
+  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
   static EventInstanceRsvpInfo? _defaultInstance;
 
   /// Overrides `EventInfo.allows_rsvps`, if set, for this instance.
   @$pb.TagNumber(1)
   $core.bool get allowsRsvps => $_getBF(0);
   @$pb.TagNumber(1)
-  set allowsRsvps($core.bool value) => $_setBool(0, value);
+  set allowsRsvps($core.bool v) { $_setBool(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasAllowsRsvps() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAllowsRsvps() => $_clearField(1);
+  void clearAllowsRsvps() => clearField(1);
 
   /// Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
   @$pb.TagNumber(2)
   $core.bool get allowsAnonymousRsvps => $_getBF(1);
   @$pb.TagNumber(2)
-  set allowsAnonymousRsvps($core.bool value) => $_setBool(1, value);
+  set allowsAnonymousRsvps($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasAllowsAnonymousRsvps() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAllowsAnonymousRsvps() => $_clearField(2);
+  void clearAllowsAnonymousRsvps() => clearField(2);
 
   /// Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)
-  set maxAttendees($core.int value) => $_setUnsignedInt32(2, value);
+  set maxAttendees($core.int v) { $_setUnsignedInt32(2, v); }
   @$pb.TagNumber(3)
   $core.bool hasMaxAttendees() => $_has(2);
   @$pb.TagNumber(3)
-  void clearMaxAttendees() => $_clearField(3);
+  void clearMaxAttendees() => clearField(3);
 
   /// The number of users who have RSVP'd to the event.
   @$pb.TagNumber(4)
   $core.int get goingRsvps => $_getIZ(3);
   @$pb.TagNumber(4)
-  set goingRsvps($core.int value) => $_setUnsignedInt32(3, value);
+  set goingRsvps($core.int v) { $_setUnsignedInt32(3, v); }
   @$pb.TagNumber(4)
   $core.bool hasGoingRsvps() => $_has(3);
   @$pb.TagNumber(4)
-  void clearGoingRsvps() => $_clearField(4);
+  void clearGoingRsvps() => clearField(4);
 
   /// The number of attendees who have RSVP'd to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(5)
   $core.int get goingAttendees => $_getIZ(4);
   @$pb.TagNumber(5)
-  set goingAttendees($core.int value) => $_setUnsignedInt32(4, value);
+  set goingAttendees($core.int v) { $_setUnsignedInt32(4, v); }
   @$pb.TagNumber(5)
   $core.bool hasGoingAttendees() => $_has(4);
   @$pb.TagNumber(5)
-  void clearGoingAttendees() => $_clearField(5);
+  void clearGoingAttendees() => clearField(5);
 
   /// The number of users who have signaled interest in the event.
   @$pb.TagNumber(6)
   $core.int get interestedRsvps => $_getIZ(5);
   @$pb.TagNumber(6)
-  set interestedRsvps($core.int value) => $_setUnsignedInt32(5, value);
+  set interestedRsvps($core.int v) { $_setUnsignedInt32(5, v); }
   @$pb.TagNumber(6)
   $core.bool hasInterestedRsvps() => $_has(5);
   @$pb.TagNumber(6)
-  void clearInterestedRsvps() => $_clearField(6);
+  void clearInterestedRsvps() => clearField(6);
 
   /// The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(7)
   $core.int get interestedAttendees => $_getIZ(6);
   @$pb.TagNumber(7)
-  set interestedAttendees($core.int value) => $_setUnsignedInt32(6, value);
+  set interestedAttendees($core.int v) { $_setUnsignedInt32(6, v); }
   @$pb.TagNumber(7)
   $core.bool hasInterestedAttendees() => $_has(6);
   @$pb.TagNumber(7)
-  void clearInterestedAttendees() => $_clearField(7);
+  void clearInterestedAttendees() => clearField(7);
 
   /// The number of users who have been invited to the event.
   @$pb.TagNumber(8)
   $core.int get invitedRsvps => $_getIZ(7);
   @$pb.TagNumber(8)
-  set invitedRsvps($core.int value) => $_setUnsignedInt32(7, value);
+  set invitedRsvps($core.int v) { $_setUnsignedInt32(7, v); }
   @$pb.TagNumber(8)
   $core.bool hasInvitedRsvps() => $_has(7);
   @$pb.TagNumber(8)
-  void clearInvitedRsvps() => $_clearField(8);
+  void clearInvitedRsvps() => clearField(8);
 
   /// The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(9)
   $core.int get invitedAttendees => $_getIZ(8);
   @$pb.TagNumber(9)
-  set invitedAttendees($core.int value) => $_setUnsignedInt32(8, value);
+  set invitedAttendees($core.int v) { $_setUnsignedInt32(8, v); }
   @$pb.TagNumber(9)
   $core.bool hasInvitedAttendees() => $_has(8);
   @$pb.TagNumber(9)
-  void clearInvitedAttendees() => $_clearField(9);
+  void clearInvitedAttendees() => clearField(9);
 }
 
 /// Request to get RSVP data for an event.
@@ -1538,60 +1502,55 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
     $core.String? eventInstanceId,
     $core.String? anonymousAttendeeAuthToken,
   }) {
-    final result = create();
-    if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
-    if (anonymousAttendeeAuthToken != null)
-      result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
-    return result;
+    final $result = create();
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (anonymousAttendeeAuthToken != null) {
+      $result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
+    }
+    return $result;
   }
+  GetEventAttendancesRequest._() : super();
+  factory GetEventAttendancesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetEventAttendancesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  GetEventAttendancesRequest._();
-
-  factory GetEventAttendancesRequest.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory GetEventAttendancesRequest.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'GetEventAttendancesRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventAttendancesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventAttendancesRequest clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventAttendancesRequest copyWith(
-          void Function(GetEventAttendancesRequest) updates) =>
-      super.copyWith(
-              (message) => updates(message as GetEventAttendancesRequest))
-          as GetEventAttendancesRequest;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetEventAttendancesRequest clone() => GetEventAttendancesRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetEventAttendancesRequest copyWith(void Function(GetEventAttendancesRequest) updates) => super.copyWith((message) => updates(message as GetEventAttendancesRequest)) as GetEventAttendancesRequest;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetEventAttendancesRequest create() => GetEventAttendancesRequest._();
-  @$core.override
   GetEventAttendancesRequest createEmptyInstance() => create();
+  static $pb.PbList<GetEventAttendancesRequest> createRepeated() => $pb.PbList<GetEventAttendancesRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetEventAttendancesRequest getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<GetEventAttendancesRequest>(create);
+  static GetEventAttendancesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventAttendancesRequest>(create);
   static GetEventAttendancesRequest? _defaultInstance;
 
   /// The ID of the event to get RSVP data for.
   @$pb.TagNumber(1)
   $core.String get eventInstanceId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventInstanceId($core.String value) => $_setString(0, value);
+  set eventInstanceId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasEventInstanceId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => $_clearField(1);
+  void clearEventInstanceId() => clearField(1);
 
   /// If set, and if the token has an RSVP for this even, request that RSVP data
   /// in addition to the rest of the RSVP data. (The event creator can always
@@ -1599,81 +1558,81 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get anonymousAttendeeAuthToken => $_getSZ(1);
   @$pb.TagNumber(2)
-  set anonymousAttendeeAuthToken($core.String value) => $_setString(1, value);
+  set anonymousAttendeeAuthToken($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasAnonymousAttendeeAuthToken() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAnonymousAttendeeAuthToken() => $_clearField(2);
+  void clearAnonymousAttendeeAuthToken() => clearField(2);
 }
 
 /// Response to get RSVP data for an event.
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
-    $3.Location? hiddenLocation,
+    $13.Location? hiddenLocation,
   }) {
-    final result = create();
-    if (attendances != null) result.attendances.addAll(attendances);
-    if (hiddenLocation != null) result.hiddenLocation = hiddenLocation;
-    return result;
+    final $result = create();
+    if (attendances != null) {
+      $result.attendances.addAll(attendances);
+    }
+    if (hiddenLocation != null) {
+      $result.hiddenLocation = hiddenLocation;
+    }
+    return $result;
   }
+  EventAttendances._() : super();
+  factory EventAttendances.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventAttendances.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventAttendances._();
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
+    ..aOM<$13.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $13.Location.create)
+    ..hasRequiredFields = false
+  ;
 
-  factory EventAttendances.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventAttendances.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventAttendances clone() => EventAttendances()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventAttendances copyWith(void Function(EventAttendances) updates) => super.copyWith((message) => updates(message as EventAttendances)) as EventAttendances;
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventAttendances',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
-    ..pPM<EventAttendance>(1, _omitFieldNames ? '' : 'attendances',
-        subBuilder: EventAttendance.create)
-    ..aOM<$3.Location>(2, _omitFieldNames ? '' : 'hiddenLocation',
-        subBuilder: $3.Location.create)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendances clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendances copyWith(void Function(EventAttendances) updates) =>
-      super.copyWith((message) => updates(message as EventAttendances))
-          as EventAttendances;
-
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventAttendances create() => EventAttendances._();
-  @$core.override
   EventAttendances createEmptyInstance() => create();
+  static $pb.PbList<EventAttendances> createRepeated() => $pb.PbList<EventAttendances>();
   @$core.pragma('dart2js:noInline')
-  static EventAttendances getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventAttendances>(create);
+  static EventAttendances getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendances>(create);
   static EventAttendances? _defaultInstance;
 
   /// The attendance data for the event, in no particular order.
   @$pb.TagNumber(1)
-  $pb.PbList<EventAttendance> get attendances => $_getList(0);
+  $core.List<EventAttendance> get attendances => $_getList(0);
 
   /// When `hide_location_until_rsvp_approved` is set, the location of the event.
   @$pb.TagNumber(2)
-  $3.Location get hiddenLocation => $_getN(1);
+  $13.Location get hiddenLocation => $_getN(1);
   @$pb.TagNumber(2)
-  set hiddenLocation($3.Location value) => $_setField(2, value);
+  set hiddenLocation($13.Location v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasHiddenLocation() => $_has(1);
   @$pb.TagNumber(2)
-  void clearHiddenLocation() => $_clearField(2);
+  void clearHiddenLocation() => clearField(2);
   @$pb.TagNumber(2)
-  $3.Location ensureHiddenLocation() => $_ensure(1);
+  $13.Location ensureHiddenLocation() => $_ensure(1);
 }
 
-enum EventAttendance_Attendee { userAttendee, anonymousAttendee, notSet }
+enum EventAttendance_Attendee {
+  userAttendee, 
+  anonymousAttendee, 
+  notSet
+}
 
 /// Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
 /// * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
@@ -1690,123 +1649,128 @@ class EventAttendance extends $pb.GeneratedMessage {
     $core.String? invitingUserId,
     $core.String? privateNote,
     $core.String? publicNote,
-    $5.Moderation? moderation,
-    $0.Timestamp? createdAt,
-    $0.Timestamp? updatedAt,
+    $11.Moderation? moderation,
+    $10.Timestamp? createdAt,
+    $10.Timestamp? updatedAt,
   }) {
-    final result = create();
-    if (id != null) result.id = id;
-    if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
-    if (userAttendee != null) result.userAttendee = userAttendee;
-    if (anonymousAttendee != null) result.anonymousAttendee = anonymousAttendee;
-    if (numberOfGuests != null) result.numberOfGuests = numberOfGuests;
-    if (status != null) result.status = status;
-    if (invitingUserId != null) result.invitingUserId = invitingUserId;
-    if (privateNote != null) result.privateNote = privateNote;
-    if (publicNote != null) result.publicNote = publicNote;
-    if (moderation != null) result.moderation = moderation;
-    if (createdAt != null) result.createdAt = createdAt;
-    if (updatedAt != null) result.updatedAt = updatedAt;
-    return result;
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (userAttendee != null) {
+      $result.userAttendee = userAttendee;
+    }
+    if (anonymousAttendee != null) {
+      $result.anonymousAttendee = anonymousAttendee;
+    }
+    if (numberOfGuests != null) {
+      $result.numberOfGuests = numberOfGuests;
+    }
+    if (status != null) {
+      $result.status = status;
+    }
+    if (invitingUserId != null) {
+      $result.invitingUserId = invitingUserId;
+    }
+    if (privateNote != null) {
+      $result.privateNote = privateNote;
+    }
+    if (publicNote != null) {
+      $result.publicNote = publicNote;
+    }
+    if (moderation != null) {
+      $result.moderation = moderation;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
   }
+  EventAttendance._() : super();
+  factory EventAttendance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventAttendance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  EventAttendance._();
-
-  factory EventAttendance.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory EventAttendance.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static const $core.Map<$core.int, EventAttendance_Attendee>
-      _EventAttendance_AttendeeByTag = {
-    3: EventAttendance_Attendee.userAttendee,
-    4: EventAttendance_Attendee.anonymousAttendee,
-    0: EventAttendance_Attendee.notSet
+  static const $core.Map<$core.int, EventAttendance_Attendee> _EventAttendance_AttendeeByTag = {
+    3 : EventAttendance_Attendee.userAttendee,
+    4 : EventAttendance_Attendee.anonymousAttendee,
+    0 : EventAttendance_Attendee.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'EventAttendance',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..oo(0, [3, 4])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventInstanceId')
-    ..aOM<UserAttendee>(3, _omitFieldNames ? '' : 'userAttendee',
-        subBuilder: UserAttendee.create)
-    ..aOM<AnonymousAttendee>(4, _omitFieldNames ? '' : 'anonymousAttendee',
-        subBuilder: AnonymousAttendee.create)
-    ..aI(5, _omitFieldNames ? '' : 'numberOfGuests',
-        fieldType: $pb.PbFieldType.OU3)
-    ..aE<AttendanceStatus>(6, _omitFieldNames ? '' : 'status',
-        enumValues: AttendanceStatus.values)
+    ..aOM<UserAttendee>(3, _omitFieldNames ? '' : 'userAttendee', subBuilder: UserAttendee.create)
+    ..aOM<AnonymousAttendee>(4, _omitFieldNames ? '' : 'anonymousAttendee', subBuilder: AnonymousAttendee.create)
+    ..a<$core.int>(5, _omitFieldNames ? '' : 'numberOfGuests', $pb.PbFieldType.OU3)
+    ..e<AttendanceStatus>(6, _omitFieldNames ? '' : 'status', $pb.PbFieldType.OE, defaultOrMaker: AttendanceStatus.INTERESTED, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values)
     ..aOS(7, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(8, _omitFieldNames ? '' : 'privateNote')
     ..aOS(9, _omitFieldNames ? '' : 'publicNote')
-    ..aE<$5.Moderation>(10, _omitFieldNames ? '' : 'moderation',
-        enumValues: $5.Moderation.values)
-    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'createdAt',
-        subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt',
-        subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false;
+    ..e<$11.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..aOM<$10.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$10.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendance clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendance copyWith(void Function(EventAttendance) updates) =>
-      super.copyWith((message) => updates(message as EventAttendance))
-          as EventAttendance;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventAttendance clone() => EventAttendance()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventAttendance copyWith(void Function(EventAttendance) updates) => super.copyWith((message) => updates(message as EventAttendance)) as EventAttendance;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static EventAttendance create() => EventAttendance._();
-  @$core.override
   EventAttendance createEmptyInstance() => create();
+  static $pb.PbList<EventAttendance> createRepeated() => $pb.PbList<EventAttendance>();
   @$core.pragma('dart2js:noInline')
-  static EventAttendance getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
+  static EventAttendance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
   static EventAttendance? _defaultInstance;
 
-  @$pb.TagNumber(3)
-  @$pb.TagNumber(4)
-  EventAttendance_Attendee whichAttendee() =>
-      _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
-  @$pb.TagNumber(3)
-  @$pb.TagNumber(4)
-  void clearAttendee() => $_clearField($_whichOneof(0));
+  EventAttendance_Attendee whichAttendee() => _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
+  void clearAttendee() => clearField($_whichOneof(0));
 
   /// Unique server-generated ID for the attendance.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String value) => $_setString(0, value);
+  set id($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => $_clearField(1);
+  void clearId() => clearField(1);
 
   /// ID of the `EventInstance` the attendance is for.
   @$pb.TagNumber(2)
   $core.String get eventInstanceId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set eventInstanceId($core.String value) => $_setString(1, value);
+  set eventInstanceId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasEventInstanceId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventInstanceId() => $_clearField(2);
+  void clearEventInstanceId() => clearField(2);
 
   /// If the attendance is non-anonymous, core data about the user.
   @$pb.TagNumber(3)
   UserAttendee get userAttendee => $_getN(2);
   @$pb.TagNumber(3)
-  set userAttendee(UserAttendee value) => $_setField(3, value);
+  set userAttendee(UserAttendee v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasUserAttendee() => $_has(2);
   @$pb.TagNumber(3)
-  void clearUserAttendee() => $_clearField(3);
+  void clearUserAttendee() => clearField(3);
   @$pb.TagNumber(3)
   UserAttendee ensureUserAttendee() => $_ensure(2);
 
@@ -1814,11 +1778,11 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   AnonymousAttendee get anonymousAttendee => $_getN(3);
   @$pb.TagNumber(4)
-  set anonymousAttendee(AnonymousAttendee value) => $_setField(4, value);
+  set anonymousAttendee(AnonymousAttendee v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasAnonymousAttendee() => $_has(3);
   @$pb.TagNumber(4)
-  void clearAnonymousAttendee() => $_clearField(4);
+  void clearAnonymousAttendee() => clearField(4);
   @$pb.TagNumber(4)
   AnonymousAttendee ensureAnonymousAttendee() => $_ensure(3);
 
@@ -1826,155 +1790,154 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.int get numberOfGuests => $_getIZ(4);
   @$pb.TagNumber(5)
-  set numberOfGuests($core.int value) => $_setUnsignedInt32(4, value);
+  set numberOfGuests($core.int v) { $_setUnsignedInt32(4, v); }
   @$pb.TagNumber(5)
   $core.bool hasNumberOfGuests() => $_has(4);
   @$pb.TagNumber(5)
-  void clearNumberOfGuests() => $_clearField(5);
+  void clearNumberOfGuests() => clearField(5);
 
   /// The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
-  set status(AttendanceStatus value) => $_setField(6, value);
+  set status(AttendanceStatus v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasStatus() => $_has(5);
   @$pb.TagNumber(6)
-  void clearStatus() => $_clearField(6);
+  void clearStatus() => clearField(6);
 
   /// User who invited the attendee. (Not yet used.)
   @$pb.TagNumber(7)
   $core.String get invitingUserId => $_getSZ(6);
   @$pb.TagNumber(7)
-  set invitingUserId($core.String value) => $_setString(6, value);
+  set invitingUserId($core.String v) { $_setString(6, v); }
   @$pb.TagNumber(7)
   $core.bool hasInvitingUserId() => $_has(6);
   @$pb.TagNumber(7)
-  void clearInvitingUserId() => $_clearField(7);
+  void clearInvitingUserId() => clearField(7);
 
   /// Public note for everyone who can see the event to see.
   @$pb.TagNumber(8)
   $core.String get privateNote => $_getSZ(7);
   @$pb.TagNumber(8)
-  set privateNote($core.String value) => $_setString(7, value);
+  set privateNote($core.String v) { $_setString(7, v); }
   @$pb.TagNumber(8)
   $core.bool hasPrivateNote() => $_has(7);
   @$pb.TagNumber(8)
-  void clearPrivateNote() => $_clearField(8);
+  void clearPrivateNote() => clearField(8);
 
   /// Private note for the event owner.
   @$pb.TagNumber(9)
   $core.String get publicNote => $_getSZ(8);
   @$pb.TagNumber(9)
-  set publicNote($core.String value) => $_setString(8, value);
+  set publicNote($core.String v) { $_setString(8, v); }
   @$pb.TagNumber(9)
   $core.bool hasPublicNote() => $_has(8);
   @$pb.TagNumber(9)
-  void clearPublicNote() => $_clearField(9);
+  void clearPublicNote() => clearField(9);
 
   /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   @$pb.TagNumber(10)
-  $5.Moderation get moderation => $_getN(9);
+  $11.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
-  set moderation($5.Moderation value) => $_setField(10, value);
+  set moderation($11.Moderation v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(10)
-  void clearModeration() => $_clearField(10);
+  void clearModeration() => clearField(10);
 
   /// The time the attendance was created.
   @$pb.TagNumber(11)
-  $0.Timestamp get createdAt => $_getN(10);
+  $10.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(11)
-  set createdAt($0.Timestamp value) => $_setField(11, value);
+  set createdAt($10.Timestamp v) { setField(11, v); }
   @$pb.TagNumber(11)
   $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(11)
-  void clearCreatedAt() => $_clearField(11);
+  void clearCreatedAt() => clearField(11);
   @$pb.TagNumber(11)
-  $0.Timestamp ensureCreatedAt() => $_ensure(10);
+  $10.Timestamp ensureCreatedAt() => $_ensure(10);
 
   /// The time the attendance was last updated.
   @$pb.TagNumber(12)
-  $0.Timestamp get updatedAt => $_getN(11);
+  $10.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(12)
-  set updatedAt($0.Timestamp value) => $_setField(12, value);
+  set updatedAt($10.Timestamp v) { setField(12, v); }
   @$pb.TagNumber(12)
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(12)
-  void clearUpdatedAt() => $_clearField(12);
+  void clearUpdatedAt() => clearField(12);
   @$pb.TagNumber(12)
-  $0.Timestamp ensureUpdatedAt() => $_ensure(11);
+  $10.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
-/// An anonymous internet user who has RSVP'd to an `EventInstance`.
+///  An anonymous internet user who has RSVP'd to an `EventInstance`.
 ///
-/// (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
-/// make them visible to the event creator.
+///  (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
+///  make them visible to the event creator.
 class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee({
     $core.String? name,
-    $core.Iterable<$2.ContactMethod>? contactMethods,
+    $core.Iterable<$4.ContactMethod>? contactMethods,
     $core.String? authToken,
   }) {
-    final result = create();
-    if (name != null) result.name = name;
-    if (contactMethods != null) result.contactMethods.addAll(contactMethods);
-    if (authToken != null) result.authToken = authToken;
-    return result;
+    final $result = create();
+    if (name != null) {
+      $result.name = name;
+    }
+    if (contactMethods != null) {
+      $result.contactMethods.addAll(contactMethods);
+    }
+    if (authToken != null) {
+      $result.authToken = authToken;
+    }
+    return $result;
   }
+  AnonymousAttendee._() : super();
+  factory AnonymousAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory AnonymousAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  AnonymousAttendee._();
-
-  factory AnonymousAttendee.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory AnonymousAttendee.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'AnonymousAttendee',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
-    ..pPM<$2.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods',
-        subBuilder: $2.ContactMethod.create)
+    ..pc<$4.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $4.ContactMethod.create)
     ..aOS(3, _omitFieldNames ? '' : 'authToken')
-    ..hasRequiredFields = false;
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AnonymousAttendee clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) =>
-      super.copyWith((message) => updates(message as AnonymousAttendee))
-          as AnonymousAttendee;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  AnonymousAttendee clone() => AnonymousAttendee()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) => super.copyWith((message) => updates(message as AnonymousAttendee)) as AnonymousAttendee;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static AnonymousAttendee create() => AnonymousAttendee._();
-  @$core.override
   AnonymousAttendee createEmptyInstance() => create();
+  static $pb.PbList<AnonymousAttendee> createRepeated() => $pb.PbList<AnonymousAttendee>();
   @$core.pragma('dart2js:noInline')
-  static AnonymousAttendee getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<AnonymousAttendee>(create);
+  static AnonymousAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AnonymousAttendee>(create);
   static AnonymousAttendee? _defaultInstance;
 
   /// A name for the anonymous user. For instance, "Bob Gomez" or "The guy on your front porch."
   @$pb.TagNumber(1)
   $core.String get name => $_getSZ(0);
   @$pb.TagNumber(1)
-  set name($core.String value) => $_setString(0, value);
+  set name($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasName() => $_has(0);
   @$pb.TagNumber(1)
-  void clearName() => $_clearField(1);
+  void clearName() => clearField(1);
 
   /// Contact methods for anonymous attendees. Currently not linked to Contact methods for users.
   @$pb.TagNumber(2)
-  $pb.PbList<$2.ContactMethod> get contactMethods => $_getList(1);
+  $core.List<$4.ContactMethod> get contactMethods => $_getList(1);
 
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
@@ -1983,11 +1946,11 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get authToken => $_getSZ(2);
   @$pb.TagNumber(3)
-  set authToken($core.String value) => $_setString(2, value);
+  set authToken($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
   $core.bool hasAuthToken() => $_has(2);
   @$pb.TagNumber(3)
-  void clearAuthToken() => $_clearField(3);
+  void clearAuthToken() => clearField(3);
 }
 
 /// Wire-identical to [Author](#author), but with a different name to avoid confusion.
@@ -1995,109 +1958,107 @@ class UserAttendee extends $pb.GeneratedMessage {
   factory UserAttendee({
     $core.String? userId,
     $core.String? username,
-    $4.MediaReference? avatar,
+    $5.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$6.Permission>? permissions,
+    $core.Iterable<$12.Permission>? permissions,
   }) {
-    final result = create();
-    if (userId != null) result.userId = userId;
-    if (username != null) result.username = username;
-    if (avatar != null) result.avatar = avatar;
-    if (realName != null) result.realName = realName;
-    if (permissions != null) result.permissions.addAll(permissions);
-    return result;
+    final $result = create();
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
+    if (realName != null) {
+      $result.realName = realName;
+    }
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
+    return $result;
   }
+  UserAttendee._() : super();
+  factory UserAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UserAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  UserAttendee._();
-
-  factory UserAttendee.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromBuffer(data, registry);
-  factory UserAttendee.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      create()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'UserAttendee',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
-      createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..aOM<$4.MediaReference>(3, _omitFieldNames ? '' : 'avatar',
-        subBuilder: $4.MediaReference.create)
+    ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$6.Permission>(
-        5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE,
-        valueOf: $6.Permission.valueOf,
-        enumValues: $6.Permission.values,
-        defaultEnumValue: $6.Permission.PERMISSION_UNKNOWN)
-    ..hasRequiredFields = false;
+    ..pc<$12.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
+    ..hasRequiredFields = false
+  ;
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserAttendee clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserAttendee copyWith(void Function(UserAttendee) updates) =>
-      super.copyWith((message) => updates(message as UserAttendee))
-          as UserAttendee;
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UserAttendee clone() => UserAttendee()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UserAttendee copyWith(void Function(UserAttendee) updates) => super.copyWith((message) => updates(message as UserAttendee)) as UserAttendee;
 
-  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static UserAttendee create() => UserAttendee._();
-  @$core.override
   UserAttendee createEmptyInstance() => create();
+  static $pb.PbList<UserAttendee> createRepeated() => $pb.PbList<UserAttendee>();
   @$core.pragma('dart2js:noInline')
-  static UserAttendee getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<UserAttendee>(create);
+  static UserAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserAttendee>(create);
   static UserAttendee? _defaultInstance;
 
   /// The user ID of the attendee.
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set userId($core.String value) => $_setString(0, value);
+  set userId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUserId() => $_clearField(1);
+  void clearUserId() => clearField(1);
 
   /// The username of the attendee.
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
-  set username($core.String value) => $_setString(1, value);
+  set username($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
-  void clearUsername() => $_clearField(2);
+  void clearUsername() => clearField(2);
 
   /// The attendee's user avatar.
   @$pb.TagNumber(3)
-  $4.MediaReference get avatar => $_getN(2);
+  $5.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)
-  set avatar($4.MediaReference value) => $_setField(3, value);
+  set avatar($5.MediaReference v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasAvatar() => $_has(2);
   @$pb.TagNumber(3)
-  void clearAvatar() => $_clearField(3);
+  void clearAvatar() => clearField(3);
   @$pb.TagNumber(3)
-  $4.MediaReference ensureAvatar() => $_ensure(2);
+  $5.MediaReference ensureAvatar() => $_ensure(2);
 
   @$pb.TagNumber(4)
   $core.String get realName => $_getSZ(3);
   @$pb.TagNumber(4)
-  set realName($core.String value) => $_setString(3, value);
+  set realName($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(4)
   $core.bool hasRealName() => $_has(3);
   @$pb.TagNumber(4)
-  void clearRealName() => $_clearField(4);
+  void clearRealName() => clearField(4);
 
   @$pb.TagNumber(5)
-  $pb.PbList<$6.Permission> get permissions => $_getList(4);
+  $core.List<$12.Permission> get permissions => $_getList(4);
 }
 
-const $core.bool _omitFieldNames =
-    $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames =
-    $core.bool.fromEnvironment('protobuf.omit_message_names');
+
+const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
