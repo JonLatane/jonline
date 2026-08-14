@@ -94,6 +94,7 @@ mainFrontendServerRules theme accountsPanel =
         , ".nav-link:hover { background-color:" ++ theme.navColor ++ "88; }\n"
         , colorRule ".events-calendar .fc .fc-button-primary:not(:disabled).fc-button-active" theme.navColor theme.navTextColor
         , ":root { --calendar-accent: " ++ theme.navColor ++ "; }\n"
+        , ".events-list:not(:has(>* .events-calendar)), .events-strip, .events-calendar { background-color:" ++ theme.backgroundColor ++ "BB; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }"
         ]
 
 

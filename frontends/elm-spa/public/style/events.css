@@ -541,6 +541,7 @@
    `!important` needed. */
 .events-calendar.embedded {
   height: 320px;
+  /* backdrop-filter: blur(4px); */
 }
 
 @media(min-height: 1000px) {
@@ -618,6 +619,7 @@
 .events-calendar .fc-media-screen .fc-multimonth-singlecol .fc-multimonth-header,
 .events-calendar .fc-popover {
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   background-color: #42424233;
 }
 
@@ -775,8 +777,8 @@
 
 .profile-detail .events-strip {
   /* background-color: #42424288; */
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px); */
 }
 
 /* Mirrors `.event-instance-grid` (above), plus `justify-content: center` --
@@ -878,6 +880,9 @@
   color: inherit;
   text-decoration: none;
   transition: border-color 0.2s ease;
+}
+
+.flip-moving .event-card {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
