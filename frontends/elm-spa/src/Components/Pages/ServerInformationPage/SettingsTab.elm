@@ -85,7 +85,6 @@ type Msg
     | AnimateCustomTabMove Animation.Msg
     | FeatureSettingsSectionToggled FeatureSettingsSet
     | FeatureSettingsEditClicked FeatureSettingsSet
-    | FeatureSettingsVisibleToggled FeatureSettingsSet
     | FeatureSettingsModerationChanged FeatureSettingsSet String
     | FeatureSettingsVisibilityChanged FeatureSettingsSet String
     | FeatureSettingsAliasSingularChanged FeatureSettingsSet String
@@ -627,13 +626,6 @@ update shared targetHost maybeServer msg model =
 
                 Nothing ->
                     ( model, Effect.none )
-
-        FeatureSettingsVisibleToggled set ->
-            ( setFeatureSettingsEditFor set
-                (featureSettingsEditFor set model |> Maybe.map (\edit -> { edit | visible = not edit.visible }))
-                model
-            , Effect.none
-            )
 
         FeatureSettingsModerationChanged set text ->
             ( setFeatureSettingsEditFor set
