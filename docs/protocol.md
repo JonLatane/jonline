@@ -203,6 +203,15 @@ Jonline&#39;s data model centers around a handful of top-level types, most of wh
 [`Visibility`](#jonline-Visibility) and [`Moderation`](#jonline-Moderation) state and can be organized into
 [`Group`](#jonline-Group)s.
 
+##### ServerConfiguration
+Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
+[`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
+and is more like a document than a row in a database. (That said, every `ServerConfiguration` change *is* a row in a database, meaning
+reverting broken configurations is easy.)
+
+Any client using the Jonline protocol is basically expected to follow a flow of &#34;get service version, then `ServerConfiguration`,
+then worry about auth, then finally about retrieving anything else.&#34;
+
 ##### User
 A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar, contact methods, and
 [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
@@ -297,7 +306,11 @@ Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotatin
 Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 `authorization` header (no `Bearer ` prefix).
 
-First, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
+First, before any authentication is done, you should [resolve your backend host](#http-based-client-host-negotiation-for-external-cdns-get-backend_host),
+and check its [`GetServiceVersion`](#grpc-api-GetServiceVersion) and [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) RPCs.
+Check whether you have the `CREATE_ACCOUNT` and/or `LOGIN` [`AuthenticationFeature`](#jonline-AuthenticationFeature)s in your [`ServerConfiguration`](#jonline-ServerConfiguration).
+
+Next, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
 then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The `AccessToken` RPC
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
@@ -2342,6 +2355,7 @@ Configuration for a Jonline server instance.
 | anonymous_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions for a user who isn&#39;t logged in to the server. Allows admins to disable certain features for anonymous users. Valid values are `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`. |
 | default_user_permissions | [Permission](#jonline-Permission) | repeated | Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also grant/revoke these permissions for others. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
 | basic_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
+| custom_tabs | [CustomNavigationTabSet](#jonline-CustomNavigationTabSet) | optional |  |
 | people_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for users on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_USERS_GLOBALLY`. |
 | group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for groups on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
 | post_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for posts on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |

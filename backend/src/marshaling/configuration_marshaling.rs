@@ -27,6 +27,10 @@ impl ToDbServerConfiguration for ServerConfiguration {
                 .web_push_config
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
+            custom_tabs: self
+                .custom_tabs
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
             private_user_strategy: self.private_user_strategy.to_string_private_user_strategy(),
             authentication_features: self
                 .authentication_features
@@ -71,6 +75,11 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             .map_or(Some(None), |c| serde_json::from_value(c).ok())
             .flatten();
         // .map(|c| serde_json::from_value(c).unwrap_or_else(|_| None));
+        let custom_tabs: Option<CustomNavigationTabSet> = self
+            .custom_tabs
+            .to_owned()
+            .map_or(Some(None), |c| serde_json::from_value(c).ok())
+            .flatten();
 
         ServerConfiguration {
             server_info: Some(server_info),
@@ -82,6 +91,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             group_settings: Some(group_settings),
             post_settings: Some(post_settings),
             event_settings: Some(event_settings),
+            custom_tabs: custom_tabs,
             //TODO actually add media settings to the DB models...
             media_settings: Some(MediaSettings {
                 visible: true,

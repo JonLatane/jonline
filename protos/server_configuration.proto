@@ -32,6 +32,9 @@ message ServerConfiguration {
   // `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   repeated Permission basic_user_permissions = 12;
 
+  
+  optional CustomNavigationTabSet custom_tabs = 19;
+
   // Configuration for users on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_USERS_GLOBALLY`.

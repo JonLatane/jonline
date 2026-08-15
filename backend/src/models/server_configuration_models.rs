@@ -32,6 +32,8 @@ pub struct ServerConfiguration {
     pub federation_info: serde_json::Value,
 
     pub web_push_config: Option<serde_json::Value>,
+
+    pub custom_tabs: Option<serde_json::Value>,
 }
 #[derive(Debug, Insertable)]
 #[diesel(table_name = server_configurations)]
@@ -49,6 +51,7 @@ pub struct NewServerConfiguration {
     pub authentication_features: serde_json::Value,
     pub federation_info: serde_json::Value,
     pub web_push_config: Option<serde_json::Value>,
+    pub custom_tabs: Option<serde_json::Value>,
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
@@ -165,6 +168,7 @@ Your media policy should describe who has ownership of uploaded media, anything 
         .unwrap(),
         external_cdn_config: None,
         web_push_config: None,
+        custom_tabs: None,
         private_user_strategy: PrivateUserStrategy::AccountIsFrozen
             .as_str_name()
             .to_string(),

@@ -67,6 +67,15 @@ import "server_configuration.proto";
 // [`Visibility`](#jonline-Visibility) and [`Moderation`](#jonline-Moderation) state and can be organized into
 // [`Group`](#jonline-Group)s.
 //
+// ##### ServerConfiguration
+// Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
+// [`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
+// and is more like a document than a row in a database. (That said, every `ServerConfiguration` change *is* a row in a database, meaning
+// reverting broken configurations is easy.)
+//
+// Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then `ServerConfiguration`,
+// then worry about auth, then finally about retrieving anything else."
+//
 // ##### User
 // A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar, contact methods, and
 // [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
@@ -161,7 +170,11 @@ import "server_configuration.proto";
 // Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 // `authorization` header (no `Bearer ` prefix).
 //
-// First, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
+// First, before any authentication is done, you should [resolve your backend host](#http-based-client-host-negotiation-for-external-cdns-get-backend_host),
+// and check its [`GetServiceVersion`](#grpc-api-GetServiceVersion) and [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) RPCs.
+// Check whether you have the `CREATE_ACCOUNT` and/or `LOGIN` [`AuthenticationFeature`](#jonline-AuthenticationFeature)s in your [`ServerConfiguration`](#jonline-ServerConfiguration).
+//
+// Next, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
 // `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
 // then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The `AccessToken` RPC
 // may, at random, also return a new `refresh_token`. If so, it should immediately replace the old

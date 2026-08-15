@@ -487,6 +487,17 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-Visibility"><code>Visibility</code></a> and <a href="#jonline-Moderation"><code>Moderation</code></a> state and can be organized into
       <a href="#jonline-Group"><code>Group</code></a>s.
     </p>
+    <h5 id="serverconfiguration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration"><span class="octicon octicon-link"></span></a>ServerConfiguration</h5>
+    <p>
+      Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its <em>most</em> primitive type.
+      <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a> is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
+      and is more like a document than a row in a database. (That said, every <code>ServerConfiguration</code> change <em>is</em> a row in a database, meaning
+      reverting broken configurations is easy.)
+    </p>
+    <p>
+      Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then <code>ServerConfiguration</code>,
+      then worry about auth, then finally about retrieving anything else."
+    </p>
     <h5 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h5>
     <p>
       A <a href="#jonline-User"><code>User</code></a> is a Jonline account: username, real name, bio, avatar, contact methods, and
@@ -637,7 +648,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <code>authorization</code> header (no <code>Bearer </code>prefix).
     </p>
     <p>
-      First, use the <a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a> or <a href="#grpc-api-Login"><code>Login</code></a> RPCs to fetch (and store) an initial
+      First, before any authentication is done, you should <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host">resolve your backend host</a>,
+      and check its <a href="#grpc-api-GetServiceVersion"><code>GetServiceVersion</code></a> and <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> RPCs.
+      Check whether you have the <code>CREATE_ACCOUNT</code> and/or <code>LOGIN</code> <a href="#jonline-AuthenticationFeature"><code>AuthenticationFeature</code></a>s in your <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
+    </p>
+    <p>
+      Next, use the <a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a> or <a href="#grpc-api-Login"><code>Login</code></a> RPCs to fetch (and store) an initial
       <code>refresh_token</code> and <code>access_token</code>. Clients should use the <code>access_token</code> until it expires,
       then use the <code>refresh_token</code> to call the <a href="#grpc-api-AccessToken"><code>AccessToken</code></a> RPC for a new one. (The <code>AccessToken</code> RPC
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
@@ -5256,7 +5272,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </tbody>
     </table>
     <p><a name="jonline-ServerConfiguration"></a></p>
-    <h3 id="serverconfiguration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration"><span class="octicon octicon-link"></span></a>ServerConfiguration</h3>
+    <h3 id="serverconfiguration-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration-1"><span class="octicon octicon-link"></span></a>ServerConfiguration</h3>
     <p>Configuration for a Jonline server instance.</p>
     <table>
       <thead>
@@ -5297,6 +5313,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-Permission">Permission</a></td>
           <td>repeated</td>
           <td>Permissions grantable by a user with the <code>GRANT_BASIC_PERMISSIONS</code> permission. Valid values are <code>VIEW_USERS</code>, <code>PUBLISH_USERS_LOCALLY</code>, <code>PUBLISH_USERS_GLOBALLY</code>, <code>VIEW_GROUPS</code>, <code>CREATE_GROUPS</code>, <code>PUBLISH_GROUPS_LOCALLY</code>, <code>PUBLISH_GROUPS_GLOBALLY</code>, <code>JOIN_GROUPS</code>, <code>VIEW_POSTS</code>, <code>CREATE_POSTS</code>, <code>PUBLISH_POSTS_LOCALLY</code>, <code>PUBLISH_POSTS_GLOBALLY</code>, <code>VIEW_EVENTS</code>, <code>CREATE_EVENTS</code>, <code>PUBLISH_EVENTS_LOCALLY</code>, and <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>custom_tabs</td>
+          <td><a href="#jonline-CustomNavigationTabSet">CustomNavigationTabSet</a></td>
+          <td>optional</td>
+          <td></td>
         </tr>
         <tr>
           <td>people_settings</td>

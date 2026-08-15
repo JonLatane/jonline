@@ -28,6 +28,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+import UI.CustomNav as CustomNav
 import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
@@ -101,21 +102,19 @@ headerNav shared currentRoute =
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
                 , div [ class "nav-links-scroll", on "scroll" navLinksScrollDecoder ]
-                    [ if Set.isEmpty shared.panels.starredPanel.starredPostIds then
+                    ([ if Set.isEmpty shared.panels.starredPanel.starredPostIds then
                         text ""
 
-                      else
+                       else
                         starredPostsToggle shared
-                    , if CreateNewPanel.hasEligibleAccount shared.accounts then
+                     , if CreateNewPanel.hasEligibleAccount shared.accounts then
                         newPostToggle shared
 
-                      else
+                       else
                         text ""
-                    , eventsLink shared currentRoute
-                    , postsLink shared currentRoute
-                    , peopleLink shared currentRoute
-                    , aboutLink shared currentRoute
-                    ]
+                     ]
+                        ++ customTabLinks shared currentRoute
+                    )
                 ]
             , div [ class "nav-right" ] [ accountsMenu shared currentRoute ]
             ]
@@ -490,6 +489,27 @@ findServer shared frontendHost =
 mainServer : Shared.Model -> Maybe AccountsPanel.Server
 mainServer shared =
     findServer shared shared.accounts.mainFrontendHost
+
+
+{-| `eventsLink`/`postsLink`/`peopleLink`/`aboutLink`, or (once `mainServer`'s own
+`ServerConfiguration.customTabs` is set -- see `Components.Pages.ServerInformationPage.SettingsTab`'s
+editor) `UI.CustomNav.navLinkView` for each of `CustomNavigationTabSet.tabs` instead, in that admin-
+configured order/icon/title. Falls back to the original four (unchanged, not routed through
+`CustomNav.defaultTabs`) whenever `mainServer` itself isn't resolved yet or `customTabs` is unset,
+so the everyday, unconfigured case can never regress from this module's own long-standing look.
+-}
+customTabLinks : Shared.Model -> Route -> List (Html Shared.Msg)
+customTabLinks shared currentRoute =
+    case mainServer shared |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs |> Maybe.map (Tuple.pair server)) of
+        Just ( server, customTabs ) ->
+            CustomNav.effectiveTabs (Just customTabs) |> List.map (CustomNav.navLinkView shared currentRoute server)
+
+        Nothing ->
+            [ eventsLink shared currentRoute
+            , postsLink shared currentRoute
+            , peopleLink shared currentRoute
+            , aboutLink shared currentRoute
+            ]
 
 
 {-| Every page's browser tab title, built from `segments` (most-specific

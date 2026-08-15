@@ -1,4 +1,4 @@
-module Components.Pages.ServerInformationPage.SettingsTab exposing (Model, Msg, init, update, view)
+module Components.Pages.ServerInformationPage.SettingsTab exposing (Model, Msg, applySharedMsg, init, subscriptions, update, view)
 
 {-| The Settings tab of `Components.Pages.ServerInformationPage` -- the three server-wide grantable
 permission sets (Anonymous/Default/Basic User Permissions, `permissionsSection`, one per
@@ -9,24 +9,32 @@ Media, `featureSettingsSection`, one per `FeatureSettingsSet`). Both mirror
 write" RPC helper) instead of a `User`'s `permissions`.
 -}
 
+import Animation
+import Browser.Dom as Dom
 import Components.Pages.ServerInformationPage.Common as Common
 import Components.Posts as Posts
 import Components.Users as Users
+import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, button, div, h3, input, option, p, select, span, text)
-import Html.Attributes exposing (disabled, selected, value)
+import Html.Attributes exposing (disabled, id, placeholder, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (ServerConfiguration, defaultEventSettings, defaultFeatureSettings, defaultMediaSettings, defaultPostSettings)
+import Html.Keyed
+import Proto.Jonline exposing (ServerConfiguration, defaultCustomNavigationTabSet, defaultEventSettings, defaultFeatureSettings, defaultMediaSettings, defaultPostSettings)
 import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Proto.Jonline.Moderation exposing (Moderation(..))
+import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
 import Proto.Jonline.Permission exposing (Permission)
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Task
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.CustomNav as CustomNav
+import UI.Flip
 
 
 
@@ -37,6 +45,7 @@ type alias Model =
     { anonymousPermissionsEdit : Maybe PermissionsEdit
     , defaultPermissionsEdit : Maybe PermissionsEdit
     , basicPermissionsEdit : Maybe PermissionsEdit
+    , customTabsEdit : Maybe CustomTabsEdit
     , peopleSettingsEdit : Maybe FeatureSettingsEdit
     , groupSettingsEdit : Maybe FeatureSettingsEdit
     , postSettingsEdit : Maybe FeatureSettingsEdit
@@ -54,6 +63,26 @@ type Msg
     | PermissionsCancelClicked ServerPermissionsSet
     | PermissionsSaveClicked ServerPermissionsSet
     | GotPermissionsSaveResult ServerPermissionsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | CustomTabsEditClicked
+    | CustomTabsCancelClicked
+    | CustomTabsSaveClicked
+    | GotCustomTabsSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | CustomTabAddClicked
+    | CustomTabRemoveClicked String
+    | CustomTabRemoved String
+    | CustomTabTargetKindChanged String String
+    | CustomTabPostIdChanged String String
+    | CustomTabTitleChanged String String
+    | CustomTabPathChanged String String
+    | CustomTabEmojiChanged String String
+    | CustomTabChooseImageClicked String
+    | CustomTabRemoveImageClicked String
+    | MoveCustomTabLeftClicked String
+    | MoveCustomTabRightClicked String
+    | GotPreMoveCustomTabPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | CustomTabMoveSettled String
+    | AnimateCustomTabFlip Animation.Msg
+    | AnimateCustomTabMove Animation.Msg
     | FeatureSettingsSectionToggled FeatureSettingsSet
     | FeatureSettingsEditClicked FeatureSettingsSet
     | FeatureSettingsVisibleToggled FeatureSettingsSet
@@ -90,6 +119,45 @@ type alias PermissionsEdit =
     { pending : List Permission
     , addSelection : Maybe Permission
     , status : AccountsPanel.FormStatus
+    }
+
+
+{-| Live only while `ServerConfiguration.customTabs`' `tabs` list (see `UI.CustomNav.effectiveTabs`)
+is being edited by an admin -- mirrors `FederationTab.FederationEdit` almost exactly (same
+`pending`/FLIP-animation shape, over `CustomTabEntry` instead of `FederatedServer`), just with two
+extras: `nextEntryId` (a monotonic counter minting each entry's own `entryId` -- unlike a
+`FederatedServer`'s naturally-unique `host`, nothing about a tab is guaranteed unique up front, so
+entries need a synthetic key for `UI.Flip`'s animation `Dict`s/DOM ids/list identity) and
+`editingIconFor` (which entry's icon `Shared.MyMediaPanel` is currently picking for, if any -- see
+`applySharedMsg`, mirroring `ThemeTab.LogoEdit`'s own `Shared.MyMediaPanel` integration).
+
+The `home` slot is deliberately not part of this edit at all (see this module's own doc on the
+"leave Home uneditable for now" scope decision) -- `pending` only ever holds `tabs`, not `home`.
+-}
+type alias CustomTabsEdit =
+    { pending : List CustomTabEntry
+    , nextEntryId : Int
+    , editingIconFor : Maybe String
+    , status : AccountsPanel.FormStatus
+    , itemAnimations : Dict String (UI.Flip.State Msg)
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
+    }
+
+
+{-| One in-progress tab in a `CustomTabsEdit.pending` -- `target`/`icon`/`path` mirror
+`UI.CustomNav.CustomTab`'s own fields exactly (this *is* a `CustomTab`, plus `entryId`); `title` is
+the raw `<input>` text (empty means "unset," same `optionalString` convention as
+`FeatureSettingsEdit.aliasSingular`) rather than `CustomTab`'s own `Maybe String`. `path` is a plain
+`<input>` too (see `customTabEditChip`'s own Path row) -- the backend's `validate_configuration`
+rejects anything that isn't `[a-z_]+` on save, surfaced the same way any other server-side rejection
+is (`Common.editErrorView`), rather than duplicating that regex client-side.
+-}
+type alias CustomTabEntry =
+    { entryId : String
+    , target : CustomNav.CustomTabTarget
+    , icon : CustomNav.CustomTabIcon
+    , title : String
+    , path : String
     }
 
 
@@ -138,6 +206,7 @@ init =
     { anonymousPermissionsEdit = Nothing
     , defaultPermissionsEdit = Nothing
     , basicPermissionsEdit = Nothing
+    , customTabsEdit = Nothing
     , peopleSettingsEdit = Nothing
     , groupSettingsEdit = Nothing
     , postSettingsEdit = Nothing
@@ -145,6 +214,19 @@ init =
     , mediaSettingsEdit = Nothing
     , collapsedFeatureSettings = Set.empty
     }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.customTabsEdit of
+        Just edit ->
+            Sub.batch
+                [ UI.Flip.subscription AnimateCustomTabFlip (Dict.values edit.itemAnimations)
+                , UI.Flip.moveSubscription AnimateCustomTabMove (Dict.values edit.moveAnimations)
+                ]
+
+        Nothing ->
+            Sub.none
 
 
 
@@ -242,6 +324,274 @@ update shared targetHost maybeServer msg model =
                 model
             , Effect.none
             )
+
+        CustomTabsEditClicked ->
+            case maybeServer of
+                Just server ->
+                    let
+                        entries : List CustomTabEntry
+                        entries =
+                            CustomNav.effectiveTabs (AccountsPanel.configurationOf server).customTabs |> List.indexedMap customTabEntryFrom
+                    in
+                    ( { model
+                        | customTabsEdit =
+                            Just
+                                { pending = entries
+                                , nextEntryId = List.length entries
+                                , editingIconFor = Nothing
+                                , status = AccountsPanel.Idle
+                                , itemAnimations = entries |> List.map (\entry -> ( entry.entryId, UI.Flip.restingState )) |> Dict.fromList
+                                , moveAnimations = Dict.empty
+                                }
+                      }
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        CustomTabsCancelClicked ->
+            ( { model | customTabsEdit = Nothing }, Effect.fromShared (Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked) )
+
+        CustomTabsSaveClicked ->
+            case ( model.customTabsEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | customTabsEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyCustomTabs edit.pending)
+                        |> Task.attempt GotCustomTabsSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotCustomTabsSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | customTabsEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotCustomTabsSaveResult (Err err) ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        CustomTabAddClicked ->
+            case model.customTabsEdit of
+                Just edit ->
+                    let
+                        entryId : String
+                        entryId =
+                            "tab-" ++ String.fromInt edit.nextEntryId
+
+                        newEntry : CustomTabEntry
+                        newEntry =
+                            { entryId = entryId
+                            , target = CustomNav.TargetTab EVENTSTAB
+                            , icon = CustomNav.EmojiIcon "✨"
+                            , title = ""
+                            , path = CustomNav.defaultPathFor (CustomNav.TargetTab EVENTSTAB)
+                            }
+                    in
+                    ( { model
+                        | customTabsEdit =
+                            Just
+                                { edit
+                                    | pending = edit.pending ++ [ newEntry ]
+                                    , nextEntryId = edit.nextEntryId + 1
+                                    , itemAnimations = Dict.insert entryId UI.Flip.enter edit.itemAnimations
+                                }
+                      }
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        CustomTabRemoveClicked entryId ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    currentState : UI.Flip.State Msg
+                                    currentState =
+                                        Dict.get entryId edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+                                in
+                                { edit | itemAnimations = Dict.insert entryId (UI.Flip.remove (CustomTabRemoved entryId) currentState) edit.itemAnimations }
+                            )
+              }
+            , Effect.none
+            )
+
+        CustomTabRemoved entryId ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = List.filter (\entry -> entry.entryId /= entryId) edit.pending
+                                    , itemAnimations = Dict.remove entryId edit.itemAnimations
+                                    , editingIconFor =
+                                        if edit.editingIconFor == Just entryId then
+                                            Nothing
+
+                                        else
+                                            edit.editingIconFor
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        CustomTabTargetKindChanged entryId text ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (mapPendingEntry entryId
+                                (\entry ->
+                                    case CustomNav.targetKindFromText text of
+                                        Just (CustomNav.KindTab navTab) ->
+                                            { entry | target = CustomNav.TargetTab navTab }
+
+                                        Just CustomNav.KindPost ->
+                                            case entry.target of
+                                                CustomNav.TargetPost _ ->
+                                                    entry
+
+                                                CustomNav.TargetTab _ ->
+                                                    { entry | target = CustomNav.TargetPost "" }
+
+                                        Nothing ->
+                                            entry
+                                )
+                            )
+              }
+            , Effect.none
+            )
+
+        CustomTabPostIdChanged entryId text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapPendingEntry entryId (\entry -> { entry | target = CustomNav.TargetPost text })) }
+            , Effect.none
+            )
+
+        CustomTabTitleChanged entryId text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapPendingEntry entryId (\entry -> { entry | title = text })) }
+            , Effect.none
+            )
+
+        CustomTabPathChanged entryId text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapPendingEntry entryId (\entry -> { entry | path = text })) }
+            , Effect.none
+            )
+
+        CustomTabEmojiChanged entryId text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapPendingEntry entryId (\entry -> { entry | icon = CustomNav.EmojiIcon text })) }
+            , Effect.none
+            )
+
+        CustomTabChooseImageClicked entryId ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (\edit -> { edit | editingIconFor = Just entryId }) }
+            , Effect.fromShared (Shared.MyMediaPanelMsg (MyMediaPanel.Open (Just (MyMediaPanel.SingleSelect { imagesOnly = True, initialSelection = Nothing })) targetHost))
+            )
+
+        CustomTabRemoveImageClicked entryId ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapPendingEntry entryId (\entry -> { entry | icon = CustomNav.EmojiIcon "" })) }
+            , Effect.none
+            )
+
+        MoveCustomTabLeftClicked entryId ->
+            ( model
+            , model.customTabsEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder .entryId customTabChipDomId GotPreMoveCustomTabPositions -1 entryId edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        MoveCustomTabRightClicked entryId ->
+            ( model
+            , model.customTabsEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder .entryId customTabChipDomId GotPreMoveCustomTabPositions 1 entryId edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        GotPreMoveCustomTabPositions entryId _ offset (Err _) ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit |> Maybe.map (\edit -> { edit | pending = UI.Flip.moveListItemBy .entryId offset entryId edit.pending })
+              }
+            , Effect.none
+            )
+
+        GotPreMoveCustomTabPositions entryId neighborEntryId offset (Ok ( chipEl, neighborEl )) ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = UI.Flip.moveListItemBy .entryId offset entryId edit.pending
+                                    , moveAnimations = UI.Flip.applyReorder UI.Flip.Horizontal CustomTabMoveSettled entryId neighborEntryId chipEl neighborEl edit.moveAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        CustomTabMoveSettled entryId ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map (\edit -> { edit | moveAnimations = Dict.update entryId (Maybe.map (\state -> { state | moving = False })) edit.moveAnimations })
+              }
+            , Effect.none
+            )
+
+        AnimateCustomTabFlip animMsg ->
+            case model.customTabsEdit of
+                Just edit ->
+                    let
+                        step : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.animate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.itemAnimations
+                    in
+                    ( { model | customTabsEdit = Just { edit | itemAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        AnimateCustomTabMove animMsg ->
+            case model.customTabsEdit of
+                Just edit ->
+                    let
+                        step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.moveAnimate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.moveAnimations
+                    in
+                    ( { model | customTabsEdit = Just { edit | moveAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
 
         FeatureSettingsSectionToggled set ->
             ( { model | collapsedFeatureSettings = toggleSetMember (featureSettingsKey set) model.collapsedFeatureSettings }, Effect.none )
@@ -365,6 +715,35 @@ update shared targetHost maybeServer msg model =
                 model
             , Effect.none
             )
+
+
+{-| Reacts to a `Shared.Msg` forwarded through by the parent's own `SharedMsg` branch -- only the
+shared `Shared.MyMediaPanel` chooser (opened by `CustomTabChooseImageClicked`) reporting a tap
+matters here, gated on `customTabsEdit.editingIconFor` naming the entry that's actually mid-pick (so
+an unrelated Browse-mode tap elsewhere can't be mistaken for an icon pick). Mirrors
+`ThemeTab.applySharedMsg`'s own `MediaItemClicked` handling.
+-}
+applySharedMsg : Shared.Msg -> Model -> Model
+applySharedMsg subMsg model =
+    { model
+        | customTabsEdit =
+            case subMsg of
+                Shared.MyMediaPanelMsg (MyMediaPanel.MediaItemClicked mediaId) ->
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                case edit.editingIconFor of
+                                    Just entryId ->
+                                        { edit | editingIconFor = Nothing }
+                                            |> mapPendingEntry entryId (\entry -> { entry | icon = CustomNav.MediaIcon mediaId })
+
+                                    Nothing ->
+                                        edit
+                            )
+
+                _ ->
+                    model.customTabsEdit
+    }
 
 
 {-| `model`'s in-progress `PermissionsEdit` for one `ServerPermissionsSet`, alongside its setter
@@ -817,6 +1196,77 @@ addablePermissions pending =
     Users.configurableServerPermissions |> List.filter (\permission -> not (List.member permission pending))
 
 
+{-| `CustomTabsEditClicked`'s starting point -- one `CustomTabEntry` per `UI.CustomNav.effectiveTabs`
+entry (so a freshly-opened editor starts from `defaultTabs` when `customTabs` itself is unset,
+same "unset means the code-defined defaults" rule `CustomNav.effectiveTabs` already encodes),
+`index` minting each entry's own stable `entryId` (see `CustomTabsEdit`'s own doc).
+-}
+customTabEntryFrom : Int -> CustomNav.CustomTab -> CustomTabEntry
+customTabEntryFrom index tab =
+    { entryId = "tab-" ++ String.fromInt index
+    , target = tab.target
+    , icon = tab.icon
+    , title = Maybe.withDefault "" tab.title
+    , path = tab.path
+    }
+
+
+{-| Updates the one entry of `edit.pending` matching `entryId`, if any -- every per-entry field
+Msg's shared plumbing. Mirrors `FederationTab.mapPendingHost`.
+-}
+mapPendingEntry : String -> (CustomTabEntry -> CustomTabEntry) -> CustomTabsEdit -> CustomTabsEdit
+mapPendingEntry entryId fn edit =
+    { edit
+        | pending =
+            edit.pending
+                |> List.map
+                    (\entry ->
+                        if entry.entryId == entryId then
+                            fn entry
+
+                        else
+                            entry
+                    )
+    }
+
+
+{-| `CustomTabsSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
+every other editor's transform is -- overlays `entries` (in the edit's own order) onto a freshly
+re-fetched `ServerConfiguration`'s `customTabs.tabs`, leaving `customTabs.home` (never edited here --
+see this module's own doc) untouched. Each entry's blank `title` round-trips to `Nothing` (same
+`optionalString` convention as `applyFeatureSettingsFor`'s alias fields); `path` is sent as-is --
+the backend's `validate_configuration` is the actual authority on whether it's a valid `[a-z_]+` slug
+(see `CustomTabEntry`'s own doc), surfaced back through `GotCustomTabsSaveResult`'s `Err` branch same
+as any other rejected save.
+-}
+applyCustomTabs : List CustomTabEntry -> ServerConfiguration -> ServerConfiguration
+applyCustomTabs entries config =
+    let
+        existing : Proto.Jonline.CustomNavigationTabSet
+        existing =
+            Maybe.withDefault defaultCustomNavigationTabSet config.customTabs
+
+        toTabWithPath : CustomTabEntry -> Proto.Jonline.CustomNavigationTabWithPath
+        toTabWithPath entry =
+            let
+                tab : CustomNav.CustomTab
+                tab =
+                    { target = entry.target, icon = entry.icon, title = optionalString entry.title, path = entry.path }
+            in
+            { customTab = Just (CustomNav.toProtoTab tab), path = entry.path }
+    in
+    { config | customTabs = Just { existing | tabs = entries |> List.map toTabWithPath } }
+
+
+{-| The DOM `id` a custom-tab chip is rendered with while `customTabsEdit` is active -- the
+`UI.Flip.Horizontal` counterpart `MoveCustomTabLeftClicked`/`MoveCustomTabRightClicked` measure.
+Mirrors `FederationTab.federatedServerChipDomId`.
+-}
+customTabChipDomId : String -> String
+customTabChipDomId entryId =
+    "custom-tab-chip-" ++ entryId
+
+
 
 -- VIEW
 
@@ -832,6 +1282,7 @@ view server maybeAdminAccount model =
         ([ permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
          , permissionsSection DefaultPermissions "Default User Permissions" maybeAdminAccount model.defaultPermissionsEdit config.defaultUserPermissions
          , permissionsSection BasicPermissions "Basic User Permissions" maybeAdminAccount model.basicPermissionsEdit config.basicUserPermissions
+         , customTabsSection server maybeAdminAccount model.customTabsEdit
          ]
             ++ ([ PeopleFeatureSettings, GroupFeatureSettings, PostFeatureSettings, EventFeatureSettings, MediaFeatureSettings ]
                     |> List.map
@@ -914,6 +1365,247 @@ permissionEditBadge set permission =
             ]
             [ text "×" ]
         ]
+
+
+{-| The "Navigation Tabs" section -- a horizontal `Home` (uneditable, see this module's own doc)
+chip followed by one chip per `UI.CustomNav.effectiveTabs` entry, previewing exactly the order/icons
+`UI.headerNav` itself would show for this `server` if it were `Shared.AccountsPanel.Model.mainFrontendHost`
+(see `UI.CustomNav`'s own module doc). Plain display chips (`customTabsDisplayView`) when nothing's
+being edited, or the FLIP-reorderable editor (`customTabsEditorView`) once `CustomTabsEditClicked`
+has started one -- same split as `permissionsSection`/`featureSettingsSection`.
+-}
+customTabsSection : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe CustomTabsEdit -> Html Msg
+customTabsSection server maybeAdminAccount maybeEdit =
+    div [ Html.Attributes.class "server-details-custom-tabs" ]
+        [ h3 [ classes [ "section-title" ] ] [ text "Navigation Tabs" ]
+        , case maybeEdit of
+            Just edit ->
+                customTabsEditorView server edit
+
+            Nothing ->
+                customTabsDisplayView server (CustomNav.effectiveTabs (AccountsPanel.configurationOf server).customTabs)
+        , case ( maybeEdit, maybeAdminAccount ) of
+            ( Nothing, Just _ ) ->
+                button [ Html.Attributes.class "server-details-rename-button", onClick CustomTabsEditClicked ] [ text "Edit" ]
+
+            _ ->
+                text ""
+        ]
+
+
+customTabsDisplayView : AccountsPanel.Server -> List CustomNav.CustomTab -> Html Msg
+customTabsDisplayView server tabs =
+    div [ Html.Attributes.class "custom-tabs-strip" ] (homeTabChip server :: List.map (customTabChip server) tabs)
+
+
+{-| The `Home` slot's own chip -- always the server's own logo/name (`AccountsPanel.serverNameAndLogo`,
+same content `UI.homeLinkContent` shows in the real nav), regardless of `customTabs.home` (see this
+module's own doc on why that override isn't wired up to any editor yet). Shown in both
+`customTabsDisplayView` and `customTabsEditorView` so the preview always reads as "this is where Home
+sits, then your tabs" -- but only the latter also wraps it in FLIP/reorder chrome, since it's never
+itself reorderable.
+-}
+homeTabChip : AccountsPanel.Server -> Html msg
+homeTabChip server =
+    div [ classes [ "server-chip", "custom-tab-chip", "custom-tab-chip-home", hostnameToCSSClass server.frontendHost ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
+        , div [ classes [ "server-chip-bottom", "background-color-nav" ] ]
+            [ span [ Html.Attributes.class "custom-tab-chip-label" ] [ text "Home" ] ]
+        ]
+
+
+customTabChip : AccountsPanel.Server -> CustomNav.CustomTab -> Html msg
+customTabChip server tab =
+    div [ classes [ "server-chip", "custom-tab-chip", hostnameToCSSClass server.frontendHost ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary", "custom-tab-chip-icon-row" ] ]
+            [ CustomNav.iconView server tab.icon ]
+        , div [ classes [ "server-chip-bottom", "background-color-nav" ] ]
+            [ span [ Html.Attributes.class "custom-tab-chip-label" ] [ text (CustomNav.resolvedTitle tab) ] ]
+        ]
+
+
+{-| The chip strip (add/remove/reorder-animated via `UI.Flip`, mirroring `FederationTab.federationEditorView`
+almost exactly), the "Add Tab" button, and the Save/Cancel actions -- everything shown once
+`CustomTabsEditClicked` has started an edit. `homeTabChip` is always the strip's first, non-FLIP,
+non-reorderable entry (see its own doc).
+-}
+customTabsEditorView : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
+customTabsEditorView server edit =
+    div [ Html.Attributes.class "server-details-custom-tabs-edit" ]
+        [ Html.Keyed.node "div"
+            [ classes [ "custom-tabs-strip", "flip-animated-row" ] ]
+            (( "home", homeTabChip server )
+                :: (edit.pending
+                        |> List.indexedMap
+                            (\index entry -> ( entry.entryId, customTabEditChipFlip server edit (List.length edit.pending) index entry ))
+                   )
+            )
+        , div [ Html.Attributes.class "server-details-permissions-actions" ]
+            [ button [ Html.Attributes.class "server-details-rename-button", onClick CustomTabAddClicked ] [ text "Add Tab" ] ]
+        , div [ Html.Attributes.class "server-details-permissions-actions" ]
+            [ Common.editSaveButton CustomTabsSaveClicked edit.status
+            , Common.editCancelButton CustomTabsCancelClicked edit.status
+            ]
+        , Common.editErrorView edit.status
+        ]
+
+
+{-| Wraps `customTabEditChip` in a fading/scaling/collapsing animated outer `div` (entering when
+freshly added via `CustomTabAddClicked`, removing when `CustomTabRemoveClicked`) -- mirrors
+`FederationTab.federatedServerEditChipFlip` exactly, just over `CustomTabEntry` instead of
+`FederatedServer`.
+-}
+customTabEditChipFlip : AccountsPanel.Server -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
+customTabEditChipFlip server edit count index entry =
+    let
+        flipState : UI.Flip.State Msg
+        flipState =
+            Dict.get entry.entryId edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving : Bool
+        isMoving =
+            Dict.get entry.entryId edit.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
+
+        pointerEventsAttr : List (Html.Attribute Msg)
+        pointerEventsAttr =
+            if flipState.removing then
+                [ Html.Attributes.style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
+        [ div pointerEventsAttr [ customTabEditChip server edit count index entry ] ]
+
+
+{-| One custom tab's editor chip: left/right reorder arrows flanking the icon editor (mirrors
+`FederationTab.federatedServerEditChip`'s own layout), then the "type of tab" `<select>` (plus a
+Post-id `<input>` when that's the chosen kind), a Title `<input>`, and a remove button.
+-}
+customTabEditChip : AccountsPanel.Server -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
+customTabEditChip server edit count index entry =
+    let
+        moveAttrs : List (Html.Attribute Msg)
+        moveAttrs =
+            edit.moveAnimations |> Dict.get entry.entryId |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
+
+        showBackward : Bool
+        showBackward =
+            index > 0
+
+        showForward : Bool
+        showForward =
+            index < count - 1
+
+        reorderPair : { backward : Html Msg, forward : Html Msg }
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = onClick (MoveCustomTabLeftClicked entry.entryId)
+                , moveForward = onClick (MoveCustomTabRightClicked entry.entryId)
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
+                }
+    in
+    div
+        (id (customTabChipDomId entry.entryId)
+            :: classes [ "server-chip", "custom-tab-chip", "custom-tab-chip-edit", hostnameToCSSClass server.frontendHost ]
+            :: moveAttrs
+        )
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ div [ Html.Attributes.class "server-chip-logo-row" ]
+                [ div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
+                , customTabIconEditor server entry
+                , div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
+                ]
+            ]
+        , div [ classes [ "server-chip-bottom", "background-color-nav", "custom-tab-chip-edit-fields" ] ]
+            (List.concat
+                [ [ customTabTargetSelect entry ]
+                , case entry.target of
+                    CustomNav.TargetPost postId ->
+                        [ input
+                            [ Html.Attributes.class "custom-tab-post-id-input"
+                            , placeholder "Post ID"
+                            , value postId
+                            , onInput (CustomTabPostIdChanged entry.entryId)
+                            ]
+                            []
+                        ]
+
+                    CustomNav.TargetTab _ ->
+                        []
+                , [ input
+                        [ Html.Attributes.class "custom-tab-title-input"
+                        , placeholder (CustomNav.resolvedTitle { target = entry.target, icon = entry.icon, title = Nothing, path = entry.path })
+                        , value entry.title
+                        , onInput (CustomTabTitleChanged entry.entryId)
+                        ]
+                        []
+                  , input
+                        [ Html.Attributes.class "custom-tab-path-input"
+                        , placeholder "path (a-z, _)"
+                        , value entry.path
+                        , onInput (CustomTabPathChanged entry.entryId)
+                        ]
+                        []
+                  , button
+                        [ Html.Attributes.class "remove-btn"
+                        , onClick (CustomTabRemoveClicked entry.entryId)
+                        , Html.Attributes.title "Remove tab"
+                        ]
+                        [ text "╳" ]
+                  ]
+                ]
+            )
+        ]
+
+
+{-| An entry's icon editor: a live preview (`CustomNav.iconView`), an emoji `<input>` (only shown
+while `entry.icon` is already an `EmojiIcon` -- typing into it always keeps it one, see
+`CustomTabEmojiChanged`), and either a "Image…" button (opens `Shared.MyMediaPanel`, see
+`CustomTabChooseImageClicked`/`applySharedMsg`) or, once a `MediaIcon`'s chosen, a "Use Emoji" button
+reverting to a blank `EmojiIcon` instead.
+-}
+customTabIconEditor : AccountsPanel.Server -> CustomTabEntry -> Html Msg
+customTabIconEditor server entry =
+    div [ Html.Attributes.class "custom-tab-icon-editor" ]
+        [ div [ Html.Attributes.class "custom-tab-icon-preview" ] [ CustomNav.iconView server entry.icon ]
+        , case entry.icon of
+            CustomNav.EmojiIcon emoji ->
+                input
+                    [ Html.Attributes.class "custom-tab-emoji-input"
+                    , placeholder "✨"
+                    , value emoji
+                    , onInput (CustomTabEmojiChanged entry.entryId)
+                    ]
+                    []
+
+            CustomNav.MediaIcon _ ->
+                text ""
+        , div [ Html.Attributes.class "custom-tab-icon-actions" ]
+            [ button [ Html.Attributes.class "custom-tab-icon-choose", onClick (CustomTabChooseImageClicked entry.entryId) ] [ text "Image…" ]
+            , case entry.icon of
+                CustomNav.MediaIcon _ ->
+                    button [ Html.Attributes.class "custom-tab-icon-choose", onClick (CustomTabRemoveImageClicked entry.entryId) ] [ text "Use Emoji" ]
+
+                CustomNav.EmojiIcon _ ->
+                    text ""
+            ]
+        ]
+
+
+customTabTargetSelect : CustomTabEntry -> Html Msg
+customTabTargetSelect entry =
+    select [ onInput (CustomTabTargetKindChanged entry.entryId) ]
+        (CustomNav.selectableTargetKinds
+            |> List.map
+                (\kind ->
+                    option
+                        [ value (CustomNav.targetKindText kind), selected (CustomNav.targetKind entry.target == kind) ]
+                        [ text (CustomNav.targetKindText kind) ]
+                )
+        )
 
 
 {-| One of the five per-feature settings sections (People/Groups/Posts/Events/Media, distinguished

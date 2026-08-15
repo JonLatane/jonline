@@ -28,6 +28,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     $core.Iterable<$12.Permission>? anonymousUserPermissions,
     $core.Iterable<$12.Permission>? defaultUserPermissions,
     $core.Iterable<$12.Permission>? basicUserPermissions,
+    CustomNavigationTabSet? customTabs,
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
     PostSettings? postSettings,
@@ -53,6 +54,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     }
     if (basicUserPermissions != null) {
       $result.basicUserPermissions.addAll(basicUserPermissions);
+    }
+    if (customTabs != null) {
+      $result.customTabs = customTabs;
     }
     if (peopleSettings != null) {
       $result.peopleSettings = peopleSettings;
@@ -93,6 +97,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..pc<$12.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
     ..pc<$12.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
     ..pc<$12.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
+    ..aOM<CustomNavigationTabSet>(19, _omitFieldNames ? '' : 'customTabs', subBuilder: CustomNavigationTabSet.create)
     ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
     ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings', subBuilder: PostSettings.create)
@@ -173,75 +178,86 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $core.List<$12.Permission> get basicUserPermissions => $_getList(4);
 
+  @$pb.TagNumber(19)
+  CustomNavigationTabSet get customTabs => $_getN(5);
+  @$pb.TagNumber(19)
+  set customTabs(CustomNavigationTabSet v) { setField(19, v); }
+  @$pb.TagNumber(19)
+  $core.bool hasCustomTabs() => $_has(5);
+  @$pb.TagNumber(19)
+  void clearCustomTabs() => clearField(19);
+  @$pb.TagNumber(19)
+  CustomNavigationTabSet ensureCustomTabs() => $_ensure(5);
+
   /// Configuration for users on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_USERS_GLOBALLY`.
   @$pb.TagNumber(20)
-  FeatureSettings get peopleSettings => $_getN(5);
+  FeatureSettings get peopleSettings => $_getN(6);
   @$pb.TagNumber(20)
   set peopleSettings(FeatureSettings v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasPeopleSettings() => $_has(5);
+  $core.bool hasPeopleSettings() => $_has(6);
   @$pb.TagNumber(20)
   void clearPeopleSettings() => clearField(20);
   @$pb.TagNumber(20)
-  FeatureSettings ensurePeopleSettings() => $_ensure(5);
+  FeatureSettings ensurePeopleSettings() => $_ensure(6);
 
   /// Configuration for groups on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_GROUPS_GLOBALLY`.
   @$pb.TagNumber(21)
-  FeatureSettings get groupSettings => $_getN(6);
+  FeatureSettings get groupSettings => $_getN(7);
   @$pb.TagNumber(21)
   set groupSettings(FeatureSettings v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasGroupSettings() => $_has(6);
+  $core.bool hasGroupSettings() => $_has(7);
   @$pb.TagNumber(21)
   void clearGroupSettings() => clearField(21);
   @$pb.TagNumber(21)
-  FeatureSettings ensureGroupSettings() => $_ensure(6);
+  FeatureSettings ensureGroupSettings() => $_ensure(7);
 
   /// Configuration for posts on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_POSTS_GLOBALLY`.
   @$pb.TagNumber(22)
-  PostSettings get postSettings => $_getN(7);
+  PostSettings get postSettings => $_getN(8);
   @$pb.TagNumber(22)
   set postSettings(PostSettings v) { setField(22, v); }
   @$pb.TagNumber(22)
-  $core.bool hasPostSettings() => $_has(7);
+  $core.bool hasPostSettings() => $_has(8);
   @$pb.TagNumber(22)
   void clearPostSettings() => clearField(22);
   @$pb.TagNumber(22)
-  PostSettings ensurePostSettings() => $_ensure(7);
+  PostSettings ensurePostSettings() => $_ensure(8);
 
   /// Configuration for events on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(23)
-  EventSettings get eventSettings => $_getN(8);
+  EventSettings get eventSettings => $_getN(9);
   @$pb.TagNumber(23)
   set eventSettings(EventSettings v) { setField(23, v); }
   @$pb.TagNumber(23)
-  $core.bool hasEventSettings() => $_has(8);
+  $core.bool hasEventSettings() => $_has(9);
   @$pb.TagNumber(23)
   void clearEventSettings() => clearField(23);
   @$pb.TagNumber(23)
-  EventSettings ensureEventSettings() => $_ensure(8);
+  EventSettings ensureEventSettings() => $_ensure(9);
 
   /// Configuration for media on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_MEDIA_GLOBALLY`.
   @$pb.TagNumber(24)
-  MediaSettings get mediaSettings => $_getN(9);
+  MediaSettings get mediaSettings => $_getN(10);
   @$pb.TagNumber(24)
   set mediaSettings(MediaSettings v) { setField(24, v); }
   @$pb.TagNumber(24)
-  $core.bool hasMediaSettings() => $_has(9);
+  $core.bool hasMediaSettings() => $_has(10);
   @$pb.TagNumber(24)
   void clearMediaSettings() => clearField(24);
   @$pb.TagNumber(24)
-  MediaSettings ensureMediaSettings() => $_ensure(9);
+  MediaSettings ensureMediaSettings() => $_ensure(10);
 
   /// If set, enables External CDN support for the server. This means that the
   /// non-secure HTTP server (on port 80) will *not* redirect to the secure server,
@@ -250,42 +266,42 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
   /// See ExternalCDNConfig for more details on securing this setup.
   @$pb.TagNumber(90)
-  ExternalCDNConfig get externalCdnConfig => $_getN(10);
+  ExternalCDNConfig get externalCdnConfig => $_getN(11);
   @$pb.TagNumber(90)
   set externalCdnConfig(ExternalCDNConfig v) { setField(90, v); }
   @$pb.TagNumber(90)
-  $core.bool hasExternalCdnConfig() => $_has(10);
+  $core.bool hasExternalCdnConfig() => $_has(11);
   @$pb.TagNumber(90)
   void clearExternalCdnConfig() => clearField(90);
   @$pb.TagNumber(90)
-  ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(10);
+  ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(11);
 
   /// Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   @$pb.TagNumber(100)
-  PrivateUserStrategy get privateUserStrategy => $_getN(11);
+  PrivateUserStrategy get privateUserStrategy => $_getN(12);
   @$pb.TagNumber(100)
   set privateUserStrategy(PrivateUserStrategy v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasPrivateUserStrategy() => $_has(11);
+  $core.bool hasPrivateUserStrategy() => $_has(12);
   @$pb.TagNumber(100)
   void clearPrivateUserStrategy() => clearField(100);
 
   /// (TODO) Allows admins to enable/disable creating accounts and logging in.
   /// Eventually, external auth too hopefully!
   @$pb.TagNumber(101)
-  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(12);
+  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(13);
 
   /// Web Push (VAPID) configuration for the server.
   @$pb.TagNumber(110)
-  WebPushConfig get webPushConfig => $_getN(13);
+  WebPushConfig get webPushConfig => $_getN(14);
   @$pb.TagNumber(110)
   set webPushConfig(WebPushConfig v) { setField(110, v); }
   @$pb.TagNumber(110)
-  $core.bool hasWebPushConfig() => $_has(13);
+  $core.bool hasWebPushConfig() => $_has(14);
   @$pb.TagNumber(110)
   void clearWebPushConfig() => clearField(110);
   @$pb.TagNumber(110)
-  WebPushConfig ensureWebPushConfig() => $_ensure(13);
+  WebPushConfig ensureWebPushConfig() => $_ensure(14);
 }
 
 /// Useful for setting your Jonline instance up to run underneath a CDN.

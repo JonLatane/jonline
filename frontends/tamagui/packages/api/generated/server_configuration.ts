@@ -304,6 +304,9 @@ export interface ServerConfiguration {
    * `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
    */
   basicUserPermissions: Permission[];
+  customTabs?:
+    | CustomNavigationTabSet
+    | undefined;
   /**
    * Configuration for users on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
@@ -707,6 +710,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     anonymousUserPermissions: [],
     defaultUserPermissions: [],
     basicUserPermissions: [],
+    customTabs: undefined,
     peopleSettings: undefined,
     groupSettings: undefined,
     postSettings: undefined,
@@ -742,6 +746,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       writer.int32(v);
     }
     writer.join();
+    if (message.customTabs !== undefined) {
+      CustomNavigationTabSet.encode(message.customTabs, writer.uint32(154).fork()).join();
+    }
     if (message.peopleSettings !== undefined) {
       FeatureSettings.encode(message.peopleSettings, writer.uint32(162).fork()).join();
     }
@@ -851,6 +858,14 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
 
           break;
         }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.customTabs = CustomNavigationTabSet.decode(reader, reader.uint32());
+          continue;
+        }
         case 20: {
           if (tag !== 162) {
             break;
@@ -955,6 +970,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       basicUserPermissions: globalThis.Array.isArray(object?.basicUserPermissions)
         ? object.basicUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
+      customTabs: isSet(object.customTabs) ? CustomNavigationTabSet.fromJSON(object.customTabs) : undefined,
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
@@ -989,6 +1005,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     }
     if (message.basicUserPermissions?.length) {
       obj.basicUserPermissions = message.basicUserPermissions.map((e) => permissionToJSON(e));
+    }
+    if (message.customTabs !== undefined) {
+      obj.customTabs = CustomNavigationTabSet.toJSON(message.customTabs);
     }
     if (message.peopleSettings !== undefined) {
       obj.peopleSettings = FeatureSettings.toJSON(message.peopleSettings);
@@ -1034,6 +1053,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     message.anonymousUserPermissions = object.anonymousUserPermissions?.map((e) => e) || [];
     message.defaultUserPermissions = object.defaultUserPermissions?.map((e) => e) || [];
     message.basicUserPermissions = object.basicUserPermissions?.map((e) => e) || [];
+    message.customTabs = (object.customTabs !== undefined && object.customTabs !== null)
+      ? CustomNavigationTabSet.fromPartial(object.customTabs)
+      : undefined;
     message.peopleSettings = (object.peopleSettings !== undefined && object.peopleSettings !== null)
       ? FeatureSettings.fromPartial(object.peopleSettings)
       : undefined;
