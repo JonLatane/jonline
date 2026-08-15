@@ -2179,6 +2179,7 @@ Either one of the app&#39;s predefined tabs, or a Post
 | ----- | ---- | ----- | ----------- |
 | tab | [NavigationTab](#jonline-NavigationTab) |  | Links to one of the app&#39;s predefined tabs/pages. |
 | post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
+| is_profile | [bool](#bool) |  | Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
 | emoji_icon | [string](#string) |  | Emoji shown as the tab&#39;s icon (e.g. &#34;🎪&#34;). |
 | icon_media_id | [string](#string) |  | Media ID (see `Media` APIs) of an image shown as the tab&#39;s icon. |
 | title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
@@ -2196,7 +2197,7 @@ If set, should override the default tab set for the Elm navigation on a Jonline 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. |
+| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is ignored and need not be set. |
 | tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via `CustomNavigationTabSet`.home instead. |
 
 

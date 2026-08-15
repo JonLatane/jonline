@@ -566,14 +566,14 @@ type alias Proto__Jonline__EventAttendance__Attendee__Attendee =
 fieldNumbersProto__Jonline__CustomNavigationTab__Target__Target :
     FieldNumbersProto__Jonline__CustomNavigationTab__Target__Target
 fieldNumbersProto__Jonline__CustomNavigationTab__Target__Target =
-    { tab = 1, postId = 2 }
+    { tab = 1, postId = 2, isProfile = 3 }
 
 
 {-| The field numbers for the fields of `Proto__Jonline__CustomNavigationTab__Target__Target`. This is mostly useful for internals, like documentation generation.
 
 -}
 type alias FieldNumbersProto__Jonline__CustomNavigationTab__Target__Target =
-    { tab : Int, postId : Int }
+    { tab : Int, postId : Int, isProfile : Int }
 
 
 {-| Declares how to decode a `Proto__Jonline__CustomNavigationTab__Target__Target` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -589,6 +589,7 @@ decodeProto__Jonline__CustomNavigationTab__Target__Target =
                 Proto.Jonline.NavigationTab.decodeNavigationTab
           )
         , ( 2, Protobuf.Decode.map Proto.Jonline.CustomNavigationTab.Target.PostId Protobuf.Decode.string )
+        , ( 3, Protobuf.Decode.map Proto.Jonline.CustomNavigationTab.Target.IsProfile Protobuf.Decode.bool )
         ]
 
 
@@ -608,12 +609,15 @@ encodeProto__Jonline__CustomNavigationTab__Target__Target value =
         Just (Proto.Jonline.CustomNavigationTab.Target.PostId innerValue) ->
             ( 2, Protobuf.Encode.string innerValue )
 
+        Just (Proto.Jonline.CustomNavigationTab.Target.IsProfile innerValue) ->
+            ( 3, Protobuf.Encode.bool innerValue )
+
 
 {-| `Proto__Jonline__CustomNavigationTab__Target__Target` options
 
 -}
 type alias Proto__Jonline__CustomNavigationTab__Target__Target =
-    Proto.Jonline.CustomNavigationTab.Target.Target Proto.Jonline.NavigationTab.NavigationTab String
+    Proto.Jonline.CustomNavigationTab.Target.Target Proto.Jonline.NavigationTab.NavigationTab String Bool
 
 
 {-| The field numbers for the fields of `Proto__Jonline__CustomNavigationTab__Icon__Icon`. This is mostly useful for internals, like documentation generation.

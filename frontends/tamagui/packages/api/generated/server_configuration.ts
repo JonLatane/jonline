@@ -617,7 +617,10 @@ export interface ServerLogo {
 
 /** If set, should override the default tab set for the Elm navigation on a Jonline instance. */
 export interface CustomNavigationTabSet {
-  /** Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. */
+  /**
+   * Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+   * Its `target` is ignored and need not be set.
+   */
   home?:
     | CustomNavigationTab
     | undefined;
@@ -638,6 +641,15 @@ export interface CustomNavigationTab {
   /** Links to a specific Post (e.g. for a custom business site's page). */
   postId?:
     | string
+    | undefined;
+  /**
+   * Only relevant for a CustomNavigationTabWithPath.
+   * Indicates the custom tab is for an actual user profile.
+   * Ultimately this isn't very "custom" in terms of the URL scheme, just
+   * it being a navigation tab.
+   */
+  isProfile?:
+    | boolean
     | undefined;
   /** Emoji shown as the tab's icon (e.g. "🎪"). */
   emojiIcon?:
@@ -2177,7 +2189,14 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
 };
 
 function createBaseCustomNavigationTab(): CustomNavigationTab {
-  return { tab: undefined, postId: undefined, emojiIcon: undefined, iconMediaId: undefined, title: undefined };
+  return {
+    tab: undefined,
+    postId: undefined,
+    isProfile: undefined,
+    emojiIcon: undefined,
+    iconMediaId: undefined,
+    title: undefined,
+  };
 }
 
 export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
@@ -2187,6 +2206,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     }
     if (message.postId !== undefined) {
       writer.uint32(18).string(message.postId);
+    }
+    if (message.isProfile !== undefined) {
+      writer.uint32(24).bool(message.isProfile);
     }
     if (message.emojiIcon !== undefined) {
       writer.uint32(82).string(message.emojiIcon);
@@ -2221,6 +2243,14 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
           }
 
           message.postId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.isProfile = reader.bool();
           continue;
         }
         case 10: {
@@ -2260,6 +2290,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     return {
       tab: isSet(object.tab) ? navigationTabFromJSON(object.tab) : undefined,
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      isProfile: isSet(object.isProfile) ? globalThis.Boolean(object.isProfile) : undefined,
       emojiIcon: isSet(object.emojiIcon) ? globalThis.String(object.emojiIcon) : undefined,
       iconMediaId: isSet(object.iconMediaId) ? globalThis.String(object.iconMediaId) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : undefined,
@@ -2273,6 +2304,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     }
     if (message.postId !== undefined) {
       obj.postId = message.postId;
+    }
+    if (message.isProfile !== undefined) {
+      obj.isProfile = message.isProfile;
     }
     if (message.emojiIcon !== undefined) {
       obj.emojiIcon = message.emojiIcon;
@@ -2293,6 +2327,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     const message = createBaseCustomNavigationTab();
     message.tab = object.tab ?? undefined;
     message.postId = object.postId ?? undefined;
+    message.isProfile = object.isProfile ?? undefined;
     message.emojiIcon = object.emojiIcon ?? undefined;
     message.iconMediaId = object.iconMediaId ?? undefined;
     message.title = object.title ?? undefined;

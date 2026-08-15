@@ -1276,6 +1276,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   static CustomNavigationTabSet? _defaultInstance;
 
   /// Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+  /// Its `target` is ignored and need not be set.
   @$pb.TagNumber(1)
   CustomNavigationTab get home => $_getN(0);
   @$pb.TagNumber(1)
@@ -1297,6 +1298,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
 enum CustomNavigationTab_Target {
   tab, 
   postId, 
+  isProfile, 
   notSet
 }
 
@@ -1311,6 +1313,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   factory CustomNavigationTab({
     NavigationTab? tab,
     $core.String? postId,
+    $core.bool? isProfile,
     $core.String? emojiIcon,
     $core.String? iconMediaId,
     $core.String? title,
@@ -1321,6 +1324,9 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     }
     if (postId != null) {
       $result.postId = postId;
+    }
+    if (isProfile != null) {
+      $result.isProfile = isProfile;
     }
     if (emojiIcon != null) {
       $result.emojiIcon = emojiIcon;
@@ -1340,6 +1346,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   static const $core.Map<$core.int, CustomNavigationTab_Target> _CustomNavigationTab_TargetByTag = {
     1 : CustomNavigationTab_Target.tab,
     2 : CustomNavigationTab_Target.postId,
+    3 : CustomNavigationTab_Target.isProfile,
     0 : CustomNavigationTab_Target.notSet
   };
   static const $core.Map<$core.int, CustomNavigationTab_Icon> _CustomNavigationTab_IconByTag = {
@@ -1348,10 +1355,11 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     0 : CustomNavigationTab_Icon.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTab', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [1, 2])
+    ..oo(0, [1, 2, 3])
     ..oo(1, [10, 11])
     ..e<NavigationTab>(1, _omitFieldNames ? '' : 'tab', $pb.PbFieldType.OE, defaultOrMaker: NavigationTab.HOME_TAB, valueOf: NavigationTab.valueOf, enumValues: NavigationTab.values)
     ..aOS(2, _omitFieldNames ? '' : 'postId')
+    ..aOB(3, _omitFieldNames ? '' : 'isProfile')
     ..aOS(10, _omitFieldNames ? '' : 'emojiIcon')
     ..aOS(11, _omitFieldNames ? '' : 'iconMediaId')
     ..aOS(12, _omitFieldNames ? '' : 'title')
@@ -1405,33 +1413,46 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
+  /// Only relevant for a CustomNavigationTabWithPath.
+  /// Indicates the custom tab is for an actual user profile.
+  /// Ultimately this isn't very "custom" in terms of the URL scheme, just
+  /// it being a navigation tab.
+  @$pb.TagNumber(3)
+  $core.bool get isProfile => $_getBF(2);
+  @$pb.TagNumber(3)
+  set isProfile($core.bool v) { $_setBool(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasIsProfile() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearIsProfile() => clearField(3);
+
   /// Emoji shown as the tab's icon (e.g. "🎪").
   @$pb.TagNumber(10)
-  $core.String get emojiIcon => $_getSZ(2);
+  $core.String get emojiIcon => $_getSZ(3);
   @$pb.TagNumber(10)
-  set emojiIcon($core.String v) { $_setString(2, v); }
+  set emojiIcon($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(10)
-  $core.bool hasEmojiIcon() => $_has(2);
+  $core.bool hasEmojiIcon() => $_has(3);
   @$pb.TagNumber(10)
   void clearEmojiIcon() => clearField(10);
 
   /// Media ID (see `Media` APIs) of an image shown as the tab's icon.
   @$pb.TagNumber(11)
-  $core.String get iconMediaId => $_getSZ(3);
+  $core.String get iconMediaId => $_getSZ(4);
   @$pb.TagNumber(11)
-  set iconMediaId($core.String v) { $_setString(3, v); }
+  set iconMediaId($core.String v) { $_setString(4, v); }
   @$pb.TagNumber(11)
-  $core.bool hasIconMediaId() => $_has(3);
+  $core.bool hasIconMediaId() => $_has(4);
   @$pb.TagNumber(11)
   void clearIconMediaId() => clearField(11);
 
   /// Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.
   @$pb.TagNumber(12)
-  $core.String get title => $_getSZ(4);
+  $core.String get title => $_getSZ(5);
   @$pb.TagNumber(12)
-  set title($core.String v) { $_setString(4, v); }
+  set title($core.String v) { $_setString(5, v); }
   @$pb.TagNumber(12)
-  $core.bool hasTitle() => $_has(4);
+  $core.bool hasTitle() => $_has(5);
   @$pb.TagNumber(12)
   void clearTitle() => clearField(12);
 }

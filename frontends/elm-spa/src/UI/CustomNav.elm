@@ -43,11 +43,16 @@ import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Elm-land mirror of `CustomNavigationTab`'s `target` `oneof` -- one of the app's own predefined
-tabs (`NavigationTab`), or a specific Post (e.g. a custom business site's page).
+tabs (`NavigationTab`), a specific Post (e.g. a custom business site's page), or a user profile
+(`TargetProfile`, from the proto's `is_profile` branch) -- unlike the other two, that branch carries
+no payload of its own on the wire (just `bool`), so which profile is entirely determined by the
+enclosing `CustomNavigationTabWithPath.path` (see `CustomTab.path`'s own doc) -- the tab's url *is*
+that username's own `/:username` route, just also featured as a styled nav tab.
 -}
 type CustomTabTarget
     = TargetTab NavigationTab
     | TargetPost String
+    | TargetProfile
 
 
 {-| Elm-land mirror of `CustomNavigationTab`'s `icon` `oneof` -- an emoji glyph, or a `Media` id
@@ -74,7 +79,7 @@ type alias CustomTab =
     }
 
 
-fromProtoTarget : ProtoTarget.Target NavigationTab String -> CustomTabTarget
+fromProtoTarget : ProtoTarget.Target NavigationTab String Bool -> CustomTabTarget
 fromProtoTarget target =
     case target of
         ProtoTarget.Tab navTab ->
@@ -83,8 +88,14 @@ fromProtoTarget target =
         ProtoTarget.PostId postId ->
             TargetPost postId
 
+        -- The payload itself is ignored -- selecting this `oneof` branch at all is what means
+        -- "this is a profile tab" (see `CustomTabTarget`'s own doc); there's no reason this
+        -- would ever actually be saved as `false`.
+        ProtoTarget.IsProfile _ ->
+            TargetProfile
 
-toProtoTarget : CustomTabTarget -> ProtoTarget.Target NavigationTab String
+
+toProtoTarget : CustomTabTarget -> ProtoTarget.Target NavigationTab String Bool
 toProtoTarget target =
     case target of
         TargetTab navTab ->
@@ -92,6 +103,9 @@ toProtoTarget target =
 
         TargetPost postId ->
             ProtoTarget.PostId postId
+
+        TargetProfile ->
+            ProtoTarget.IsProfile True
 
 
 fromProtoIcon : ProtoIcon.Icon String String -> CustomTabIcon
@@ -190,6 +204,9 @@ targetLabel target =
         TargetPost _ ->
             "Post"
 
+        TargetProfile ->
+            "Profile"
+
 
 {-| A tab's shown title -- its own `title` if set, otherwise the predefined tab's name (or "Post"
 for a Post target, since resolving an actual Post's title would mean an extra fetch this preview/nav
@@ -204,10 +221,13 @@ resolvedTitle tab =
 {-| `CustomTab.path`'s starting value for a freshly-added tab (`SettingsTab.CustomTabAddClicked`) or
 one of `defaultTabs` -- once a tab exists, its `path` is admin-editable (see `SettingsTab.customTabEditChip`'s
 Path `<input>`) and no longer re-derived from this. The backend's own `validate_configuration` (see
-`backend/src/rpcs/validations/configuration_validation.rs`) rejects anything that isn't `[a-z_]+` --
-notably *not* a real href (no leading `/`, no digits, no hyphens), which a Post's own id would
-violate -- so this is just a lowercase, underscore-only starting slug the admin's expected to
-customize (e.g. to `gigs` or `weddings`).
+`backend/src/rpcs/validations/configuration_validation.rs`) rejects anything that isn't `[a-z_]+` for
+every target *except* `TargetProfile` -- notably *not* a real href (no leading `/`, no digits, no
+hyphens), which a Post's own id would violate -- so this is just a lowercase, underscore-only
+starting slug the admin's expected to customize (e.g. to `gigs` or `weddings`); for `TargetProfile`
+it's really a placeholder username instead (see `CustomTabTarget`'s own doc), not actually reachable
+from `SettingsTab.CustomTabTargetKindChanged` (which leaves an existing `path` alone across a kind
+switch), but still a safe, valid starting value if this is ever called for one directly.
 -}
 defaultPathFor : CustomTabTarget -> String
 defaultPathFor target =
@@ -235,6 +255,9 @@ defaultPathFor target =
         TargetPost _ ->
             "post"
 
+        TargetProfile ->
+            "profile"
+
 
 {-| A `CustomTabTarget`'s kind, ignoring a `TargetPost`'s specific id -- what `SettingsTab`'s "type
 of tab" `<select>` actually offers a choice between (see `selectableTargetKinds`), since a `TargetPost`'s
@@ -244,6 +267,7 @@ id is its own separate `<input>`, not part of the `<select>`. `KindTab` delibera
 type TargetKind
     = KindTab NavigationTab
     | KindPost
+    | KindProfile
 
 
 targetKind : CustomTabTarget -> TargetKind
@@ -255,6 +279,9 @@ targetKind target =
         TargetPost _ ->
             KindPost
 
+        TargetProfile ->
+            KindProfile
+
 
 targetKindText : TargetKind -> String
 targetKindText kind =
@@ -265,14 +292,17 @@ targetKindText kind =
         KindPost ->
             "Post"
 
+        KindProfile ->
+            "Profile"
+
 
 {-| Every `TargetKind` `SettingsTab`'s "type of tab" `<select>` offers -- the four non-Home
-predefined tabs, plus Post. Mirrors `SettingsTab.allowedDefaultModerations`' own "the full enum has
-more values than are actually choosable here" reasoning.
+predefined tabs, plus Post and Profile. Mirrors `SettingsTab.allowedDefaultModerations`' own "the
+full enum has more values than are actually choosable here" reasoning.
 -}
 selectableTargetKinds : List TargetKind
 selectableTargetKinds =
-    [ KindTab EVENTSTAB, KindTab POSTSTAB, KindTab PEOPLETAB, KindTab ABOUTTAB, KindPost ]
+    [ KindTab EVENTSTAB, KindTab POSTSTAB, KindTab PEOPLETAB, KindTab ABOUTTAB, KindPost, KindProfile ]
 
 
 targetKindFromText : String -> Maybe TargetKind

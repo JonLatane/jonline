@@ -39,6 +39,7 @@ import Json.Decode as Decode
 import Process
 import Proto.Jonline exposing (Post, User)
 import Proto.Jonline.PostContext exposing (PostContext(..))
+import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -49,6 +50,7 @@ import Shared.Time as SharedTime
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.CustomNav as CustomNav
 import UI.Flip
 import Url.Builder
 
@@ -314,11 +316,27 @@ updateInner shared msg model =
                     maybeAccountsPanelMsg
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
+
+                -- Posts already featured via a `mainFrontendHost`-configured custom nav tab (see
+                -- `customNavPostIds`) are dropped from this generic feed -- they've already got
+                -- their own dedicated tab/url (`UI.CustomNav`/`Pages.UsernameOrCustomTab_`), so
+                -- showing them here too would just be clutter. Only applies to `frontendHost ==
+                -- mainFrontendHost` -- a `CustomNavigationTab.post_id` is always assumed to name a
+                -- Post on that server (see `UI.CustomNav.CustomTabTarget`'s own doc), so it'd be a
+                -- coincidence, not a real match, for some other federated server's own post to
+                -- share that id.
+                posts : List Post
+                posts =
+                    if frontendHost == shared.accounts.mainFrontendHost then
+                        response.posts |> List.filter (\post -> not (Set.member post.id (customNavPostIds shared)))
+
+                    else
+                        response.posts
             in
             ( { model
                 | postsByServer =
                     Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded response.posts }))
+                        (Maybe.map (\feed -> { feed | status = Loaded posts }))
                         model.postsByServer
               }
                 |> syncAnimations
@@ -506,6 +524,28 @@ relevantServers shared model =
 
         Nothing ->
             AccountsPanel.enabledServers shared.accounts
+
+
+{-| Every Post id `mainFrontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost`
+tab at -- what `GotServerPosts` excludes from `mainFrontendHost`'s own feed (see its own doc), so a
+Post already featured via its own custom nav tab/url doesn't also clutter the generic listing.
+-}
+customNavPostIds : Shared.Model -> Set String
+customNavPostIds shared =
+    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+        |> Maybe.map (\customTabs -> CustomNav.effectiveTabs (Just customTabs))
+        |> Maybe.withDefault []
+        |> List.filterMap
+            (\tab ->
+                case tab.target of
+                    CustomNav.TargetPost postId ->
+                        Just postId
+
+                    _ ->
+                        Nothing
+            )
+        |> Set.fromList
 
 
 {-| Fetches `serversToFetch` using the current `model.searchText`/

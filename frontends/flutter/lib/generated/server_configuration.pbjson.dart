@@ -374,6 +374,7 @@ const CustomNavigationTab$json = {
   '2': [
     {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.jonline.NavigationTab', '9': 0, '10': 'tab'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'postId'},
+    {'1': 'is_profile', '3': 3, '4': 1, '5': 8, '9': 0, '10': 'isProfile'},
     {'1': 'emoji_icon', '3': 10, '4': 1, '5': 9, '9': 1, '10': 'emojiIcon'},
     {'1': 'icon_media_id', '3': 11, '4': 1, '5': 9, '9': 1, '10': 'iconMediaId'},
     {'1': 'title', '3': 12, '4': 1, '5': 9, '9': 2, '10': 'title', '17': true},
@@ -388,9 +389,10 @@ const CustomNavigationTab$json = {
 /// Descriptor for `CustomNavigationTab`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customNavigationTabDescriptor = $convert.base64Decode(
     'ChNDdXN0b21OYXZpZ2F0aW9uVGFiEioKA3RhYhgBIAEoDjIWLmpvbmxpbmUuTmF2aWdhdGlvbl'
-    'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKZW1vamlfaWNvbhgKIAEo'
-    'CUgBUgllbW9qaUljb24SJAoNaWNvbl9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCg'
-    'V0aXRsZRgMIAEoCUgCUgV0aXRsZYgBAUIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
+    'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKaXNfcHJvZmlsZRgDIAEo'
+    'CEgAUglpc1Byb2ZpbGUSHwoKZW1vamlfaWNvbhgKIAEoCUgBUgllbW9qaUljb24SJAoNaWNvbl'
+    '9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCgV0aXRsZRgMIAEoCUgCUgV0aXRsZYgB'
+    'AUIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
 
 @$core.Deprecated('Use customNavigationTabWithPathDescriptor instead')
 const CustomNavigationTabWithPath$json = {

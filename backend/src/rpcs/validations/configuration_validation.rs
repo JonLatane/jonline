@@ -10,7 +10,17 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
     if let Some(custom_tabs) = config.custom_tabs.as_ref() {
         let path_re = Regex::new(r"^[a-z_]+$").unwrap();
         for tab in &custom_tabs.tabs {
-            if !path_re.is_match(&tab.path) {
+            // A profile tab's `path` *is* the username it links to (see the proto's own doc on
+            // `is_profile`), so it's validated as a username instead (`validate_username`'s own
+            // `[\w.-]+` word-char rule) -- not `[a-z_]+`, which most real usernames (mixed case,
+            // digits) would fail.
+            let is_profile_tab = matches!(
+                tab.custom_tab.as_ref().and_then(|ct| ct.target.as_ref()),
+                Some(custom_navigation_tab::Target::IsProfile(_))
+            );
+            if is_profile_tab {
+                super::validate_username(&tab.path)?;
+            } else if !path_re.is_match(&tab.path) {
                 return Err(Status::new(
                     Code::InvalidArgument,
                     "custom_tab_path_must_match_[a-z_]",

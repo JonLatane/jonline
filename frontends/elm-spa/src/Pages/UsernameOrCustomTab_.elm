@@ -57,13 +57,21 @@ page shared req =
 the same components `Pages.Events`/`Pages.Posts`/`Pages.People`/`Pages.About`/`Pages.Post.PostId_`
 themselves wrap -- see `initEmbedded`, and that module's own doc for why a `Post` target is
 genuinely indistinguishable from visiting `/post/:id` directly (down to the same `Components.Pages.PostPage`
-being mounted either way). `Redirecting` covers `HOMETAB` alone (not normally reachable from the
-admin editor -- see `UI.CustomNav.selectableTargetKinds`' own doc -- but not excluded at the type
-level either): unlike the other five, `Pages.Home_`'s Events+Posts composite isn't factored into a
-separately-reusable `Components.Pages.*` module (it's a deliberately-duplicated composite, per its
-own doc), so redirecting to `/` gets a visitor to the right content without duplicating it wholesale
-just for this. `Redirecting` renders nothing itself, since its own `Effect` fires a real navigation
-in `init` that replaces this page before `view` would otherwise matter.
+being mounted either way). `EmbeddedProfile` is `TargetProfile`'s own -- deliberately a *separate*
+variant from the plain-username-fallback `Profile` below even though both just wrap a
+`UserProfilePage.Model`: `update`'s `SharedMsg` handling for `Reserved`/`Profile` re-checks
+`customTabFor` on every incoming message (see its own doc, for the "config wasn't loaded yet at
+init" race), and once a tab's actually matched that re-check would keep matching forever, restarting
+`UserProfilePage.init` (and thus its fetch) on every single `Shared.Msg` -- an infinite reinit loop,
+not just a wasted re-check. Keeping `EmbeddedProfile` a distinct variant routes it through the same
+plain "forward via `fromShared`, don't re-examine" handling every other `Embedded*` already gets.
+`Redirecting` covers `HOMETAB` alone (not normally reachable from the admin editor -- see
+`UI.CustomNav.selectableTargetKinds`' own doc -- but not excluded at the type level either): unlike
+the other five, `Pages.Home_`'s Events+Posts composite isn't factored into a separately-reusable
+`Components.Pages.*` module (it's a deliberately-duplicated composite, per its own doc), so
+redirecting to `/` gets a visitor to the right content without duplicating it wholesale just for
+this. `Redirecting` renders nothing itself, since its own `Effect` fires a real navigation in `init`
+that replaces this page before `view` would otherwise matter.
 -}
 type Model
     = Reserved String
@@ -73,6 +81,7 @@ type Model
     | EmbeddedPeople UsersPage.Model
     | EmbeddedAbout ServerInformationPage.Model
     | EmbeddedPost PostPage.Model
+    | EmbeddedProfile UserProfilePage.Model
     | Redirecting
 
 
@@ -90,6 +99,7 @@ type Msg
     | PeopleMsg UsersPage.Msg
     | AboutMsg ServerInformationPage.Msg
     | EmbeddedPostMsg PostPage.Msg
+    | EmbeddedProfileMsg UserProfilePage.Msg
     | SharedMsg Shared.Msg
 
 
@@ -125,9 +135,14 @@ the custom path itself stays in the address bar with that page's content rendere
 point of a vanity URL. `TargetPost` mounts `Components.Pages.PostPage` exactly the same way
 `Pages.Post.PostId_` itself does, so e.g. a band's `/weddings` renders indistinguishably from
 `/post/:id` for the Post it's configured to point at -- same fetch, same edit/reply/delete/moderation
-UI, same everything, just a friendlier url. `HOMETAB` instead redirects to `/` (see `Model`'s own
-doc on why that one's not embedded the same way). A malformed/future `NavigationTabUnrecognized_`
-target falls back to the ordinary username lookup, same as if this path hadn't matched a tab at all.
+UI, same everything, just a friendlier url. `TargetProfile` mounts the same `Components.Pages.UserProfilePage`
+the ordinary username fallback does, just as its own `EmbeddedProfile` (see `Model`'s own doc on why
+that's a distinct variant, not just `Profile` again) -- the only real difference is where the
+username comes from (`tab.path` instead of the route segment itself), since `UI.CustomNav.CustomTabTarget`'s
+own doc explains a profile tab's url *is* that user's own `/:username` route either way. `HOMETAB`
+instead redirects to `/` (see `Model`'s own doc on why that one's not embedded the same way). A
+malformed/future `NavigationTabUnrecognized_` target falls back to the ordinary username lookup,
+same as if this path hadn't matched a tab at all.
 -}
 initEmbedded : Shared.Model -> Request.With Params -> CustomNav.CustomTab -> ( Model, Effect Msg )
 initEmbedded shared req tab =
@@ -162,6 +177,15 @@ initEmbedded shared req tab =
             PostPage.init shared (AccountsPanel.isSecure req) postId req.key
                 |> Tuple.mapFirst EmbeddedPost
                 |> Tuple.mapSecond (Effect.map EmbeddedPostMsg)
+
+        CustomNav.TargetProfile ->
+            let
+                ( username, targetHost ) =
+                    Users.parseUserRouteId shared.accounts.mainFrontendHost tab.path
+            in
+            UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+                |> Tuple.mapFirst EmbeddedProfile
+                |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
 
 {-| `replaceUrl`, not `pushUrl` -- a vanity path like `/gigs` should read as if `/events` were the
@@ -211,6 +235,9 @@ subscriptions model =
         EmbeddedPost subModel ->
             Sub.map EmbeddedPostMsg (PostPage.subscriptions subModel)
 
+        EmbeddedProfile subModel ->
+            Sub.map EmbeddedProfileMsg (UserProfilePage.subscriptions subModel)
+
         Reserved _ ->
             Sub.none
 
@@ -250,6 +277,11 @@ update shared req msg model =
             PostPage.update shared subMsg subModel
                 |> Tuple.mapFirst EmbeddedPost
                 |> Tuple.mapSecond (Effect.map EmbeddedPostMsg)
+
+        ( EmbeddedProfileMsg subMsg, EmbeddedProfile subModel ) ->
+            UserProfilePage.update shared subMsg subModel
+                |> Tuple.mapFirst EmbeddedProfile
+                |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
         -- `Reserved`/`Profile` are re-examined (via `customTabFor`) on every incoming
         -- `Shared.Msg` first -- covers `init` having run before `mainFrontendHost`'s own
@@ -304,6 +336,11 @@ update shared req msg model =
                 |> Tuple.mapFirst EmbeddedPost
                 |> Tuple.mapSecond (Effect.map EmbeddedPostMsg)
 
+        ( SharedMsg subMsg, EmbeddedProfile subModel ) ->
+            UserProfilePage.update shared (UserProfilePage.fromShared subMsg) subModel
+                |> Tuple.mapFirst EmbeddedProfile
+                |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
+
         _ ->
             ( model, Effect.none )
 
@@ -334,6 +371,9 @@ view shared req model =
                 EmbeddedPost subModel ->
                     Html.map EmbeddedPostMsg (PostPage.view shared subModel)
 
+                EmbeddedProfile subModel ->
+                    Html.map EmbeddedProfileMsg (UserProfilePage.view shared subModel)
+
                 Reserved username ->
                     p [ class "profile-error" ] [ text ("\"" ++ username ++ "\" isn't a user.") ]
 
@@ -363,6 +403,9 @@ titleFor model =
 
         EmbeddedPost subModel ->
             [ PostPage.titleFor subModel ]
+
+        EmbeddedProfile subModel ->
+            [ UserProfilePage.titleFor subModel ]
 
         Reserved _ ->
             [ "Not Found" ]

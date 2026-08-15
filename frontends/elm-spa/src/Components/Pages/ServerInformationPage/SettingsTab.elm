@@ -133,6 +133,7 @@ entries need a synthetic key for `UI.Flip`'s animation `Dict`s/DOM ids/list iden
 
 The `home` slot is deliberately not part of this edit at all (see this module's own doc on the
 "leave Home uneditable for now" scope decision) -- `pending` only ever holds `tabs`, not `home`.
+
 -}
 type alias CustomTabsEdit =
     { pending : List CustomTabEntry
@@ -145,7 +146,7 @@ type alias CustomTabsEdit =
 
 
 {-| One in-progress tab in a `CustomTabsEdit.pending` -- `target`/`icon`/`path` mirror
-`UI.CustomNav.CustomTab`'s own fields exactly (this *is* a `CustomTab`, plus `entryId`); `title` is
+`UI.CustomNav.CustomTab`'s own fields exactly (this _is_ a `CustomTab`, plus `entryId`); `title` is
 the raw `<input>` text (empty means "unset," same `optionalString` convention as
 `FeatureSettingsEdit.aliasSingular`) rather than `CustomTab`'s own `Maybe String`. `path` is a plain
 `<input>` too (see `customTabEditChip`'s own Path row) -- the backend's `validate_configuration`
@@ -464,8 +465,11 @@ update shared targetHost maybeServer msg model =
                                                 CustomNav.TargetPost _ ->
                                                     entry
 
-                                                CustomNav.TargetTab _ ->
+                                                _ ->
                                                     { entry | target = CustomNav.TargetPost "" }
+
+                                        Just CustomNav.KindProfile ->
+                                            { entry | target = CustomNav.TargetProfile }
 
                                         Nothing ->
                                             entry
@@ -1535,6 +1539,9 @@ customTabEditChip server edit count index entry =
 
                     CustomNav.TargetTab _ ->
                         []
+
+                    CustomNav.TargetProfile ->
+                        []
                 , [ input
                         [ Html.Attributes.class "custom-tab-title-input"
                         , placeholder (CustomNav.resolvedTitle { target = entry.target, icon = entry.icon, title = Nothing, path = entry.path })
@@ -1544,7 +1551,14 @@ customTabEditChip server edit count index entry =
                         []
                   , input
                         [ Html.Attributes.class "custom-tab-path-input"
-                        , placeholder "path (a-z, _)"
+                        , placeholder
+                            (case entry.target of
+                                CustomNav.TargetProfile ->
+                                    "username"
+
+                                _ ->
+                                    "path (a-z, _)"
+                            )
                         , value entry.path
                         , onInput (CustomTabPathChanged entry.entryId)
                         ]
@@ -1678,8 +1692,8 @@ featureSettingsDisplayView set maybeAdminAccount current =
     in
     div [ Html.Attributes.class "server-details-feature-settings-display" ]
         (List.concat
-            [ [ Common.settingsRow "Visible" (Common.switchDisplay current.visible)
-              , Common.settingsRow "Moderation" (textValue (Users.moderationText current.moderation))
+            [ [ -- Common.settingsRow "Visible" (Common.switchDisplay current.visible),
+                Common.settingsRow "Moderation" (textValue (Users.moderationText current.moderation))
               , Common.settingsRow "Visibility" (textValue (Posts.visibilityText current.visibility))
               ]
             , if fields.alias then
@@ -1743,8 +1757,8 @@ featureSettingsEditView set edit =
     in
     div [ Html.Attributes.class "server-details-feature-settings-edit" ]
         (List.concat
-            [ [ Common.settingsRow "Visible" (Common.flagSwitch edit.visible (FeatureSettingsVisibleToggled set))
-              , Common.settingsRow "Moderation"
+            [ [ --Common.settingsRow "Visible" (Common.flagSwitch edit.visible (FeatureSettingsVisibleToggled set)),
+                Common.settingsRow "Moderation"
                     (select [ onInput (FeatureSettingsModerationChanged set) ]
                         (allowedDefaultModerations
                             |> List.map
