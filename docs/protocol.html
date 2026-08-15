@@ -687,23 +687,52 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="http://localhost/docs/protocol#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
     <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
-    <h5 id="icalendarrfc5545-get-calendarics-get-calendaricsuser_idid"><a class="anchor" aria-hidden="true" tabindex="-1" href="#icalendarrfc5545-get-calendarics-get-calendaricsuser_idid"><span class="octicon octicon-link"></span></a>iCalendar/RFC5545 (<code>GET /calendar.ics</code>, <code>GET /calendar.ics?user_id={id}</code>)</h5>
+    <h5 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h5>
+    <h6 id="post-email-stalwart-email-integration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-email-stalwart-email-integration"><span class="octicon octicon-link"></span></a><code>POST /email</code>: Stalwart Email Integration</h6>
     <p>
-      Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
-      Users can "subscribe" to a Jonline server at, for instance, <code>https://jonline.io/calendar.ics</code>
-      to get a calendar of all public events on the server.
-      Users can also subscribe to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code>
-      to get a calendar of all public events for that user.
-      In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
-      the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+      Delivery endpoint called by the <a href="https://stalw.art/">Stalwart</a> mail server (see
+      <a href="https://github.com/JonLatane/jonline/tree/main/deploys/email"><code>deploys/email</code></a>'s
+      <a href="https://github.com/JonLatane/jonline/blob/main/deploys/email/README.md">README</a> for setup/architecture) once it
+      accepts an inbound message addressed to one of this Jonline instance's onboarded domains, turning it into a
+      <a href="#jonline-Message"><code>Message</code></a>. It is <strong>internal-only</strong>: mounted solely on the unsecured 27705 server (never on
+      80/8000/443), has no authentication of its own, and trusts its caller completely -- that trust boundary is
+      expected to be enforced at the network layer (e.g. a <code>NetworkPolicy</code> restricting port 27705 to Stalwart's pod).
     </p>
-    <h5 id="robots--sitemap-get-robotstxt-and-get-sitemapxml"><a class="anchor" aria-hidden="true" tabindex="-1" href="#robots--sitemap-get-robotstxt-and-get-sitemapxml"><span class="octicon octicon-link"></span></a>Robots &#x26; Sitemap (<code>GET /robots.txt</code> and <code>GET /sitemap.xml</code>)</h5>
-    <p>Jonline servers are expected to serve a <code>robots.txt</code> file at <code>/robots.txt</code> and a <code>sitemap.xml</code> file at <code>/sitemap.xml</code>.</p>
-    <h5 id="favicons-get-faviconico-get-faviconpng"><a class="anchor" aria-hidden="true" tabindex="-1" href="#favicons-get-faviconico-get-faviconpng"><span class="octicon octicon-link"></span></a>Favicons (<code>GET /favicon.ico</code>, <code>GET /favicon.png</code>)</h5>
-    <p>Favicons in a couple of formats.</p>
-    <h5 id="media-get-mediaid-and-post-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media-get-mediaid-and-post-media"><span class="octicon octicon-link"></span></a>Media (<code>GET /media/{id}</code> and <code>POST /media</code>)</h5>
-    <p>See the <a href="#jonline-Media">Media</a> section for details on how to upload/download media files.</p>
-    <h5 id="http-based-client-host-negotiation-for-external-cdns-get-backend_host"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs) (<code>GET /backend_host</code>)</h5>
+    <ul>
+      <li>
+        <strong>Request</strong>: recipients are supplied out-of-band via the <code>X-Jonline-Email-Recipients</code> header (comma-separated
+        addresses); the request body is the raw MIME message (up to 50 MiB). <code>X-Jonline-Email-Recipients</code> is deliberately
+        the SMTP envelope's <code>RCPT TO</code> addresses, not the message's <code>To</code>/<code>Cc</code> headers -- it's the only place Bcc'd
+        recipients show up at all. A missing header returns <code>406 Not Acceptable</code>; an oversized body returns
+        <code>413 Payload Too Large</code>; a body that doesn't parse as MIME returns <code>400 Bad Request</code>.
+      </li>
+      <li>
+        <strong>Recipient resolution</strong>: each envelope address's local part (before the <code>@</code>) is looked up as a username on this
+        server; addresses that don't match any user are silently skipped, since Stalwart is expected to have already
+        confirmed deliverability before calling this endpoint. If none match, the whole message is dropped and the
+        endpoint returns <code>404 Not Found</code>.
+      </li>
+      <li>
+        <strong>Storage</strong>: matched recipients become a <a href="#jonline-Message"><code>Message</code></a> addressed to a
+        <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> keyed on the <code>To</code>/<code>Cc</code> recipients only -- Bcc'd recipients are excluded
+        from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as <code>Bcc</code>
+        rows on the <code>Message</code>. The <code>Message</code> has no <code>from_user_id</code>, since inbound email never has a local sender; its
+        parsed <code>from</code>/<code>to</code>/<code>cc</code> headers are stored alongside it, and the raw <code>.eml</code> is uploaded to the same MinIO store
+        used for <code>Media</code>. Duplicate deliveries of the same <code>Message-ID</code> (Stalwart retries on transient failure) reuse the
+        existing <code>Message</code> row rather than storing/uploading a duplicate.
+      </li>
+      <li><strong>Response</strong>: <code>200 OK</code> with the resulting <code>Message</code>'s ID (as plain text) on success.</li>
+    </ul>
+    <h5 id="external-http-servers-80-8000-443"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-http-servers-80-8000-443"><span class="octicon octicon-link"></span></a>External HTTP servers (80, 8000, 443)</h5>
+    <p>
+      Note that, if the TLS server on port 443 starts up successfully, the server on port 80
+      will simply redirect to HTTPS.
+    </p>
+    <p>
+      The server on port 8000 will always serve up unsecured HTTP. It is up to server admins to block this
+      port if they find that necessary.
+    </p>
+    <h6 id="get-backend_host-http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-backend_host-http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a><code>GET /backend_host</code>: HTTP-based client host negotiation (for external CDNs)</h6>
     <p>
       When first negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
       to connect to <code>jonline.io</code> via gRPC on 27707/443, the client
@@ -720,11 +749,146 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26">Flutter</a>
       client implementations of this negotiation.
     </p>
+    <h6 id="get-robotstxt-get-sitemapxml-robots--sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-robotstxt-get-sitemapxml-robots--sitemap"><span class="octicon octicon-link"></span></a><code>GET /robots.txt</code>, <code>GET /sitemap.xml</code>: Robots &#x26; Sitemap</h6>
     <p>
-      In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
-      80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
-      proxy support. With this, both web and gRPC resources can live behind a CDN.
+      Jonline servers are expected to serve a <code>robots.txt</code> file at <code>/robots.txt</code> and a <code>sitemap.xml</code> file at <code>/sitemap.xml</code>.
+      Both are generated on the fly (not static files) from the request's <code>Host</code> header, publicly cacheable for 1 hour.
     </p>
+    <ul>
+      <li>
+        <code>GET /robots.txt</code> always allows all crawling (<code>User-agent: * / Allow: /</code>) and points crawlers at
+        <code>https://{host}/sitemap.xml</code>.
+      </li>
+      <li>
+        <code>GET /sitemap.xml</code> lists a fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>,
+        <code>/about</code>, <code>/about_jonline</code>, <code>/flutter</code> -- each qualified with the request's <code>Host</code>. It does not (yet) enumerate
+        individual <code>Post</code>/<code>Event</code>/<code>User</code> pages.
+      </li>
+    </ul>
+    <h6 id="get-faviconico-get-faviconpng-favicons"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-get-faviconpng-favicons"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>, <code>GET /favicon.png</code>: Favicons</h6>
+    <p>
+      Both serve the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <code>Media</code>
+      reference) in the requested format, publicly cacheable for 12 hours (<code>must-revalidate</code>). If no logo is configured,
+      they fall back to the bundled Tamagui frontend's default <code>favicon.ico</code>/generated PNG instead. Whichever converted
+      rendition of the logo is served, it's picked in size preference order Medium, then Small, then Large, then the
+      original upload if none of those conversions exist (favicons are small, so there's no reason to prefer a bigger
+      one) -- and converted between <code>.ico</code>/<code>.png</code> on the fly if the stored format doesn't match the requested extension.
+    </p>
+    <h6 id="get-mediaid-post-media-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaid-post-media-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}</code>, <code>POST /media</code>: Media</h6>
+    <p>
+      See the <a href="#jonline-Media">Media</a> section for the <code>Media</code> type itself; this is how its bytes actually move.
+      <code>OPTIONS</code> variants of both exist solely to satisfy CORS preflight requests.
+    </p>
+    <ul>
+      <li>
+        <code>POST /media</code>: <em>Authenticated</em> (via <code>Authorization</code> header or a <code>jonline_access_token</code> cookie). Requires
+        <code>Content-Type</code> and <code>Filename</code> headers; the body is streamed directly to the object store, capped at 250 MiB --
+        note that a larger upload is silently truncated to that cap rather than rejected, since nothing checks for
+        completeness the way <code>POST /email</code> does -- at a path namespaced by uploader and request host
+        (<code>user/{user_id}@{host}-{username}/{uuid}-{filename}</code>). A <a href="#jonline-Media"><code>Media</code></a> row is created immediately at
+        <code>GLOBAL_PUBLIC</code> visibility (video content types also get a default <code>video_preview_time_ms</code>) and its ID returned as
+        plain text -- there's no separate "confirm" step, and no image/video conversion happens synchronously on this
+        request (see the background media-conversion job).
+      </li>
+      <li>
+        <code>GET /media/{id}?size={original|small|medium|large}</code>: publicly downloadable -- <strong>moderation/visibility/permission
+checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s implementation), so a <code>Media</code> ID is currently a
+        bearer capability. <code>size</code> (default <code>medium</code>) selects a converted rendition, falling back to the original upload if
+        that conversion doesn't exist. The first request for a given rendition lazily downloads it from the object store
+        into a local on-disk cache; subsequent requests are served from that cache. Cacheable for 12 hours
+        (<code>must-revalidate</code>).
+      </li>
+    </ul>
+    <h6 id="get-calendarics-get-calendaricsuser_idid-icalendarrfc5545"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-get-calendaricsuser_idid-icalendarrfc5545"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>, <code>GET /calendar.ics?user_id={id}</code>: iCalendar/RFC5545</h6>
+    <p>
+      Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
+      Users can "subscribe" to a Jonline server at, for instance, <code>https://jonline.io/calendar.ics</code>
+      to get a calendar of all public events on the server.
+      Users can also subscribe to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code>
+      to get a calendar of all public events for that user.
+      In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
+      the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+    </p>
+    <h4 id="web-ui-paths"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-ui-paths"><span class="octicon octicon-link"></span></a>Web UI paths</h4>
+    <p>Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.</p>
+    <p>
+      Tamagui and Elm share one page structure (below) and are always <em>both</em> reachable, explicitly, at <code>/tamagui/*</code>
+      and <code>/elm/*</code> respectively; unprefixed requests (<code>/</code>, <code>/posts</code>, <code>/post/{postId}</code>, etc.) render whichever of the
+      two the server's <code>ServerConfiguration.server_info.web_user_interface</code> selects (<code>ELM_SPA</code> picks Elm; every other
+      setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app -- every Elm-served
+      path, prefixed or not, resolves to the same <code>index.html</code>, with in-app (client-side) routing taking over from
+      there -- whereas Tamagui's Next.js build is statically exported one HTML file per route, so the server picks
+      between actual distinct files below, each enriched with server-rendered, per-route social-preview
+      (<code>&#x26;lt;title&#x26;gt;</code>/<code>og:*</code>) tags before being served.
+    </p>
+    <p>
+      <strong>Flutter does not participate in any of this.</strong> It has no page structure of its own to speak of: no per-route
+      pages, no server-rendered social-preview metadata, and no unprefixed presence at all -- a server configured to
+      prefer it doesn't route "/" through the Tamagui/Elm machinery below and then render Flutter, it instead serves
+      Flutter's own <code>index.html</code> directly, bypassing that machinery entirely. Flutter is otherwise reached only at the
+      literal <code>/flutter</code> and <code>/flutter/*</code> paths, which serve its compiled static assets; from there, all further
+      in-app navigation is handled entirely client-side by Flutter's own router and is invisible to the server.
+    </p>
+    <p>
+      The shared Tamagui/Elm page structure, grouped the way the <a href="https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa/src/Pages">Elm app's <code>Pages</code>
+directory</a> is (<code>{name}</code> denotes a
+      dynamic path segment; <code>[@{host}]</code> marks where a <a href="#federated-profiles">federated</a> <code>{username}@{host}</code>-style
+      suffix is accepted for that segment):
+    </p>
+    <h5 id="-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#-home"><span class="octicon octicon-link"></span></a><code>/</code>: Home</h5>
+    <p>The community's latest activity.</p>
+    <h5 id="posts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#posts-posts"><span class="octicon octicon-link"></span></a><code>/posts</code>: Posts</h5>
+    <p>The Posts listing.</p>
+    <h6 id="postpostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postpostidhost-post"><span class="octicon octicon-link"></span></a><code>/post/{postId}[@{host}]</code>: Post</h6>
+    <p>
+      An individual <a href="#jonline-Post"><code>Post</code></a> -- including <code>Event</code>/<code>EventInstance</code> posts and replies, which are <code>Post</code>s
+      themselves (see <a href="#post">Post</a> above).
+    </p>
+    <h5 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h5>
+    <p>The Events listing.</p>
+    <h6 id="eventeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{eventInstanceId}[@{host}]</code>: Event</h6>
+    <p>An individual <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</p>
+    <h6 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h6>
+    <p>Tamagui-only, for now -- an AI-assisted bulk <code>Event</code> importer. Elm doesn't have this page yet.</p>
+    <h5 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h5>
+    <p>The People listing.</p>
+    <h6 id="peoplefollow_requests-follow-requests"><a class="anchor" aria-hidden="true" tabindex="-1" href="#peoplefollow_requests-follow-requests"><span class="octicon octicon-link"></span></a><code>/people/follow_requests</code>: Follow Requests</h6>
+    <p>The current user's pending <a href="#jonline-Follow"><code>Follow</code></a> requests.</p>
+    <h6 id="useruserid-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#useruserid-profile"><span class="octicon octicon-link"></span></a><code>/user/{userId}</code>: Profile</h6>
+    <p>A <a href="#jonline-User"><code>User</code></a> profile looked up by (stable) user ID.</p>
+    <h5 id="username-user-pages-by-username"><a class="anchor" aria-hidden="true" tabindex="-1" href="#username-user-pages-by-username"><span class="octicon octicon-link"></span></a><code>/{username}</code>: User pages by username</h5>
+    <p>
+      The same <code>User</code> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
+      looked up by the current <code>username</code> instead -- lighter-weight to link to, but less stable than <code>/user/{userId}</code>
+      since a username can change.
+    </p>
+    <h6 id="username-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#username-profile"><span class="octicon octicon-link"></span></a><code>/{username}</code>: Profile</h6>
+    <p>
+      This is also the server's last-resort catch-all: any otherwise-unmatched single path segment is tried here. On
+      the Elm frontend this is also where admin-configured custom tab paths are resolved (see
+      <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) -- a matching custom path (e.g. a band
+      mounting their Events listing at <code>/gigs</code>) wins over a same-named user, and a small set of reserved names can
+      never be reached this way, only via <code>/user/{userId}</code>.
+    </p>
+    <h6 id="usernameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernameposts-posts"><span class="octicon octicon-link"></span></a><code>/{username}/posts</code>: Posts</h6>
+    <h6 id="usernamefriends-friends"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefriends-friends"><span class="octicon octicon-link"></span></a><code>/{username}/friends</code>: Friends</h6>
+    <h6 id="usernamefollowers-followers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowers-followers"><span class="octicon octicon-link"></span></a><code>/{username}/followers</code>: Followers</h6>
+    <h6 id="usernamefollowing-following"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowing-following"><span class="octicon octicon-link"></span></a><code>/{username}/following</code>: Following</h6>
+    <h5 id="gshortname-groups"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-groups"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Groups</h5>
+    <p>A <a href="#jonline-Group"><code>Group</code></a>'s pages. Tamagui-only for now -- the Elm frontend doesn't have Group pages yet.</p>
+    <h6 id="gshortname-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-home"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Home</h6>
+    <h6 id="gshortnameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameposts-posts"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/posts</code>: Posts</h6>
+    <h6 id="gshortnameppostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameppostidhost-post"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/p/{postId}[@{host}]</code>: Post</h6>
+    <p>An individual <code>Post</code> cross-posted into the group.</p>
+    <h6 id="gshortnameevents-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameevents-events"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/events</code>: Events</h6>
+    <h6 id="gshortnameeeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameeeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/e/{eventInstanceId}[@{host}]</code>: Event</h6>
+    <h6 id="gshortnamemembers-members"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemembers-members"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/members</code>: Members</h6>
+    <h6 id="gshortnamemusername-member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemusername-member"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/m/{username}</code>: Member</h6>
+    <p>An individual <a href="#jonline-Member"><code>Member</code></a>'s details.</p>
+    <h5 id="serverserveridentifier-server"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverserveridentifier-server"><span class="octicon octicon-link"></span></a><code>/server/{serverIdentifier}</code>: Server</h5>
+    <p>Information about a (possibly federated) Jonline server.</p>
+    <h5 id="about-about_jonline-about"><a class="anchor" aria-hidden="true" tabindex="-1" href="#about-about_jonline-about"><span class="octicon octicon-link"></span></a><code>/about</code>, <code>/about_jonline</code>: About</h5>
+    <p>This server's own About page, and a general "what is Jonline" page.</p>
     <h3 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h3>
     <table>
       <thead>
