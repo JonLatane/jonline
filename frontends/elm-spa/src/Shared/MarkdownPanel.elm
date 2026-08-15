@@ -24,7 +24,8 @@ import Components.Users as Users
 import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, spellcheck, src, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Json.Decode as Decode
 import Proto.Jonline exposing (Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -57,7 +58,16 @@ type Msg
     = Open TargetType String
     | ContentChanged String
     | ViewModeSelected ViewMode
+      -- The "Cancel" button -- doesn't discard anything itself, just bubbles
+      -- a request up through `update`'s own extra return value for
+      -- `Shared.update` to turn into a `Shared.RequestDelete
+      -- ConfirmMarkdownEditingDataLost`, the same shared "are you sure?" flow
+      -- `Shared.MyMediaPanel.DeleteClicked` uses (see `Shared.DeleteConfirmation`).
     | CancelClicked
+      -- Fired back from `Shared.update`'s `ConfirmDelete` once the user's
+      -- confirmed the dialog `CancelClicked` requested -- this is what
+      -- actually discards `model.content` back to `init`.
+    | CancelConfirmed
     | SaveClicked
     | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
 
@@ -131,9 +141,12 @@ convention, with a `Bool` that's `True` only right after a successful save:
 `Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
 Post's re-fetched content (see `saveTask`) can change its rendered height
 once this panel closes and the page under it catches up, same yank
-`Shared.ShowScrollPreserver` already guards against on back navigation.
+`Shared.ShowScrollPreserver` already guards against on back navigation --
+and a third `Bool`, `True` only right after `CancelClicked`, for
+`Shared.update` to turn into a `Shared.RequestDelete ConfirmMarkdownEditingDataLost`
+(see `Msg`'s own doc on `CancelClicked`/`CancelConfirmed`).
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Bool ) )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Bool, Bool ) )
 update accountsPanelModel msg model =
     case msg of
         Open target host ->
@@ -144,17 +157,20 @@ update accountsPanelModel msg model =
                 , status = Idle
               }
             , Cmd.none
-            , ( Nothing, False )
+            , ( Nothing, False, False )
             )
 
         ContentChanged content ->
-            ( { model | content = content }, Cmd.none, ( Nothing, False ) )
+            ( { model | content = content }, Cmd.none, ( Nothing, False, False ) )
 
         ViewModeSelected viewMode ->
-            ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False ) )
+            ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         CancelClicked ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
+            ( model, Cmd.none, ( Nothing, False, True ) )
+
+        CancelConfirmed ->
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         SaveClicked ->
             case model.target of
@@ -165,7 +181,7 @@ update accountsPanelModel msg model =
                 -- off this exact `SaveClicked` before `update` (here) resets
                 -- it back to `init` below.
                 Just (NewPostContent _) ->
-                    ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
+                    ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
 
                 Just target ->
                     case resolve accountsPanelModel target model.targetHost of
@@ -173,20 +189,20 @@ update accountsPanelModel msg model =
                             ( { model | status = Submitting }
                             , saveTask accountsPanelModel ( Just resolved.account.userId, resolved.server.frontendHost ) target model.content
                                 |> Task.attempt GotSaveResult
-                            , ( Nothing, False )
+                            , ( Nothing, False, False )
                             )
 
                         Err err ->
-                            ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False ) )
+                            ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False, False ) )
 
                 Nothing ->
-                    ( model, Cmd.none, ( Nothing, False ) )
+                    ( model, Cmd.none, ( Nothing, False, False ) )
 
         GotSaveResult (Ok maybeAccountsPanelMsg) ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, ( maybeAccountsPanelMsg, True ) )
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( maybeAccountsPanelMsg, True, False ) )
 
         GotSaveResult (Err err) ->
-            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False ) )
+            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False, False ) )
 
 
 {-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
@@ -231,7 +247,10 @@ view accountsPanelModel model =
                         _ ->
                             Nothing
     in
-    div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ] ]
+    div
+        (classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ]
+            :: saveShortcutAttrs model
+        )
         [ div [ class "markdown-panel-header" ]
             [ modeSlider model.targetHost model.viewMode
             , accountRow accountsPanelModel model
@@ -275,6 +294,44 @@ view accountsPanelModel model =
                 ]
             ]
         ]
+
+
+{-| Cmd+S (Mac)/Ctrl+S (elsewhere) submits, same as clicking `Save` --
+`preventDefaultOn`, not a `Browser.Events.onKeyDown` subscription (compare
+`Shared.MediaViewerPanel.subscriptions`'s arrow keys), since only an event
+handler on the DOM can stop the browser's own "Save Page As" from popping up;
+attached to the panel's own root div (always rendered -- see `view`'s own doc
+comment -- so this works whether the keypress bubbles up from the `textarea`
+or from a button) rather than globally, so the shortcut only fires while this
+panel's actually open (`model.target /= Nothing`) and only one save at a time
+(`model.status /= Submitting`) -- mirrors the `Save` button's own `disabled`
+condition in spirit, though it doesn't re-check `canSave`/`resolve` here since
+`SaveClicked` (see `update`) already re-checks that itself and surfaces any
+problem as `errorMessage`.
+-}
+saveShortcutAttrs : Model -> List (Html.Attribute Msg)
+saveShortcutAttrs model =
+    if model.target /= Nothing && model.status /= Submitting then
+        [ preventDefaultOn "keydown" saveKeyDecoder ]
+
+    else
+        []
+
+
+saveKeyDecoder : Decode.Decoder ( Msg, Bool )
+saveKeyDecoder =
+    Decode.map3 (\key ctrlKey metaKey -> ( String.toLower key, ctrlKey || metaKey ))
+        (Decode.field "key" Decode.string)
+        (Decode.field "ctrlKey" Decode.bool)
+        (Decode.field "metaKey" Decode.bool)
+        |> Decode.andThen
+            (\( key, isModifierDown ) ->
+                if isModifierDown && key == "s" then
+                    Decode.succeed ( SaveClicked, True )
+
+                else
+                    Decode.fail "not Cmd/Ctrl+S"
+            )
 
 
 editorView : Model -> Html Msg

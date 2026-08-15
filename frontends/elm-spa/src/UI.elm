@@ -2244,6 +2244,11 @@ deleteConfirmationModal shared =
                             , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
                             )
 
+                        Shared.ConfirmMarkdownEditingDataLost ->
+                            ( "Delete Markdown Edits?"
+                            , "Discard your unsaved changes? This can't be undone."
+                            )
+
                         Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
                             let
                                 sourceLabel : String

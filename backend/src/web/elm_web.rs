@@ -35,7 +35,7 @@ lazy_static! {
 // "elm"+wildcard from "post"+wildcard on its own. An explicit rank breaks
 // those ties in favor of the more specific `SPA_PAGES` routes (this is a
 // fallback -- see below). It just needs to be worse than -5; it still needs
-// to beat `spa_file_or_username`'s rank (see that route's own doc comment),
+// to beat `spa_file_or_username_or_custom_tab`'s rank (see that route's own doc comment),
 // which is also explicit for the same reason.
 #[rocket::get("/elm/<file..>", rank = 1)]
 async fn elm_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
@@ -150,7 +150,7 @@ async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<Named
 /// `window.location.origin + jonlineBasePath + "/facebook-callback.html"`, so when Elm is served
 /// at root (`jonlineBasePath == ""`) this needs its own root-mounted route the same reason
 /// `elm_root_markdown_js`/etc do: without one, `/facebook-callback.html` falls through to
-/// `spa_file_or_username`'s catch-all and gets misinterpreted as a username lookup. (Under
+/// `spa_file_or_username_or_custom_tab`'s catch-all and gets misinterpreted as a username lookup. (Under
 /// `/elm`, `elm_file`'s own asset fallback already serves it -- no separate route needed there.)
 #[rocket::get("/facebook-callback.html")]
 async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {

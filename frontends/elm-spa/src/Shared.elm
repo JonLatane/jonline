@@ -211,23 +211,33 @@ Account's confirmation isn't a plain "are you sure you want to delete this"
 prompt). More constructors (e.g. for Posts) can be added here as that need
 comes up.
 
-`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete` delegate
-their actual delete into a Shared-owned submodel's own `DeleteConfirmed`
-(`AccountsPanel`/`MyMediaPanel`) once confirmed, since those submodels
-(unlike a page's own `Model`) are reachable from here. `ConfirmMediaDelete`
-could in principle follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
-`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`
-_requires_ living in `Shared.Model`, it's just simpler to route through since
-it's already there (it _is_ a real global panel, opened from several pages,
-unlike the old `Shared.EventSyncSourcesPanel` used to be). `ConfirmServerDelete`/
-`ConfirmAccountDelete` genuinely can't switch: removing a `Server`/`Account`
-has to mutate `AccountsPanel.Model` itself, which only exists here.
+`ConfirmServerDelete`/`ConfirmAccountDelete`/`ConfirmMediaDelete`/
+`ConfirmMarkdownEditingDataLost` delegate their actual delete into a
+Shared-owned submodel's own `DeleteConfirmed`/`CancelConfirmed`
+(`AccountsPanel`/`MyMediaPanel`/`MarkdownPanel`) once confirmed, since those
+submodels (unlike a page's own `Model`) are reachable from here.
+`ConfirmMediaDelete`/`ConfirmMarkdownEditingDataLost` could in principle
+follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
+`ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`/
+`MarkdownPanel` _requires_ living in `Shared.Model`, it's just simpler to
+route through since they're already there (each _is_ a real global panel,
+opened from several pages, unlike the old `Shared.EventSyncSourcesPanel` used
+to be). `ConfirmServerDelete`/`ConfirmAccountDelete` genuinely can't switch:
+removing a `Server`/`Account` has to mutate `AccountsPanel.Model` itself,
+which only exists here.
+
+`ConfirmMarkdownEditingDataLost` carries no payload (unlike
+`ConfirmMediaDelete`'s `Media`) -- there's only ever one `MarkdownPanel`
+instance, and what it'd discard is already sitting in
+`Panels.markdownPanel.content` at confirm time, so there's nothing extra to
+carry.
 
 -}
 type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
+    | ConfirmMarkdownEditingDataLost
       -- The trailing `String` on each of these four is the acting
       -- `targetHost` (the source/Post/Event/User isn't itself paired with
       -- one) -- resolved back to a signed-in `Account` (if any) in
@@ -679,7 +689,7 @@ sharedUpdate req msg model =
                         _ ->
                             Nothing
 
-                ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver, cancelRequested ) ) =
                     MarkdownPanel.update model.accounts subMsg panels.markdownPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
@@ -698,6 +708,19 @@ sharedUpdate req msg model =
                     else
                         Cmd.none
 
+                -- `MarkdownPanel.CancelClicked`'s own request (see its doc)
+                -- to open the shared "are you sure?" dialog -- same
+                -- `RequestDelete` `MyMediaPanel.DeleteClicked` triggers,
+                -- just with no payload (see `ConfirmMarkdownEditingDataLost`'s
+                -- own doc).
+                confirmingDeleteFor : Maybe DeleteConfirmation
+                confirmingDeleteFor =
+                    if cancelRequested then
+                        Just ConfirmMarkdownEditingDataLost
+
+                    else
+                        panels.confirmingDeleteFor
+
                 ( createNewPanelModel, createNewPanelCmd ) =
                     case savedNewPostContent of
                         Just content ->
@@ -710,7 +733,10 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( panels.createNewPanel, Cmd.none )
             in
-            ( { model | accounts = accountsPanelModel, panels = { panels | markdownPanel = subModel, createNewPanel = createNewPanelModel } }
+            ( { model
+                | accounts = accountsPanelModel
+                , panels = { panels | markdownPanel = subModel, createNewPanel = createNewPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+              }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -1042,6 +1068,19 @@ sharedUpdate req msg model =
                         [ Cmd.map MyMediaPanelMsg subCmd
                         , Cmd.map AccountsPanelMsg accountsPanelCmd
                         ]
+                    )
+
+                -- No RPC, no `AccountsPanel.Msg` to forward -- just discards
+                -- `panels.markdownPanel.content` back to `init`, exactly what
+                -- `CancelClicked` used to do directly before this
+                -- confirmation step existed.
+                Just ConfirmMarkdownEditingDataLost ->
+                    let
+                        ( subModel, subCmd, _ ) =
+                            MarkdownPanel.update model.accounts MarkdownPanel.CancelConfirmed panels.markdownPanel
+                    in
+                    ( { model | panels = { panels | markdownPanel = subModel, confirmingDeleteFor = Nothing } }
+                    , Cmd.map MarkdownPanelMsg subCmd
                     )
 
                 -- Unlike every branch above, none of these three is owned by

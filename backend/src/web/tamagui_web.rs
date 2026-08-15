@@ -5,11 +5,11 @@ use rocket_cache_response::CacheResponse;
 
 use crate::web::RocketState;
 
-use super::{index_summary, spa_file_or_username, spa_web_path, JonlineResponder, SpaApp};
+use super::{index_summary, spa_file_or_username_or_custom_tab, spa_web_path, JonlineResponder, SpaApp};
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> =
-        routes![index, spa_file_or_username::spa_file_or_username,];
+        routes![index, spa_file_or_username_or_custom_tab::spa_file_or_username_or_custom_tab,];
 }
 
 /// The Tamagui home page, always reachable at the literal "/tamagui" path
