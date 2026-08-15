@@ -201,47 +201,13 @@ resolvedTitle tab =
     tab.title |> Maybe.withDefault (targetLabel tab.target)
 
 
-{-| The route a `CustomTabTarget` links to -- every predefined tab's own fixed route (same ones
-`UI.eventsLink`/etc. link to; note the proto's own doc that `/events`/`/posts/`/`/people`/`/about`
-aren't reconfigurable), or a specific Post's route for `TargetPost`. `CustomTab.path` (for mounting
-a tab at an arbitrary custom URL, e.g. `/gigs`) isn't wired into routing yet -- see `defaultPathFor`'s
-own doc.
--}
-routeFor : CustomTabTarget -> Route
-routeFor target =
-    case target of
-        TargetTab navTab ->
-            case navTab of
-                HOMETAB ->
-                    Route.Home_
-
-                EVENTSTAB ->
-                    Route.Events
-
-                POSTSTAB ->
-                    Route.Posts
-
-                PEOPLETAB ->
-                    Route.People
-
-                ABOUTTAB ->
-                    Route.About
-
-                NavigationTabUnrecognized_ _ ->
-                    Route.Home_
-
-        TargetPost postId ->
-            Route.Post__PostId_ { postId = postId }
-
-
 {-| `CustomTab.path`'s starting value for a freshly-added tab (`SettingsTab.CustomTabAddClicked`) or
 one of `defaultTabs` -- once a tab exists, its `path` is admin-editable (see `SettingsTab.customTabEditChip`'s
 Path `<input>`) and no longer re-derived from this. The backend's own `validate_configuration` (see
 `backend/src/rpcs/validations/configuration_validation.rs`) rejects anything that isn't `[a-z_]+` --
-notably *not* a real href (no leading `/`, no digits, no hyphens), which a Post's own id or
-`Route.toHref`'s output would both violate -- so this is just a lowercase, underscore-only starting
-slug rather than anything derived from `routeFor`, which the admin's expected to customize (e.g. to
-`gigs` or `weddings`) once actual custom-path routing exists.
+notably *not* a real href (no leading `/`, no digits, no hyphens), which a Post's own id would
+violate -- so this is just a lowercase, underscore-only starting slug the admin's expected to
+customize (e.g. to `gigs` or `weddings`).
 -}
 defaultPathFor : CustomTabTarget -> String
 defaultPathFor target =
@@ -347,13 +313,19 @@ treatment as `UI.eventsLink`/`UI.postsLink`/`UI.peopleLink`/`UI.aboutLink`, just
 but `SettingsTab`'s preview reuses this for whichever server is being viewed/edited). Generic in
 `msg` (no `Shared.Msg`-specific click handling, unlike `UI.navLink`'s own Home link) since a plain
 `href` is all routing here needs -- elm-spa's own link interception handles the rest.
+
+Links to `tab.path` itself (via `Route.UsernameOrCustomTab_`), not `tab.target`'s own canonical
+route -- `Pages.UsernameOrCustomTab_` is what actually resolves that path back to `target` at
+request time (see its own `customTabFor`), so this always matches whatever url a visitor would
+land on, e.g. a `path` of `gigs` links to (and highlights as current on) `/gigs`, not `/events`,
+even though `target` is `EVENTSTAB`.
 -}
 navLinkView : Shared.Model -> Route -> AccountsPanel.Server -> CustomTab -> Html msg
 navLinkView shared currentRoute server tab =
     let
         route : Route
         route =
-            routeFor tab.target
+            Route.UsernameOrCustomTab_ { usernameOrCustomTab = tab.path }
 
         isCurrent : Bool
         isCurrent =

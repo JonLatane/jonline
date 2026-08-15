@@ -18,10 +18,10 @@ in/out animations -- mirrors `Components.Pages.PostsPage` almost exactly
 (`ServerFeed`/`fetchNewServers`/`refetchServers`/`syncAnimations`/
 `setBreadcrumbsRoot` all follow the same shape, just over
 `(Event, EventInstance)` pairs instead of `Post`s), reused by `Pages.Events`
-(which passes `author = Nothing`) and `Pages.Username_.Events`/
+(which passes `author = Nothing`) and `Pages.UsernameOrCustomTab_.Events`/
 `Pages.User.UserId_.Events` (which pass the already-resolved profile `User`,
 restricting the feed to that user's own events), same as `PostsPage` is
-reused by `Pages.Home_`/`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`.
+reused by `Pages.Home_`/`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts`.
 
 The one real departure from `PostsPage`: this listing is itself centered on
 the `EventInstance` (every `Event` can have many, see `Components.Events`'
@@ -136,7 +136,7 @@ type alias Model =
     -- `Pages.Home_`'s and `Pages.Events`' own copies (passed via `init`'s own
     -- `syncsCalendarPreference` argument), so switching layouts while looking
     -- at just one user's events (`Components.Pages.UserProfilePage`,
-    -- `Pages.Username_.Events`, `Pages.User.UserId_.Events`) never overwrites
+    -- `Pages.UsernameOrCustomTab_.Events`, `Pages.User.UserId_.Events`) never overwrites
     -- the preference every copy's own `defaultMode` reads back (see that
     -- field's own doc) -- it's still *read* there regardless of this flag,
     -- just never *written*.
@@ -475,7 +475,7 @@ type alias Rect =
 {-| `author`, if given, restricts the feed to that user's own events (see
 `Components.Events.fetchEvents`) and adds an "Events | <name>" heading
 (see `authorHeadingView`) -- `Pages.Events` passes `Nothing`,
-`Pages.Username_.Events`/`Pages.User.UserId_.Events` pass their
+`Pages.UsernameOrCustomTab_.Events`/`Pages.User.UserId_.Events` pass their
 already-resolved profile `User` paired with the host it was resolved from --
 mirrors `Components.Pages.PostsPage.init`'s own `author` param exactly,
 including `navKey`/`path` (this module's own URL persistence, see
@@ -1243,7 +1243,7 @@ pushUrl model =
 
 {-| Mirrors `Components.Pages.PostsPage.relevantServers` exactly: every
 enabled server for an unfiltered feed (`Pages.Events`), or just `author`'s own
-resolved host once there is one (`Pages.Username_.Events`/
+resolved host once there is one (`Pages.UsernameOrCustomTab_.Events`/
 `Pages.User.UserId_.Events`).
 -}
 relevantServers : Shared.Model -> Model -> List AccountsPanel.Server

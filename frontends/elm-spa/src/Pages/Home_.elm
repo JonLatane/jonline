@@ -3,7 +3,7 @@ module Pages.Home_ exposing (Model, Msg, fromShared, page)
 {-| `/` -- upcoming events plus recent posts from every enabled server. Thin
 wrapper around `Components.Pages.EventsPage`/`Components.Pages.PostsPage`,
 which do all the actual work -- mirrors `Pages.User.UserId_`/
-`Pages.Username_.Posts`' own use of `PostsPage` for the posts half, except
+`Pages.UsernameOrCustomTab_.Posts`' own use of `PostsPage` for the posts half, except
 this page adds its own "Recent Posts"/"Recent Replies" heading (see
 `heading`, which tracks `PostsPage`'s own POST/REPLY context chooser),
 renders an `EventsPage` above that (defaulted to `HorizontalList` mode --

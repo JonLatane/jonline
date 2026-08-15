@@ -15,11 +15,11 @@ search box + POST/REPLY context chooser (see `searchRowView`) that switches
 the fetch to `TEXT_SEARCH` (debounced 311ms after typing stops) and persists
 `search_text`/`context` as URL query params -- reused by `Pages.Home_` (which
 adds its own "Recent Posts" heading and passes `author = Nothing`) and
-`Pages.Username_.Posts`/`Pages.User.UserId_.Posts` (which pass the
+`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts` (which pass the
 already-resolved profile `User`, restricting the feed to that user's own
 posts and adding this module's own "Posts | <name>" heading, via
 `Components.Pages.UserProfilePage.nameHeader`), mirroring how
-`Components.Pages.UserProfilePage` is reused by `Pages.Username_` and
+`Components.Pages.UserProfilePage` is reused by `Pages.UsernameOrCustomTab_` and
 `Pages.User.UserId_` themselves.
 -}
 
@@ -182,7 +182,7 @@ type PostsTab
 {-| `author`, if given, restricts the feed to that user's own posts (see
 `Components.PostCard.fetchRecentPosts`) and adds a "Posts | <name>"
 heading (see `view`) -- `Pages.Home_` passes `Nothing`,
-`Pages.Username_.Posts`/`Pages.User.UserId_.Posts` pass their
+`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts` pass their
 already-resolved profile `User` paired with the host it was resolved from
 (`Components.Users.Resolver`'s own `targetHost`, resolved before ever calling
 this, so this module never needs to fetch the `User` itself -- it only needs
@@ -670,9 +670,9 @@ applySearchChange shared model =
 {-| Keeps `Shared.Breadcrumbs` pointed at this feed's own root: `FromServerHost
 mainFrontendHost` for an unfiltered feed (`model.author == Nothing`, e.g.
 `Pages.Posts`), or `FromUser` the already-resolved author once one's known
-(`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`, which only ever call
+(`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts`, which only ever call
 `init` once their own `Resolver` has actually loaded the `User` -- see
-`Pages.Username_.Posts.update`) -- mirrors
+`Pages.UsernameOrCustomTab_.Posts.update`) -- mirrors
 `Components.Pages.UserProfilePage.setBreadcrumbsHost`, reissued after every
 `update`, a no-op once already in sync via the same equality check.
 
@@ -903,7 +903,7 @@ picker, since the click still bubbles up to the wrapping `div`) or actually
 changing the date both switch to it, per `TabChanged`'s own doc. Absent
 entirely for `Pages.Home_`'s embedded copy (still gets its own static
 "Recent Posts"/"Recent Replies" heading, see `Pages.Home_.heading`) and for
-any author-scoped copy (`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`/
+any author-scoped copy (`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts`/
 `Components.Pages.UserProfilePage`, which show `authorHeadingView` instead).
 -}
 recentPostsTabsView : Shared.Model -> Model -> Html Msg

@@ -71,12 +71,12 @@ import Pages.User.UserId_.Followers
 import Pages.User.UserId_.Following
 import Pages.User.UserId_.Friends
 import Pages.User.UserId_.Posts
-import Pages.Username_
-import Pages.Username_.Events
-import Pages.Username_.Followers
-import Pages.Username_.Following
-import Pages.Username_.Friends
-import Pages.Username_.Posts
+import Pages.UsernameOrCustomTab_
+import Pages.UsernameOrCustomTab_.Events
+import Pages.UsernameOrCustomTab_.Followers
+import Pages.UsernameOrCustomTab_.Following
+import Pages.UsernameOrCustomTab_.Friends
+import Pages.UsernameOrCustomTab_.Posts
 import Request
 import Shared
 import Url exposing (Url)
@@ -331,23 +331,23 @@ sharedMsgForPage sharedMsg page =
         Gen.Model.User__UserId___Friends _ _ ->
             Just (Gen.Msg.User__UserId___Friends (Pages.User.UserId_.Friends.fromShared sharedMsg))
 
-        Gen.Model.Username_ _ _ ->
-            Just (Gen.Msg.Username_ (Pages.Username_.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab_ _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab_ (Pages.UsernameOrCustomTab_.fromShared sharedMsg))
 
-        Gen.Model.Username___Posts _ _ ->
-            Just (Gen.Msg.Username___Posts (Pages.Username_.Posts.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab___Posts _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab___Posts (Pages.UsernameOrCustomTab_.Posts.fromShared sharedMsg))
 
-        Gen.Model.Username___Events _ _ ->
-            Just (Gen.Msg.Username___Events (Pages.Username_.Events.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab___Events _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab___Events (Pages.UsernameOrCustomTab_.Events.fromShared sharedMsg))
 
-        Gen.Model.Username___Following _ _ ->
-            Just (Gen.Msg.Username___Following (Pages.Username_.Following.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab___Following _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab___Following (Pages.UsernameOrCustomTab_.Following.fromShared sharedMsg))
 
-        Gen.Model.Username___Followers _ _ ->
-            Just (Gen.Msg.Username___Followers (Pages.Username_.Followers.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab___Followers _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab___Followers (Pages.UsernameOrCustomTab_.Followers.fromShared sharedMsg))
 
-        Gen.Model.Username___Friends _ _ ->
-            Just (Gen.Msg.Username___Friends (Pages.Username_.Friends.fromShared sharedMsg))
+        Gen.Model.UsernameOrCustomTab___Friends _ _ ->
+            Just (Gen.Msg.UsernameOrCustomTab___Friends (Pages.UsernameOrCustomTab_.Friends.fromShared sharedMsg))
 
         Gen.Model.People _ _ ->
             Just (Gen.Msg.People (Pages.People.fromShared sharedMsg))
