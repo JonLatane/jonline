@@ -749,65 +749,61 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26">Flutter</a>
       client implementations of this negotiation.
     </p>
-    <h6 id="get-robotstxt-get-sitemapxml-robots--sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-robotstxt-get-sitemapxml-robots--sitemap"><span class="octicon octicon-link"></span></a><code>GET /robots.txt</code>, <code>GET /sitemap.xml</code>: Robots &#x26; Sitemap</h6>
+    <h6 id="get-robotstxt-robots"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-robotstxt-robots"><span class="octicon octicon-link"></span></a><code>GET /robots.txt</code>: Robots</h6>
     <p>
-      Jonline servers are expected to serve a <code>robots.txt</code> file at <code>/robots.txt</code> and a <code>sitemap.xml</code> file at <code>/sitemap.xml</code>.
-      Both are generated on the fly (not static files) from the request's <code>Host</code> header, publicly cacheable for 1 hour.
+      Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Always
+      allows all crawling (<code>User-agent: * / Allow: /</code>) and points crawlers at <code>https://{host}/sitemap.xml</code>.
     </p>
-    <ul>
-      <li>
-        <code>GET /robots.txt</code> always allows all crawling (<code>User-agent: * / Allow: /</code>) and points crawlers at
-        <code>https://{host}/sitemap.xml</code>.
-      </li>
-      <li>
-        <code>GET /sitemap.xml</code> lists a fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>,
-        <code>/about</code>, <code>/about_jonline</code>, <code>/flutter</code> -- each qualified with the request's <code>Host</code>. It does not (yet) enumerate
-        individual <code>Post</code>/<code>Event</code>/<code>User</code> pages.
-      </li>
-    </ul>
-    <h6 id="get-faviconico-get-faviconpng-favicons"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-get-faviconpng-favicons"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>, <code>GET /favicon.png</code>: Favicons</h6>
+    <h6 id="get-sitemapxml-sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-sitemapxml-sitemap"><span class="octicon octicon-link"></span></a><code>GET /sitemap.xml</code>: Sitemap</h6>
     <p>
-      Both serve the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <code>Media</code>
-      reference) in the requested format, publicly cacheable for 12 hours (<code>must-revalidate</code>). If no logo is configured,
-      they fall back to the bundled Tamagui frontend's default <code>favicon.ico</code>/generated PNG instead. Whichever converted
-      rendition of the logo is served, it's picked in size preference order Medium, then Small, then Large, then the
-      original upload if none of those conversions exist (favicons are small, so there's no reason to prefer a bigger
-      one) -- and converted between <code>.ico</code>/<code>.png</code> on the fly if the stored format doesn't match the requested extension.
+      Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Lists a
+      fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_jonline</code>,
+      <code>/flutter</code> -- each qualified with the request's <code>Host</code>. It does not (yet) enumerate individual <code>Post</code>/<code>Event</code>/<code>User</code>
+      pages.
     </p>
-    <h6 id="get-mediaid-post-media-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaid-post-media-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}</code>, <code>POST /media</code>: Media</h6>
+    <h6 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h6>
     <p>
-      See the <a href="#jonline-Media">Media</a> section for the <code>Media</code> type itself; this is how its bytes actually move.
-      <code>OPTIONS</code> variants of both exist solely to satisfy CORS preflight requests.
+      Serves the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <code>Media</code>
+      reference) as an <code>.ico</code>, publicly cacheable for 12 hours (<code>must-revalidate</code>), converting on the fly if the
+      stored rendition is a <code>.png</code>. If no logo is configured, falls back to the bundled Tamagui frontend's default
+      favicon instead. Whichever converted rendition of the logo is served, it's picked in size preference order
+      Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
+      so there's no reason to prefer a bigger one).
     </p>
-    <ul>
-      <li>
-        <code>POST /media</code>: <em>Authenticated</em> (via <code>Authorization</code> header or a <code>jonline_access_token</code> cookie). Requires
-        <code>Content-Type</code> and <code>Filename</code> headers; the body is streamed directly to the object store, capped at 250 MiB --
-        note that a larger upload is silently truncated to that cap rather than rejected, since nothing checks for
-        completeness the way <code>POST /email</code> does -- at a path namespaced by uploader and request host
-        (<code>user/{user_id}@{host}-{username}/{uuid}-{filename}</code>). A <a href="#jonline-Media"><code>Media</code></a> row is created immediately at
-        <code>GLOBAL_PUBLIC</code> visibility (video content types also get a default <code>video_preview_time_ms</code>) and its ID returned as
-        plain text -- there's no separate "confirm" step, and no image/video conversion happens synchronously on this
-        request (see the background media-conversion job).
-      </li>
-      <li>
-        <code>GET /media/{id}?size={original|small|medium|large}</code>: publicly downloadable -- <strong>moderation/visibility/permission
-checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s implementation), so a <code>Media</code> ID is currently a
-        bearer capability. <code>size</code> (default <code>medium</code>) selects a converted rendition, falling back to the original upload if
-        that conversion doesn't exist. The first request for a given rendition lazily downloads it from the object store
-        into a local on-disk cache; subsequent requests are served from that cache. Cacheable for 12 hours
-        (<code>must-revalidate</code>).
-      </li>
-    </ul>
-    <h6 id="get-calendarics-get-calendaricsuser_idid-icalendarrfc5545"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-get-calendaricsuser_idid-icalendarrfc5545"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>, <code>GET /calendar.ics?user_id={id}</code>: iCalendar/RFC5545</h6>
+    <h6 id="get-faviconpng-png-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconpng-png-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.png</code>: PNG Favicon</h6>
+    <p>As <code>GET /favicon.ico</code> above, but serves (and if necessary converts to) <code>.png</code> instead.</p>
+    <h6 id="post-media-upload-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-media-upload-media"><span class="octicon octicon-link"></span></a><code>POST /media</code>: Upload Media</h6>
     <p>
-      Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
-      Users can "subscribe" to a Jonline server at, for instance, <code>https://jonline.io/calendar.ics</code>
-      to get a calendar of all public events on the server.
-      Users can also subscribe to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code>
-      to get a calendar of all public events for that user.
-      In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
+      See the <a href="#jonline-Media">Media</a> section for the <code>Media</code> type itself; this is how its bytes actually get in
+      (an <code>OPTIONS /media</code> variant also exists, solely to satisfy CORS preflight requests). <em>Authenticated</em> (via
+      <code>Authorization</code> header or a <code>jonline_access_token</code> cookie). Requires <code>Content-Type</code> and <code>Filename</code> headers; the
+      body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
+      truncated to that cap rather than rejected, since nothing checks for completeness the way <code>POST /email</code> does --
+      at a path namespaced by uploader and request host (<code>user/{user_id}@{host}-{username}/{uuid}-{filename}</code>). A
+      <a href="#jonline-Media"><code>Media</code></a> row is created immediately at <code>GLOBAL_PUBLIC</code> visibility (video content types also get
+      a default <code>video_preview_time_ms</code>) and its ID returned as plain text -- there's no separate "confirm" step, and
+      no image/video conversion happens synchronously on this request (see the background media-conversion job).
+    </p>
+    <h6 id="get-mediaidsizeoriginalsmallmediumlarge-download-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaidsizeoriginalsmallmediumlarge-download-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}?size={original|small|medium|large}</code>: Download Media</h6>
+    <p>
+      (An <code>OPTIONS /media/{id}</code> variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
+      -- <strong>moderation/visibility/permission checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s
+      implementation), so a <code>Media</code> ID is currently a bearer capability. <code>size</code> (default <code>medium</code>) selects a converted
+      rendition, falling back to the original upload if that conversion doesn't exist. The first request for a given
+      rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
+      from that cache. Cacheable for 12 hours (<code>must-revalidate</code>).
+    </p>
+    <h6 id="get-calendarics-server-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-server-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>: Server Calendar</h6>
+    <p>
+      Jonline events support iCalendar/RFC5545; only public events are included. "Subscribe" to a Jonline server at,
+      for instance, <code>https://jonline.io/calendar.ics</code> to get a calendar of all public events on the server. In the
+      Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
       the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+    </p>
+    <h6 id="get-calendaricsuser_idid-user-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendaricsuser_idid-user-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics?user_id={id}</code>: User Calendar</h6>
+    <p>
+      "Subscribe" to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code> to get a
+      calendar of all public events for that user.
     </p>
     <h4 id="web-ui-paths"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-ui-paths"><span class="octicon octicon-link"></span></a>Web UI paths</h4>
     <p>Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.</p>

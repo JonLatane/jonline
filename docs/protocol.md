@@ -391,49 +391,55 @@ more information about external CDN setup. Developers may wish to review the [Re
 and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
 client implementations of this negotiation.
 
-###### `GET /robots.txt`, `GET /sitemap.xml`: Robots &amp; Sitemap
-Jonline servers are expected to serve a `robots.txt` file at `/robots.txt` and a `sitemap.xml` file at `/sitemap.xml`.
-Both are generated on the fly (not static files) from the request&#39;s `Host` header, publicly cacheable for 1 hour.
-* `GET /robots.txt` always allows all crawling (`User-agent: * / Allow: /`) and points crawlers at
-`https://{host}/sitemap.xml`.
-* `GET /sitemap.xml` lists a fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`,
-`/about`, `/about_jonline`, `/flutter` -- each qualified with the request&#39;s `Host`. It does not (yet) enumerate
-individual `Post`/`Event`/`User` pages.
+###### `GET /robots.txt`: Robots
+Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Always
+allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https://{host}/sitemap.xml`.
 
-###### `GET /favicon.ico`, `GET /favicon.png`: Favicons
-Both serve the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`
-reference) in the requested format, publicly cacheable for 12 hours (`must-revalidate`). If no logo is configured,
-they fall back to the bundled Tamagui frontend&#39;s default `favicon.ico`/generated PNG instead. Whichever converted
-rendition of the logo is served, it&#39;s picked in size preference order Medium, then Small, then Large, then the
-original upload if none of those conversions exist (favicons are small, so there&#39;s no reason to prefer a bigger
-one) -- and converted between `.ico`/`.png` on the fly if the stored format doesn&#39;t match the requested extension.
+###### `GET /sitemap.xml`: Sitemap
+Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Lists a
+fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
+`/flutter` -- each qualified with the request&#39;s `Host`. It does not (yet) enumerate individual `Post`/`Event`/`User`
+pages.
 
-###### `GET /media/{id}`, `POST /media`: Media
-See the [Media](#jonline-Media) section for the `Media` type itself; this is how its bytes actually move.
-`OPTIONS` variants of both exist solely to satisfy CORS preflight requests.
-* `POST /media`: *Authenticated* (via `Authorization` header or a `jonline_access_token` cookie). Requires
-`Content-Type` and `Filename` headers; the body is streamed directly to the object store, capped at 250 MiB --
-note that a larger upload is silently truncated to that cap rather than rejected, since nothing checks for
-completeness the way `POST /email` does -- at a path namespaced by uploader and request host
-(`user/{user_id}@{host}-{username}/{uuid}-{filename}`). A [`Media`](#jonline-Media) row is created immediately at
-`GLOBAL_PUBLIC` visibility (video content types also get a default `video_preview_time_ms`) and its ID returned as
-plain text -- there&#39;s no separate &#34;confirm&#34; step, and no image/video conversion happens synchronously on this
-request (see the background media-conversion job).
-* `GET /media/{id}?size={original|small|medium|large}`: publicly downloadable -- **moderation/visibility/permission
-checks on read are not yet enforced** (a `TODO` in `media_file`&#39;s implementation), so a `Media` ID is currently a
-bearer capability. `size` (default `medium`) selects a converted rendition, falling back to the original upload if
-that conversion doesn&#39;t exist. The first request for a given rendition lazily downloads it from the object store
-into a local on-disk cache; subsequent requests are served from that cache. Cacheable for 12 hours
-(`must-revalidate`).
+###### `GET /favicon.ico`: ICO Favicon
+Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`
+reference) as an `.ico`, publicly cacheable for 12 hours (`must-revalidate`), converting on the fly if the
+stored rendition is a `.png`. If no logo is configured, falls back to the bundled Tamagui frontend&#39;s default
+favicon instead. Whichever converted rendition of the logo is served, it&#39;s picked in size preference order
+Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
+so there&#39;s no reason to prefer a bigger one).
 
-###### `GET /calendar.ics`, `GET /calendar.ics?user_id={id}`: iCalendar/RFC5545
-Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
-Users can &#34;subscribe&#34; to a Jonline server at, for instance, `https://jonline.io/calendar.ics` 
-to get a calendar of all public events on the server.
-Users can also subscribe to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm`
-to get a calendar of all public events for that user.
-In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
+###### `GET /favicon.png`: PNG Favicon
+As `GET /favicon.ico` above, but serves (and if necessary converts to) `.png` instead.
+
+###### `POST /media`: Upload Media
+See the [Media](#jonline-Media) section for the `Media` type itself; this is how its bytes actually get in
+(an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
+`Authorization` header or a `jonline_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
+body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
+truncated to that cap rather than rejected, since nothing checks for completeness the way `POST /email` does --
+at a path namespaced by uploader and request host (`user/{user_id}@{host}-{username}/{uuid}-{filename}`). A
+[`Media`](#jonline-Media) row is created immediately at `GLOBAL_PUBLIC` visibility (video content types also get
+a default `video_preview_time_ms`) and its ID returned as plain text -- there&#39;s no separate &#34;confirm&#34; step, and
+no image/video conversion happens synchronously on this request (see the background media-conversion job).
+
+###### `GET /media/{id}?size={original|small|medium|large}`: Download Media
+(An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
+-- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`&#39;s
+implementation), so a `Media` ID is currently a bearer capability. `size` (default `medium`) selects a converted
+rendition, falling back to the original upload if that conversion doesn&#39;t exist. The first request for a given
+rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
+from that cache. Cacheable for 12 hours (`must-revalidate`).
+
+###### `GET /calendar.ics`: Server Calendar
+Jonline events support iCalendar/RFC5545; only public events are included. &#34;Subscribe&#34; to a Jonline server at,
+for instance, `https://jonline.io/calendar.ics` to get a calendar of all public events on the server. In the
+Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
 the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+
+###### `GET /calendar.ics?user_id={id}`: User Calendar
+&#34;Subscribe&#34; to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
+calendar of all public events for that user.
 
 #### Web UI paths
 Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.
