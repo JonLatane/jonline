@@ -347,8 +347,13 @@ but `SettingsTab`'s preview reuses this for whichever server is being viewed/edi
 Links to `tab.path` itself (via `Route.UsernameOrCustomTab_`), not `tab.target`'s own canonical
 route -- `Pages.UsernameOrCustomTab_` is what actually resolves that path back to `target` at
 request time (see its own `customTabFor`), so this always matches whatever url a visitor would
-land on, e.g. a `path` of `gigs` links to (and highlights as current on) `/gigs`, not `/events`,
-even though `target` is `EVENTSTAB`.
+land on, e.g. a `path` of `gigs` links to `/gigs`, not `/events`, even though `target` is
+`EVENTSTAB`. `isCurrent`, though, checks *both* that path route and `target`'s own canonical one
+(`canonicalRoute`) -- the proto's own doc is explicit that `/events`/`/posts/`/`/people`/`/about`
+stay reachable and unmodified regardless of any custom path pointed at the same `target`, so a
+visitor who lands on plain `/events` (an old link, a bookmark, `Gen.Route.routes`' own static entry)
+should still see the "Events" tab (now living at `/gigs`) highlighted as current, not dark. Not
+relevant for `TargetPost`/`TargetProfile`, whose only route *is* their own `path` either way.
 -}
 navLinkView : Shared.Model -> Route -> AccountsPanel.Server -> CustomTab -> Html msg
 navLinkView shared currentRoute server tab =
@@ -357,9 +362,36 @@ navLinkView shared currentRoute server tab =
         route =
             Route.UsernameOrCustomTab_ { usernameOrCustomTab = tab.path }
 
+        canonicalRoute : Route
+        canonicalRoute =
+            case tab.target of
+                TargetTab HOMETAB ->
+                    Route.Home_
+
+                TargetTab EVENTSTAB ->
+                    Route.Events
+
+                TargetTab POSTSTAB ->
+                    Route.Posts
+
+                TargetTab PEOPLETAB ->
+                    Route.People
+
+                TargetTab ABOUTTAB ->
+                    Route.About
+
+                TargetTab (NavigationTabUnrecognized_ _) ->
+                    route
+
+                TargetPost postId ->
+                    Route.Post__PostId_ { postId = postId }
+
+                TargetProfile ->
+                    route
+
         isCurrent : Bool
         isCurrent =
-            route == currentRoute
+            currentRoute == route || currentRoute == canonicalRoute
     in
     a
         [ href (shared.basePath ++ Route.toHref route)
