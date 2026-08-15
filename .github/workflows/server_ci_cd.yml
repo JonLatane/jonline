@@ -569,6 +569,9 @@ jobs:
       - working-directory: frontends/tamagui
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: yarn tsc
+      - working-directory: frontends/tamagui
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
+        run: yarn test
 
       - name: Mark Tamagui tests passed
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'

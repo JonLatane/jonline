@@ -852,19 +852,16 @@ directory</a> is (<code>{name}</code> denotes a
     <p>The current user's pending <a href="#jonline-Follow"><code>Follow</code></a> requests.</p>
     <h6 id="useruserid-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#useruserid-profile"><span class="octicon octicon-link"></span></a><code>/user/{userId}</code>: Profile</h6>
     <p>A <a href="#jonline-User"><code>User</code></a> profile looked up by (stable) user ID.</p>
-    <h5 id="username-user-pages-by-username"><a class="anchor" aria-hidden="true" tabindex="-1" href="#username-user-pages-by-username"><span class="octicon octicon-link"></span></a><code>/{username}</code>: User pages by username</h5>
+    <h5 id="custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><span class="octicon octicon-link"></span></a><code>/{custom_tab_or_username}</code>: User pages by username, or a custom tab</h5>
     <p>
       The same <code>User</code> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
       looked up by the current <code>username</code> instead -- lighter-weight to link to, but less stable than <code>/user/{userId}</code>
-      since a username can change.
-    </p>
-    <h6 id="username-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#username-profile"><span class="octicon octicon-link"></span></a><code>/{username}</code>: Profile</h6>
-    <p>
-      This is also the server's last-resort catch-all: any otherwise-unmatched single path segment is tried here. On
-      the Elm frontend this is also where admin-configured custom tab paths are resolved (see
-      <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) -- a matching custom path (e.g. a band
-      mounting their Events listing at <code>/gigs</code>) wins over a same-named user, and a small set of reserved names can
-      never be reached this way, only via <code>/user/{userId}</code>.
+      since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
+      order: first any actual matching build asset or other explicit route above (e.g. <code>/posts</code>, <code>/user/{userId}</code>)
+      wins outright; then, if none matched, an admin-configured custom tab path (see
+      <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) -- e.g. a band mounting their Events
+      listing at <code>/gigs</code> -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
+      set of reserved names can never be reached this way, only via <code>/user/{userId}</code>.
     </p>
     <h6 id="usernameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernameposts-posts"><span class="octicon octicon-link"></span></a><code>/{username}/posts</code>: Posts</h6>
     <h6 id="usernamefriends-friends"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefriends-friends"><span class="octicon octicon-link"></span></a><code>/{username}/friends</code>: Friends</h6>

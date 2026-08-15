@@ -353,17 +353,15 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  ###### `/user/{userId}`: Profile
  A [`User`](#jonline-User) profile looked up by (stable) user ID.
 
- ##### `/{username}`: User pages by username
+ ##### `/{custom_tab_or_username}`: User pages by username, or a custom tab
  The same `User` profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
  looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
- since a username can change.
-
- ###### `/{username}`: Profile
- This is also the server's last-resort catch-all: any otherwise-unmatched single path segment is tried here. On
- the Elm frontend this is also where admin-configured custom tab paths are resolved (see
- [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- a matching custom path (e.g. a band
- mounting their Events listing at `/gigs`) wins over a same-named user, and a small set of reserved names can
- never be reached this way, only via `/user/{userId}`.
+ since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
+ order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
+ wins outright; then, if none matched, an admin-configured custom tab path (see
+ [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- e.g. a band mounting their Events
+ listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
+ set of reserved names can never be reached this way, only via `/user/{userId}`.
 
  ###### `/{username}/posts`: Posts
  ###### `/{username}/friends`: Friends

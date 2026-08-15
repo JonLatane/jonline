@@ -12,6 +12,8 @@ run_elm:
 run_tamagui:
 	$(MAKE) -C frontends/tamagui run
 
+test: test_backend test_elm test_tamagui
+
 test_backend:
 	$(MAKE) -C backend test
 test_elm:
