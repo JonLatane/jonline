@@ -104,19 +104,21 @@ const ServerConfiguration$json = {
     {'1': 'anonymous_user_permissions', '3': 10, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'anonymousUserPermissions'},
     {'1': 'default_user_permissions', '3': 11, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultUserPermissions'},
     {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'basicUserPermissions'},
+    {'1': 'custom_tabs', '3': 19, '4': 1, '5': 11, '6': '.jonline.CustomNavigationTabSet', '9': 2, '10': 'customTabs', '17': true},
     {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'peopleSettings'},
     {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'groupSettings'},
     {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
     {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.EventSettings', '10': 'eventSettings'},
     {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.MediaSettings', '10': 'mediaSettings'},
-    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 2, '10': 'externalCdnConfig', '17': true},
+    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 3, '10': 'externalCdnConfig', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
-    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.jonline.WebPushConfig', '9': 3, '10': 'webPushConfig', '17': true},
+    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.jonline.WebPushConfig', '9': 4, '10': 'webPushConfig', '17': true},
   ],
   '8': [
     {'1': '_server_info'},
     {'1': '_federation_info'},
+    {'1': '_custom_tabs'},
     {'1': '_external_cdn_config'},
     {'1': '_web_push_config'},
   ],
@@ -131,19 +133,21 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'clBlcm1pc3Npb25zEk0KGGRlZmF1bHRfdXNlcl9wZXJtaXNzaW9ucxgLIAMoDjITLmpvbmxpbm'
     'UuUGVybWlzc2lvblIWZGVmYXVsdFVzZXJQZXJtaXNzaW9ucxJJChZiYXNpY191c2VyX3Blcm1p'
     'c3Npb25zGAwgAygOMhMuam9ubGluZS5QZXJtaXNzaW9uUhRiYXNpY1VzZXJQZXJtaXNzaW9ucx'
-    'JBCg9wZW9wbGVfc2V0dGluZ3MYFCABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0aW5nc1IOcGVv'
-    'cGxlU2V0dGluZ3MSPwoOZ3JvdXBfc2V0dGluZ3MYFSABKAsyGC5qb25saW5lLkZlYXR1cmVTZX'
-    'R0aW5nc1INZ3JvdXBTZXR0aW5ncxI6Cg1wb3N0X3NldHRpbmdzGBYgASgLMhUuam9ubGluZS5Q'
-    'b3N0U2V0dGluZ3NSDHBvc3RTZXR0aW5ncxI9Cg5ldmVudF9zZXR0aW5ncxgXIAEoCzIWLmpvbm'
-    'xpbmUuRXZlbnRTZXR0aW5nc1INZXZlbnRTZXR0aW5ncxI9Cg5tZWRpYV9zZXR0aW5ncxgYIAEo'
-    'CzIWLmpvbmxpbmUuTWVkaWFTZXR0aW5nc1INbWVkaWFTZXR0aW5ncxJPChNleHRlcm5hbF9jZG'
-    '5fY29uZmlnGFogASgLMhouam9ubGluZS5FeHRlcm5hbENETkNvbmZpZ0gCUhFleHRlcm5hbENk'
-    'bkNvbmZpZ4gBARJQChVwcml2YXRlX3VzZXJfc3RyYXRlZ3kYZCABKA4yHC5qb25saW5lLlByaX'
-    'ZhdGVVc2VyU3RyYXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVwoXYXV0aGVudGljYXRpb25f'
-    'ZmVhdHVyZXMYZSADKA4yHi5qb25saW5lLkF1dGhlbnRpY2F0aW9uRmVhdHVyZVIWYXV0aGVudG'
-    'ljYXRpb25GZWF0dXJlcxJDCg93ZWJfcHVzaF9jb25maWcYbiABKAsyFi5qb25saW5lLldlYlB1'
-    'c2hDb25maWdIA1INd2ViUHVzaENvbmZpZ4gBAUIOCgxfc2VydmVyX2luZm9CEgoQX2ZlZGVyYX'
-    'Rpb25faW5mb0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZ0ISChBfd2ViX3B1c2hfY29uZmln');
+    'JFCgtjdXN0b21fdGFicxgTIAEoCzIfLmpvbmxpbmUuQ3VzdG9tTmF2aWdhdGlvblRhYlNldEgC'
+    'UgpjdXN0b21UYWJziAEBEkEKD3Blb3BsZV9zZXR0aW5ncxgUIAEoCzIYLmpvbmxpbmUuRmVhdH'
+    'VyZVNldHRpbmdzUg5wZW9wbGVTZXR0aW5ncxI/Cg5ncm91cF9zZXR0aW5ncxgVIAEoCzIYLmpv'
+    'bmxpbmUuRmVhdHVyZVNldHRpbmdzUg1ncm91cFNldHRpbmdzEjoKDXBvc3Rfc2V0dGluZ3MYFi'
+    'ABKAsyFS5qb25saW5lLlBvc3RTZXR0aW5nc1IMcG9zdFNldHRpbmdzEj0KDmV2ZW50X3NldHRp'
+    'bmdzGBcgASgLMhYuam9ubGluZS5FdmVudFNldHRpbmdzUg1ldmVudFNldHRpbmdzEj0KDm1lZG'
+    'lhX3NldHRpbmdzGBggASgLMhYuam9ubGluZS5NZWRpYVNldHRpbmdzUg1tZWRpYVNldHRpbmdz'
+    'Ek8KE2V4dGVybmFsX2Nkbl9jb25maWcYWiABKAsyGi5qb25saW5lLkV4dGVybmFsQ0ROQ29uZm'
+    'lnSANSEWV4dGVybmFsQ2RuQ29uZmlniAEBElAKFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEo'
+    'DjIcLmpvbmxpbmUuUHJpdmF0ZVVzZXJTdHJhdGVneVITcHJpdmF0ZVVzZXJTdHJhdGVneRJXCh'
+    'dhdXRoZW50aWNhdGlvbl9mZWF0dXJlcxhlIAMoDjIeLmpvbmxpbmUuQXV0aGVudGljYXRpb25G'
+    'ZWF0dXJlUhZhdXRoZW50aWNhdGlvbkZlYXR1cmVzEkMKD3dlYl9wdXNoX2NvbmZpZxhuIAEoCz'
+    'IWLmpvbmxpbmUuV2ViUHVzaENvbmZpZ0gEUg13ZWJQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJf'
+    'aW5mb0ISChBfZmVkZXJhdGlvbl9pbmZvQg4KDF9jdXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2'
+    'RuX2NvbmZpZ0ISChBfd2ViX3B1c2hfY29uZmln');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {
@@ -370,6 +374,7 @@ const CustomNavigationTab$json = {
   '2': [
     {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.jonline.NavigationTab', '9': 0, '10': 'tab'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'postId'},
+    {'1': 'is_profile', '3': 3, '4': 1, '5': 8, '9': 0, '10': 'isProfile'},
     {'1': 'emoji_icon', '3': 10, '4': 1, '5': 9, '9': 1, '10': 'emojiIcon'},
     {'1': 'icon_media_id', '3': 11, '4': 1, '5': 9, '9': 1, '10': 'iconMediaId'},
     {'1': 'title', '3': 12, '4': 1, '5': 9, '9': 2, '10': 'title', '17': true},
@@ -384,9 +389,10 @@ const CustomNavigationTab$json = {
 /// Descriptor for `CustomNavigationTab`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customNavigationTabDescriptor = $convert.base64Decode(
     'ChNDdXN0b21OYXZpZ2F0aW9uVGFiEioKA3RhYhgBIAEoDjIWLmpvbmxpbmUuTmF2aWdhdGlvbl'
-    'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKZW1vamlfaWNvbhgKIAEo'
-    'CUgBUgllbW9qaUljb24SJAoNaWNvbl9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCg'
-    'V0aXRsZRgMIAEoCUgCUgV0aXRsZYgBAUIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
+    'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKaXNfcHJvZmlsZRgDIAEo'
+    'CEgAUglpc1Byb2ZpbGUSHwoKZW1vamlfaWNvbhgKIAEoCUgBUgllbW9qaUljb24SJAoNaWNvbl'
+    '9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCgV0aXRsZRgMIAEoCUgCUgV0aXRsZYgB'
+    'AUIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
 
 @$core.Deprecated('Use customNavigationTabWithPathDescriptor instead')
 const CustomNavigationTabWithPath$json = {

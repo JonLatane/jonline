@@ -32,6 +32,9 @@ message ServerConfiguration {
   // `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   repeated Permission basic_user_permissions = 12;
 
+  
+  optional CustomNavigationTabSet custom_tabs = 19;
+
   // Configuration for users on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_USERS_GLOBALLY`.
@@ -291,6 +294,7 @@ enum WebUserInterface {
 // If set, should override the default tab set for the Elm navigation on a Jonline instance.
 message CustomNavigationTabSet {
   // Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+  // Its `target` is ignored and need not be set.
   optional CustomNavigationTab home = 1;
   // Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
   // Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
@@ -319,6 +323,11 @@ message CustomNavigationTab {
     NavigationTab tab = 1;
     // Links to a specific Post (e.g. for a custom business site's page).
     string post_id = 2;
+    // Only relevant for a CustomNavigationTabWithPath.
+    // Indicates the custom tab is for an actual user profile.
+    // Ultimately this isn't very "custom" in terms of the URL scheme, just
+    // it being a navigation tab.
+    bool is_profile = 3;
   }
 
   oneof icon {

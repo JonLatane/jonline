@@ -566,14 +566,14 @@ type alias Proto__Jonline__EventAttendance__Attendee__Attendee =
 fieldNumbersProto__Jonline__CustomNavigationTab__Target__Target :
     FieldNumbersProto__Jonline__CustomNavigationTab__Target__Target
 fieldNumbersProto__Jonline__CustomNavigationTab__Target__Target =
-    { tab = 1, postId = 2 }
+    { tab = 1, postId = 2, isProfile = 3 }
 
 
 {-| The field numbers for the fields of `Proto__Jonline__CustomNavigationTab__Target__Target`. This is mostly useful for internals, like documentation generation.
 
 -}
 type alias FieldNumbersProto__Jonline__CustomNavigationTab__Target__Target =
-    { tab : Int, postId : Int }
+    { tab : Int, postId : Int, isProfile : Int }
 
 
 {-| Declares how to decode a `Proto__Jonline__CustomNavigationTab__Target__Target` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -589,6 +589,7 @@ decodeProto__Jonline__CustomNavigationTab__Target__Target =
                 Proto.Jonline.NavigationTab.decodeNavigationTab
           )
         , ( 2, Protobuf.Decode.map Proto.Jonline.CustomNavigationTab.Target.PostId Protobuf.Decode.string )
+        , ( 3, Protobuf.Decode.map Proto.Jonline.CustomNavigationTab.Target.IsProfile Protobuf.Decode.bool )
         ]
 
 
@@ -608,12 +609,15 @@ encodeProto__Jonline__CustomNavigationTab__Target__Target value =
         Just (Proto.Jonline.CustomNavigationTab.Target.PostId innerValue) ->
             ( 2, Protobuf.Encode.string innerValue )
 
+        Just (Proto.Jonline.CustomNavigationTab.Target.IsProfile innerValue) ->
+            ( 3, Protobuf.Encode.bool innerValue )
+
 
 {-| `Proto__Jonline__CustomNavigationTab__Target__Target` options
 
 -}
 type alias Proto__Jonline__CustomNavigationTab__Target__Target =
-    Proto.Jonline.CustomNavigationTab.Target.Target Proto.Jonline.NavigationTab.NavigationTab String
+    Proto.Jonline.CustomNavigationTab.Target.Target Proto.Jonline.NavigationTab.NavigationTab String Bool
 
 
 {-| The field numbers for the fields of `Proto__Jonline__CustomNavigationTab__Icon__Icon`. This is mostly useful for internals, like documentation generation.
@@ -1491,6 +1495,7 @@ fieldNumbersProto__Jonline__ServerConfiguration :
     , anonymousUserPermissions : Int
     , defaultUserPermissions : Int
     , basicUserPermissions : Int
+    , customTabs : Int
     , peopleSettings : Int
     , groupSettings : Int
     , postSettings : Int
@@ -1507,6 +1512,7 @@ fieldNumbersProto__Jonline__ServerConfiguration =
     , anonymousUserPermissions = 10
     , defaultUserPermissions = 11
     , basicUserPermissions = 12
+    , customTabs = 19
     , peopleSettings = 20
     , groupSettings = 21
     , postSettings = 22
@@ -1529,6 +1535,7 @@ defaultProto__Jonline__ServerConfiguration =
     , anonymousUserPermissions = []
     , defaultUserPermissions = []
     , basicUserPermissions = []
+    , customTabs = Nothing
     , peopleSettings = Nothing
     , groupSettings = Nothing
     , postSettings = Nothing
@@ -1571,6 +1578,10 @@ decodeProto__Jonline__ServerConfiguration =
             Proto.Jonline.Permission.decodePermission
             .basicUserPermissions
             (\a r -> { r | basicUserPermissions = a })
+        , Protobuf.Decode.optional
+            19
+            (Protobuf.Decode.map Just decodeProto__Jonline__CustomNavigationTabSet)
+            (\a r -> { r | customTabs = a })
         , Protobuf.Decode.optional
             20
             (Protobuf.Decode.map Just decodeProto__Jonline__FeatureSettings)
@@ -1625,6 +1636,10 @@ encodeProto__Jonline__ServerConfiguration value =
         , ( 10, (Protobuf.Encode.list Proto.Jonline.Permission.encodePermission) value.anonymousUserPermissions )
         , ( 11, (Protobuf.Encode.list Proto.Jonline.Permission.encodePermission) value.defaultUserPermissions )
         , ( 12, (Protobuf.Encode.list Proto.Jonline.Permission.encodePermission) value.basicUserPermissions )
+        , ( 19
+          , (Maybe.map encodeProto__Jonline__CustomNavigationTabSet >> Maybe.withDefault Protobuf.Encode.none)
+                value.customTabs
+          )
         , ( 20
           , (Maybe.map encodeProto__Jonline__FeatureSettings >> Maybe.withDefault Protobuf.Encode.none)
                 value.peopleSettings
@@ -1669,6 +1684,7 @@ type alias Proto__Jonline__ServerConfiguration =
     , anonymousUserPermissions : List Proto.Jonline.Permission.Permission
     , defaultUserPermissions : List Proto.Jonline.Permission.Permission
     , basicUserPermissions : List Proto.Jonline.Permission.Permission
+    , customTabs : Maybe Proto__Jonline__CustomNavigationTabSet
     , peopleSettings : Maybe Proto__Jonline__FeatureSettings
     , groupSettings : Maybe Proto__Jonline__FeatureSettings
     , postSettings : Maybe Proto__Jonline__PostSettings

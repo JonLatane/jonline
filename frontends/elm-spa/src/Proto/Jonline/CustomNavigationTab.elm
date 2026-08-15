@@ -46,6 +46,14 @@ type alias Icon =
  Links to a specific Post (e.g. for a custom business site's page).
 
 
+### IsProfile
+
+ Only relevant for a CustomNavigationTabWithPath.
+ Indicates the custom tab is for an actual user profile.
+ Ultimately this isn't very "custom" in terms of the URL scheme, just
+ it being a navigation tab.
+
+
 -}
 type alias Target =
     Proto.Jonline.Internals_.Proto__Jonline__CustomNavigationTab__Target__Target

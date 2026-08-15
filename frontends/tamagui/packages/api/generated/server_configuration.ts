@@ -304,6 +304,9 @@ export interface ServerConfiguration {
    * `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
    */
   basicUserPermissions: Permission[];
+  customTabs?:
+    | CustomNavigationTabSet
+    | undefined;
   /**
    * Configuration for users on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
@@ -614,7 +617,10 @@ export interface ServerLogo {
 
 /** If set, should override the default tab set for the Elm navigation on a Jonline instance. */
 export interface CustomNavigationTabSet {
-  /** Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. */
+  /**
+   * Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
+   * Its `target` is ignored and need not be set.
+   */
   home?:
     | CustomNavigationTab
     | undefined;
@@ -635,6 +641,15 @@ export interface CustomNavigationTab {
   /** Links to a specific Post (e.g. for a custom business site's page). */
   postId?:
     | string
+    | undefined;
+  /**
+   * Only relevant for a CustomNavigationTabWithPath.
+   * Indicates the custom tab is for an actual user profile.
+   * Ultimately this isn't very "custom" in terms of the URL scheme, just
+   * it being a navigation tab.
+   */
+  isProfile?:
+    | boolean
     | undefined;
   /** Emoji shown as the tab's icon (e.g. "🎪"). */
   emojiIcon?:
@@ -707,6 +722,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     anonymousUserPermissions: [],
     defaultUserPermissions: [],
     basicUserPermissions: [],
+    customTabs: undefined,
     peopleSettings: undefined,
     groupSettings: undefined,
     postSettings: undefined,
@@ -742,6 +758,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       writer.int32(v);
     }
     writer.join();
+    if (message.customTabs !== undefined) {
+      CustomNavigationTabSet.encode(message.customTabs, writer.uint32(154).fork()).join();
+    }
     if (message.peopleSettings !== undefined) {
       FeatureSettings.encode(message.peopleSettings, writer.uint32(162).fork()).join();
     }
@@ -851,6 +870,14 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
 
           break;
         }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.customTabs = CustomNavigationTabSet.decode(reader, reader.uint32());
+          continue;
+        }
         case 20: {
           if (tag !== 162) {
             break;
@@ -955,6 +982,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       basicUserPermissions: globalThis.Array.isArray(object?.basicUserPermissions)
         ? object.basicUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
+      customTabs: isSet(object.customTabs) ? CustomNavigationTabSet.fromJSON(object.customTabs) : undefined,
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
@@ -989,6 +1017,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     }
     if (message.basicUserPermissions?.length) {
       obj.basicUserPermissions = message.basicUserPermissions.map((e) => permissionToJSON(e));
+    }
+    if (message.customTabs !== undefined) {
+      obj.customTabs = CustomNavigationTabSet.toJSON(message.customTabs);
     }
     if (message.peopleSettings !== undefined) {
       obj.peopleSettings = FeatureSettings.toJSON(message.peopleSettings);
@@ -1034,6 +1065,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     message.anonymousUserPermissions = object.anonymousUserPermissions?.map((e) => e) || [];
     message.defaultUserPermissions = object.defaultUserPermissions?.map((e) => e) || [];
     message.basicUserPermissions = object.basicUserPermissions?.map((e) => e) || [];
+    message.customTabs = (object.customTabs !== undefined && object.customTabs !== null)
+      ? CustomNavigationTabSet.fromPartial(object.customTabs)
+      : undefined;
     message.peopleSettings = (object.peopleSettings !== undefined && object.peopleSettings !== null)
       ? FeatureSettings.fromPartial(object.peopleSettings)
       : undefined;
@@ -2155,7 +2189,14 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
 };
 
 function createBaseCustomNavigationTab(): CustomNavigationTab {
-  return { tab: undefined, postId: undefined, emojiIcon: undefined, iconMediaId: undefined, title: undefined };
+  return {
+    tab: undefined,
+    postId: undefined,
+    isProfile: undefined,
+    emojiIcon: undefined,
+    iconMediaId: undefined,
+    title: undefined,
+  };
 }
 
 export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
@@ -2165,6 +2206,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     }
     if (message.postId !== undefined) {
       writer.uint32(18).string(message.postId);
+    }
+    if (message.isProfile !== undefined) {
+      writer.uint32(24).bool(message.isProfile);
     }
     if (message.emojiIcon !== undefined) {
       writer.uint32(82).string(message.emojiIcon);
@@ -2199,6 +2243,14 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
           }
 
           message.postId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.isProfile = reader.bool();
           continue;
         }
         case 10: {
@@ -2238,6 +2290,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     return {
       tab: isSet(object.tab) ? navigationTabFromJSON(object.tab) : undefined,
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      isProfile: isSet(object.isProfile) ? globalThis.Boolean(object.isProfile) : undefined,
       emojiIcon: isSet(object.emojiIcon) ? globalThis.String(object.emojiIcon) : undefined,
       iconMediaId: isSet(object.iconMediaId) ? globalThis.String(object.iconMediaId) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : undefined,
@@ -2251,6 +2304,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     }
     if (message.postId !== undefined) {
       obj.postId = message.postId;
+    }
+    if (message.isProfile !== undefined) {
+      obj.isProfile = message.isProfile;
     }
     if (message.emojiIcon !== undefined) {
       obj.emojiIcon = message.emojiIcon;
@@ -2271,6 +2327,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     const message = createBaseCustomNavigationTab();
     message.tab = object.tab ?? undefined;
     message.postId = object.postId ?? undefined;
+    message.isProfile = object.isProfile ?? undefined;
     message.emojiIcon = object.emojiIcon ?? undefined;
     message.iconMediaId = object.iconMediaId ?? undefined;
     message.title = object.title ?? undefined;

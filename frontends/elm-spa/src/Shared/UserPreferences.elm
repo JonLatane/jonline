@@ -22,7 +22,7 @@ type alias Model =
     -- `Pages.Home_`/`Pages.Events` only, see `EventsPage.Model.syncsCalendarPreference`)
     -- whenever the user switches that page's own copy into or out of
     -- `Calendar` mode, then read back by *every* `EventsPage` copy (including
-    -- `Components.Pages.UserProfilePage`'s and `Pages.Username_.Events`/
+    -- `Components.Pages.UserProfilePage`'s and `Pages.UsernameOrCustomTab_.Events`/
     -- `Pages.User.UserId_.Events`'s, which never write it) to decide their
     -- own initial mode -- see `EventsPage.defaultMode`.
     { prefersCalendar : Bool }

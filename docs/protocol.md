@@ -203,6 +203,15 @@ Jonline&#39;s data model centers around a handful of top-level types, most of wh
 [`Visibility`](#jonline-Visibility) and [`Moderation`](#jonline-Moderation) state and can be organized into
 [`Group`](#jonline-Group)s.
 
+##### ServerConfiguration
+Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
+[`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
+and is more like a document than a row in a database. (That said, every `ServerConfiguration` change *is* a row in a database, meaning
+reverting broken configurations is easy.)
+
+Any client using the Jonline protocol is basically expected to follow a flow of &#34;get service version, then `ServerConfiguration`,
+then worry about auth, then finally about retrieving anything else.&#34;
+
 ##### User
 A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar, contact methods, and
 [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
@@ -297,7 +306,11 @@ Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotatin
 Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 `authorization` header (no `Bearer ` prefix).
 
-First, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
+First, before any authentication is done, you should [resolve your backend host](#http-based-client-host-negotiation-for-external-cdns-get-backend_host),
+and check its [`GetServiceVersion`](#grpc-api-GetServiceVersion) and [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) RPCs.
+Check whether you have the `CREATE_ACCOUNT` and/or `LOGIN` [`AuthenticationFeature`](#jonline-AuthenticationFeature)s in your [`ServerConfiguration`](#jonline-ServerConfiguration).
+
+Next, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
 then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The `AccessToken` RPC
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
@@ -328,26 +341,42 @@ isn&#39;t linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.soci
 Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](http://localhost/docs/protocol#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
 
 #### HTTP Endpoints
+##### Internal HTTP server (27705)
+###### `POST /email`: Stalwart Email Integration
+Delivery endpoint called by the [Stalwart](https://stalw.art) mail server (see
+[`deploys/email`](https://github.com/JonLatane/jonline/tree/main/deploys/email)&#39;s
+[README](https://github.com/JonLatane/jonline/blob/main/deploys/email/README.md) for setup/architecture) once it
+accepts an inbound message addressed to one of this Jonline instance&#39;s onboarded domains, turning it into a
+[`Message`](#jonline-Message). It is **internal-only**: mounted solely on the unsecured 27705 server (never on
+80/8000/443), has no authentication of its own, and trusts its caller completely -- that trust boundary is
+expected to be enforced at the network layer (e.g. a `NetworkPolicy` restricting port 27705 to Stalwart&#39;s pod).
 
-##### iCalendar/RFC5545 (`GET /calendar.ics`, `GET /calendar.ics?user_id={id}`)
-Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
-Users can &#34;subscribe&#34; to a Jonline server at, for instance, `https://jonline.io/calendar.ics` 
-to get a calendar of all public events on the server.
-Users can also subscribe to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm`
-to get a calendar of all public events for that user.
-In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
-the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+* **Request**: recipients are supplied out-of-band via the `X-Jonline-Email-Recipients` header (comma-separated
+addresses); the request body is the raw MIME message (up to 50 MiB). `X-Jonline-Email-Recipients` is deliberately
+the SMTP envelope&#39;s `RCPT TO` addresses, not the message&#39;s `To`/`Cc` headers -- it&#39;s the only place Bcc&#39;d
+recipients show up at all. A missing header returns `406 Not Acceptable`; an oversized body returns
+`413 Payload Too Large`; a body that doesn&#39;t parse as MIME returns `400 Bad Request`.
+* **Recipient resolution**: each envelope address&#39;s local part (before the `@`) is looked up as a username on this
+server; addresses that don&#39;t match any user are silently skipped, since Stalwart is expected to have already
+confirmed deliverability before calling this endpoint. If none match, the whole message is dropped and the
+endpoint returns `404 Not Found`.
+* **Storage**: matched recipients become a [`Message`](#jonline-Message) addressed to a
+[`MessagingGroup`](#jonline-MessagingGroup) keyed on the `To`/`Cc` recipients only -- Bcc&#39;d recipients are excluded
+from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as `Bcc`
+rows on the `Message`. The `Message` has no `from_user_id`, since inbound email never has a local sender; its
+parsed `from`/`to`/`cc` headers are stored alongside it, and the raw `.eml` is uploaded to the same MinIO store
+used for `Media`. Duplicate deliveries of the same `Message-ID` (Stalwart retries on transient failure) reuse the
+existing `Message` row rather than storing/uploading a duplicate.
+* **Response**: `200 OK` with the resulting `Message`&#39;s ID (as plain text) on success.
 
-##### Robots &amp; Sitemap (`GET /robots.txt` and `GET /sitemap.xml`)
-Jonline servers are expected to serve a `robots.txt` file at `/robots.txt` and a `sitemap.xml` file at `/sitemap.xml`.
+##### External HTTP servers (80, 8000, 443)
+Note that, if the TLS server on port 443 starts up successfully, the server on port 80
+will simply redirect to HTTPS.
 
-##### Favicons (`GET /favicon.ico`, `GET /favicon.png`)
-Favicons in a couple of formats.
+The server on port 8000 will always serve up unsecured HTTP. It is up to server admins to block this
+port if they find that necessary.
 
-##### Media (`GET /media/{id}` and `POST /media`)
-See the [Media](#jonline-Media) section for details on how to upload/download media files.
-
-##### HTTP-based client host negotiation (for external CDNs) (`GET /backend_host`)
+###### `GET /backend_host`: HTTP-based client host negotiation (for external CDNs)
 When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 to connect to `jonline.io` via gRPC on 27707/443, the client
 is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
@@ -362,9 +391,144 @@ more information about external CDN setup. Developers may wish to review the [Re
 and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
 client implementations of this negotiation.
 
-In the works to be released soon, Jonline will also support a &#34;fully behind CDN&#34; mode, where gRPC is served over port 443 and HTTP over port
-80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare&#39;s gRPC
-proxy support. With this, both web and gRPC resources can live behind a CDN.
+###### `GET /robots.txt`: Robots
+Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Always
+allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https://{host}/sitemap.xml`.
+
+###### `GET /sitemap.xml`: Sitemap
+Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Lists a
+fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
+`/flutter` -- each qualified with the request&#39;s `Host`. It does not (yet) enumerate individual `Post`/`Event`/`User`
+pages.
+
+###### `GET /favicon.ico`: ICO Favicon
+Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`
+reference) as an `.ico`, publicly cacheable for 12 hours (`must-revalidate`), converting on the fly if the
+stored rendition is a `.png`. If no logo is configured, falls back to the bundled Tamagui frontend&#39;s default
+favicon instead. Whichever converted rendition of the logo is served, it&#39;s picked in size preference order
+Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
+so there&#39;s no reason to prefer a bigger one).
+
+###### `GET /favicon.png`: PNG Favicon
+As `GET /favicon.ico` above, but serves (and if necessary converts to) `.png` instead.
+
+###### `POST /media`: Upload Media
+See the [Media](#jonline-Media) section for the `Media` type itself; this is how its bytes actually get in
+(an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
+`Authorization` header or a `jonline_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
+body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
+truncated to that cap rather than rejected, since nothing checks for completeness the way `POST /email` does --
+at a path namespaced by uploader and request host (`user/{user_id}@{host}-{username}/{uuid}-{filename}`). A
+[`Media`](#jonline-Media) row is created immediately at `GLOBAL_PUBLIC` visibility (video content types also get
+a default `video_preview_time_ms`) and its ID returned as plain text -- there&#39;s no separate &#34;confirm&#34; step, and
+no image/video conversion happens synchronously on this request (see the background media-conversion job).
+
+###### `GET /media/{id}?size={original|small|medium|large}`: Download Media
+(An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
+-- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`&#39;s
+implementation), so a `Media` ID is currently a bearer capability. `size` (default `medium`) selects a converted
+rendition, falling back to the original upload if that conversion doesn&#39;t exist. The first request for a given
+rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
+from that cache. Cacheable for 12 hours (`must-revalidate`).
+
+###### `GET /calendar.ics`: Server Calendar
+Jonline events support iCalendar/RFC5545; only public events are included. &#34;Subscribe&#34; to a Jonline server at,
+for instance, `https://jonline.io/calendar.ics` to get a calendar of all public events on the server. In the
+Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
+the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+
+###### `GET /calendar.ics?user_id={id}`: User Calendar
+&#34;Subscribe&#34; to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
+calendar of all public events for that user.
+
+#### Web UI paths
+Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.
+
+Tamagui and Elm share one page structure (below) and are always *both* reachable, explicitly, at `/tamagui/*`
+and `/elm/*` respectively; unprefixed requests (`/`, `/posts`, `/post/{postId}`, etc.) render whichever of the
+two the server&#39;s `ServerConfiguration.server_info.web_user_interface` selects (`ELM_SPA` picks Elm; every other
+setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app -- every Elm-served
+path, prefixed or not, resolves to the same `index.html`, with in-app (client-side) routing taking over from
+there -- whereas Tamagui&#39;s Next.js build is statically exported one HTML file per route, so the server picks
+between actual distinct files below, each enriched with server-rendered, per-route social-preview
+(`&lt;title&gt;`/`og:*`) tags before being served.
+
+**Flutter does not participate in any of this.** It has no page structure of its own to speak of: no per-route
+pages, no server-rendered social-preview metadata, and no unprefixed presence at all -- a server configured to
+prefer it doesn&#39;t route &#34;/&#34; through the Tamagui/Elm machinery below and then render Flutter, it instead serves
+Flutter&#39;s own `index.html` directly, bypassing that machinery entirely. Flutter is otherwise reached only at the
+literal `/flutter` and `/flutter/*` paths, which serve its compiled static assets; from there, all further
+in-app navigation is handled entirely client-side by Flutter&#39;s own router and is invisible to the server.
+
+The shared Tamagui/Elm page structure, grouped the way the [Elm app&#39;s `Pages`
+directory](https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa/src/Pages) is (`{name}` denotes a
+dynamic path segment; `[@{host}]` marks where a [federated](#federated-profiles) `{username}@{host}`-style
+suffix is accepted for that segment):
+
+##### `/`: Home
+The community&#39;s latest activity.
+
+##### `/posts`: Posts
+The Posts listing.
+
+###### `/post/{postId}[@{host}]`: Post
+An individual [`Post`](#jonline-Post) -- including `Event`/`EventInstance` posts and replies, which are `Post`s
+themselves (see [Post](#post) above).
+
+##### `/events`: Events
+The Events listing.
+
+###### `/event/{eventInstanceId}[@{host}]`: Event
+An individual [`EventInstance`](#jonline-EventInstance).
+
+###### `/event_ai`: AI Event Importer
+Tamagui-only, for now -- an AI-assisted bulk `Event` importer. Elm doesn&#39;t have this page yet.
+
+##### `/people`: People
+The People listing.
+
+###### `/people/follow_requests`: Follow Requests
+The current user&#39;s pending [`Follow`](#jonline-Follow) requests.
+
+###### `/user/{userId}`: Profile
+A [`User`](#jonline-User) profile looked up by (stable) user ID.
+
+##### `/{username}`: User pages by username
+The same `User` profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
+looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
+since a username can change.
+
+###### `/{username}`: Profile
+This is also the server&#39;s last-resort catch-all: any otherwise-unmatched single path segment is tried here. On
+the Elm frontend this is also where admin-configured custom tab paths are resolved (see
+[`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- a matching custom path (e.g. a band
+mounting their Events listing at `/gigs`) wins over a same-named user, and a small set of reserved names can
+never be reached this way, only via `/user/{userId}`.
+
+###### `/{username}/posts`: Posts
+###### `/{username}/friends`: Friends
+###### `/{username}/followers`: Followers
+###### `/{username}/following`: Following
+
+##### `/g/{shortname}`: Groups
+A [`Group`](#jonline-Group)&#39;s pages. Tamagui-only for now -- the Elm frontend doesn&#39;t have Group pages yet.
+
+###### `/g/{shortname}`: Home
+###### `/g/{shortname}/posts`: Posts
+###### `/g/{shortname}/p/{postId}[@{host}]`: Post
+An individual `Post` cross-posted into the group.
+
+###### `/g/{shortname}/events`: Events
+###### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
+###### `/g/{shortname}/members`: Members
+###### `/g/{shortname}/m/{username}`: Member
+An individual [`Member`](#jonline-Member)&#39;s details.
+
+##### `/server/{serverIdentifier}`: Server
+Information about a (possibly federated) Jonline server.
+
+##### `/about`, `/about_jonline`: About
+This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 
 ### gRPC API
 
@@ -2166,6 +2330,7 @@ Either one of the app&#39;s predefined tabs, or a Post
 | ----- | ---- | ----- | ----------- |
 | tab | [NavigationTab](#jonline-NavigationTab) |  | Links to one of the app&#39;s predefined tabs/pages. |
 | post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
+| is_profile | [bool](#bool) |  | Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
 | emoji_icon | [string](#string) |  | Emoji shown as the tab&#39;s icon (e.g. &#34;🎪&#34;). |
 | icon_media_id | [string](#string) |  | Media ID (see `Media` APIs) of an image shown as the tab&#39;s icon. |
 | title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
@@ -2183,7 +2348,7 @@ If set, should override the default tab set for the Elm navigation on a Jonline 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. |
+| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is ignored and need not be set. |
 | tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via `CustomNavigationTabSet`.home instead. |
 
 
@@ -2342,6 +2507,7 @@ Configuration for a Jonline server instance.
 | anonymous_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions for a user who isn&#39;t logged in to the server. Allows admins to disable certain features for anonymous users. Valid values are `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`. |
 | default_user_permissions | [Permission](#jonline-Permission) | repeated | Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also grant/revoke these permissions for others. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
 | basic_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
+| custom_tabs | [CustomNavigationTabSet](#jonline-CustomNavigationTabSet) | optional |  |
 | people_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for users on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_USERS_GLOBALLY`. |
 | group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for groups on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
 | post_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for posts on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |

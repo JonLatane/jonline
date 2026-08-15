@@ -14,7 +14,7 @@ module Components.Users.Resolver exposing
 {-| Fetches a `Proto.Jonline.User` from a specific (possibly not-yet-connected)
 server, by id or by username -- the common guts `Components.Pages.UserProfilePage`
 (which additionally lets the viewer edit the resolved profile once loaded) and
-`Pages.Username_.Posts` (which just needs the resolved id, to filter
+`Pages.UsernameOrCustomTab_.Posts` (which just needs the resolved id, to filter
 `Components.Pages.PostsPage`'s feed to one user's own posts) both need.
 
 The fetch only ever runs once `targetHost` is a server the viewer is already

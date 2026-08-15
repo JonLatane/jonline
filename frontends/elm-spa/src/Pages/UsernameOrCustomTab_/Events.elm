@@ -1,25 +1,25 @@
-module Pages.Username_.Following exposing (Model, Msg, fromShared, page)
+module Pages.UsernameOrCustomTab_.Events exposing (Model, Msg, fromShared, page)
 
-{-| `/:username[@host]/following` -- the users a user (looked up by
-(impermanent) username) is following. Mirrors `Pages.Username_.Posts` exactly
--- first resolving the username to an id via `Components.Users.Resolver`,
-then handing the resolved `User` to `Components.Pages.UsersPage` (with
-`UserListingType.FOLLOWING`) instead of `Components.Pages.PostsPage`.
+{-| `/:username[@host]/events` -- one user's own events, looked up by
+(impermanent) username. `GetEventsRequest.authorUserId` needs the user's
+actual id, which the route doesn't have directly (unlike
+`Pages.User.UserId_.Events`), so this page first resolves the username to an
+id via `Components.Users.Resolver` (same as `Pages.UsernameOrCustomTab_.Posts`) before
+handing that id to `Components.Pages.EventsPage`.
 
-Same reserved-username short-circuit as `Pages.Username_`/`Pages.Username_.Posts`
--- see their module docs for why.
+Same reserved-username short-circuit as `Pages.UsernameOrCustomTab_`/`Pages.UsernameOrCustomTab_.Posts`
+-- see either's module doc for why.
 
 -}
 
-import Components.Pages.UsersPage as UsersPage
+import Components.Pages.EventsPage as EventsPage
 import Components.Users as Users
 import Components.Users.Resolver as Resolver
 import Effect exposing (Effect)
-import Gen.Params.Username_.Following exposing (Params)
+import Gen.Params.UsernameOrCustomTab_.Events exposing (Params)
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
 import Page
-import Proto.Jonline.UserListingType exposing (UserListingType(..))
 import Request
 import Shared
 import UI
@@ -39,19 +39,19 @@ page shared req =
 type Model
     = Reserved String
     | Resolving Resolver.Model
-    | Listing UsersPage.Model
+    | Events EventsPage.Model
 
 
 type Msg
     = ResolverMsg Resolver.Msg
-    | ListingMsg UsersPage.Msg
+    | EventsMsg EventsPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( username, targetHost ) =
-            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.username
+            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
     if Users.isReservedUsername username then
         ( Reserved username, Effect.none )
@@ -68,8 +68,8 @@ subscriptions model =
         Resolving resolverModel ->
             Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
 
-        Listing listingModel ->
-            Sub.map ListingMsg (UsersPage.subscriptions listingModel)
+        Events eventsModel ->
+            Sub.map EventsMsg (EventsPage.subscriptions eventsModel)
 
         Reserved _ ->
             Sub.none
@@ -86,29 +86,29 @@ update shared req msg model =
             case newResolver.status of
                 Resolver.Loaded user ->
                     let
-                        ( listingModel, listingEffect ) =
-                            UsersPage.init shared (Just ( newResolver.targetHost, user, FOLLOWING )) req.key req.url.path req.query
+                        ( eventsModel, eventsEffect ) =
+                            EventsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False False Nothing
                     in
-                    ( Listing listingModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map ListingMsg listingEffect ] )
+                    ( Events eventsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map EventsMsg eventsEffect ] )
 
                 _ ->
                     ( Resolving newResolver, Effect.map ResolverMsg resolverEffect )
 
-        ( ListingMsg subMsg, Listing listingModel ) ->
-            UsersPage.update shared subMsg listingModel
-                |> Tuple.mapFirst Listing
-                |> Tuple.mapSecond (Effect.map ListingMsg)
+        ( EventsMsg subMsg, Events eventsModel ) ->
+            EventsPage.update shared subMsg eventsModel
+                |> Tuple.mapFirst Events
+                |> Tuple.mapSecond (Effect.map EventsMsg)
 
-        ( ResolverMsg subMsg, Listing listingModel ) ->
+        ( ResolverMsg subMsg, Events eventsModel ) ->
             -- The resolver has already resolved (see above) -- any further
             -- `SharedMsg` it's forwarded (via `fromShared`) still needs to
-            -- reach `UsersPage`, e.g. an `AccountsPanelMsg` it should
-            -- re-fetch on.
+            -- reach `EventsPage`, e.g. an `AccountsPanelMsg` it should
+            -- re-fetch on, same as `Pages.UsernameOrCustomTab_.Posts` handles.
             case subMsg of
                 Resolver.SharedMsg sharedMsg ->
-                    UsersPage.update shared (UsersPage.fromShared sharedMsg) listingModel
-                        |> Tuple.mapFirst Listing
-                        |> Tuple.mapSecond (Effect.map ListingMsg)
+                    EventsPage.update shared (EventsPage.fromShared sharedMsg) eventsModel
+                        |> Tuple.mapFirst Events
+                        |> Tuple.mapSecond (Effect.map EventsMsg)
 
                 _ ->
                     ( model, Effect.none )
@@ -131,14 +131,14 @@ view shared req model =
                 Resolving _ ->
                     p [ class "posts-empty" ] [ text "Loading…" ]
 
-                Listing listingModel ->
-                    Html.map ListingMsg (UsersPage.view shared listingModel)
+                Events eventsModel ->
+                    Html.map EventsMsg (EventsPage.view shared True eventsModel)
             ]
     }
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
-see `Components.Users.Resolver.fromShared`/`Components.Pages.UsersPage.fromShared`.
+see `Components.Users.Resolver.fromShared`/`Components.Pages.EventsPage.fromShared`.
 -}
 fromShared : Shared.Msg -> Msg
 fromShared sharedMsg =

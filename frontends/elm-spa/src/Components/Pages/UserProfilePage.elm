@@ -12,8 +12,8 @@ module Components.Pages.UserProfilePage exposing
 {-| The shared guts of a user profile page: fetching a `Proto.Jonline.User`
 from a specific (possibly not-yet-connected) server, by id or by username, and
 rendering it -- reused by both `Pages.User.UserId_` (`/user/:id[@host]`) and
-`Pages.Username_` (`/:username[@host]`), which differ only in which `Lookup`
-they parse out of their route and (for `Pages.Username_`) whether the username
+`Pages.UsernameOrCustomTab_` (`/:username[@host]`), which differ only in which `Lookup`
+they parse out of their route and (for `Pages.UsernameOrCustomTab_`) whether the username
 is even routable at all (see `Components.Users.isReservedUsername`, checked by
 the page itself before ever constructing this module's `Model`).
 
@@ -23,7 +23,7 @@ id or username.
 
 The actual "fetch a `User` once its server is connected, retry until it is"
 state machine lives in `Components.Users.Resolver` (`model.resolver`), shared
-with `Pages.Username_.Posts`, which needs the same username -> id resolution
+with `Pages.UsernameOrCustomTab_.Posts`, which needs the same username -> id resolution
 but none of this module's profile-editing machinery.
 
 -}
@@ -521,7 +521,7 @@ accountsPanelEffect maybeAccountsPanelMsg =
 equality check), except keyed to `model.resolver.targetHost` rather than
 `mainFrontendHost`, since a profile page (unlike the home feed) always
 belongs to one specific server. `targetHost` is already known from the route
-by `init` (see `Pages.User.UserId_.init`/`Pages.Username_.init`), so this
+by `init` (see `Pages.User.UserId_.init`/`Pages.UsernameOrCustomTab_.init`), so this
 covers both the very first paint and any later host change (e.g.
 `ConnectClicked` connecting a not-yet-connected `targetHost`).
 
@@ -2162,7 +2162,7 @@ lookupToString targetHost lookup =
 
 
 {-| Before the `User` has loaded, falls back to whatever the route itself
-already told us: the username for `ByUsername` (`Pages.Username_`), or else
+already told us: the username for `ByUsername` (`Pages.UsernameOrCustomTab_`), or else
 "User <id>" for `ById` (`Pages.User.UserId_`, which has no username to show
 yet).
 -}
@@ -2658,8 +2658,8 @@ editErrorView status =
 
 
 {-| `postsHref`/`followersHref`/`followingHref`/`friendsHref` (see `profileDetail`) link the
-"Posts"/"Followers"/"Following"/"Friends" counts to `Pages.Username_.Posts`/
-`Pages.Username_.Followers`/`Pages.Username_.Following`/`Pages.Username_.Friends`
+"Posts"/"Followers"/"Following"/"Friends" counts to `Pages.UsernameOrCustomTab_.Posts`/
+`Pages.UsernameOrCustomTab_.Followers`/`Pages.UsernameOrCustomTab_.Following`/`Pages.UsernameOrCustomTab_.Friends`
 (or their `Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
 own (yet) to link to.
 -}

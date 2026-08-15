@@ -3,7 +3,7 @@ module Pages.User.UserId_ exposing (Model, Msg, fromShared, page)
 {-| `/user/:id[@host]` -- a user profile looked up by (permanent) id, on
 `mainFrontendHost` or, with an `@host` suffix, some other federated server.
 Thin wrapper around `Components.UserProfilePage`, which does all the actual
-work -- mirrors `Pages.Post.PostId_`. See `Pages.Username_` for the
+work -- mirrors `Pages.Post.PostId_`. See `Pages.UsernameOrCustomTab_` for the
 `/:username[@host]` counterpart.
 -}
 

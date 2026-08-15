@@ -27,7 +27,16 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  Links to a specific Post (e.g. for a custom business site's page).
 
 
+### IsProfile
+
+ Only relevant for a CustomNavigationTabWithPath.
+ Indicates the custom tab is for an actual user profile.
+ Ultimately this isn't very "custom" in terms of the URL scheme, just
+ it being a navigation tab.
+
+
 -}
-type Target a0 a1
+type Target a0 a1 a2
     = Tab a0
     | PostId a1
+    | IsProfile a2

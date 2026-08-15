@@ -6,7 +6,7 @@ server, identified by a `[http|https]:hostname` route segment (e.g.
 route param; mirrors the Tamagui app's `server_details_screen.tsx`, which
 parses its own `id` route param the same way). Thin wrapper around
 `Components.Pages.ServerInformationPage`, which does all the actual work --
-mirrors `Pages.Username_`'s own `Reserved`/`Profile` split around
+mirrors `Pages.UsernameOrCustomTab_`'s own `Reserved`/`Profile` split around
 `Components.Pages.UserProfilePage`, for the same reason: parsing the route
 segment can fail (an ill-formed identifier) in a way that has nothing to do
 with that shared module, so it's handled here instead, before that module's

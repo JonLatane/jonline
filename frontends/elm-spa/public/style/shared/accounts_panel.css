@@ -74,7 +74,8 @@
   text-decoration: none;
 }
 
-.info-button {
+.info-button,
+[data-glyph="i"] {
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
   font-weight: bold;

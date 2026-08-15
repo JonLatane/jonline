@@ -901,6 +901,7 @@ fieldNumbersServerConfiguration :
     , anonymousUserPermissions : Int
     , defaultUserPermissions : Int
     , basicUserPermissions : Int
+    , customTabs : Int
     , peopleSettings : Int
     , groupSettings : Int
     , postSettings : Int

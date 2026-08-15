@@ -1,13 +1,13 @@
-module Pages.Username_.Friends exposing (Model, Msg, fromShared, page)
+module Pages.UsernameOrCustomTab_.Friends exposing (Model, Msg, fromShared, page)
 
 {-| `/:username[@host]/friends` -- the users who mutually follow (and are
 followed by) a user (looked up by (impermanent) username). Mirrors
-`Pages.Username_.Posts` exactly
+`Pages.UsernameOrCustomTab_.Posts` exactly
 -- first resolving the username to an id via `Components.Users.Resolver`,
 then handing the resolved `User` to `Components.Pages.UsersPage` (with
 `UserListingType.FRIENDS`) instead of `Components.Pages.PostsPage`.
 
-Same reserved-username short-circuit as `Pages.Username_`/`Pages.Username_.Posts`
+Same reserved-username short-circuit as `Pages.UsernameOrCustomTab_`/`Pages.UsernameOrCustomTab_.Posts`
 -- see their module docs for why.
 
 -}
@@ -16,7 +16,7 @@ import Components.Pages.UsersPage as UsersPage
 import Components.Users as Users
 import Components.Users.Resolver as Resolver
 import Effect exposing (Effect)
-import Gen.Params.Username_.Friends exposing (Params)
+import Gen.Params.UsernameOrCustomTab_.Friends exposing (Params)
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
 import Page
@@ -52,7 +52,7 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( username, targetHost ) =
-            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.username
+            Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
     if Users.isReservedUsername username then
         ( Reserved username, Effect.none )

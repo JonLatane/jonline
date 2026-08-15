@@ -13,14 +13,14 @@ listing of users and rendering them as `Components.Users.userCard`s -- reused
 by `Pages.People` (which adds its own "People" heading and passes
 `target = Nothing`, an unfiltered `EVERYONE` listing aggregated across every
 enabled server, mirroring `Components.Pages.PostsPage`'s own aggregation for
-`Pages.Home_`) and `Pages.Username_.{Following,Followers,Friends}`/
+`Pages.Home_`) and `Pages.UsernameOrCustomTab_.{Following,Followers,Friends}`/
 `Pages.User.UserId_.{Following,Followers,Friends}` (which pass the
 already-resolved profile `User` paired with the host it was resolved from and
 the relevant `UserListingType`, restricting the listing to that user's own
 relationship, fetched from just that one host -- see `candidateServers` --
 and adding a "Following | <name>"-style heading), mirroring
 `Components.Pages.PostsPage`'s own `author` parameter and reuse by
-`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`.
+`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts`.
 
 Like `PostsPage`, cards fade/scale in and out (see `UserAnimation`) as users
 appear/disappear from the listing -- e.g. a search that narrows the results,
@@ -315,7 +315,7 @@ updateInner shared msg model =
 aggregated together, when there's no `target` (`Pages.People`'s unfiltered
 `EVERYONE` listing, mirroring `Components.Pages.PostsPage.fetchNewServers`'s
 own aggregation for `Pages.Home_`) -- but just `target`'s own host, alone,
-once there is one (`Pages.Username_.{Following,Followers,Friends}`/
+once there is one (`Pages.UsernameOrCustomTab_.{Following,Followers,Friends}`/
 `Pages.User.UserId_.{Following,Followers,Friends}`), since a user's
 relationships only ever live on the one server that user themself is on;
 querying every other enabled server too would be pointless (nothing there
@@ -474,7 +474,7 @@ applySearchChange shared model =
 {-| Keeps `Shared.Breadcrumbs` pointed at this listing's own root:
 `FromServerHost mainFrontendHost` for `Pages.People`'s unfiltered listing
 (`model.target == Nothing`), or `FromUser` the already-resolved `target` user
-once there is one (`Pages.Username_.{Following,Followers,Friends}`/
+once there is one (`Pages.UsernameOrCustomTab_.{Following,Followers,Friends}`/
 `Pages.User.UserId_.{Following,Followers,Friends}`) -- mirrors
 `Components.Pages.PostsPage.setBreadcrumbsRoot` exactly, just keyed off
 `target`'s `User` instead of `author`'s, reissued after every `update`, a

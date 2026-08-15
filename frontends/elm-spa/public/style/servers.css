@@ -365,6 +365,123 @@
   color: var(--fg);
 }
 
+/* Settings tab's "Navigation Tabs" section (Components/Pages/ServerInformationPage/SettingsTab.elm)
+   -- a horizontally-scrolling strip of chips previewing UI.headerNav's own tab layout, reusing
+   accounts_panel.css's `.server-chip`/`.server-chip-top`/`-bottom` look (see `.federated-servers-strip`'s
+   own doc above for why) rather than introducing a whole new chip style. `customTabsDisplayView`'s
+   read-only strip isn't FLIP-animated (nothing ever adds/removes/reorders it), so it sets its own
+   `gap` directly, same as `.federated-servers-strip`. */
+.server-details-custom-tabs,
+.server-details-custom-tabs-edit {
+  margin-bottom: 1.25rem;
+}
+
+.custom-tabs-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  flex-shrink: 0;
+}
+
+.custom-tabs-strip.flip-animated-row {
+  gap: 0;
+}
+
+.custom-tab-chip {
+  width: 100px;
+}
+
+.custom-tab-chip-home {
+  width: 120px;
+}
+
+.custom-tab-chip-icon-row {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.custom-nav-tab-icon-image {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.custom-tab-chip-label {
+  font-size: 0.75rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Editable chips (`customTabEditChip`) are noticeably wider than the plain preview ones -- they
+   need room for the "type of tab" `<select>`, an optional Post-id `<input>`, and a Title `<input>`,
+   none of which a 100px preview chip has space for. Mirrors `.federated-server-chip`'s own width
+   override. */
+.custom-tab-chip-edit {
+  width: 200px;
+}
+
+.custom-tab-chip-edit-fields {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+.custom-tab-chip-edit-fields select,
+.custom-tab-chip-edit-fields input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.custom-tab-icon-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.custom-tab-icon-preview {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.custom-tab-emoji-input {
+  width: 3rem;
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.custom-tab-icon-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.custom-tab-icon-choose {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
 .server-details-cdn-row {
   display: flex;
   align-items: center;

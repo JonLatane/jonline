@@ -35,7 +35,7 @@ module Components.Users exposing
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.User`s -- the fetch
-helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.Username_`, by
+helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.UsernameOrCustomTab_`, by
 username) need against a specific `Shared.AccountsPanel.Server`, the
 `/user/:id[@host]`/`/:username[@host]` route id parsing/linking (mirroring
 `Components.Posts`' `postHref`/`parsePostRouteId` for `/post/:id[@host]`), and
@@ -378,7 +378,7 @@ where the username might not be usable.
 -}
 usernameHref : String -> String -> String -> String -> String
 usernameHref basePath viewingServerHost userServerHost username =
-    basePath ++ Gen.Route.toHref (Gen.Route.Username_ { username = withHostSuffix viewingServerHost userServerHost username })
+    basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab_ { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
 
 
 {-| The best available profile link for a user: their `/:username[@host]`
