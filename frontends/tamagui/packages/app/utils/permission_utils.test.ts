@@ -4,19 +4,19 @@ import { hasAdminPermission, hasPermission } from './permission_utils';
 
 describe('hasPermission', () => {
   test('returns false when item is undefined', () => {
-    expect(hasPermission(undefined, Permission.MODERATE)).toBe(false);
+    expect(hasPermission(undefined, Permission.MODERATE_POSTS)).toBe(false);
   });
 
   test('returns true when the exact permission is present', () => {
-    expect(hasPermission({ permissions: [Permission.MODERATE] }, Permission.MODERATE)).toBe(true);
+    expect(hasPermission({ permissions: [Permission.MODERATE_POSTS] }, Permission.MODERATE_POSTS)).toBe(true);
   });
 
   test('returns false when the permission is absent', () => {
-    expect(hasPermission({ permissions: [Permission.MODERATE] }, Permission.ADMIN)).toBe(false);
+    expect(hasPermission({ permissions: [Permission.MODERATE_POSTS] }, Permission.ADMIN)).toBe(false);
   });
 
   test('ADMIN implies other permissions', () => {
-    expect(hasPermission({ permissions: [Permission.ADMIN] }, Permission.MODERATE)).toBe(true);
+    expect(hasPermission({ permissions: [Permission.ADMIN] }, Permission.MODERATE_POSTS)).toBe(true);
   });
 
   test('ADMIN does not imply BUSINESS', () => {
@@ -34,6 +34,6 @@ describe('hasAdminPermission', () => {
   });
 
   test('returns false when ADMIN is absent', () => {
-    expect(hasAdminPermission({ permissions: [Permission.MODERATE] })).toBe(false);
+    expect(hasAdminPermission({ permissions: [Permission.MODERATE_POSTS] })).toBe(false);
   });
 });
