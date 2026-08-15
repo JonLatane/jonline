@@ -12,7 +12,7 @@ use std::{
 };
 
 use crate::{
-    protos::{custom_navigation_tab, GetPostsRequest, GetUsersRequest, Permission},
+    protos::{custom_navigation_tab, GetPostsRequest, GetUsersRequest, NavigationTab, Permission},
     rpcs,
     web::RocketState,
 };
@@ -83,6 +83,12 @@ pub async fn spa_file_or_username_or_custom_tab(
                         let app = spa_prefix(origin.path().as_str())
                             .unwrap_or_else(|| root_app(&server_info));
                         let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+                        let server_logo = server_info
+                            .logo
+                            .clone()
+                            .unwrap_or_default()
+                            .square_media_id
+                            .map(|id| format!("/media/{}", id));
                         let path = strip_spa_prefix(origin.path().as_str());
                         let path_components = path.split('/').collect_vec();
                         // FUck it let's see if this works
@@ -100,92 +106,136 @@ pub async fn spa_file_or_username_or_custom_tab(
 
                         // A `CustomNavigationTabWithPath` claiming this exact segment (see
                         // `UI.CustomNav.customTabFor` on the Elm side, which this mirrors) wins
-                        // over the plain username lookup below -- today only a `PostId` target
-                        // changes what's previewed here (a `Tab`/`IsProfile` target either isn't
-                        // reachable through this single-segment route at all, or -- for
-                        // `IsProfile` -- already resolves to the same username lookup this file
-                        // already does), but matching generically (rather than hard-coding
-                        // "does this path look like a post") keeps this in sync with whatever the
-                        // admin's actually configured.
-                        let matched_post_id: Option<String> = configuration
+                        // over the plain username lookup below, regardless of what it targets --
+                        // `Pages.UsernameOrCustomTab_.customTabFor` always runs before its own
+                        // username fallback, so a configured custom path beats a same-named user
+                        // even when it points at a built-in tab like Events, not just a Post.
+                        let matched_tab = configuration
                             .custom_tabs
                             .as_ref()
                             .and_then(|set| set.tabs.iter().find(|t| t.path == path_segment))
-                            .and_then(|t| t.custom_tab.as_ref())
+                            .and_then(|t| t.custom_tab.as_ref());
+
+                        let (page_title, description, avatar) = match matched_tab
                             .and_then(|ct| ct.target.as_ref())
-                            .and_then(|target| match target {
-                                custom_navigation_tab::Target::PostId(id) => Some(id.clone()),
-                                _ => None,
-                            });
-
-                        let (page_title, description, avatar) = if let Some(post_id) =
-                            matched_post_id
                         {
-                            let post = rpcs::get_posts(
-                                GetPostsRequest {
-                                    post_id: Some(post_id),
-                                    ..Default::default()
-                                },
-                                &None,
-                                &mut connection,
-                            )
-                            .ok()
-                            .map(|r| r.posts.into_iter().next())
-                            .flatten();
+                            Some(custom_navigation_tab::Target::PostId(post_id)) => {
+                                let post = rpcs::get_posts(
+                                    GetPostsRequest {
+                                        post_id: Some(post_id.clone()),
+                                        ..Default::default()
+                                    },
+                                    &None,
+                                    &mut connection,
+                                )
+                                .ok()
+                                .map(|r| r.posts.into_iter().next())
+                                .flatten();
 
-                            match post {
-                                Some(post) => {
-                                    let page_title =
-                                        post.title.clone().unwrap_or_else(|| "Post".to_string());
-                                    let description = post.content.clone();
-                                    let avatar = post
-                                        .media
-                                        .first()
-                                        .map(|m| format!("/media/{}", m.id));
-                                    (page_title, description, avatar)
-                                }
-                                None => ("Post".to_string(), None, None),
+                                let (default_title, description, avatar) = match post {
+                                    Some(post) => {
+                                        let default_title = post
+                                            .title
+                                            .clone()
+                                            .unwrap_or_else(|| "Post".to_string());
+                                        let description = post.content.clone();
+                                        let avatar = post
+                                            .media
+                                            .first()
+                                            .map(|m| format!("/media/{}", m.id));
+                                        (default_title, description, avatar)
+                                    }
+                                    None => ("Post".to_string(), None, None),
+                                };
+                                // `title` (see `CustomNavigationTab.title`'s own proto doc)
+                                // overrides the Post's own title if the admin's set one, e.g. so
+                                // "/see_us_live" can read "See Us Live" instead of the Post's
+                                // internal title.
+                                let page_title = matched_tab
+                                    .and_then(|ct| ct.title.clone())
+                                    .unwrap_or(default_title);
+                                (page_title, description, avatar)
                             }
-                        } else {
-                            let username = Some(path_segment);
-                            let user = rpcs::get_users(
-                                GetUsersRequest {
-                                    username,
-                                    ..Default::default()
-                                },
-                                &None,
-                                &mut connection,
-                            )
-                            .ok()
-                            .map(|u| u.users.into_iter().next())
-                            .flatten();
+                            Some(custom_navigation_tab::Target::Tab(nav_tab))
+                                if NavigationTab::try_from(*nav_tab).is_ok() =>
+                            {
+                                let (default_title, description) =
+                                    match NavigationTab::try_from(*nav_tab).unwrap() {
+                                        NavigationTab::HomeTab => ("Home".to_string(), None),
+                                        NavigationTab::EventsTab => (
+                                            "Events".to_string(),
+                                            Some(
+                                                "Searchable, RSVPable Events from a Jonline community"
+                                                    .to_string(),
+                                            ),
+                                        ),
+                                        NavigationTab::PostsTab => (
+                                            "Posts".to_string(),
+                                            Some("Posts from a Jonline community".to_string()),
+                                        ),
+                                        NavigationTab::PeopleTab => (
+                                            "People".to_string(),
+                                            Some(
+                                                "User listings for a Jonline community"
+                                                    .to_string(),
+                                            ),
+                                        ),
+                                        NavigationTab::AboutTab => (
+                                            "About Community".to_string(),
+                                            Some("Information a Jonline community".to_string()),
+                                        ),
+                                    };
+                                let page_title = matched_tab
+                                    .and_then(|ct| ct.title.clone())
+                                    .unwrap_or(default_title);
+                                (page_title, description, server_logo.clone())
+                            }
+                            // No matching custom tab, an `IsProfile` target (whose url *is* the
+                            // matched username either way -- see `UI.CustomNav.CustomTabTarget`'s
+                            // own doc), or an unrecognized `Tab` value all fall back to the plain
+                            // username lookup, mirroring `Pages.UsernameOrCustomTab_.initEmbedded`'s
+                            // own `NavigationTabUnrecognized_ -> initProfile` fallback.
+                            _ => {
+                                let username = Some(path_segment);
+                                let user = rpcs::get_users(
+                                    GetUsersRequest {
+                                        username,
+                                        ..Default::default()
+                                    },
+                                    &None,
+                                    &mut connection,
+                                )
+                                .ok()
+                                .map(|u| u.users.into_iter().next())
+                                .flatten();
 
-                            match user {
-                                Some(user) => {
-                                    let is_business = user
-                                        .permissions
-                                        .contains(&(Permission::Business as i32));
-                                    let page_title = format!(
-                                        "{} - {}",
-                                        match user.real_name {
-                                            name if name != "" => name,
-                                            _ => user.username.clone(),
-                                        },
-                                        // user.username.clone(),
-                                        if is_business {
-                                            "Business Profile"
-                                        } else {
-                                            "Profile"
-                                        }
-                                    );
-                                    let description = user.bio.clone();
-                                    let avatar = user
-                                        .avatar
-                                        .clone()
-                                        .map(|a| format!("/media/{}", a.id));
-                                    (page_title, Some(description), avatar)
+                                match user {
+                                    Some(user) => {
+                                        let is_business = user
+                                            .permissions
+                                            .contains(&(Permission::Business as i32));
+                                        let page_title = format!(
+                                            "{} - {}",
+                                            match user.real_name {
+                                                name if name != "" => name,
+                                                _ => user.username.clone(),
+                                            },
+                                            // user.username.clone(),
+                                            if is_business {
+                                                "Business Profile"
+                                            } else {
+                                                "Profile"
+                                            }
+                                        );
+                                        let description = user.bio.clone();
+                                        let avatar = user
+                                            .avatar
+                                            .clone()
+                                            .map(|a| format!("/media/{}", a.id));
+                                        (page_title, Some(description), avatar)
+                                    }
+                                    None => ("Profile".to_string(), None, None),
                                 }
-                                None => ("Profile".to_string(), None, None),
                             }
                         };
 

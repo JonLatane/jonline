@@ -347,7 +347,7 @@ update shared req msg model =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = UI.pageTitle shared (titleFor model)
+    { title = UI.pageTitle shared (titleFor shared req model)
     , body =
         UI.layout shared
             req.route
@@ -383,35 +383,46 @@ view shared req model =
     }
 
 
-titleFor : Model -> List String
-titleFor model =
-    case model of
-        Profile subModel ->
-            [ UserProfilePage.titleFor subModel ]
+{-| A matched custom tab's own `title` (see `CustomNavigationTab.title`'s proto doc, "defaults to
+the predefined tab's/Post's title if unset") wins over every one of `model`'s own default titles
+below, including a fetched Post's real title -- so e.g. a `/see_us_live` tab titled "See Us Live"
+reads as "See Us Live | <server name>" instead of "Events | <server name>", matching the nav
+tooltip `CustomNav.resolvedTitle` already shows for the same tab.
+-}
+titleFor : Shared.Model -> Request.With Params -> Model -> List String
+titleFor shared req model =
+    case customTabFor shared req.params.usernameOrCustomTab |> Maybe.andThen .title of
+        Just title ->
+            [ title ]
 
-        EmbeddedEvents _ ->
-            []
+        Nothing ->
+            case model of
+                Profile subModel ->
+                    [ UserProfilePage.titleFor subModel ]
 
-        EmbeddedPosts _ ->
-            [ "Posts" ]
+                EmbeddedEvents _ ->
+                    []
 
-        EmbeddedPeople _ ->
-            [ "People" ]
+                EmbeddedPosts _ ->
+                    [ "Posts" ]
 
-        EmbeddedAbout _ ->
-            [ "About" ]
+                EmbeddedPeople _ ->
+                    [ "People" ]
 
-        EmbeddedPost subModel ->
-            [ PostPage.titleFor subModel ]
+                EmbeddedAbout _ ->
+                    [ "About" ]
 
-        EmbeddedProfile subModel ->
-            [ UserProfilePage.titleFor subModel ]
+                EmbeddedPost subModel ->
+                    [ PostPage.titleFor subModel ]
 
-        Reserved _ ->
-            [ "Not Found" ]
+                EmbeddedProfile subModel ->
+                    [ UserProfilePage.titleFor subModel ]
 
-        Redirecting ->
-            []
+                Reserved _ ->
+                    [ "Not Found" ]
+
+                Redirecting ->
+                    []
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page -- see `Msg`'s own doc
