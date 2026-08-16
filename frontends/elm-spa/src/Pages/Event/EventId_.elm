@@ -97,6 +97,14 @@ type alias Model =
     -- Live only while the moderation-status selector (see `moderationView`)
     -- is open -- mirrors `postFieldEdit` in shape.
     , moderationEdit : Maybe ModerationEdit
+
+    -- `Submitting`/`SubmitFailed` push status per `eventSyncDestinationId`,
+    -- for the "synced to" listing's own Push/Push-again button (see
+    -- `Events.eventSyncDestinationsView`'s `isPushing`/`pushError`) --
+    -- mirrors `Components.Pages.EventsPage.Model.pushStatuses`, just keyed by
+    -- destination id alone rather than `instanceId ++ "|" ++ destinationId`,
+    -- since this page only ever shows one `EventInstance` at a time.
+    , syncDestinationPushStatuses : Dict String SubmitStatus
     }
 
 
@@ -167,6 +175,14 @@ type Msg
       -- found, e.g. an `Event` with only one instance) is a pure no-op.
     | GotScrollTarget (Result Dom.Error Float)
     | Poll
+      -- The "synced to" listing's own Push/Push-again button (see
+      -- `Model.syncDestinationPushStatuses`'s own doc) -- the Delete button
+      -- next to it needs no `Msg` of its own, going straight through
+      -- `Shared.RequestDelete`/`Shared.ConfirmEventInstanceSyncDestinationDelete`
+      -- like `Components.Pages.EventsPage.eventCardView`'s own `onDelete`
+      -- does, picked up in `SharedMsg` below.
+    | PushSyncDestinationClicked String
+    | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
     | SharedMsg Shared.Msg
 
 
@@ -278,6 +294,7 @@ init shared params =
                 , mediaEditActive = False
                 , postFieldEdit = Nothing
                 , moderationEdit = Nothing
+                , syncDestinationPushStatuses = Dict.empty
                 }
     in
     ( fetchedModel
@@ -588,6 +605,37 @@ update shared req msg model =
         Poll ->
             fetchIfReady shared model
 
+        PushSyncDestinationClicked destinationId ->
+            case ( model.eventStatus, serverAndAccount shared model ) of
+                ( EventLoaded _ instance, Just ( server, account ) ) ->
+                    ( { model | syncDestinationPushStatuses = Dict.insert destinationId Submitting model.syncDestinationPushStatuses }
+                    , Events.syncEventInstance shared.accounts ( Just account.userId, server.frontendHost ) instance.id destinationId
+                        |> Task.attempt (GotSyncDestinationPushResult destinationId)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotSyncDestinationPushResult destinationId (Ok ( maybeAccountsPanelMsg, updatedInstance )) ->
+            ( { model
+                | syncDestinationPushStatuses = Dict.remove destinationId model.syncDestinationPushStatuses
+                , eventStatus =
+                    case model.eventStatus of
+                        EventLoaded event _ ->
+                            EventLoaded event updatedInstance
+
+                        other ->
+                            other
+              }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotSyncDestinationPushResult destinationId (Err err) ->
+            ( { model | syncDestinationPushStatuses = Dict.insert destinationId (SubmitFailed (AccountsPanel.grpcErrorToString err)) model.syncDestinationPushStatuses }
+            , Effect.none
+            )
+
         SharedMsg subMsg ->
             let
                 ( fetchedModel, fetchEffect ) =
@@ -655,6 +703,18 @@ update shared req msg model =
                         -- there's nothing left here to show.
                         Shared.GotEventDeleteResult (Ok _) ->
                             ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
+
+                        -- The "synced to" listing's own Delete button (see
+                        -- `Model.syncDestinationPushStatuses`'s own doc)
+                        -- resolving successfully -- mirrors
+                        -- `Components.Pages.EventsPage`'s identical branch:
+                        -- refetch, since a successful un-sync changes
+                        -- `instance.syncDestinations` behind this
+                        -- already-fetched copy's back the same way, and the
+                        -- result carries no destination id to patch it out
+                        -- by hand with.
+                        Shared.GotEventInstanceSyncDestinationDeleteResult _ (Ok _) ->
+                            refetch shared model
 
                         _ ->
                             ( model, Effect.none )
@@ -1161,15 +1221,34 @@ eventDetailView shared model event instance =
         , instanceMetaView shared model instance
         , Events.eventSyncSourceView event
 
-        -- `availableSyncDestinations` is always `Nothing` here -- push/delete
-        -- UI is only wired up on `Components.Pages.UserProfilePage`'s embedded
-        -- events feed for now (see `Components.Events.eventSyncDestinationsView`'s
-        -- own doc). The `isPushing`/`pushError`/`onPush`/`onDelete` placeholders
-        -- below are never actually invoked (no button renders when `Nothing`),
-        -- so this needs no new `Msg`/`update`/state here -- just enough shape
-        -- to type-check against the shared function's signature, ready for a
-        -- future session to wire up real push/delete here.
-        , Events.eventSyncDestinationsView Nothing (\_ -> False) (\_ -> Nothing) (\_ -> SharedMsg Shared.NoOp) (\_ _ -> SharedMsg Shared.NoOp) instance
+        -- `availableSyncDestinations` is `Just []`, not `Nothing` -- this
+        -- page only ever shows destinations `instance` is *already* synced
+        -- to (`eventSyncDestinationsView`'s `syncedRows`, built from
+        -- `instance.syncDestinations` alone), never ones it isn't yet (that
+        -- would need this page's own fetch of the account's configured
+        -- `EventSyncDestination`s, which only `UserProfilePage` currently
+        -- has) -- an empty `availableDestinations` makes `notYetSyncedRows`
+        -- empty too, so only the synced rows (each with a working
+        -- Push-again/Delete pair) ever render. `destinationName` is always
+        -- `Nothing` for the same reason (no `EventSyncDestination` to read a
+        -- Facebook Page name off of), which just falls back to the row's
+        -- generic "Facebook Page" label.
+        , Events.eventSyncDestinationsView
+            (Just [])
+            (\destinationId -> Dict.get destinationId model.syncDestinationPushStatuses == Just Submitting)
+            (\destinationId ->
+                case Dict.get destinationId model.syncDestinationPushStatuses of
+                    Just (SubmitFailed err) ->
+                        Just err
+
+                    _ ->
+                        Nothing
+            )
+            PushSyncDestinationClicked
+            (\destinationId destinationLabel ->
+                SharedMsg (Shared.RequestDelete (Shared.ConfirmEventInstanceSyncDestinationDelete instance destinationId destinationLabel model.targetHost))
+            )
+            instance
         ]
 
 
