@@ -61,6 +61,7 @@ import Pages.About
 import Pages.Event.EventId_
 import Pages.Events
 import Pages.Home_
+import Pages.Messages
 import Pages.People
 import Pages.Post.PostId_
 import Pages.Posts
@@ -351,6 +352,9 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.People _ _ ->
             Just (Gen.Msg.People (Pages.People.fromShared sharedMsg))
+
+        Gen.Model.Messages _ _ ->
+            Just (Gen.Msg.Messages (Pages.Messages.fromShared sharedMsg))
 
         _ ->
             Nothing

@@ -26,6 +26,7 @@ import Browser.Events
 import Browser.Navigation as Nav
 import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
+import Components.Pages.MessagesPage as MessagesPage
 import Components.Posts as Posts
 import Components.Users as Users
 import Grpc
@@ -42,6 +43,7 @@ import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
@@ -120,6 +122,7 @@ type Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
     | CreateNewPanelMsg CreateNewPanel.Msg
+    | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
@@ -288,6 +291,7 @@ type alias Panels =
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
+    , messagingPanel : MessagingPanel.Model
     , confirmingDeleteFor : Maybe DeleteConfirmation
     }
 
@@ -374,6 +378,7 @@ init basePath req flags =
                 , mediaViewerPanel = MediaViewerPanel.init
                 , myMediaPanel = MyMediaPanel.init
                 , createNewPanel = CreateNewPanel.init
+                , messagingPanel = MessagingPanel.init
                 , confirmingDeleteFor = Nothing
                 }
             , breadcrumbs = Breadcrumbs.init
@@ -436,6 +441,8 @@ subscriptions model =
         , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.panels.starredPanel)
         , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.panels.mediaViewerPanel)
         , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
+        , Sub.map MessagingPanelMsg (MessagingPanel.subscriptions model.panels.messagingPanel)
+        , Sub.map MarkdownPanelMsg (MarkdownPanel.subscriptions model.panels.markdownPanel)
         , if model.panels.starredPanel.showStarredPanel then
             Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
 
@@ -530,13 +537,40 @@ sharedUpdate req msg model =
 
                     else
                         ( panels.createNewPanel, Cmd.none )
+
+                -- Mirrors `shouldCloseStarredPanel` above -- the Messaging
+                -- panel is another `.navbar`-anchored dropdown, same
+                -- narrow-screen collision with the Accounts Panel.
+                shouldCloseMessagingPanel : Bool
+                shouldCloseMessagingPanel =
+                    case subMsg of
+                        AccountsPanel.ToggleAccountsPanel ->
+                            subModel.showAccountsPanel && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedMessagingPanel, closeMessagingCmd ) =
+                    if shouldCloseMessagingPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                MessagingPanel.update subModel MessagingPanel.CloseMessagingPanel panels.messagingPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.messagingPanel, Cmd.none )
             in
-            ( { model | accounts = subModel, panels = { panels | starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel } }
+            ( { model
+                | accounts = subModel
+                , panels = { panels | starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel, messagingPanel = closedMessagingPanel }
+              }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPanelMsg refreshCmd
                 , Cmd.map StarredPanelMsg closeCmd
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
+                , Cmd.map MessagingPanelMsg closeMessagingCmd
                 ]
             )
 
@@ -620,6 +654,29 @@ sharedUpdate req msg model =
 
                     else
                         ( panels.createNewPanel, Cmd.none )
+
+                -- Both the Starred and Messaging panels are `.navbar`-anchored
+                -- dropdowns at the same position, so opening one closes the
+                -- other outright (not just narrow screens).
+                shouldCloseMessagingPanel : Bool
+                shouldCloseMessagingPanel =
+                    case subMsg of
+                        StarredPanel.ToggleStarredPanel ->
+                            subModel.showStarredPanel
+
+                        _ ->
+                            False
+
+                ( closedMessagingPanelModel, closeMessagingCmd ) =
+                    if shouldCloseMessagingPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                MessagingPanel.update closedAccountsPanelModel MessagingPanel.CloseMessagingPanel panels.messagingPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.messagingPanel, Cmd.none )
             in
             ( { model
                 | accounts = closedAccountsPanelModel
@@ -628,6 +685,7 @@ sharedUpdate req msg model =
                         | starredPanel = subModel
                         , mediaViewerPanel = mediaViewerPanelModel
                         , createNewPanel = closedCreateNewPanelModel
+                        , messagingPanel = closedMessagingPanelModel
                     }
               }
             , Cmd.batch
@@ -635,6 +693,7 @@ sharedUpdate req msg model =
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map AccountsPanelMsg closeCmd
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
+                , Cmd.map MessagingPanelMsg closeMessagingCmd
                 ]
             )
 
@@ -689,8 +748,38 @@ sharedUpdate req msg model =
                         _ ->
                             Nothing
 
+                -- `True` only right as a `SendNewMessage` save actually
+                -- succeeds -- read off `panels.markdownPanel.target` *before*
+                -- `MarkdownPanel.update` (below) resets it back to `init`,
+                -- same "read the pre-update state" trick `savedNewPostContent`
+                -- above uses. Drives refetching `Shared.MessagingPanel`'s own
+                -- embedded listing (see `refreshedMessagingPanel` below) so a
+                -- just-sent message shows up there without waiting for its
+                -- next 30s poll -- the routed `/messages` page gets the same
+                -- treatment via `Pages.Messages`'s own `SharedMsg` handling of
+                -- this exact forwarded message (see `Main.notifyPageOfSharedMsg`).
+                messageJustSent : Bool
+                messageJustSent =
+                    case ( subMsg, panels.markdownPanel.target ) of
+                        ( MarkdownPanel.GotSaveResult (Ok _), Just (MarkdownPanel.SendNewMessage _) ) ->
+                            True
+
+                        _ ->
+                            False
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver, cancelRequested ) ) =
                     MarkdownPanel.update model.accounts subMsg panels.markdownPanel
+
+                ( refreshedMessagingPanel, refreshMessagingPanelCmd ) =
+                    if messageJustSent then
+                        let
+                            ( m, cmd, _ ) =
+                                MessagingPanel.update model.accounts (MessagingPanel.PageMsg MessagesPage.Poll) panels.messagingPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.messagingPanel, Cmd.none )
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -735,13 +824,20 @@ sharedUpdate req msg model =
             in
             ( { model
                 | accounts = accountsPanelModel
-                , panels = { panels | markdownPanel = subModel, createNewPanel = createNewPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+                , panels =
+                    { panels
+                        | markdownPanel = subModel
+                        , createNewPanel = createNewPanelModel
+                        , confirmingDeleteFor = confirmingDeleteFor
+                        , messagingPanel = refreshedMessagingPanel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , scrollPreserverCmd
                 , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                , Cmd.map MessagingPanelMsg refreshMessagingPanelCmd
                 ]
             )
 
@@ -906,6 +1002,29 @@ sharedUpdate req msg model =
 
                     else
                         ( accountsPanelModel, Cmd.none )
+
+                -- Mirrors `shouldCloseStarredPanel` above -- the New
+                -- Post/Event panel opens at the same vertical position as
+                -- the Messaging panel too.
+                shouldCloseMessagingPanel : Bool
+                shouldCloseMessagingPanel =
+                    case subMsg of
+                        CreateNewPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedMessagingPanelModel, closeMessagingCmd ) =
+                    if shouldCloseMessagingPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                MessagingPanel.update accountsPanelModel MessagingPanel.CloseMessagingPanel panels.messagingPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.messagingPanel, Cmd.none )
             in
             ( { model
                 | accounts = closedAccountsPanelModel
@@ -915,6 +1034,7 @@ sharedUpdate req msg model =
                         , markdownPanel = markdownPanelModel
                         , myMediaPanel = myMediaPanelModel
                         , starredPanel = closedStarredPanelModel
+                        , messagingPanel = closedMessagingPanelModel
                     }
               }
             , Cmd.batch
@@ -924,6 +1044,7 @@ sharedUpdate req msg model =
                 , Cmd.map MarkdownPanelMsg markdownPanelCmd
                 , Cmd.map MyMediaPanelMsg myMediaPanelCmd
                 , Cmd.map StarredPanelMsg closeStarredPostsCmd
+                , Cmd.map MessagingPanelMsg closeMessagingCmd
                 ]
             )
 
@@ -952,6 +1073,104 @@ sharedUpdate req msg model =
             in
             ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
 
+        MessagingPanelMsg subMsg ->
+            let
+                panels : Panels
+                panels =
+                    model.panels
+
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                    MessagingPanel.update model.accounts subMsg panels.messagingPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+
+                -- Mirrors `StarredPanelMsg`'s own `shouldCloseAccountsPanel`.
+                shouldCloseAccountsPanel : Bool
+                shouldCloseAccountsPanel =
+                    case subMsg of
+                        MessagingPanel.ToggleOpen ->
+                            subModel.open && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedAccountsPanelModel, closeAccountsCmd ) =
+                    if shouldCloseAccountsPanel then
+                        AccountsPanel.update req AccountsPanel.CloseAccountsPanel accountsPanelModel
+
+                    else
+                        ( accountsPanelModel, Cmd.none )
+
+                -- Mirrors `StarredPanelMsg`'s own `shouldCloseCreateNewPanel`
+                -- (unconditional -- same overlapping vertical position).
+                shouldCloseCreateNewPanel : Bool
+                shouldCloseCreateNewPanel =
+                    case subMsg of
+                        MessagingPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedCreateNewPanelModel, closeCreateNewCmd ) =
+                    if shouldCloseCreateNewPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                CreateNewPanel.update model.time.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.createNewPanel, Cmd.none )
+
+                -- Mirrors `StarredPanelMsg`'s own reverse-direction
+                -- `shouldCloseMessagingPanel` -- both are same-position
+                -- `.navbar` dropdowns, so opening one closes the other
+                -- outright.
+                shouldCloseStarredPanel : Bool
+                shouldCloseStarredPanel =
+                    case subMsg of
+                        MessagingPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedStarredPanelModel, closeStarredCmd ) =
+                    if shouldCloseStarredPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                StarredPanel.update closedAccountsPanelModel StarredPanel.CloseStarredPanel panels.starredPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( panels.starredPanel, Cmd.none )
+            in
+            ( { model
+                | accounts = closedAccountsPanelModel
+                , panels =
+                    { panels
+                        | messagingPanel = subModel
+                        , createNewPanel = closedCreateNewPanelModel
+                        , starredPanel = closedStarredPanelModel
+                    }
+              }
+            , Cmd.batch
+                [ Cmd.map MessagingPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map AccountsPanelMsg closeAccountsCmd
+                , Cmd.map CreateNewPanelMsg closeCreateNewCmd
+                , Cmd.map StarredPanelMsg closeStarredCmd
+                ]
+            )
+
         CloseAllPanels ->
             let
                 ( closedAccountsModel, closeAccountsCmd ) =
@@ -962,8 +1181,11 @@ sharedUpdate req msg model =
 
                 ( closedCreateNewModel, closeCreateNewCmd ) =
                     sharedUpdate req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
+
+                ( closedMessagingModel, closeMessagingCmd ) =
+                    sharedUpdate req (MessagingPanelMsg MessagingPanel.CloseMessagingPanel) closedCreateNewModel
             in
-            ( closedCreateNewModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd ] )
+            ( closedMessagingModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd, closeMessagingCmd ] )
 
         ThemePreferenceClicked ->
             let

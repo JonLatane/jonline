@@ -317,21 +317,24 @@ updateInner shared msg model =
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
 
-                -- Posts already featured via a `mainFrontendHost`-configured custom nav tab (see
-                -- `customNavPostIds`) are dropped from this generic feed -- they've already got
-                -- their own dedicated tab/url (`UI.CustomNav`/`Pages.UsernameOrCustomTab_`), so
-                -- showing them here too would just be clutter. Only applies to `frontendHost ==
-                -- mainFrontendHost` -- a `CustomNavigationTab.post_id` is always assumed to name a
-                -- Post on that server (see `UI.CustomNav.CustomTabTarget`'s own doc), so it'd be a
+                -- Posts already featured via a server's own custom nav tab (see
+                -- `customNavPostIds`) are dropped from that server's generic feed -- they've
+                -- already got their own dedicated tab/url (`UI.CustomNav`/
+                -- `Pages.UsernameOrCustomTab_`), so showing them here too would just be clutter.
+                -- `customNavPostIds frontendHost` only ever looks at `frontendHost`'s own
+                -- `customTabs` -- a `CustomNavigationTab.post_id` is always assumed to name a Post
+                -- on that server (see `UI.CustomNav.CustomTabTarget`'s own doc), so it'd be a
                 -- coincidence, not a real match, for some other federated server's own post to
-                -- share that id.
+                -- share that id. Skipped entirely when `Shared.debugShowCustomNavPosts` is set, so
+                -- DebugTab's "Show Posts linked to Custom Tabs" toggle can surface them for
+                -- inspection.
                 posts : List Post
                 posts =
-                    if frontendHost == shared.accounts.mainFrontendHost then
-                        response.posts |> List.filter (\post -> not (Set.member post.id (customNavPostIds shared)))
+                    if shared.accounts.debugTab.showCustomNavPosts then
+                        response.posts
 
                     else
-                        response.posts
+                        response.posts |> List.filter (\post -> not (Set.member post.id (customNavPostIds shared frontendHost)))
             in
             ( { model
                 | postsByServer =
@@ -526,13 +529,16 @@ relevantServers shared model =
             AccountsPanel.enabledServers shared.accounts
 
 
-{-| Every Post id `mainFrontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost`
-tab at -- what `GotServerPosts` excludes from `mainFrontendHost`'s own feed (see its own doc), so a
-Post already featured via its own custom nav tab/url doesn't also clutter the generic listing.
+{-| Every Post id `frontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost` tab
+at -- what `GotServerPosts` excludes from `frontendHost`'s own feed (see its own doc), so a Post
+already featured via its own custom nav tab/url doesn't also clutter the generic listing. Applies
+to every known server, not just `mainFrontendHost` -- each federated server's custom nav tabs only
+ever point at that same server's own posts (see `UI.CustomNav.CustomTabTarget`'s own doc), so this
+is looked up per-`frontendHost` rather than once for `mainFrontendHost`.
 -}
-customNavPostIds : Shared.Model -> Set String
-customNavPostIds shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+customNavPostIds : Shared.Model -> String -> Set String
+customNavPostIds shared frontendHost =
+    AccountsPanel.serverForHost shared.accounts.servers frontendHost
         |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
         |> Maybe.map (\customTabs -> CustomNav.effectiveTabs (Just customTabs))
         |> Maybe.withDefault []

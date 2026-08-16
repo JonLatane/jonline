@@ -7,7 +7,7 @@ use crate::{
     rpcs::{get_server_configuration_proto, get_service_version},
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
-use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use rocket::{
     fs::NamedFile,
     http::{ContentType, MediaType, Status},
@@ -23,6 +23,12 @@ const FAVICON_SIZE_PREFERENCE: [ConvertedSizeSpec; 3] = [
     ConvertedSizeSpec::Small,
     ConvertedSizeSpec::Large,
 ];
+
+/// shields.io badge path segments are split on unescaped `-`, with a literal hyphen escaped as
+/// `--`. Percent-encoding a hyphen to `%2D` doesn't work: it's decoded back to `-` before that
+/// split happens, so it's indistinguishable from a real separator and corrupts the badge. This
+/// set leaves `-` unencoded so callers can pre-escape hyphens as `--` and have them survive.
+const SHIELD_LABEL_TEXT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'-');
 
 lazy_static! {
     pub static ref INFORMATIONAL_PAGES: Vec<Route> = routes![
@@ -61,7 +67,8 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
         nav_color = format!("{}", &nav_color[1..]);
     }
 
-    let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC).to_string();
+    let encoded_server_name =
+        utf8_percent_encode(&server_name.replace('-', "--"), SHIELD_LABEL_TEXT).to_string();
 
     let logo_media_id = server_info
         .logo
@@ -104,7 +111,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
     match encoded_logo {
         Some(encoded_logo) => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
             "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}&logo={}",
-            encoded_server_name.replace("-", "--"),
+            encoded_server_name,
             service_version.replace("-", "--"),
             primary_color,
             nav_color,
@@ -112,7 +119,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
         )))),
         None => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
             "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}",
-            encoded_server_name.replace("-", "--"),
+            encoded_server_name,
             service_version.replace("-", "--"),
             primary_color,
             nav_color

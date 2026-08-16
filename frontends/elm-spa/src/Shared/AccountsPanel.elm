@@ -3918,6 +3918,12 @@ permissionFromInt n =
         35 ->
             RSVPTOEVENTS
 
+        36 ->
+            SYNCHRONIZEEVENTS
+
+        37 ->
+            SYNCEVENTSTOFACEBOOK
+
         40 ->
             VIEWMEDIA
 
@@ -3932,6 +3938,12 @@ permissionFromInt n =
 
         44 ->
             MODERATEMEDIA
+
+        50 ->
+            READPERSONALMESSAGES
+
+        51 ->
+            READALLSYSTEMMESSAGES
 
         9998 ->
             BUSINESS

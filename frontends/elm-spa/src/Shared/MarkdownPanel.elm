@@ -1,4 +1,4 @@
-module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode, init, update, view)
+module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode, init, subscriptions, update, view)
 
 {-| A single, app-wide Markdown editor: a plain monospace `<textarea>` and a
 live `Components.Markdown.view` preview of the same text, with "Save"/
@@ -20,13 +20,15 @@ later without touching callers that only care about the ones they use.
 
 import Components.Markdown as Markdown
 import Components.Posts as Posts
+import Components.UserPicker as UserPicker
 import Components.Users as Users
 import Grpc
-import Html exposing (Html, button, div, img, span, text, textarea)
-import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, spellcheck, src, value)
+import Html exposing (Html, button, div, img, label, option, select, span, text, textarea)
+import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, spellcheck, src, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
-import Proto.Jonline exposing (Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultServerInfo)
+import Dict
+import Proto.Jonline exposing (Author, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -42,6 +44,8 @@ type alias Model =
     -- resolve the `AccountsPanel.Server`/signed-in `Account` to submit as,
     -- and to verify (see `resolve`) that server's still enabled and that
     -- account still has the relevant permission, right before submitting.
+    -- For `SendNewMessage`, this doubles as "who I'm sending as" -- see
+    -- `PostingAsChanged`.
     , targetHost : String
     , content : String
     , status : SubmitStatus
@@ -51,6 +55,14 @@ type alias Model =
     -- not part of the in-progress edit, so it should carry over the next
     -- time this panel's opened.
     , viewMode : ViewMode
+
+    -- `SendNewMessage`-only draft state, unused (and left at its `init`
+    -- default) by every other `TargetType` -- see `extraFieldsView`.
+    -- `messageRecipients`' own `host` always tracks `targetHost` (see
+    -- `PostingAsChanged`), since a message's recipients all have to live on
+    -- the same server as whoever's sending it.
+    , messageSubject : String
+    , messageRecipients : UserPicker.Model
     }
 
 
@@ -70,6 +82,11 @@ type Msg
     | CancelConfirmed
     | SaveClicked
     | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
+      -- `SendNewMessage`-only, see `Msg`'s constructors' own module-doc
+      -- cross-reference above.
+    | PostingAsChanged String
+    | MessageSubjectChanged String
+    | UserPickerMsg UserPicker.Msg
 
 
 {-| What a save should do once the user's done editing: `PostContent post`
@@ -86,6 +103,24 @@ re-fetching the server's configuration fresh first -- see `saveTask` --
 same reasoning as `PostContent`, and the same pattern
 `Shared.AccountsPanel.renameServer` already uses for `name`). Only ever
 opened for a signed-in account with `ADMIN` on that server (see `resolve`).
+
+`SendNewMessage` composes a brand new `Message` (via `SendMessage`, see
+`sendMessageTask` -- deliberately *not* routed through `saveTask`/`resolve`'s
+shared per-target dispatch, since it's the one target needing more than
+`model.content` to submit). Its own extra draft state (who to send as, who to
+send to) doesn't fit in a bare `content : String` either, so it lives in
+`Model.messageSubject`/`.messageRecipients` instead, and its own chrome
+replaces the plain `accountRow`/adds a fields block below it -- see
+`accountRowFor`/`extraFieldsView`, the two extension points any future
+`TargetType` needing its own top-chrome beyond the text/preview editor should
+hook into, rather than special-casing `view` itself further. Its own payload
+(unlike every other `TargetType`, which either carries no payload or an
+existing entity to overwrite) is the recipients to pre-seed
+`messageRecipients` with when this panel opens (`Open`, below) -- `[]` for a
+fresh compose (`Pages.Messages`' own "Send Message" button), or a messaging
+group's current members, minus whoever's sending, for "Reply"
+(`MessagesPage.ReplyClicked`) -- either way just the *initial* selection,
+freely changed from the picker afterward like any other.
 -}
 type TargetType
     = PostContent Post
@@ -95,6 +130,7 @@ type TargetType
     | ServerDescription AccountsPanel.Server
     | ServerPrivacyPolicy AccountsPanel.Server
     | ServerMediaPolicy AccountsPanel.Server
+    | SendNewMessage (List Author)
 
 
 type SubmitStatus
@@ -127,6 +163,8 @@ init =
     , content = ""
     , status = Idle
     , viewMode = Split
+    , messageSubject = ""
+    , messageRecipients = UserPicker.empty ""
     }
 
 
@@ -150,13 +188,38 @@ update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe Accoun
 update accountsPanelModel msg model =
     case msg of
         Open target host ->
+            let
+                -- `SendNewMessage`'s own recipients fetch, kicked off
+                -- immediately against `host` (the initially-resolved "send
+                -- as" server -- see `Pages.Messages`' own default-host
+                -- pick) -- no other `TargetType` has anything to fetch at
+                -- `Open` time. `initialRecipients` (`SendNewMessage`'s own
+                -- payload -- see its doc) is overlaid onto the freshly
+                -- `init`ed picker's own (empty) `selected` afterward -- it's
+                -- only ever non-empty for "Reply" (`MessagesPage.ReplyClicked`),
+                -- pre-populating the picker rather than making the user
+                -- re-pick everyone already in the thread.
+                ( messageRecipients, recipientsCmd ) =
+                    case target of
+                        SendNewMessage initialRecipients ->
+                            let
+                                ( picker, cmd ) =
+                                    UserPicker.init accountsPanelModel host
+                            in
+                            ( UserPicker.withInitialSelection initialRecipients picker, cmd )
+
+                        _ ->
+                            ( UserPicker.empty "", Cmd.none )
+            in
             ( { model
                 | target = Just target
                 , targetHost = host
                 , content = initialContent target
                 , status = Idle
+                , messageSubject = ""
+                , messageRecipients = messageRecipients
               }
-            , Cmd.none
+            , Cmd.map UserPickerMsg recipientsCmd
             , ( Nothing, False, False )
             )
 
@@ -172,6 +235,42 @@ update accountsPanelModel msg model =
         CancelConfirmed ->
             ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
 
+        -- `SendNewMessage`-only -- switches which signed-in account (i.e.
+        -- which server, since `AccountsPanel.enabledAccounts` never has more
+        -- than one per host) to send as. A different server means a wholly
+        -- different user pool, so recipients picked against the old one
+        -- can't carry over -- swaps in a fresh `UserPicker` for the new host
+        -- (discarding the old selection) exactly when the host actually
+        -- changes, rather than clearing it on every selection.
+        PostingAsChanged accountId ->
+            case AccountsPanel.enabledAccounts accountsPanelModel |> List.filter (\account -> AccountsPanel.accountId account == accountId) |> List.head of
+                Just account ->
+                    if account.server == model.targetHost then
+                        ( model, Cmd.none, ( Nothing, False, False ) )
+
+                    else
+                        let
+                            ( messageRecipients, recipientsCmd ) =
+                                UserPicker.init accountsPanelModel account.server
+                        in
+                        ( { model | targetHost = account.server, messageRecipients = messageRecipients }
+                        , Cmd.map UserPickerMsg recipientsCmd
+                        , ( Nothing, False, False )
+                        )
+
+                Nothing ->
+                    ( model, Cmd.none, ( Nothing, False, False ) )
+
+        MessageSubjectChanged subject ->
+            ( { model | messageSubject = subject }, Cmd.none, ( Nothing, False, False ) )
+
+        UserPickerMsg subMsg ->
+            let
+                ( newRecipients, cmd, maybeAccountsPanelMsg ) =
+                    UserPicker.update accountsPanelModel subMsg model.messageRecipients
+            in
+            ( { model | messageRecipients = newRecipients }, Cmd.map UserPickerMsg cmd, ( maybeAccountsPanelMsg, False, False ) )
+
         SaveClicked ->
             case model.target of
                 -- No RPC to make -- there's no Post yet (see `TargetType`'s
@@ -182,6 +281,31 @@ update accountsPanelModel msg model =
                 -- it back to `init` below.
                 Just (NewPostContent _) ->
                     ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
+
+                -- Routed through `sendMessageTask` directly, not
+                -- `resolve`/`saveTask`'s shared dispatch -- see
+                -- `TargetType`'s own doc on why.
+                Just ((SendNewMessage _) as sendTarget) ->
+                    case resolve accountsPanelModel sendTarget model.targetHost of
+                        Err err ->
+                            ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False, False ) )
+
+                        Ok resolved ->
+                            case sendNewMessageProblem model of
+                                Just err ->
+                                    ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False, False ) )
+
+                                Nothing ->
+                                    ( { model | status = Submitting }
+                                    , sendMessageTask
+                                        accountsPanelModel
+                                        ( Just resolved.account.userId, resolved.server.frontendHost )
+                                        (UserPicker.selectedUsers model.messageRecipients |> List.map .id)
+                                        model.messageSubject
+                                        model.content
+                                        |> Task.attempt GotSaveResult
+                                    , ( Nothing, False, False )
+                                    )
 
                 Just target ->
                     case resolve accountsPanelModel target model.targetHost of
@@ -205,6 +329,20 @@ update accountsPanelModel msg model =
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False, False ) )
 
 
+{-| Only `SendNewMessage`'s embedded `UserPicker` has anything to subscribe
+to (its own FLIP animations) -- every other `TargetType` (and `Nothing`)
+subscribes to nothing.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.target of
+        Just (SendNewMessage _) ->
+            Sub.map UserPickerMsg (UserPicker.subscriptions model.messageRecipients)
+
+        _ ->
+            Sub.none
+
+
 {-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
 panels, so opening/closing is a plain CSS transition -- see `openClosedClass`.
 Needs `AccountsPanel.Model` for the same reason `update` does -- resolving
@@ -224,10 +362,22 @@ view accountsPanelModel model =
         resolution =
             model.target |> Maybe.map (\target -> resolve accountsPanelModel target model.targetHost)
 
+        -- `SendNewMessage`-only extra validation (recipients/content) that
+        -- doesn't fit `resolve`'s per-target host/account signature -- see
+        -- `sendNewMessageProblem`'s own doc.
+        sendMessageProblem : Maybe String
+        sendMessageProblem =
+            case model.target of
+                Just (SendNewMessage _) ->
+                    sendNewMessageProblem model
+
+                _ ->
+                    Nothing
+
         canSave : Bool
         canSave =
-            case resolution of
-                Just (Ok _) ->
+            case ( resolution, sendMessageProblem ) of
+                ( Just (Ok _), Nothing ) ->
                     True
 
                 _ ->
@@ -245,7 +395,7 @@ view accountsPanelModel model =
                             Just err
 
                         _ ->
-                            Nothing
+                            sendMessageProblem
     in
     div
         (classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ]
@@ -253,8 +403,9 @@ view accountsPanelModel model =
         )
         [ div [ class "markdown-panel-header" ]
             [ modeSlider model.targetHost model.viewMode
-            , accountRow accountsPanelModel model
+            , accountRowFor accountsPanelModel model
             ]
+        , extraFieldsView accountsPanelModel model
         , div [ classes [ "markdown-panel-split", viewModeClass model.viewMode ] ]
             (case model.viewMode of
                 TextOnly ->
@@ -284,42 +435,37 @@ view accountsPanelModel model =
                 , onClick SaveClicked
                 , disabled (model.status == Submitting || not canSave)
                 ]
-                [ text
-                    (if model.status == Submitting then
-                        "Saving…"
-
-                     else
-                        "Save"
-                    )
-                ]
+                [ text (saveButtonText model.target model.status) ]
             ]
         ]
 
 
-{-| Cmd+S (Mac)/Ctrl+S (elsewhere) submits, same as clicking `Save` --
-`preventDefaultOn`, not a `Browser.Events.onKeyDown` subscription (compare
-`Shared.MediaViewerPanel.subscriptions`'s arrow keys), since only an event
-handler on the DOM can stop the browser's own "Save Page As" from popping up;
-attached to the panel's own root div (always rendered -- see `view`'s own doc
-comment -- so this works whether the keypress bubbles up from the `textarea`
-or from a button) rather than globally, so the shortcut only fires while this
-panel's actually open (`model.target /= Nothing`) and only one save at a time
-(`model.status /= Submitting`) -- mirrors the `Save` button's own `disabled`
-condition in spirit, though it doesn't re-check `canSave`/`resolve` here since
-`SaveClicked` (see `update`) already re-checks that itself and surfaces any
-problem as `errorMessage`.
+{-| Cmd+S (Mac)/Ctrl+S (elsewhere) submits, same as clicking `Save`; Escape
+requests the same "are you sure?" confirmation as clicking `Cancel` (see
+`CancelClicked`'s own doc). `preventDefaultOn`, not a `Browser.Events.onKeyDown`
+subscription (compare `Shared.MediaViewerPanel.subscriptions`'s arrow keys),
+since only an event handler on the DOM can stop the browser's own "Save Page
+As" from popping up on Cmd/Ctrl+S; attached to the panel's own root div
+(always rendered -- see `view`'s own doc comment -- so this works whether the
+keypress bubbles up from the `textarea` or from a button) rather than
+globally, so neither shortcut fires unless this panel's actually open
+(`model.target /= Nothing`) and only one save/cancel at a time
+(`model.status /= Submitting`) -- mirrors the `Save`/`Cancel` buttons' own
+`disabled` condition in spirit, though it doesn't re-check `canSave`/`resolve`
+here since `SaveClicked` (see `update`) already re-checks that itself and
+surfaces any problem as `errorMessage`.
 -}
 saveShortcutAttrs : Model -> List (Html.Attribute Msg)
 saveShortcutAttrs model =
     if model.target /= Nothing && model.status /= Submitting then
-        [ preventDefaultOn "keydown" saveKeyDecoder ]
+        [ preventDefaultOn "keydown" panelKeyDecoder ]
 
     else
         []
 
 
-saveKeyDecoder : Decode.Decoder ( Msg, Bool )
-saveKeyDecoder =
+panelKeyDecoder : Decode.Decoder ( Msg, Bool )
+panelKeyDecoder =
     Decode.map3 (\key ctrlKey metaKey -> ( String.toLower key, ctrlKey || metaKey ))
         (Decode.field "key" Decode.string)
         (Decode.field "ctrlKey" Decode.bool)
@@ -329,8 +475,11 @@ saveKeyDecoder =
                 if isModifierDown && key == "s" then
                     Decode.succeed ( SaveClicked, True )
 
+                else if key == "escape" then
+                    Decode.succeed ( CancelClicked, True )
+
                 else
-                    Decode.fail "not Cmd/Ctrl+S"
+                    Decode.fail "not Cmd/Ctrl+S or Escape"
             )
 
 
@@ -385,6 +534,24 @@ modeOption current target label =
         [ text label ]
 
 
+{-| The header row's account chrome -- dispatches per `model.target`, same
+extension point `extraFieldsView` below is, for any future `TargetType`
+needing its own top chrome: `SendNewMessage` swaps the plain `accountRow`
+(read-only "who's about to act") out for an interactive picker (`AccountsPanel.enabledAccounts`
+is the whole point -- there's a real choice of who to send as, unlike every
+other target where `targetHost` was already resolved by whoever opened this
+panel); every other target keeps today's plain `accountRow`.
+-}
+accountRowFor : AccountsPanel.Model -> Model -> Html Msg
+accountRowFor accountsPanelModel model =
+    case model.target of
+        Just (SendNewMessage _) ->
+            sendMessagePostingAsRow accountsPanelModel model
+
+        _ ->
+            accountRow accountsPanelModel model
+
+
 {-| "Editing as <avatar> username" / "Posting as <avatar> username" -- no
 link, just enough to make clear which signed-in account (of possibly several
 on this server) is about to make the edit/reply. Blank if `targetHost` has no
@@ -405,6 +572,53 @@ accountRow accountsPanelModel model =
             text ""
 
 
+{-| `accountRowFor`'s `SendNewMessage` case -- "Sending as <avatar> username"
+alone when there's only one enabled account anywhere (no point offering a
+one-item dropdown, mirrors `Shared.CreateNewPanel.postingAsSelector`'s own
+single-account case), otherwise a `<select>` of every enabled account
+(`AccountsPanel.enabledAccounts`, never more than one per host) -- picking one
+fires `PostingAsChanged`, which resets `messageRecipients` if it's actually a
+different host (see that branch's own doc). Blank if there's no enabled
+account at all -- `resolve`'s "You're not signed in on that server" error
+already covers that case (`Pages.Messages`' Send Message button is also
+hidden entirely then, but this panel can't assume it was only ever opened
+from there).
+-}
+sendMessagePostingAsRow : AccountsPanel.Model -> Model -> Html Msg
+sendMessagePostingAsRow accountsPanelModel model =
+    case AccountsPanel.enabledAccounts accountsPanelModel of
+        [] ->
+            text ""
+
+        [ onlyAccount ] ->
+            div [ class "markdown-panel-account" ]
+                [ text "Sending as "
+                , accountAvatar accountsPanelModel.servers onlyAccount
+                , span [ class "markdown-panel-account-name" ] [ text onlyAccount.username ]
+                ]
+
+        accounts ->
+            div [ class "markdown-panel-account" ]
+                [ case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost of
+                    Just account ->
+                        accountAvatar accountsPanelModel.servers account
+
+                    Nothing ->
+                        text ""
+                , select [ class "markdown-panel-account-select", onInput PostingAsChanged ]
+                    (List.map
+                        (\account ->
+                            option
+                                [ value (AccountsPanel.accountId account)
+                                , selected (account.server == model.targetHost)
+                                ]
+                                [ text (account.username ++ " on " ++ account.server) ]
+                        )
+                        accounts
+                    )
+                ]
+
+
 accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
 accountAvatar servers account =
     case AccountsPanel.accountAvatarUrl servers account of
@@ -413,6 +627,38 @@ accountAvatar servers account =
 
         Nothing ->
             div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
+
+
+{-| The second extension point (alongside `accountRowFor`) for a
+`TargetType`'s own top chrome -- rendered between the header row and the
+text/preview split. `SendNewMessage` is the only target using it today (a
+Subject field plus the recipients `Components.UserPicker`); every other
+target renders nothing here.
+-}
+extraFieldsView : AccountsPanel.Model -> Model -> Html Msg
+extraFieldsView accountsPanelModel model =
+    case model.target of
+        Just (SendNewMessage _) ->
+            div [ class "markdown-panel-message-fields" ]
+                [ div [ class "markdown-panel-field" ]
+                    [ label [ class "markdown-panel-label" ] [ text "Subject" ]
+                    , Html.input
+                        [ type_ "text"
+                        , class "markdown-panel-subject-input"
+                        , value model.messageSubject
+                        , onInput MessageSubjectChanged
+                        , placeholder "Subject (optional)"
+                        ]
+                        []
+                    ]
+                , div [ class "markdown-panel-field" ]
+                    [ label [ class "markdown-panel-label" ] [ text "To" ]
+                    , Html.map UserPickerMsg (UserPicker.view accountsPanelModel model.messageRecipients)
+                    ]
+                ]
+
+        _ ->
+            text ""
 
 
 initialContent : TargetType -> String
@@ -439,6 +685,9 @@ initialContent target =
         ServerMediaPolicy server ->
             Maybe.withDefault "" (AccountsPanel.serverInfoOf server).mediaPolicy
 
+        SendNewMessage _ ->
+            ""
+
 
 viewModeClass : ViewMode -> String
 viewModeClass mode =
@@ -464,6 +713,27 @@ verbFor target =
 
         _ ->
             "Editing as "
+
+
+{-| "Save"/"Saving…" for every other target, "Send"/"Sending…" for
+`SendNewMessage` -- this is the one target that isn't editing/saving
+anything, it's dispatching a brand new `Message`, so the button should read
+accordingly.
+-}
+saveButtonText : Maybe TargetType -> SubmitStatus -> String
+saveButtonText target status =
+    case ( target, status == Submitting ) of
+        ( Just (SendNewMessage _), True ) ->
+            "Sending…"
+
+        ( Just (SendNewMessage _), False ) ->
+            "Send"
+
+        ( _, True ) ->
+            "Saving…"
+
+        ( _, False ) ->
+            "Save"
 
 
 {-| Verifies `host`/`target` are actually usable right now, right before a
@@ -544,6 +814,37 @@ resolve accountsPanelModel target host =
                                 else
                                     Err "You must be an admin to edit this."
 
+                            -- No special permission -- `send_message.rs`
+                            -- never calls `validate_permission` at all (it
+                            -- even supports a fully anonymous sender). Just
+                            -- needing a signed-in account on `host` (already
+                            -- established above) is this UI's own,
+                            -- stricter-than-the-backend choice, matching
+                            -- "choose among any of the users I'm currently
+                            -- logged in as" -- see `sendMessagePostingAsRow`.
+                            SendNewMessage _ ->
+                                Ok { server = server, account = account }
+
+
+{-| `SendNewMessage`-only validation `resolve` can't do itself -- it only
+sees `TargetType`/`host`, not the rest of `Model` (`messageRecipients`'
+current selection, `content`), both required by `send_message.rs`
+(`to_user_ids_required`/`body_text_required`). Checked alongside `resolve`
+by both `view` (`errorMessage`/`canSave`) and `SaveClicked`, same
+"validate again right before the RPC, not just when Save was disabled"
+belt-and-suspenders `resolve` itself already follows.
+-}
+sendNewMessageProblem : Model -> Maybe String
+sendNewMessageProblem model =
+    if List.isEmpty (UserPicker.selectedUsers model.messageRecipients) then
+        Just "Choose at least one recipient."
+
+    else if String.isEmpty (String.trim model.content) then
+        Just "Write a message."
+
+    else
+        Nothing
+
 
 {-| `PostContent` re-fetches its Post fresh (via `GetPosts`) before submitting
 `UpdatePost` -- only `content` from `model.content` is overlaid onto that fresh
@@ -622,6 +923,50 @@ saveTask accountsPanelModel maybeAccountServer target content =
 
         ServerMediaPolicy server ->
             saveServerInfoField accountsPanelModel maybeAccountServer server (\info -> { info | mediaPolicy = Just content })
+
+        -- Unreachable in practice -- `SaveClicked` routes `SendNewMessage`
+        -- straight to `sendMessageTask` instead (see `TargetType`'s own
+        -- doc on why), never through this shared `target`+`content`
+        -- dispatch. Still needs a branch here for exhaustiveness, same as
+        -- `NewPostContent` above.
+        SendNewMessage _ ->
+            Task.fail Grpc.NetworkError
+
+
+{-| `SendNewMessage`'s own save -- unlike every `saveTask` branch above, needs
+more than `target`+`content` (`recipientUserIds`, `subject`), so it isn't one
+of those; `SaveClicked` calls this directly instead. No re-fetch-then-overlay
+dance (unlike `PostContent`/`UserBio`) -- there's nothing existing to
+overwrite, this always creates a brand new `Message`.
+-}
+sendMessageTask :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> List String
+    -> String
+    -> String
+    -> Task Grpc.Error (Maybe AccountsPanel.Msg)
+sendMessageTask accountsPanelModel maybeAccountServer recipientUserIds subject bodyText =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.sendMessage
+                { defaultSendMessageRequest
+                    | toUserIds = recipientUserIds
+                    , subject =
+                        if String.isEmpty (String.trim subject) then
+                            Nothing
+
+                        else
+                            Just (String.trim subject)
+                    , bodyText = Just bodyText
+                }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+        |> Task.map Tuple.first
 
 
 {-| Shared by `ServerDescription`/`ServerPrivacyPolicy`/`ServerMediaPolicy` --

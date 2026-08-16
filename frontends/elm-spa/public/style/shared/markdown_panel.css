@@ -100,6 +100,51 @@
   font-weight: 700;
 }
 
+.markdown-panel-account-select {
+  max-width: 220px;
+  font-size: 0.8rem;
+  background: var(--chip-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+}
+
+/* `SendNewMessage`'s Subject/To fields (`Shared.MarkdownPanel.extraFieldsView`)
+   -- sits between `.markdown-panel-header` and `.markdown-panel-split` as
+   another `flex: 0 0 auto` column child, same convention
+   `.create-new-panel-field` (create_new_panel.css) already uses for its own
+   title/link/media/content fields. */
+.markdown-panel-message-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  margin-bottom: 0.5rem;
+  overflow-y: auto;
+  max-height: 40%;
+}
+
+.markdown-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.markdown-panel-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.markdown-panel-subject-input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
 .markdown-panel-split {
   display: flex;
   flex: 1 1 auto;

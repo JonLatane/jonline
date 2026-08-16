@@ -83,3 +83,66 @@
   color: var(--danger);
   font-size: 0.8rem;
 }
+
+/* Components/UserPicker.elm -- the recipient picker Shared/MarkdownPanel.elm's
+   SendNewMessage target embeds. Rows reuse `.user-card`'s own box styling
+   (border/padding/radius/brand-tint utility classes) directly -- just a
+   `<button>` instead of an `<a>`, toggling selection instead of linking out. */
+.user-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.user-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.user-picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+}
+
+.user-picker-chip-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 0.75rem;
+}
+
+.user-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.user-picker-row {
+  width: 100%;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-picker-row.selected {
+  border-color: var(--fg);
+  background: var(--chip-bg);
+}
+
+.user-picker-row-check {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-weight: 700;
+}
