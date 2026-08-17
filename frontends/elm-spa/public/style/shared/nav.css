@@ -18,6 +18,7 @@
      is a no-op elsewhere. */
   padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s ease;
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
      descendant .nav-panel elements -- Accounts, Starred) is never
      blurred/covered/click-intercepted by the backdrop. Below

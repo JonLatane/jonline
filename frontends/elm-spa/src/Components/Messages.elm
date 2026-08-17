@@ -193,6 +193,14 @@ counts every fetched message in the group with `isUnread == True` -- not just
 whether `mostRecent` itself is unread -- so it stays accurate once an older
 message's read status changes independently (e.g. `MessagesPage` marking a
 whole thread read on expand doesn't necessarily touch every message at once).
+`messageCount` counts every fetched message in the group, full stop -- since
+the *outer* listing this is built from (`groupMessages`, always called on a
+`GetMessagesRequest` with no `messageGroupId`) is only ever the server's most
+recent `PAGE_SIZE` messages *across every group*, not this group's full
+history, this is a floor, not a total -- `MessagesPage.groupMessageCountView`
+is what appends a "+" to make that clear, unless the group's own full thread
+has separately been fetched (`expand`/`fetchExpand`, keyed by `key`), in which
+case that fetch's own message count *is* the true total.
 -}
 type alias GroupSummary =
     { key : String
@@ -202,6 +210,7 @@ type alias GroupSummary =
     , members : List Author
     , mostRecent : Message
     , unreadCount : Int
+    , messageCount : Int
     }
 
 
@@ -244,7 +253,7 @@ groupMessages host messages =
             case Dict.get key groups of
                 Nothing ->
                     Dict.insert key
-                        { key = key, host = host, groupId = groupId, isSolo = isSolo, members = members, mostRecent = message, unreadCount = increment }
+                        { key = key, host = host, groupId = groupId, isSolo = isSolo, members = members, mostRecent = message, unreadCount = increment, messageCount = 1 }
                         groups
 
                 Just existing ->
@@ -257,6 +266,7 @@ groupMessages host messages =
                                 else
                                     existing.mostRecent
                             , unreadCount = existing.unreadCount + increment
+                            , messageCount = existing.messageCount + 1
                         }
                         groups
     in

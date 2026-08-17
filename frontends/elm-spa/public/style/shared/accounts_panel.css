@@ -112,7 +112,7 @@
      below) in step with its panel's own 0.15s opacity/transform transition
      (`.nav-panel`) -- shorthand so it covers whichever corners a given state
      (pill, circular, single-avatar) actually changes. */
-  transition: border-radius 0.15s ease;
+  transition: border-radius 0.15s ease, background-color 0.2s ease, max-width 0.2s ease, width 0.2s ease;
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);

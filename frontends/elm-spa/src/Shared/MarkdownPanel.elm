@@ -18,16 +18,17 @@ later without touching callers that only care about the ones they use.
 
 -}
 
+import Browser.Dom as Dom
 import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Components.UserPicker as UserPicker
 import Components.Users as Users
 import Grpc
 import Html exposing (Html, button, div, img, label, option, select, span, text, textarea)
-import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, spellcheck, src, type_, value)
+import Html.Attributes exposing (alt, attribute, class, disabled, id, placeholder, selected, spellcheck, src, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
-import Proto.Jonline exposing (Author, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo)
+import Proto.Jonline exposing (Author, Message, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -62,6 +63,12 @@ type alias Model =
     -- the same server as whoever's sending it.
     , messageSubject : String
     , messageRecipients : UserPicker.Model
+
+    -- Whether the Subject field (`extraFieldsView`) is showing -- hidden by
+    -- default behind the "…" toggle just left of the "To" label, since most
+    -- messages don't need one; `SubjectToggleClicked` flips it,
+    -- `messageSubject` itself is untouched either way.
+    , messageSubjectExpanded : Bool
     }
 
 
@@ -69,11 +76,17 @@ type Msg
     = Open TargetType String
     | ContentChanged String
     | ViewModeSelected ViewMode
-      -- The "Cancel" button -- doesn't discard anything itself, just bubbles
-      -- a request up through `update`'s own extra return value for
+      -- The "Cancel" button -- doesn't discard anything itself. Only bubbles
+      -- a request up through `update`'s own extra return value (for
       -- `Shared.update` to turn into a `Shared.RequestDelete
       -- ConfirmMarkdownEditingDataLost`, the same shared "are you sure?" flow
-      -- `Shared.MyMediaPanel.DeleteClicked` uses (see `Shared.DeleteConfirmation`).
+      -- `Shared.MyMediaPanel.DeleteClicked` uses -- see `Shared.DeleteConfirmation`)
+      -- when `model.content` actually differs from `initialContent model.target`
+      -- -- i.e. there's actually something to lose. Otherwise (nothing typed
+      -- yet for a blank-start target like `NewReply`, or an existing target's
+      -- content untouched from what it was opened with) closes immediately,
+      -- same as `CancelConfirmed`, since there's nothing the user could
+      -- accidentally discard.
     | CancelClicked
       -- Fired back from `Shared.update`'s `ConfirmDelete` once the user's
       -- confirmed the dialog `CancelClicked` requested -- this is what
@@ -81,11 +94,26 @@ type Msg
     | CancelConfirmed
     | SaveClicked
     | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
-      -- `SendNewMessage`-only, see `Msg`'s constructors' own module-doc
-      -- cross-reference above.
+      -- `SendNewMessage`'s own save result -- a separate constructor from
+      -- `GotSaveResult` (rather than folding into it) because it's the one
+      -- save that produces an entity any caller actually needs back: the
+      -- freshly created `Message` itself (id + `messagingGroup`, needed to
+      -- navigate/scroll to it -- see `Components.Pages.MessagesPage.MessageSent`)
+      -- plus the host it was sent from (not recoverable from `Message` alone,
+      -- see `sendMessageTask`'s own doc). Forwarded verbatim as part of
+      -- `Shared.Msg` to whichever page is mounted (`Main.notifyPageOfSharedMsg`),
+      -- so `Pages.Messages` can read it straight off the pattern match --
+      -- no extra `Model` field needed just to shuttle it there.
+    | GotSendMessageResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, String, Message ))
     | PostingAsChanged String
     | MessageSubjectChanged String
+    | SubjectToggleClicked
     | UserPickerMsg UserPicker.Msg
+      -- Discards a `Browser.Dom.focus` result -- see `focusCmdFor` -- same
+      -- "focusing is best-effort" convention `Shared.AccountsPanel.NoOp`
+      -- already follows (there's nothing useful to do if the target's
+      -- vanished from the DOM already).
+    | NoOp
 
 
 {-| What a save should do once the user's done editing: `PostContent post`
@@ -165,6 +193,7 @@ init =
     , viewMode = Split
     , messageSubject = ""
     , messageRecipients = UserPicker.empty ""
+    , messageSubjectExpanded = False
     }
 
 
@@ -175,12 +204,13 @@ needs forwarded on its behalf -- an `AccessTokenResponseReceived`, if
 `saveTask` had to refresh the account's token, that `AccountsPanel.performWithAccountServer`
 already builds -- for `Shared.update` to actually dispatch, same convention as
 `Shared.StarredPanel.update` -- paired, in that same third-tuple-slot
-convention, with a `Bool` that's `True` only right after a successful save:
-`Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
-Post's re-fetched content (see `saveTask`) can change its rendered height
-once this panel closes and the page under it catches up, same yank
-`Shared.ShowScrollPreserver` already guards against on back navigation --
-and a third `Bool`, `True` only right after `CancelClicked`, for
+convention, with a `Bool` that's `True` only right after a `saveTask`-driven
+save succeeds (`GotSaveResult`, never `GotSendMessageResult`, see that
+branch's own doc): `Shared.update` fires `Shared.ShowScrollPreserver` on it,
+since the edited Post's re-fetched content (see `saveTask`) can change its
+rendered height once this panel closes and the page under it catches up,
+same yank `Shared.ShowScrollPreserver` already guards against on back
+navigation -- and a third `Bool`, `True` only right after `CancelClicked`, for
 `Shared.update` to turn into a `Shared.RequestDelete ConfirmMarkdownEditingDataLost`
 (see `Msg`'s own doc on `CancelClicked`/`CancelConfirmed`).
 -}
@@ -218,8 +248,9 @@ update accountsPanelModel msg model =
                 , status = Idle
                 , messageSubject = ""
                 , messageRecipients = messageRecipients
+                , messageSubjectExpanded = False
               }
-            , Cmd.map UserPickerMsg recipientsCmd
+            , Cmd.batch [ Cmd.map UserPickerMsg recipientsCmd, focusCmdFor target ]
             , ( Nothing, False, False )
             )
 
@@ -230,7 +261,21 @@ update accountsPanelModel msg model =
             ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         CancelClicked ->
-            ( model, Cmd.none, ( Nothing, False, True ) )
+            let
+                hasUnsavedChanges : Bool
+                hasUnsavedChanges =
+                    case model.target of
+                        Just target ->
+                            model.content /= initialContent target
+
+                        Nothing ->
+                            False
+            in
+            if hasUnsavedChanges then
+                ( model, Cmd.none, ( Nothing, False, True ) )
+
+            else
+                ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         CancelConfirmed ->
             ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
@@ -263,6 +308,9 @@ update accountsPanelModel msg model =
 
         MessageSubjectChanged subject ->
             ( { model | messageSubject = subject }, Cmd.none, ( Nothing, False, False ) )
+
+        SubjectToggleClicked ->
+            ( { model | messageSubjectExpanded = not model.messageSubjectExpanded }, Cmd.none, ( Nothing, False, False ) )
 
         UserPickerMsg subMsg ->
             let
@@ -303,7 +351,7 @@ update accountsPanelModel msg model =
                                         (UserPicker.selectedUsers model.messageRecipients |> List.map .id)
                                         model.messageSubject
                                         model.content
-                                        |> Task.attempt GotSaveResult
+                                        |> Task.attempt GotSendMessageResult
                                     , ( Nothing, False, False )
                                     )
 
@@ -327,6 +375,23 @@ update accountsPanelModel msg model =
 
         GotSaveResult (Err err) ->
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False, False ) )
+
+        -- `False`, unlike `GotSaveResult`'s own `Ok` branch above -- a sent
+        -- message isn't reshaping any content already on screen the way a
+        -- `saveTask`-driven edit can (see `update`'s own doc), and
+        -- `MessagesPage.MessageSent` (what `Pages.Messages`' own
+        -- `SharedMsg` handling of this exact `Ok` dispatches) already drives
+        -- its own explicit scroll to the new message -- `ShowScrollPreserver`'s
+        -- spacer would just be a spurious flash of empty space underneath
+        -- that, not a jump it's actually preventing.
+        GotSendMessageResult (Ok ( maybeAccountsPanelMsg, _, _ )) ->
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( maybeAccountsPanelMsg, False, False ) )
+
+        GotSendMessageResult (Err err) ->
+            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False, False ) )
+
+        NoOp ->
+            ( model, Cmd.none, ( Nothing, False, False ) )
 
 
 {-| Only `SendNewMessage`'s embedded `UserPicker` has anything to subscribe
@@ -483,10 +548,35 @@ panelKeyDecoder =
             )
 
 
+{-| What `Open` should focus, if anything, once this panel's actually on
+screen -- today, just `SendNewMessage`'s two distinct entry points
+(`Pages.Messages`' "Compose"/`MessagesPage.ReplyClicked`'s "Reply"), which
+`initialRecipients` already tells apart (see `Open`'s own doc: empty only for
+a fresh compose, never for a reply -- `ReplyClicked` always seeds at least the
+other thread participants). A fresh compose has no recipients chosen yet, so
+focus the picker's own search input; a reply already has its recipients
+pre-filled, so focus the content editor instead, since that's the only thing
+left to fill in. Every other `TargetType` leaves focus wherever the browser
+already put it (typically whatever button was clicked to open this panel).
+-}
+focusCmdFor : TargetType -> Cmd Msg
+focusCmdFor target =
+    case target of
+        SendNewMessage [] ->
+            Task.attempt (\_ -> NoOp) (Dom.focus "user-picker-search-input")
+
+        SendNewMessage (_ :: _) ->
+            Task.attempt (\_ -> NoOp) (Dom.focus "markdown-panel-editor")
+
+        _ ->
+            Cmd.none
+
+
 editorView : Model -> Html Msg
 editorView model =
     textarea
-        [ class "markdown-panel-editor"
+        [ id "markdown-panel-editor"
+        , class "markdown-panel-editor"
         , value model.content
         , onInput ContentChanged
         , spellcheck False
@@ -634,31 +724,72 @@ accountAvatar servers account =
 text/preview split. `SendNewMessage` is the only target using it today (a
 Subject field plus the recipients `Components.UserPicker`); every other
 target renders nothing here.
+
+The Subject field itself is hidden behind a "…" toggle
+(`subjectToggleButton`) just left of the "To" label rather than shown
+outright -- most messages don't need one, and burying it saves the vertical
+space `markdown-panel-message-fields`'s own `max-height` (markdown_panel.css)
+has to share with the recipients picker below it. `SubjectToggleClicked`
+flips `model.messageSubjectExpanded`; the subject text itself
+(`model.messageSubject`) is untouched by hiding it again, so toggling back
+and forth doesn't lose anything already typed.
 -}
 extraFieldsView : AccountsPanel.Model -> Model -> Html Msg
 extraFieldsView accountsPanelModel model =
     case model.target of
         Just (SendNewMessage _) ->
             div [ class "markdown-panel-message-fields" ]
-                [ div [ class "markdown-panel-field" ]
-                    [ label [ class "markdown-panel-label" ] [ text "Subject" ]
-                    , Html.input
-                        [ type_ "text"
-                        , class "markdown-panel-subject-input"
-                        , value model.messageSubject
-                        , onInput MessageSubjectChanged
-                        , placeholder "Subject (optional)"
+                [ if model.messageSubjectExpanded then
+                    div [ class "markdown-panel-field" ]
+                        [ label [ class "markdown-panel-label" ] [ text "Subject" ]
+                        , Html.input
+                            [ type_ "text"
+                            , class "markdown-panel-subject-input"
+                            , value model.messageSubject
+                            , onInput MessageSubjectChanged
+                            , placeholder "Subject (optional)"
+                            ]
+                            []
                         ]
-                        []
-                    ]
+
+                  else
+                    text ""
                 , div [ class "markdown-panel-field" ]
-                    [ label [ class "markdown-panel-label" ] [ text "To" ]
+                    [ div [ class "markdown-panel-label-row" ]
+                        [ subjectToggleButton model.messageSubjectExpanded
+                        , label [ class "markdown-panel-label" ] [ text "To" ]
+                        ]
                     , Html.map UserPickerMsg (UserPicker.view accountsPanelModel model.messageRecipients)
                     ]
                 ]
 
         _ ->
             text ""
+
+
+subjectToggleButton : Bool -> Html Msg
+subjectToggleButton expanded =
+    button
+        [ type_ "button"
+        , classes
+            ("markdown-panel-subject-toggle"
+                :: (if expanded then
+                        [ "expanded" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick SubjectToggleClicked
+        , title
+            (if expanded then
+                "Hide subject"
+
+             else
+                "Add a subject"
+            )
+        ]
+        [ text "…" ]
 
 
 initialContent : TargetType -> String
@@ -937,7 +1068,15 @@ saveTask accountsPanelModel maybeAccountServer target content =
 more than `target`+`content` (`recipientUserIds`, `subject`), so it isn't one
 of those; `SaveClicked` calls this directly instead. No re-fetch-then-overlay
 dance (unlike `PostContent`/`UserBio`) -- there's nothing existing to
-overwrite, this always creates a brand new `Message`.
+overwrite, this always creates a brand new `Message`. Unlike every `saveTask`
+branch (which discard their own RPC's response, `Task.map Tuple.first`ing it
+away), this keeps both the response `Message` itself *and* `server.frontendHost`
+-- `SendMessage` is the one save whose caller (`Components.Pages.MessagesPage`,
+via `GotSendMessageResult`) needs to know exactly what got created and where,
+to navigate/scroll to it; `Message` has no host of its own to recover that
+from afterward (it's purely an Elm-side routing concept), so it has to be
+captured here, at the one point this task actually knows which server it
+talked to.
 -}
 sendMessageTask :
     AccountsPanel.Model
@@ -945,7 +1084,7 @@ sendMessageTask :
     -> List String
     -> String
     -> String
-    -> Task Grpc.Error (Maybe AccountsPanel.Msg)
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, String, Message )
 sendMessageTask accountsPanelModel maybeAccountServer recipientUserIds subject bodyText =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
@@ -965,8 +1104,9 @@ sendMessageTask accountsPanelModel maybeAccountServer recipientUserIds subject b
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
+                |> Task.map (\message -> ( server.frontendHost, message ))
         )
-        |> Task.map Tuple.first
+        |> Task.map (\( maybeAccountsPanelMsg, ( host, message ) ) -> ( maybeAccountsPanelMsg, host, message ))
 
 
 {-| Shared by `ServerDescription`/`ServerPrivacyPolicy`/`ServerMediaPolicy` --

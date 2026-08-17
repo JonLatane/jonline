@@ -64,6 +64,14 @@ lazy_static! {
         "auths",
         "calendar.ics",
     ];
+    // Custom tab paths share the RESERVED_PATHS namespace, but these specific values are
+    // allowed since they're used as top-level containers (e.g. federatedserver.com/events)
+    // rather than single-resource routes.
+    static ref CUSTOM_TAB_RESERVED_PATHS: Vec<&'static str> = RESERVED_PATHS
+        .iter()
+        .filter(|path| !["events", "people", "users", "posts", "about"].contains(path))
+        .cloned()
+        .collect();
     static ref CUSTOM_TAB_PATH_RE: Regex = Regex::new(r"^[a-z_]+$").unwrap();
 }
 
@@ -81,7 +89,7 @@ pub fn validate_custom_tab_path(path: &str, is_profile: bool) -> Result<(), Stat
     if is_profile {
         return validate_username(path);
     }
-    validate_username(path)?;
+    validate_reserved_values(path, "custom_tab_path", &CUSTOM_TAB_RESERVED_PATHS)?;
     if !CUSTOM_TAB_PATH_RE.is_match(path) {
         return Err(Status::new(
             Code::InvalidArgument,

@@ -95,7 +95,7 @@ subscriptions model =
         Sub.none
 
 
-view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
-view browserTimeZone accountsPanelModel model =
+view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
+view time accountsPanelModel model =
     div [ classes [ "messaging-panel", "nav-panel", openClosedClass model.open ] ]
-        [ Html.map PageMsg (MessagesPage.view browserTimeZone accountsPanelModel model.page) ]
+        [ Html.map PageMsg (MessagesPage.view time accountsPanelModel model.page) ]
