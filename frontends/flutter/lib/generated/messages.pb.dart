@@ -223,7 +223,7 @@ class Message extends $pb.GeneratedMessage {
   void clearBcc() => clearField(10);
 
   /// Whether/when *this response's viewer* has read the message -- unset means unread. Always
-  /// reflects the currently-authenticated caller's own read status (via `MarkMessageRead`), even
+  /// reflects the currently-authenticated caller's own read status (via `MarkMessagesRead`), even
   /// when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it's a personal "have I seen
   /// this" marker, not tied to whichever user this response happens to be showing `messaging_group`
   /// for.
@@ -323,7 +323,7 @@ class MessageRead extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => clearField(2);
 
-  /// When the message was marked read. Always set on a `MessageRead` returned from `MarkMessageRead`
+  /// When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead`
   /// -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
   /// a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
   @$pb.TagNumber(20)
@@ -338,8 +338,9 @@ class MessageRead extends $pb.GeneratedMessage {
   $10.Timestamp ensureReadAt() => $_ensure(2);
 }
 
-/// Marks (or unmarks) a Message as read by the calling user. *Authenticated* -- read status is
-/// inherently personal, so there's no anonymous variant the way `SendMessage` has one.
+/// Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
+/// thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
+/// no anonymous variant the way `SendMessage` has one.
 class MarkMessagesReadRequest extends $pb.GeneratedMessage {
   factory MarkMessagesReadRequest({
     $core.bool? unread,
@@ -385,7 +386,7 @@ class MarkMessagesReadRequest extends $pb.GeneratedMessage {
   static MarkMessagesReadRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MarkMessagesReadRequest>(create);
   static MarkMessagesReadRequest? _defaultInstance;
 
-  /// If `false` (the default), the request is to mark the message as read. If `true`, marks it
+  /// If `false` (the default), the request is to mark the messages as read. If `true`, marks them
   /// (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.
   @$pb.TagNumber(1)
   $core.bool get unread => $_getBF(0);
@@ -396,11 +397,58 @@ class MarkMessagesReadRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUnread() => clearField(1);
 
-  /// The Message to mark read/unread. The caller must have the same access to it `GetMessages`
-  /// would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see
-  /// `MarkMessageRead`'s own RPC doc comment.
+  /// The Messages to mark read/unread. The caller must have the same access to each of them
+  /// `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
+  /// -- see `MarkMessagesRead`'s own RPC doc comment. A message id the caller doesn't have access to
+  /// fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
   @$pb.TagNumber(2)
   $core.List<$core.String> get messageIds => $_getList(1);
+}
+
+/// Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+/// same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
+class MarkMessagesReadResponse extends $pb.GeneratedMessage {
+  factory MarkMessagesReadResponse({
+    $core.Iterable<MessageRead>? messageReads,
+  }) {
+    final $result = create();
+    if (messageReads != null) {
+      $result.messageReads.addAll(messageReads);
+    }
+    return $result;
+  }
+  MarkMessagesReadResponse._() : super();
+  factory MarkMessagesReadResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory MarkMessagesReadResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MarkMessagesReadResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<MessageRead>(1, _omitFieldNames ? '' : 'messageReads', $pb.PbFieldType.PM, subBuilder: MessageRead.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  MarkMessagesReadResponse clone() => MarkMessagesReadResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  MarkMessagesReadResponse copyWith(void Function(MarkMessagesReadResponse) updates) => super.copyWith((message) => updates(message as MarkMessagesReadResponse)) as MarkMessagesReadResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MarkMessagesReadResponse create() => MarkMessagesReadResponse._();
+  MarkMessagesReadResponse createEmptyInstance() => create();
+  static $pb.PbList<MarkMessagesReadResponse> createRepeated() => $pb.PbList<MarkMessagesReadResponse>();
+  @$core.pragma('dart2js:noInline')
+  static MarkMessagesReadResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MarkMessagesReadResponse>(create);
+  static MarkMessagesReadResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<MessageRead> get messageReads => $_getList(0);
 }
 
 /// Request to create a new message.

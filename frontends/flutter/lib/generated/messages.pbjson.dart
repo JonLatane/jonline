@@ -104,6 +104,19 @@ final $typed_data.Uint8List markMessagesReadRequestDescriptor = $convert.base64D
     'ChdNYXJrTWVzc2FnZXNSZWFkUmVxdWVzdBIWCgZ1bnJlYWQYASABKAhSBnVucmVhZBIfCgttZX'
     'NzYWdlX2lkcxgCIAMoCVIKbWVzc2FnZUlkcw==');
 
+@$core.Deprecated('Use markMessagesReadResponseDescriptor instead')
+const MarkMessagesReadResponse$json = {
+  '1': 'MarkMessagesReadResponse',
+  '2': [
+    {'1': 'message_reads', '3': 1, '4': 3, '5': 11, '6': '.jonline.MessageRead', '10': 'messageReads'},
+  ],
+};
+
+/// Descriptor for `MarkMessagesReadResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List markMessagesReadResponseDescriptor = $convert.base64Decode(
+    'ChhNYXJrTWVzc2FnZXNSZWFkUmVzcG9uc2USOQoNbWVzc2FnZV9yZWFkcxgBIAMoCzIULmpvbm'
+    'xpbmUuTWVzc2FnZVJlYWRSDG1lc3NhZ2VSZWFkcw==');
+
 @$core.Deprecated('Use sendMessageRequestDescriptor instead')
 const SendMessageRequest$json = {
   '1': 'SendMessageRequest',

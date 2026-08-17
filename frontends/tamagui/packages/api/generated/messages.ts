@@ -109,7 +109,7 @@ export interface Message {
     | undefined;
   /**
    * Whether/when *this response's viewer* has read the message -- unset means unread. Always
-   * reflects the currently-authenticated caller's own read status (via `MarkMessageRead`), even
+   * reflects the currently-authenticated caller's own read status (via `MarkMessagesRead`), even
    * when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it's a personal "have I seen
    * this" marker, not tied to whichever user this response happens to be showing `messaging_group`
    * for.
@@ -131,7 +131,7 @@ export interface MessageRead {
   messageId: string;
   userId: string;
   /**
-   * When the message was marked read. Always set on a `MessageRead` returned from `MarkMessageRead`
+   * When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead`
    * -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
    * a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
    */
@@ -139,21 +139,31 @@ export interface MessageRead {
 }
 
 /**
- * Marks (or unmarks) a Message as read by the calling user. *Authenticated* -- read status is
- * inherently personal, so there's no anonymous variant the way `SendMessage` has one.
+ * Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
+ * thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
+ * no anonymous variant the way `SendMessage` has one.
  */
 export interface MarkMessagesReadRequest {
   /**
-   * If `false` (the default), the request is to mark the message as read. If `true`, marks it
+   * If `false` (the default), the request is to mark the messages as read. If `true`, marks them
    * (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.
    */
   unread: boolean;
   /**
-   * The Message to mark read/unread. The caller must have the same access to it `GetMessages`
-   * would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see
-   * `MarkMessageRead`'s own RPC doc comment.
+   * The Messages to mark read/unread. The caller must have the same access to each of them
+   * `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
+   * -- see `MarkMessagesRead`'s own RPC doc comment. A message id the caller doesn't have access to
+   * fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
    */
   messageIds: string[];
+}
+
+/**
+ * Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+ * same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
+ */
+export interface MarkMessagesReadResponse {
+  messageReads: MessageRead[];
 }
 
 /**
@@ -638,6 +648,68 @@ export const MarkMessagesReadRequest: MessageFns<MarkMessagesReadRequest> = {
     const message = createBaseMarkMessagesReadRequest();
     message.unread = object.unread ?? false;
     message.messageIds = object.messageIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseMarkMessagesReadResponse(): MarkMessagesReadResponse {
+  return { messageReads: [] };
+}
+
+export const MarkMessagesReadResponse: MessageFns<MarkMessagesReadResponse> = {
+  encode(message: MarkMessagesReadResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.messageReads) {
+      MessageRead.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MarkMessagesReadResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarkMessagesReadResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.messageReads.push(MessageRead.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MarkMessagesReadResponse {
+    return {
+      messageReads: globalThis.Array.isArray(object?.messageReads)
+        ? object.messageReads.map((e: any) => MessageRead.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MarkMessagesReadResponse): unknown {
+    const obj: any = {};
+    if (message.messageReads?.length) {
+      obj.messageReads = message.messageReads.map((e) => MessageRead.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MarkMessagesReadResponse>, I>>(base?: I): MarkMessagesReadResponse {
+    return MarkMessagesReadResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MarkMessagesReadResponse>, I>>(object: I): MarkMessagesReadResponse {
+    const message = createBaseMarkMessagesReadResponse();
+    message.messageReads = object.messageReads?.map((e) => MessageRead.fromPartial(e)) || [];
     return message;
   },
 };

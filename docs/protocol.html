@@ -198,6 +198,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></p>
           </li>
           <li>
+            <p><a href="#jonline-MarkMessagesReadResponse">MarkMessagesReadResponse</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-Message">Message</a></p>
           </li>
           <li>
@@ -986,8 +989,8 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>MarkMessagesRead</td>
           <td><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></td>
-          <td><a href="#jonline-MessageRead">MessageRead</a></td>
-          <td>Marks a Message as read (or unread) by the current user. <em>Authenticated.</em> Only needs the recipient/sender access <code>GetMessages</code> already requires for that Message -- no separate permission.</td>
+          <td><a href="#jonline-MarkMessagesReadResponse">MarkMessagesReadResponse</a></td>
+          <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <code>GetMessages</code> already requires for each Message -- no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -3010,8 +3013,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-MarkMessagesReadRequest"></a></p>
     <h3 id="markmessagesreadrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadrequest"><span class="octicon octicon-link"></span></a>MarkMessagesReadRequest</h3>
     <p>
-      Marks (or unmarks) a Message as read by the calling user. <em>Authenticated</em> -- read status is
-      inherently personal, so there's no anonymous variant the way <code>SendMessage</code> has one.
+      Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
+      thread once it's been opened. <em>Authenticated</em> -- read status is inherently personal, so there's
+      no anonymous variant the way <code>SendMessage</code> has one.
     </p>
     <table>
       <thead>
@@ -3027,13 +3031,37 @@ directory</a> is (<code>{name}</code> denotes a
           <td>unread</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>If <code>false</code> (the default), the request is to mark the message as read. If <code>true</code>, marks it (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.</td>
+          <td>If <code>false</code> (the default), the request is to mark the messages as read. If <code>true</code>, marks them (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.</td>
         </tr>
         <tr>
           <td>message_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>The Message to mark read/unread. The caller must have the same access to it <code>GetMessages</code> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <code>MarkMessageRead</code>'s own RPC doc comment.</td>
+          <td>The Messages to mark read/unread. The caller must have the same access to each of them <code>GetMessages</code> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <code>MarkMessagesRead</code>'s own RPC doc comment. A message id the caller doesn't have access to fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MarkMessagesReadResponse"></a></p>
+    <h3 id="markmessagesreadresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadresponse"><span class="octicon octicon-link"></span></a>MarkMessagesReadResponse</h3>
+    <p>
+      Response to a <code>MarkMessagesReadRequest</code> -- one <code>MessageRead</code> per <code>message_ids</code> entry, in the
+      same order, each reflecting that message's own read/unread result (see <code>MarkMessagesReadRequest.unread</code>).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>message_reads</td>
+          <td><a href="#jonline-MessageRead">MessageRead</a></td>
+          <td>repeated</td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -3117,7 +3145,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>current_user_read</td>
           <td><a href="#jonline-MessageRead">MessageRead</a></td>
           <td>optional</td>
-          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <code>MarkMessageRead</code>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
+          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <code>MarkMessagesRead</code>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -3161,7 +3189,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>read_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td>When the message was marked read. Always set on a <code>MessageRead</code> returned from <code>MarkMessageRead</code> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
+          <td>When the message was marked read. Always set on a <code>MessageRead</code> returned from <code>MarkMessagesRead</code> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
         </tr>
       </tbody>
     </table>

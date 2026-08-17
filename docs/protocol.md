@@ -50,6 +50,7 @@
     - [GetMessagesRequest](#jonline-GetMessagesRequest)
     - [GetMessagesResponse](#jonline-GetMessagesResponse)
     - [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest)
+    - [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse)
     - [Message](#jonline-Message)
     - [MessageRead](#jonline-MessageRead)
     - [MessagingGroup](#jonline-MessagingGroup)
@@ -548,7 +549,7 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | DeleteUser | [User](#jonline-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
 | SendMessage | [SendMessageRequest](#jonline-SendMessageRequest) | [Message](#jonline-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
 | GetMessages | [GetMessagesRequest](#jonline-GetMessagesRequest) | [GetMessagesResponse](#jonline-GetMessagesResponse) | Gets Messages. *Authenticated.* `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received. `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns every Message on the server. |
-| MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MessageRead](#jonline-MessageRead) | Marks a Message as read (or unread) by the current user. *Authenticated.* Only needs the recipient/sender access `GetMessages` already requires for that Message -- no separate permission. |
+| MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse) | Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it&#39;s been opened. *Authenticated.* Only needs the recipient/sender access `GetMessages` already requires for each Message -- no separate permission. Atomic: if the caller lacks access to *any* of `message_ids`, none of them are marked (matching `MarkMessagesReadRequest.message_ids`&#39; own doc), so a client never has to reconcile a partially-applied batch. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
@@ -1404,14 +1405,31 @@ Response to a `GetMessagesRequest`, containing the requested messages.
 <a name="jonline-MarkMessagesReadRequest"></a>
 
 ### MarkMessagesReadRequest
-Marks (or unmarks) a Message as read by the calling user. *Authenticated* -- read status is
-inherently personal, so there&#39;s no anonymous variant the way `SendMessage` has one.
+Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
+thread once it&#39;s been opened. *Authenticated* -- read status is inherently personal, so there&#39;s
+no anonymous variant the way `SendMessage` has one.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| unread | [bool](#bool) |  | If `false` (the default), the request is to mark the message as read. If `true`, marks it (back) as unread instead -- e.g. an explicit &#34;mark unread&#34; action on an already-read message. |
-| message_ids | [string](#string) | repeated | The Message to mark read/unread. The caller must have the same access to it `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see `MarkMessageRead`&#39;s own RPC doc comment. |
+| unread | [bool](#bool) |  | If `false` (the default), the request is to mark the messages as read. If `true`, marks them (back) as unread instead -- e.g. an explicit &#34;mark unread&#34; action on an already-read message. |
+| message_ids | [string](#string) | repeated | The Messages to mark read/unread. The caller must have the same access to each of them `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see `MarkMessagesRead`&#39;s own RPC doc comment. A message id the caller doesn&#39;t have access to fails the whole request (see that RPC&#39;s own doc on atomicity) rather than silently skipping it. |
+
+
+
+
+
+
+<a name="jonline-MarkMessagesReadResponse"></a>
+
+### MarkMessagesReadResponse
+Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+same order, each reflecting that message&#39;s own read/unread result (see `MarkMessagesReadRequest.unread`).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message_reads | [MessageRead](#jonline-MessageRead) | repeated |  |
 
 
 
@@ -1437,7 +1455,7 @@ A Jonline `Message` represents a single message/email sent to one or more recipi
 | to | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;to&#34; address. |
 | cc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;cc&#34; address. |
 | bcc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;bcc&#34; address. |
-| current_user_read | [MessageRead](#jonline-MessageRead) | optional | Whether/when *this response&#39;s viewer* has read the message -- unset means unread. Always reflects the currently-authenticated caller&#39;s own read status (via `MarkMessageRead`), even when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it&#39;s a personal &#34;have I seen this&#34; marker, not tied to whichever user this response happens to be showing `messaging_group` for. |
+| current_user_read | [MessageRead](#jonline-MessageRead) | optional | Whether/when *this response&#39;s viewer* has read the message -- unset means unread. Always reflects the currently-authenticated caller&#39;s own read status (via `MarkMessagesRead`), even when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it&#39;s a personal &#34;have I seen this&#34; marker, not tied to whichever user this response happens to be showing `messaging_group` for. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the message was created. |
 
 
@@ -1458,7 +1476,7 @@ no RPC to see *other* users&#39; read status on a Message.
 | ----- | ---- | ----- | ----------- |
 | message_id | [string](#string) |  |  |
 | user_id | [string](#string) |  |  |
-| read_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the message was marked read. Always set on a `MessageRead` returned from `MarkMessageRead` -- including a `{ unread: true }` call, where it&#39;s simply the time of that unmark request, not a meaningful &#34;last read&#34; timestamp (there&#39;s no longer a row for it to come from at that point). |
+| read_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead` -- including a `{ unread: true }` call, where it&#39;s simply the time of that unmark request, not a meaningful &#34;last read&#34; timestamp (there&#39;s no longer a row for it to come from at that point). |
 
 
 

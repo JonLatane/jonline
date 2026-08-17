@@ -86,10 +86,10 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/GetMessages',
       ($6.GetMessagesRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $6.GetMessagesResponse.fromBuffer(value));
-  static final _$markMessagesRead = $grpc.ClientMethod<$6.MarkMessagesReadRequest, $6.MessageRead>(
+  static final _$markMessagesRead = $grpc.ClientMethod<$6.MarkMessagesReadRequest, $6.MarkMessagesReadResponse>(
       '/jonline.Jonline/MarkMessagesRead',
       ($6.MarkMessagesReadRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $6.MessageRead.fromBuffer(value));
+      ($core.List<$core.int> value) => $6.MarkMessagesReadResponse.fromBuffer(value));
   static final _$createFollow = $grpc.ClientMethod<$4.Follow, $4.Follow>(
       '/jonline.Jonline/CreateFollow',
       ($4.Follow value) => value.writeToBuffer(),
@@ -325,7 +325,7 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$getMessages, request, options: options);
   }
 
-  $grpc.ResponseFuture<$6.MessageRead> markMessagesRead($6.MarkMessagesReadRequest request, {$grpc.CallOptions? options}) {
+  $grpc.ResponseFuture<$6.MarkMessagesReadResponse> markMessagesRead($6.MarkMessagesReadRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$markMessagesRead, request, options: options);
   }
 
@@ -605,13 +605,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $6.GetMessagesRequest.fromBuffer(value),
         ($6.GetMessagesResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$6.MarkMessagesReadRequest, $6.MessageRead>(
+    $addMethod($grpc.ServiceMethod<$6.MarkMessagesReadRequest, $6.MarkMessagesReadResponse>(
         'MarkMessagesRead',
         markMessagesRead_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $6.MarkMessagesReadRequest.fromBuffer(value),
-        ($6.MessageRead value) => value.writeToBuffer()));
+        ($6.MarkMessagesReadResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.Follow, $4.Follow>(
         'CreateFollow',
         createFollow_Pre,
@@ -971,7 +971,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getMessages(call, await request);
   }
 
-  $async.Future<$6.MessageRead> markMessagesRead_Pre($grpc.ServiceCall call, $async.Future<$6.MarkMessagesReadRequest> request) async {
+  $async.Future<$6.MarkMessagesReadResponse> markMessagesRead_Pre($grpc.ServiceCall call, $async.Future<$6.MarkMessagesReadRequest> request) async {
     return markMessagesRead(call, await request);
   }
 
@@ -1161,7 +1161,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$0.Empty> deleteUser($grpc.ServiceCall call, $4.User request);
   $async.Future<$6.Message> sendMessage($grpc.ServiceCall call, $6.SendMessageRequest request);
   $async.Future<$6.GetMessagesResponse> getMessages($grpc.ServiceCall call, $6.GetMessagesRequest request);
-  $async.Future<$6.MessageRead> markMessagesRead($grpc.ServiceCall call, $6.MarkMessagesReadRequest request);
+  $async.Future<$6.MarkMessagesReadResponse> markMessagesRead($grpc.ServiceCall call, $6.MarkMessagesReadRequest request);
   $async.Future<$4.Follow> createFollow($grpc.ServiceCall call, $4.Follow request);
   $async.Future<$4.Follow> updateFollow($grpc.ServiceCall call, $4.Follow request);
   $async.Future<$0.Empty> deleteFollow($grpc.ServiceCall call, $4.Follow request);
