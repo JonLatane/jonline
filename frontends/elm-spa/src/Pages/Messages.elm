@@ -67,7 +67,7 @@ init shared req =
                 |> Maybe.andThen
                     (\fragment ->
                         if String.startsWith "message-" fragment then
-                            Just (String.dropLeft (String.length "message-") fragment)
+                            Just (String.dropLeft 8 fragment)
 
                         else
                             Nothing
@@ -108,7 +108,7 @@ update shared msg model =
         -- `ForceRefresh`'s own doc on why plain `Poll` can't do this),
         -- since it doesn't otherwise learn this page's read/unread changes
         -- at all.
-        PageMsg (MessagesPage.GotMarkReadResult (Ok _) as subMsg) ->
+        PageMsg ((MessagesPage.GotMarkReadResult (Ok _)) as subMsg) ->
             let
                 ( updatedModel, pageEffect ) =
                     applyPageMsg shared subMsg model

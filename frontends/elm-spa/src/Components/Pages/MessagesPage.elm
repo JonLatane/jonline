@@ -215,7 +215,12 @@ type Msg
     | SearchDebounceElapsed Int
     | ClearSearchClicked
     | GroupSelected GroupRef
-    | ScrollAttempted (Result Dom.Error ())
+      -- Fired regardless of whether the scroll itself actually succeeded
+      -- (`scrollToPendingMessageCmd`'s own `Task.attempt` result is
+      -- discarded, not carried on this constructor) -- either way, this
+      -- was the one-shot attempt, so `pendingScrollMessageId` gets cleared
+      -- the same way (see its own doc on `Model`).
+    | ScrollAttempted
     | ToggleMobileSidebar
       -- Fired by a group row's `onClick` *only* when `embeddedPanel == True`
       -- (alongside its own `href`, not instead of it) -- a pure signal with
@@ -411,7 +416,8 @@ update accountsPanelModel msg model =
             else
                 let
                     ( newModel, cmd ) =
-                        expand accountsPanelModel { model | inlineOpenGroups = Set.insert summary.key model.inlineOpenGroups }
+                        expand accountsPanelModel
+                            { model | inlineOpenGroups = Set.insert summary.key model.inlineOpenGroups }
                             { key = summary.key, host = summary.host, groupId = summary.groupId }
                 in
                 ( newModel, cmd, Nothing )
@@ -590,7 +596,7 @@ update accountsPanelModel msg model =
                     , Nothing
                     )
 
-        ScrollAttempted _ ->
+        ScrollAttempted ->
             ( { model | pendingScrollMessageId = Nothing }, Cmd.none, Nothing )
 
         ToggleMobileSidebar ->
@@ -684,7 +690,7 @@ entry `ExpandLoading` (never firing a doomed, instantly-failing request
 against it) for `retryPendingExpansions` to actually attempt once the real
 connection lands -- mirrors `Components.Messages.eligibleServers`'s own fix
 for the exact same race, just for a single group's fetch instead of the
-whole listing. A genuine failure (the fetch *did* reach a connected server,
+whole listing. A genuine failure (the fetch _did_ reach a connected server,
 and it came back an error -- not found, no access, ...) still lands in
 `ExpandFailed` as before, via `GotGroupMessages`'s own `Err` branch -- that
 one's terminal, not retried.
@@ -692,18 +698,6 @@ one's terminal, not retried.
 fetchExpand : AccountsPanel.Model -> Model -> GroupRef -> ( Model, Cmd Msg )
 fetchExpand accountsPanelModel model ref =
     let
-        feed : Maybe ServerFeed
-        feed =
-            Dict.get ref.host model.messagesByServer
-
-        accountUserId : Maybe String
-        accountUserId =
-            feed |> Maybe.andThen .accountId
-
-        listingType : MessageListingType
-        listingType =
-            feed |> Maybe.map .listingType |> Maybe.withDefault PERSONALMESSAGES
-
         existingMessageAnimations : Dict String MessageAnimation
         existingMessageAnimations =
             Dict.get ref.key model.expandedGroups |> Maybe.map .messageAnimations |> Maybe.withDefault Dict.empty
@@ -715,6 +709,19 @@ fetchExpand accountsPanelModel model ref =
                     Cmd.none
 
                 Just _ ->
+                    let
+                        feed : Maybe ServerFeed
+                        feed =
+                            Dict.get ref.host model.messagesByServer
+
+                        accountUserId : Maybe String
+                        accountUserId =
+                            feed |> Maybe.andThen .accountId
+
+                        listingType : MessageListingType
+                        listingType =
+                            feed |> Maybe.map .listingType |> Maybe.withDefault PERSONALMESSAGES
+                    in
                     Messages.fetchMessagingGroup accountsPanelModel ( accountUserId, ref.host ) listingType ref.groupId
                         |> Task.attempt (GotGroupMessages ref.key)
     in
@@ -791,7 +798,7 @@ scrollToPendingMessageCmd model =
             if isPresent then
                 Dom.getElement (messageDomId messageId)
                     |> Task.andThen (\el -> Dom.setViewport 0 (max 0 (el.element.y - 96)))
-                    |> Task.attempt ScrollAttempted
+                    |> Task.attempt (\_ -> ScrollAttempted)
 
             else
                 Cmd.none
@@ -855,7 +862,7 @@ patchServerFeedUnread unreadIds feed =
 {-| Every currently-known `GroupSummary.unreadCount`, summed -- what
 `Shared.MessagingPanel`/`UI.messagingToggle` badge with a number, mirroring
 `Shared.StarredPanel`'s own `Set.size starredPostIds` badge. Unlike that one,
-though, this can only ever reflect what's *already been fetched* into this
+though, this can only ever reflect what's _already been fetched_ into this
 `Model` -- there's no local, always-available record of "how many unread
 messages do I have" the way starring's own locally-persisted `starredPostIds`
 is (see that module's own `init`, which reads it straight out of `flags` at
@@ -1086,6 +1093,7 @@ alongside `.messages-detail` at any reasonable width -- but on a narrow
 button (`ToggleMobileSidebar`) rather than shown outright.
 `openClosedClass model.mobileSidebarOpen` only actually matters at that
 width; wider viewports override it back to always-visible in CSS.
+
 -}
 view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
 view browserTimeZone accountsPanelModel model =
@@ -1395,13 +1403,13 @@ show a message, so they're a real `<a href>` out to its `/messages`
 permalink -- "clicking a message... takes you to the [real page]" per that
 panel's own spec (`ExternalLink`). The real page's own two-pane detail
 (`selectedGroupView`) is already showing the message, so its own rows are
-plain, non-navigating content (`NoInteraction`). The real page's *sidebar*
+plain, non-navigating content (`NoInteraction`). The real page's _sidebar_
 inline-expand (`groupRowView`'s chevron) is the one case with somewhere to
 go that isn't a full page navigation -- clicking one of its rows selects
-that message's group into the two-pane detail *and* scrolls/highlights that
+that message's group into the two-pane detail _and_ scrolls/highlights that
 exact message there, same as landing on its `#message-<id>` permalink
 directly (`SelectGroup`, see `MessageSelected`'s own doc). Deliberately
-*not* affected by whether some *other* group is currently `selectedGroup` --
+_not_ affected by whether some _other_ group is currently `selectedGroup` --
 clicking a message is always a real choice, unlike merely toggling a row's
 chevron open (`ToggleExpand`, `inlineOpenGroups`), which never touches
 `selectedGroup` at all.
@@ -1445,7 +1453,7 @@ expandedGroupView browserTimeZone accountsPanelModel model groupKey =
 
 {-| A thread's participants -- derived straight from the `messagingGroup` of
 whichever loaded message has one (they all share the same group, so the
-first is enough), *not* from `model.groupAnimations` -- this way it's just as
+first is enough), _not_ from `model.groupAnimations` -- this way it's just as
 correct for a group reached only by a `?messaging_group=` permalink that
 never appeared in the general listing at all (see `fetchExpand`'s own doc on
 that case) as for one that did. Falls back to the loaded messages' own
@@ -1638,7 +1646,7 @@ yet (never actually happens -- every rendered `Message` came straight from a
 button lives inside `messageRowView`'s own `content`, which every
 `MessageInteraction` case wraps in something clickable/navigable of its own
 (`SelectGroup`'s `onClick`, `ExternalLink`'s `<a href>`) -- same
-stop-propagation-*and*-prevent-default reasoning `groupRowView`'s own
+stop-propagation-_and_-prevent-default reasoning `groupRowView`'s own
 `expandChevron` doc explains, needed here for exactly the same reason (an
 embedded panel's `ExternalLink` row is a real anchor; without `preventDefault`
 this click would navigate away instead of just marking unread in place).

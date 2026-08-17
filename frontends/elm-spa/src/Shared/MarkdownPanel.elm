@@ -27,8 +27,7 @@ import Html exposing (Html, button, div, img, label, option, select, span, text,
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, spellcheck, src, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
-import Dict
-import Proto.Jonline exposing (Author, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo, defaultUser)
+import Proto.Jonline exposing (Author, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -105,7 +104,7 @@ same reasoning as `PostContent`, and the same pattern
 opened for a signed-in account with `ADMIN` on that server (see `resolve`).
 
 `SendNewMessage` composes a brand new `Message` (via `SendMessage`, see
-`sendMessageTask` -- deliberately *not* routed through `saveTask`/`resolve`'s
+`sendMessageTask` -- deliberately _not_ routed through `saveTask`/`resolve`'s
 shared per-target dispatch, since it's the one target needing more than
 `model.content` to submit). Its own extra draft state (who to send as, who to
 send to) doesn't fit in a bare `content : String` either, so it lives in
@@ -119,8 +118,9 @@ existing entity to overwrite) is the recipients to pre-seed
 `messageRecipients` with when this panel opens (`Open`, below) -- `[]` for a
 fresh compose (`Pages.Messages`' own "Send Message" button), or a messaging
 group's current members, minus whoever's sending, for "Reply"
-(`MessagesPage.ReplyClicked`) -- either way just the *initial* selection,
+(`MessagesPage.ReplyClicked`) -- either way just the _initial_ selection,
 freely changed from the picker afterward like any other.
+
 -}
 type TargetType
     = PostContent Post
@@ -204,7 +204,7 @@ update accountsPanelModel msg model =
                         SendNewMessage initialRecipients ->
                             let
                                 ( picker, cmd ) =
-                                    UserPicker.init accountsPanelModel host
+                                    UserPicker.init host
                             in
                             ( UserPicker.withInitialSelection initialRecipients picker, cmd )
 
@@ -251,7 +251,7 @@ update accountsPanelModel msg model =
                     else
                         let
                             ( messageRecipients, recipientsCmd ) =
-                                UserPicker.init accountsPanelModel account.server
+                                UserPicker.init account.server
                         in
                         ( { model | targetHost = account.server, messageRecipients = messageRecipients }
                         , Cmd.map UserPickerMsg recipientsCmd

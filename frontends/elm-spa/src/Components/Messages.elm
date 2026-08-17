@@ -10,7 +10,6 @@ module Components.Messages exposing
     , markMessagesRead
     , messageMillis
     , parseGroupRouteId
-    , textSearchListingType
     )
 
 {-| Shared building blocks for `Components.Pages.MessagesPage` -- the
@@ -20,7 +19,7 @@ the client-side grouping of a flat `GetMessagesResponse.messages` list into
 which always returns messages -- see `protos/messages.proto`).
 
 Unlike `Components.Users.fetchUserListing`'s unfiltered `EVERYONE` listing
-(every *enabled* server, no account needed), `GetMessages` always requires
+(every _enabled_ server, no account needed), `GetMessages` always requires
 auth (`backend/src/rpcs/messages/get_messages.rs`'s `validate_permission`
 rejects an anonymous `user`), so `eligibleServers` scopes this to every
 signed-in account that actually has the relevant permission, one
@@ -64,6 +63,7 @@ instead means no fetch (and no `Failed` status) is ever recorded for it, so
 the very next `Poll` (fired off the `Shared.AccountsPanelMsg` that connecting
 itself dispatches -- see `Pages.Messages.update`) sees it as brand new and
 fetches for the first time, successfully.
+
 -}
 eligibleServers : AccountsPanel.Model -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
 eligibleServers accountsPanelModel =
@@ -154,6 +154,7 @@ the outer listing's search) the group was found under, from `eligibleServers`.
 Never called for a "solo" (Bcc-only) pseudo-group (see `groupMessages`) --
 there's only ever the one already-in-hand message for those, no group id to
 fetch by.
+
 -}
 fetchMessagingGroup :
     AccountsPanel.Model

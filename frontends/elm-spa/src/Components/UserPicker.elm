@@ -98,8 +98,8 @@ unfiltered `EVERYONE` browse, this picker never shows a "browse everyone"
 listing at all, only search results (see `SearchTextChanged`), so there's
 nothing to fetch until the user actually types something.
 -}
-init : AccountsPanel.Model -> String -> ( Model, Cmd Msg )
-init _ host =
+init : String -> ( Model, Cmd Msg )
+init host =
     ( empty host, Cmd.none )
 
 
