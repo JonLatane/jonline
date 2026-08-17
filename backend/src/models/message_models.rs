@@ -7,7 +7,7 @@ use tonic::{Code, Status};
 
 use super::User;
 use crate::db_connection::PgPooledConnection;
-use crate::schema::{message_recipients, messages, messaging_groups};
+use crate::schema::{message_reads, message_recipients, messages, messaging_groups};
 
 /// The canonical conversation between a set of participants -- every [`Message`] belongs to
 /// exactly one. `sorted_user_ids` excludes Bcc'd recipients (see [`MessageRecipient`],
@@ -189,4 +189,33 @@ pub struct NewMessageRecipient {
     pub message_id: i64,
     pub user_id: i64,
     pub recipient_type: RecipientType,
+}
+
+/// One row per (message, user) once that user has read that [`Message`] -- absence of a row means
+/// unread. Backs `Message.current_user_read`/`MarkMessageReadRequest` (see
+/// protos/messages.proto), read/written for the *authenticated caller's own* user id only --
+/// there's no notion of marking a message read on someone else's behalf. Composite primary key
+/// (no separate id column), same reasoning as `models::EventInstanceSyncDestination` (see
+/// 2026-08-09-205953_create_event_sync_destinations): a user can only ever have one read record
+/// per Message, so there's nothing an extra surrogate key would let us express.
+#[derive(Debug, Queryable, Identifiable, Associations, Clone)]
+#[diesel(belongs_to(Message))]
+#[diesel(belongs_to(User))]
+#[diesel(table_name = message_reads)]
+#[diesel(primary_key(message_id, user_id))]
+pub struct MessageRead {
+    pub message_id: i64,
+    pub user_id: i64,
+    pub read_at: SystemTime,
+}
+
+/// Also doubles as the changeset for "mark read" upserts (`mark_messages_read`, via `AsChangeset`)
+/// -- `read_at` is always written fresh (rather than preserved across a re-mark), so there's no
+/// separate changeset struct needed.
+#[derive(Debug, Insertable, AsChangeset)]
+#[diesel(table_name = message_reads)]
+pub struct NewMessageRead {
+    pub message_id: i64,
+    pub user_id: i64,
+    pub read_at: SystemTime,
 }

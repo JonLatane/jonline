@@ -6,6 +6,8 @@ module Components.Messages exposing
     , groupMessages
     , groupRouteId
     , hasEligibleAccount
+    , isUnread
+    , markMessagesRead
     , messageMillis
     , parseGroupRouteId
     , textSearchListingType
@@ -28,7 +30,7 @@ signed-in account that actually has the relevant permission, one
 
 import Dict exposing (Dict)
 import Grpc
-import Proto.Jonline exposing (Author, GetMessagesRequest, GetMessagesResponse, Message, defaultGetMessagesRequest)
+import Proto.Jonline exposing (Author, GetMessagesRequest, GetMessagesResponse, Message, MessageRead, defaultGetMessagesRequest, defaultMarkMessagesReadRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.MessageListingType exposing (MessageListingType(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -185,7 +187,11 @@ its most recent message -- what `Components.Pages.MessagesPage`'s outer list
 renders/sorts/animates. `key` is globally unique across every fetched server
 (`"<host>|<groupId>"`, or `"<host>|<messageId>"` for a solo group -- a raw
 `MessagingGroup.id`/`Message.id` alone isn't unique across servers, same
-reasoning as `Components.Users.followStatusAndButtonKey`).
+reasoning as `Components.Users.followStatusAndButtonKey`). `unreadCount`
+counts every fetched message in the group with `isUnread == True` -- not just
+whether `mostRecent` itself is unread -- so it stays accurate once an older
+message's read status changes independently (e.g. `MessagesPage` marking a
+whole thread read on expand doesn't necessarily touch every message at once).
 -}
 type alias GroupSummary =
     { key : String
@@ -194,6 +200,7 @@ type alias GroupSummary =
     , isSolo : Bool
     , members : List Author
     , mostRecent : Message
+    , unreadCount : Int
     }
 
 
@@ -224,21 +231,75 @@ groupMessages host messages =
                 key : String
                 key =
                     host ++ "|" ++ groupId
+
+                increment : Int
+                increment =
+                    if isUnread message then
+                        1
+
+                    else
+                        0
             in
             case Dict.get key groups of
                 Nothing ->
-                    Dict.insert key { key = key, host = host, groupId = groupId, isSolo = isSolo, members = members, mostRecent = message } groups
+                    Dict.insert key
+                        { key = key, host = host, groupId = groupId, isSolo = isSolo, members = members, mostRecent = message, unreadCount = increment }
+                        groups
 
                 Just existing ->
-                    if messageMillis message > messageMillis existing.mostRecent then
-                        Dict.insert key { existing | mostRecent = message } groups
+                    Dict.insert key
+                        { existing
+                            | mostRecent =
+                                if messageMillis message > messageMillis existing.mostRecent then
+                                    message
 
-                    else
+                                else
+                                    existing.mostRecent
+                            , unreadCount = existing.unreadCount + increment
+                        }
                         groups
     in
     List.foldl addMessage Dict.empty messages
         |> Dict.values
         |> List.sortBy (\group -> -(messageMillis group.mostRecent))
+
+
+{-| `True` iff `message.currentUserRead` hasn't been set -- see that field's
+own proto doc comment. Used both to compute `GroupSummary.unreadCount` and by
+`MessagesPage` to decide which messages to `markMessageRead` once their
+thread's actually been viewed.
+-}
+isUnread : Message -> Bool
+isUnread message =
+    message.currentUserRead == Nothing
+
+
+{-| Marks every id in `messageIds` read or unread (`MarkMessagesReadRequest.unread`),
+all in one request, as `maybeAccountServer`'s account. Two callers:
+`MessagesPage` fires this with `unread = False` once per thread, for every
+`isUnread` message in it at once, right when that thread's finished loading
+(see its own `GotGroupMessages` handling); its own "Mark unread" button
+(`MarkUnreadClicked`) fires it with `unread = True` for a single already-read
+message instead. `messageIds` empty is a caller bug (the RPC itself rejects
+it) -- both callers only ever call this with a non-empty list.
+-}
+markMessagesRead :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Bool
+    -> List String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, List MessageRead )
+markMessagesRead accountsPanelModel maybeAccountServer unread messageIds =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.markMessagesRead { defaultMarkMessagesReadRequest | messageIds = messageIds, unread = unread }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+        |> Task.map (Tuple.mapSecond .messageReads)
 
 
 {-| `message.createdAt`, in epoch milliseconds -- what `groupMessages` sorts

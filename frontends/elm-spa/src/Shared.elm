@@ -773,8 +773,15 @@ sharedUpdate req msg model =
                 ( refreshedMessagingPanel, refreshMessagingPanelCmd ) =
                     if messageJustSent then
                         let
+                            -- `ForceRefresh`, not `Poll` -- see that
+                            -- constructor's own doc: `Poll`'s own
+                            -- `fetchNewServers` only fetches newly-eligible
+                            -- servers, so it would silently no-op here once
+                            -- this panel's already been opened once this
+                            -- session (the common case) and had time to
+                            -- fetch its own listing already.
                             ( m, cmd, _ ) =
-                                MessagingPanel.update model.accounts (MessagingPanel.PageMsg MessagesPage.Poll) panels.messagingPanel
+                                MessagingPanel.update model.accounts (MessagingPanel.PageMsg MessagesPage.ForceRefresh) panels.messagingPanel
                         in
                         ( m, cmd )
 

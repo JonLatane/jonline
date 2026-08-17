@@ -195,7 +195,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-GetMessagesResponse">GetMessagesResponse</a></p>
           </li>
           <li>
+            <p><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-Message">Message</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-MessageRead">MessageRead</a></p>
           </li>
           <li>
             <p><a href="#jonline-MessagingGroup">MessagingGroup</a></p>
@@ -976,6 +982,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-GetMessagesRequest">GetMessagesRequest</a></td>
           <td><a href="#jonline-GetMessagesResponse">GetMessagesResponse</a></td>
           <td>Gets Messages. <em>Authenticated.</em> <code>PERSONAL_MESSAGES(_TEXT_SEARCH)</code> (and looking up a single Message/MessagingGroup) requires the <code>READ_PERSONAL_MESSAGES</code> permission and only returns Messages the current user sent or received. <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> requires the <code>READ_ALL_SYSTEM_MESSAGES</code> permission and returns every Message on the server.</td>
+        </tr>
+        <tr>
+          <td>MarkMessagesRead</td>
+          <td><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></td>
+          <td><a href="#jonline-MessageRead">MessageRead</a></td>
+          <td>Marks a Message as read (or unread) by the current user. <em>Authenticated.</em> Only needs the recipient/sender access <code>GetMessages</code> already requires for that Message -- no separate permission.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -2995,6 +3007,36 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-MarkMessagesReadRequest"></a></p>
+    <h3 id="markmessagesreadrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadrequest"><span class="octicon octicon-link"></span></a>MarkMessagesReadRequest</h3>
+    <p>
+      Marks (or unmarks) a Message as read by the calling user. <em>Authenticated</em> -- read status is
+      inherently personal, so there's no anonymous variant the way <code>SendMessage</code> has one.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>unread</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>If <code>false</code> (the default), the request is to mark the message as read. If <code>true</code>, marks it (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.</td>
+        </tr>
+        <tr>
+          <td>message_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>The Message to mark read/unread. The caller must have the same access to it <code>GetMessages</code> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <code>MarkMessageRead</code>'s own RPC doc comment.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-Message"></a></p>
     <h3 id="message-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message-1"><span class="octicon octicon-link"></span></a>Message</h3>
     <p>
@@ -3072,10 +3114,54 @@ directory</a> is (<code>{name}</code> denotes a
           <td>If this message derived from an email, the original email's "bcc" address.</td>
         </tr>
         <tr>
+          <td>current_user_read</td>
+          <td><a href="#jonline-MessageRead">MessageRead</a></td>
+          <td>optional</td>
+          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <code>MarkMessageRead</code>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
+        </tr>
+        <tr>
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
           <td>The time the message was created.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MessageRead"></a></p>
+    <h3 id="messageread"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messageread"><span class="octicon octicon-link"></span></a>MessageRead</h3>
+    <p>
+      Records that a user has read a particular Message -- one row (conceptually; see the composite
+      <code>message_id</code>/<code>user_id</code> key on the backing table) per (Message, user) that's ever been marked
+      read. Only ever surfaced back to the user it belongs to, as <code>Message.current_user_read</code> -- there's
+      no RPC to see <em>other</em> users' read status on a Message.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>message_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>read_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>When the message was marked read. Always set on a <code>MessageRead</code> returned from <code>MarkMessageRead</code> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
         </tr>
       </tbody>
     </table>

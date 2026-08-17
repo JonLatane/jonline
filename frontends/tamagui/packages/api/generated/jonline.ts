@@ -33,7 +33,14 @@ import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse, Media } from "./media";
-import { GetMessagesRequest, GetMessagesResponse, Message, SendMessageRequest } from "./messages";
+import {
+  GetMessagesRequest,
+  GetMessagesResponse,
+  MarkMessagesReadRequest,
+  Message,
+  MessageRead,
+  SendMessageRequest,
+} from "./messages";
 import {
   GetGroupPostsRequest,
   GetGroupPostsResponse,
@@ -588,6 +595,18 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Marks a Message as read (or unread) by the current user. *Authenticated.* Only needs the
+     * recipient/sender access `GetMessages` already requires for that Message -- no separate permission.
+     */
+    markMessagesRead: {
+      name: "MarkMessagesRead",
+      requestType: MarkMessagesReadRequest,
+      requestStream: false,
+      responseType: MessageRead,
+      responseStream: false,
+      options: {},
+    },
     /** Follow (or request to follow) a user. *Authenticated.* */
     createFollow: {
       name: "CreateFollow",
@@ -1082,6 +1101,14 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: GetMessagesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<GetMessagesResponse>>;
+  /**
+   * Marks a Message as read (or unread) by the current user. *Authenticated.* Only needs the
+   * recipient/sender access `GetMessages` already requires for that Message -- no separate permission.
+   */
+  markMessagesRead(
+    request: MarkMessagesReadRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<MessageRead>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -1322,6 +1349,14 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<GetMessagesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<GetMessagesResponse>;
+  /**
+   * Marks a Message as read (or unread) by the current user. *Authenticated.* Only needs the
+   * recipient/sender access `GetMessages` already requires for that Message -- no separate permission.
+   */
+  markMessagesRead(
+    request: DeepPartial<MarkMessagesReadRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<MessageRead>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */

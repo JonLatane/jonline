@@ -97,6 +97,26 @@ update shared msg model =
         PageMsg (MessagesPage.ReplyClicked ref recipients) ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage recipients) ref.host)) )
 
+        -- A "Mark [un]read" round trip (either the auto-mark-read that
+        -- fires when a thread's viewed, or the explicit "Mark unread"
+        -- button, see `MessagesPage.GotMarkReadResult`'s own doc) landing
+        -- while this page owns the mounted `MessagesPage.Model` -- also
+        -- refreshes `Shared.MessagingPanel`'s own, *separate* embedded copy
+        -- (`MessagesPage.ForceRefresh`, same "unconditionally refetch"
+        -- mechanism the `SendNewMessage`-succeeded case already uses for it
+        -- -- see `Shared.elm`'s own `MarkdownPanelMsg` branch, and
+        -- `ForceRefresh`'s own doc on why plain `Poll` can't do this),
+        -- since it doesn't otherwise learn this page's read/unread changes
+        -- at all.
+        PageMsg (MessagesPage.GotMarkReadResult (Ok _) as subMsg) ->
+            let
+                ( updatedModel, pageEffect ) =
+                    applyPageMsg shared subMsg model
+            in
+            ( updatedModel
+            , Effect.batch [ pageEffect, Effect.fromShared (Shared.MessagingPanelMsg (MessagingPanel.PageMsg MessagesPage.ForceRefresh)) ]
+            )
+
         PageMsg subMsg ->
             applyPageMsg shared subMsg model
 
@@ -115,20 +135,34 @@ update shared msg model =
                         Shared.MessagingPanelMsg (MessagingPanel.PageMsg (MessagesPage.EmbeddedGroupLinkClicked ref)) ->
                             applyPageMsg shared (MessagesPage.SyncSelectedGroup ref) model
 
+                        -- The reverse of `PageMsg (MessagesPage.GotMarkReadResult
+                        -- (Ok _))`, above -- a "Mark [un]read" round trip
+                        -- completing *inside the embedded panel itself*
+                        -- (open on top of this very page) refetches this
+                        -- page's own, separate `Model` too, so both copies
+                        -- of the same messages stay in sync regardless of
+                        -- which surface the read/unread change was actually
+                        -- made from.
+                        Shared.MessagingPanelMsg (MessagingPanel.PageMsg (MessagesPage.GotMarkReadResult (Ok _))) ->
+                            applyPageMsg shared MessagesPage.ForceRefresh model
+
                         -- Any Markdown panel save succeeding while this is
                         -- the mounted page -- in practice always a
                         -- `SendNewMessage`/"Reply" save, the only
                         -- `MarkdownPanel.TargetType` reachable from here at
                         -- all (`sendMessageButton`/`MessagesPage.ReplyClicked`,
-                        -- both above) -- refetches so the just-sent message
-                        -- shows up without waiting for the next 30s poll.
-                        -- `Shared.MessagingPanel`'s own embedded copy gets
-                        -- the same treatment directly from `Shared.update`
-                        -- (see its `MarkdownPanelMsg` branch), since it isn't
-                        -- reachable through this page-forwarding mechanism at
-                        -- all.
+                        -- both above) -- unconditionally refetches
+                        -- (`ForceRefresh`, not plain `Poll` -- see that
+                        -- constructor's own doc) so the just-sent message
+                        -- shows up without waiting for the next 30s poll,
+                        -- which wouldn't otherwise refetch an
+                        -- already-loaded listing at all. `Shared.MessagingPanel`'s
+                        -- own embedded copy gets the same treatment directly
+                        -- from `Shared.update` (see its `MarkdownPanelMsg`
+                        -- branch), since it isn't reachable through this
+                        -- page-forwarding mechanism at all.
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
-                            applyPageMsg shared MessagesPage.Poll model
+                            applyPageMsg shared MessagesPage.ForceRefresh model
 
                         _ ->
                             ( model, Effect.none )

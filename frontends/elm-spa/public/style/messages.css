@@ -154,6 +154,32 @@
   white-space: nowrap;
 }
 
+/* `MessagesPage.unreadBadgeView` -- a group card's own unread-message count.
+   Colors come from the `background-color-nav`/`border-color-primary-text`
+   utility classes (see `UI.EmittedStylesheet`'s doc comment); sized to match
+   `UI.starredPostsToggle`'s own (absolutely-positioned) `.starred-count-badge`,
+   just inline in the row's own flow here instead of pinned to a corner.
+   `align-self: flex-start` -- without it, `.messages-group-row-body`'s own
+   `display: flex; flex-direction: column` (no `align-items` override there,
+   since `.messages-participants` needs the *default* stretch to get its own
+   full width to wrap into) stretches this badge to that same full width too,
+   turning its `border-radius: 999px` pill into one enormous rounded bar
+   instead of a small badge. */
+.messages-unread-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1px solid;
+}
+
 .messages-thread-status {
   color: var(--muted);
   padding: 0.6rem 0.8rem;
@@ -208,6 +234,41 @@
 
 .message-row-sender {
   font-weight: 600;
+}
+
+/* `Components.Messages.isUnread` -- see `MessagesPage.messageRowView`'s own
+   doc. `.message-row-unread` bolds the whole row (mirrors most email
+   clients' own unread styling); `.message-row-unread-dot` is the small
+   brand-colored marker in its header, colored via `background-color-nav`
+   (see `UI.EmittedStylesheet`'s doc comment). */
+.message-row-unread {
+  font-weight: 600;
+}
+
+.message-row-unread .message-row-body {
+  font-weight: 400;
+}
+
+.message-row-unread-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* `MessagesPage.markUnreadButtonView` -- plain text-button styling, right
+   below `.message-row-body`, so it reads as a small in-place action rather
+   than competing with the header's own controls. */
+.message-row-mark-unread {
+  display: block;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .message-row-time {

@@ -86,6 +86,11 @@ pub fn send_message(
             Some(group),
             viewing_user_id,
         )],
+        // A freshly-sent message can't have a `message_reads` row yet, from anyone -- the exact
+        // id here doesn't affect `current_user_read` (always `None`), just needs *some* `i64` to
+        // satisfy `convert_messages`' signature. `0` for an anonymous sender, who has no real id
+        // to use anyway.
+        viewing_user_id.unwrap_or(0),
         conn,
     )
     .remove(0))

@@ -2525,17 +2525,43 @@ account with `READ_PERSONAL_MESSAGES`/`READ_ALL_SYSTEM_MESSAGES`/`ADMIN`) --
 mirrors `starredPostsToggle`'s own "only show once there's something behind
 it" gating and `.starred-menu`/separately-mounted-panel structure (see
 `messagingPanel`, mounted as a `.navbar` direct child in `headerNav`, same
-reasoning as `starredPanel`).
+reasoning as `starredPanel`). The unread badge (`MessagingPanel.totalUnreadCount`,
+styled exactly like `starredPostsToggle`'s own `.starred-count-badge`) is
+hidden at `0` rather than shown as a literal "0" -- unlike Starred's count,
+which is always known from boot (`starredPostIds` persists locally), this one
+only reflects whatever's actually been fetched so far (see that function's
+own doc caveat), so a `0` here is ambiguous between "genuinely caught up" and
+"haven't checked yet" -- hiding it in both cases reads better than a
+misleadingly confident zero.
 -}
 messagingToggle : Shared.Model -> Html Shared.Msg
 messagingToggle shared =
+    let
+        unreadCount : Int
+        unreadCount =
+            MessagingPanel.totalUnreadCount shared.panels.messagingPanel
+    in
     div [ class "messaging-menu" ]
         [ button
             [ classes [ "nav-menu-toggle", "circular", openClosedClass (MessagingPanel.isOpen shared.panels.messagingPanel) ]
             , stopPropagationOn "click" (Decode.succeed ( Shared.MessagingPanelMsg MessagingPanel.ToggleOpen, True ))
             , title "Messages"
             ]
-            [ text "✉️" ]
+            [ text "✉️"
+            , if unreadCount <= 0 then
+                text ""
+
+              else
+                span
+                    [ classes
+                        [ "starred-count-badge"
+                        , hostnameToCSSClass shared.accounts.mainFrontendHost
+                        , "background-color-nav"
+                        , "border-color-primary-text"
+                        ]
+                    ]
+                    [ text (String.fromInt unreadCount) ]
+            ]
         ]
 
 

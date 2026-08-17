@@ -44,6 +44,7 @@ const Message$json = {
     {'1': 'to', '3': 8, '4': 1, '5': 9, '9': 5, '10': 'to', '17': true},
     {'1': 'cc', '3': 9, '4': 1, '5': 9, '9': 6, '10': 'cc', '17': true},
     {'1': 'bcc', '3': 10, '4': 1, '5': 9, '9': 7, '10': 'bcc', '17': true},
+    {'1': 'current_user_read', '3': 19, '4': 1, '5': 11, '6': '.jonline.MessageRead', '9': 8, '10': 'currentUserRead', '17': true},
     {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
   '8': [
@@ -55,6 +56,7 @@ const Message$json = {
     {'1': '_to'},
     {'1': '_cc'},
     {'1': '_bcc'},
+    {'1': '_current_user_read'},
   ],
 };
 
@@ -66,9 +68,41 @@ final $typed_data.Uint8List messageDescriptor = $convert.base64Decode(
     'lUZXh0Eh0KB3N1YmplY3QYBSABKAlIAlIHc3ViamVjdIgBARItChBlbWFpbF9tZXNzYWdlX2lk'
     'GAYgASgJSANSDmVtYWlsTWVzc2FnZUlkiAEBEhcKBGZyb20YByABKAlIBFIEZnJvbYgBARITCg'
     'J0bxgIIAEoCUgFUgJ0b4gBARITCgJjYxgJIAEoCUgGUgJjY4gBARIVCgNiY2MYCiABKAlIB1ID'
-    'YmNjiAEBEjkKCmNyZWF0ZWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg'
-    'ljcmVhdGVkQXRCCQoHX3NlbmRlckISChBfbWVzc2FnaW5nX2dyb3VwQgoKCF9zdWJqZWN0QhMK'
-    'EV9lbWFpbF9tZXNzYWdlX2lkQgcKBV9mcm9tQgUKA190b0IFCgNfY2NCBgoEX2JjYw==');
+    'YmNjiAEBEkUKEWN1cnJlbnRfdXNlcl9yZWFkGBMgASgLMhQuam9ubGluZS5NZXNzYWdlUmVhZE'
+    'gIUg9jdXJyZW50VXNlclJlYWSIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90'
+    'b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdEIJCgdfc2VuZGVyQhIKEF9tZXNzYWdpbmdfZ3JvdX'
+    'BCCgoIX3N1YmplY3RCEwoRX2VtYWlsX21lc3NhZ2VfaWRCBwoFX2Zyb21CBQoDX3RvQgUKA19j'
+    'Y0IGCgRfYmNjQhQKEl9jdXJyZW50X3VzZXJfcmVhZA==');
+
+@$core.Deprecated('Use messageReadDescriptor instead')
+const MessageRead$json = {
+  '1': 'MessageRead',
+  '2': [
+    {'1': 'message_id', '3': 1, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'read_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'readAt'},
+  ],
+};
+
+/// Descriptor for `MessageRead`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List messageReadDescriptor = $convert.base64Decode(
+    'CgtNZXNzYWdlUmVhZBIdCgptZXNzYWdlX2lkGAEgASgJUgltZXNzYWdlSWQSFwoHdXNlcl9pZB'
+    'gCIAEoCVIGdXNlcklkEjMKB3JlYWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0'
+    'YW1wUgZyZWFkQXQ=');
+
+@$core.Deprecated('Use markMessagesReadRequestDescriptor instead')
+const MarkMessagesReadRequest$json = {
+  '1': 'MarkMessagesReadRequest',
+  '2': [
+    {'1': 'unread', '3': 1, '4': 1, '5': 8, '10': 'unread'},
+    {'1': 'message_ids', '3': 2, '4': 3, '5': 9, '10': 'messageIds'},
+  ],
+};
+
+/// Descriptor for `MarkMessagesReadRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List markMessagesReadRequestDescriptor = $convert.base64Decode(
+    'ChdNYXJrTWVzc2FnZXNSZWFkUmVxdWVzdBIWCgZ1bnJlYWQYASABKAhSBnVucmVhZBIfCgttZX'
+    'NzYWdlX2lkcxgCIAMoCVIKbWVzc2FnZUlkcw==');
 
 @$core.Deprecated('Use sendMessageRequestDescriptor instead')
 const SendMessageRequest$json = {

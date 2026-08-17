@@ -92,7 +92,7 @@ pub fn get_messages(
     };
 
     Ok(GetMessagesResponse {
-        messages: convert_messages(&result, conn),
+        messages: convert_messages(&result, user.id, conn),
     })
 }
 

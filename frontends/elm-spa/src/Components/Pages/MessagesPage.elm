@@ -6,6 +6,7 @@ module Components.Pages.MessagesPage exposing
     , empty
     , init
     , subscriptions
+    , totalUnreadCount
     , update
     , view
     )
@@ -42,7 +43,7 @@ import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Process
-import Proto.Jonline exposing (Author, Message)
+import Proto.Jonline exposing (Author, Message, defaultMessageRead)
 import Proto.Jonline.MessageListingType exposing (MessageListingType(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
@@ -179,12 +180,37 @@ type alias ExpandedGroup =
 type Msg
     = GotServerMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
     | Poll
+      -- Unconditionally refetches *every* `eligibleEntries` server's outer
+      -- listing, unlike `Poll` (via `fetchNewServers`), which only fetches
+      -- servers that are newly eligible or whose account/listingType just
+      -- changed -- deliberately conservative there, so idle browsing/the
+      -- 30s timer doesn't keep re-fetching (and reordering/re-animating) a
+      -- listing that's already loaded and hasn't been told anything
+      -- changed. `ForceRefresh` is for exactly the opposite case: something
+      -- *did* just change server-side that this `Model` has no way to have
+      -- noticed on its own -- a message was just sent (`Pages.Messages`'
+      -- own `SendNewMessage` success) or marked read/unread (`GotMarkReadResult`)
+      -- from *this page's own or the embedded panel's* `MessagesPage.Model`
+      -- -- see both call sites' own doc comments.
+    | ForceRefresh
     | Animate Animation.Msg
     | MessageAnimate Animation.Msg
     | RemoveGroup String
     | RemoveMessage String String
     | ToggleExpand Messages.GroupSummary
     | GotGroupMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
+      -- Fired once per thread, batching every still-`Messages.isUnread`
+      -- message in it into one `MarkMessagesRead` call, right when that
+      -- thread finishes loading (`GotGroupMessages`'s own `Ok` branch
+      -- already optimistically patches those same messages'
+      -- `currentUserRead` locally, both in `expandedGroups` and, so
+      -- `GroupSummary.unreadCount` stays in sync too, `messagesByServer` --
+      -- see that branch's own doc) -- this is just the actual RPC catching
+      -- up with what the UI already shows. Errors are silently dropped: a
+      -- thread that failed to mark read server-side just looks read locally
+      -- for the rest of this session, and gets a fresh attempt the next
+      -- time it's opened (or reloaded) instead of any bespoke retry here.
+    | GotMarkReadResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Proto.Jonline.MessageRead ))
     | SearchTextChanged String
     | SearchDebounceElapsed Int
     | ClearSearchClicked
@@ -238,6 +264,14 @@ type Msg
       -- navigational choice, unlike merely toggling a group's chevron open
       -- (`ToggleExpand`, which never touches `selectedGroup` at all).
     | MessageSelected GroupRef String
+      -- The "Mark unread" button on an already-read message row (any
+      -- context -- two-pane detail, sidebar inline-expand, or embedded
+      -- panel). `host` (not a whole `GroupRef`) is all `update` needs to
+      -- resolve which account to fire `MarkMessagesRead { unread = True }`
+      -- as -- see its own handling, which mirrors `GotGroupMessages`'
+      -- optimistic-patch-then-fire-the-RPC shape, just in reverse and for a
+      -- single message instead of a whole thread's unread ones.
+    | MarkUnreadClicked String String
 
 
 {-| A `Model` with nothing fetched yet and no `PageContext` -- what
@@ -335,6 +369,13 @@ update accountsPanelModel msg model =
             in
             ( retriedModel, Cmd.batch [ cmd, retryCmd ], Nothing )
 
+        ForceRefresh ->
+            let
+                ( refetchedModel, cmd ) =
+                    refetchServers accountsPanelModel model (eligibleEntries accountsPanelModel)
+            in
+            ( refetchedModel, cmd, Nothing )
+
         Animate animMsg ->
             let
                 ( newAnimations, cmds ) =
@@ -377,6 +418,29 @@ update accountsPanelModel msg model =
 
         GotGroupMessages key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
+                -- Every message in this thread that's still unread *as
+                -- fetched* -- what actually gets `markMessageRead`'d below,
+                -- and (via `patchMessageRead`) optimistically shown as read
+                -- immediately, rather than waiting on that RPC's own
+                -- round trip -- viewing a thread is what marks it read, see
+                -- `GotMarkReadResult`'s own doc.
+                unreadIds : Set String
+                unreadIds =
+                    response.messages |> List.filter Messages.isUnread |> List.map .id |> Set.fromList
+
+                patchedMessages : List Message
+                patchedMessages =
+                    List.map (patchMessageRead unreadIds) response.messages
+
+                -- The host this group's thread actually lives on -- carried
+                -- on `ExpandedGroup` itself (see its own doc) precisely for
+                -- self-contained lookups like this one, rather than needing
+                -- a `GroupRef` threaded in from wherever `GotGroupMessages`
+                -- happened to be dispatched.
+                host : Maybe String
+                host =
+                    Dict.get key model.expandedGroups |> Maybe.map .host
+
                 newModel : Model
                 newModel =
                     { model
@@ -386,18 +450,95 @@ update accountsPanelModel msg model =
                                     (\eg ->
                                         { eg
                                             | status = ExpandLoaded
-                                            , messageAnimations = syncMessageAnimations key response.messages eg.messageAnimations
+                                            , messageAnimations = syncMessageAnimations key patchedMessages eg.messageAnimations
                                         }
                                     )
                                 )
                                 model.expandedGroups
+
+                        -- Patches the *outer listing's* own copy of these
+                        -- same messages too (if `host` has one), so
+                        -- `syncAnimations` below recomputes each affected
+                        -- `GroupSummary.unreadCount` immediately -- without
+                        -- this, the group card's own unread badge wouldn't
+                        -- catch up until the next 30s `Poll` refetches the
+                        -- outer listing fresh from the server.
+                        , messagesByServer =
+                            case host of
+                                Just h ->
+                                    Dict.update h (Maybe.map (patchServerFeedRead unreadIds)) model.messagesByServer
+
+                                Nothing ->
+                                    model.messagesByServer
                     }
+                        |> syncAnimations
+
+                markReadCmd : Cmd Msg
+                markReadCmd =
+                    case ( host, Set.toList unreadIds ) of
+                        ( Just h, (_ :: _) as ids ) ->
+                            let
+                                accountUserId : Maybe String
+                                accountUserId =
+                                    Dict.get h model.messagesByServer |> Maybe.andThen .accountId
+                            in
+                            Messages.markMessagesRead accountsPanelModel ( accountUserId, h ) False ids
+                                |> Task.attempt GotMarkReadResult
+
+                        _ ->
+                            Cmd.none
             in
-            ( newModel, scrollToPendingMessageCmd newModel, maybeAccountsPanelMsg )
+            ( newModel, Cmd.batch [ scrollToPendingMessageCmd newModel, markReadCmd ], maybeAccountsPanelMsg )
 
         GotGroupMessages key (Err _) ->
             ( { model | expandedGroups = Dict.update key (Maybe.map (\eg -> { eg | status = ExpandFailed })) model.expandedGroups }
             , Cmd.none
+            , Nothing
+            )
+
+        GotMarkReadResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            ( model, Cmd.none, maybeAccountsPanelMsg )
+
+        GotMarkReadResult (Err _) ->
+            ( model, Cmd.none, Nothing )
+
+        MarkUnreadClicked host messageId ->
+            let
+                unreadIds : Set String
+                unreadIds =
+                    Set.singleton messageId
+
+                -- Every `expandedGroups` entry (not just whichever one this
+                -- message actually belongs to -- there's no cheap way to
+                -- know that from just `host`/`messageId`) gets a pass over
+                -- its own `messageAnimations`; a no-op wherever `messageId`
+                -- doesn't appear.
+                patchedExpandedGroups : Dict String ExpandedGroup
+                patchedExpandedGroups =
+                    Dict.map
+                        (\_ eg ->
+                            { eg
+                                | messageAnimations =
+                                    Dict.map (\_ anim -> { anim | message = patchMessageUnread unreadIds anim.message }) eg.messageAnimations
+                            }
+                        )
+                        model.expandedGroups
+
+                newModel : Model
+                newModel =
+                    { model
+                        | expandedGroups = patchedExpandedGroups
+                        , messagesByServer = Dict.update host (Maybe.map (patchServerFeedUnread unreadIds)) model.messagesByServer
+                    }
+                        |> syncAnimations
+
+                accountUserId : Maybe String
+                accountUserId =
+                    Dict.get host model.messagesByServer |> Maybe.andThen .accountId
+            in
+            ( newModel
+            , Messages.markMessagesRead accountsPanelModel ( accountUserId, host ) True [ messageId ]
+                |> Task.attempt GotMarkReadResult
             , Nothing
             )
 
@@ -654,6 +795,81 @@ scrollToPendingMessageCmd model =
 
             else
                 Cmd.none
+
+
+{-| Optimistically marks `message` read (a synthetic `defaultMessageRead`,
+just enough for `Components.Messages.isUnread`/`messageRowView`'s own
+`currentUserRead == Nothing` checks to flip -- its exact contents are never
+read back out) if its id is in `readIds` -- see `GotGroupMessages`'s own doc
+on why this doesn't wait for `markMessageRead`'s round trip.
+-}
+patchMessageRead : Set String -> Message -> Message
+patchMessageRead readIds message =
+    if Set.member message.id readIds then
+        { message | currentUserRead = Just { defaultMessageRead | messageId = message.id } }
+
+    else
+        message
+
+
+{-| `patchMessageRead`, applied across a whole `ServerFeed`'s own `Loaded`
+messages -- a no-op (returns `feed` as-is) for any other `ServerMessages`
+status, or for a message id `readIds` doesn't mention.
+-}
+patchServerFeedRead : Set String -> ServerFeed -> ServerFeed
+patchServerFeedRead readIds feed =
+    case feed.status of
+        Loaded messages ->
+            { feed | status = Loaded (List.map (patchMessageRead readIds) messages) }
+
+        _ ->
+            feed
+
+
+{-| `patchMessageRead`'s inverse -- optimistically clears `message.currentUserRead`
+back to `Nothing` if its id is in `unreadIds`, for `MarkUnreadClicked`'s own
+"Mark unread" button.
+-}
+patchMessageUnread : Set String -> Message -> Message
+patchMessageUnread unreadIds message =
+    if Set.member message.id unreadIds then
+        { message | currentUserRead = Nothing }
+
+    else
+        message
+
+
+{-| `patchMessageUnread`, applied across a whole `ServerFeed`'s own `Loaded`
+messages -- mirrors `patchServerFeedRead`.
+-}
+patchServerFeedUnread : Set String -> ServerFeed -> ServerFeed
+patchServerFeedUnread unreadIds feed =
+    case feed.status of
+        Loaded messages ->
+            { feed | status = Loaded (List.map (patchMessageUnread unreadIds) messages) }
+
+        _ ->
+            feed
+
+
+{-| Every currently-known `GroupSummary.unreadCount`, summed -- what
+`Shared.MessagingPanel`/`UI.messagingToggle` badge with a number, mirroring
+`Shared.StarredPanel`'s own `Set.size starredPostIds` badge. Unlike that one,
+though, this can only ever reflect what's *already been fetched* into this
+`Model` -- there's no local, always-available record of "how many unread
+messages do I have" the way starring's own locally-persisted `starredPostIds`
+is (see that module's own `init`, which reads it straight out of `flags` at
+boot, no RPC needed) -- so a freshly-opened `Shared.MessagingPanel` that
+hasn't fetched anything yet (`empty`, see its own doc) reads `0` here until
+its first `Poll`/`ToggleOpen` fetch resolves, same as every other count this
+module surfaces.
+-}
+totalUnreadCount : Model -> Int
+totalUnreadCount model =
+    model.groupAnimations
+        |> Dict.values
+        |> List.map (\anim -> anim.summary.unreadCount)
+        |> List.sum
 
 
 eligibleEntries : AccountsPanel.Model -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
@@ -1015,6 +1231,7 @@ groupRowView browserTimeZone accountsPanelModel model summary =
                 [ participantsView accountsPanelModel summary.host summary.members
                 , span [ classes [ "messages-group-time", hostnameToCSSClass summary.host ] ]
                     [ text (SharedTime.formatDateTime browserTimeZone (Messages.messageMillis summary.mostRecent |> Time.millisToPosix)) ]
+                , unreadBadgeView summary.host summary.unreadCount
                 ]
             ]
 
@@ -1113,6 +1330,24 @@ old subject heading -- see both their own docs for why.
 participantsView : AccountsPanel.Model -> String -> List Author -> Html msg
 participantsView accountsPanelModel host members =
     div [ class "messages-participants" ] (List.map (participantChipView accountsPanelModel host) members)
+
+
+{-| A group card's own unread-message count (`GroupSummary.unreadCount`) --
+hidden entirely at `0`, same "only show chrome when there's something behind
+it" reasoning as `UI.starredPostsToggle`'s own badge. Styled with `host`'s
+own brand color (`background-color-nav`/`border-color-primary-text`, see
+`UI.EmittedStylesheet`'s doc comment on those utility classes) rather than a
+fixed color, since a group card's participants can be on any of several
+eligible servers, not just `mainFrontendHost`.
+-}
+unreadBadgeView : String -> Int -> Html msg
+unreadBadgeView host count =
+    if count <= 0 then
+        text ""
+
+    else
+        span [ classes [ "messages-unread-badge", hostnameToCSSClass host, "background-color-nav", "border-color-primary-text" ] ]
+            [ text (String.fromInt count) ]
 
 
 {-| Duplicated (rather than reusing `UI.imageOrInitial`) since `UI` itself
@@ -1339,22 +1574,37 @@ messageRowView browserTimeZone accountsPanelModel host interaction highlightMess
             [ div [ class "message-row-header" ]
                 [ avatarView "message-row-avatar" senderName senderAvatarUrl
                 , span [ class "message-row-sender" ] [ text senderName ]
+                , if Messages.isUnread message then
+                    span [ classes [ "message-row-unread-dot", hostnameToCSSClass host, "background-color-nav" ] ] []
+
+                  else
+                    text ""
                 , span [ class "message-row-time" ]
                     [ text (SharedTime.formatDateTime browserTimeZone (Messages.messageMillis message |> Time.millisToPosix)) ]
                 ]
             , messageSubjectView message
             , p [ class "message-row-body" ] [ text message.bodyText ]
+            , markUnreadButtonView host message
             ]
 
         -- `border-color-nav` -- see `Model.highlightMessageId`'s own doc --
         -- relies on `.message-row`'s already-existing `border` (messages.css)
         -- for its width/style, same "utility class only sets the color"
         -- convention every `border-color-*` class in `UI.EmittedStylesheet`
-        -- follows.
+        -- follows. `message-row-unread` just bolds the row -- see
+        -- `Components.Messages.isUnread` -- the small `message-row-unread-dot`
+        -- above is what actually carries the server's brand color; a
+        -- highlighted *and* unread message gets both.
         rowClasses : List String
         rowClasses =
             "message-row"
-                :: (if highlightMessageId == Just message.id then
+                :: (if Messages.isUnread message then
+                        [ "message-row-unread" ]
+
+                    else
+                        []
+                   )
+                ++ (if highlightMessageId == Just message.id then
                         [ hostnameToCSSClass host, "border-color-nav" ]
 
                     else
@@ -1379,6 +1629,32 @@ messageRowView browserTimeZone accountsPanelModel host interaction highlightMess
                     )
                 ]
                 content
+
+
+{-| "Mark unread" -- hidden entirely on an already-`Messages.isUnread`
+message (re-marking it unread would be a no-op) or one with no `.id` fetched
+yet (never actually happens -- every rendered `Message` came straight from a
+`GetMessages` response). `Html.Events.custom`, not plain `onClick` -- this
+button lives inside `messageRowView`'s own `content`, which every
+`MessageInteraction` case wraps in something clickable/navigable of its own
+(`SelectGroup`'s `onClick`, `ExternalLink`'s `<a href>`) -- same
+stop-propagation-*and*-prevent-default reasoning `groupRowView`'s own
+`expandChevron` doc explains, needed here for exactly the same reason (an
+embedded panel's `ExternalLink` row is a real anchor; without `preventDefault`
+this click would navigate away instead of just marking unread in place).
+-}
+markUnreadButtonView : String -> Message -> Html Msg
+markUnreadButtonView host message =
+    if Messages.isUnread message then
+        text ""
+
+    else
+        button
+            [ Html.Attributes.type_ "button"
+            , class "message-row-mark-unread"
+            , Html.Events.custom "click" (Decode.succeed { message = MarkUnreadClicked host message.id, stopPropagation = True, preventDefault = True })
+            ]
+            [ text "Mark unread" ]
 
 
 messageDomId : String -> String
