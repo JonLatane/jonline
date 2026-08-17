@@ -367,7 +367,7 @@ If you want these features prioritized, or have ideas about how they would fit i
 
 ### Delightful Federation
 
-A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication supported is via [protocol-defined federated servers](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedserver), allowing, for instance, [jonline.io](https://jonline.io)'s UI to automatcally integrate posts and events from [bullcity.social](https://bullcity.social) and [oakcity.social](https://oakcity.social). (To limit this sort of external access, bullcity.social and oakcity.social admins can always use CORS.)
+A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication supported is via [protocol-defined federated servers](https://jonline.io/docs/protocol#federated-servers), allowing, for instance, [jonline.io](https://jonline.io)'s UI to automatcally integrate posts and events from [bullcity.social](https://bullcity.social) and [oakcity.social](https://oakcity.social). (To limit this sort of external access, bullcity.social and oakcity.social admins can always use CORS.)
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 
