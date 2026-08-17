@@ -41,7 +41,7 @@ At a high level, Jonline's CI/CD ([example run](https://github.com/JonLatane/jon
 
 The Homebrew distro puts the Jonline server contents in `/#{etc}/jonline`, with a `bash`-based thin launcher for it at `#{bin}/jonline`. The launcher can set up your local Postgres DB with `createdb` and `dropdb` for you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it.
 
-Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which *is literally the launcher script that will become your `#{bin}/jonline`*, if you wanna PR any changes).
+Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/main/docs/homebrew_jonline.sh`) (which *is literally the launcher script that will become your `#{bin}/jonline`*, if you wanna PR any changes).
 
 #### 2 minute startup with Homebrew
 
@@ -84,7 +84,7 @@ brew upgrade jonlatane/jonline/jonline # Upgrade to the latest release.
 
 Rather than figure out all the Linux repos' stuff, Jonline ships as Linux tarball with both `arm64` and `amd64` binaries, and a launcher (mirroring the Homebrew one) to choose the right archicture's binaries. It can also auto-delete unneeded binaries. You can run Jonline from either wherever you extract it, or install it to `~/.jonline-linux/` (which, along with the platform-agnostic env vars in `~/.jonline`, and any `$PATH`-setting you do yourself, are its only traces on your system).
 
-Additional docs for the Jonline thin launcher can be found in [`docs/linux_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/linux_jonline.sh`) (which *is literally the launcher script that will become your `#{install_dir}/bin/jonline`*, if you wanna PR any changes).
+Additional docs for the Jonline thin launcher can be found in [`docs/linux_jonline.sh`](https://github.com/JonLatane/jonline/blob/main/docs/linux_jonline.sh`) (which *is literally the launcher script that will become your `#{install_dir}/bin/jonline`*, if you wanna PR any changes).
 
 Unlike the Homebrew distro, this is *straight up untested by me*. So please, submit issues or PRs.
 
@@ -147,7 +147,7 @@ jonline set_permission my_admin_username admin on
 
 #### Install/self-update on Linux
 
-Whereas Homebrew gives you updates via `brew`, the Linux version ships with an update script, again, a vibe-coded blend of `curl` and `jq`. Once you've gotten things running via the above guide, you may want to install. All these commands are [just a bash script you can/should look at before running them](https://github.com/JonLatane/jonline/blob/docs/linux_jonline.sh).
+Whereas Homebrew gives you updates via `brew`, the Linux version ships with an update script, again, a vibe-coded blend of `curl` and `jq`. Once you've gotten things running via the above guide, you may want to install. All these commands are [just a bash script you can/should look at before running them](https://github.com/JonLatane/jonline/blob/main/docs/linux_jonline.sh).
 
 ```bash
 # If you want to self-update, you may want to:
@@ -171,12 +171,12 @@ Jonline's CI is set up to deploy the above Docker images as part of its build sy
 
 To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster).
 
-| Deployment                                                                                                    | Purpose                          | Federation Settings                                                                              | Links                                                                                                                                           | Deployment Version |
+| Deployment                                                                                                    | Purpose                          | Federated Servers                                                                              | Links                                                                                                                                           | Deployment Version |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Elm UI](https://jonline.io/elm/), [Tamagui/React UI](https://jonline.io/tamagui/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development/Canary        |
-| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Elm UI](https://BullCity.Social/elm/), [Tamagui/React UI](https://BullCity.Social/tamagui/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
-| [OakCity.Social  ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
-| [ATO.Band ![ato.band](https://ato.band/info_shield?b6713cbc)](https://ato.band/)     | Site for my band, Against The Odds | [BullCity.Social (pinned)](https://ato.band/about?section=federation)                      | [About](https://ato.band/about), [Elm UI](https://ato.band/elm/), [Tamagui/React UI](https://ato.band/tamagui/), [Protocol Docs](https://ato.band/docs/protocol/)    | Production         |
+| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned), ATO.Band (pinned)](https://jonline.io/about?tab=federation) | [About](https://jonline.io/about), [Elm UI](https://jonline.io/elm/), [Tamagui/React UI](https://jonline.io/tamagui/), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development/Canary        |
+| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned), ATO.Band (pinned)](https://bullcity.social/about?tab=federation)                      | [About](https://BullCity.Social/about), [Elm UI](https://BullCity.Social/elm/), [Tamagui/React UI](https://BullCity.Social/tamagui/), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
+| [OakCity.Social  ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned), ATO.Band (pinned)](https://OakCity.Social/about?tab=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
+| [ATO.Band ![ato.band](https://ato.band/info_shield?b6713cbc)](https://ato.band/)     | Site for my band, Against The Odds | [BullCity.Social, OakCity.Social](https://ato.band/about?tab=federation), Facebook                      | [About](https://ato.band/about), [Elm UI](https://ato.band/elm/), [Tamagui/React UI](https://ato.band/tamagui/), [Flutter UI](https://ato.band/flutter/), [Protocol Docs](https://ato.band/docs/protocol/)    | Production         |
 
 - [Jonline  ](#jonline--)
   - [Packages, Images \& Deployments](#packages-images--deployments)
@@ -371,7 +371,7 @@ A key thing that separates Jonline from Mastodon and other Fediverse projects is
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 
-This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https%3Abullcity.social?section=federation) - literally nothing but a list of hosts.
+This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https%3Abullcity.social?tab=federation) - literally nothing but a list of hosts.
 
 ### Protocol Documentation
 
