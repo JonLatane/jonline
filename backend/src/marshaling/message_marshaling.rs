@@ -197,10 +197,29 @@ impl ToProtoMessagingGroup for models::MessagingGroup {
                 .sorted_user_ids
                 .iter()
                 .filter_map(|id| id.as_ref())
-                .filter_map(|id| members.get(id))
-                .map(|author| author.to_proto(media_lookup))
+                .map(|id| match members.get(id) {
+                    Some(author) => author.to_proto(media_lookup),
+                    None => deleted_member_placeholder(*id),
+                })
                 .collect(),
             created_at: Some(self.created_at.to_proto()),
         }
+    }
+}
+
+/// A stand-in `Author` for a `MessagingGroup` member whose `users` row is gone -- deleting an
+/// account (`rpcs::users::delete_user`) hard-deletes it with no FK from `sorted_user_ids` to scrub
+/// after (see 2026-08-07-115738_create_messaging_groups's own doc comment on that gap), so
+/// silently omitting missing ids here would misrepresent e.g. a 3-person conversation as one
+/// between just its remaining members. `user_id` is kept (stable, and already exposed for every
+/// other member) so the client can still tell distinct deleted members apart; everything else
+/// about them is gone, so there's nothing real left to show.
+fn deleted_member_placeholder(id: i64) -> Author {
+    Author {
+        user_id: id.to_proto_id(),
+        username: Some("Deleted user".to_string()),
+        avatar: None,
+        real_name: None,
+        permissions: vec![],
     }
 }

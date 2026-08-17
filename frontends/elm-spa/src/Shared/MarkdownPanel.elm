@@ -76,11 +76,17 @@ type Msg
     = Open TargetType String
     | ContentChanged String
     | ViewModeSelected ViewMode
-      -- The "Cancel" button -- doesn't discard anything itself, just bubbles
-      -- a request up through `update`'s own extra return value for
+      -- The "Cancel" button -- doesn't discard anything itself. Only bubbles
+      -- a request up through `update`'s own extra return value (for
       -- `Shared.update` to turn into a `Shared.RequestDelete
       -- ConfirmMarkdownEditingDataLost`, the same shared "are you sure?" flow
-      -- `Shared.MyMediaPanel.DeleteClicked` uses (see `Shared.DeleteConfirmation`).
+      -- `Shared.MyMediaPanel.DeleteClicked` uses -- see `Shared.DeleteConfirmation`)
+      -- when `model.content` actually differs from `initialContent model.target`
+      -- -- i.e. there's actually something to lose. Otherwise (nothing typed
+      -- yet for a blank-start target like `NewReply`, or an existing target's
+      -- content untouched from what it was opened with) closes immediately,
+      -- same as `CancelConfirmed`, since there's nothing the user could
+      -- accidentally discard.
     | CancelClicked
       -- Fired back from `Shared.update`'s `ConfirmDelete` once the user's
       -- confirmed the dialog `CancelClicked` requested -- this is what
@@ -255,7 +261,21 @@ update accountsPanelModel msg model =
             ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         CancelClicked ->
-            ( model, Cmd.none, ( Nothing, False, True ) )
+            let
+                hasUnsavedChanges : Bool
+                hasUnsavedChanges =
+                    case model.target of
+                        Just target ->
+                            model.content /= initialContent target
+
+                        Nothing ->
+                            False
+            in
+            if hasUnsavedChanges then
+                ( model, Cmd.none, ( Nothing, False, True ) )
+
+            else
+                ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )
 
         CancelConfirmed ->
             ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False, False ) )

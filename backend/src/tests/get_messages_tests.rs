@@ -7,7 +7,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use diesel::Connection;
+use diesel::{Connection, QueryDsl, RunQueryDsl};
 use tonic::{Code, Status};
 
 use crate::marshaling::*;
@@ -168,6 +168,51 @@ mod by_message_id {
             let proto_message = &response.messages[0];
             assert_eq!(proto_message.subject, message.subject);
             assert!(proto_message.messaging_group.is_some());
+            Ok(())
+        });
+    }
+
+    // A `MessagingGroup.sorted_user_ids` entry can outlive the `users` row it points to (deleting
+    // an account hard-deletes it with no FK to scrub `sorted_user_ids` after -- see
+    // 2026-08-07-115738_create_messaging_groups's own doc comment). `to_proto` should still show a
+    // placeholder for that member rather than just omitting them, so a 2-person conversation
+    // doesn't collapse into looking like a solo self-note once the other side deletes their account.
+    #[test]
+    fn shows_placeholder_for_deleted_group_member() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let me = create_user(conn, "gmid_survivor");
+            let me = grant_permissions(conn, &me, vec![Permission::ReadPersonalMessages]);
+            let other = create_user(conn, "gmid_deleted");
+            let other_proto_id = other.id.to_proto_id();
+            let message = create_message(conn, Some(&other), &[&me], MessageOpts::default());
+
+            diesel::delete(crate::schema::users::table.find(other.id))
+                .execute(conn)
+                .expect("failed to delete test user");
+
+            let response = get_messages(
+                GetMessagesRequest {
+                    message_id: Some(message.id.to_proto_id()),
+                    ..Default::default()
+                },
+                &Some(&me),
+                conn,
+            )?;
+
+            let group = response.messages[0]
+                .messaging_group
+                .as_ref()
+                .expect("messaging_group");
+            let placeholder = group
+                .members
+                .iter()
+                .find(|member| member.user_id == other_proto_id)
+                .expect("deleted member still listed");
+            assert_eq!(placeholder.username, Some("Deleted user".to_string()));
+            assert_eq!(placeholder.real_name, None);
+            assert!(placeholder.avatar.is_none());
+            assert!(placeholder.permissions.is_empty());
             Ok(())
         });
     }

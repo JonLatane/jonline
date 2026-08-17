@@ -269,6 +269,26 @@ type Msg
       -- navigational choice, unlike merely toggling a group's chevron open
       -- (`ToggleExpand`, which never touches `selectedGroup` at all).
     | MessageSelected GroupRef String
+      -- Fired by a message row's `onClick` *only* when `embeddedPanel ==
+      -- True` (alongside its own external `<a href>` permalink, not instead
+      -- of it) -- the message-level counterpart to `EmbeddedGroupLinkClicked`,
+      -- for exactly the same reason: a same-path query/fragment-only URL
+      -- change doesn't reach `Pages.Messages`' own `init`/`update` at all,
+      -- so without this, clicking a message in the embedded panel while
+      -- already on `/messages` would silently update the URL bar and
+      -- nothing else. A pure signal, no effect on this instance's own state
+      -- (see its `update` branch): flows up through `Shared.MessagingPanelMsg`
+      -- -> `Main.notifyPageOfSharedMsg` -> `Pages.Messages`' own `SharedMsg`
+      -- handling, which applies `SyncSelectedMessage` to *that* instance
+      -- instead.
+    | EmbeddedMessageLinkClicked GroupRef String
+      -- `MessageSelected`'s own effect (expand + select + scroll/highlight),
+      -- minus the `pushUrl` -- same relationship `SyncSelectedGroup` has to
+      -- `GroupSelected`: the embedded panel's own `<a href>` (`messageRowView`)
+      -- already carries this exact message's `#message-<id>` fragment, so
+      -- the browser's own navigation is what put it in the URL bar here,
+      -- not another `pushUrl`.
+    | SyncSelectedMessage GroupRef String
       -- The "Mark unread" button on an already-read message row (any
       -- context -- two-pane detail, sidebar inline-expand, or embedded
       -- panel). `host` (not a whole `GroupRef`) is all `update` needs to
@@ -687,28 +707,20 @@ update accountsPanelModel msg model =
 
         SyncSelectedGroup ref ->
             let
-                mostRecentId : Maybe String
-                mostRecentId =
-                    mostRecentMessageIdFor model ref.key
-
-                -- `GroupSelected`'s own effect (see its doc), minus the
-                -- `pushUrl` -- same relationship this constructor's own doc
-                -- already describes for the rest of its handling: the
-                -- embedded panel's own `<a href>` (`groupRowView`) already
-                -- carries the `#message-<id>` fragment for this exact
-                -- `mostRecentId`, so the browser's own navigation is what
-                -- put it in the URL bar here, not another `pushUrl`.
-                ( expandedModel, expandCmd ) =
-                    expand accountsPanelModel
-                        { model
-                            | selectedGroup = Just ref
-                            , mobileSidebarOpen = False
-                            , highlightMessageId = mostRecentId
-                            , pendingScrollMessageId = mostRecentId
-                        }
-                        ref
+                ( newModel, cmd ) =
+                    syncSelection accountsPanelModel model ref (mostRecentMessageIdFor model ref.key)
             in
-            ( expandedModel, Cmd.batch [ expandCmd, scrollToPendingMessageCmd expandedModel ], Nothing )
+            ( newModel, cmd, Nothing )
+
+        EmbeddedMessageLinkClicked _ _ ->
+            ( model, Cmd.none, Nothing )
+
+        SyncSelectedMessage ref messageId ->
+            let
+                ( newModel, cmd ) =
+                    syncSelection accountsPanelModel model ref (Just messageId)
+            in
+            ( newModel, cmd, Nothing )
 
         ReplyClicked _ _ ->
             ( model, Cmd.none, Nothing )
@@ -780,6 +792,29 @@ update accountsPanelModel msg model =
                         ]
                     , Nothing
                     )
+
+
+{-| Shared guts of `SyncSelectedGroup`/`SyncSelectedMessage` -- expands `ref`,
+selects it, and highlights/scrolls to `messageId` (`Nothing` just lands on the
+top of the thread, same as `expand` alone) -- everything `GroupSelected`/
+`MessageSelected` do, minus their own `pushUrl`, since both callers exist
+precisely because the embedded panel's own `<a href>` already put the right
+URL in the bar (see either constructor's own doc on `Msg`).
+-}
+syncSelection : AccountsPanel.Model -> Model -> GroupRef -> Maybe String -> ( Model, Cmd Msg )
+syncSelection accountsPanelModel model ref messageId =
+    let
+        ( expandedModel, expandCmd ) =
+            expand accountsPanelModel
+                { model
+                    | selectedGroup = Just ref
+                    , mobileSidebarOpen = False
+                    , highlightMessageId = messageId
+                    , pendingScrollMessageId = messageId
+                }
+                ref
+    in
+    ( expandedModel, Cmd.batch [ expandCmd, scrollToPendingMessageCmd expandedModel ] )
 
 
 {-| The id of `key`'s own `GroupSummary.mostRecent` message, read straight off
@@ -1796,14 +1831,19 @@ ifNonEmpty s =
 {-| What clicking a message row (`messageRowView`) actually does, per
 context: embedded (`Shared.MessagingPanel`) rows have nowhere of their own to
 show a message, so they're a real `<a href>` out to its `/messages`
-permalink -- "clicking a message... takes you to the [real page]" per that
-panel's own spec (`ExternalLink`). The real page's own two-pane detail
-(`selectedGroupView`) is already showing the message, so its own rows are
-plain, non-navigating content (`NoInteraction`). The real page's _sidebar_
-inline-expand (`groupRowView`'s chevron) is the one case with somewhere to
-go that isn't a full page navigation -- clicking one of its rows selects
-that message's group into the two-pane detail _and_ scrolls/highlights that
-exact message there, same as landing on its `#message-<id>` permalink
+permalink (`ExternalLink`), paired -- same trick `groupRowView`'s own
+`EmbeddedGroupLinkClicked` `onClick` uses alongside its `href` -- with an
+`EmbeddedMessageLinkClicked` pure signal, so that if `Pages.Messages` turns
+out to be the page mounted underneath this exact panel, it syncs to that
+message in place (`SyncSelectedMessage`) instead of just updating the URL bar
+and stopping there (a same-path query/fragment-only change `Pages.Messages`'
+own `init`/`update` would never otherwise notice). The real page's own
+two-pane detail (`selectedGroupView`) is already showing the message, so its
+own rows are plain, non-navigating content (`NoInteraction`). The real page's
+_sidebar_ inline-expand (`groupRowView`'s chevron) is the one case with
+somewhere to go that isn't a full page navigation -- clicking one of its rows
+selects that message's group into the two-pane detail _and_ scrolls/highlights
+that exact message there, same as landing on its `#message-<id>` permalink
 directly (`SelectGroup`, see `MessageSelected`'s own doc). Deliberately
 _not_ affected by whether some _other_ group is currently `selectedGroup` --
 clicking a message is always a real choice, unlike merely toggling a row's
@@ -1817,13 +1857,13 @@ type MessageInteraction
 
 
 type alias MessageLinkTarget =
-    { mainFrontendHost : String, host : String, groupId : String }
+    { mainFrontendHost : String, key : String, host : String, groupId : String }
 
 
 messageInteractionFor : AccountsPanel.Model -> Model -> Messages.GroupSummary -> MessageInteraction
 messageInteractionFor accountsPanelModel model summary =
     if model.embeddedPanel then
-        ExternalLink { mainFrontendHost = accountsPanelModel.mainFrontendHost, host = summary.host, groupId = summary.groupId }
+        ExternalLink { mainFrontendHost = accountsPanelModel.mainFrontendHost, key = summary.key, host = summary.host, groupId = summary.groupId }
 
     else
         SelectGroup { key = summary.key, host = summary.host, groupId = summary.groupId }
@@ -2186,6 +2226,7 @@ messageRowView time accountsPanelModel host interaction highlightMessageId messa
                         ++ "#"
                         ++ messageDomId message.id
                     )
+                , onClick (EmbeddedMessageLinkClicked { key = target.key, host = target.host, groupId = target.groupId } message.id)
                 ]
                 content
 

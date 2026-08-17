@@ -150,6 +150,13 @@ update shared msg model =
                         Shared.MessagingPanelMsg (MessagingPanel.PageMsg (MessagesPage.EmbeddedGroupLinkClicked ref)) ->
                             applyPageMsg shared (MessagesPage.SyncSelectedGroup ref) model
 
+                        -- The message-level counterpart, immediately above --
+                        -- a message row (not just a group row) clicked in the
+                        -- embedded panel while already on this page -- see
+                        -- `MessagesPage.EmbeddedMessageLinkClicked`'s own doc.
+                        Shared.MessagingPanelMsg (MessagingPanel.PageMsg (MessagesPage.EmbeddedMessageLinkClicked ref messageId)) ->
+                            applyPageMsg shared (MessagesPage.SyncSelectedMessage ref messageId) model
+
                         -- The reverse of `PageMsg (MessagesPage.GotMarkReadResult
                         -- (Ok _))`, above -- a "Mark [un]read" round trip
                         -- completing *inside the embedded panel itself*
