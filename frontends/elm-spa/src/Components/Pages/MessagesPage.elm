@@ -277,6 +277,32 @@ type Msg
       -- optimistic-patch-then-fire-the-RPC shape, just in reverse and for a
       -- single message instead of a whole thread's unread ones.
     | MarkUnreadClicked String String
+      -- The header row's "Compose" button (`searchRowView`, real page only --
+      -- mirrors `ReplyClicked`'s own "pure signal, `Shared` does the actual
+      -- work" pattern, since this module can't depend on `Shared`/
+      -- `MarkdownPanel` itself). `Pages.Messages`'s own `PageMsg` handling
+      -- intercepts this before it ever reaches `applyPageMsg`/this module's
+      -- `update` (whose own handling below is a no-op), and dispatches
+      -- `Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage
+      -- []) firstAccount.server)` instead, same as the old
+      -- `Pages.Messages.sendMessageButton` used to do directly.
+    | ComposeClicked
+      -- A `ReplyClicked`/`ComposeClicked` send actually landing --
+      -- `Pages.Messages`'s own `SharedMsg` handling of `Shared.MarkdownPanelMsg
+      -- (MarkdownPanel.GotSendMessageResult (Ok ...))` dispatches this with
+      -- the group the new message landed in and the message's own id, real
+      -- page only (same reasoning as `ReplyClicked`/`ComposeClicked` --
+      -- `Pages.Messages`'s own `SharedMsg` handling is what fires it, and
+      -- only the real page has one; the embedded panel's own `Model` never
+      -- gets this constructor at all). Deliberately *not* `MessageSelected`
+      -- plus a plain `ForceRefresh`: `expand` (what `MessageSelected` calls)
+      -- is a no-op once `ref` is already `expandedGroups`-loaded (see its own
+      -- doc) -- exactly the common case for a Reply sent from a thread
+      -- that's already open -- so without a dedicated force-refetch here, a
+      -- just-sent reply silently wouldn't appear in the still-open thread at
+      -- all until some other refetch (a poll, a collapse/re-expand) happened
+      -- to catch it up.
+    | MessageSent GroupRef String
 
 
 {-| A `Model` with nothing fetched yet and no `PageContext` -- what
@@ -456,7 +482,33 @@ update accountsPanelModel msg model =
                                     (\eg ->
                                         { eg
                                             | status = ExpandLoaded
-                                            , messageAnimations = syncMessageAnimations key patchedMessages eg.messageAnimations
+                                            , messageAnimations =
+                                                if Dict.isEmpty eg.messageAnimations then
+                                                    -- This group's very first resolution (never
+                                                    -- expanded before, so there was nothing to
+                                                    -- sync against) -- every message starts at
+                                                    -- rest, not `syncMessageAnimations`' own
+                                                    -- `UI.Flip.enter` fade-in-from-collapsed.
+                                                    -- They're a thread's *pre-existing* history,
+                                                    -- not messages newly arriving while you
+                                                    -- watch -- animating all of them in also
+                                                    -- meant every one sat `flip-collapsed`
+                                                    -- (zero height, see flip.css's own doc) for
+                                                    -- a frame right when `scrollToPendingMessageCmd`
+                                                    -- (below) measures them, throwing off its
+                                                    -- own scroll-to-center math (every message
+                                                    -- reads as ~0 height at nearly the same
+                                                    -- position, so there's nothing meaningful to
+                                                    -- center against) -- this is exactly why a
+                                                    -- landing-on-`#message-<id>` page load kept
+                                                    -- ending up at the bottom regardless of
+                                                    -- where the target actually was.
+                                                    patchedMessages
+                                                        |> List.map (\message -> ( message.id, { message = message, flip = UI.Flip.restingState } ))
+                                                        |> Dict.fromList
+
+                                                else
+                                                    syncMessageAnimations key patchedMessages eg.messageAnimations
                                         }
                                     )
                                 )
@@ -584,15 +636,43 @@ update accountsPanelModel msg model =
 
                 Just ctx ->
                     let
+                        mostRecentId : Maybe String
+                        mostRecentId =
+                            mostRecentMessageIdFor model ref.key
+
                         ( expandedModel, expandCmd ) =
                             -- Closes the mobile sidebar overlay too (see
                             -- `view`'s own doc) -- selecting a group should
                             -- reveal what was just picked, not leave it
-                            -- covered by the still-open sidebar.
-                            expand accountsPanelModel { model | selectedGroup = Just ref, mobileSidebarOpen = False } ref
+                            -- covered by the still-open sidebar. Scrolls to
+                            -- (and highlights) `mostRecentId` -- same as
+                            -- landing on a `#message-<id>` permalink to it
+                            -- directly, or clicking it in the sidebar's own
+                            -- inline-expand (`MessageSelected`) -- so opening
+                            -- a group two-pane always lands on its newest
+                            -- message, the one `messageThreadView`'s own
+                            -- oldest-first sort (`selectedGroupView`) puts at
+                            -- the bottom of the pane, rather than leaving the
+                            -- viewer scrolled to the top of the whole thread.
+                            expand accountsPanelModel
+                                { model
+                                    | selectedGroup = Just ref
+                                    , mobileSidebarOpen = False
+                                    , highlightMessageId = mostRecentId
+                                    , pendingScrollMessageId = mostRecentId
+                                }
+                                ref
+
+                        urlFragment : String
+                        urlFragment =
+                            mostRecentId |> Maybe.map (\id -> "#" ++ messageDomId id) |> Maybe.withDefault ""
                     in
                     ( expandedModel
-                    , Cmd.batch [ expandCmd, Browser.Navigation.pushUrl ctx.navKey (ctx.path ++ queryString accountsPanelModel expandedModel) ]
+                    , Cmd.batch
+                        [ expandCmd
+                        , scrollToPendingMessageCmd expandedModel
+                        , Browser.Navigation.pushUrl ctx.navKey (ctx.path ++ queryString accountsPanelModel expandedModel ++ urlFragment)
+                        ]
                     , Nothing
                     )
 
@@ -607,12 +687,33 @@ update accountsPanelModel msg model =
 
         SyncSelectedGroup ref ->
             let
+                mostRecentId : Maybe String
+                mostRecentId =
+                    mostRecentMessageIdFor model ref.key
+
+                -- `GroupSelected`'s own effect (see its doc), minus the
+                -- `pushUrl` -- same relationship this constructor's own doc
+                -- already describes for the rest of its handling: the
+                -- embedded panel's own `<a href>` (`groupRowView`) already
+                -- carries the `#message-<id>` fragment for this exact
+                -- `mostRecentId`, so the browser's own navigation is what
+                -- put it in the URL bar here, not another `pushUrl`.
                 ( expandedModel, expandCmd ) =
-                    expand accountsPanelModel { model | selectedGroup = Just ref, mobileSidebarOpen = False } ref
+                    expand accountsPanelModel
+                        { model
+                            | selectedGroup = Just ref
+                            , mobileSidebarOpen = False
+                            , highlightMessageId = mostRecentId
+                            , pendingScrollMessageId = mostRecentId
+                        }
+                        ref
             in
-            ( expandedModel, expandCmd, Nothing )
+            ( expandedModel, Cmd.batch [ expandCmd, scrollToPendingMessageCmd expandedModel ], Nothing )
 
         ReplyClicked _ _ ->
+            ( model, Cmd.none, Nothing )
+
+        ComposeClicked ->
             ( model, Cmd.none, Nothing )
 
         MessageSelected ref messageId ->
@@ -640,6 +741,60 @@ update accountsPanelModel msg model =
                         ]
                     , Nothing
                     )
+
+        MessageSent ref messageId ->
+            case model.pageContext of
+                Nothing ->
+                    ( model, Cmd.none, Nothing )
+
+                Just ctx ->
+                    let
+                        -- `fetchExpand`, not `expand` -- see this
+                        -- constructor's own doc: `ref` is, in the common
+                        -- Reply case, already `ExpandLoaded`, which `expand`
+                        -- would treat as a no-op.
+                        ( expandedModel, expandCmd ) =
+                            fetchExpand accountsPanelModel
+                                { model
+                                    | selectedGroup = Just ref
+                                    , mobileSidebarOpen = False
+                                    , highlightMessageId = Just messageId
+                                    , pendingScrollMessageId = Just messageId
+                                }
+                                ref
+
+                        -- Refreshes the outer listing too, same as
+                        -- `ForceRefresh` -- otherwise this group's own
+                        -- sidebar card (last-message preview, sort order)
+                        -- wouldn't catch up with the just-sent message until
+                        -- the next 30s poll.
+                        ( refreshedModel, refreshCmd ) =
+                            refetchServers accountsPanelModel expandedModel (eligibleEntries accountsPanelModel)
+                    in
+                    ( refreshedModel
+                    , Cmd.batch
+                        [ expandCmd
+                        , refreshCmd
+                        , scrollToPendingMessageCmd refreshedModel
+                        , Browser.Navigation.pushUrl ctx.navKey (ctx.path ++ queryString accountsPanelModel refreshedModel ++ "#" ++ messageDomId messageId)
+                        ]
+                    , Nothing
+                    )
+
+
+{-| The id of `key`'s own `GroupSummary.mostRecent` message, read straight off
+`model.groupAnimations` (the outer listing, always fetched before any row is
+clickable at all -- unlike `expandedGroups`, no full-thread fetch is needed
+just to know which message is newest). `Nothing` for a group not (yet, or
+ever) in that listing -- e.g. a `?messaging_group=` permalink to a group that
+was never in the general listing at all (see `fetchExpand`'s own doc on that
+case) -- in which case `GroupSelected`/`SyncSelectedGroup` simply don't get a
+scroll target or `#message-<id>` fragment to add, same as before this
+existed.
+-}
+mostRecentMessageIdFor : Model -> String -> Maybe String
+mostRecentMessageIdFor model key =
+    Dict.get key model.groupAnimations |> Maybe.map (.summary >> .mostRecent >> .id)
 
 
 {-| Expands `ref` (re-fires the fetch if it's already `ExpandFailed`, a no-op
@@ -783,11 +938,46 @@ retryPendingExpansions accountsPanelModel model =
         |> Tuple.mapSecond Cmd.batch
 
 
+{-| The two-pane detail pane's own `.messages-thread-list` -- see
+`messageThreadView`'s own doc on why this needs a stable id at all (only its
+copy is ever `scrollToPendingMessageCmd`'s target). Shared as one constant
+between `messageThreadView` (which sets the id) and `scrollToPendingMessageCmd`
+(which targets it), rather than each hand-typing the same string, so they
+can't quietly drift apart.
+-}
+messagesDetailThreadListId : String
+messagesDetailThreadListId =
+    "messages-detail-thread-list"
+
+
 {-| Once a group's thread finishes loading, scrolls `pendingScrollMessageId`
 (from the initial `#message-<id>` fragment, see `Pages.Messages.init`) into
 view if it's actually present in what just loaded -- a one-shot attempt;
 `ScrollAttempted` always clears it afterward (success or failure) so a
 missing/not-yet-loaded target doesn't keep retrying every render.
+
+Scrolls `messagesDetailThreadListId` itself (via `Dom.setViewportOf`), not
+the page (`Dom.setViewport`) -- the two-pane pane bounds itself to the
+viewport and scrolls its own message list internally now (see
+messages.css's own doc on `.messages-thread`), so the page usually has
+nothing left to scroll at all; targeting it would silently do nothing.
+Centers the target vertically within that pane rather than pinning it near
+the top, and animates there smoothly rather than jumping -- both purely a
+CSS concern (`scroll-behavior: smooth` on `.messages-thread .messages-thread-list`,
+messages.css), not something this `Task` has to orchestrate itself, since a
+plain `setViewportOf` already respects it.
+
+The offset math: `container`/`target` (both `Dom.getElement`, so both
+measured in the same *current-viewport-relative* coordinate space, per
+`Browser.Dom.getElement`'s own doc) gives `target.element.y - container.element.y`,
+`target`'s position relative to the container's own *visible* top edge right
+now -- adding that to `containerViewport.viewport.y` (the container's own
+*current* scroll offset, from `Dom.getViewportOf`) converts it into a
+position within the container's full scrollable content, independent of
+however it's scrolled at the moment this runs. Subtracting half the
+container's height and adding half the target's own centers it; `setViewportOf`
+clamps the result into range on its own (see its own doc), so an
+over/undershoot at either end of the thread is harmless.
 -}
 scrollToPendingMessageCmd : Model -> Cmd Msg
 scrollToPendingMessageCmd model =
@@ -804,8 +994,22 @@ scrollToPendingMessageCmd model =
                         |> List.any (\eg -> Dict.member messageId eg.messageAnimations)
             in
             if isPresent then
-                Dom.getElement (messageDomId messageId)
-                    |> Task.andThen (\el -> Dom.setViewport 0 (max 0 (el.element.y - 96)))
+                Task.map3 (\containerViewport container target -> ( containerViewport, container, target ))
+                    (Dom.getViewportOf messagesDetailThreadListId)
+                    (Dom.getElement messagesDetailThreadListId)
+                    (Dom.getElement (messageDomId messageId))
+                    |> Task.andThen
+                        (\( containerViewport, container, target ) ->
+                            let
+                                newScrollTop : Float
+                                newScrollTop =
+                                    containerViewport.viewport.y
+                                        + (target.element.y - container.element.y)
+                                        - (container.element.height / 2)
+                                        + (target.element.height / 2)
+                            in
+                            Dom.setViewportOf messagesDetailThreadListId containerViewport.viewport.x newScrollTop
+                        )
                     |> Task.attempt (\_ -> ScrollAttempted)
 
             else
@@ -1103,25 +1307,33 @@ button (`ToggleMobileSidebar`) rather than shown outright.
 width; wider viewports override it back to always-visible in CSS.
 
 -}
-view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
-view browserTimeZone accountsPanelModel model =
+view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
+view time accountsPanelModel model =
     div [ class "messages-page" ]
-        [ searchRowView model
+        [ searchRowView accountsPanelModel model
         , case model.selectedGroup of
             Nothing ->
-                groupsListView browserTimeZone accountsPanelModel model
+                groupsListView time accountsPanelModel model
 
             Just selected ->
                 div [ class "messages-two-pane" ]
-                    [ div [ classes [ "messages-sidebar", openClosedClass model.mobileSidebarOpen ] ] [ groupsListView browserTimeZone accountsPanelModel model ]
-                    , div [ class "messages-detail" ] [ selectedGroupView browserTimeZone accountsPanelModel model selected ]
+                    [ div [ classes [ "messages-sidebar", openClosedClass model.mobileSidebarOpen ] ] [ groupsListView time accountsPanelModel model ]
+                    , div [ class "messages-detail" ] [ selectedGroupView time accountsPanelModel model selected ]
                     ]
         ]
 
 
-searchRowView : Model -> Html Msg
-searchRowView model =
-    div [ class "filter-controls-row" ]
+{-| The header row -- hamburger (two-pane, narrow screens only), search
+field, and (real page only, see below) the "Compose" button. `class
+"messages-header-row"` alongside the shared `"filter-controls-row"` layout
+(`ui/filter_bar.css`) is what messages.css hooks its own sticky positioning
+onto, without touching that shared class's own rule (which every other
+`*Page.searchRowView` -- `PostsPage`, `EventsPage`, `UsersPage` -- also
+uses, none of which want to go sticky).
+-}
+searchRowView : AccountsPanel.Model -> Model -> Html Msg
+searchRowView accountsPanelModel model =
+    div [ classes [ "filter-controls-row", "messages-header-row" ] ]
         [ if model.selectedGroup == Nothing then
             text ""
 
@@ -1166,8 +1378,40 @@ searchRowView model =
                 [ Html.a [ class "panel-icon-button", href "/messages", title "Open Messages" ] [ text "⛶" ] ]
 
           else
-            text ""
+            composeButtonView accountsPanelModel
         ]
+
+
+{-| The real page's own "Compose" button, trailing the search field in
+`searchRowView` (`filter-controls-trailing`) -- moved down from its old spot
+as a standalone heading row above the search box (`Pages.Messages`' own
+former `sendMessageButton`), so the whole header reads as one row. Hidden
+entirely with nobody signed in anywhere, same as that old button -- there's
+no point offering a button that can only ever fail. `ComposeClicked` is a
+pure signal; `Pages.Messages` is what actually opens the Markdown panel
+(this module can't depend on `Shared`/`MarkdownPanel` itself), using the
+same first-enabled-account "sending as" default -- see that constructor's
+own doc.
+-}
+composeButtonView : AccountsPanel.Model -> Html Msg
+composeButtonView accountsPanelModel =
+    case AccountsPanel.enabledAccounts accountsPanelModel of
+        [] ->
+            text ""
+
+        firstAccount :: _ ->
+            div [ class "filter-controls-trailing" ]
+                [ button
+                    [ Html.Attributes.type_ "button"
+                    , Html.Attributes.classList
+                        [ ( "messages-send-button", True )
+                        , ( hostnameToCSSClass firstAccount.server, True )
+                        , ( "background-color-primary", True )
+                        ]
+                    , onClick ComposeClicked
+                    ]
+                    [ text "Compose" ]
+                ]
 
 
 onEscape : msg -> Html.Attribute msg
@@ -1185,8 +1429,8 @@ onEscape msg =
         )
 
 
-groupsListView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
-groupsListView browserTimeZone accountsPanelModel model =
+groupsListView : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
+groupsListView time accountsPanelModel model =
     if Dict.isEmpty model.messagesByServer then
         p [ class "posts-empty" ] [ text "Sign in with permission to read messages to see them here." ]
 
@@ -1204,11 +1448,11 @@ groupsListView browserTimeZone accountsPanelModel model =
         else
             Html.Keyed.node "div"
                 [ class "messages-group-list flip-animated-column" ]
-                (List.map (groupAnimationView browserTimeZone accountsPanelModel model) sortedAnimations)
+                (List.map (groupAnimationView time accountsPanelModel model) sortedAnimations)
 
 
-groupAnimationView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> ( String, GroupAnimation ) -> ( String, Html Msg )
-groupAnimationView browserTimeZone accountsPanelModel model ( key, anim ) =
+groupAnimationView : SharedTime.Model -> AccountsPanel.Model -> Model -> ( String, GroupAnimation ) -> ( String, Html Msg )
+groupAnimationView time accountsPanelModel model ( key, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
@@ -1220,12 +1464,12 @@ groupAnimationView browserTimeZone accountsPanelModel model ( key, anim ) =
     in
     ( key
     , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
-        [ div pointerEventsAttr [ groupRowView browserTimeZone accountsPanelModel model anim.summary ] ]
+        [ div pointerEventsAttr [ groupRowView time accountsPanelModel model anim.summary ] ]
     )
 
 
-groupRowView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Messages.GroupSummary -> Html Msg
-groupRowView browserTimeZone accountsPanelModel model summary =
+groupRowView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.GroupSummary -> Html Msg
+groupRowView time accountsPanelModel model summary =
     let
         isSelected : Bool
         isSelected =
@@ -1241,23 +1485,45 @@ groupRowView browserTimeZone accountsPanelModel model summary =
                         []
                    )
 
+        ( messageCount, messageCountComplete ) =
+            groupMessageCount model summary
+
         content : List (Html Msg)
         content =
             [ div [ class "messages-group-row-body" ]
-                [ participantsView accountsPanelModel summary.host summary.members
+                [ div [ class "messages-group-badges" ]
+                    [ messageCountBadgeView messageCount messageCountComplete
+                    , unreadBadgeView summary.host summary.unreadCount
+                    ]
+                , participantsView accountsPanelModel summary.host summary.members
                 , span [ classes [ "messages-group-time", hostnameToCSSClass summary.host ] ]
-                    [ text (SharedTime.formatDateTime browserTimeZone (Messages.messageMillis summary.mostRecent |> Time.millisToPosix)) ]
-                , unreadBadgeView summary.host summary.unreadCount
+                    [ hostLabelView accountsPanelModel.mainFrontendHost summary.host
+                    , text (SharedTime.formatMoment time (Messages.messageMillis summary.mostRecent |> Time.millisToPosix))
+                    ]
                 ]
             ]
 
+        -- A search in progress puts every group's inline-expand into a
+        -- different, read-only mode -- see `searchResultThreadView`'s own
+        -- doc -- rather than the usual per-group manual toggle, so there's
+        -- no "collapse" to offer (`expandChevron`, below) and every row
+        -- counts as open regardless of `inlineOpenGroups`' own (untouched)
+        -- membership, which simply resumes governing things once the
+        -- search is cleared.
+        isSearchActive : Bool
+        isSearchActive =
+            not (String.isEmpty (String.trim model.searchText))
+
         isInlineOpen : Bool
         isInlineOpen =
-            Set.member summary.key model.inlineOpenGroups
+            isSearchActive || Set.member summary.key model.inlineOpenGroups
 
         -- Always shown, on *every* row -- including whichever one is
         -- `selectedGroup` (see `inlineOpenGroups`' own doc on `Model` for
-        -- why that no longer conflicts with the two-pane detail pane).
+        -- why that no longer conflicts with the two-pane detail pane) --
+        -- *unless* a search is active (see `isSearchActive`'s own doc):
+        -- there's nothing left to toggle then, every row's inline-expand is
+        -- driven by the search instead.
         -- `Html.Events.custom` (not `stopPropagationOn`, what this used
         -- before) sets *both* `stopPropagation` (so the row's own
         -- `onClick`/`href` doesn't also fire, same as before) *and*
@@ -1269,31 +1535,46 @@ groupRowView browserTimeZone accountsPanelModel model summary =
         -- *other JS listeners*, not the anchor's own native default action.
         expandChevron : Html Msg
         expandChevron =
-            button
-                [ class "messages-group-expand-toggle"
-                , Html.Events.custom "click" (Decode.succeed { message = ToggleExpand summary, stopPropagation = True, preventDefault = True })
-                , title
-                    (if isInlineOpen then
-                        "Collapse"
+            if isSearchActive then
+                text ""
 
-                     else
-                        "Expand"
-                    )
-                ]
-                [ text
-                    (if isInlineOpen then
-                        "▾"
+            else
+                button
+                    [ class "messages-group-expand-toggle"
+                    , Html.Events.custom "click" (Decode.succeed { message = ToggleExpand summary, stopPropagation = True, preventDefault = True })
+                    , title
+                        (if isInlineOpen then
+                            "Collapse"
 
-                     else
-                        "▸"
-                    )
-                ]
+                         else
+                            "Expand"
+                        )
+                    ]
+                    [ text
+                        (if isInlineOpen then
+                            "▾"
+
+                         else
+                            "▸"
+                        )
+                    ]
     in
     div [ class "messages-group" ]
         [ if model.embeddedPanel then
             Html.a
                 [ classes rowClasses
-                , href ("/messages" ++ Url.Builder.toQuery [ Url.Builder.string "messaging_group" (Messages.groupRouteId accountsPanelModel.mainFrontendHost summary.host summary.groupId) ])
+                , href
+                    ("/messages"
+                        ++ Url.Builder.toQuery [ Url.Builder.string "messaging_group" (Messages.groupRouteId accountsPanelModel.mainFrontendHost summary.host summary.groupId) ]
+                        -- Lands the real page's two-pane detail already
+                        -- scrolled to the group's newest message -- see
+                        -- `GroupSelected`'s own doc on why (the same
+                        -- `#message-<id>` fragment `SyncSelectedGroup`
+                        -- applies for this exact click, when this page is
+                        -- already mounted underneath the panel).
+                        ++ "#"
+                        ++ messageDomId summary.mostRecent.id
+                    )
                 , onClick (EmbeddedGroupLinkClicked { key = summary.key, host = summary.host, groupId = summary.groupId })
                 ]
                 (expandChevron :: content)
@@ -1304,8 +1585,11 @@ groupRowView browserTimeZone accountsPanelModel model summary =
                 , onClick (GroupSelected { key = summary.key, host = summary.host, groupId = summary.groupId })
                 ]
                 (expandChevron :: content)
-        , if isInlineOpen then
-            expandedGroupView browserTimeZone accountsPanelModel model summary.key
+        , if isSearchActive then
+            searchResultThreadView time accountsPanelModel model summary
+
+          else if isInlineOpen then
+            expandedGroupView time accountsPanelModel model summary.key
 
           else
             text ""
@@ -1341,11 +1625,115 @@ participantChipView accountsPanelModel host author =
 {-| All of a group's members, each as `participantChipView` -- what a group
 card (`groupRowView`) shows in place of any subject/snippet, and what the
 two-pane detail view (`selectedGroupView`) shows at the top in place of the
-old subject heading -- see both their own docs for why.
+old subject heading -- see both their own docs for why. Always excludes
+whoever's actually signed in on `host` (`visibleParticipants`, below) -- no
+point naming yourself among your own conversation's recipients.
 -}
 participantsView : AccountsPanel.Model -> String -> List Author -> Html msg
 participantsView accountsPanelModel host members =
-    div [ class "messages-participants" ] (List.map (participantChipView accountsPanelModel host) members)
+    div [ class "messages-participants" ] (List.map (participantChipView accountsPanelModel host) (visibleParticipants accountsPanelModel host members))
+
+
+{-| `members`, minus whoever's actually signed in on `host` -- unless that
+would leave nothing to show at all, which only happens for a group that's
+*only* that one signed-in user (a self-note solo group, or a real
+`MessagingGroup` with no other members left in it) -- showing yourself as
+your own sole participant there is more useful than showing an empty card.
+Mirrors `replyButtonView`'s own, separate self-exclusion for `ReplyClicked`'s
+recipients (that one has no such fallback -- an empty recipients list is a
+perfectly valid "reply to yourself" there).
+-}
+visibleParticipants : AccountsPanel.Model -> String -> List Author -> List Author
+visibleParticipants accountsPanelModel host members =
+    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+        Nothing ->
+            members
+
+        Just account ->
+            let
+                withoutSelf : List Author
+                withoutSelf =
+                    List.filter (\author -> author.userId /= account.userId) members
+            in
+            if List.isEmpty withoutSelf then
+                members
+
+            else
+                withoutSelf
+
+
+{-| `summary.messageCount` (a floor, not a total -- see that field's own doc)
+paired with whether it's actually the group's true total: `True` once its
+full thread has separately been fetched (`expand`), reading straight off
+that fetch's own `messageAnimations` count rather than the outer listing's;
+`False` (still just the floor) otherwise, whatever the group's own
+`inlineOpenGroups`/`selectedGroup` status -- a chevron that's merely been
+clicked open, with the fetch still `ExpandLoading`/`ExpandFailed`, doesn't
+actually know the true count yet either.
+-}
+groupMessageCount : Model -> Messages.GroupSummary -> ( Int, Bool )
+groupMessageCount model summary =
+    case Dict.get summary.key model.expandedGroups of
+        Just eg ->
+            if eg.status == ExpandLoaded then
+                ( Dict.size eg.messageAnimations, True )
+
+            else
+                ( summary.messageCount, False )
+
+        Nothing ->
+            ( summary.messageCount, False )
+
+
+{-| A group card's own message count, to the left of `unreadBadgeView` --
+hidden at `count <= 1` (a single message is already fully represented by the
+row's own timestamp/snippet, nothing a count would add). `isComplete`
+(`groupMessageCount`) is what decides the trailing "+" -- appended whenever
+`count` might just be how many of this group's messages happened to fall in
+the outer listing's own recency window, not the group's true total, so the
+badge reads as "2+" (at least two) rather than a flatly wrong "2" when
+there's actually more. Shares `.messages-count-badge`'s own box geometry with
+`unreadBadgeView`, but flat gray/white (`.messages-message-count-badge`,
+messages.css) rather than host-branded -- this one's just a fact about the
+thread, not an actionable "something's new here" signal the way the unread
+count is.
+-}
+messageCountBadgeView : Int -> Bool -> Html msg
+messageCountBadgeView count isComplete =
+    if count <= 1 then
+        text ""
+
+    else
+        span [ class "messages-count-badge messages-message-count-badge" ]
+            [ text (String.fromInt count ++ ("+" |> withDefaultUnless isComplete)) ]
+
+
+{-| `"+"` unless `isComplete`, in which case `""` -- a tiny helper just so
+`messageCountBadgeView`'s own string-building reads left-to-right instead of
+needing an `if/then/else` block for one conditional suffix. -}
+withDefaultUnless : Bool -> String -> String
+withDefaultUnless isComplete suffix =
+    if isComplete then
+        ""
+
+    else
+        suffix
+
+
+{-| `host`, prefixed to `.messages-group-time`'s own timestamp, whenever a
+group isn't on `mainFrontendHost` -- e.g. a federated-in account's own
+messages, otherwise indistinguishable from a `mainFrontendHost` group except
+by the row's own (subtle, color-only) `hostnameToCSSClass` tinting. Hidden
+entirely on `mainFrontendHost` itself, the common case, so most rows don't
+carry the extra label at all.
+-}
+hostLabelView : String -> String -> Html msg
+hostLabelView mainFrontendHost host =
+    if host == mainFrontendHost then
+        text ""
+
+    else
+        text (host ++ " · ")
 
 
 {-| A group card's own unread-message count (`GroupSummary.unreadCount`) --
@@ -1362,7 +1750,7 @@ unreadBadgeView host count =
         text ""
 
     else
-        span [ classes [ "messages-unread-badge", hostnameToCSSClass host, "background-color-nav", "border-color-primary-text" ] ]
+        span [ classes [ "messages-count-badge", "messages-unread-badge", hostnameToCSSClass host, "background-color-nav", "border-color-primary-text" ] ]
             [ text (String.fromInt count) ]
 
 
@@ -1441,8 +1829,8 @@ messageInteractionFor accountsPanelModel model summary =
         SelectGroup { key = summary.key, host = summary.host, groupId = summary.groupId }
 
 
-expandedGroupView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> String -> Html Msg
-expandedGroupView browserTimeZone accountsPanelModel model groupKey =
+expandedGroupView : SharedTime.Model -> AccountsPanel.Model -> Model -> String -> Html Msg
+expandedGroupView time accountsPanelModel model groupKey =
     case ( Dict.get groupKey model.expandedGroups, Dict.get groupKey model.groupAnimations ) of
         ( Just eg, Just anim ) ->
             case eg.status of
@@ -1453,10 +1841,80 @@ expandedGroupView browserTimeZone accountsPanelModel model groupKey =
                     p [ class "messages-thread-status" ] [ text "Couldn't load this messaging group." ]
 
                 ExpandLoaded ->
-                    messageThreadView browserTimeZone accountsPanelModel anim.summary.host (messageInteractionFor accountsPanelModel model anim.summary) model.highlightMessageId eg
+                    messageThreadView time
+                        accountsPanelModel
+                        anim.summary.host
+                        (messageInteractionFor accountsPanelModel model anim.summary)
+                        model.highlightMessageId
+                        Nothing
+                        eg
 
         _ ->
             text ""
+
+
+{-| `groupRowView`'s own search-mode counterpart to `expandedGroupView` --
+while a search is active, every group's inline-expand (see `isSearchActive`/
+`isInlineOpen`, `groupRowView`'s own doc) shows *only* the messages that
+matched the search, sourced directly from the outer listing's own response
+(`model.messagesByServer`, already the `*_TEXT_SEARCH` variant while
+searching -- see `Messages.fetchMessageListing`) -- not a group's full
+thread narrowed down client-side, and not a separate per-group fetch at all
+(`model.expandedGroups`/`fetchMessagingGroup` are untouched by this). A
+deliberately different, simpler data path from the normal manual-expand flow
+-- see this function's own two callers in `groupRowView` for the full
+before/after split.
+-}
+searchResultThreadView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.GroupSummary -> Html Msg
+searchResultThreadView time accountsPanelModel model summary =
+    let
+        sortedMessages : List Message
+        sortedMessages =
+            searchResultMessagesFor model summary
+                |> List.sortBy (\message -> -(Messages.messageMillis message))
+
+        interaction : MessageInteraction
+        interaction =
+            messageInteractionFor accountsPanelModel model summary
+    in
+    Html.Keyed.node "div"
+        [ class "messages-thread-list flip-animated-column" ]
+        (List.map
+            (\message ->
+                ( message.id
+                , div (UI.Flip.itemAttributes UI.Flip.Vertical UI.Flip.restingState False)
+                    [ div [] [ messageRowView time accountsPanelModel summary.host interaction model.highlightMessageId message ] ]
+                )
+            )
+            sortedMessages
+        )
+
+
+{-| `summary`'s own slice of `model.messagesByServer[summary.host]`'s
+already-fetched listing response -- see `searchResultThreadView`'s own doc.
+Matches messages the same way `Components.Messages.groupMessages` grouped
+them into `summary` in the first place: by `messagingGroup.id`, falling back
+to the lone message's own id for a "solo" (Bcc-only) pseudo-group (see that
+function's own doc).
+-}
+searchResultMessagesFor : Model -> Messages.GroupSummary -> List Message
+searchResultMessagesFor model summary =
+    case Dict.get summary.host model.messagesByServer |> Maybe.map .status of
+        Just (Loaded messages) ->
+            List.filter (messageBelongsToGroup summary.groupId) messages
+
+        _ ->
+            []
+
+
+messageBelongsToGroup : String -> Message -> Bool
+messageBelongsToGroup groupId message =
+    case message.messagingGroup of
+        Just group ->
+            group.id == groupId
+
+        Nothing ->
+            message.id == groupId
 
 
 {-| A thread's participants -- derived straight from the `messagingGroup` of
@@ -1487,8 +1945,8 @@ threadParticipants eg =
         fromGroup
 
 
-selectedGroupView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> GroupRef -> Html Msg
-selectedGroupView browserTimeZone accountsPanelModel model selected =
+selectedGroupView : SharedTime.Model -> AccountsPanel.Model -> Model -> GroupRef -> Html Msg
+selectedGroupView time accountsPanelModel model selected =
     case Dict.get selected.key model.expandedGroups of
         Nothing ->
             p [ class "messages-thread-status" ] [ text "Loading messages…" ]
@@ -1507,7 +1965,7 @@ selectedGroupView browserTimeZone accountsPanelModel model selected =
                             [ participantsView accountsPanelModel selected.host (threadParticipants eg)
                             , replyButtonView accountsPanelModel selected eg
                             ]
-                        , messageThreadView browserTimeZone accountsPanelModel selected.host NoInteraction model.highlightMessageId eg
+                        , messageThreadView time accountsPanelModel selected.host NoInteraction model.highlightMessageId (Just messagesDetailThreadListId) eg
                         ]
 
 
@@ -1515,7 +1973,12 @@ selectedGroupView browserTimeZone accountsPanelModel model selected =
 (`threadParticipants`, minus whoever's actually signed in on `selected.host`
 -- no point pre-selecting yourself as your own recipient, `SendMessage`
 auto-adds the sender to the group either way, see `send_message.rs`'s
-`find_or_create_messaging_group`) as its pre-seeded recipients. Hidden
+`find_or_create_messaging_group`) as its pre-seeded recipients -- *unless*
+that filter would leave nobody at all, i.e. `selected` is a "note to self"
+group with no other members to begin with: excluding yourself there would
+pre-seed `SendNewMessage`'s picker with zero recipients, tripping
+`MarkdownPanel.sendNewMessageProblem`'s "choose at least one recipient"
+and leaving Reply unusable for the one case it's *only* ever yourself. Hidden
 entirely with nobody signed in on `selected.host` -- same "no point offering
 a button that can only fail" reasoning `Pages.Messages.sendMessageButton`
 already follows.
@@ -1528,9 +1991,21 @@ replyButtonView accountsPanelModel selected eg =
 
         Just account ->
             let
+                allParticipants : List Author
+                allParticipants =
+                    threadParticipants eg
+
+                otherParticipants : List Author
+                otherParticipants =
+                    allParticipants |> List.filter (\author -> author.userId /= account.userId)
+
                 recipients : List Author
                 recipients =
-                    threadParticipants eg |> List.filter (\author -> author.userId /= account.userId)
+                    if List.isEmpty otherParticipants then
+                        allParticipants
+
+                    else
+                        otherParticipants
             in
             button
                 [ Html.Attributes.type_ "button"
@@ -1540,22 +2015,77 @@ replyButtonView accountsPanelModel selected eg =
                 [ text "Reply" ]
 
 
-messageThreadView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> ExpandedGroup -> Html Msg
-messageThreadView browserTimeZone accountsPanelModel host interaction highlightMessageId eg =
+{-| Always sorts newest-first (DOM order) -- both the sidebar's own
+inline-expand (`expandedGroupView`) *and* the two-pane detail pane
+(`selectedGroupView`) want that same DOM order now, just rendered in
+opposite visual directions: the sidebar's own `.messages-thread-list`
+(messages.css) stacks it plain `column` (top-to-bottom = newest-to-oldest,
+unchanged from this view's original behavior), while the two-pane pane's
+copy (scoped `.messages-thread .messages-thread-list`) stacks it
+`column-reverse` instead -- so it reads top-to-bottom like a chat transcript
+(oldest first, newest at the bottom) while *still* being newest-first in the
+DOM. That's not just a preference: `column-reverse` is what lets a short
+thread bottom-anchor for free (the flex line's own `flex-start` edge is the
+*bottom* in a reversed column) while an overflowing one still scrolls
+correctly -- `justify-content: flex-end` on a plain, non-reversed column
+looks equivalent at rest but breaks scrolling to the overflowed (start-side)
+messages once a thread's too long to fit, a well-known flex/overflow
+interaction gotcha `column-reverse` sidesteps entirely by never needing
+`justify-content` to be anything but its own `flex-start` default.
+
+`domId`: `Just "messages-detail-thread-list"` for `selectedGroupView`'s own
+copy only (`Nothing` for the sidebar's `expandedGroupView`) -- a stable,
+unique DOM id `scrollToPendingMessageCmd` can target with `Browser.Dom`'s
+`*Of` functions to scroll *that specific scrolling region* (not the whole
+page, which -- now that `.messages-thread` bounds itself to the viewport and
+scrolls internally, see messages.css's own doc -- usually has nothing left
+to scroll at all). Only the two-pane copy is ever a `scrollToPendingMessageCmd`
+target (clicking a message anywhere always selects it into the two-pane
+detail, see `MessageSelected`'s own doc), so the sidebar's own copy needs no
+id, and giving it the same one would collide if a group's ever both
+inline-expanded *and* the two-pane's current `selectedGroup` at once.
+-}
+messageThreadView : SharedTime.Model -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> Maybe String -> ExpandedGroup -> Html Msg
+messageThreadView time accountsPanelModel host interaction highlightMessageId domId eg =
     let
         sortedAnimations : List ( String, MessageAnimation )
         sortedAnimations =
             eg.messageAnimations
                 |> Dict.toList
                 |> List.sortBy (\( _, anim ) -> -(Messages.messageMillis anim.message))
+
+        -- Whether this is the two-pane detail's own copy (`domId /= Nothing`,
+        -- see this function's own doc) -- threaded down to `messageAnimationView`
+        -- so *only* that copy's own message rows get a `message-<id>` DOM id
+        -- (below). The same message can easily be on screen twice at once
+        -- (inline-expanded in the sidebar *and* the two-pane's current
+        -- `selectedGroup`, e.g. right after clicking it there) -- giving
+        -- both copies the same id would leave two elements answering to it,
+        -- and `Dom.getElement`/`getElementById` always resolves to whichever
+        -- is first in the DOM (the sidebar's, since it renders before
+        -- `.messages-detail`) regardless of which one `scrollToPendingMessageCmd`
+        -- actually means to measure -- silently scrolling the *wrong*
+        -- element/container's coordinates entirely.
+        isDetailPane : Bool
+        isDetailPane =
+            domId /= Nothing
+
+        domIdAttrs : List (Html.Attribute Msg)
+        domIdAttrs =
+            case domId of
+                Just i ->
+                    [ id i ]
+
+                Nothing ->
+                    []
     in
     Html.Keyed.node "div"
-        [ class "messages-thread-list flip-animated-column" ]
-        (List.map (messageAnimationView browserTimeZone accountsPanelModel host interaction highlightMessageId) sortedAnimations)
+        (class "messages-thread-list flip-animated-column" :: domIdAttrs)
+        (List.map (messageAnimationView time accountsPanelModel host interaction highlightMessageId isDetailPane) sortedAnimations)
 
 
-messageAnimationView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> ( String, MessageAnimation ) -> ( String, Html Msg )
-messageAnimationView browserTimeZone accountsPanelModel host interaction highlightMessageId ( key, anim ) =
+messageAnimationView : SharedTime.Model -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> Bool -> ( String, MessageAnimation ) -> ( String, Html Msg )
+messageAnimationView time accountsPanelModel host interaction highlightMessageId isDetailPane ( key, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
@@ -1564,15 +2094,28 @@ messageAnimationView browserTimeZone accountsPanelModel host interaction highlig
 
             else
                 []
+
+        -- See `messageThreadView`'s own doc on `isDetailPane` -- only the
+        -- two-pane copy gets a `message-<id>` id at all, since
+        -- `scrollToPendingMessageCmd`'s `Dom.getElement (messageDomId ...)`
+        -- is the only thing that ever looks one up, and it only ever means
+        -- *that* copy.
+        idAttr : List (Html.Attribute Msg)
+        idAttr =
+            if isDetailPane then
+                [ id (messageDomId anim.message.id) ]
+
+            else
+                []
     in
     ( key
     , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
-        [ div (id (messageDomId anim.message.id) :: pointerEventsAttr) [ messageRowView browserTimeZone accountsPanelModel host interaction highlightMessageId anim.message ] ]
+        [ div (idAttr ++ pointerEventsAttr) [ messageRowView time accountsPanelModel host interaction highlightMessageId anim.message ] ]
     )
 
 
-messageRowView : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> Message -> Html Msg
-messageRowView browserTimeZone accountsPanelModel host interaction highlightMessageId message =
+messageRowView : SharedTime.Model -> AccountsPanel.Model -> String -> MessageInteraction -> Maybe String -> Message -> Html Msg
+messageRowView time accountsPanelModel host interaction highlightMessageId message =
     let
         senderName : String
         senderName =
@@ -1596,7 +2139,7 @@ messageRowView browserTimeZone accountsPanelModel host interaction highlightMess
                   else
                     text ""
                 , span [ class "message-row-time" ]
-                    [ text (SharedTime.formatDateTime browserTimeZone (Messages.messageMillis message |> Time.millisToPosix)) ]
+                    [ text (SharedTime.formatMoment time (Messages.messageMillis message |> Time.millisToPosix)) ]
                 ]
             , messageSubjectView message
             , p [ class "message-row-body" ] [ text message.bodyText ]

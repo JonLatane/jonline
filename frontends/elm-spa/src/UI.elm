@@ -109,7 +109,7 @@ headerNav shared currentRoute =
                        else
                         starredPostsToggle shared
                      , if MessagingPanel.hasEligibleAccount shared.accounts then
-                        messagingToggle shared
+                        messagingToggle shared currentRoute
 
                        else
                         text ""
@@ -2534,16 +2534,30 @@ own doc caveat), so a `0` here is ambiguous between "genuinely caught up" and
 "haven't checked yet" -- hiding it in both cases reads better than a
 misleadingly confident zero.
 -}
-messagingToggle : Shared.Model -> Html Shared.Msg
-messagingToggle shared =
+messagingToggle : Shared.Model -> Route -> Html Shared.Msg
+messagingToggle shared currentRoute =
     let
         unreadCount : Int
         unreadCount =
             MessagingPanel.totalUnreadCount shared.panels.messagingPanel
+
+        -- Highlighted the same way `postsLink`/`eventsLink`/etc. highlight
+        -- themselves for their own `currentRoute` -- just `background-color-nav`
+        -- alone (no paired `hostnameToCSSClass` the way those add) since this
+        -- button's already a `.navbar` descendant, which carries that class
+        -- itself (see `headerNav`); `withDescendants` (`UI.EmittedStylesheet`)
+        -- emits `background-color-nav`'s color rule for *either* form.
+        currentPageClasses : List String
+        currentPageClasses =
+            if currentRoute == Route.Messages then
+                [ "background-color-nav" ]
+
+            else
+                []
     in
     div [ class "messaging-menu" ]
         [ button
-            [ classes [ "nav-menu-toggle", "circular", openClosedClass (MessagingPanel.isOpen shared.panels.messagingPanel) ]
+            [ classes ([ "nav-menu-toggle", "circular", openClosedClass (MessagingPanel.isOpen shared.panels.messagingPanel) ] ++ currentPageClasses)
             , stopPropagationOn "click" (Decode.succeed ( Shared.MessagingPanelMsg MessagingPanel.ToggleOpen, True ))
             , title "Messages"
             ]
@@ -2573,7 +2587,7 @@ cycle-avoidance reasoning as `Shared.StarredPanel`) into `Shared.Msg`.
 -}
 messagingPanel : Shared.Model -> Html Shared.Msg
 messagingPanel shared =
-    Html.map Shared.MessagingPanelMsg (MessagingPanel.view shared.time.browserTimeZone shared.accounts shared.panels.messagingPanel)
+    Html.map Shared.MessagingPanelMsg (MessagingPanel.view shared.time shared.accounts shared.panels.messagingPanel)
 
 
 {-| A collapsible panel, one per admin-capable signed-in account, for setting

@@ -13,9 +13,7 @@ import Components.Pages.MessagesPage as MessagesPage
 import Dict
 import Effect exposing (Effect)
 import Gen.Params.Messages exposing (Params)
-import Html exposing (button, div, h2, text)
-import Html.Attributes exposing (class)
-import Html.Events exposing (onClick)
+import Html
 import Page
 import Request
 import Shared
@@ -23,7 +21,6 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MessagingPanel as MessagingPanel
 import UI
-import UI.Classes exposing (hostnameToCSSClass)
 import View exposing (View)
 
 
@@ -97,6 +94,24 @@ update shared msg model =
         PageMsg (MessagesPage.ReplyClicked ref recipients) ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage recipients) ref.host)) )
 
+        -- The header row's "Compose" button (`MessagesPage.searchRowView`,
+        -- see `ComposeClicked`'s own doc) -- same interception trick as
+        -- `ReplyClicked` above, just with no particular recipients and
+        -- defaulting "sending as" to the first enabled account's server,
+        -- same as this used to work back when it was a standalone button
+        -- built directly here (`sendMessageButton`). Hidden entirely by
+        -- `MessagesPage.composeButtonView` itself with nobody signed in
+        -- anywhere, so this branch is only ever reached with at least one
+        -- enabled account -- but falls back to a no-op rather than crashing
+        -- if that invariant somehow doesn't hold.
+        PageMsg MessagesPage.ComposeClicked ->
+            case AccountsPanel.enabledAccounts shared.accounts of
+                [] ->
+                    ( model, Effect.none )
+
+                firstAccount :: _ ->
+                    ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage []) firstAccount.server)) )
+
         -- A "Mark [un]read" round trip (either the auto-mark-read that
         -- fires when a thread's viewed, or the explicit "Mark unread"
         -- button, see `MessagesPage.GotMarkReadResult`'s own doc) landing
@@ -146,23 +161,38 @@ update shared msg model =
                         Shared.MessagingPanelMsg (MessagingPanel.PageMsg (MessagesPage.GotMarkReadResult (Ok _))) ->
                             applyPageMsg shared MessagesPage.ForceRefresh model
 
-                        -- Any Markdown panel save succeeding while this is
-                        -- the mounted page -- in practice always a
-                        -- `SendNewMessage`/"Reply" save, the only
+                        -- A `ComposeClicked`/`ReplyClicked` send actually
+                        -- landing while this is the mounted page -- the only
                         -- `MarkdownPanel.TargetType` reachable from here at
-                        -- all (`sendMessageButton`/`MessagesPage.ReplyClicked`,
-                        -- both above) -- unconditionally refetches
-                        -- (`ForceRefresh`, not plain `Poll` -- see that
-                        -- constructor's own doc) so the just-sent message
-                        -- shows up without waiting for the next 30s poll,
-                        -- which wouldn't otherwise refetch an
-                        -- already-loaded listing at all. `Shared.MessagingPanel`'s
-                        -- own embedded copy gets the same treatment directly
-                        -- from `Shared.update` (see its `MarkdownPanelMsg`
-                        -- branch), since it isn't reachable through this
-                        -- page-forwarding mechanism at all.
-                        Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
-                            applyPageMsg shared MessagesPage.ForceRefresh model
+                        -- all (both above). Dispatches `MessagesPage.MessageSent`
+                        -- with exactly where the new `Message` landed (its own
+                        -- `messagingGroup`, plus `host` -- threaded through by
+                        -- `MarkdownPanel.sendMessageTask` since neither's
+                        -- otherwise recoverable once the RPC's done, see
+                        -- `MarkdownPanel.GotSendMessageResult`'s own doc), so
+                        -- the page can force-refetch that exact thread
+                        -- (`MessageSent`'s own doc: plain `ForceRefresh`
+                        -- alone wouldn't refresh an already-open thread at
+                        -- all) and navigate/scroll to the new message, same
+                        -- as landing on its own `#message-<id>` permalink
+                        -- directly. `Shared.MessagingPanel`'s own embedded
+                        -- copy gets a plain listing refresh directly from
+                        -- `Shared.update` instead (see its `MarkdownPanelMsg`
+                        -- branch) -- it has no URL/thread-detail view of its
+                        -- own to navigate within, see `MessageSent`'s own doc.
+                        -- Falls back to a plain `ForceRefresh` on the
+                        -- (shouldn't-happen -- `send_message.rs` always
+                        -- attaches one) chance the response has no
+                        -- `messagingGroup`.
+                        Shared.MarkdownPanelMsg (MarkdownPanel.GotSendMessageResult (Ok ( _, host, sentMessage ))) ->
+                            case sentMessage.messagingGroup of
+                                Just group ->
+                                    applyPageMsg shared
+                                        (MessagesPage.MessageSent { key = host ++ "|" ++ group.id, host = host, groupId = group.id } sentMessage.id)
+                                        model
+
+                                Nothing ->
+                                    applyPageMsg shared MessagesPage.ForceRefresh model
 
                         _ ->
                             ( model, Effect.none )
@@ -197,40 +227,8 @@ view shared req model =
         UI.layout shared
             req.route
             SharedMsg
-            [ div [ class "messages-page-heading" ]
-                [ h2 [] [ text "Messages" ]
-                , sendMessageButton shared
-                ]
-            , Html.map PageMsg (MessagesPage.view shared.time.browserTimeZone shared.accounts model)
-            ]
+            [ Html.map PageMsg (MessagesPage.view shared.time shared.accounts model) ]
     }
-
-
-{-| Opens `Shared.MarkdownPanel` on a fresh `MarkdownPanel.SendNewMessage`
-draft -- only on this real page (`Shared.MessagingPanel`'s embedded copy has
-no button of its own, per its own spec). Hidden entirely with nobody signed
-in anywhere (`MarkdownPanel.resolve`'s "you're not signed in" error would
-just cover it otherwise, but there's no point offering a button that can
-only ever fail). `defaultHost`, the initial "sending as" server
-`sendMessagePostingAsRow` starts from, is just the first enabled account's
-server -- `PostingAsChanged` lets the user switch it once the panel's open.
--}
-sendMessageButton : Shared.Model -> Html.Html Msg
-sendMessageButton shared =
-    case AccountsPanel.enabledAccounts shared.accounts of
-        [] ->
-            text ""
-
-        firstAccount :: _ ->
-            button
-                [ Html.Attributes.classList
-                    [ ( "messages-send-button", True )
-                    , ( hostnameToCSSClass firstAccount.server, True )
-                    , ( "background-color-primary", True )
-                    ]
-                , onClick (SharedMsg (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage []) firstAccount.server)))
-                ]
-                [ text "Send Message" ]
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --

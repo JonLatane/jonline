@@ -22,4 +22,10 @@
   left: calc(max(0px, (100vw - 800px) / 2) + max(2px, 188px - var(--panel-width)));
   top: calc(12px + var(--nav-toggle-height) - 1px);
   padding: 0.6rem 0.8rem;
+  padding-top: 0;
+}
+
+.messaging-panel>:first-child,
+.nav-panel.messaging-panel>:first-child {
+  margin-top: 0.6rem;
 }

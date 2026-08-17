@@ -781,8 +781,8 @@ sharedUpdate req msg model =
                 -- this exact forwarded message (see `Main.notifyPageOfSharedMsg`).
                 messageJustSent : Bool
                 messageJustSent =
-                    case ( subMsg, panels.markdownPanel.target ) of
-                        ( MarkdownPanel.GotSaveResult (Ok _), Just (MarkdownPanel.SendNewMessage _) ) ->
+                    case subMsg of
+                        MarkdownPanel.GotSendMessageResult (Ok _) ->
                             True
 
                         _ ->

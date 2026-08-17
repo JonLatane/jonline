@@ -32,7 +32,7 @@ import Components.Users as Users
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, button, div, img, input, p, span, text)
-import Html.Attributes exposing (alt, attribute, class, placeholder, src, title, type_, value)
+import Html.Attributes exposing (alt, attribute, class, id, placeholder, src, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -292,6 +292,7 @@ searchRowView model =
         [ div [ class "filter-search-field" ]
             [ input
                 [ type_ "text"
+                , id "user-picker-search-input"
                 , classes [ "filter-search-input", "user-picker-search-input" ]
                 , placeholder "Search people..."
                 , value model.searchText

@@ -28,15 +28,53 @@
   margin-right: 0;
 }
 
-.messages-page-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* `MessagesPage.searchRowView`'s header row -- hamburger (two-pane, narrow
+   screens only) + search field + (real page only) the "Compose" button, all
+   one row (see `Pages.Messages`' own doc on why the old standalone
+   "Messages" heading + "Send Message" button above this row are gone).
+   `.filter-controls-row`'s own rule (`ui/filter_bar.css`) is untouched --
+   every other `*Page.searchRowView` (`PostsPage`, `EventsPage`, `UsersPage`)
+   shares that class too and none of them want to stick -- this rule just
+   adds to it via the second, messages-page-only class.
+
+   `top` clears `.navbar`'s own rendered height so this sticks *just below*
+   it rather than overlapping it (two `position: sticky` siblings both
+   wanting `top: 0` would otherwise both pin to the very top of the
+   viewport and stack on each other -- sticky offsets don't auto-compound
+   the way normal document flow does). That height is deterministic, not
+   measured: `.navbar`'s own tallest child is `.nav-link-home`'s 64px-tall
+   logo (`nav.css`, `.nav-link-home .server-name-and-logo.regular
+   .server-logo-*`), inset by that link's own `margin: 2px` top and bottom,
+   plus `.navbar`'s own 1px `border-bottom` -- `64px + 2*2px + 1px = 69px`.
+   `env(safe-area-inset-top)` mirrors `.navbar`'s own matching `padding-top`
+   (nav.css), so this still clears it exactly on a notched/Dynamic-Island
+   phone. Overridden to plain `top: 0` inside `.messaging-panel` (below) --
+   the embedded copy's `.messaging-panel` is its own independent scroll
+   container with no navbar stacked above *it*, so no offset is needed
+   there.
+
+   `flex-wrap: nowrap` (overriding `.filter-controls-row`'s own `wrap`) plus
+   `min-height` keep this row's height fixed at a single, predictable
+   value -- `.messages-two-pane`'s own mobile `position: fixed` (below)
+   bakes that same value in as part of its own `top` offset, so a row that
+   silently grew taller (a wrapped second line) would leave a gap between
+   this header and the two-pane below it on a narrow phone. */
+.messages-header-row {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 69px);
+  z-index: 2;
+  flex-wrap: nowrap;
+  min-height: 44px;
+  background: var(--bg);
+}
+
+.messaging-panel .messages-header-row {
+  top: 0;
+  background: var(--panel-bg);
 }
 
 /* Color comes from the `background-color-primary` utility class
-   (`Pages.Messages.sendMessageButton`, see `UI/EmittedStylesheet.elm`) --
+   (`MessagesPage.composeButtonView`, see `UI/EmittedStylesheet.elm`) --
    same convention as `.create-new-panel-save`/`.markdown-panel-save`. */
 .messages-send-button {
   flex: 0 0 auto;
@@ -91,17 +129,33 @@
 }
 
 /* A group card's own body (everything but `.messages-group-expand-toggle`,
-   its one sibling within `.messages-group-row`) -- stacked, not a row,
-   *specifically* so `.messages-participants` can claim the card's full
-   width to wrap into (see that rule's own doc) with
-   `.messages-group-time` below it, rather than the two competing
-   side by side for width the way they used to. */
+   its one sibling within `.messages-group-row`) -- plain block flow, not
+   flex, *specifically* so `.messages-group-badges` (below) can `float:
+   right` within it and have `.messages-participants`' own inline-level chips
+   wrap around it the way text wraps around a floated image -- a flex
+   container (an unconditional new block-formatting-context per spec) would
+   instead just have its *whole* box narrowed to avoid the float, not wrap
+   around it line by line. `.messages-group-time` (below both) carries its
+   own `clear: both` for the same reason -- flex's per-line wrapping isn't
+   available here to fall back on. */
 .messages-group-row-body {
   flex: 1;
   min-width: 0;
+}
+
+/* The message count + unread count badges (`MessagesPage.messageCountBadgeView`/
+   `.unreadBadgeView`), floated to the card's top-right corner so
+   `.messages-participants`' own chips flow around them instead of pushing
+   them down onto their own row -- see `.messages-group-row-body`'s own doc.
+   Comes *before* `.messages-participants` in the DOM (`MessagesPage.groupRowView`)
+   -- a float only affects content that follows it in the same block
+   formatting context, not content before it. */
+.messages-group-badges {
+  float: right;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.3rem;
+  margin: 0 0 0.3rem 0.5rem;
 }
 
 /* One group card's (or the two-pane detail view's own top) participant
@@ -109,15 +163,14 @@
    `.profile-federated` container: wraps onto as many lines as it needs
    rather than truncating, so *every* participant stays visible (see
    `Components.Pages.MessagesPage.participantsView`'s own doc for why this
-   replaced the old subject/snippet preview). Spans `.messages-group-row-body`'s
-   full width (its parent) to wrap, rather than sharing a row with
-   `.messages-group-time` (now stacked below it instead, see that rule's own
-   doc). */
+   replaced the old subject/snippet preview). Plain block flow (not
+   `.messages-group-row-body`'s previous `display: flex`) so its own
+   inline-level `.messages-participant-chip`s wrap around
+   `.messages-group-badges`' floated corner the normal inline-layout way --
+   spacing between wrapped chips comes from each chip's own margin (below)
+   instead of this container's `gap`, which doesn't apply to plain inline
+   flow the way it did to the old flex layout. */
 .messages-participants {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
   width: 100%;
 }
 
@@ -129,6 +182,8 @@
   border-radius: 999px;
   background: var(--chip-bg);
   font-size: 0.8rem;
+  margin: 0 0.3rem 0.3rem 0;
+  vertical-align: middle;
 }
 
 .messages-participant-avatar {
@@ -148,25 +203,28 @@
   font-size: 0.65rem;
 }
 
+/* `clear: both` (needing `display: block` first -- a `span`, per
+   `MessagesPage.groupRowView`, doesn't otherwise honor `clear` at all) is
+   what guarantees this always starts its own line below both
+   `.messages-group-badges`' floated corner and however many lines
+   `.messages-participants` wrapped into, regardless of which of the two
+   happens to be taller for any given card. */
 .messages-group-time {
+  display: block;
+  clear: both;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   white-space: nowrap;
 }
 
-/* `MessagesPage.unreadBadgeView` -- a group card's own unread-message count.
-   Colors come from the `background-color-nav`/`border-color-primary-text`
-   utility classes (see `UI.EmittedStylesheet`'s doc comment); sized to match
-   `UI.starredPostsToggle`'s own (absolutely-positioned) `.starred-count-badge`,
-   just inline in the row's own flow here instead of pinned to a corner.
-   `align-self: flex-start` -- without it, `.messages-group-row-body`'s own
-   `display: flex; flex-direction: column` (no `align-items` override there,
-   since `.messages-participants` needs the *default* stretch to get its own
-   full width to wrap into) stretches this badge to that same full width too,
-   turning its `border-radius: 999px` pill into one enormous rounded bar
-   instead of a small badge. */
-.messages-unread-badge {
-  align-self: flex-start;
+/* Shared box geometry for `.messages-group-badges`' own two children
+   (`MessagesPage.messageCountBadgeView`/`.unreadBadgeView`) -- sized to
+   match `UI.starredPostsToggle`'s own (absolutely-positioned)
+   `.starred-count-badge`, just inline in `.messages-group-badges`' own
+   floated corner here instead of pinned to one. Coloring is each badge's
+   own, separate concern -- `.messages-unread-badge` (host-branded) and
+   `.messages-message-count-badge` (flat gray/white), both below. */
+.messages-count-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -178,6 +236,26 @@
   font-size: 0.65rem;
   font-weight: 700;
   border: 1px solid;
+  opacity: 0.5;
+}
+
+/* `MessagesPage.unreadBadgeView` -- a group card's own unread-message count.
+   No rule of its own: `.messages-count-badge` (above) is all its box
+   geometry, and its colors come from the `background-color-nav`/
+   `border-color-primary-text` utility classes applied alongside it (see
+   `UI.EmittedStylesheet`'s doc comment) rather than a fixed color, since a
+   group card's participants can be on any of several eligible servers, not
+   just `mainFrontendHost` -- this class only still exists as a selector
+   hook for the two rules above/below to reference in their own doc
+   comments. */
+
+/* `MessagesPage.messageCountBadgeView` -- a group card's own message count
+   (unlike `.messages-unread-badge`, not host-branded: it's a flat fact
+   about the thread's own length, not an actionable per-server signal). */
+.messages-message-count-badge {
+  background: #424242;
+  color: #ffffff;
+  border-color: #424242;
 }
 
 .messages-thread-status {
@@ -190,6 +268,44 @@
   flex-direction: column;
   gap: 0.5rem;
   margin: 0.5rem 0 0.5rem 1.6rem;
+}
+
+/* Two-pane detail only -- `.messages-thread` (above) is `selectedGroupView`'s
+   own wrapper, never the sidebar's inline-expand (`expandedGroupView`), so
+   this doesn't touch that copy at all.
+
+   `flex: 1 1 auto` plus `min-height: 0` (flex items default to a
+   `min-height` of their own content size otherwise, which would blow right
+   through the bounded column above and defeat the scroll entirely -- the
+   classic "flex child won't shrink/scroll" gotcha) is what makes this the
+   one part of `.messages-thread`'s own bounded flex column that actually
+   scrolls, independently of the pinned `.messages-thread-header` beside it.
+
+   `flex-direction: column-reverse` (rather than the plain `column` +
+   `justify-content: flex-end` it might look equivalent to at rest) is what
+   makes a short thread bottom-anchor for free -- a reversed column's own
+   `flex-start` default *is* the bottom -- while a long, overflowing one
+   still scrolls correctly. `justify-content: flex-end` looks identical for
+   a short thread but breaks scrolling to the overflowed messages once a
+   thread doesn't fit (a well-known flex/overflow interaction: browsers
+   don't reliably expose scrollable overflow before the `flex-end`-aligned
+   line's own start edge). `column-reverse` sidesteps that entirely by
+   never needing `justify-content` to be anything but its own default.
+   `messageThreadView`'s own DOM order is always newest-first regardless of
+   which of these two contexts renders it (see that function's own doc) --
+   reversing *here* is what turns that back into the oldest-top/newest-bottom
+   reading order a chat transcript wants. */
+.messages-thread .messages-thread-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  flex-direction: column-reverse;
+  /* `MessagesPage.scrollToPendingMessageCmd` sets this pane's own scroll
+     offset directly (`Dom.setViewportOf`) whenever a message is clicked in
+     the sidebar or landed on via permalink -- `scroll-behavior: smooth` is
+     what turns that plain, instant-looking assignment into an animated
+     scroll, with no JS/Elm-side animation code of its own needed. */
+  scroll-behavior: smooth;
 }
 
 .message-row {
@@ -275,6 +391,7 @@
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--muted);
+  font-size: 0.7rem;
   white-space: nowrap;
 }
 
@@ -299,39 +416,116 @@
   max-width: 320px;
 }
 
+/* Wide (non-hamburger) screens only -- the narrow-screen drawer overlay
+   (`@media (max-width: 639px)` below) already reads as "fixed" on its own,
+   nothing further needed there. No `position: fixed`/`sticky` actually
+   required to get that same "stays put on screen" effect here: since
+   `.messages-thread` (above) now bounds *itself* to the rest of the
+   viewport and scrolls its own message list internally, the surrounding
+   page in two-pane mode never grows taller than the viewport in the first
+   place, so there's nothing left for the page to scroll that would carry
+   this sidebar away with it -- a plain in-flow column, height-matched to
+   the same viewport remainder and independently scrollable if the group
+   list itself is long, already stays visually fixed for free. */
+@media (min-width: 640px) {
+  .messages-sidebar {
+    height: calc(100vh - (env(safe-area-inset-top) + 69px + 44px));
+    overflow-y: auto;
+  }
+}
+
 .messages-detail {
   flex: 1;
   min-width: 0;
 }
 
+/* A bounded-height flex column, not a plain document-flow box -- `height`
+   matches `.messages-header-row`'s own `top` offset (that rule's own doc has
+   the full 69px/44px derivation; kept in sync with it by hand, same as the
+   mobile `.messages-two-pane` rule below already does) so this pane always
+   fills exactly the rest of the viewport under the sticky header row,
+   regardless of scroll position. `.messages-thread-header` (below) is a
+   non-shrinking flex item, so it's always visible; `.messages-thread-list`
+   (below) is the one flex item that scrolls, in the space left over --
+   independently of the header and, in two-pane mode, of the rest of the
+   page (which no longer has anything left to scroll, since this pane is
+   already viewport-tall) rather than carrying the header away with it.
+   Applies at every width, narrow or wide -- on narrow screens this sits
+   inside `.messages-two-pane`'s own `position: fixed` bounds (below), which
+   already happen to match this same height. */
 .messages-thread {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - (env(safe-area-inset-top) + 69px + 44px));
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.8rem;
 }
 
-/* Wraps `.messages-participants` and the "Reply" button
-   (`MessagesPage.selectedGroupView`/`replyButtonView`) together as the
-   two-pane detail pane's own top header, replacing the old subject heading
-   -- see `participantsView`'s own doc. */
+/* Wraps `.messages-participants` -- the two-pane detail pane's own top
+   header, replacing the old subject heading -- see `participantsView`'s own
+   doc. The "Reply" button (`MessagesPage.selectedGroupView`/`replyButtonView`)
+   used to sit in this same row too; it's `position: fixed` now (below),
+   so `justify-content: space-between` here just resolves to a plain
+   left-aligned row with nothing on the right anymore.
+
+   `flex: 0 0 auto` is what actually keeps this pinned at the top of
+   `.messages-thread`'s own bounded flex column (above) while
+   `.messages-thread-list` (below) scrolls beneath it -- without it, the
+   column's default `flex: 0 1 auto` would let this shrink alongside the
+   list once they're both squeezed into a fixed-height column. */
 .messages-thread-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.6rem;
+  flex: 0 0 auto;
   padding-bottom: 0.6rem;
   margin-bottom: 0.6rem;
   border-bottom: 1px solid var(--border);
 }
 
+/* Pinned to the bottom-right corner of the viewport, same "reachable
+   without hunting for it while scrolled" reasoning as a chat app's own
+   floating reply/compose action.
+
+   `z-index` is required, not optional, despite this being later in the DOM
+   than `.messages-thread-list` (its own sibling's *children*, not this
+   button's literal siblings, but still earlier-painted at the same "auto"
+   stacking level otherwise): those message cards each carry an inline
+   `transform` from `elm-style-animation`'s own `Animation.render` (even at
+   rest, `scale(1)`, not the literal keyword `none`), which makes each one a
+   stacking context of its own -- see `.messages-sidebar`'s own z-index
+   comment (below) for the fuller derivation of why that alone is enough to
+   paint over a plain `z-index: auto` positioned box. */
 .messages-reply-button {
-  flex: 0 0 auto;
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 2;
   padding: 0.35rem 0.8rem;
   border: none;
   border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* A `--debug` dev build's Elm debugger icon docks at this same bottom-right
+   corner (`bottom: 0; right: 0`, its own inline styles -- not this
+   stylesheet's, and (per Elm's compiled runtime) always at `z-index:
+   2147483647`, the one hook this selector has to react to it at all). Only
+   actually shown to begin with while a `MessagingGroup`'s selected
+   (`.messages-reply-button` only renders there), so this can't false-match
+   on some *other* unrelated fixed/high-z-index element elsewhere on the
+   page. Bumped clear of it here rather than by default (above) since a
+   production build never has the debugger at all, and shouldn't pay for
+   clearance it doesn't need -- this is a best-effort selector, not verified
+   live against a real `--debug` build; nudge the offset if it turns out not
+   to line up. */
+body:has(> [style*="2147483647"]) .messages-reply-button {
+  bottom: 4.5rem;
 }
 
 /* Hidden above the mobile breakpoint below -- `.messages-sidebar` is always
@@ -353,16 +547,33 @@
    markdown_panel.css) -- there's no room for `.messages-sidebar` and
    `.messages-detail` side by side, so the sidebar becomes a drawer overlay
    instead, toggled by `.messages-mobile-sidebar-toggle` (`ToggleMobileSidebar`)
-   rather than shown outright. `.messages-two-pane` (not the viewport) is the
-   drawer's own positioning context -- it's `.filter-controls-row`'s (the
-   search field and `.messages-mobile-sidebar-toggle` itself) very next
-   sibling in `.messages-page`, so anchoring to it, rather than
-   `position: fixed` off a measured navbar-height pixel offset, makes the
-   drawer start right where `.messages-two-pane` itself does and never
-   physically reach up into the search row above -- no z-index bump needed
-   on `.messages-mobile-sidebar-toggle` to keep it clickable through it,
-   unlike a previous version of this rule that covered the whole viewport
-   below `.navbar` (search box included) and relied on exactly that bump.
+   rather than shown outright.
+
+   `.messages-two-pane` itself is `position: fixed` -- not just
+   `.messages-sidebar` -- spanning from directly under `.messages-header-row`
+   (that same row's own `top`/height derivation, above) down to the bottom of
+   the viewport, so `.messages-sidebar`'s existing `top: 0; bottom: 0;`
+   (unchanged below) already spans that same full fixed height for free, with
+   no separate pixel math of its own needed -- it's `position: absolute`
+   against a `position: fixed` ancestor, not `position: fixed` itself, but
+   reads as exactly that "sidebar pinned to the viewport" chrome the navbar
+   and header row above it already are. This *is* a previous version of this
+   rule's own approach (`position: fixed` off a measured navbar-height pixel
+   offset, once rejected in favor of anchoring to `.messages-two-pane`'s own
+   in-flow position instead) -- safe to bring back now specifically because
+   `.messages-header-row` (above) is its own `position: sticky` sibling with
+   a *fixed, guaranteed* height (`flex-wrap: nowrap` + `min-height`, see its
+   own doc), so this rule's own `top` can bake that height in as a constant
+   without drifting, and because this fixed block starts *below* that header
+   rather than covering the whole viewport including it -- the z-index bump
+   the old comment here used to warn about (needed to keep the search box
+   clickable through an overlay that covered it too) simply doesn't apply
+   when the header is a separate, spatially non-overlapping sibling instead.
+
+   `.messages-detail`'s own `height: 100%; overflow-y: auto;` (below) is what
+   makes it -- not the whole page -- the scrollable region: with everything
+   above and beside it now fixed/pinned, there's nothing left for the page
+   itself to scroll.
 
    Only `transform` (a slide from the left, `translateX`) animates
    open/closed -- deliberately not `opacity` (an earlier version of this
@@ -395,8 +606,24 @@
   }
 
   .messages-two-pane {
-    position: relative;
+    position: fixed;
+    /* `.messages-header-row`'s own `top` (69px navbar) plus its own
+       `min-height` (44px) -- see that rule's own doc; kept in sync with it
+       by hand, there being no cross-rule `calc()` reference in plain CSS. */
+    top: calc(env(safe-area-inset-top) + 69px + 44px);
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow: hidden;
+  }
+
+  /* No `overflow-y: auto` of its own anymore -- `.messages-thread`'s own
+     bounded flex column (base rule, above) already scrolls internally
+     (`.messages-thread-list`), and its own explicit `height` already
+     matches this `100%` exactly, so a second scroll container here would
+     just be redundant (and never actually trigger). */
+  .messages-detail {
+    height: 100%;
   }
 
   .messages-sidebar {

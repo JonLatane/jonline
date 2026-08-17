@@ -137,6 +137,42 @@
   color: var(--muted);
 }
 
+/* The "To" field's own label row -- `subjectToggleButton` (the "…" that
+   shows/hides the Subject field above it, see `extraFieldsView`'s own doc)
+   sits just left of the "To" label here rather than inside the Subject
+   field itself, since the whole point is to reach it without the Subject
+   field already being open. */
+.markdown-panel-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.markdown-panel-subject-toggle {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.markdown-panel-subject-toggle:hover {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+.markdown-panel-subject-toggle.expanded {
+  color: var(--fg);
+  background: var(--border);
+}
+
 .markdown-panel-subject-input {
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--border);
