@@ -194,9 +194,5 @@ pub async fn spa_web_path(
         }
         _ => (),
     };
-    CacheResponse::Public {
-        responder: template.map_or(Err(Status::NotFound), |body| Ok(body)),
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(template.map_or(Err(Status::NotFound), |body| Ok(body)), 60)
 }

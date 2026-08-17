@@ -317,6 +317,7 @@ fn graph_post(url: &str, params: &[(&str, &str)]) -> Result<Value, Status> {
 fn graph_request(
     build: impl FnOnce(&reqwest::blocking::Client) -> reqwest::blocking::RequestBuilder + Send,
 ) -> Result<Value, Status> {
+    crate::init_crypto();
     let call = move || {
         let client = reqwest::blocking::Client::new();
         let text = build(&client)

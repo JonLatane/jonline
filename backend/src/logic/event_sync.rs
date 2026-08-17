@@ -63,6 +63,7 @@ pub fn sync_event_sync_source(
 /// itself panics if there's no Tokio runtime at all (e.g. this same function called from a plain
 /// `#[test]` or a `bin/`), so it's only used when actually inside one.
 fn fetch_ics(url: &str) -> Result<String, Status> {
+    crate::init_crypto();
     let fetch = || {
         reqwest::blocking::get(url)
             .and_then(|response| response.error_for_status())

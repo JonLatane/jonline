@@ -746,7 +746,7 @@ pub fn test_bucket() -> TestBucket {
             // `TEST_DATABASE_URL`; `minio_connection::get_and_test_bucket` doesn't load `.env`
             // itself, and callers may reach for a bucket before ever calling `test_conn`, so do
             // it here too.
-            dotenv::dotenv().ok();
+            dotenvy::dotenv().ok();
             block_on(crate::minio_connection::get_and_test_bucket()).expect(
                 "failed to connect to test MinIO bucket -- is MinIO running? (`docker compose up minio`, or the full dev stack)",
             )

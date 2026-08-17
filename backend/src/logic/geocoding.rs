@@ -51,6 +51,7 @@ pub fn resolve_timezone_at(base_url: &str, address: &str) -> Option<chrono_tz::T
 /// See `facebook_sync::graph_request` for why `block_in_place` is used (and only when there's
 /// already a Tokio runtime).
 fn geocode_at(base_url: &str, address: &str) -> Option<(f64, f64)> {
+    crate::init_crypto();
     let url = format!("{base_url}/search");
     let address = address.to_string();
     let call = move || -> Option<String> {

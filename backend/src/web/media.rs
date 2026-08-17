@@ -21,7 +21,7 @@ use rocket::http::MediaType;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
 
 use rocket::http::Status;
-use rocket_cache_response::CacheResponse;
+use rocket_cache_response::{CacheControl, CacheResponse};
 use uuid::Uuid;
 
 lazy_static! {
@@ -116,11 +116,13 @@ pub async fn media_file<'a>(
 
     let data = load_media_file_data(id, size.as_deref(), state).await?;
 
-    Ok(CacheResponse::Public {
-        responder: data,
-        max_age: 3600 * 12,
-        must_revalidate: true,
-    })
+    Ok(CacheResponse::new(
+        data,
+        CacheControl {
+            must_revalidate: true,
+            ..CacheControl::public(3600 * 12)
+        },
+    ))
 }
 
 /// Picks the (minio_path, content_type) to serve for a given size request.

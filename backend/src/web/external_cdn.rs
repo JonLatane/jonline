@@ -12,13 +12,13 @@ lazy_static! {
 #[rocket::get("/backend_host")]
 async fn backend_host(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<String> {
     let configured_backend_domain = configured_backend_domain(state, host);
-    CacheResponse::NoStore(configured_backend_domain)
+    CacheResponse::no_store(configured_backend_domain)
 }
 
 #[rocket::get("/frontend_host")]
 async fn frontend_host(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<String> {
     let configured_backend_domain = configured_backend_domain(state, host);
-    CacheResponse::NoStore(configured_backend_domain)
+    CacheResponse::no_store(configured_backend_domain)
 }
 
 pub fn configured_backend_domain(state: &State<RocketState>, host: &Host<'_>) -> String {

@@ -5,7 +5,7 @@ fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let _ = fs::create_dir("./target");
     let _ = fs::create_dir("./target/compiled_protos");
-    tonic_build::configure()
+    tonic_prost_build::configure()
         .build_server(true)
         .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
         // Used for updating servers from 0.5.551 -> 0.5.552+. Can be removed

@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use diesel::*;
 use rand;
-use rand::Rng;
+use rand::RngExt;
 use tonic::{Code, Status};
 
 use crate::auth::*;
@@ -71,7 +71,7 @@ pub fn access_token(
                 })
             }
             None => {
-                match rand::thread_rng().gen_range(0..=2) {
+                match rand::rng().random_range(0..=2) {
                     0 => {
                         log::info!("Randomly generating new refresh/access token pair for non-expiring refresh token for user_id={}; current token will expire in 360s.", user_id);
                         // log::warn!("Randomly failing to generate access token for user_id={}", user_id);

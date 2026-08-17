@@ -28,11 +28,7 @@ Sitemap: https://{}/sitemap.xml
         .to_string(),
     );
 
-    CacheResponse::Public {
-        responder: response,
-        max_age: 3600,
-        must_revalidate: false,
-    }
+    CacheResponse::public(response, 3600)
 }
 
 #[rocket::get("/sitemap.xml")]
@@ -73,11 +69,7 @@ async fn sitemap(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<R
         .to_string(),
     );
 
-    CacheResponse::Public {
-        responder: response,
-        max_age: 3600,
-        must_revalidate: false,
-    }
+    CacheResponse::public(response, 3600)
 }
 
 #[rocket::get("/manifest.json")]
@@ -136,9 +128,5 @@ async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse
         .to_string(),
     );
 
-    CacheResponse::Public {
-        responder: response,
-        max_age: 3600,
-        must_revalidate: false,
-    }
+    CacheResponse::public(response, 3600)
 }
