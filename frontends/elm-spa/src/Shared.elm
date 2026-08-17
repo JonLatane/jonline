@@ -488,6 +488,26 @@ sharedUpdate req msg model =
                 ( refreshedStarredPanel, refreshCmd ) =
                     StarredPanel.refreshHosts subModel changedHosts panels.starredPanel
 
+                -- Mirrors `Pages.Messages`' own `SharedMsg (Shared.AccountsPanelMsg
+                -- _)` handling (`applyPageMsg shared MessagesPage.Poll model`) --
+                -- unconditional on every `AccountsPanelMsg`, not just
+                -- `ServerConnected`, since `Poll`'s own `fetchNewServers` only
+                -- ever (re)fetches an entry that's newly eligible or changed
+                -- account/listingType, so this is a no-op RPC-wise whenever
+                -- nothing relevant actually changed. Without this, the nav
+                -- badge (`UI.elm`'s `MessagingPanel.totalUnreadCount`) stayed
+                -- at 0 until the user opened the Messages panel at least once
+                -- this session -- `Shared.MessagingPanel.init`'s own `empty`
+                -- deliberately fetches nothing up front, see its doc -- even
+                -- though the servers/accounts it'd need were already bootstrapped
+                -- by `AccountsPanel` well before that.
+                ( polledMessagingPanel, pollMessagingCmd ) =
+                    let
+                        ( m, cmd, _ ) =
+                            MessagingPanel.update subModel (MessagingPanel.PageMsg MessagesPage.Poll) panels.messagingPanel
+                    in
+                    ( m, cmd )
+
                 -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
                 -- `UI.Responsive`), so opening one closes the other there.
@@ -554,12 +574,12 @@ sharedUpdate req msg model =
                     if shouldCloseMessagingPanel then
                         let
                             ( m, cmd, _ ) =
-                                MessagingPanel.update subModel MessagingPanel.CloseMessagingPanel panels.messagingPanel
+                                MessagingPanel.update subModel MessagingPanel.CloseMessagingPanel polledMessagingPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( panels.messagingPanel, Cmd.none )
+                        ( polledMessagingPanel, Cmd.none )
             in
             ( { model
                 | accounts = subModel
@@ -569,6 +589,7 @@ sharedUpdate req msg model =
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPanelMsg refreshCmd
                 , Cmd.map StarredPanelMsg closeCmd
+                , Cmd.map MessagingPanelMsg pollMessagingCmd
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 , Cmd.map MessagingPanelMsg closeMessagingCmd
                 ]

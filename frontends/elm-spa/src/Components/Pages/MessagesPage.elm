@@ -642,8 +642,9 @@ update accountsPanelModel msg model =
                     )
 
 
-{-| Expands `ref` (a no-op if already expanded): a "solo" (Bcc-only) group is
-already fully in hand from the outer listing fetch (see
+{-| Expands `ref` (re-fires the fetch if it's already `ExpandFailed`, a no-op
+for any other already-expanded status -- see that branch's own doc): a "solo"
+(Bcc-only) group is already fully in hand from the outer listing fetch (see
 `Components.Messages.groupMessages`), so this just seeds it directly with no
 RPC; every other group fetches its full thread via `GetMessages
 { messageGroupId = Just ref.groupId }`. Falls back to `PERSONALMESSAGES`/no
@@ -655,45 +656,52 @@ than silently doing nothing.
 -}
 expand : AccountsPanel.Model -> Model -> GroupRef -> ( Model, Cmd Msg )
 expand accountsPanelModel model ref =
-    if Dict.member ref.key model.expandedGroups then
-        ( model, Cmd.none )
+    case Dict.get ref.key model.expandedGroups |> Maybe.map .status of
+        Just ExpandFailed ->
+            fetchExpand accountsPanelModel model ref
 
-    else
-        case Dict.get ref.key model.groupAnimations |> Maybe.map .summary of
-            Just summary ->
-                if summary.isSolo then
-                    ( { model
-                        | expandedGroups =
-                            Dict.insert ref.key
-                                { status = ExpandLoaded
-                                , messageAnimations = Dict.singleton summary.mostRecent.id { message = summary.mostRecent, flip = UI.Flip.enter }
-                                , host = ref.host
-                                , groupId = ref.groupId
-                                }
-                                model.expandedGroups
-                      }
-                    , Cmd.none
-                    )
+        Just _ ->
+            ( model, Cmd.none )
 
-                else
+        Nothing ->
+            case Dict.get ref.key model.groupAnimations |> Maybe.map .summary of
+                Just summary ->
+                    if summary.isSolo then
+                        ( { model
+                            | expandedGroups =
+                                Dict.insert ref.key
+                                    { status = ExpandLoaded
+                                    , messageAnimations = Dict.singleton summary.mostRecent.id { message = summary.mostRecent, flip = UI.Flip.enter }
+                                    , host = ref.host
+                                    , groupId = ref.groupId
+                                    }
+                                    model.expandedGroups
+                          }
+                        , Cmd.none
+                        )
+
+                    else
+                        fetchExpand accountsPanelModel model ref
+
+                Nothing ->
                     fetchExpand accountsPanelModel model ref
 
-            Nothing ->
-                fetchExpand accountsPanelModel model ref
 
-
-{-| Fires (or re-fires, see `retryPendingExpansions`) the actual `GetMessages
-{ messageGroupId = ... }` fetch for `ref` -- unless `ref.host` isn't yet a
-`knownConnectedServer` (see that function's own doc on the disconnected
-placeholder every persisted server starts as), in which case this leaves the
-entry `ExpandLoading` (never firing a doomed, instantly-failing request
-against it) for `retryPendingExpansions` to actually attempt once the real
-connection lands -- mirrors `Components.Messages.eligibleServers`'s own fix
-for the exact same race, just for a single group's fetch instead of the
-whole listing. A genuine failure (the fetch _did_ reach a connected server,
-and it came back an error -- not found, no access, ...) still lands in
-`ExpandFailed` as before, via `GotGroupMessages`'s own `Err` branch -- that
-one's terminal, not retried.
+{-| Fires (or re-fires, see `retryPendingExpansions` and `expand`'s own
+`ExpandFailed` branch) the actual `GetMessages { messageGroupId = ... }`
+fetch for `ref` -- unless `ref.host` isn't yet a `knownConnectedServer` (see
+that function's own doc on the disconnected placeholder every persisted
+server starts as), in which case this leaves the entry `ExpandLoading` (never
+firing a doomed, instantly-failing request against it) for
+`retryPendingExpansions` to actually attempt once the real connection lands
+-- mirrors `Components.Messages.eligibleServers`'s own fix for the exact same
+race, just for a single group's fetch instead of the whole listing. A genuine
+failure (the fetch _did_ reach a connected server, and it came back an error
+-- not found, no access, ...) still lands in `ExpandFailed` as before, via
+`GotGroupMessages`'s own `Err` branch -- that one isn't auto-retried (`Poll`'s
+`retryPendingExpansions` deliberately skips it), but a user re-clicking the
+same row's chevron (`ToggleExpand` -> `expand`) fires this again rather than
+just re-showing the stale "Couldn't load this messaging group." message.
 -}
 fetchExpand : AccountsPanel.Model -> Model -> GroupRef -> ( Model, Cmd Msg )
 fetchExpand accountsPanelModel model ref =
