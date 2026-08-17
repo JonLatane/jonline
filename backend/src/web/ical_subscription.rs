@@ -79,7 +79,7 @@ async fn ical_subscription(
     let events_response = match get_events(request, &None, &mut conn) {
         Ok(response) => response,
         Err(e) => {
-            return CacheResponse::NoStore(ICalResponse(format!("Error fetching events: {e}")))
+            return CacheResponse::no_store(ICalResponse(format!("Error fetching events: {e}")))
         }
     };
 
@@ -146,5 +146,5 @@ async fn ical_subscription(
     // Generate iCal content
     let ical_content = calendar.to_string();
 
-    CacheResponse::NoStore(ICalResponse(ical_content))
+    CacheResponse::no_store(ICalResponse(ical_content))
 }

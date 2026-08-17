@@ -36,11 +36,7 @@ pub async fn jonline_path(
 ) -> CacheResponse<Result<JonlineResponder, Status>> {
     let body = jonline_path_responder(path, server_location, repo_location).await;
 
-    CacheResponse::Public {
-        responder: body.map_or(Err(Status::NotFound), |body| Ok(body)),
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(body.map_or(Err(Status::NotFound), |body| Ok(body)), 60)
 }
 
 pub async fn jonline_path_responder(

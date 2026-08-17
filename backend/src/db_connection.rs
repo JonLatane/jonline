@@ -5,7 +5,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use std::env;
 
 use diesel::pg::PgConnection;

@@ -48,11 +48,7 @@ async fn elm_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
         // router instead of 404ing before the app ever loads.
         Err(_) => open_elm_index().await,
     };
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 /// The Elm home page, always reachable at the literal "/elm" path (unlike the
@@ -102,11 +98,7 @@ async fn elm_root_style(
     file: PathBuf,
 ) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(&Path::new("style").join(file)).await;
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 #[rocket::get("/dist/<file..>")]
@@ -115,11 +107,7 @@ async fn elm_root_dist(
     file: PathBuf,
 ) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(&Path::new("dist").join(file)).await;
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 #[rocket::get("/vendor/<file..>")]
@@ -128,21 +116,13 @@ async fn elm_root_vendor(
     file: PathBuf,
 ) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(&Path::new("vendor").join(file)).await;
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 #[rocket::get("/markdown.js")]
 async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(Path::new("markdown.js")).await;
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 /// The Facebook OAuth popup's `redirect_uri` target (see `public/index.html`'s
@@ -155,11 +135,7 @@ async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<Named
 #[rocket::get("/facebook-callback.html")]
 async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(Path::new("facebook-callback.html")).await;
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 /// Request guard for `elm_root_style`/`elm_root_dist`: succeeds only when this

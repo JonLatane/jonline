@@ -4,7 +4,7 @@ extern crate async_compression;
 extern crate bcrypt;
 extern crate bs58;
 extern crate diesel_migrations;
-extern crate dotenv;
+extern crate dotenvy;
 extern crate env_logger;
 extern crate futures;
 extern crate itertools;

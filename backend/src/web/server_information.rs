@@ -14,7 +14,7 @@ use rocket::{
     response::Redirect,
     routes, uri, Route, State,
 };
-use rocket_cache_response::CacheResponse;
+use rocket_cache_response::{CacheControl, CacheResponse};
 
 /// Favicons are small, so prefer the Medium converted size, then Small, then Large, falling
 /// back to the original upload if none of those conversions exist.
@@ -109,7 +109,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
     };
 
     match encoded_logo {
-        Some(encoded_logo) => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
+        Some(encoded_logo) => Ok(CacheResponse::no_store(Redirect::temporary(format!(
             "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}&logo={}",
             encoded_server_name,
             service_version.replace("-", "--"),
@@ -117,7 +117,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
             nav_color,
             encoded_logo
         )))),
-        None => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
+        None => Ok(CacheResponse::no_store(Redirect::temporary(format!(
             "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}",
             encoded_server_name,
             service_version.replace("-", "--"),
@@ -150,14 +150,13 @@ async fn docs_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
             Err(e) => Err(e),
         },
     };
-    CacheResponse::Public {
-        responder: result.map_err(|e| {
+    CacheResponse::public(
+        result.map_err(|e| {
             log::error!("docs_path: {:?}", e);
             Status::NotFound
         }),
-        max_age: 60,
-        must_revalidate: false,
-    }
+        60,
+    )
 }
 
 #[rocket::get("/favicon.ico")]
@@ -190,11 +189,13 @@ async fn favicon_ico<'a>(
                     }
                 }
             };
-            Ok(CacheResponse::Public {
-                responder: (media_type, favicon_file),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
+            Ok(CacheResponse::new(
+                (media_type, favicon_file),
+                CacheControl {
+                    must_revalidate: true,
+                    ..CacheControl::public(3600 * 12)
+                },
+            ))
         }
         Some(square_media_id) => {
             let data =
@@ -229,14 +230,16 @@ async fn favicon_ico<'a>(
                 content_type = ico_content_type
             }
 
-            Ok(CacheResponse::Public {
-                responder: (
+            Ok(CacheResponse::new(
+                (
                     content_type.to_owned(),
                     open_named_file(named_filename).await?,
                 ),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
+                CacheControl {
+                    must_revalidate: true,
+                    ..CacheControl::public(3600 * 12)
+                },
+            ))
         }
     }
 }
@@ -273,11 +276,13 @@ async fn favicon_png<'a>(
             let png_filename = format!("{}/default-favicon.png", state.tempdir.path().display());
             convert_ico_to_png(&favicon_ico_path, &png_filename)?;
 
-            Ok(CacheResponse::Public {
-                responder: (ContentType::PNG, open_named_file(&png_filename).await?),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
+            Ok(CacheResponse::new(
+                (ContentType::PNG, open_named_file(&png_filename).await?),
+                CacheControl {
+                    must_revalidate: true,
+                    ..CacheControl::public(3600 * 12)
+                },
+            ))
         }
         Some(square_media_id) => {
             let data =
@@ -297,11 +302,13 @@ async fn favicon_png<'a>(
                 content_type = ContentType::PNG;
             }
 
-            Ok(CacheResponse::Public {
-                responder: (content_type, open_named_file(&named_filename).await?),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
+            Ok(CacheResponse::new(
+                (content_type, open_named_file(&named_filename).await?),
+                CacheControl {
+                    must_revalidate: true,
+                    ..CacheControl::public(3600 * 12)
+                },
+            ))
         }
     }
 }

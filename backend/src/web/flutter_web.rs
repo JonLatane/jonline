@@ -18,11 +18,7 @@ async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>>
             }
         }
     };
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }
 
 #[rocket::get("/flutter")]
@@ -34,12 +30,11 @@ pub async fn flutter_index() -> CacheResponse<Result<NamedFile, Status>> {
             Err(e) => Err(e),
         },
     };
-    CacheResponse::Public {
-        responder: result.map_err(|e| {
+    CacheResponse::public(
+        result.map_err(|e| {
             log::info!("flutter: {:?}", e);
             Status::NotFound
         }),
-        max_age: 60,
-        must_revalidate: false,
-    }
+        60,
+    )
 }

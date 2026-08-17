@@ -251,9 +251,5 @@ pub async fn spa_file_or_username_or_custom_tab(
                 }
             }
         };
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+    CacheResponse::public(result, 60)
 }

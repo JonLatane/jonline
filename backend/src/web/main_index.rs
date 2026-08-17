@@ -36,14 +36,13 @@ pub async fn main_index(
             inner: data,
             content_type: ContentType(MediaType::from_str("text/html").unwrap()),
         });
-        return CacheResponse::Public {
-            responder: result_data.map_err(|e| {
+        return CacheResponse::public(
+            result_data.map_err(|e| {
                 log::info!("flutter: {:?}", e);
                 Status::NotFound
             }),
-            max_age: 60,
-            must_revalidate: false,
-        };
+            60,
+        );
     }
 
     let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());

@@ -5,7 +5,7 @@ extern crate diesel;
 extern crate bcrypt;
 extern crate bs58;
 extern crate diesel_migrations;
-extern crate dotenv;
+extern crate dotenvy;
 extern crate futures;
 extern crate itertools;
 extern crate ring;
@@ -63,10 +63,17 @@ pub fn env_var(name: &str) -> Option<String> {
     env::var(name).ok().filter(|s| !s.is_empty())
 }
 
+/// Idempotent: reqwest and tonic both require a process-wide rustls `CryptoProvider` to be
+/// installed (they're built with `rustls-no-provider`/`tls-ring` rather than a TLS backend that
+/// installs one for us), so every entry point -- `main`s and the test harness alike -- must be
+/// able to call this safely, including more than once from the same process.
 pub fn init_crypto() {
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .expect("Failed to install rustls crypto provider");
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| {
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("Failed to install rustls crypto provider");
+    });
 }
 
 /// Designed to be called from the main function of a service.
