@@ -354,11 +354,25 @@ accepts an inbound message addressed to one of this Jonline instance&#39;s onboa
 80/8000/443), has no authentication of its own, and trusts its caller completely -- that trust boundary is
 expected to be enforced at the network layer (e.g. a `NetworkPolicy` restricting port 27705 to Stalwart&#39;s pod).
 
-* **Request**: recipients are supplied out-of-band via the `X-Jonline-Email-Recipients` header (comma-separated
-addresses); the request body is the raw MIME message (up to 50 MiB). `X-Jonline-Email-Recipients` is deliberately
-the SMTP envelope&#39;s `RCPT TO` addresses, not the message&#39;s `To`/`Cc` headers -- it&#39;s the only place Bcc&#39;d
-recipients show up at all. A missing header returns `406 Not Acceptable`; an oversized body returns
-`413 Payload Too Large`; a body that doesn&#39;t parse as MIME returns `400 Bad Request`.
+* **Request**: the body is Stalwart&#39;s `data`-stage [MTA Hook](https://stalw.art/docs/mta/filter/mtahooks/) JSON
+payload (up to 50 MiB), not a raw MIME stream -- only the fields below are read, the rest of Stalwart&#39;s payload
+(`context`, `envelope.from`, `message.serverHeaders`, `message.size`, ...) is ignored:
+```json
+{
+  &#34;envelope&#34;: { &#34;to&#34;: [{ &#34;address&#34;: &#34;someone@yourdomain.com&#34; }] },
+  &#34;message&#34;: {
+    &#34;headers&#34;: [[&#34;Subject&#34;, &#34;Hello&#34;], [&#34;From&#34;, &#34;sender@example.com&#34;], [&#34;To&#34;, &#34;someone@yourdomain.com&#34;]],
+    &#34;contents&#34;: &#34;Hello, World!\r\n&#34;
+  }
+}
+```
+Recipients come from `envelope.to[].address` -- deliberately the SMTP envelope, not the message&#39;s `To`/`Cc`
+headers, since that&#39;s the only place Bcc&#39;d recipients show up at all. The message itself is reconstructed by
+concatenating `message.headers` (each an unfolded `[name, value]` pair) with `message.contents` across a blank
+line, which `mail_parser` then parses as the RFC822 message -- Stalwart only splits at the top-level header/body
+boundary, so this still captures multipart bodies and attachments intact within `contents`. A body that isn&#39;t
+valid JSON in this shape, or that doesn&#39;t reconstruct into a parseable MIME message, returns `400 Bad Request`;
+an oversized body returns `413 Payload Too Large`.
 * **Recipient resolution**: each envelope address&#39;s local part (before the `@`) is looked up as a username on this
 server; addresses that don&#39;t match any user are silently skipped, since Stalwart is expected to have already
 confirmed deliverability before calling this endpoint. If none match, the whole message is dropped and the

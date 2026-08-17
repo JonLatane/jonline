@@ -1,12 +1,12 @@
 use diesel::*;
 use mail_parser::{Addr, Address};
 use rocket::{data::ToByteUnit, http::Status, routes, Data, Route, State};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::models;
 use crate::models::{find_or_create_messaging_group, MESSAGE_COLUMNS};
 use crate::schema::{self, message_recipients, messages, users};
-use crate::web::headers::RecipientsHeader;
 use crate::web::RocketState;
 
 lazy_static! {
@@ -18,6 +18,38 @@ lazy_static! {
 /// limit.
 const MAX_EMAIL_SIZE_MIB: u64 = 50;
 
+/// Body shape of Stalwart's `data`-stage MTA Hook request (see
+/// https://stalw.art/docs/mta/filter/mtahooks/) -- a JSON object, not a raw MIME stream. Only the
+/// fields this endpoint actually needs are modeled; unknown fields (`context`, `envelope.from`,
+/// `message.serverHeaders`, `message.size`, ...) are ignored by default (no
+/// `deny_unknown_fields`).
+#[derive(Deserialize)]
+struct MtaHookRequest {
+    envelope: MtaHookEnvelope,
+    message: MtaHookMessage,
+}
+
+#[derive(Deserialize)]
+struct MtaHookEnvelope {
+    to: Vec<MtaHookAddress>,
+}
+
+#[derive(Deserialize)]
+struct MtaHookAddress {
+    address: String,
+}
+
+/// `headers` are `[name, value]` pairs, already unfolded to one line each; `contents` is the raw
+/// body (everything after the header block) as it appeared on the wire. Concatenating the two
+/// back together with a blank-line separator reconstitutes an RFC822 message `mail_parser` can
+/// parse, including multipart/attachments -- Stalwart only splits at the top-level header/body
+/// boundary, it doesn't touch nested MIME part headers within `contents`.
+#[derive(Deserialize)]
+struct MtaHookMessage {
+    headers: Vec<(String, String)>,
+    contents: String,
+}
+
 /// Delivery endpoint called by the Stalwart mail server (see `deploys/email`) once it accepts an
 /// inbound message addressed to one of this namespace's domains. This is mounted *only* on the
 /// internal-only Rocket instance on port 27705 (see `servers::start_rocket_internal`) -- never on
@@ -25,27 +57,39 @@ const MAX_EMAIL_SIZE_MIB: u64 = 50;
 /// caller completely; that trust boundary must be enforced at the network layer (e.g. a
 /// NetworkPolicy restricting port 27705 to Stalwart's pod).
 ///
-/// `X-Jonline-Email-Recipients` carries the SMTP envelope's `RCPT TO` addresses (comma-separated)
-/// -- this is the envelope, not the message's `To`/`Cc` headers, so it's the only place Bcc'd
-/// recipients show up at all. The request body is the raw MIME message. Recipients whose
+/// The request body is Stalwart's MTA Hook JSON payload (`MtaHookRequest` above) -- recipients
+/// come from `envelope.to`, which is the SMTP envelope's `RCPT TO` addresses, not the message's
+/// `To`/`Cc` headers, so it's the only place Bcc'd recipients show up at all. Recipients whose
 /// username doesn't match any user in this namespace are silently skipped (Stalwart is expected
 /// to have already validated deliverability before calling this endpoint); if none match, the
 /// whole message is dropped.
-#[rocket::post("/email", data = "<message>")]
+#[rocket::post("/email", data = "<body>")]
 pub async fn create_email_message(
-    message: Data<'_>,
-    recipients_header: RecipientsHeader<'_>,
+    body: Data<'_>,
     state: &State<RocketState>,
 ) -> Result<String, Status> {
-    let capped_message = message
+    let capped_body = body
         .open(MAX_EMAIL_SIZE_MIB.mebibytes())
         .into_bytes()
         .await
         .map_err(|_| Status::InternalServerError)?;
-    if !capped_message.is_complete() {
+    if !capped_body.is_complete() {
         return Err(Status::PayloadTooLarge);
     }
-    let raw_message = capped_message.into_inner();
+    let capped_body = capped_body.into_inner();
+
+    let payload: MtaHookRequest =
+        serde_json::from_slice(&capped_body).map_err(|_| Status::BadRequest)?;
+
+    let mut raw_message = Vec::new();
+    for (name, value) in &payload.message.headers {
+        raw_message.extend_from_slice(name.as_bytes());
+        raw_message.extend_from_slice(b": ");
+        raw_message.extend_from_slice(value.as_bytes());
+        raw_message.extend_from_slice(b"\r\n");
+    }
+    raw_message.extend_from_slice(b"\r\n");
+    raw_message.extend_from_slice(payload.message.contents.as_bytes());
 
     let parsed = mail_parser::MessageParser::default()
         .parse(&raw_message)
@@ -59,10 +103,11 @@ pub async fn create_email_message(
     let mut conn = state.pool.get().map_err(|_| Status::InternalServerError)?;
 
     let mut recipients: Vec<(i64, models::RecipientType)> = vec![];
-    for address in recipients_header
-        .0
-        .split(',')
-        .map(|address| address.trim())
+    for address in payload
+        .envelope
+        .to
+        .iter()
+        .map(|recipient| recipient.address.trim())
         .filter(|address| !address.is_empty())
     {
         let username = match address.split('@').next() {

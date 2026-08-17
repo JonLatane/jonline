@@ -19,8 +19,8 @@ sender's MTA -> DNS MX lookup for yourdomain.com -> Traefik (:25, shared LoadBal
                                                         |
                                                         v
                                    POST http://jonline.<namespace>.svc.cluster.local:27705/email
-                                   (X-Jonline-Email-Recipients: <envelope RCPT TO addresses>,
-                                    body: raw MIME message)
+                                   (body: Stalwart's MTA Hook JSON -- envelope.to/from,
+                                    message.headers, message.contents; NOT a raw MIME stream)
                                                         |
                                                         v
                               that namespace's `jonline` backend parses it, stores the raw
@@ -68,16 +68,17 @@ make deploy_email_get_ip
 
 Unlike `deploys/ingress`'s `add_ingress_domain`, this isn't a `kubectl apply` of generated YAML -- Stalwart keeps its accepted-domains list and MTA Hook definitions in its own database. `add_email_domain`/`remove_email_domain`/`list_email_domains` script that database through Stalwart's REST Management API (its JMAP-based `x:Domain`/`x:MtaHook` extension objects; see [stalw.art/docs/api/management](https://stalw.art/docs/api/management/overview/)) instead of walking the admin UI by hand.
 
-**`make deploy_email_admin_port_forward` must already be running in another terminal for any of `add_email_domain`/`remove_email_domain`/`list_email_domains` to work** -- Stalwart's Management API is `ClusterIP`-only (same as the admin UI), so without the port-forward these will just hang or fail to connect to `localhost:8080`:
+`add_email_domain`/`remove_email_domain`/`list_email_domains` need Stalwart's Management API reachable at `localhost:8080`, which is `ClusterIP`-only (same as the admin UI) -- but you don't need to set that up yourself: each target checks the port first and, if nothing's there, starts `deploy_email_admin_port_forward` in the background for the duration of the call and stops it again afterward (only if it started it -- an existing port-forward from another terminal is left running). Run `make deploy_email_admin_stop_port_forwarding` if you ever need to kill a stray one by hand.
 
 ```bash
-make deploy_email_admin_port_forward &   # leave this running
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com make add_email_domain
 ```
 
-This adds `my.domain.example.com` as an accepted domain and a `data`-stage MTA Hook scoped to it (via an `enable` expression matching `rcpt_domain`), pointed at that namespace's `jonline` Service. **This has been checked against Stalwart's documented API shape but not exercised against a live instance** -- verify the domain actually shows up (`make list_email_domains`, or the admin UI) before pointing real DNS at it, and if it starts failing, recheck the Makefile's `add_email_domain`/`remove_email_domain` targets against your running version -- Stalwart's API evolves between releases and what's encoded there might be stale by the time you read this.
+This adds `my.domain.example.com` as an accepted domain and a `data`-stage MTA Hook scoped to it (via an `enable` expression matching `rcpt_domain`), pointed at that namespace's `jonline` Service. This has been exercised end-to-end against a live instance (`swaks` -> Stalwart -> the hook -> a stored `Message`) -- but Stalwart's Management API can still evolve between releases, so if `add_email_domain`/`remove_email_domain` start failing, recheck them against your running version. `create` calls are not idempotent (Stalwart has no "get or create" for `x:Domain`/`x:MtaHook`) -- re-running `add_email_domain` for a domain that already exists will either `notCreated`/`primaryKeyViolation` on the `Domain` (harmless) or pile up a duplicate `MtaHook` pointed at the same URL (harmless but untidy; both fire per message). Verify with `make list_email_domains` before pointing real DNS at a new domain.
 
-The `X-Jonline-Email-Recipients` header the hook should send is the SMTP envelope's `RCPT TO` addresses, comma-separated -- this is deliberately the envelope, not the message's `To`/`Cc` headers, since that's the only place Bcc'd recipients show up at all (see `backend/src/web/email.rs`'s doc comment).
+Stalwart's `data`-stage MTA Hook is a JSON POST, not a raw MIME stream with a custom header -- see `backend/src/web/email.rs`'s doc comment and <https://stalw.art/docs/mta/filter/mtahooks/> for the exact shape. Recipients come from the JSON body's `envelope.to` addresses (deliberately the SMTP envelope, not the message's `To`/`Cc` headers, since that's the only place Bcc'd recipients show up at all); there is no `httpHeaders` configuration needed on the `MtaHook` object for this to work.
+
+If mail gets a `550 5.1.2 Relay not allowed` even though the domain shows up in `list_email_domains` with `allowRelaying: true`, Stalwart may have cached a negative "no such domain" lookup from before the domain existed -- `make deploy_email_restart` flushes it.
 
 ### DNS
 

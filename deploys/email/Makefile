@@ -50,6 +50,12 @@ deploy_email_monitor_rollout:
 deploy_email_admin_port_forward:
 	kubectl port-forward service/stalwart-admin -n jonline-email 8080:8080
 
+# Dev ergonomics counterpart to the above -- kills any matching port-forward, whether it was
+# started by hand or by add_email_domain's self-managed background one below. No-ops cleanly if
+# nothing's running.
+deploy_email_admin_stop_port_forwarding:
+	@pkill -f "$(stalwart_port_forward_pattern)" 2>/dev/null && echo "Stopped." || echo "No matching port-forward was running."
+
 # add_email_domain / remove_email_domain / list_email_domains: unlike ../ingress's
 # add_ingress_domain, these are NOT `kubectl apply` of generated YAML -- Stalwart keeps accepted
 # domains and MTA hook definitions in its own database, so instead these script Stalwart's HTTP
@@ -63,27 +69,94 @@ deploy_email_admin_port_forward:
 # recheck this against your Stalwart version if it starts failing; see ../README.md's original
 # note on this API's syntax evolving between releases).
 #
-# Requires `make deploy_email_admin_port_forward` running in another terminal (Stalwart's admin
-# API is ClusterIP-only, per k8s/stalwart.yaml).
+# Requires Stalwart's admin API reachable at localhost:8080 (it's ClusterIP-only, per
+# k8s/stalwart.yaml -- never a LoadBalancer). All three targets below handle this themselves: each
+# checks the port first and, if nothing's there, starts `deploy_email_admin_port_forward` in the
+# background just for the duration of the call and stops it again afterward (only if it started
+# it -- an existing port-forward from another terminal is left running).
 STALWART_ADMIN_URL ?= http://localhost:8080/jmap
 stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n jonline-email -o jsonpath='{.data.credentials}' | base64 -d)
+stalwart_port_forward_pattern = port-forward service/stalwart-admin -n jonline-email
 
 add_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
-	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain, allowRelaying: true}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: {data: true}, httpAuth: {"@type": "Unauthenticated"}, enable: {match: {"0": {"if": $$expr, then: "true"}}, "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
+	@started_pf=0; \
+	if ! curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then \
+	  echo "localhost:8080 unreachable -- starting 'make deploy_email_admin_port_forward' in the background (will stop it when done)..."; \
+	  $(MAKE) --no-print-directory deploy_email_admin_port_forward >/tmp/stalwart-admin-port-forward.log 2>&1 & \
+	  started_pf=1; \
+	  up=0; \
+	  for i in $$(seq 1 20); do \
+	    if curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then up=1; break; fi; \
+	    sleep 0.5; \
+	  done; \
+	  if [ $$up -eq 0 ]; then \
+	    echo "Timed out waiting for the port-forward to come up -- see /tmp/stalwart-admin-port-forward.log"; \
+	    $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	    exit 1; \
+	  fi; \
+	fi; \
+	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain, allowRelaying: true}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: {data: true}, httpAuth: {"@type": "Unauthenticated"}, enable: {match: {"0": {"if": $$expr, then: "true"}}, "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
+	if [ $$started_pf -eq 1 ]; then \
+	  $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	fi
 	@echo "If that succeeded (check for \"notCreated\" errors above), point '$(DOMAIN)'s MX record at"
 	@echo "this cluster's mail IP (make deploy_email_get_ip); see ../README.md's DNS table for SPF/DMARC."
 
 remove_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make remove_email_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make remove_email_domain" && exit 1)
-	@resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
+	@started_pf=0; \
+	if ! curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then \
+	  echo "localhost:8080 unreachable -- starting 'make deploy_email_admin_port_forward' in the background (will stop it when done)..."; \
+	  $(MAKE) --no-print-directory deploy_email_admin_port_forward >/tmp/stalwart-admin-port-forward.log 2>&1 & \
+	  started_pf=1; \
+	  up=0; \
+	  for i in $$(seq 1 20); do \
+	    if curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then up=1; break; fi; \
+	    sleep 0.5; \
+	  done; \
+	  if [ $$up -eq 0 ]; then \
+	    echo "Timed out waiting for the port-forward to come up -- see /tmp/stalwart-admin-port-forward.log"; \
+	    $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	    exit 1; \
+	  fi; \
+	fi; \
+	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
 	did="$$(echo "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id')"; \
 	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
 	hid="$$(echo "$$resp" | jq -r --arg u "$$hurl" '.methodResponses[1][1].list[] | select(.url==$$u) | .id')"; \
-	test -n "$$did" || (echo "No domain named '$(DOMAIN)' found via the API." && exit 1); \
-	jq -n --arg did "$$did" --arg hid "$$hid" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {destroy: [$$did]}, "c1"], ["x:MtaHook/set", {destroy: (if $$hid == "" then [] else [$$hid] end)}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .
+	rc=0; \
+	if [ -z "$$did" ]; then \
+	  echo "No domain named '$(DOMAIN)' found via the API."; \
+	  rc=1; \
+	else \
+	  jq -n --arg did "$$did" --arg hid "$$hid" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {destroy: [$$did]}, "c1"], ["x:MtaHook/set", {destroy: (if $$hid == "" then [] else [$$hid] end)}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
+	fi; \
+	if [ $$started_pf -eq 1 ]; then \
+	  $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	fi; \
+	exit $$rc
 
 list_email_domains:
-	@jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq -r '.methodResponses[0][1].list[] | .name'
+	@started_pf=0; \
+	if ! curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then \
+	  echo "localhost:8080 unreachable -- starting 'make deploy_email_admin_port_forward' in the background (will stop it when done)..."; \
+	  $(MAKE) --no-print-directory deploy_email_admin_port_forward >/tmp/stalwart-admin-port-forward.log 2>&1 & \
+	  started_pf=1; \
+	  up=0; \
+	  for i in $$(seq 1 20); do \
+	    if curl -s -o /dev/null http://localhost:8080/ 2>/dev/null; then up=1; break; fi; \
+	    sleep 0.5; \
+	  done; \
+	  if [ $$up -eq 0 ]; then \
+	    echo "Timed out waiting for the port-forward to come up -- see /tmp/stalwart-admin-port-forward.log"; \
+	    $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	    exit 1; \
+	  fi; \
+	fi; \
+	jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq -r '.methodResponses[0][1].list[] | .name'; \
+	if [ $$started_pf -eq 1 ]; then \
+	  $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
+	fi

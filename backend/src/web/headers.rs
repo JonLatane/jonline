@@ -71,19 +71,3 @@ impl<'r> FromRequest<'r> for MediaDescriptionHeader<'r> {
         }
     }
 }
-
-/// The SMTP envelope's `RCPT TO` addresses (comma-separated) for a message delivered via
-/// `POST /email` -- see `web::email`.
-pub struct RecipientsHeader<'a>(pub &'a str);
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for RecipientsHeader<'r> {
-    type Error = ();
-
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match req.headers().get_one("X-Jonline-Email-Recipients") {
-            Some(h) => Outcome::Success(RecipientsHeader(h)),
-            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
-        }
-    }
-}
