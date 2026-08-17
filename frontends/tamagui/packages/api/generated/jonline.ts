@@ -33,7 +33,14 @@ import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse, Media } from "./media";
-import { GetMessagesRequest, GetMessagesResponse, Message, SendMessageRequest } from "./messages";
+import {
+  GetMessagesRequest,
+  GetMessagesResponse,
+  MarkMessagesReadRequest,
+  MarkMessagesReadResponse,
+  Message,
+  SendMessageRequest,
+} from "./messages";
 import {
   GetGroupPostsRequest,
   GetGroupPostsResponse,
@@ -588,6 +595,22 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
+     * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
+     * `GetMessages` already requires for each Message -- no separate permission. Atomic: if the
+     * caller lacks access to *any* of `message_ids`, none of them are marked (matching
+     * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
+     * partially-applied batch.
+     */
+    markMessagesRead: {
+      name: "MarkMessagesRead",
+      requestType: MarkMessagesReadRequest,
+      requestStream: false,
+      responseType: MarkMessagesReadResponse,
+      responseStream: false,
+      options: {},
+    },
     /** Follow (or request to follow) a user. *Authenticated.* */
     createFollow: {
       name: "CreateFollow",
@@ -1082,6 +1105,18 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: GetMessagesRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<GetMessagesResponse>>;
+  /**
+   * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
+   * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
+   * `GetMessages` already requires for each Message -- no separate permission. Atomic: if the
+   * caller lacks access to *any* of `message_ids`, none of them are marked (matching
+   * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
+   * partially-applied batch.
+   */
+  markMessagesRead(
+    request: MarkMessagesReadRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<MarkMessagesReadResponse>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -1322,6 +1357,18 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<GetMessagesRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<GetMessagesResponse>;
+  /**
+   * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
+   * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
+   * `GetMessages` already requires for each Message -- no separate permission. Atomic: if the
+   * caller lacks access to *any* of `message_ids`, none of them are marked (matching
+   * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
+   * partially-applied batch.
+   */
+  markMessagesRead(
+    request: DeepPartial<MarkMessagesReadRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<MarkMessagesReadResponse>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */

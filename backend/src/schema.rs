@@ -202,6 +202,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    message_reads (message_id, user_id) {
+        message_id -> Int8,
+        user_id -> Int8,
+        read_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::RecipientType;
 
@@ -402,6 +410,8 @@ diesel::joinable!(group_posts -> users (user_id));
 diesel::joinable!(groups -> media (avatar_media_id));
 diesel::joinable!(memberships -> groups (group_id));
 diesel::joinable!(memberships -> users (user_id));
+diesel::joinable!(message_reads -> messages (message_id));
+diesel::joinable!(message_reads -> users (user_id));
 diesel::joinable!(message_recipients -> messages (message_id));
 diesel::joinable!(message_recipients -> users (user_id));
 diesel::joinable!(messages -> messaging_groups (messaging_group_id));
@@ -432,6 +442,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     groups,
     media,
     memberships,
+    message_reads,
     message_recipients,
     messages,
     messaging_groups,

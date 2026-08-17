@@ -1,0 +1,399 @@
+/* /messages (Pages/Messages.elm) and the embedded Messaging nav panel
+   (Shared/MessagingPanel.elm) -- see Components/Pages/MessagesPage.elm.
+   `.posts-empty`/`.filter-controls-row`/`.filter-search-*` (posts.css,
+   ui/filter_bar.css) and `.flip-animated-column`/`.flip-animated-item`
+   (ui/flip.css) are reused as-is, not redefined here. */
+
+/* Breaks `.messages-page` out of `UI.layout`'s usual 800px-capped
+   `.container` (main.css) to use the full page width instead -- mirrors
+   `Components.Pages.EventsPage`'s `.events-grid`/`.events-strip`/
+   `.events-calendar` (events.css), the only other place in this codebase
+   doing this; see that rule's own doc comment for the full derivation of
+   this exact `calc()`. Relies on `.container` no longer clipping
+   descendants that intentionally render wider than it (see main.css's own
+   `overflow-x: hidden` note on `body`). */
+.messages-page {
+  margin-left: calc(min(0px, -49vw + 400px));
+  margin-right: calc(min(0px, -49vw + 400px));
+}
+
+/* ...except embedded in the Messaging nav panel (messaging_panel.css) --
+   a narrow, absolutely-positioned dropdown, not a `.container` descendant
+   at all, so there's no 800px cap to break out of there; the viewport-wide
+   negative margins above would just push this panel's own content out past
+   its own bounds. Undoes the breakout back to normal margins for that one
+   embedding context. */
+.messaging-panel .messages-page {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.messages-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Color comes from the `background-color-primary` utility class
+   (`Pages.Messages.sendMessageButton`, see `UI/EmittedStylesheet.elm`) --
+   same convention as `.create-new-panel-save`/`.markdown-panel-save`. */
+.messages-send-button {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.messages-group-list {
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0;
+  gap: 0.4rem;
+}
+
+.messages-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-group-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.messages-group-row.selected {
+  background: var(--chip-bg);
+  border-color: var(--fg);
+}
+
+.messages-group-expand-toggle {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* A group card's own body (everything but `.messages-group-expand-toggle`,
+   its one sibling within `.messages-group-row`) -- stacked, not a row,
+   *specifically* so `.messages-participants` can claim the card's full
+   width to wrap into (see that rule's own doc) with
+   `.messages-group-time` below it, rather than the two competing
+   side by side for width the way they used to. */
+.messages-group-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* One group card's (or the two-pane detail view's own top) participant
+   list -- mirrors `Components.Pages.UserProfilePage`'s "Federated Profiles"
+   `.profile-federated` container: wraps onto as many lines as it needs
+   rather than truncating, so *every* participant stays visible (see
+   `Components.Pages.MessagesPage.participantsView`'s own doc for why this
+   replaced the old subject/snippet preview). Spans `.messages-group-row-body`'s
+   full width (its parent) to wrap, rather than sharing a row with
+   `.messages-group-time` (now stacked below it instead, see that rule's own
+   doc). */
+.messages-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  width: 100%;
+}
+
+.messages-participant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem 0.1rem 0.1rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+}
+
+.messages-participant-avatar {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.messages-participant-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
+.messages-group-time {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* `MessagesPage.unreadBadgeView` -- a group card's own unread-message count.
+   Colors come from the `background-color-nav`/`border-color-primary-text`
+   utility classes (see `UI.EmittedStylesheet`'s doc comment); sized to match
+   `UI.starredPostsToggle`'s own (absolutely-positioned) `.starred-count-badge`,
+   just inline in the row's own flow here instead of pinned to a corner.
+   `align-self: flex-start` -- without it, `.messages-group-row-body`'s own
+   `display: flex; flex-direction: column` (no `align-items` override there,
+   since `.messages-participants` needs the *default* stretch to get its own
+   full width to wrap into) stretches this badge to that same full width too,
+   turning its `border-radius: 999px` pill into one enormous rounded bar
+   instead of a small badge. */
+.messages-unread-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.messages-thread-status {
+  color: var(--muted);
+  padding: 0.6rem 0.8rem;
+}
+
+.messages-thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.5rem 1.6rem;
+}
+
+.message-row {
+  display: block;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* `MessagesPage.MessageInteraction.SelectGroup` -- a sidebar inline-expand
+   row (real page only), not a real `<a>` (unlike `ExternalLink`, which
+   already gets a pointer cursor for free) -- see that type's own doc. */
+.message-row-clickable {
+  cursor: pointer;
+}
+
+.message-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.message-row-avatar {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.message-row-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
+.message-row-sender {
+  font-weight: 600;
+}
+
+/* `Components.Messages.isUnread` -- see `MessagesPage.messageRowView`'s own
+   doc. `.message-row-unread` bolds the whole row (mirrors most email
+   clients' own unread styling); `.message-row-unread-dot` is the small
+   brand-colored marker in its header, colored via `background-color-nav`
+   (see `UI.EmittedStylesheet`'s doc comment). */
+.message-row-unread {
+  font-weight: 600;
+}
+
+.message-row-unread .message-row-body {
+  font-weight: 400;
+}
+
+.message-row-unread-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* `MessagesPage.markUnreadButtonView` -- plain text-button styling, right
+   below `.message-row-body`, so it reads as a small in-place action rather
+   than competing with the header's own controls. */
+.message-row-mark-unread {
+  display: block;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.message-row-time {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.message-row-subject {
+  margin: 0.3rem 0 0;
+  font-weight: 600;
+}
+
+.message-row-body {
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+}
+
+.messages-two-pane {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.messages-sidebar {
+  flex: 0 0 320px;
+  max-width: 320px;
+}
+
+.messages-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.messages-thread {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+
+/* Wraps `.messages-participants` and the "Reply" button
+   (`MessagesPage.selectedGroupView`/`replyButtonView`) together as the
+   two-pane detail pane's own top header, replacing the old subject heading
+   -- see `participantsView`'s own doc. */
+.messages-thread-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.messages-reply-button {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Hidden above the mobile breakpoint below -- `.messages-sidebar` is always
+   visible there, nothing to toggle. */
+.messages-mobile-sidebar-toggle {
+  display: none;
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Phone-width screens (see this codebase's standard breakpoint, e.g.
+   markdown_panel.css) -- there's no room for `.messages-sidebar` and
+   `.messages-detail` side by side, so the sidebar becomes a fixed-position
+   overlay instead, toggled by `.messages-mobile-sidebar-toggle`
+   (`ToggleMobileSidebar`) rather than shown outright. Sits above plain page
+   content but -- like every other nav-adjacent panel -- below the
+   `.navbar`/panel stack (see nav.css's z-index scheme); `24` matches the
+   Messaging nav panel's own tier (messaging_panel.css), which this is
+   conceptually a page-level cousin of. */
+@media (max-width: 639px) {
+  .messages-mobile-sidebar-toggle {
+    display: block;
+    /* Above `.messages-sidebar`'s own z-index (24) -- otherwise, once open,
+       the overlay (covering the full width/height below `.navbar`, which
+       includes this button's own normal-flow position in the search row)
+       would bury the one control that closes it again. */
+    position: relative;
+    z-index: 25;
+  }
+
+  .messages-sidebar {
+    position: fixed;
+    /* `.navbar`'s own rendered height (measured: 69px -- its `nav-links`
+       row plus `.navbar-inner` padding; no fixed CSS variable captures this
+       total the way `--nav-toggle-height` does for just the toggle button
+       alone, since every other panel positions itself *relative to*
+       `.navbar` instead of needing this figure directly). Without this, the
+       overlay's own top content renders from the literal viewport top and
+       sits hidden under the opaque navbar instead of starting where it
+       visibly ends. */
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 24;
+    max-width: none;
+    background: var(--bg);
+    padding: 0.8rem;
+    overflow-y: auto;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .messages-sidebar.is-closed {
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+  }
+}

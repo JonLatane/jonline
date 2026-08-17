@@ -25,6 +25,7 @@ import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -107,6 +108,11 @@ headerNav shared currentRoute =
 
                        else
                         starredPostsToggle shared
+                     , if MessagingPanel.hasEligibleAccount shared.accounts then
+                        messagingToggle shared
+
+                       else
+                        text ""
                      , if CreateNewPanel.hasEligibleAccount shared.accounts then
                         newPostToggle shared
 
@@ -137,6 +143,16 @@ headerNav shared currentRoute =
           else
             div [ stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True )) ]
                 [ starredPanel shared currentRoute ]
+
+        -- Mirrors `starredPanel`'s own mount just above -- a `.navbar`
+        -- direct child (not `messagingToggle`'s own narrow wrapper) for the
+        -- same "hug the actual screen edge" reason.
+        , if MessagingPanel.hasEligibleAccount shared.accounts then
+            div [ stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True )) ]
+                [ messagingPanel shared ]
+
+          else
+            text ""
 
         -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
         -- -- see `breadcrumbsBar`.
@@ -248,6 +264,14 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.panels.starredPanel.showStarredPanel
               , closeMsg = Shared.StarredPanelMsg StarredPanel.ToggleStarredPanel
+              , blurs = False
+              }
+
+            -- Same non-blocking browsing reasoning as the Starred panel just
+            -- above -- slotted right next to it since both are equally
+            -- "peripheral" nav dropdowns.
+            , { isOpen = MessagingPanel.isOpen shared.panels.messagingPanel
+              , closeMsg = Shared.MessagingPanelMsg MessagingPanel.ToggleOpen
               , blurs = False
               }
             , { isOpen = shared.accounts.showAccountsPanel
@@ -981,8 +1005,9 @@ accountsAndServersTab shared currentRoute =
 
 
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
-into other hosts with username/password" (see `addAccountForm`), and "Show
-all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`)
+into other hosts with username/password" (see `addAccountForm`), "Show
+all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`), and
+"Show Posts linked to Custom Tabs" (see `Components.Pages.PostsPage.customNavPostIds`)
 toggles -- only shown (via `debugCount`) while an admin account is signed
 in.
 -}
@@ -1000,6 +1025,10 @@ debugTab shared =
         , label [ class "admin-switch-row" ]
             [ switchInput shared.accounts.debugTab.showAllEventLayouts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleShowAllEventLayouts))
             , span [] [ text "Show all event layouts" ]
+            ]
+        , label [ class "admin-switch-row" ]
+            [ switchInput shared.accounts.debugTab.showCustomNavPosts False (Shared.AccountsPanelMsg (AccountsPanel.DebugTabMsg DebugTab.ToggleShowCustomNavPosts))
+            , span [] [ text "Show Posts linked to Custom Tabs" ]
             ]
         ]
 
@@ -2223,7 +2252,7 @@ deleteConfirmationModal shared =
 
         Just confirmation ->
             let
-                ( heading, message ) =
+                ( heading, message, deleteButtonText ) =
                     case confirmation of
                         Shared.ConfirmAccountDelete account ->
                             ( "Remove Account?"
@@ -2232,21 +2261,25 @@ deleteConfirmationModal shared =
                                 ++ " ("
                                 ++ account.server
                                 ++ ")? You'll need to log in again to use it."
+                            , "Delete"
                             )
 
                         Shared.ConfirmServerDelete server ->
                             ( "Remove Server?"
                             , "Remove " ++ server.frontendHost ++ " from your server list?"
+                            , "Delete"
                             )
 
                         Shared.ConfirmMediaDelete media ->
                             ( "Delete Media?"
                             , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
+                            , "Delete"
                             )
 
                         Shared.ConfirmMarkdownEditingDataLost ->
                             ( "Delete Markdown Edits?"
                             , "Discard your unsaved changes? This can't be undone."
+                            , "Delete Changes"
                             )
 
                         Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
@@ -2274,11 +2307,13 @@ deleteConfirmationModal shared =
                                     ++ "? This will leave the "
                                     ++ EventSyncSources.syncedCountsLabel source
                                     ++ " it synced on your profile, no longer associated with a source."
+                            , "Delete"
                             )
 
                         Shared.ConfirmPostDelete post _ ->
                             ( "Delete Post?"
                             , "Delete \"" ++ Posts.postTitleText post ++ "\"? This can't be undone."
+                            , "Delete"
                             )
 
                         Shared.ConfirmEventDelete event _ ->
@@ -2286,6 +2321,7 @@ deleteConfirmationModal shared =
                             , "Delete \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\"? This can't be undone."
+                            , "Delete"
                             )
 
                         Shared.ConfirmUserDelete user _ ->
@@ -2293,6 +2329,7 @@ deleteConfirmationModal shared =
                             , "Delete "
                                 ++ Users.titleName user
                                 ++ "'s account? This can't be undone."
+                            , "Delete"
                             )
 
                         Shared.ConfirmEventInstanceSyncDestinationDelete _ _ destinationLabel _ ->
@@ -2300,6 +2337,7 @@ deleteConfirmationModal shared =
                             , "Stop syncing this event to "
                                 ++ destinationLabel
                                 ++ "? This won't delete the post already made there."
+                            , "Delete"
                             )
             in
             UI.Modal.view
@@ -2310,7 +2348,7 @@ deleteConfirmationModal shared =
                 , body = [ p [ class "confirm-delete-message" ] [ text message ] ]
                 , buttons =
                     [ button [ onClick Shared.CancelDelete ] [ text "Cancel" ]
-                    , button [ onClick Shared.ConfirmDelete, class "confirm-delete-button" ] [ text "Delete" ]
+                    , button [ onClick Shared.ConfirmDelete, class "confirm-delete-button" ] [ text deleteButtonText ]
                     ]
                 }
 
@@ -2480,6 +2518,62 @@ currentStarredEventInstanceKey shared currentRoute =
 
         _ ->
             Nothing
+
+
+{-| Only shown at all once `MessagingPanel.hasEligibleAccount` (a signed-in
+account with `READ_PERSONAL_MESSAGES`/`READ_ALL_SYSTEM_MESSAGES`/`ADMIN`) --
+mirrors `starredPostsToggle`'s own "only show once there's something behind
+it" gating and `.starred-menu`/separately-mounted-panel structure (see
+`messagingPanel`, mounted as a `.navbar` direct child in `headerNav`, same
+reasoning as `starredPanel`). The unread badge (`MessagingPanel.totalUnreadCount`,
+styled exactly like `starredPostsToggle`'s own `.starred-count-badge`) is
+hidden at `0` rather than shown as a literal "0" -- unlike Starred's count,
+which is always known from boot (`starredPostIds` persists locally), this one
+only reflects whatever's actually been fetched so far (see that function's
+own doc caveat), so a `0` here is ambiguous between "genuinely caught up" and
+"haven't checked yet" -- hiding it in both cases reads better than a
+misleadingly confident zero.
+-}
+messagingToggle : Shared.Model -> Html Shared.Msg
+messagingToggle shared =
+    let
+        unreadCount : Int
+        unreadCount =
+            MessagingPanel.totalUnreadCount shared.panels.messagingPanel
+    in
+    div [ class "messaging-menu" ]
+        [ button
+            [ classes [ "nav-menu-toggle", "circular", openClosedClass (MessagingPanel.isOpen shared.panels.messagingPanel) ]
+            , stopPropagationOn "click" (Decode.succeed ( Shared.MessagingPanelMsg MessagingPanel.ToggleOpen, True ))
+            , title "Messages"
+            ]
+            [ text "✉️"
+            , if unreadCount <= 0 then
+                text ""
+
+              else
+                span
+                    [ classes
+                        [ "starred-count-badge"
+                        , hostnameToCSSClass shared.accounts.mainFrontendHost
+                        , "background-color-nav"
+                        , "border-color-primary-text"
+                        ]
+                    ]
+                    [ text (String.fromInt unreadCount) ]
+            ]
+        ]
+
+
+{-| The Messaging panel's content -- see `messagingToggle` for why this is
+separate from (and rendered outside) the toggle button. `MessagesPage.view`
+returns `Html MessagesPage.Msg`, doubly-mapped here through
+`Shared.MessagingPanel.Msg` (which can't itself import `Shared`, same
+cycle-avoidance reasoning as `Shared.StarredPanel`) into `Shared.Msg`.
+-}
+messagingPanel : Shared.Model -> Html Shared.Msg
+messagingPanel shared =
+    Html.map Shared.MessagingPanelMsg (MessagingPanel.view shared.time.browserTimeZone shared.accounts shared.panels.messagingPanel)
 
 
 {-| A collapsible panel, one per admin-capable signed-in account, for setting

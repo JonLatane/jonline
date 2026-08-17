@@ -47,8 +47,48 @@ message Message {
   // If this message derived from an email, the original email's "bcc" address.
   optional string bcc = 10;
 
+  // Whether/when *this response's viewer* has read the message -- unset means unread. Always
+  // reflects the currently-authenticated caller's own read status (via `MarkMessagesRead`), even
+  // when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it's a personal "have I seen
+  // this" marker, not tied to whichever user this response happens to be showing `messaging_group`
+  // for.
+  optional MessageRead current_user_read = 19;
   // The time the message was created.
   google.protobuf.Timestamp created_at = 20;
+
+}
+
+// Records that a user has read a particular Message -- one row (conceptually; see the composite
+// `message_id`/`user_id` key on the backing table) per (Message, user) that's ever been marked
+// read. Only ever surfaced back to the user it belongs to, as `Message.current_user_read` -- there's
+// no RPC to see *other* users' read status on a Message.
+message MessageRead {
+  string message_id = 1;
+  string user_id = 2;
+  // When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead`
+  // -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
+  // a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
+  google.protobuf.Timestamp read_at = 20;
+}
+
+// Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
+// thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
+// no anonymous variant the way `SendMessage` has one.
+message MarkMessagesReadRequest {
+  // If `false` (the default), the request is to mark the messages as read. If `true`, marks them
+  // (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.
+  bool unread = 1;
+  // The Messages to mark read/unread. The caller must have the same access to each of them
+  // `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
+  // -- see `MarkMessagesRead`'s own RPC doc comment. A message id the caller doesn't have access to
+  // fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
+  repeated string message_ids = 2;
+}
+
+// Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+// same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
+message MarkMessagesReadResponse {
+  repeated MessageRead message_reads = 1;
 }
 
 // Request to create a new message.

@@ -7,11 +7,14 @@ does, see `UI.elm`'s `serverChip`), `allowUsernamePasswordForOtherHosts` (which 
 Account form's Username/Password/Login/Create Account controls show for any server, not
 just `AccountsPanel.isMainServer` ones -- see `UI.elm`'s `addAccountForm` -- though it
 never enables `signInFromButton`'s cross-server SSO hand-off for `browsingHost`/
-`mainFrontendHost` themselves), and `showAllEventLayouts` (which un-hides
+`mainFrontendHost` themselves), `showAllEventLayouts` (which un-hides
 `Components.Pages.EventsPage`'s List/Grid/Row mode buttons everywhere -- see that
-module's `modeButtonsView` for the default, flag-off visibility rules it overrides).
+module's `modeButtonsView` for the default, flag-off visibility rules it overrides), and
+`showCustomNavPosts` (which stops `Components.Pages.PostsPage` from hiding posts that are
+already featured via some server's own custom nav tab -- see that module's
+`customNavPostIds`).
 
-All three are session-only, like the rest of the Accounts Panel's Debug/Admin state --
+All four are session-only, like the rest of the Accounts Panel's Debug/Admin state --
 none of them are persisted, so they're back off after a page refresh (the Debug tab doc
 in `UI.elm` notes this too).
 
@@ -22,6 +25,7 @@ type alias Model =
     { allowMainServerSwitch : Bool
     , allowUsernamePasswordForOtherHosts : Bool
     , showAllEventLayouts : Bool
+    , showCustomNavPosts : Bool
     }
 
 
@@ -29,6 +33,7 @@ type Msg
     = ToggleAllowMainServerSwitch
     | ToggleAllowUsernamePasswordForOtherHosts
     | ToggleShowAllEventLayouts
+    | ToggleShowCustomNavPosts
 
 
 init : Model
@@ -36,6 +41,7 @@ init =
     { allowMainServerSwitch = False
     , allowUsernamePasswordForOtherHosts = False
     , showAllEventLayouts = False
+    , showCustomNavPosts = False
     }
 
 
@@ -50,3 +56,6 @@ update msg model =
 
         ToggleShowAllEventLayouts ->
             { model | showAllEventLayouts = not model.showAllEventLayouts }
+
+        ToggleShowCustomNavPosts ->
+            { model | showCustomNavPosts = not model.showCustomNavPosts }

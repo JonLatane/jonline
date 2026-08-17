@@ -207,6 +207,12 @@ impl Jonline for JonlineService {
     ) -> Result<Response<GetMessagesResponse>, Status> {
         unauthenticated_rpc!(self, rpcs::get_messages, request)
     }
+    async fn mark_messages_read(
+        &self,
+        request: Request<MarkMessagesReadRequest>,
+    ) -> Result<Response<MarkMessagesReadResponse>, Status> {
+        authenticated_rpc!(self, rpcs::mark_messages_read, request)
+    }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
         authenticated_rpc!(self, rpcs::create_follow, request)

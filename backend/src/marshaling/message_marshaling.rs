@@ -6,7 +6,7 @@ use super::{load_media_lookup, MediaLookup, ToProtoAuthor, ToProtoId, ToProtoTim
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
-use crate::schema::users;
+use crate::schema::{message_reads, users};
 
 /// A [`models::Message`] plus everything needed to marshal it for one particular viewer.
 ///
@@ -26,9 +26,16 @@ pub struct MarshalableMessage(
 
 /// Batch-converts messages, loading each referenced [`models::MessagingGroup`]'s member `Author`s
 /// and everyone's avatar `Media` at most once for the whole list -- mirroring
-/// `post_marshaling::convert_posts`.
+/// `post_marshaling::convert_posts`. `current_user_id` is the *actual* authenticated caller
+/// (`get_messages`' own `user.id`, not `MarshalableMessage`'s own `.3` viewer id -- that field is
+/// deliberately `None` for `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` listings, see its own doc comment,
+/// but `current_user_read` should still reflect the admin's own personal read status even then)
+/// used to batch-load this caller's own [`models::MessageRead`] rows for every message in `data`,
+/// at most once for the whole list, same "load it once, look it up per message" shape as
+/// `members`/`lookup` below.
 pub fn convert_messages(
     data: &Vec<MarshalableMessage>,
+    current_user_id: i64,
     conn: &mut PgPooledConnection,
 ) -> Vec<Message> {
     let member_user_ids: Vec<i64> = data
@@ -61,8 +68,32 @@ pub fn convert_messages(
         .collect();
     let lookup = load_media_lookup(media_ids, conn);
 
+    let message_ids: Vec<i64> = data.iter().map(|m| m.0.id).collect();
+    let reads = load_message_read_lookup(message_ids, current_user_id, conn);
+
     data.iter()
-        .map(|message| message.to_proto(&members, lookup.as_ref()))
+        .map(|message| message.to_proto(&members, lookup.as_ref(), &reads))
+        .collect()
+}
+
+/// This caller's own [`models::MessageRead`] rows for `message_ids`, keyed by `message_id` --
+/// unambiguous without also keying by `user_id` since every row here is already filtered down to
+/// `current_user_id`'s own reads.
+fn load_message_read_lookup(
+    message_ids: Vec<i64>,
+    current_user_id: i64,
+    conn: &mut PgPooledConnection,
+) -> HashMap<i64, models::MessageRead> {
+    if message_ids.is_empty() {
+        return HashMap::new();
+    }
+    message_reads::table
+        .filter(message_reads::message_id.eq_any(message_ids))
+        .filter(message_reads::user_id.eq(current_user_id))
+        .load::<models::MessageRead>(conn)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|read| (read.message_id, read))
         .collect()
 }
 
@@ -88,6 +119,7 @@ pub trait ToProtoMarshalableMessage {
         &self,
         members: &HashMap<i64, models::Author>,
         media_lookup: Option<&MediaLookup>,
+        reads: &HashMap<i64, models::MessageRead>,
     ) -> Message;
 }
 
@@ -96,6 +128,7 @@ impl ToProtoMarshalableMessage for MarshalableMessage {
         &self,
         members: &HashMap<i64, models::Author>,
         media_lookup: Option<&MediaLookup>,
+        reads: &HashMap<i64, models::MessageRead>,
     ) -> Message {
         let message = &self.0;
         let sender = &self.1;
@@ -124,7 +157,22 @@ impl ToProtoMarshalableMessage for MarshalableMessage {
             to: (!headers.to.is_empty()).then(|| headers.to.join(", ")),
             cc: (!headers.cc.is_empty()).then(|| headers.cc.join(", ")),
             bcc: (!headers.bcc.is_empty()).then(|| headers.bcc.join(", ")),
+            current_user_read: reads.get(&message.id).map(|read| read.to_proto()),
             created_at: Some(message.created_at.to_proto()),
+        }
+    }
+}
+
+pub trait ToProtoMessageRead {
+    fn to_proto(&self) -> MessageRead;
+}
+
+impl ToProtoMessageRead for models::MessageRead {
+    fn to_proto(&self) -> MessageRead {
+        MessageRead {
+            message_id: self.message_id.to_proto_id(),
+            user_id: self.user_id.to_proto_id(),
+            read_at: Some(self.read_at.to_proto()),
         }
     }
 }

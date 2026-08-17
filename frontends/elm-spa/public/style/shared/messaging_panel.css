@@ -1,0 +1,25 @@
+/* Wraps just the Messaging toggle button (`UI.elm`'s `messagingToggle`) --
+   same bare positioning wrapper as `.starred-menu` (starred_panel.css). */
+.messaging-menu {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Positioned identically to `.starred-panel` (see that rule's own doc for
+   the full `left`/`top` derivation) -- safe to reuse verbatim since
+   `Shared.elm` keeps the two mutually exclusive (opening either closes the
+   other outright, same as it does for the Accounts Panel on narrow
+   screens), so they never need to coexist on screen at two different
+   positions. */
+.messaging-panel,
+.nav-panel.messaging-panel {
+  z-index: 24;
+  --panel-width: 420px;
+  width: var(--panel-width);
+  max-width: calc(100vw - 2rem);
+  right: auto;
+  left: calc(max(0px, (100vw - 800px) / 2) + max(2px, 188px - var(--panel-width)));
+  top: calc(12px + var(--nav-toggle-height) - 1px);
+  padding: 0.6rem 0.8rem;
+}
