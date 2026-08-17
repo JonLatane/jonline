@@ -22,6 +22,25 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
                     "custom_tab_paths_must_be_distinct",
                 ));
             }
+
+            // "events", "posts", "people", and "about" are reserved as top-level paths (see
+            // `RESERVED_PATHS`/`CUSTOM_TAB_RESERVED_PATHS`), but still permitted as custom tab
+            // paths since they're the predefined tabs' own paths. Make sure they're only ever
+            // used to point to their matching `NavigationTab`, not remapped to a different tab
+            // or a Post.
+            let required_tab = match tab.path.as_str() {
+                "events" => Some((NavigationTab::EventsTab, "events_path_must_point_to_events_tab")),
+                "posts" => Some((NavigationTab::PostsTab, "posts_path_must_point_to_posts_tab")),
+                "people" => Some((NavigationTab::PeopleTab, "people_path_must_point_to_people_tab")),
+                "about" => Some((NavigationTab::AboutTab, "about_path_must_point_to_about_tab")),
+                _ => None,
+            };
+            if let Some((required_tab, error_message)) = required_tab {
+                let target = tab.custom_tab.as_ref().and_then(|ct| ct.target.as_ref());
+                if target != Some(&custom_navigation_tab::Target::Tab(required_tab as i32)) {
+                    return Err(Status::new(Code::InvalidArgument, error_message));
+                }
+            }
         }
     }
 
