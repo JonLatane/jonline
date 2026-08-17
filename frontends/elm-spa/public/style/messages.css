@@ -351,49 +351,72 @@
 
 /* Phone-width screens (see this codebase's standard breakpoint, e.g.
    markdown_panel.css) -- there's no room for `.messages-sidebar` and
-   `.messages-detail` side by side, so the sidebar becomes a fixed-position
-   overlay instead, toggled by `.messages-mobile-sidebar-toggle`
-   (`ToggleMobileSidebar`) rather than shown outright. Sits above plain page
-   content but -- like every other nav-adjacent panel -- below the
-   `.navbar`/panel stack (see nav.css's z-index scheme); `24` matches the
-   Messaging nav panel's own tier (messaging_panel.css), which this is
-   conceptually a page-level cousin of. */
+   `.messages-detail` side by side, so the sidebar becomes a drawer overlay
+   instead, toggled by `.messages-mobile-sidebar-toggle` (`ToggleMobileSidebar`)
+   rather than shown outright. `.messages-two-pane` (not the viewport) is the
+   drawer's own positioning context -- it's `.filter-controls-row`'s (the
+   search field and `.messages-mobile-sidebar-toggle` itself) very next
+   sibling in `.messages-page`, so anchoring to it, rather than
+   `position: fixed` off a measured navbar-height pixel offset, makes the
+   drawer start right where `.messages-two-pane` itself does and never
+   physically reach up into the search row above -- no z-index bump needed
+   on `.messages-mobile-sidebar-toggle` to keep it clickable through it,
+   unlike a previous version of this rule that covered the whole viewport
+   below `.navbar` (search box included) and relied on exactly that bump.
+
+   Only `transform` (a slide from the left, `translateX`) animates
+   open/closed -- deliberately not `opacity` (an earlier version of this
+   rule faded/shifted the drawer instead): background/text staying at their
+   normal, fully-opaque colors throughout keeps the drawer solidly readable
+   mid-animation instead of briefly translucent. `width` stays well short of
+   `.messages-two-pane`'s own full width (`inset: 0` on a previous version of
+   this rule) so `.messages-detail` -- the selected conversation -- still
+   peeks out on the right as a visual anchor for what opening the drawer is
+   about to cover, rather than the drawer replacing the whole screen.
+
+   `.messages-sidebar`'s own `z-index` (below) is required, not optional,
+   despite `.messages-detail` being a plain, non-positioned sibling that
+   comes right *after* it in the DOM: `.messages-detail`'s own message cards
+   (`messageThreadView`'s `flip-animated-item`s) each carry an inline
+   `transform` from `elm-style-animation`'s own `Animation.render` (even at
+   rest, that's `scale(1)`, not the literal keyword `none`), which is enough
+   to make each one a stacking context of its own per the CSS spec. Left at
+   `z-index: auto`, that puts `.messages-sidebar` and those transformed cards
+   in the very same "positioned, stack level 0" paint step, ordered by tree
+   position alone -- and since the cards come later in the DOM, they'd paint
+   *over* the drawer instead of the other way around (confirmed by
+   instrumenting a transform-bearing stand-in card in a headless browser: it
+   fully covered the sidebar without this). An explicit, non-auto `z-index`
+   moves the drawer into its own later paint step, above every such card
+   regardless of DOM order. */
 @media (max-width: 639px) {
   .messages-mobile-sidebar-toggle {
     display: block;
-    /* Above `.messages-sidebar`'s own z-index (24) -- otherwise, once open,
-       the overlay (covering the full width/height below `.navbar`, which
-       includes this button's own normal-flow position in the search row)
-       would bury the one control that closes it again. */
+  }
+
+  .messages-two-pane {
     position: relative;
-    z-index: 25;
+    overflow: hidden;
   }
 
   .messages-sidebar {
-    position: fixed;
-    /* `.navbar`'s own rendered height (measured: 69px -- its `nav-links`
-       row plus `.navbar-inner` padding; no fixed CSS variable captures this
-       total the way `--nav-toggle-height` does for just the toggle button
-       alone, since every other panel positions itself *relative to*
-       `.navbar` instead of needing this figure directly). Without this, the
-       overlay's own top content renders from the literal viewport top and
-       sits hidden under the opaque navbar instead of starting where it
-       visibly ends. */
-    top: 70px;
+    position: absolute;
+    top: 0;
     left: 0;
-    right: 0;
     bottom: 0;
-    z-index: 24;
+    width: min(320px, calc(100% - 3rem));
     max-width: none;
-    background: var(--bg);
+    z-index: 1;
+    background-color: var(--bg);
     padding: 0.8rem;
     overflow-y: auto;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
+    transform: translateX(0);
+    transition: transform 0.2s ease;
   }
 
   .messages-sidebar.is-closed {
-    transform: translateY(-8px);
-    opacity: 0;
+    transform: translateX(-100%);
     pointer-events: none;
   }
 }
