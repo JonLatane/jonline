@@ -1,6 +1,8 @@
 use diesel::*;
 use mail_parser::{Addr, Address};
-use rocket::{data::ToByteUnit, http::Status, routes, serde::json::Json, Data, Route, State};
+use rocket::{
+    data::ToByteUnit, http::Status, response::content::RawJson, routes, Data, Route, State,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -77,7 +79,7 @@ struct MtaHookResponse {
 pub async fn create_email_message(
     body: Data<'_>,
     state: &State<RocketState>,
-) -> Result<Json<MtaHookResponse>, Status> {
+) -> Result<RawJson<String>, Status> {
     let capped_body = body
         .open(MAX_EMAIL_SIZE_MIB.mebibytes())
         .into_bytes()
@@ -222,7 +224,9 @@ pub async fn create_email_message(
             .map_err(|_| Status::InternalServerError)?;
     }
 
-    Ok(Json(MtaHookResponse { action: "accept" }))
+    Ok(RawJson(
+        serde_json::to_string(&MtaHookResponse { action: "accept" }).unwrap(),
+    ))
 }
 
 fn format_addr(addr: &Addr) -> Option<String> {
