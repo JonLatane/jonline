@@ -1,7 +1,7 @@
 use diesel::*;
 use mail_parser::{Addr, Address};
-use rocket::{data::ToByteUnit, http::Status, routes, Data, Route, State};
-use serde::Deserialize;
+use rocket::{data::ToByteUnit, http::Status, routes, serde::json::Json, Data, Route, State};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::models;
@@ -50,6 +50,16 @@ struct MtaHookMessage {
     contents: String,
 }
 
+/// Stalwart doesn't just check the HTTP status of a hook call -- it parses the response *body* as
+/// this shape (see https://stalw.art/docs/mta/filter/mtahooks/) and treats a body it can't parse
+/// as a hook failure regardless of status code, which -- combined with the `MtaHook`'s
+/// `tempFailOnError: true` -- surfaces to the sending client as a `451` temp-fail. `{"action":
+/// "accept"}` is the minimal response that tells Stalwart to keep going with no modifications.
+#[derive(Serialize)]
+struct MtaHookResponse {
+    action: &'static str,
+}
+
 /// Delivery endpoint called by the Stalwart mail server (see `deploys/email`) once it accepts an
 /// inbound message addressed to one of this namespace's domains. This is mounted *only* on the
 /// internal-only Rocket instance on port 27705 (see `servers::start_rocket_internal`) -- never on
@@ -67,7 +77,7 @@ struct MtaHookMessage {
 pub async fn create_email_message(
     body: Data<'_>,
     state: &State<RocketState>,
-) -> Result<String, Status> {
+) -> Result<Json<MtaHookResponse>, Status> {
     let capped_body = body
         .open(MAX_EMAIL_SIZE_MIB.mebibytes())
         .into_bytes()
@@ -212,7 +222,7 @@ pub async fn create_email_message(
             .map_err(|_| Status::InternalServerError)?;
     }
 
-    Ok(message.id.to_string())
+    Ok(Json(MtaHookResponse { action: "accept" }))
 }
 
 fn format_addr(addr: &Addr) -> Option<String> {

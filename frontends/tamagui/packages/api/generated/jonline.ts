@@ -293,7 +293,11 @@ export const protobufPackage = "jonline";
  * parsed `from`/`to`/`cc` headers are stored alongside it, and the raw `.eml` is uploaded to the same MinIO store
  * used for `Media`. Duplicate deliveries of the same `Message-ID` (Stalwart retries on transient failure) reuse the
  * existing `Message` row rather than storing/uploading a duplicate.
- * * **Response**: `200 OK` with the resulting `Message`'s ID (as plain text) on success.
+ * * **Response**: `200 OK` with a body of `{"action": "accept"}` on success -- Stalwart's MTA Hook protocol parses
+ * the response *body*, not just the status code, so this has to be the exact shape it expects
+ * (see <https://stalw.art/docs/mta/filter/mtahooks/>) or Stalwart treats the call as a hook failure regardless of
+ * status; combined with the `MtaHook`'s `tempFailOnError: true`, that surfaces to the sending client as a
+ * `451` temp-fail rather than anything indicating the real cause.
  *
  * ##### External HTTP servers (80, 8000, 443)
  * Note that, if the TLS server on port 443 starts up successfully, the server on port 80

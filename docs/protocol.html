@@ -754,7 +754,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         used for <code>Media</code>. Duplicate deliveries of the same <code>Message-ID</code> (Stalwart retries on transient failure) reuse the
         existing <code>Message</code> row rather than storing/uploading a duplicate.
       </li>
-      <li><strong>Response</strong>: <code>200 OK</code> with the resulting <code>Message</code>'s ID (as plain text) on success.</li>
+      <li>
+        <strong>Response</strong>: <code>200 OK</code> with a body of <code>{&#x26;#34;action&#x26;#34;: &#x26;#34;accept&#x26;#34;}</code> on success -- Stalwart's MTA Hook protocol parses
+        the response <em>body</em>, not just the status code, so this has to be the exact shape it expects
+        (see &#x3C;<a href="https://stalw.art/docs/mta/filter/mtahooks/">https://stalw.art/docs/mta/filter/mtahooks/</a>>) or Stalwart treats the call as a hook failure regardless of
+        status; combined with the <code>MtaHook</code>'s <code>tempFailOnError: true</code>, that surfaces to the sending client as a
+        <code>451</code> temp-fail rather than anything indicating the real cause.
+      </li>
     </ul>
     <h5 id="external-http-servers-80-8000-443"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-http-servers-80-8000-443"><span class="octicon octicon-link"></span></a>External HTTP servers (80, 8000, 443)</h5>
     <p>
