@@ -9,6 +9,7 @@ module UI.Flip exposing
     , atRestScaled
     , beginReorder
     , enter
+    , flipDurationMs
     , itemAttributes
     , measureElementsCmd
     , moveAnimate

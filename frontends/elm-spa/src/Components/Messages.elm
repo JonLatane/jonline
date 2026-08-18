@@ -241,9 +241,14 @@ id alone):
   - `FromEmail host fromEmail` -- no real server-side group at all, just
     every message sharing the same (unauthenticated, spoofable -- see
     `GetMessagesRequest.from_email`'s own proto doc) `Message.from` value,
-    fetched via `fetchFromEmail`, routed as `?from_email=`. Only ever assigned
-    to a message whose `messagingGroup` is `Nothing` (see
-    `Message.messaging_group`'s own doc) but whose `from` is known.
+    fetched via `fetchFromEmail`, routed as `?from_email=`. Assigned to
+    _every_ message whose `from` is known, regardless of whether it also has
+    a real `messagingGroup` -- deliberately not mutually exclusive with
+    `MessagingGroup` above: the backend's own `from_email` filter
+    (`get_by_from_email`) likewise doesn't exclude group messages, so a
+    message can legitimately belong to both its real group's conversation
+    _and_ the "everything from this address" pseudo-conversation at once (see
+    `conversationMessages`' own doc).
   - `SoloMessage host messageId` -- a single message with no visible
     `messagingGroup` _and_ no known sender address to fall back on (e.g. an
     unparseable inbound email `From:` header) -- keyed by its own message id,
@@ -352,37 +357,48 @@ type alias ConversationSummary =
 
 
 {-| Groups a flat, `created_at DESC`-sorted `messages` list (as
-`GetMessagesResponse` always returns them) by `messagingGroup.id` -- there's
-no `GetMessagingGroups` RPC, only `GetMessages`, so this is the only way to
-derive a group listing at all. A message with `messagingGroup == Nothing`
-(the client was Bcc'ed, or the message otherwise has no visible group -- per
-`Message.messaging_group`'s own proto doc) falls back to `FromEmail`, grouped
-with every other such message sharing the same `from` address, or -- if `from`
-itself is unknown -- `SoloMessage`, its own pseudo-group of exactly one. See
-`Conversation`'s own doc. Result is sorted by each group's `mostRecent` message,
-most-recent-first.
+`GetMessagesResponse` always returns them) into every `Conversation` each
+message belongs to -- there's no `GetMessagingGroups` RPC, only `GetMessages`,
+so this is the only way to derive a group listing at all. A message with a
+real `messagingGroup` counts toward that `MessagingGroup` conversation; a
+message with a known `from` address _also_ (not "instead") counts toward the
+`FromEmail` conversation for that address, per `FromEmail`'s own doc -- so a
+message with both counts toward two different `ConversationSummary`s at once,
+each with its own independent `mostRecent`/`unreadCount`/`messageCount`. Only
+a message with neither (the client was Bcc'ed with no parseable `from`, or the
+message otherwise has no visible group -- per `Message.messaging_group`'s own
+proto doc) falls back to `SoloMessage`, its own pseudo-group of exactly one.
+See `Conversation`'s own doc. Result is sorted by each group's `mostRecent`
+message, most-recent-first.
 -}
 conversationMessages : String -> List Message -> List ConversationSummary
 conversationMessages host messages =
     let
-        addMessage : Message -> Dict String ConversationSummary -> Dict String ConversationSummary
-        addMessage message groups =
+        applicableConversations : Message -> List ( Conversation, List Author )
+        applicableConversations message =
             let
                 soloMembers : List Author
                 soloMembers =
                     message.sender |> Maybe.map List.singleton |> Maybe.withDefault []
 
-                ( conversation, members ) =
-                    case ( message.messagingGroup, message.from ) of
-                        ( Just group, _ ) ->
-                            ( MessagingGroup host group.id, group.members )
+                groupEntry : Maybe ( Conversation, List Author )
+                groupEntry =
+                    message.messagingGroup |> Maybe.map (\group -> ( MessagingGroup host group.id, group.members ))
 
-                        ( Nothing, Just fromEmail ) ->
-                            ( FromEmail host fromEmail, soloMembers )
+                fromEmailEntry : Maybe ( Conversation, List Author )
+                fromEmailEntry =
+                    message.from |> Maybe.map (\fromEmail -> ( FromEmail host fromEmail, soloMembers ))
+            in
+            case ( groupEntry, fromEmailEntry ) of
+                ( Nothing, Nothing ) ->
+                    [ ( SoloMessage host message.id, soloMembers ) ]
 
-                        ( Nothing, Nothing ) ->
-                            ( SoloMessage host message.id, soloMembers )
+                _ ->
+                    List.filterMap identity [ groupEntry, fromEmailEntry ]
 
+        addToConversation : Message -> ( Conversation, List Author ) -> Dict String ConversationSummary -> Dict String ConversationSummary
+        addToConversation message ( conversation, members ) groups =
+            let
                 key : String
                 key =
                     conversationKey conversation
@@ -414,6 +430,10 @@ conversationMessages host messages =
                             , messageCount = existing.messageCount + 1
                         }
                         groups
+
+        addMessage : Message -> Dict String ConversationSummary -> Dict String ConversationSummary
+        addMessage message groups =
+            List.foldl (addToConversation message) groups (applicableConversations message)
     in
     List.foldl addMessage Dict.empty messages
         |> Dict.values

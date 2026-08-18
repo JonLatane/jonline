@@ -1188,6 +1188,21 @@ container's height and adding half the target's own centers it; `setViewportOf`
 clamps the result into range on its own (see its own doc), so an
 over/undershoot at either end of the thread is harmless.
 
+The `Process.sleep` up front is load-bearing, not padding: every message in a
+just-loaded thread is a fresh `UI.Flip.enter` (`syncDetailThreadAnimations`),
+which mounts `flip-collapsed` -- zero height, per `flip.css` -- and only
+starts growing on the *next* animation frame once `entering` clears
+(`UI.Flip.animate`). This `Cmd` fires in the very same update as the messages
+themselves first appearing, i.e. before that first frame, so an immediate
+`Dom.getElement` would measure every message (target included) still
+collapsed to zero height -- indistinguishable from each other, and all
+sitting at whatever position the reversed-column list's own resting scroll
+(bottom) happens to put a zero-height box. That's exactly the "scrolls right
+to the bottom regardless of target" bug this sleep fixes: waiting out
+`UI.Flip.flipDurationMs` (plus a small buffer for the frame the browser needs
+to notice the class change before it starts transitioning at all) lets every
+message reach its real, final height first, so the geometry above measures
+the thread as it'll actually look.
 -}
 scrollToPendingMessageCmd : Model -> Cmd Msg
 scrollToPendingMessageCmd model =
@@ -1211,10 +1226,14 @@ scrollToPendingMessageCmd model =
                         |> List.any (\eg -> Messages.conversationHost eg.conversation == target.host && Dict.member target.id eg.messages)
             in
             if isPresent then
-                Task.map3 (\containerViewport container el -> ( containerViewport, container, el ))
-                    (Dom.getViewportOf messagesDetailThreadListId)
-                    (Dom.getElement messagesDetailThreadListId)
-                    (Dom.getElement (messageDomId target.id))
+                Process.sleep (UI.Flip.flipDurationMs + 50)
+                    |> Task.andThen
+                        (\_ ->
+                            Task.map3 (\containerViewport container el -> ( containerViewport, container, el ))
+                                (Dom.getViewportOf messagesDetailThreadListId)
+                                (Dom.getElement messagesDetailThreadListId)
+                                (Dom.getElement (messageDomId target.id))
+                        )
                     |> Task.andThen
                         (\( containerViewport, container, el ) ->
                             let
@@ -1603,7 +1622,7 @@ groupMessageRows model mostRecentMillis summary =
                             visibleMessages
                                 |> List.map
                                     (\message ->
-                                        ( "message:" ++ Messages.messageKey (Messages.conversationHost summary.conversation) message
+                                        ( "message:" ++ key ++ "|" ++ Messages.messageKey (Messages.conversationHost summary.conversation) message
                                         , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey mostRecentMillis message }
                                         )
                                     )
@@ -2516,7 +2535,10 @@ each variant -- unlike a naive "same id" check (this function's own
 pre-`Conversation` predecessor, `messageBelongsToGroup`, effectively used one
 generic id for every kind), a `FromEmail` conversation's id is an email
 _address_, not a message id, so it has to match against `message.from`
-instead of `message.id`.
+instead of `message.id`. `MessagingGroup` and `FromEmail` aren't mutually
+exclusive -- a message can belong to both at once (see `FromEmail`'s own
+doc) -- so this can return `True` for the same `message` under two different
+`conversation` values, same as `conversationMessages` assigning it to both.
 -}
 messageBelongsToConversation : Messages.Conversation -> Message -> Bool
 messageBelongsToConversation conversation message =
@@ -2525,7 +2547,7 @@ messageBelongsToConversation conversation message =
             (message.messagingGroup |> Maybe.map .id) == Just groupId
 
         Messages.FromEmail _ fromEmail ->
-            message.messagingGroup == Nothing && message.from == Just fromEmail
+            message.from == Just fromEmail
 
         Messages.SoloMessage _ messageId ->
             message.id == messageId
