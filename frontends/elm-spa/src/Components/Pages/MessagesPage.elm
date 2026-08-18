@@ -990,6 +990,7 @@ fetchExpand accountsPanelModel model ref =
                         accountServer =
                             ( accountUserId, ref.host )
 
+                        fetchTask : Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse )
                         fetchTask =
                             case ref.kind of
                                 Messages.MessagingGroup ->
