@@ -120,10 +120,16 @@
   font-size: 0.75rem;
 }
 
+/* No `gap` here -- always paired with `flip-animated-column` (`UserPicker`'s
+   own combined class), whose collapse axis is this column's own vertical
+   stacking; see `messages.css`'s `.messages-group-list` for the full "why
+   not" (a `gap` on the collapsing axis leaves a visible leftover sliver
+   until final DOM removal, then snaps shut) -- `flip.css`'s own
+   `.flip-animated-item` `padding-bottom` is this list's real, animatable
+   inter-row spacing instead. */
 .user-picker-list {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
   max-height: 220px;
   overflow-y: auto;
 }

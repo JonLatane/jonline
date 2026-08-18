@@ -85,11 +85,17 @@
   font-weight: 600;
 }
 
+/* No `gap` here -- always paired with `flip-animated-column` (`groupsListView`'s
+   own combined class), whose own collapse axis is exactly this column's
+   vertical stacking; a `gap` on that same axis doesn't shrink away as a row
+   collapses to zero height, so it'd sit there as a visible leftover sliver
+   until the row's actually removed from the DOM, then snap shut -- see
+   `flip.css`'s own doc on `.flip-animated-item`'s `padding-bottom`, which is
+   this list's real (animatable) inter-row spacing instead. */
 .messages-group-list {
   display: flex;
   flex-direction: column;
   margin: 1rem 0;
-  gap: 0.4rem;
 }
 
 .messages-group {

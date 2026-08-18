@@ -90,6 +90,118 @@ type alias State msg =
     }
 
 
+{-| `flip.css`'s own `.flip-animated-item` transition duration (`0.25s`,
+`grid-template-rows`/`-columns`) -- `flipEasing` (below) is what keeps the
+opacity/scale fade below in lockstep with it.
+-}
+flipDurationMs : Float
+flipDurationMs =
+    250
+
+
+{-| Elm's own copy of CSS's `ease` timing function (`cubic-bezier(0.25, 0.1,
+0.25, 1.0)`, the browser default and exactly what `flip.css`'s own
+`.flip-animated-item` `transition` declares) -- solved via Newton-Raphson on
+the bezier curve's own `x(t)`, the same general technique browsers use
+themselves, since `Float -> Float` easing functions in this library are
+defined in terms of "given elapsed-time fraction `x`, what's the eased
+progress `y`", not the four raw control points a CSS `cubic-bezier()` takes
+directly.
+
+`enter`/`remove`/`reappear`'s own opacity/scale fade uses this (paired with
+`flipDurationMs`) instead of `Animation.to`'s *default* interpolation for a
+plain numeric property -- a lightly-damped spring (`stiffness = 170, damping
+= 26`, see `Animation.Model.defaultInterpolationByProperty`) that, unlike
+`flip.css`'s own fixed-duration CSS transition, has no fixed duration at all:
+it settles once its position and velocity both drop under a small tolerance,
+which for these particular constants takes roughly 400-550ms -- comfortably
+*longer* than the CSS collapse's fixed 250ms. That gap is exactly what
+produced the "mostly collapses, then a frozen-looking pause, then suddenly
+finishes" artifact reported live (Messages' sidebar/detail panes, but also
+PostsPage/UsersPage/StarredPanel turning something off -- every `UI.Flip`
+caller, confirming this was never page-specific): the CSS-driven
+`grid-template-rows` had already visually collapsed the item to zero height
+by 250ms, but the *element itself* -- and, for any caller whose own container
+also declares a `gap` alongside `.flip-animated-column` (`.messages-group-list`,
+`.user-picker-list`, `.my-media-panel-grid`/`-selected-strip`, `.events-grid`,
+`.event-instance-grid`), the resulting empty `gap`-width sliver right where
+it used to be -- stuck around for however much longer the spring's own slow,
+barely-visible settling tail actually took, since only the spring's own
+completion (`Animation.Messenger.send onRemoved`) ever actually deletes the
+item from the caller's collection. Matching both animations to the *same*
+fixed duration and curve removes that gap entirely -- either both finish at
+250ms, or (aesthetically, not the bug fix) neither does.
+-}
+flipEasing : Animation.Interpolation
+flipEasing =
+    Animation.easing { duration = flipDurationMs, ease = cssEase }
+
+
+{-| `cubic-bezier(0.25, 0.1, 0.25, 1.0)` (CSS's `ease`), evaluated at
+elapsed-time fraction `x` -- Newton-Raphson on the bezier's own parametric
+`x(t)` (8 iterations, converges well past visible precision for a curve this
+mild/monotonic) to find `t` such that `bezierX t == x`, then returns `bezierY
+t`. `x` itself is already a solid initial guess for `t` on a curve whose own
+`x1`/`x2` control points (`0.25`/`0.25`) are both roughly on the identity
+line, so this converges in just a few iterations in practice.
+-}
+cssEase : Float -> Float
+cssEase x =
+    let
+        x1 : Float
+        x1 =
+            0.25
+
+        y1 : Float
+        y1 =
+            0.1
+
+        x2 : Float
+        x2 =
+            0.25
+
+        y2 : Float
+        y2 =
+            1.0
+
+        bezierComponent : Float -> Float -> Float -> Float
+        bezierComponent t p1 p2 =
+            let
+                mt : Float
+                mt =
+                    1 - t
+            in
+            (3 * mt * mt * t * p1) + (3 * mt * t * t * p2) + (t * t * t)
+
+        bezierXDerivative : Float -> Float
+        bezierXDerivative t =
+            let
+                mt : Float
+                mt =
+                    1 - t
+            in
+            (3 * mt * mt * x1) + (6 * mt * t * (x2 - x1)) + (3 * t * t * (1 - x2))
+
+        solveT : Float -> Int -> Float
+        solveT guess iterations =
+            if iterations <= 0 then
+                guess
+
+            else
+                let
+                    derivative : Float
+                    derivative =
+                        bezierXDerivative guess
+                in
+                if abs derivative < 1.0e-6 then
+                    guess
+
+                else
+                    solveT (guess - ((bezierComponent guess x1 x2 - x) / derivative)) (iterations - 1)
+    in
+    bezierComponent (solveT x 8) y1 y2
+
+
 {-| A static "already here, nothing animating" state -- the right thing to
 default a not-yet-tracked item to, e.g. one that's about to be removed for
 the first time and needs a real (visible, settled) state for `remove` to
@@ -113,7 +225,7 @@ enter =
     , style =
         Animation.style [ Animation.opacity 0, Animation.scale 0.92 ]
             |> Animation.interrupt
-                [ Animation.to [ Animation.opacity 1, Animation.scale 1 ] ]
+                [ Animation.toWith flipEasing [ Animation.opacity 1, Animation.scale 1 ] ]
     }
 
 
@@ -127,7 +239,7 @@ reappear state =
         | removing = False
         , style =
             Animation.interrupt
-                [ Animation.to [ Animation.opacity 1, Animation.scale 1 ] ]
+                [ Animation.toWith flipEasing [ Animation.opacity 1, Animation.scale 1 ] ]
                 state.style
     }
 
@@ -162,7 +274,7 @@ remove onRemoved state =
         | removing = True
         , style =
             Animation.interrupt
-                [ Animation.to [ Animation.opacity 0, Animation.scale 0.92 ]
+                [ Animation.toWith flipEasing [ Animation.opacity 0, Animation.scale 0.92 ]
                 , Animation.Messenger.send onRemoved
                 ]
                 state.style
