@@ -1,12 +1,14 @@
 module Components.Messages exposing
-    ( MessagingGroupKind(..)
-    , GroupSummary
+    ( Conversation(..)
+    , ConversationSummary
+    , conversationHost
+    , conversationKey
+    , conversationMessages
     , eligibleServers
     , fetchFromEmail
     , fetchMessage
     , fetchMessageListing
     , fetchMessagingGroup
-    , groupMessages
     , groupRouteId
     , hasEligibleAccount
     , isUnread
@@ -148,16 +150,17 @@ fetchMessageListing accountsPanelModel maybeAccountServer listingType searchText
 
 
 {-| Fetches every message in `groupId` (most-recent-first, per
-`get_messaging_group_messages`) -- what expanding a `MessagingGroup`-kind
-group (or two-pane `selectedGroup`) in `Components.Pages.MessagesPage`
+`get_messaging_group_messages`) -- what expanding a `MessagingGroup`
+conversation (or two-pane `selectedGroup`) in `Components.Pages.MessagesPage`
 fetches. `listingType` should be the same `PERSONALMESSAGES`/`ALLSYSTEMMESSAGES`
 (never the `*_TEXT_SEARCH` variant -- a group's own full thread isn't itself
 filtered by the outer listing's search) the group was found under, from
 `eligibleServers`.
 
-Never called for a `SoloMessage` pseudo-group (see `groupMessages`/`MessagingGroupKind`)
+Never called for a `SoloMessage` pseudo-group (see `conversationMessages`/`Conversation`)
 -- there's only ever the one already-in-hand message for those, no group id
 to fetch by; `fetchMessage` is that kind's own counterpart.
+
 -}
 fetchMessagingGroup :
     AccountsPanel.Model
@@ -171,7 +174,7 @@ fetchMessagingGroup accountsPanelModel maybeAccountServer listingType groupId =
 
 {-| Fetches every message whose email "from" header exactly matches `fromEmail`
 (most-recent-first) -- the `FromEmail`-kind counterpart to `fetchMessagingGroup`,
-for a message with no visible `messagingGroup` (see `MessagingGroupKind`'s own doc)
+for a message with no visible `messagingGroup` (see `Conversation`'s own doc)
 whose sender address is known. `fromEmail` should be some prior response's own
 `Message.from`, verbatim -- matching is an exact string comparison server-side
 (`GetMessagesRequest.from_email`'s own proto doc), not a normalized-address
@@ -222,56 +225,106 @@ fetchMessages accountsPanelModel maybeAccountServer request =
         )
 
 
-{-| What a `GroupSummary`/`MessagingGroupRef` (`Components.Pages.MessagesPage`) is
-actually backed by, and so how it can be expanded into its full message list
-and what query param identifies it in a permalink:
+{-| What a `ConversationSummary` (`Components.Pages.MessagesPage`) is actually
+backed by, and so how it can be expanded into its full message list and what
+query param identifies it in a permalink -- each variant's own payload _is_
+that backing id (second `String`), plus the host it lives on (first `String`),
+so a bare `Conversation` value is always a complete, self-contained identity
+(see `conversationHost`/`conversationId`/`conversationKey` for pulling pieces
+back out of it, e.g. to build a `"<host>|<id>"` Dict key or fetch by the raw
+id alone):
 
-  - `MessagingGroup` -- a real `MessagingGroup.id`, fetched via `fetchMessagingGroup`
-    (`GetMessagesRequest.message_group_id`), routed as `?messaging_group=`.
-  - `FromEmail` -- no real server-side group at all, just every message sharing
-    the same (unauthenticated, spoofable -- see `GetMessagesRequest.from_email`'s
-    own proto doc) `Message.from` value, fetched via `fetchFromEmail`, routed
-    as `?from_email=`. Only ever assigned to a message whose `messagingGroup`
-    is `Nothing` (see `Message.messaging_group`'s own doc) but whose `from` is
-    known.
-  - `SoloMessage` -- a single message with no visible `messagingGroup` *and* no
-    known sender address to fall back on (e.g. an unparseable inbound email
-    `From:` header) -- keyed by its own message id, since there's nothing else
-    to group it by. Fetched via `fetchMessage`, routed as `?message=`; the
-    common case needs no fetch at all, see that function's own doc.
+  - `MessagingGroup host groupId` -- a real `MessagingGroup.id`, fetched via
+    `fetchMessagingGroup` (`GetMessagesRequest.message_group_id`), routed as
+    `?messaging_group=`.
+  - `FromEmail host fromEmail` -- no real server-side group at all, just
+    every message sharing the same (unauthenticated, spoofable -- see
+    `GetMessagesRequest.from_email`'s own proto doc) `Message.from` value,
+    fetched via `fetchFromEmail`, routed as `?from_email=`. Only ever assigned
+    to a message whose `messagingGroup` is `Nothing` (see
+    `Message.messaging_group`'s own doc) but whose `from` is known.
+  - `SoloMessage host messageId` -- a single message with no visible
+    `messagingGroup` _and_ no known sender address to fall back on (e.g. an
+    unparseable inbound email `From:` header) -- keyed by its own message id,
+    since there's nothing else to group it by. Fetched via `fetchMessage`,
+    routed as `?message=`; the common case needs no fetch at all, see that
+    function's own doc.
 
 -}
-type MessagingGroupKind
-    = MessagingGroup
-    | FromEmail
-    | SoloMessage
+type Conversation
+    = MessagingGroup String String
+    | FromEmail String String
+    | SoloMessage String String
+
+
+{-| The server `conversation` lives on, regardless of variant -- always the
+first `String` of whichever variant, see `Conversation`'s own doc.
+-}
+conversationHost : Conversation -> String
+conversationHost conversation =
+    case conversation of
+        MessagingGroup host _ ->
+            host
+
+        FromEmail host _ ->
+            host
+
+        SoloMessage host _ ->
+            host
+
+
+{-| The backing id `conversation` carries, regardless of variant -- always
+the second `String` of whichever variant, see `Conversation`'s own doc. Used
+for dispatching straight to `fetchMessagingGroup`/`fetchFromEmail`/
+`fetchMessage`, or building the `?messaging_group=`/`?from_email=`/`?message=`
+query param value, where only the id itself (not which variant it came from,
+nor its host) matters.
+-}
+conversationId : Conversation -> String
+conversationId conversation =
+    case conversation of
+        MessagingGroup _ groupId ->
+            groupId
+
+        FromEmail _ fromEmail ->
+            fromEmail
+
+        SoloMessage _ messageId ->
+            messageId
+
+
+{-| `"<host>|<id>"` -- globally unique across every fetched server (a raw
+`MessagingGroup.id`/`Message.id`/email address alone isn't unique across
+servers, same reasoning as `Components.Users.followStatusAndButtonKey`), and
+so what every `Dict String _` keyed by conversation in
+`Components.Pages.MessagesPage` actually uses as its key, computed from
+`conversation` on demand rather than carried alongside it as its own stored
+field.
+-}
+conversationKey : Conversation -> String
+conversationKey conversation =
+    conversationHost conversation ++ "|" ++ conversationId conversation
 
 
 {-| One `MessagingGroup` (or `FromEmail`/`SoloMessage` pseudo-group, see
-`MessagingGroupKind`) summarized down to its most recent message -- what
-`Components.Pages.MessagesPage`'s outer list renders/sorts/animates. `key` is
-globally unique across every fetched server (`"<host>|<groupId>"` -- a raw
-`MessagingGroup.id`/`Message.id`/email address alone isn't unique across
-servers, same reasoning as `Components.Users.followStatusAndButtonKey`).
+`Conversation`) summarized down to its most recent message -- what
+`Components.Pages.MessagesPage`'s outer list renders/sorts/animates.
 `unreadCount` counts every fetched message in the group with `isUnread ==
 True` -- not just whether `mostRecent` itself is unread -- so it stays
 accurate once an older message's read status changes independently (e.g.
 `MessagesPage` marking a whole thread read on expand doesn't necessarily touch
 every message at once). `messageCount` counts every fetched message in the
-group, full stop -- since the *outer* listing this is built from
-(`groupMessages`, always called on a `GetMessagesRequest` with no
+group, full stop -- since the _outer_ listing this is built from
+(`conversationMessages`, always called on a `GetMessagesRequest` with no
 `messageGroupId`/`fromEmail`) is only ever the server's most recent
-`PAGE_SIZE` messages *across every group*, not this group's full history,
+`PAGE_SIZE` messages _across every group_, not this group's full history,
 this is a floor, not a total -- `MessagesPage.groupMessageCountView` is what
 appends a "+" to make that clear, unless the group's own full thread has
-separately been fetched (`expand`/`fetchExpand`, keyed by `key`), in which
-case that fetch's own message count *is* the true total.
+separately been fetched (`expand`/`fetchExpand`, keyed by `conversationKey`),
+in which case that fetch's own message count _is_ the true total.
 -}
-type alias GroupSummary =
-    { key : String
-    , host : String
-    , groupId : String
-    , kind : MessagingGroupKind
+type alias ConversationSummary =
+    { conversation : Conversation
     , members : List Author
     , mostRecent : Message
     , unreadCount : Int
@@ -287,33 +340,33 @@ derive a group listing at all. A message with `messagingGroup == Nothing`
 `Message.messaging_group`'s own proto doc) falls back to `FromEmail`, grouped
 with every other such message sharing the same `from` address, or -- if `from`
 itself is unknown -- `SoloMessage`, its own pseudo-group of exactly one. See
-`MessagingGroupKind`'s own doc. Result is sorted by each group's `mostRecent` message,
+`Conversation`'s own doc. Result is sorted by each group's `mostRecent` message,
 most-recent-first.
 -}
-groupMessages : String -> List Message -> List GroupSummary
-groupMessages host messages =
+conversationMessages : String -> List Message -> List ConversationSummary
+conversationMessages host messages =
     let
-        addMessage : Message -> Dict String GroupSummary -> Dict String GroupSummary
+        addMessage : Message -> Dict String ConversationSummary -> Dict String ConversationSummary
         addMessage message groups =
             let
                 soloMembers : List Author
                 soloMembers =
                     message.sender |> Maybe.map List.singleton |> Maybe.withDefault []
 
-                ( groupId, kind, members ) =
+                ( conversation, members ) =
                     case ( message.messagingGroup, message.from ) of
                         ( Just group, _ ) ->
-                            ( group.id, MessagingGroup, group.members )
+                            ( MessagingGroup host group.id, group.members )
 
                         ( Nothing, Just fromEmail ) ->
-                            ( fromEmail, FromEmail, soloMembers )
+                            ( FromEmail host fromEmail, soloMembers )
 
                         ( Nothing, Nothing ) ->
-                            ( message.id, SoloMessage, soloMembers )
+                            ( SoloMessage host message.id, soloMembers )
 
                 key : String
                 key =
-                    host ++ "|" ++ groupId
+                    conversationKey conversation
 
                 increment : Int
                 increment =
@@ -326,7 +379,7 @@ groupMessages host messages =
             case Dict.get key groups of
                 Nothing ->
                     Dict.insert key
-                        { key = key, host = host, groupId = groupId, kind = kind, members = members, mostRecent = message, unreadCount = increment, messageCount = 1 }
+                        { conversation = conversation, members = members, mostRecent = message, unreadCount = increment, messageCount = 1 }
                         groups
 
                 Just existing ->
@@ -349,7 +402,7 @@ groupMessages host messages =
 
 
 {-| `True` iff `message.currentUserRead` hasn't been set -- see that field's
-own proto doc comment. Used both to compute `GroupSummary.unreadCount` and by
+own proto doc comment. Used both to compute `ConversationSummary.unreadCount` and by
 `MessagesPage` to decide which messages to `markMessageRead` once their
 thread's actually been viewed.
 -}
@@ -386,7 +439,7 @@ markMessagesRead accountsPanelModel maybeAccountServer unread messageIds =
         |> Task.map (Tuple.mapSecond .messageReads)
 
 
-{-| `message.createdAt`, in epoch milliseconds -- what `groupMessages` sorts
+{-| `message.createdAt`, in epoch milliseconds -- what `conversationMessages` sorts
 by, and what `Components.Pages.MessagesPage` sorts an expanded group's own
 messages by too. `0` (the epoch -- always sorts last) for the
 never-actually-happens case of a missing `createdAt`, same fallback
@@ -405,7 +458,7 @@ messageMillis message =
 Used for both `?messaging_group=` (a `MessagingGroup.id`) and `?message=` (a
 `Message.id`) -- both are opaque server-assigned ids that never themselves
 contain `@`, so the same bare-id-or-`id@host` shape and split logic works for
-either. *Not* used for `?from_email=`: an email address already contains its
+either. _Not_ used for `?from_email=`: an email address already contains its
 own `@`, so `MessagesPage.groupQueryParams`/`Pages.Messages.init` route that
 kind through a separate `from_email_host` param instead of this suffix.
 -}

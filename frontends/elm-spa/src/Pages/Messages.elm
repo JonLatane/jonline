@@ -4,7 +4,7 @@ module Pages.Messages exposing (Model, Msg, fromShared, page)
 their messages, going two-pane whenever `?messaging_group=<id>[@host]`,
 `?from_email=<address>[&from_email_host=<host>]`, or `?message=<id>[@host]`
 is set (`#message-<id>` autoscrolls to a specific message once its thread
-loads) -- one query param per `Components.Messages.MessagingGroupKind`, see
+loads) -- one query param per `Components.Messages.Conversation`, see
 `MessagesPage.groupQueryParams`'s own doc on why `from_email` needs a
 separate host param rather than reusing the other two kinds' `id@host`
 suffix. Thin `Effect`/`Shared`/URL-owning wrapper around
@@ -51,12 +51,12 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         -- One of `?messaging_group=`/`?from_email=`/`?message=` -- see
-        -- `Components.Messages.MessagingGroupKind`'s own doc on why each kind gets
+        -- `Components.Messages.Conversation`'s own doc on why each kind gets
         -- its own param rather than overloading one, and `MessagesPage.groupQueryParams`'s
         -- doc on why `from_email` alone needs a separate `from_email_host`
         -- param instead of `parseGroupRouteId`'s shared `id@host` suffix
         -- (an email address already contains its own `@`).
-        selectedGroup : Maybe MessagesPage.MessagingGroupRef
+        selectedGroup : Maybe Messages.Conversation
         selectedGroup =
             case Dict.get "messaging_group" req.query of
                 Just raw ->
@@ -64,7 +64,7 @@ init shared req =
                         ( groupId, host ) =
                             Messages.parseGroupRouteId shared.accounts.mainFrontendHost raw
                     in
-                    Just { key = host ++ "|" ++ groupId, host = host, groupId = groupId, kind = Messages.MessagingGroup }
+                    Just (Messages.MessagingGroup host groupId)
 
                 Nothing ->
                     case Dict.get "from_email" req.query of
@@ -74,7 +74,7 @@ init shared req =
                                 host =
                                     Dict.get "from_email_host" req.query |> Maybe.withDefault shared.accounts.mainFrontendHost
                             in
-                            Just { key = host ++ "|" ++ fromEmail, host = host, groupId = fromEmail, kind = Messages.FromEmail }
+                            Just (Messages.FromEmail host fromEmail)
 
                         Nothing ->
                             Dict.get "message" req.query
@@ -84,7 +84,7 @@ init shared req =
                                             ( messageId, host ) =
                                                 Messages.parseGroupRouteId shared.accounts.mainFrontendHost raw
                                         in
-                                        { key = host ++ "|" ++ messageId, host = host, groupId = messageId, kind = Messages.SoloMessage }
+                                        Messages.SoloMessage host messageId
                                     )
 
         pendingScrollMessageId : Maybe String
@@ -118,10 +118,10 @@ update shared msg model =
         -- module can't depend on itself. Opens the shared Markdown panel on
         -- a `SendNewMessage` pre-seeded with `recipients` (the other thread
         -- participants, computed at the button's own click site) and
-        -- `ref.host` (a reply always sends from the same server the
-        -- messaging group lives on).
+        -- `ref`'s own host (`Messages.conversationHost`) -- a reply always
+        -- sends from the same server the messaging group lives on.
         PageMsg (MessagesPage.ReplyClicked ref recipients) ->
-            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage recipients) ref.host)) )
+            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage recipients) (Messages.conversationHost ref))) )
 
         -- The header row's "Compose" button (`MessagesPage.searchRowView`,
         -- see `ComposeClicked`'s own doc) -- same interception trick as
@@ -224,7 +224,7 @@ update shared msg model =
                             case sentMessage.messagingGroup of
                                 Just group ->
                                     applyPageMsg shared
-                                        (MessagesPage.MessageSent { key = host ++ "|" ++ group.id, host = host, groupId = group.id, kind = Messages.MessagingGroup } sentMessage.id)
+                                        (MessagesPage.MessageSent (Messages.MessagingGroup host group.id) sentMessage.id)
                                         model
 
                                 Nothing ->

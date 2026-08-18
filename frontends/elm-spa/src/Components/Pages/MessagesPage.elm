@@ -1,6 +1,5 @@
 module Components.Pages.MessagesPage exposing
-    ( MessagingGroupRef
-    , Model
+    ( Model
     , Msg(..)
     , PageContext
     , empty
@@ -104,7 +103,7 @@ type alias Model =
     , inlineOpenGroups : Set String
     , searchText : String
     , searchGeneration : Int
-    , selectedGroup : Maybe MessagingGroupRef
+    , selectedGroup : Maybe Messages.Conversation
     , pendingScrollMessageId : Maybe String
 
     -- The one message (if any) to draw attention to with a `border-color-nav`
@@ -153,18 +152,6 @@ type alias PageContext =
     }
 
 
-{-| Identifies one `MessagingGroup`/`FromEmail`/`SoloMessage` group (see
-`Components.Messages.MessagingGroupKind`) across every fetched server -- mirrors that
-module's own `GroupSummary.key`/`.host`/`.groupId`/`.kind`.
--}
-type alias MessagingGroupRef =
-    { key : String
-    , host : String
-    , groupId : String
-    , kind : Messages.MessagingGroupKind
-    }
-
-
 type ServerMessages
     = Loading
     | Loaded (List Message)
@@ -183,8 +170,8 @@ row, or (only for an inline-open, `ExpandLoaded`, non-search group) one of its
 messages -- see that field's own doc.
 -}
 type SidebarRow
-    = SidebarGroupRow Messages.GroupSummary
-    | SidebarMessageRow MessagingGroupRef Message
+    = SidebarGroupRow Messages.ConversationSummary
+    | SidebarMessageRow Messages.Conversation Message
 
 
 type alias SidebarAnimation =
@@ -222,12 +209,13 @@ type alias ExpandedGroup =
     , messages : Dict String Message
 
     -- Carried alongside `status`/`messages` (duplicating the outer
-    -- `expandedGroups` Dict key) so `retryPendingExpansions` can re-issue
-    -- the fetch for a still-`ExpandLoading` entry without needing a
-    -- `MessagingGroupRef` from anywhere else -- see that function's own doc.
-    , host : String
-    , groupId : String
-    , kind : Messages.MessagingGroupKind
+    -- `expandedGroups` Dict key, `Messages.conversationKey conversation`) so
+    -- `retryPendingExpansions` can re-issue the fetch for a still-
+    -- `ExpandLoading` entry without needing a `Messages.Conversation` from
+    -- anywhere else -- see that function's own doc. Also carries its own
+    -- `host` (`Messages.conversationHost`), so nothing here needs a separate
+    -- `host` field of its own.
+    , conversation : Messages.Conversation
     }
 
 
@@ -249,14 +237,14 @@ type Msg
     | ForceRefresh
     | Animate Animation.Msg
     | RemoveSidebarRow String
-    | ToggleExpand Messages.GroupSummary
+    | ToggleExpand Messages.ConversationSummary
     | GotGroupMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
       -- Fired once per thread, batching every still-`Messages.isUnread`
       -- message in it into one `MarkMessagesRead` call, right when that
       -- thread finishes loading (`GotGroupMessages`'s own `Ok` branch
       -- already optimistically patches those same messages'
       -- `currentUserRead` locally, both in `expandedGroups` and, so
-      -- `GroupSummary.unreadCount` stays in sync too, `messagesByServer` --
+      -- `ConversationSummary.unreadCount` stays in sync too, `messagesByServer` --
       -- see that branch's own doc) -- this is just the actual RPC catching
       -- up with what the UI already shows. Errors are silently dropped: a
       -- thread that failed to mark read server-side just looks read locally
@@ -266,7 +254,7 @@ type Msg
     | SearchTextChanged String
     | SearchDebounceElapsed Int
     | ClearSearchClicked
-    | GroupSelected MessagingGroupRef
+    | GroupSelected Messages.Conversation
       -- Fired regardless of whether the scroll itself actually succeeded
       -- (`scrollToPendingMessageCmd`'s own `Task.attempt` result is
       -- discarded, not carried on this constructor) -- either way, this
@@ -303,13 +291,13 @@ type Msg
       -- applies `SyncSelectedGroup` to *that* instance instead -- see its
       -- own doc for why plain `href` navigation alone doesn't already
       -- handle this (a same-path query-only change).
-    | EmbeddedGroupLinkClicked MessagingGroupRef
+    | EmbeddedGroupLinkClicked Messages.Conversation
       -- `GroupSelected`'s own effect (expand + `selectedGroup`), minus the
       -- `pushUrl` -- see `EmbeddedGroupLinkClicked`'s doc: dispatched only
       -- via that forwarding path, where the URL bar's already been updated
       -- by the embedded panel's own real `<a href>` navigation, so pushing
       -- it again here would just double up the browser history entry.
-    | SyncSelectedGroup MessagingGroupRef
+    | SyncSelectedGroup Messages.Conversation
       -- The two-pane detail header's "Reply" button (`selectedGroupView`,
       -- real page only -- see that view's own doc). A pure signal, same
       -- forwarding trick `EmbeddedGroupLinkClicked` uses (no-op for *this*
@@ -317,13 +305,14 @@ type Msg
       -- own `PageMsg` handling intercepts it before it ever reaches
       -- `applyPageMsg`/this module's `update`, and dispatches
       -- `Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.SendNewMessage
-      -- recipients) ref.host)` instead -- this module can't do that itself,
-      -- it doesn't (can't) import `Shared`. The `List Author` recipients are
+      -- recipients) (Messages.conversationHost ref))` instead -- this module
+      -- can't do that itself, it doesn't (can't) import `Shared`. The `List
+      -- Author` recipients are
       -- computed at the click site (`selectedGroupView` already has
       -- `threadParticipants eg` in scope) rather than re-derived from
       -- `model` up in `Pages.Messages`, which only has this module's own
       -- opaque `Model` to work with.
-    | ReplyClicked MessagingGroupRef (List Author)
+    | ReplyClicked Messages.Conversation (List Author)
       -- A message row clicked inline in the sidebar's own inline-expand
       -- (`groupRowView`/`expandedGroupView`, real page only -- the embedded
       -- panel's own inline-expand messages are plain external permalink
@@ -337,7 +326,7 @@ type Msg
       -- group is currently selected -- clicking a message is always a real
       -- navigational choice, unlike merely toggling a group's chevron open
       -- (`ToggleExpand`, which never touches `selectedGroup` at all).
-    | MessageSelected MessagingGroupRef String
+    | MessageSelected Messages.Conversation String
       -- Fired by a message row's `onClick` *only* when `embeddedPanel ==
       -- True` (alongside its own external `<a href>` permalink, not instead
       -- of it) -- the message-level counterpart to `EmbeddedGroupLinkClicked`,
@@ -350,17 +339,17 @@ type Msg
       -- -> `Main.notifyPageOfSharedMsg` -> `Pages.Messages`' own `SharedMsg`
       -- handling, which applies `SyncSelectedMessage` to *that* instance
       -- instead.
-    | EmbeddedMessageLinkClicked MessagingGroupRef String
+    | EmbeddedMessageLinkClicked Messages.Conversation String
       -- `MessageSelected`'s own effect (expand + select + scroll/highlight),
       -- minus the `pushUrl` -- same relationship `SyncSelectedGroup` has to
       -- `GroupSelected`: the embedded panel's own `<a href>` (`messageRowView`)
       -- already carries this exact message's `#message-<id>` fragment, so
       -- the browser's own navigation is what put it in the URL bar here,
       -- not another `pushUrl`.
-    | SyncSelectedMessage MessagingGroupRef String
+    | SyncSelectedMessage Messages.Conversation String
       -- The "Mark unread" button on an already-read message row (any
       -- context -- two-pane detail, sidebar inline-expand, or embedded
-      -- panel). `host` (not a whole `MessagingGroupRef`) is all `update` needs to
+      -- panel). `host` (not a whole `Messages.Conversation`) is all `update` needs to
       -- resolve which account to fire `MarkMessagesRead { unread = True }`
       -- as -- see its own handling, which mirrors `GotGroupMessages`'
       -- optimistic-patch-then-fire-the-RPC shape, just in reverse and for a
@@ -391,7 +380,7 @@ type Msg
       -- just-sent reply silently wouldn't appear in the still-open thread at
       -- all until some other refetch (a poll, a collapse/re-expand) happened
       -- to catch it up.
-    | MessageSent MessagingGroupRef String
+    | MessageSent Messages.Conversation String
 
 
 {-| A `Model` with nothing fetched yet and no `PageContext` -- what
@@ -418,7 +407,7 @@ empty =
     }
 
 
-init : AccountsPanel.Model -> Maybe PageContext -> Maybe MessagingGroupRef -> Maybe String -> String -> ( Model, Cmd Msg )
+init : AccountsPanel.Model -> Maybe PageContext -> Maybe Messages.Conversation -> Maybe String -> String -> ( Model, Cmd Msg )
 init accountsPanelModel pageContext selectedGroup pendingScrollMessageId searchText =
     let
         ( fetchedModel, fetchCmd ) =
@@ -504,15 +493,20 @@ update accountsPanelModel msg model =
             ( { model | sidebarAnimations = Dict.remove key model.sidebarAnimations }, Cmd.none, Nothing )
 
         ToggleExpand summary ->
-            if Set.member summary.key model.inlineOpenGroups then
-                ( syncSidebarAnimations { model | inlineOpenGroups = Set.remove summary.key model.inlineOpenGroups }, Cmd.none, Nothing )
+            let
+                key : String
+                key =
+                    Messages.conversationKey summary.conversation
+            in
+            if Set.member key model.inlineOpenGroups then
+                ( syncSidebarAnimations { model | inlineOpenGroups = Set.remove key model.inlineOpenGroups }, Cmd.none, Nothing )
 
             else
                 let
                     ( newModel, cmd ) =
                         expand accountsPanelModel
-                            { model | inlineOpenGroups = Set.insert summary.key model.inlineOpenGroups }
-                            { key = summary.key, host = summary.host, groupId = summary.groupId, kind = summary.kind }
+                            { model | inlineOpenGroups = Set.insert key model.inlineOpenGroups }
+                            summary.conversation
                 in
                 ( syncSidebarAnimations newModel, cmd, Nothing )
 
@@ -533,13 +527,13 @@ update accountsPanelModel msg model =
                     List.map (patchMessageRead unreadIds) response.messages
 
                 -- The host this group's thread actually lives on -- carried
-                -- on `ExpandedGroup` itself (see its own doc) precisely for
-                -- self-contained lookups like this one, rather than needing
-                -- a `MessagingGroupRef` threaded in from wherever `GotGroupMessages`
-                -- happened to be dispatched.
+                -- on `ExpandedGroup.conversation` itself (see that type's own
+                -- doc) precisely for self-contained lookups like this one,
+                -- rather than needing a `Messages.Conversation` threaded in
+                -- from wherever `GotGroupMessages` happened to be dispatched.
                 host : Maybe String
                 host =
-                    Dict.get key model.expandedGroups |> Maybe.map .host
+                    Dict.get key model.expandedGroups |> Maybe.map (.conversation >> Messages.conversationHost)
 
                 newModel : Model
                 newModel =
@@ -559,7 +553,7 @@ update accountsPanelModel msg model =
                         -- Patches the *outer listing's* own copy of these
                         -- same messages too (if `host` has one), so
                         -- `syncSidebarAnimations` below recomputes each
-                        -- affected `GroupSummary.unreadCount` immediately --
+                        -- affected `ConversationSummary.unreadCount` immediately --
                         -- without this, the group card's own unread badge
                         -- wouldn't catch up until the next 30s `Poll`
                         -- refetches the outer listing fresh from the server.
@@ -687,7 +681,7 @@ update accountsPanelModel msg model =
                     let
                         mostRecentId : Maybe String
                         mostRecentId =
-                            mostRecentMessageIdFor model ref.key
+                            mostRecentMessageIdFor model ref
 
                         ( expandedModel, expandCmd ) =
                             -- Closes the mobile sidebar overlay too (see
@@ -759,7 +753,7 @@ update accountsPanelModel msg model =
         SyncSelectedGroup ref ->
             let
                 ( newModel, cmd ) =
-                    syncSelection accountsPanelModel model ref (mostRecentMessageIdFor model ref.key)
+                    syncSelection accountsPanelModel model ref (mostRecentMessageIdFor model ref)
             in
             ( newModel, cmd, Nothing )
 
@@ -863,7 +857,7 @@ top of the thread, same as `expand` alone) -- everything `GroupSelected`/
 precisely because the embedded panel's own `<a href>` already put the right
 URL in the bar (see either constructor's own doc on `Msg`).
 -}
-syncSelection : AccountsPanel.Model -> Model -> MessagingGroupRef -> Maybe String -> ( Model, Cmd Msg )
+syncSelection : AccountsPanel.Model -> Model -> Messages.Conversation -> Maybe String -> ( Model, Cmd Msg )
 syncSelection accountsPanelModel model ref messageId =
     let
         ( expandedModel, expandCmd ) =
@@ -886,98 +880,111 @@ syncSelection accountsPanelModel model ref messageId =
     ( expandedModel, Cmd.batch [ expandCmd, scrollToPendingMessageCmd expandedModel ] )
 
 
-{-| The id of `key`'s own `GroupSummary.mostRecent` message, read straight off
-`currentGroupSummaries` (the outer listing, always fetched before any row is
-clickable at all -- unlike `expandedGroups`, no full-thread fetch is needed
-just to know which message is newest). `Nothing` for a group not (yet, or
-ever) in that listing -- e.g. a `?messaging_group=` permalink to a group that
-was never in the general listing at all (see `fetchExpand`'s own doc on that
-case) -- in which case `GroupSelected`/`SyncSelectedGroup` simply don't get a
-scroll target or `#message-<id>` fragment to add, same as before this
-existed.
+{-| The id of `conversation`'s own `ConversationSummary.mostRecent` message,
+read straight off `currentGroupSummaries` (the outer listing, always fetched
+before any row is clickable at all -- unlike `expandedGroups`, no full-thread
+fetch is needed just to know which message is newest). `Nothing` for a group
+not (yet, or ever) in that listing -- e.g. a `?messaging_group=` permalink to
+a group that was never in the general listing at all (see `fetchExpand`'s own
+doc on that case) -- in which case `GroupSelected`/`SyncSelectedGroup` simply
+don't get a scroll target or `#message-<id>` fragment to add, same as before
+this existed.
 -}
-mostRecentMessageIdFor : Model -> String -> Maybe String
-mostRecentMessageIdFor model key =
-    Dict.get key (currentGroupSummaries model) |> Maybe.map (.mostRecent >> .id)
+mostRecentMessageIdFor : Model -> Messages.Conversation -> Maybe String
+mostRecentMessageIdFor model conversation =
+    Dict.get (Messages.conversationKey conversation) (currentGroupSummaries model) |> Maybe.map (.mostRecent >> .id)
 
 
-{-| Expands `ref` (re-fires the fetch if it's already `ExpandFailed`, a no-op
-for any other already-expanded status -- see that branch's own doc): a
-`SoloMessage` (see `Components.Messages.MessagingGroupKind`) is already fully in hand
-from the outer listing fetch (`Components.Messages.groupMessages`), so this
-just seeds it directly with no RPC; every other group fetches its full thread
-via `fetchExpand`, which dispatches to the right `GetMessages` filter for
-`ref.kind`. Falls back to `PERSONALMESSAGES`/no known account when `ref.host`
-isn't (yet) in `messagesByServer` at all -- e.g. a `?messaging_group=`
-permalink to a group whose host the viewer isn't currently signed into with a
-matching permission -- so the fetch still fires (and, most likely, 404s into
-`ExpandFailed`'s "not found" rendering) rather than silently doing nothing.
+{-| Expands `conversation` (re-fires the fetch if it's already `ExpandFailed`,
+a no-op for any other already-expanded status -- see that branch's own doc):
+a `SoloMessage` (see `Components.Messages.Conversation`) is already fully in
+hand from the outer listing fetch (`Components.Messages.conversationMessages`),
+so this just seeds it directly with no RPC; every other conversation fetches
+its full thread via `fetchExpand`, which dispatches to the right `GetMessages`
+filter for its own variant. Falls back to `PERSONALMESSAGES`/no known account
+when `conversation`'s own host isn't (yet) in `messagesByServer` at all -- e.g.
+a `?messaging_group=` permalink to a group whose host the viewer isn't
+currently signed into with a matching permission -- so the fetch still fires
+(and, most likely, 404s into `ExpandFailed`'s "not found" rendering) rather
+than silently doing nothing.
 -}
-expand : AccountsPanel.Model -> Model -> MessagingGroupRef -> ( Model, Cmd Msg )
-expand accountsPanelModel model ref =
-    case Dict.get ref.key model.expandedGroups |> Maybe.map .status of
+expand : AccountsPanel.Model -> Model -> Messages.Conversation -> ( Model, Cmd Msg )
+expand accountsPanelModel model conversation =
+    let
+        key : String
+        key =
+            Messages.conversationKey conversation
+    in
+    case Dict.get key model.expandedGroups |> Maybe.map .status of
         Just ExpandFailed ->
-            fetchExpand accountsPanelModel model ref
+            fetchExpand accountsPanelModel model conversation
 
         Just _ ->
             ( model, Cmd.none )
 
         Nothing ->
-            case Dict.get ref.key (currentGroupSummaries model) of
+            case Dict.get key (currentGroupSummaries model) of
                 Just summary ->
-                    if summary.kind == Messages.SoloMessage then
-                        ( { model
-                            | expandedGroups =
-                                Dict.insert ref.key
-                                    { status = ExpandLoaded
-                                    , messages = Dict.singleton summary.mostRecent.id summary.mostRecent
-                                    , host = ref.host
-                                    , groupId = ref.groupId
-                                    , kind = summary.kind
-                                    }
-                                    model.expandedGroups
-                          }
-                        , Cmd.none
-                        )
+                    case summary.conversation of
+                        Messages.SoloMessage _ _ ->
+                            ( { model
+                                | expandedGroups =
+                                    Dict.insert key
+                                        { status = ExpandLoaded
+                                        , messages = Dict.singleton summary.mostRecent.id summary.mostRecent
+                                        , conversation = conversation
+                                        }
+                                        model.expandedGroups
+                              }
+                            , Cmd.none
+                            )
 
-                    else
-                        fetchExpand accountsPanelModel model ref
+                        _ ->
+                            fetchExpand accountsPanelModel model conversation
 
                 Nothing ->
-                    fetchExpand accountsPanelModel model ref
+                    fetchExpand accountsPanelModel model conversation
 
 
 {-| Fires (or re-fires, see `retryPendingExpansions` and `expand`'s own
-`ExpandFailed` branch) the actual `GetMessages` fetch for `ref` -- one of
-`fetchMessagingGroup`/`fetchFromEmail`/`fetchMessage` depending on `ref.kind`
-(`Components.Messages.MessagingGroupKind`), so a cold permalink (one whose `ref`
-never came from an already-fetched `GroupSummary`, e.g. `expand`'s own
-`Nothing` branches) always resolves through the RPC filter that actually
-matches what `ref.groupId` means, rather than assuming it's always a real
-`MessagingGroup.id`. Unless `ref.host` isn't yet a `knownConnectedServer`
-(see that function's own doc on the disconnected placeholder every persisted
-server starts as), in which case this leaves the entry `ExpandLoading` (never
-firing a doomed, instantly-failing request against it) for
-`retryPendingExpansions` to actually attempt once the real connection lands
--- mirrors `Components.Messages.eligibleServers`'s own fix for the exact same
-race, just for a single group's fetch instead of the whole listing. A genuine
-failure (the fetch _did_ reach a connected server, and it came back an error
--- not found, no access, ...) still lands in `ExpandFailed` as before, via
-`GotGroupMessages`'s own `Err` branch -- that one isn't auto-retried (`Poll`'s
-`retryPendingExpansions` deliberately skips it), but a user re-clicking the
-same row's chevron (`ToggleExpand` -> `expand`) fires this again rather than
-just re-showing the stale "Couldn't load this messaging group." message.
+`ExpandFailed` branch) the actual `GetMessages` fetch for `conversation` --
+one of `fetchMessagingGroup`/`fetchFromEmail`/`fetchMessage` depending on its
+own variant, so a cold permalink (one whose `conversation` never came from an
+already-fetched `ConversationSummary`, e.g. `expand`'s own `Nothing` branches)
+always resolves through the RPC filter that actually matches what it means,
+rather than assuming it's always a real `MessagingGroup.id`. Unless its own
+host isn't yet a `knownConnectedServer` (see that function's own doc on the
+disconnected placeholder every persisted server starts as), in which case
+this leaves the entry `ExpandLoading` (never firing a doomed, instantly-failing
+request against it) for `retryPendingExpansions` to actually attempt once the
+real connection lands -- mirrors `Components.Messages.eligibleServers`'s own
+fix for the exact same race, just for a single group's fetch instead of the
+whole listing. A genuine failure (the fetch _did_ reach a connected server,
+and it came back an error -- not found, no access, ...) still lands in
+`ExpandFailed` as before, via `GotGroupMessages`'s own `Err` branch -- that
+one isn't auto-retried (`Poll`'s `retryPendingExpansions` deliberately skips
+it), but a user re-clicking the same row's chevron (`ToggleExpand` -> `expand`)
+fires this again rather than just re-showing the stale "Couldn't load this
+messaging group." message.
 -}
-fetchExpand : AccountsPanel.Model -> Model -> MessagingGroupRef -> ( Model, Cmd Msg )
-fetchExpand accountsPanelModel model ref =
+fetchExpand : AccountsPanel.Model -> Model -> Messages.Conversation -> ( Model, Cmd Msg )
+fetchExpand accountsPanelModel model conversation =
     let
+        key : String
+        key =
+            Messages.conversationKey conversation
+
+        host : String
+        host =
+            Messages.conversationHost conversation
+
         existingMessages : Dict String Message
         existingMessages =
-            Dict.get ref.key model.expandedGroups |> Maybe.map .messages |> Maybe.withDefault Dict.empty
+            Dict.get key model.expandedGroups |> Maybe.map .messages |> Maybe.withDefault Dict.empty
 
         cmd : Cmd Msg
         cmd =
-            case AccountsPanel.knownConnectedServer accountsPanelModel.servers ref.host of
+            case AccountsPanel.knownConnectedServer accountsPanelModel.servers host of
                 Nothing ->
                     Cmd.none
 
@@ -985,7 +992,7 @@ fetchExpand accountsPanelModel model ref =
                     let
                         feed : Maybe ServerFeed
                         feed =
-                            Dict.get ref.host model.messagesByServer
+                            Dict.get host model.messagesByServer
 
                         accountUserId : Maybe String
                         accountUserId =
@@ -997,27 +1004,27 @@ fetchExpand accountsPanelModel model ref =
 
                         accountServer : AccountsPanel.MaybeAccountServer
                         accountServer =
-                            ( accountUserId, ref.host )
+                            ( accountUserId, host )
 
                         fetchTask : Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse )
                         fetchTask =
-                            case ref.kind of
-                                Messages.MessagingGroup ->
-                                    Messages.fetchMessagingGroup accountsPanelModel accountServer listingType ref.groupId
+                            case conversation of
+                                Messages.MessagingGroup _ groupId ->
+                                    Messages.fetchMessagingGroup accountsPanelModel accountServer listingType groupId
 
-                                Messages.FromEmail ->
-                                    Messages.fetchFromEmail accountsPanelModel accountServer listingType ref.groupId
+                                Messages.FromEmail _ fromEmail ->
+                                    Messages.fetchFromEmail accountsPanelModel accountServer listingType fromEmail
 
-                                Messages.SoloMessage ->
-                                    Messages.fetchMessage accountsPanelModel accountServer listingType ref.groupId
+                                Messages.SoloMessage _ messageId ->
+                                    Messages.fetchMessage accountsPanelModel accountServer listingType messageId
                     in
                     fetchTask
-                        |> Task.attempt (GotGroupMessages ref.key)
+                        |> Task.attempt (GotGroupMessages key)
     in
     ( { model
         | expandedGroups =
-            Dict.insert ref.key
-                { status = ExpandLoading, messages = existingMessages, host = ref.host, groupId = ref.groupId, kind = ref.kind }
+            Dict.insert key
+                { status = ExpandLoading, messages = existingMessages, conversation = conversation }
                 model.expandedGroups
       }
     , cmd
@@ -1038,14 +1045,14 @@ that's genuinely not found/accessible.
 retryPendingExpansions : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 retryPendingExpansions accountsPanelModel model =
     let
-        pending : List MessagingGroupRef
+        pending : List Messages.Conversation
         pending =
             model.expandedGroups
-                |> Dict.toList
+                |> Dict.values
                 |> List.filterMap
-                    (\( key, eg ) ->
+                    (\eg ->
                         if eg.status == ExpandLoading then
-                            Just { key = key, host = eg.host, groupId = eg.groupId, kind = eg.kind }
+                            Just eg.conversation
 
                         else
                             Nothing
@@ -1198,7 +1205,7 @@ patchServerFeedUnread unreadIds feed =
             feed
 
 
-{-| Every currently-known `GroupSummary.unreadCount`, summed -- what
+{-| Every currently-known `ConversationSummary.unreadCount`, summed -- what
 `Shared.MessagingPanel`/`UI.messagingToggle` badge with a number, mirroring
 `Shared.StarredPanel`'s own `Set.size starredPostIds` badge. Unlike that one,
 though, this can only ever reflect what's _already been fetched_ into this
@@ -1307,33 +1314,32 @@ isSearchActive model =
     not (String.isEmpty (String.trim model.searchText))
 
 
-{-| The query param(s) identifying `ref` -- `?messaging_group=`/`?message=`
-(via `Messages.groupRouteId`'s shared `id`-or-`id@host` encoding, see its own
-doc) for the two opaque-id kinds, or `?from_email=` (plus `&from_email_host=`
-if `ref.host` isn't `mainFrontendHost`) for `FromEmail`: an email address
-already contains its own `@`, so it can't reuse `groupRouteId`'s federation
-suffix without an ambiguous double-`@` string, hence the separate param.
-Generic over any record with `MessagingGroupRef`'s `host`/`groupId`/`kind` fields, so
-this covers both `MessagingGroupRef` itself and `MessageLinkTarget`'s inline
-`ExternalLink` permalinks (see `messageInteractionFor`) without needing an
-intermediate `MessagingGroupRef` built just to call this.
+{-| The query param(s) identifying `conversation` -- `?messaging_group=`/
+`?message=` (via `Messages.groupRouteId`'s shared `id`-or-`id@host` encoding,
+see its own doc) for the two opaque-id kinds, or `?from_email=` (plus
+`&from_email_host=` if its host isn't `mainFrontendHost`) for `FromEmail`: an
+email address already contains its own `@`, so it can't reuse
+`groupRouteId`'s federation suffix without an ambiguous double-`@` string,
+hence the separate param. Takes a bare `Messages.Conversation` -- unlike
+before this carried its own host, so nothing else (a `MessageLinkTarget`, a
+`ConversationSummary`) needs to be unwrapped first to call this.
 -}
-groupQueryParams : String -> { r | host : String, groupId : String, kind : Messages.MessagingGroupKind } -> List Url.Builder.QueryParameter
-groupQueryParams mainFrontendHost ref =
-    case ref.kind of
-        Messages.MessagingGroup ->
-            [ Url.Builder.string "messaging_group" (Messages.groupRouteId mainFrontendHost ref.host ref.groupId) ]
+groupQueryParams : String -> Messages.Conversation -> List Url.Builder.QueryParameter
+groupQueryParams mainFrontendHost conversation =
+    case conversation of
+        Messages.MessagingGroup host groupId ->
+            [ Url.Builder.string "messaging_group" (Messages.groupRouteId mainFrontendHost host groupId) ]
 
-        Messages.SoloMessage ->
-            [ Url.Builder.string "message" (Messages.groupRouteId mainFrontendHost ref.host ref.groupId) ]
+        Messages.SoloMessage host messageId ->
+            [ Url.Builder.string "message" (Messages.groupRouteId mainFrontendHost host messageId) ]
 
-        Messages.FromEmail ->
-            Url.Builder.string "from_email" ref.groupId
-                :: (if ref.host == mainFrontendHost then
+        Messages.FromEmail host fromEmail ->
+            Url.Builder.string "from_email" fromEmail
+                :: (if host == mainFrontendHost then
                         []
 
                     else
-                        [ Url.Builder.string "from_email_host" ref.host ]
+                        [ Url.Builder.string "from_email_host" host ]
                    )
 
 
@@ -1383,7 +1389,7 @@ replaceQueryUrl accountsPanelModel model =
 old standalone `groupAnimations` cache now that its own `flip` state lives in
 `sidebarAnimations` instead (see that field's own doc).
 -}
-currentGroupSummaries : Model -> Dict String Messages.GroupSummary
+currentGroupSummaries : Model -> Dict String Messages.ConversationSummary
 currentGroupSummaries model =
     model.messagesByServer
         |> Dict.toList
@@ -1391,7 +1397,7 @@ currentGroupSummaries model =
             (\( host, feed ) ->
                 case feed.status of
                     Loaded messages ->
-                        Messages.groupMessages host messages |> List.map (\group -> ( group.key, group ))
+                        Messages.conversationMessages host messages |> List.map (\group -> ( Messages.conversationKey group.conversation, group ))
 
                     _ ->
                         []
@@ -1407,7 +1413,7 @@ of that same group's own messages (see `messageSortKey`) -- one less than the
 group's own (negated) timestamp always does that, since no message's
 timestamp exceeds its group's `mostRecent`.
 -}
-groupSortKey : Messages.GroupSummary -> ( Int, Int )
+groupSortKey : Messages.ConversationSummary -> ( Int, Int )
 groupSortKey summary =
     let
         t : Int
@@ -1417,7 +1423,7 @@ groupSortKey summary =
     ( t, t - 1 )
 
 
-messageSortKey : Messages.GroupSummary -> Message -> ( Int, Int )
+messageSortKey : Messages.ConversationSummary -> Message -> ( Int, Int )
 messageSortKey summary message =
     ( negate (Messages.messageMillis summary.mostRecent), negate (Messages.messageMillis message) )
 
@@ -1430,26 +1436,26 @@ the group isn't inline-open at all, or its fetch hasn't resolved to
 `ExpandLoaded` yet (a `Loading`/`Failed` placeholder, also still nested under
 the row rather than a flat entry of its own -- see `groupRowView`).
 -}
-groupMessageRows : Model -> Messages.GroupSummary -> List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+groupMessageRows : Model -> Messages.ConversationSummary -> List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
 groupMessageRows model summary =
-    if isSearchActive model || not (Set.member summary.key model.inlineOpenGroups) then
+    let
+        key : String
+        key =
+            Messages.conversationKey summary.conversation
+    in
+    if isSearchActive model || not (Set.member key model.inlineOpenGroups) then
         []
 
     else
-        case Dict.get summary.key model.expandedGroups of
+        case Dict.get key model.expandedGroups of
             Just eg ->
                 if eg.status == ExpandLoaded then
-                    let
-                        ref : MessagingGroupRef
-                        ref =
-                            { key = summary.key, host = summary.host, groupId = summary.groupId, kind = summary.kind }
-                    in
                     eg.messages
                         |> Dict.values
                         |> List.map
                             (\message ->
                                 ( "message:" ++ message.id
-                                , { row = SidebarMessageRow ref message, sortKey = messageSortKey summary message }
+                                , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey summary message }
                                 )
                             )
 
@@ -1470,7 +1476,7 @@ flattenSidebar model =
         |> Dict.values
         |> List.concatMap
             (\summary ->
-                ( "group:" ++ summary.key, { row = SidebarGroupRow summary, sortKey = groupSortKey summary } )
+                ( "group:" ++ Messages.conversationKey summary.conversation, { row = SidebarGroupRow summary, sortKey = groupSortKey summary } )
                     :: groupMessageRows model summary
             )
 
@@ -1520,7 +1526,7 @@ syncDetailThreadAnimations model =
         currentMessages : Dict String Message
         currentMessages =
             model.selectedGroup
-                |> Maybe.andThen (\ref -> Dict.get ref.key model.expandedGroups)
+                |> Maybe.andThen (\ref -> Dict.get (Messages.conversationKey ref) model.expandedGroups)
                 |> Maybe.andThen
                     (\eg ->
                         if eg.status == ExpandLoaded then
@@ -1772,9 +1778,9 @@ sidebarRowView time accountsPanelModel model ( key, anim ) =
                 SidebarGroupRow summary ->
                     groupRowView time accountsPanelModel model summary
 
-                SidebarMessageRow ref message ->
+                SidebarMessageRow conversation message ->
                     div [ class "messages-sidebar-message-row" ]
-                        [ messageRowView time accountsPanelModel ref.host (messageInteractionFor accountsPanelModel model ref) model.highlightMessageId message ]
+                        [ messageRowView time accountsPanelModel (Messages.conversationHost conversation) (messageInteractionFor accountsPanelModel model conversation) model.highlightMessageId message ]
     in
     ( key
     , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
@@ -1782,18 +1788,26 @@ sidebarRowView time accountsPanelModel model ( key, anim ) =
     )
 
 
-groupRowView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.GroupSummary -> Html Msg
+groupRowView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.ConversationSummary -> Html Msg
 groupRowView time accountsPanelModel model summary =
     let
+        key : String
+        key =
+            Messages.conversationKey summary.conversation
+
+        host : String
+        host =
+            Messages.conversationHost summary.conversation
+
         isSelected : Bool
         isSelected =
-            model.selectedGroup |> Maybe.map .key |> (==) (Just summary.key)
+            model.selectedGroup |> Maybe.map Messages.conversationKey |> (==) (Just key)
 
         rowClasses : List String
         rowClasses =
             "messages-group-row"
                 :: (if isSelected then
-                        [ "selected", "border-color-primary", hostnameToCSSClass summary.host ]
+                        [ "selected", "border-color-primary", hostnameToCSSClass host ]
 
                     else
                         []
@@ -1807,12 +1821,12 @@ groupRowView time accountsPanelModel model summary =
             [ div [ class "messages-group-row-body" ]
                 [ div [ class "messages-group-badges" ]
                     [ messageCountBadgeView messageCount messageCountComplete
-                    , unreadBadgeView summary.host summary.unreadCount
+                    , unreadBadgeView host summary.unreadCount
                     ]
-                , fromEmailView summary.kind summary.groupId
-                , participantsView accountsPanelModel summary.host summary.members
-                , span [ classes [ "messages-group-time", hostnameToCSSClass summary.host ] ]
-                    [ hostLabelView accountsPanelModel.mainFrontendHost summary.host
+                , fromEmailView summary.conversation
+                , participantsView accountsPanelModel host summary.members
+                , span [ classes [ "messages-group-time", hostnameToCSSClass host ] ]
+                    [ hostLabelView accountsPanelModel.mainFrontendHost host
                     , text (SharedTime.formatMoment time (Messages.messageMillis summary.mostRecent |> Time.millisToPosix))
                     ]
                 ]
@@ -1827,7 +1841,7 @@ groupRowView time accountsPanelModel model summary =
         -- search is cleared.
         isInlineOpen : Bool
         isInlineOpen =
-            isSearchActive model || Set.member summary.key model.inlineOpenGroups
+            isSearchActive model || Set.member key model.inlineOpenGroups
 
         -- Always shown, on *every* row -- including whichever one is
         -- `selectedGroup` (see `inlineOpenGroups`' own doc on `Model` for
@@ -1876,7 +1890,7 @@ groupRowView time accountsPanelModel model summary =
                 [ classes rowClasses
                 , href
                     ("/messages"
-                        ++ Url.Builder.toQuery (groupQueryParams accountsPanelModel.mainFrontendHost summary)
+                        ++ Url.Builder.toQuery (groupQueryParams accountsPanelModel.mainFrontendHost summary.conversation)
                         -- Lands the real page's two-pane detail already
                         -- scrolled to the group's newest message -- see
                         -- `GroupSelected`'s own doc on why (the same
@@ -1886,14 +1900,14 @@ groupRowView time accountsPanelModel model summary =
                         ++ "#"
                         ++ messageDomId summary.mostRecent.id
                     )
-                , onClick (EmbeddedGroupLinkClicked { key = summary.key, host = summary.host, groupId = summary.groupId, kind = summary.kind })
+                , onClick (EmbeddedGroupLinkClicked summary.conversation)
                 ]
                 (expandChevron :: content)
 
           else
             div
                 [ classes rowClasses
-                , onClick (GroupSelected { key = summary.key, host = summary.host, groupId = summary.groupId, kind = summary.kind })
+                , onClick (GroupSelected summary.conversation)
                 ]
                 (expandChevron :: content)
         , if isSearchActive model then
@@ -1946,7 +1960,7 @@ participantsView accountsPanelModel host members =
 
 
 {-| The raw sender address for a `FromEmail`-kind group (`groupId` is that
-`Message.from` value verbatim, see `Components.Messages.MessagingGroupKind`'s own
+`Message.from` value verbatim, see `Components.Messages.Conversation`'s own
 doc) -- shown _alongside_ `participantsView`'s own member chips, not instead
 of them, since a `FromEmail` group's `members` (any locally-resolvable
 `Message.sender`) is still worth showing when present. `text ""` for every
@@ -1956,10 +1970,10 @@ like a real participant -- see `selectedGroupView`'s own `messages-thread-header
 spoofable-address warning for why a `from` address shouldn't visually read as
 a verified identity.
 -}
-fromEmailView : Messages.MessagingGroupKind -> String -> Html msg
-fromEmailView kind fromEmail =
-    case kind of
-        Messages.FromEmail ->
+fromEmailView : Messages.Conversation -> Html msg
+fromEmailView conversation =
+    case conversation of
+        Messages.FromEmail _ fromEmail ->
             div [ class "messages-from-email" ] [ text fromEmail ]
 
         _ ->
@@ -2003,9 +2017,9 @@ that fetch's own `messages` count rather than the outer listing's; `False`
 clicked open, with the fetch still `ExpandLoading`/`ExpandFailed`, doesn't
 actually know the true count yet either.
 -}
-groupMessageCount : Model -> Messages.GroupSummary -> ( Int, Bool )
+groupMessageCount : Model -> Messages.ConversationSummary -> ( Int, Bool )
 groupMessageCount model summary =
-    case Dict.get summary.key model.expandedGroups of
+    case Dict.get (Messages.conversationKey summary.conversation) model.expandedGroups of
         Just eg ->
             if eg.status == ExpandLoaded then
                 ( Dict.size eg.messages, True )
@@ -2069,7 +2083,7 @@ hostLabelView mainFrontendHost host =
         text (host ++ " · ")
 
 
-{-| A group card's own unread-message count (`GroupSummary.unreadCount`) --
+{-| A group card's own unread-message count (`ConversationSummary.unreadCount`) --
 hidden entirely at `0`, same "only show chrome when there's something behind
 it" reasoning as `UI.starredPostsToggle`'s own badge. Styled with `host`'s
 own brand color (`background-color-nav`/`border-color-primary-text`, see
@@ -2151,20 +2165,20 @@ chevron open (`ToggleExpand`, `inlineOpenGroups`), which never touches
 type MessageInteraction
     = NoInteraction
     | ExternalLink MessageLinkTarget
-    | SelectGroup MessagingGroupRef
+    | SelectGroup Messages.Conversation
 
 
 type alias MessageLinkTarget =
-    { mainFrontendHost : String, key : String, host : String, groupId : String, kind : Messages.MessagingGroupKind }
+    { mainFrontendHost : String, conversation : Messages.Conversation }
 
 
-messageInteractionFor : AccountsPanel.Model -> Model -> { r | key : String, host : String, groupId : String, kind : Messages.MessagingGroupKind } -> MessageInteraction
-messageInteractionFor accountsPanelModel model ref =
+messageInteractionFor : AccountsPanel.Model -> Model -> Messages.Conversation -> MessageInteraction
+messageInteractionFor accountsPanelModel model conversation =
     if model.embeddedPanel then
-        ExternalLink { mainFrontendHost = accountsPanelModel.mainFrontendHost, key = ref.key, host = ref.host, groupId = ref.groupId, kind = ref.kind }
+        ExternalLink { mainFrontendHost = accountsPanelModel.mainFrontendHost, conversation = conversation }
 
     else
-        SelectGroup { key = ref.key, host = ref.host, groupId = ref.groupId, kind = ref.kind }
+        SelectGroup conversation
 
 
 {-| `groupRowView`'s own nested placeholder for an inline-open group whose
@@ -2175,9 +2189,9 @@ this placeholder to say) and for a group with no `expandedGroups` entry at
 all (a chevron that's only just been clicked, `expand`'s own `Cmd` not
 resolved into the model yet).
 -}
-inlineStatusView : Model -> Messages.GroupSummary -> Html msg
+inlineStatusView : Model -> Messages.ConversationSummary -> Html msg
 inlineStatusView model summary =
-    case Dict.get summary.key model.expandedGroups |> Maybe.map .status of
+    case Dict.get (Messages.conversationKey summary.conversation) model.expandedGroups |> Maybe.map .status of
         Just ExpandLoading ->
             p [ class "messages-thread-status" ] [ text "Loading messages…" ]
 
@@ -2200,7 +2214,7 @@ deliberately different, simpler data path from the normal manual-expand flow
 -- see this function's own two callers in `groupRowView` for the full
 before/after split.
 -}
-searchResultThreadView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.GroupSummary -> Html Msg
+searchResultThreadView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.ConversationSummary -> Html Msg
 searchResultThreadView time accountsPanelModel model summary =
     let
         sortedMessages : List Message
@@ -2210,7 +2224,11 @@ searchResultThreadView time accountsPanelModel model summary =
 
         interaction : MessageInteraction
         interaction =
-            messageInteractionFor accountsPanelModel model summary
+            messageInteractionFor accountsPanelModel model summary.conversation
+
+        host : String
+        host =
+            Messages.conversationHost summary.conversation
     in
     Html.Keyed.node "div"
         [ class "messages-thread-list flip-animated-column" ]
@@ -2218,38 +2236,49 @@ searchResultThreadView time accountsPanelModel model summary =
             (\message ->
                 ( message.id
                 , div (UI.Flip.itemAttributes UI.Flip.Vertical UI.Flip.restingState False)
-                    [ div [] [ messageRowView time accountsPanelModel summary.host interaction model.highlightMessageId message ] ]
+                    [ div [] [ messageRowView time accountsPanelModel host interaction model.highlightMessageId message ] ]
                 )
             )
             sortedMessages
         )
 
 
-{-| `summary`'s own slice of `model.messagesByServer[summary.host]`'s
-already-fetched listing response -- see `searchResultThreadView`'s own doc.
-Matches messages the same way `Components.Messages.groupMessages` grouped
-them into `summary` in the first place: by `messagingGroup.id`, falling back
-to the lone message's own id for a "solo" (Bcc-only) pseudo-group (see that
-function's own doc).
+{-| `summary`'s own slice of its own host's already-fetched listing response
+-- see `searchResultThreadView`'s own doc. Matches messages the same way
+`Components.Messages.conversationMessages` grouped them into `summary` in the
+first place (`messageBelongsToConversation`): by `messagingGroup.id`, or
+`from` address, or the lone message's own id, matching whichever variant
+`summary.conversation` actually is.
 -}
-searchResultMessagesFor : Model -> Messages.GroupSummary -> List Message
+searchResultMessagesFor : Model -> Messages.ConversationSummary -> List Message
 searchResultMessagesFor model summary =
-    case Dict.get summary.host model.messagesByServer |> Maybe.map .status of
+    case Dict.get (Messages.conversationHost summary.conversation) model.messagesByServer |> Maybe.map .status of
         Just (Loaded messages) ->
-            List.filter (messageBelongsToGroup summary.groupId) messages
+            List.filter (messageBelongsToConversation summary.conversation) messages
 
         _ ->
             []
 
 
-messageBelongsToGroup : String -> Message -> Bool
-messageBelongsToGroup groupId message =
-    case message.messagingGroup of
-        Just group ->
-            group.id == groupId
+{-| Whether `message` is one of `conversation`'s own, matching
+`Components.Messages.conversationMessages`' own classification exactly for
+each variant -- unlike a naive "same id" check (this function's own
+pre-`Conversation` predecessor, `messageBelongsToGroup`, effectively used one
+generic id for every kind), a `FromEmail` conversation's id is an email
+*address*, not a message id, so it has to match against `message.from`
+instead of `message.id`.
+-}
+messageBelongsToConversation : Messages.Conversation -> Message -> Bool
+messageBelongsToConversation conversation message =
+    case conversation of
+        Messages.MessagingGroup _ groupId ->
+            (message.messagingGroup |> Maybe.map .id) == Just groupId
 
-        Nothing ->
-            message.id == groupId
+        Messages.FromEmail _ fromEmail ->
+            message.messagingGroup == Nothing && message.from == Just fromEmail
+
+        Messages.SoloMessage _ messageId ->
+            message.id == messageId
 
 
 {-| A thread's participants -- derived straight from the `messagingGroup` of
@@ -2259,7 +2288,7 @@ correct for a group reached only by a `?messaging_group=` permalink that
 never appeared in the general listing at all (see `fetchExpand`'s own doc on
 that case) as for one that did. Falls back to the loaded messages' own
 senders for a "solo" (Bcc-only) group, whose lone message has no
-`messagingGroup` of its own (see `Components.Messages.groupMessages`) to read
+`messagingGroup` of its own (see `Components.Messages.conversationMessages`) to read
 members from in the first place.
 -}
 threadParticipants : ExpandedGroup -> List Author
@@ -2280,9 +2309,9 @@ threadParticipants eg =
         fromGroup
 
 
-selectedGroupView : SharedTime.Model -> AccountsPanel.Model -> Model -> MessagingGroupRef -> Html Msg
+selectedGroupView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.Conversation -> Html Msg
 selectedGroupView time accountsPanelModel model selected =
-    case Dict.get selected.key model.expandedGroups of
+    case Dict.get (Messages.conversationKey selected) model.expandedGroups of
         Nothing ->
             p [ class "messages-thread-status" ] [ text "Loading messages…" ]
 
@@ -2295,16 +2324,21 @@ selectedGroupView time accountsPanelModel model selected =
                     p [ class "messages-thread-status" ] [ text "Messaging group not found." ]
 
                 ExpandLoaded ->
+                    let
+                        host : String
+                        host =
+                            Messages.conversationHost selected
+                    in
                     div [ class "messages-thread" ]
                         [ div [ class "messages-thread-header" ]
                             [ div [ class "messages-thread-header-info" ]
-                                (fromEmailView selected.kind eg.groupId
-                                    :: participantsView accountsPanelModel selected.host (threadParticipants eg)
-                                    :: spoofableEmailWarningView selected.kind
+                                (fromEmailView selected
+                                    :: participantsView accountsPanelModel host (threadParticipants eg)
+                                    :: spoofableEmailWarningView selected
                                 )
                             , replyButtonView accountsPanelModel selected eg
                             ]
-                        , messageThreadView time accountsPanelModel selected.host NoInteraction model.highlightMessageId (Just messagesDetailThreadListId) model.detailThreadAnimations
+                        , messageThreadView time accountsPanelModel host NoInteraction model.highlightMessageId (Just messagesDetailThreadListId) model.detailThreadAnimations
                         ]
 
 
@@ -2316,10 +2350,10 @@ real `MessagingGroup`'s members (each an authenticated Jonline `Author`), a
 unauthenticated: anyone can put any address there. `[]` (nothing rendered)
 for every other kind.
 -}
-spoofableEmailWarningView : Messages.MessagingGroupKind -> List (Html msg)
-spoofableEmailWarningView kind =
-    case kind of
-        Messages.FromEmail ->
+spoofableEmailWarningView : Messages.Conversation -> List (Html msg)
+spoofableEmailWarningView conversation =
+    case conversation of
+        Messages.FromEmail _ _ ->
             [ p [ class "messages-spoofable-warning" ]
                 [ text "Email senders aren't verified. Anyone could have sent this claiming to be this address." ]
             ]
@@ -2342,9 +2376,14 @@ entirely with nobody signed in on `selected.host` -- same "no point offering
 a button that can only fail" reasoning `Pages.Messages.sendMessageButton`
 already follows.
 -}
-replyButtonView : AccountsPanel.Model -> MessagingGroupRef -> ExpandedGroup -> Html Msg
+replyButtonView : AccountsPanel.Model -> Messages.Conversation -> ExpandedGroup -> Html Msg
 replyButtonView accountsPanelModel selected eg =
-    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts selected.host of
+    let
+        host : String
+        host =
+            Messages.conversationHost selected
+    in
+    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
         Nothing ->
             text ""
 
@@ -2368,7 +2407,7 @@ replyButtonView accountsPanelModel selected eg =
             in
             button
                 [ Html.Attributes.type_ "button"
-                , classes [ "messages-reply-button", hostnameToCSSClass selected.host, "background-color-primary" ]
+                , classes [ "messages-reply-button", hostnameToCSSClass host, "background-color-primary" ]
                 , onClick (ReplyClicked selected recipients)
                 ]
                 [ text "Reply" ]
@@ -2543,11 +2582,11 @@ messageRowView time accountsPanelModel host interaction highlightMessageId messa
                 [ classes rowClasses
                 , href
                     ("/messages"
-                        ++ Url.Builder.toQuery (groupQueryParams target.mainFrontendHost target)
+                        ++ Url.Builder.toQuery (groupQueryParams target.mainFrontendHost target.conversation)
                         ++ "#"
                         ++ messageDomId message.id
                     )
-                , onClick (EmbeddedMessageLinkClicked { key = target.key, host = target.host, groupId = target.groupId, kind = target.kind } message.id)
+                , onClick (EmbeddedMessageLinkClicked target.conversation message.id)
                 ]
                 content
 
