@@ -48,6 +48,7 @@ class Media extends $pb.GeneratedMessage {
     $11.Moderation? moderation,
     $core.bool? generated,
     $core.bool? processed,
+    $core.double? aspectRatio,
     $10.Timestamp? createdAt,
     $10.Timestamp? updatedAt,
     MediaMetadata? metadata,
@@ -80,6 +81,9 @@ class Media extends $pb.GeneratedMessage {
     if (processed != null) {
       $result.processed = processed;
     }
+    if (aspectRatio != null) {
+      $result.aspectRatio = aspectRatio;
+    }
     if (createdAt != null) {
       $result.createdAt = createdAt;
     }
@@ -105,6 +109,7 @@ class Media extends $pb.GeneratedMessage {
     ..e<$11.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOB(8, _omitFieldNames ? '' : 'generated')
     ..aOB(9, _omitFieldNames ? '' : 'processed')
+    ..a<$core.double>(10, _omitFieldNames ? '' : 'aspectRatio', $pb.PbFieldType.OF)
     ..aOM<$10.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
     ..aOM<$10.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
     ..aOM<MediaMetadata>(17, _omitFieldNames ? '' : 'metadata', subBuilder: MediaMetadata.create)
@@ -223,38 +228,49 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearProcessed() => clearField(9);
 
+  /// Width divided by height. Set by the `convert_media_sizes` background job once it's able to
+  /// read the media's dimensions (via ImageMagick/ffprobe); unset until then.
+  @$pb.TagNumber(10)
+  $core.double get aspectRatio => $_getN(9);
+  @$pb.TagNumber(10)
+  set aspectRatio($core.double v) { $_setFloat(9, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasAspectRatio() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearAspectRatio() => clearField(10);
+
   @$pb.TagNumber(15)
-  $10.Timestamp get createdAt => $_getN(9);
+  $10.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(15)
   set createdAt($10.Timestamp v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasCreatedAt() => $_has(9);
+  $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(15)
   void clearCreatedAt() => clearField(15);
   @$pb.TagNumber(15)
-  $10.Timestamp ensureCreatedAt() => $_ensure(9);
+  $10.Timestamp ensureCreatedAt() => $_ensure(10);
 
   @$pb.TagNumber(16)
-  $10.Timestamp get updatedAt => $_getN(10);
+  $10.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(16)
   set updatedAt($10.Timestamp v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasUpdatedAt() => $_has(10);
+  $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => clearField(16);
   @$pb.TagNumber(16)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(10);
+  $10.Timestamp ensureUpdatedAt() => $_ensure(11);
 
   @$pb.TagNumber(17)
-  MediaMetadata get metadata => $_getN(11);
+  MediaMetadata get metadata => $_getN(12);
   @$pb.TagNumber(17)
   set metadata(MediaMetadata v) { setField(17, v); }
   @$pb.TagNumber(17)
-  $core.bool hasMetadata() => $_has(11);
+  $core.bool hasMetadata() => $_has(12);
   @$pb.TagNumber(17)
   void clearMetadata() => clearField(17);
   @$pb.TagNumber(17)
-  MediaMetadata ensureMetadata() => $_ensure(11);
+  MediaMetadata ensureMetadata() => $_ensure(12);
 }
 
 /// Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
@@ -322,6 +338,7 @@ class MediaReference extends $pb.GeneratedMessage {
     $core.String? name,
     $core.bool? generated,
     MediaMetadata? metadata,
+    $core.double? aspectRatio,
   }) {
     final $result = create();
     if (contentType != null) {
@@ -339,6 +356,9 @@ class MediaReference extends $pb.GeneratedMessage {
     if (metadata != null) {
       $result.metadata = metadata;
     }
+    if (aspectRatio != null) {
+      $result.aspectRatio = aspectRatio;
+    }
     return $result;
   }
   MediaReference._() : super();
@@ -351,6 +371,7 @@ class MediaReference extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aOB(4, _omitFieldNames ? '' : 'generated')
     ..aOM<MediaMetadata>(5, _omitFieldNames ? '' : 'metadata', subBuilder: MediaMetadata.create)
+    ..a<$core.double>(10, _omitFieldNames ? '' : 'aspectRatio', $pb.PbFieldType.OF)
     ..hasRequiredFields = false
   ;
 
@@ -425,6 +446,16 @@ class MediaReference extends $pb.GeneratedMessage {
   void clearMetadata() => clearField(5);
   @$pb.TagNumber(5)
   MediaMetadata ensureMetadata() => $_ensure(4);
+
+  /// Width divided by height. See `Media.aspect_ratio`.
+  @$pb.TagNumber(10)
+  $core.double get aspectRatio => $_getN(5);
+  @$pb.TagNumber(10)
+  set aspectRatio($core.double v) { $_setFloat(5, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasAspectRatio() => $_has(5);
+  @$pb.TagNumber(10)
+  void clearAspectRatio() => clearField(10);
 }
 
 /// Valid GetMediaRequest formats:

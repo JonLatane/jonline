@@ -972,7 +972,7 @@ ifNonEmpty s =
 -}
 toMediaReference : Media -> MediaReference
 toMediaReference media =
-    { contentType = media.contentType, id = media.id, name = media.name, generated = media.generated, metadata = media.metadata }
+    { contentType = media.contentType, id = media.id, name = media.name, generated = media.generated, metadata = media.metadata, aspectRatio = media.aspectRatio }
 
 
 

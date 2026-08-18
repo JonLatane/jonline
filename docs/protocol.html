@@ -2875,6 +2875,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Media is generally stored as-is on upload. When background jobs process and compress the media, this flag is set to true.</td>
         </tr>
         <tr>
+          <td>aspect_ratio</td>
+          <td><a href="#float">float</a></td>
+          <td>optional</td>
+          <td>Width divided by height. Set by the <code>convert_media_sizes</code> background job once it's able to read the media's dimensions (via ImageMagick/ffprobe); unset until then.</td>
+        </tr>
+        <tr>
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
@@ -2964,6 +2970,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-MediaMetadata">MediaMetadata</a></td>
           <td></td>
           <td></td>
+        </tr>
+        <tr>
+          <td>aspect_ratio</td>
+          <td><a href="#float">float</a></td>
+          <td>optional</td>
+          <td>Width divided by height. See <code>Media.aspect_ratio</code>.</td>
         </tr>
       </tbody>
     </table>

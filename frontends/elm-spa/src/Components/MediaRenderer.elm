@@ -36,7 +36,7 @@ existed).
 -}
 
 import Html exposing (Html, a, div, img, object, text, video)
-import Html.Attributes exposing (alt, attribute, class, controls, href, src, target, type_)
+import Html.Attributes exposing (alt, attribute, class, controls, href, src, style, target, type_)
 import Html.Events exposing (onClick)
 import Proto.Jonline exposing (MediaReference)
 import Shared.AccountsPanel as AccountsPanel
@@ -73,21 +73,27 @@ view mediaSize sizeConstraint server maybeAccount onImageClicked media =
     case String.split "/" media.contentType |> List.head |> Maybe.withDefault "" of
         "image" ->
             img
-                [ class ("media-renderer-image " ++ sizeClass)
-                , src mediaUrl
-                , alt (Maybe.withDefault "" media.name)
-                , onClick (onImageClicked media.id)
-                , attribute "loading" "lazy"
-                ]
+                (List.filterMap identity
+                    [ Just (class ("media-renderer-image " ++ sizeClass))
+                    , Just (src mediaUrl)
+                    , Just (alt (Maybe.withDefault "" media.name))
+                    , Just (onClick (onImageClicked media.id))
+                    , Just (attribute "loading" "lazy")
+                    , aspectRatioStyle media
+                    ]
+                )
                 []
 
         "video" ->
             video
-                [ class ("media-renderer-video " ++ sizeClass)
-                , controls True
-                , attribute "preload" "metadata"
-                , src (mediaUrl ++ previewTimeFragment media)
-                ]
+                (List.filterMap identity
+                    [ Just (class ("media-renderer-video " ++ sizeClass))
+                    , Just (controls True)
+                    , Just (attribute "preload" "metadata")
+                    , Just (src (mediaUrl ++ previewTimeFragment media))
+                    , aspectRatioStyle media
+                    ]
+                )
                 [ text "Your browser doesn't support embedded video." ]
 
         _ ->
@@ -120,6 +126,19 @@ sizeConstraintClass sizeConstraint =
 
         ToWidthAndHeight ->
             "media-renderer-to-width-and-height"
+
+
+{-| The CSS `aspect-ratio` for `media`, from `MediaReference.aspectRatio` (width / height, set by
+the backend's `convert_media_sizes` job once it's read the media's actual dimensions -- see
+`protos/media.proto`). Reserves the right amount of space for an image/video whose own
+`width`/`height` are left `auto` by `media.css`, so the page doesn't jump once it finishes loading
+and the browser learns its real intrinsic size. `Nothing` (not yet processed, or a content type
+the job doesn't inspect) just leaves sizing to load as before.
+-}
+aspectRatioStyle : MediaReference -> Maybe (Html.Attribute msg)
+aspectRatioStyle media =
+    media.aspectRatio
+        |> Maybe.map (\ratio -> style "aspect-ratio" (String.fromFloat ratio))
 
 
 {-| A Media Fragments URI (`#t=<seconds>`) selecting the timestamp a `<video>` should show as its

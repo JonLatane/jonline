@@ -185,6 +185,7 @@ diesel::table! {
         updated_at -> Timestamp,
         converted_sizes -> Jsonb,
         metadata -> Jsonb,
+        aspect_ratio -> Nullable<Float4>,
     }
 }
 

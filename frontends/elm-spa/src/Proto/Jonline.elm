@@ -5096,7 +5096,8 @@ type alias GetMediaRequest =
 {-| The field numbers for the fields of `MediaReference`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersMediaReference : { contentType : Int, id : Int, name : Int, generated : Int, metadata : Int }
+fieldNumbersMediaReference :
+    { contentType : Int, id : Int, name : Int, generated : Int, metadata : Int, aspectRatio : Int }
 fieldNumbersMediaReference =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__MediaReference
 
@@ -5206,6 +5207,7 @@ fieldNumbersMedia :
     , moderation : Int
     , generated : Int
     , processed : Int
+    , aspectRatio : Int
     , createdAt : Int
     , updatedAt : Int
     , metadata : Int
