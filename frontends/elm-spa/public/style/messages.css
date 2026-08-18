@@ -175,7 +175,7 @@
 }
 
 /* `MessagesPage.fromEmailView` -- a `FromEmail`-kind group's raw sender
-   address (`Components.Messages.GroupKind`'s own doc), shown alongside
+   address (`Components.Messages.MessagingGroupKind`'s own doc), shown alongside
    `.messages-participants` rather than styled as a chip itself: unlike a
    real participant, it's unauthenticated (see `.messages-spoofable-warning`
    below), so it shouldn't visually read as a verified identity the way
@@ -283,9 +283,24 @@
   margin: 0.5rem 0 0.5rem 1.6rem;
 }
 
+/* `MessagesPage.sidebarRowView`'s own wrapper for a `SidebarMessageRow` --
+   one of a manually-expanded group's messages, flattened into
+   `.messages-group-list` as a sibling of every `.messages-group` row rather
+   than nested inside one (see `Model.sidebarAnimations`'s own doc on why),
+   so it needs its own indent to still read as "belonging to" the group row
+   above it -- the same `1.6rem` `.messages-thread-list` (above) used to
+   supply for the whole nested block this replaces. Doesn't apply to a
+   search-mode thread (`searchResultThreadView`) or the two-pane detail
+   (`selectedGroupView`) -- both still render into an actual
+   `.messages-thread-list` of their own, nested under their own row/pane. */
+.messages-sidebar-message-row {
+  margin-left: 1.6rem;
+}
+
 /* Two-pane detail only -- `.messages-thread` (above) is `selectedGroupView`'s
-   own wrapper, never the sidebar's inline-expand (`expandedGroupView`), so
-   this doesn't touch that copy at all.
+   own wrapper; the sidebar's own message rows (`.messages-sidebar-message-row`,
+   below) aren't nested in a `.messages-thread-list` of their own at all
+   anymore, so this doesn't touch them.
 
    `flex: 1 1 auto` plus `min-height: 0` (flex items default to a
    `min-height` of their own content size otherwise, which would blow right

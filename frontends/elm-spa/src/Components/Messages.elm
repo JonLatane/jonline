@@ -1,5 +1,5 @@
 module Components.Messages exposing
-    ( GroupKind(..)
+    ( MessagingGroupKind(..)
     , GroupSummary
     , eligibleServers
     , fetchFromEmail
@@ -155,7 +155,7 @@ fetches. `listingType` should be the same `PERSONALMESSAGES`/`ALLSYSTEMMESSAGES`
 filtered by the outer listing's search) the group was found under, from
 `eligibleServers`.
 
-Never called for a `SoloMessage` pseudo-group (see `groupMessages`/`GroupKind`)
+Never called for a `SoloMessage` pseudo-group (see `groupMessages`/`MessagingGroupKind`)
 -- there's only ever the one already-in-hand message for those, no group id
 to fetch by; `fetchMessage` is that kind's own counterpart.
 -}
@@ -171,7 +171,7 @@ fetchMessagingGroup accountsPanelModel maybeAccountServer listingType groupId =
 
 {-| Fetches every message whose email "from" header exactly matches `fromEmail`
 (most-recent-first) -- the `FromEmail`-kind counterpart to `fetchMessagingGroup`,
-for a message with no visible `messagingGroup` (see `GroupKind`'s own doc)
+for a message with no visible `messagingGroup` (see `MessagingGroupKind`'s own doc)
 whose sender address is known. `fromEmail` should be some prior response's own
 `Message.from`, verbatim -- matching is an exact string comparison server-side
 (`GetMessagesRequest.from_email`'s own proto doc), not a normalized-address
@@ -222,7 +222,7 @@ fetchMessages accountsPanelModel maybeAccountServer request =
         )
 
 
-{-| What a `GroupSummary`/`GroupRef` (`Components.Pages.MessagesPage`) is
+{-| What a `GroupSummary`/`MessagingGroupRef` (`Components.Pages.MessagesPage`) is
 actually backed by, and so how it can be expanded into its full message list
 and what query param identifies it in a permalink:
 
@@ -241,14 +241,14 @@ and what query param identifies it in a permalink:
     common case needs no fetch at all, see that function's own doc.
 
 -}
-type GroupKind
+type MessagingGroupKind
     = MessagingGroup
     | FromEmail
     | SoloMessage
 
 
 {-| One `MessagingGroup` (or `FromEmail`/`SoloMessage` pseudo-group, see
-`GroupKind`) summarized down to its most recent message -- what
+`MessagingGroupKind`) summarized down to its most recent message -- what
 `Components.Pages.MessagesPage`'s outer list renders/sorts/animates. `key` is
 globally unique across every fetched server (`"<host>|<groupId>"` -- a raw
 `MessagingGroup.id`/`Message.id`/email address alone isn't unique across
@@ -271,7 +271,7 @@ type alias GroupSummary =
     { key : String
     , host : String
     , groupId : String
-    , kind : GroupKind
+    , kind : MessagingGroupKind
     , members : List Author
     , mostRecent : Message
     , unreadCount : Int
@@ -287,7 +287,7 @@ derive a group listing at all. A message with `messagingGroup == Nothing`
 `Message.messaging_group`'s own proto doc) falls back to `FromEmail`, grouped
 with every other such message sharing the same `from` address, or -- if `from`
 itself is unknown -- `SoloMessage`, its own pseudo-group of exactly one. See
-`GroupKind`'s own doc. Result is sorted by each group's `mostRecent` message,
+`MessagingGroupKind`'s own doc. Result is sorted by each group's `mostRecent` message,
 most-recent-first.
 -}
 groupMessages : String -> List Message -> List GroupSummary

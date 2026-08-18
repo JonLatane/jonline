@@ -4,7 +4,7 @@ module Pages.Messages exposing (Model, Msg, fromShared, page)
 their messages, going two-pane whenever `?messaging_group=<id>[@host]`,
 `?from_email=<address>[&from_email_host=<host>]`, or `?message=<id>[@host]`
 is set (`#message-<id>` autoscrolls to a specific message once its thread
-loads) -- one query param per `Components.Messages.GroupKind`, see
+loads) -- one query param per `Components.Messages.MessagingGroupKind`, see
 `MessagesPage.groupQueryParams`'s own doc on why `from_email` needs a
 separate host param rather than reusing the other two kinds' `id@host`
 suffix. Thin `Effect`/`Shared`/URL-owning wrapper around
@@ -51,12 +51,12 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         -- One of `?messaging_group=`/`?from_email=`/`?message=` -- see
-        -- `Components.Messages.GroupKind`'s own doc on why each kind gets
+        -- `Components.Messages.MessagingGroupKind`'s own doc on why each kind gets
         -- its own param rather than overloading one, and `MessagesPage.groupQueryParams`'s
         -- doc on why `from_email` alone needs a separate `from_email_host`
         -- param instead of `parseGroupRouteId`'s shared `id@host` suffix
         -- (an email address already contains its own `@`).
-        selectedGroup : Maybe MessagesPage.GroupRef
+        selectedGroup : Maybe MessagesPage.MessagingGroupRef
         selectedGroup =
             case Dict.get "messaging_group" req.query of
                 Just raw ->
