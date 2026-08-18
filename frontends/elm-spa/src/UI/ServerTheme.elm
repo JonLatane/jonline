@@ -394,15 +394,16 @@ saturationOfRgb { r, g, b } =
         maxChannel : Float
         maxChannel =
             toFloat (max r (max g b))
-
-        minChannel : Float
-        minChannel =
-            toFloat (min r (min g b))
     in
     if maxChannel <= 0 then
         0
 
     else
+        let
+            minChannel : Float
+            minChannel =
+                toFloat (min r (min g b))
+        in
         (maxChannel - minChannel) / maxChannel
 
 
