@@ -214,7 +214,19 @@ export interface GetMessagesRequest {
     | string
     | undefined;
   /** Request to only return posts that were published or created before the given timestamp. */
-  sentBefore?: string | undefined;
+  sentBefore?:
+    | string
+    | undefined;
+  /**
+   * Returns messages (assuming the user has access to each) whose email "from" header exactly
+   * matches the given value - i.e. `Message.from` as returned by a previous response. Meant for
+   * expanding the "sender" grouping a client falls back to when `Message.messaging_group` isn't
+   * set (see that field's own doc comment): unlike `message_group_id`, there's no server-side
+   * group backing this, so it's just a straight filter, not an access-controlled entity lookup.
+   * Since `from` is unauthenticated/spoofable (see this file's own top-level doc comment), so is
+   * this filter - it matches whatever string the sender's email client sent, nothing more.
+   */
+  fromEmail?: string | undefined;
 }
 
 /** Response to a `GetMessagesRequest`, containing the requested messages. */
@@ -907,6 +919,7 @@ function createBaseGetMessagesRequest(): GetMessagesRequest {
     messageGroupId: undefined,
     searchText: undefined,
     sentBefore: undefined,
+    fromEmail: undefined,
   };
 }
 
@@ -926,6 +939,9 @@ export const GetMessagesRequest: MessageFns<GetMessagesRequest> = {
     }
     if (message.sentBefore !== undefined) {
       Timestamp.encode(toTimestamp(message.sentBefore), writer.uint32(66).fork()).join();
+    }
+    if (message.fromEmail !== undefined) {
+      writer.uint32(74).string(message.fromEmail);
     }
     return writer;
   },
@@ -977,6 +993,14 @@ export const GetMessagesRequest: MessageFns<GetMessagesRequest> = {
           message.sentBefore = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.fromEmail = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -993,6 +1017,7 @@ export const GetMessagesRequest: MessageFns<GetMessagesRequest> = {
       messageGroupId: isSet(object.messageGroupId) ? globalThis.String(object.messageGroupId) : undefined,
       searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
       sentBefore: isSet(object.sentBefore) ? globalThis.String(object.sentBefore) : undefined,
+      fromEmail: isSet(object.fromEmail) ? globalThis.String(object.fromEmail) : undefined,
     };
   },
 
@@ -1013,6 +1038,9 @@ export const GetMessagesRequest: MessageFns<GetMessagesRequest> = {
     if (message.sentBefore !== undefined) {
       obj.sentBefore = message.sentBefore;
     }
+    if (message.fromEmail !== undefined) {
+      obj.fromEmail = message.fromEmail;
+    }
     return obj;
   },
 
@@ -1026,6 +1054,7 @@ export const GetMessagesRequest: MessageFns<GetMessagesRequest> = {
     message.messageGroupId = object.messageGroupId ?? undefined;
     message.searchText = object.searchText ?? undefined;
     message.sentBefore = object.sentBefore ?? undefined;
+    message.fromEmail = object.fromEmail ?? undefined;
     return message;
   },
 };

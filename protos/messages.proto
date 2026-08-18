@@ -130,6 +130,15 @@ message GetMessagesRequest {
 
   // Request to only return posts that were published or created before the given timestamp.
   optional google.protobuf.Timestamp sent_before = 8;
+
+  // Returns messages (assuming the user has access to each) whose email "from" header exactly
+  // matches the given value - i.e. `Message.from` as returned by a previous response. Meant for
+  // expanding the "sender" grouping a client falls back to when `Message.messaging_group` isn't
+  // set (see that field's own doc comment): unlike `message_group_id`, there's no server-side
+  // group backing this, so it's just a straight filter, not an access-controlled entity lookup.
+  // Since `from` is unauthenticated/spoofable (see this file's own top-level doc comment), so is
+  // this filter - it matches whatever string the sender's email client sent, nothing more.
+  optional string from_email = 9;
 }
 
 // Response to a `GetMessagesRequest`, containing the requested messages.

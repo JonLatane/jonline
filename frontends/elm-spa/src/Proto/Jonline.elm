@@ -1083,7 +1083,7 @@ type alias GetMessagesResponse =
 
 -}
 fieldNumbersGetMessagesRequest :
-    { listingType : Int, messageId : Int, messageGroupId : Int, searchText : Int, sentBefore : Int }
+    { listingType : Int, messageId : Int, messageGroupId : Int, searchText : Int, sentBefore : Int, fromEmail : Int }
 fieldNumbersGetMessagesRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetMessagesRequest
 

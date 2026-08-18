@@ -14,6 +14,12 @@ COPY backend/target/release/sync_event_sync_sources__server_release /opt/sync_ev
 COPY backend/target/release/update_user_counts__server_release /opt/update_user_counts
 COPY backend/target/release/convert_media_sizes__server_release /opt/convert_media_sizes
 
+# TODO(2026-08-18): one-off backfill for the header-reconstruction bug fixed in web/email.rs
+# (see build_raw_message's doc comment) -- delete this binary (backend/src/bin/repair_email_messages.rs),
+# this COPY line, and its entry in server_ci_cd.yml's "Rename Rust binaries for Dockerfiles" step
+# once it's been run against every deployed namespace's Messages.
+COPY backend/target/release/repair_email_messages__server_release /opt/repair_email_messages
+
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 COPY backend/target/release/set_permission__server_release /opt/set_permission

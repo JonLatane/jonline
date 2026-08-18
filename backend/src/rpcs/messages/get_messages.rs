@@ -1,6 +1,10 @@
 use std::time::SystemTime;
 
-use diesel::*;
+use diesel::{
+    dsl::sql,
+    sql_types::{Bool, Text},
+    *,
+};
 use diesel_full_text_search::{
     configuration::TsConfigurationByName, to_tsquery_with_search_config, TsVectorExtensions,
 };
@@ -63,10 +67,16 @@ pub fn get_messages(
     let result = match (
         request.to_owned().message_id,
         request.to_owned().message_group_id,
+        request.to_owned().from_email,
     ) {
-        (Some(message_id), _) => get_by_message_id(user, &message_id, is_system_listing, conn)?,
-        (_, Some(message_group_id)) => {
+        (Some(message_id), _, _) => {
+            get_by_message_id(user, &message_id, is_system_listing, conn)?
+        }
+        (_, Some(message_group_id), _) => {
             get_messaging_group_messages(user, &message_group_id, is_system_listing, cutoff, conn)?
+        }
+        (_, _, Some(from_email)) => {
+            get_by_from_email(user, &from_email, is_system_listing, cutoff, conn)?
         }
         _ if is_system_listing => get_system_messages(
             match request.listing_type() {
@@ -197,6 +207,79 @@ fn get_messaging_group_messages(
         .into_iter()
         .map(|(message, sender)| {
             MarshalableMessage(message, sender, Some(group.clone()), viewing_user_id)
+        })
+        .collect();
+
+    Ok(result)
+}
+
+// Expands the client-side "grouped by sender" fallback a message with no visible
+// `messaging_group` falls into (see `Message.messaging_group`'s own doc comment) - unlike
+// `get_messaging_group_messages`, there's no server-side entity this is backed by, just a plain
+// filter on `messages.email_headers->>'from'` matching some prior response's own `Message.from`
+// verbatim. Since `from` is unauthenticated/spoofable (see `protos/messages.proto`'s top-level
+// doc comment), so is this filter - two messages "from" the same address only actually share a
+// sender if you already trust that address wasn't spoofed. Access is the same rule
+// `get_personal_messages` uses (sender, a group member, or a Bcc recipient) for a non-admin
+// caller; an admin (`is_system_listing`) sees every match server-wide, as with
+// `get_system_messages`.
+fn get_by_from_email(
+    user: &models::User,
+    from_email: &str,
+    is_system_listing: bool,
+    cutoff: Option<SystemTime>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalableMessage>, Status> {
+    let mut query = messages::table
+        .inner_join(
+            messaging_groups::table.on(messages::messaging_group_id.eq(messaging_groups::id)),
+        )
+        .left_join(users::table.on(messages::from_user_id.eq(users::id.nullable())))
+        .left_join(
+            message_recipients::table.on(message_recipients::message_id
+                .eq(messages::id)
+                .and(message_recipients::user_id.eq(user.id))),
+        )
+        .filter(messages::email_headers.is_not_null().and(
+            sql::<Bool>("messages.email_headers->>'from' = ").bind::<Text, _>(from_email),
+        ))
+        .select((
+            models::MESSAGE_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            messaging_groups::all_columns,
+        ))
+        .order(messages::created_at.desc())
+        .limit(PAGE_SIZE)
+        .into_boxed();
+
+    if !is_system_listing {
+        query = query.filter(
+            messages::from_user_id
+                .eq(user.id)
+                .or(messaging_groups::sorted_user_ids.contains(vec![user.id]))
+                .or(message_recipients::user_id.eq(user.id)),
+        );
+    }
+
+    if let Some(cutoff) = cutoff {
+        query = query.filter(messages::created_at.lt(cutoff));
+    }
+
+    let viewing_user_id = if is_system_listing {
+        None
+    } else {
+        Some(user.id)
+    };
+    let result = query
+        .load::<(
+            models::Message,
+            Option<models::Author>,
+            models::MessagingGroup,
+        )>(conn)
+        .map_err(|_| Status::new(Code::Internal, "error_loading_messages"))?
+        .into_iter()
+        .map(|(message, sender, group)| {
+            MarshalableMessage(message, sender, Some(group), viewing_user_id)
         })
         .collect();
 

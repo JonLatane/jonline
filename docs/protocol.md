@@ -1401,6 +1401,7 @@ Text search requests return messages in order of relevance to the search text.
 | message_group_id | [string](#string) | optional | Returns messages that are part of the given messaging group (assuming the user has access to it). |
 | search_text | [string](#string) | optional | Full-text search query, matched against the sender&#39;s username/real name and the message&#39;s subject and body. Required (and only used) when `listing_type` is `TEXT_SEARCH`. |
 | sent_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request to only return posts that were published or created before the given timestamp. |
+| from_email | [string](#string) | optional | Returns messages (assuming the user has access to each) whose email &#34;from&#34; header exactly matches the given value - i.e. `Message.from` as returned by a previous response. Meant for expanding the &#34;sender&#34; grouping a client falls back to when `Message.messaging_group` isn&#39;t set (see that field&#39;s own doc comment): unlike `message_group_id`, there&#39;s no server-side group backing this, so it&#39;s just a straight filter, not an access-controlled entity lookup. Since `from` is unauthenticated/spoofable (see this file&#39;s own top-level doc comment), so is this filter - it matches whatever string the sender&#39;s email client sent, nothing more. |
 
 
 

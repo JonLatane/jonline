@@ -615,6 +615,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
     $core.String? messageGroupId,
     $core.String? searchText,
     $10.Timestamp? sentBefore,
+    $core.String? fromEmail,
   }) {
     final $result = create();
     if (listingType != null) {
@@ -632,6 +633,9 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
     if (sentBefore != null) {
       $result.sentBefore = sentBefore;
     }
+    if (fromEmail != null) {
+      $result.fromEmail = fromEmail;
+    }
     return $result;
   }
   GetMessagesRequest._() : super();
@@ -644,6 +648,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'messageGroupId')
     ..aOS(7, _omitFieldNames ? '' : 'searchText')
     ..aOM<$10.Timestamp>(8, _omitFieldNames ? '' : 'sentBefore', subBuilder: $10.Timestamp.create)
+    ..aOS(9, _omitFieldNames ? '' : 'fromEmail')
     ..hasRequiredFields = false
   ;
 
@@ -720,6 +725,22 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
   void clearSentBefore() => clearField(8);
   @$pb.TagNumber(8)
   $10.Timestamp ensureSentBefore() => $_ensure(4);
+
+  /// Returns messages (assuming the user has access to each) whose email "from" header exactly
+  /// matches the given value - i.e. `Message.from` as returned by a previous response. Meant for
+  /// expanding the "sender" grouping a client falls back to when `Message.messaging_group` isn't
+  /// set (see that field's own doc comment): unlike `message_group_id`, there's no server-side
+  /// group backing this, so it's just a straight filter, not an access-controlled entity lookup.
+  /// Since `from` is unauthenticated/spoofable (see this file's own top-level doc comment), so is
+  /// this filter - it matches whatever string the sender's email client sent, nothing more.
+  @$pb.TagNumber(9)
+  $core.String get fromEmail => $_getSZ(5);
+  @$pb.TagNumber(9)
+  set fromEmail($core.String v) { $_setString(5, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasFromEmail() => $_has(5);
+  @$pb.TagNumber(9)
+  void clearFromEmail() => clearField(9);
 }
 
 /// Response to a `GetMessagesRequest`, containing the requested messages.

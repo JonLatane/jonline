@@ -1,9 +1,13 @@
 module Pages.Messages exposing (Model, Msg, fromShared, page)
 
 {-| `/messages` -- the signed-in user's `MessagingGroup`s, expandable into
-their messages, going two-pane whenever `?messaging_group=<id>[@host]` is
-set (`#message-<id>` autoscrolls to a specific message once its thread
-loads). Thin `Effect`/`Shared`/URL-owning wrapper around
+their messages, going two-pane whenever `?messaging_group=<id>[@host]`,
+`?from_email=<address>[&from_email_host=<host>]`, or `?message=<id>[@host]`
+is set (`#message-<id>` autoscrolls to a specific message once its thread
+loads) -- one query param per `Components.Messages.GroupKind`, see
+`MessagesPage.groupQueryParams`'s own doc on why `from_email` needs a
+separate host param rather than reusing the other two kinds' `id@host`
+suffix. Thin `Effect`/`Shared`/URL-owning wrapper around
 `Components.Pages.MessagesPage`, which can't depend on `Shared` itself since
 `Shared.MessagingPanel` embeds it too -- see that module's own doc.
 -}
@@ -46,17 +50,42 @@ type Msg
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
+        -- One of `?messaging_group=`/`?from_email=`/`?message=` -- see
+        -- `Components.Messages.GroupKind`'s own doc on why each kind gets
+        -- its own param rather than overloading one, and `MessagesPage.groupQueryParams`'s
+        -- doc on why `from_email` alone needs a separate `from_email_host`
+        -- param instead of `parseGroupRouteId`'s shared `id@host` suffix
+        -- (an email address already contains its own `@`).
         selectedGroup : Maybe MessagesPage.GroupRef
         selectedGroup =
-            Dict.get "messaging_group" req.query
-                |> Maybe.map
-                    (\raw ->
-                        let
-                            ( groupId, host ) =
-                                Messages.parseGroupRouteId shared.accounts.mainFrontendHost raw
-                        in
-                        { key = host ++ "|" ++ groupId, host = host, groupId = groupId }
-                    )
+            case Dict.get "messaging_group" req.query of
+                Just raw ->
+                    let
+                        ( groupId, host ) =
+                            Messages.parseGroupRouteId shared.accounts.mainFrontendHost raw
+                    in
+                    Just { key = host ++ "|" ++ groupId, host = host, groupId = groupId, kind = Messages.MessagingGroup }
+
+                Nothing ->
+                    case Dict.get "from_email" req.query of
+                        Just fromEmail ->
+                            let
+                                host : String
+                                host =
+                                    Dict.get "from_email_host" req.query |> Maybe.withDefault shared.accounts.mainFrontendHost
+                            in
+                            Just { key = host ++ "|" ++ fromEmail, host = host, groupId = fromEmail, kind = Messages.FromEmail }
+
+                        Nothing ->
+                            Dict.get "message" req.query
+                                |> Maybe.map
+                                    (\raw ->
+                                        let
+                                            ( messageId, host ) =
+                                                Messages.parseGroupRouteId shared.accounts.mainFrontendHost raw
+                                        in
+                                        { key = host ++ "|" ++ messageId, host = host, groupId = messageId, kind = Messages.SoloMessage }
+                                    )
 
         pendingScrollMessageId : Maybe String
         pendingScrollMessageId =
@@ -195,7 +224,7 @@ update shared msg model =
                             case sentMessage.messagingGroup of
                                 Just group ->
                                     applyPageMsg shared
-                                        (MessagesPage.MessageSent { key = host ++ "|" ++ group.id, host = host, groupId = group.id } sentMessage.id)
+                                        (MessagesPage.MessageSent { key = host ++ "|" ++ group.id, host = host, groupId = group.id, kind = Messages.MessagingGroup } sentMessage.id)
                                         model
 
                                 Nothing ->

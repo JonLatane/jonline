@@ -3029,6 +3029,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>Request to only return posts that were published or created before the given timestamp.</td>
         </tr>
+        <tr>
+          <td>from_email</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns messages (assuming the user has access to each) whose email "from" header exactly matches the given value - i.e. <code>Message.from</code> as returned by a previous response. Meant for expanding the "sender" grouping a client falls back to when <code>Message.messaging_group</code> isn't set (see that field's own doc comment): unlike <code>message_group_id</code>, there's no server-side group backing this, so it's just a straight filter, not an access-controlled entity lookup. Since <code>from</code> is unauthenticated/spoofable (see this file's own top-level doc comment), so is this filter - it matches whatever string the sender's email client sent, nothing more.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetMessagesResponse"></a></p>

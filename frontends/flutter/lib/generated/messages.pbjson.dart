@@ -162,12 +162,14 @@ const GetMessagesRequest$json = {
     {'1': 'message_group_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'messageGroupId', '17': true},
     {'1': 'search_text', '3': 7, '4': 1, '5': 9, '9': 2, '10': 'searchText', '17': true},
     {'1': 'sent_before', '3': 8, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 3, '10': 'sentBefore', '17': true},
+    {'1': 'from_email', '3': 9, '4': 1, '5': 9, '9': 4, '10': 'fromEmail', '17': true},
   ],
   '8': [
     {'1': '_message_id'},
     {'1': '_message_group_id'},
     {'1': '_search_text'},
     {'1': '_sent_before'},
+    {'1': '_from_email'},
   ],
 };
 
@@ -177,9 +179,10 @@ final $typed_data.Uint8List getMessagesRequestDescriptor = $convert.base64Decode
     'NzYWdlTGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEiIKCm1lc3NhZ2VfaWQYAiABKAlIAFIJbWVz'
     'c2FnZUlkiAEBEi0KEG1lc3NhZ2VfZ3JvdXBfaWQYAyABKAlIAVIObWVzc2FnZUdyb3VwSWSIAQ'
     'ESJAoLc2VhcmNoX3RleHQYByABKAlIAlIKc2VhcmNoVGV4dIgBARJACgtzZW50X2JlZm9yZRgI'
-    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIA1IKc2VudEJlZm9yZYgBAUINCgtfbW'
-    'Vzc2FnZV9pZEITChFfbWVzc2FnZV9ncm91cF9pZEIOCgxfc2VhcmNoX3RleHRCDgoMX3NlbnRf'
-    'YmVmb3Jl');
+    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIA1IKc2VudEJlZm9yZYgBARIiCgpmcm'
+    '9tX2VtYWlsGAkgASgJSARSCWZyb21FbWFpbIgBAUINCgtfbWVzc2FnZV9pZEITChFfbWVzc2Fn'
+    'ZV9ncm91cF9pZEIOCgxfc2VhcmNoX3RleHRCDgoMX3NlbnRfYmVmb3JlQg0KC19mcm9tX2VtYW'
+    'ls');
 
 @$core.Deprecated('Use getMessagesResponseDescriptor instead')
 const GetMessagesResponse$json = {

@@ -93,15 +93,7 @@ pub async fn create_email_message(
     let payload: MtaHookRequest =
         serde_json::from_slice(&capped_body).map_err(|_| Status::BadRequest)?;
 
-    let mut raw_message = Vec::new();
-    for (name, value) in &payload.message.headers {
-        raw_message.extend_from_slice(name.as_bytes());
-        raw_message.extend_from_slice(b": ");
-        raw_message.extend_from_slice(value.as_bytes());
-        raw_message.extend_from_slice(b"\r\n");
-    }
-    raw_message.extend_from_slice(b"\r\n");
-    raw_message.extend_from_slice(payload.message.contents.as_bytes());
+    let raw_message = build_raw_message(&payload.message.headers, &payload.message.contents);
 
     let parsed = mail_parser::MessageParser::default()
         .parse(&raw_message)
@@ -229,6 +221,48 @@ pub async fn create_email_message(
     ))
 }
 
+/// Reconstitutes an RFC822 message from a Stalwart MTA Hook's `[name, value]` header pairs and
+/// body `contents` (see `MtaHookMessage`'s doc comment). Also used by the `repair_email_messages`
+/// bin to re-derive fields for messages stored before this function sanitized each `value` (see
+/// that bin's doc comment for why that mattered).
+///
+/// `sanitize_header_value` is load-bearing: Stalwart's hook values come back containing their own
+/// embedded line terminators (contrary to the clean, terminator-free examples in
+/// https://stalw.art/docs/mta/filter/mtahooks/) -- at minimum a trailing one, and for
+/// server-generated multi-line headers like `Received`, seemingly internal ones too (still
+/// present despite the docs' "already unfolded to one line" claim). Appending our own `\r\n`
+/// unconditionally after an already-terminated value produced a blank line -- `mail_parser` treats
+/// the first blank line as the header/body boundary, so as little as one such header could
+/// silently swallow the entire rest of the message, headers included, into `body_text`. Collapsing
+/// every embedded terminator (plus the fold's leading whitespace, if any) down to a single space
+/// guarantees each header is truly one line before this function adds its own single `\r\n`,
+/// regardless of how many terminators -- or where -- Stalwart's value already carried.
+pub fn build_raw_message(headers: &[(String, String)], contents: &str) -> Vec<u8> {
+    let mut raw_message = Vec::new();
+    for (name, value) in headers {
+        raw_message.extend_from_slice(name.as_bytes());
+        raw_message.extend_from_slice(b": ");
+        raw_message.extend_from_slice(sanitize_header_value(value).as_bytes());
+        raw_message.extend_from_slice(b"\r\n");
+    }
+    raw_message.extend_from_slice(b"\r\n");
+    raw_message.extend_from_slice(contents.as_bytes());
+    raw_message
+}
+
+/// Collapses a header value to a single line: splits on any CR/LF, trims each fragment (removing
+/// a fold's leading whitespace), drops fragments left empty by a leading/trailing/doubled
+/// terminator, and rejoins with a single space. A value with no embedded terminators at all
+/// passes through unchanged (`trim`'s outer whitespace aside).
+pub fn sanitize_header_value(value: &str) -> String {
+    value
+        .split(['\r', '\n'])
+        .map(str::trim)
+        .filter(|fragment| !fragment.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 fn format_addr(addr: &Addr) -> Option<String> {
     match (addr.name(), addr.address()) {
         (Some(name), Some(address)) => Some(format!("{} <{}>", name, address)),
@@ -237,12 +271,92 @@ fn format_addr(addr: &Addr) -> Option<String> {
     }
 }
 
-fn collect_addresses(address: Option<&Address>) -> Vec<String> {
+pub fn collect_addresses(address: Option<&Address>) -> Vec<String> {
     address
         .map(|address| address.iter().filter_map(format_addr).collect())
         .unwrap_or_default()
 }
 
-fn display_address(address: &Address) -> Option<String> {
+pub fn display_address(address: &Address) -> Option<String> {
     address.iter().next().and_then(format_addr)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_header_value_passes_through_a_clean_value() {
+        assert_eq!(sanitize_header_value(" jon@ato.band"), "jon@ato.band");
+    }
+
+    #[test]
+    fn sanitize_header_value_strips_a_trailing_terminator() {
+        // The shape Stalwart actually sends: `value` already CRLF-terminated (see
+        // `build_raw_message`'s doc comment for why appending our own unconditionally broke
+        // parsing).
+        assert_eq!(sanitize_header_value(" jon@ato.band\r\n"), "jon@ato.band");
+    }
+
+    #[test]
+    fn sanitize_header_value_unfolds_an_embedded_break() {
+        assert_eq!(
+            sanitize_header_value("from foo\r\n\tby bar"),
+            "from foo by bar"
+        );
+    }
+
+    /// Regression test for the header-reconstruction bug itself: reproduces the exact
+    /// production symptom (see `build_raw_message`'s doc comment) -- every header value carrying
+    /// its own trailing CRLF -- and confirms `build_raw_message` now yields a message
+    /// `mail_parser` parses correctly instead of silently swallowing every header past the first
+    /// into `body_text`.
+    #[test]
+    fn build_raw_message_survives_stalwart_style_terminated_header_values() {
+        let headers = vec![
+            ("To".to_string(), " jon@ato.band\r\n".to_string()),
+            ("From".to_string(), " someone@example.com\r\n".to_string()),
+            ("Subject".to_string(), " Test\r\n".to_string()),
+            (
+                "Message-Id".to_string(),
+                " <abc123@example.com>\r\n".to_string(),
+            ),
+        ];
+        let raw_message = build_raw_message(&headers, "Test message.\r\n");
+
+        let parsed = mail_parser::MessageParser::default()
+            .parse(&raw_message)
+            .expect("should parse as a valid message");
+
+        assert_eq!(parsed.subject(), Some("Test"));
+        assert_eq!(parsed.message_id(), Some("abc123@example.com"));
+        assert_eq!(
+            parsed.from().and_then(display_address),
+            Some("someone@example.com".to_string())
+        );
+        assert_eq!(
+            collect_addresses(parsed.to()),
+            vec!["jon@ato.band".to_string()]
+        );
+        assert_eq!(parsed.body_text(0).as_deref(), Some("Test message.\r\n"));
+    }
+
+    #[test]
+    fn build_raw_message_still_works_with_clean_terminator_free_values() {
+        // The shape https://stalw.art/docs/mta/filter/mtahooks/'s own examples show -- covered
+        // separately since it's what a naive reading of the docs would lead you to test against,
+        // and wouldn't have caught the bug above on its own.
+        let headers = vec![
+            ("To".to_string(), " jon@ato.band".to_string()),
+            ("Subject".to_string(), " Test".to_string()),
+        ];
+        let raw_message = build_raw_message(&headers, "Test message.\r\n");
+
+        let parsed = mail_parser::MessageParser::default()
+            .parse(&raw_message)
+            .expect("should parse as a valid message");
+
+        assert_eq!(parsed.subject(), Some("Test"));
+        assert_eq!(parsed.body_text(0).as_deref(), Some("Test message.\r\n"));
+    }
 }

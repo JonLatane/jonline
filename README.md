@@ -209,7 +209,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [Rust Backend](#rust-backend)
       - [Frontends](#frontends)
         - [Elm Frontend](#elm-frontend)
-        - [Web (Tamagui/React/Next.js) Frontend](#web-tamaguireactnextjs-frontend)
+        - [Tamagui/React/Next.js Frontend](#tamaguireactnextjs-frontend)
         - [Flutter Frontend (Deprecated/To Be Deleted Unless A Contributor Fixes It)](#flutter-frontend-deprecatedto-be-deleted-unless-a-contributor-fixes-it)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and cross-namespace load balancing with Traefik](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-cross-namespace-load-balancing-with-traefik)
@@ -442,8 +442,7 @@ The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main
 
 The [Elm frontend, in `frontends/elm-spa`](https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa), is the new "public Web face" of any Jonline instance. It's built with [Elm](https://elm-lang.org/) and [Elm-Spa](https://www.elm-spa.dev).
 
-
-##### Web (Tamagui/React/Next.js) Frontend
+##### Tamagui/React/Next.js Frontend
 
 The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonline/tree/main/frontends/tamagui), was, until recently, the "public Web face" of any Jonline instance. It's the most "complete" UI, and some features can still only be edited in this UI. It's built with [Tamagui](https://tamagui.dev) (a somewhat Flutter-like UI toolkit and build system built atop [yarn](https://yarnpkg.com/), [React](https://react.dev), [React Native](https://reactnative.dev), and [Next.JS](https://nextjs.org)), along with [Redux](https://redux.js.org) among others.
 

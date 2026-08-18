@@ -1,6 +1,9 @@
 module Components.Messages exposing
-    ( GroupSummary
+    ( GroupKind(..)
+    , GroupSummary
     , eligibleServers
+    , fetchFromEmail
+    , fetchMessage
     , fetchMessageListing
     , fetchMessagingGroup
     , groupMessages
@@ -145,16 +148,16 @@ fetchMessageListing accountsPanelModel maybeAccountServer listingType searchText
 
 
 {-| Fetches every message in `groupId` (most-recent-first, per
-`get_messaging_group_messages`) -- what expanding a group (or two-pane
-`selectedGroup`) in `Components.Pages.MessagesPage` fetches. `listingType`
-should be the same `PERSONALMESSAGES`/`ALLSYSTEMMESSAGES` (never the
-`*_TEXT_SEARCH` variant -- a group's own full thread isn't itself filtered by
-the outer listing's search) the group was found under, from `eligibleServers`.
+`get_messaging_group_messages`) -- what expanding a `MessagingGroup`-kind
+group (or two-pane `selectedGroup`) in `Components.Pages.MessagesPage`
+fetches. `listingType` should be the same `PERSONALMESSAGES`/`ALLSYSTEMMESSAGES`
+(never the `*_TEXT_SEARCH` variant -- a group's own full thread isn't itself
+filtered by the outer listing's search) the group was found under, from
+`eligibleServers`.
 
-Never called for a "solo" (Bcc-only) pseudo-group (see `groupMessages`) --
-there's only ever the one already-in-hand message for those, no group id to
-fetch by.
-
+Never called for a `SoloMessage` pseudo-group (see `groupMessages`/`GroupKind`)
+-- there's only ever the one already-in-hand message for those, no group id
+to fetch by; `fetchMessage` is that kind's own counterpart.
 -}
 fetchMessagingGroup :
     AccountsPanel.Model
@@ -164,6 +167,42 @@ fetchMessagingGroup :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMessagesResponse )
 fetchMessagingGroup accountsPanelModel maybeAccountServer listingType groupId =
     fetchMessages accountsPanelModel maybeAccountServer { defaultGetMessagesRequest | listingType = listingType, messageGroupId = Just groupId }
+
+
+{-| Fetches every message whose email "from" header exactly matches `fromEmail`
+(most-recent-first) -- the `FromEmail`-kind counterpart to `fetchMessagingGroup`,
+for a message with no visible `messagingGroup` (see `GroupKind`'s own doc)
+whose sender address is known. `fromEmail` should be some prior response's own
+`Message.from`, verbatim -- matching is an exact string comparison server-side
+(`GetMessagesRequest.from_email`'s own proto doc), not a normalized-address
+comparison, and (per that same doc) `from` is unauthenticated/spoofable to
+begin with.
+-}
+fetchFromEmail :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> MessageListingType
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMessagesResponse )
+fetchFromEmail accountsPanelModel maybeAccountServer listingType fromEmail =
+    fetchMessages accountsPanelModel maybeAccountServer { defaultGetMessagesRequest | listingType = listingType, fromEmail = Just fromEmail }
+
+
+{-| Fetches the single message `messageId` (assuming the caller has access to
+it) -- the `SoloMessage`-kind counterpart to `fetchMessagingGroup`/`fetchFromEmail`.
+Only ever actually needed for a cold `?message=` permalink that never went
+through this session's own outer listing fetch -- otherwise the message is
+already fully in hand (see `Components.Pages.MessagesPage.expand`'s own doc),
+and no RPC is fired at all.
+-}
+fetchMessage :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> MessageListingType
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMessagesResponse )
+fetchMessage accountsPanelModel maybeAccountServer listingType messageId =
+    fetchMessages accountsPanelModel maybeAccountServer { defaultGetMessagesRequest | listingType = listingType, messageId = Just messageId }
 
 
 fetchMessages :
@@ -183,30 +222,56 @@ fetchMessages accountsPanelModel maybeAccountServer request =
         )
 
 
-{-| One `MessagingGroup` (or Bcc-only solo pseudo-group) summarized down to
-its most recent message -- what `Components.Pages.MessagesPage`'s outer list
-renders/sorts/animates. `key` is globally unique across every fetched server
-(`"<host>|<groupId>"`, or `"<host>|<messageId>"` for a solo group -- a raw
-`MessagingGroup.id`/`Message.id` alone isn't unique across servers, same
-reasoning as `Components.Users.followStatusAndButtonKey`). `unreadCount`
-counts every fetched message in the group with `isUnread == True` -- not just
-whether `mostRecent` itself is unread -- so it stays accurate once an older
-message's read status changes independently (e.g. `MessagesPage` marking a
-whole thread read on expand doesn't necessarily touch every message at once).
-`messageCount` counts every fetched message in the group, full stop -- since
-the *outer* listing this is built from (`groupMessages`, always called on a
-`GetMessagesRequest` with no `messageGroupId`) is only ever the server's most
-recent `PAGE_SIZE` messages *across every group*, not this group's full
-history, this is a floor, not a total -- `MessagesPage.groupMessageCountView`
-is what appends a "+" to make that clear, unless the group's own full thread
-has separately been fetched (`expand`/`fetchExpand`, keyed by `key`), in which
+{-| What a `GroupSummary`/`GroupRef` (`Components.Pages.MessagesPage`) is
+actually backed by, and so how it can be expanded into its full message list
+and what query param identifies it in a permalink:
+
+  - `MessagingGroup` -- a real `MessagingGroup.id`, fetched via `fetchMessagingGroup`
+    (`GetMessagesRequest.message_group_id`), routed as `?messaging_group=`.
+  - `FromEmail` -- no real server-side group at all, just every message sharing
+    the same (unauthenticated, spoofable -- see `GetMessagesRequest.from_email`'s
+    own proto doc) `Message.from` value, fetched via `fetchFromEmail`, routed
+    as `?from_email=`. Only ever assigned to a message whose `messagingGroup`
+    is `Nothing` (see `Message.messaging_group`'s own doc) but whose `from` is
+    known.
+  - `SoloMessage` -- a single message with no visible `messagingGroup` *and* no
+    known sender address to fall back on (e.g. an unparseable inbound email
+    `From:` header) -- keyed by its own message id, since there's nothing else
+    to group it by. Fetched via `fetchMessage`, routed as `?message=`; the
+    common case needs no fetch at all, see that function's own doc.
+
+-}
+type GroupKind
+    = MessagingGroup
+    | FromEmail
+    | SoloMessage
+
+
+{-| One `MessagingGroup` (or `FromEmail`/`SoloMessage` pseudo-group, see
+`GroupKind`) summarized down to its most recent message -- what
+`Components.Pages.MessagesPage`'s outer list renders/sorts/animates. `key` is
+globally unique across every fetched server (`"<host>|<groupId>"` -- a raw
+`MessagingGroup.id`/`Message.id`/email address alone isn't unique across
+servers, same reasoning as `Components.Users.followStatusAndButtonKey`).
+`unreadCount` counts every fetched message in the group with `isUnread ==
+True` -- not just whether `mostRecent` itself is unread -- so it stays
+accurate once an older message's read status changes independently (e.g.
+`MessagesPage` marking a whole thread read on expand doesn't necessarily touch
+every message at once). `messageCount` counts every fetched message in the
+group, full stop -- since the *outer* listing this is built from
+(`groupMessages`, always called on a `GetMessagesRequest` with no
+`messageGroupId`/`fromEmail`) is only ever the server's most recent
+`PAGE_SIZE` messages *across every group*, not this group's full history,
+this is a floor, not a total -- `MessagesPage.groupMessageCountView` is what
+appends a "+" to make that clear, unless the group's own full thread has
+separately been fetched (`expand`/`fetchExpand`, keyed by `key`), in which
 case that fetch's own message count *is* the true total.
 -}
 type alias GroupSummary =
     { key : String
     , host : String
     , groupId : String
-    , isSolo : Bool
+    , kind : GroupKind
     , members : List Author
     , mostRecent : Message
     , unreadCount : Int
@@ -218,10 +283,11 @@ type alias GroupSummary =
 `GetMessagesResponse` always returns them) by `messagingGroup.id` -- there's
 no `GetMessagingGroups` RPC, only `GetMessages`, so this is the only way to
 derive a group listing at all. A message with `messagingGroup == Nothing`
-(the client was Bcc'ed, per `Message.messaging_group`'s own proto doc: no
-group access) becomes its own "solo" pseudo-group instead, keyed by its own
-message id -- there's exactly one message in it, and no real group id to
-group it under. Result is sorted by each group's `mostRecent` message,
+(the client was Bcc'ed, or the message otherwise has no visible group -- per
+`Message.messaging_group`'s own proto doc) falls back to `FromEmail`, grouped
+with every other such message sharing the same `from` address, or -- if `from`
+itself is unknown -- `SoloMessage`, its own pseudo-group of exactly one. See
+`GroupKind`'s own doc. Result is sorted by each group's `mostRecent` message,
 most-recent-first.
 -}
 groupMessages : String -> List Message -> List GroupSummary
@@ -230,13 +296,20 @@ groupMessages host messages =
         addMessage : Message -> Dict String GroupSummary -> Dict String GroupSummary
         addMessage message groups =
             let
-                ( groupId, isSolo, members ) =
-                    case message.messagingGroup of
-                        Just group ->
-                            ( group.id, False, group.members )
+                soloMembers : List Author
+                soloMembers =
+                    message.sender |> Maybe.map List.singleton |> Maybe.withDefault []
 
-                        Nothing ->
-                            ( message.id, True, message.sender |> Maybe.map List.singleton |> Maybe.withDefault [] )
+                ( groupId, kind, members ) =
+                    case ( message.messagingGroup, message.from ) of
+                        ( Just group, _ ) ->
+                            ( group.id, MessagingGroup, group.members )
+
+                        ( Nothing, Just fromEmail ) ->
+                            ( fromEmail, FromEmail, soloMembers )
+
+                        ( Nothing, Nothing ) ->
+                            ( message.id, SoloMessage, soloMembers )
 
                 key : String
                 key =
@@ -253,7 +326,7 @@ groupMessages host messages =
             case Dict.get key groups of
                 Nothing ->
                     Dict.insert key
-                        { key = key, host = host, groupId = groupId, isSolo = isSolo, members = members, mostRecent = message, unreadCount = increment, messageCount = 1 }
+                        { key = key, host = host, groupId = groupId, kind = kind, members = members, mostRecent = message, unreadCount = increment, messageCount = 1 }
                         groups
 
                 Just existing ->
@@ -326,10 +399,15 @@ messageMillis message =
         |> Maybe.withDefault 0
 
 
-{-| The inverse of `groupRouteId`: `raw` is either a bare group id (a group on
-`mainFrontendHost`) or `id@host` (a group on some other, federated-in-account
-server) -- mirrors `Components.Users.parseUserRouteId`/
-`Components.Posts.parsePostRouteId`.
+{-| The inverse of `groupRouteId`: `raw` is either a bare id (on
+`mainFrontendHost`) or `id@host` (on some other, federated-in-account server)
+-- mirrors `Components.Users.parseUserRouteId`/`Components.Posts.parsePostRouteId`.
+Used for both `?messaging_group=` (a `MessagingGroup.id`) and `?message=` (a
+`Message.id`) -- both are opaque server-assigned ids that never themselves
+contain `@`, so the same bare-id-or-`id@host` shape and split logic works for
+either. *Not* used for `?from_email=`: an email address already contains its
+own `@`, so `MessagesPage.groupQueryParams`/`Pages.Messages.init` route that
+kind through a separate `from_email_host` param instead of this suffix.
 -}
 parseGroupRouteId : String -> String -> ( String, String )
 parseGroupRouteId mainFrontendHost raw =
@@ -341,8 +419,9 @@ parseGroupRouteId mainFrontendHost raw =
             ( raw, mainFrontendHost )
 
 
-{-| The `?messaging_group=` value for a group on `groupHost` -- mirrors
-`Components.Users`' own (private) `withHostSuffix`.
+{-| The `?messaging_group=`/`?message=` value for an id on `groupHost` --
+mirrors `Components.Users`' own (private) `withHostSuffix`. See `parseGroupRouteId`'s
+own doc on why this same helper covers both query params.
 -}
 groupRouteId : String -> String -> String -> String
 groupRouteId mainFrontendHost groupHost groupId =

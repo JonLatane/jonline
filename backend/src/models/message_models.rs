@@ -146,7 +146,7 @@ pub fn find_or_create_messaging_group(
 /// `Message.email_headers`' typed shape. Address fields hold raw `To`/`Cc`/`Bcc`/`From` header
 /// values (e.g. `"Jon Latané <jon@jonline.io>"`), not just bare addresses, since that's what's
 /// useful to render without re-parsing the MIME blob in MinIO.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EmailHeaders {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<String>,

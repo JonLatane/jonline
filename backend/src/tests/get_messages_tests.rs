@@ -141,6 +141,70 @@ mod personal_messages {
             Ok(())
         });
     }
+
+    /// `email_headers`' 'from'/'to'/'cc'/'bcc' *values* (the actual addresses) should be
+    /// searchable, but the JSONB's own key names should not be -- see
+    /// 2026-08-18-160000_index_email_header_addresses_in_messages_search_text, which replaced a
+    /// blunt `email_headers::text` cast (indexing the whole JSON blob, key names included) with
+    /// one that extracts just the address values.
+    #[test]
+    fn text_search_matches_email_header_addresses_but_not_field_names() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let me = create_user(conn, "gmpm_addr_search_me");
+            let me = grant_permissions(conn, &me, vec![Permission::ReadPersonalMessages]);
+            let other = create_user(conn, "gmpm_addr_search_other");
+
+            let from_alice = create_message(
+                conn,
+                Some(&other),
+                &[&me],
+                MessageOpts {
+                    from_email: Some("alice@example.com".to_string()),
+                    ..Default::default()
+                },
+            );
+            let from_bob = create_message(
+                conn,
+                Some(&other),
+                &[&me],
+                MessageOpts {
+                    from_email: Some("bob@example.com".to_string()),
+                    ..Default::default()
+                },
+            );
+
+            let search = |search_text: &str, conn: &mut _| {
+                ids(&get_messages(
+                    GetMessagesRequest {
+                        listing_type: MessageListingType::PersonalMessagesTextSearch as i32,
+                        search_text: Some(search_text.to_string()),
+                        ..Default::default()
+                    },
+                    &Some(&me),
+                    conn,
+                )
+                .unwrap())
+            };
+
+            // Not the full address: `prefix_tsquery_text` (shared by every text search in this
+            // app) strips non-alphanumeric characters from the query before building a `:*`
+            // prefix match, so "alice@example.com" as *input* becomes the query "aliceexamplecom"
+            // -- not a prefix of the indexed "alice@example.com" lexeme, which keeps its '@'/'.'.
+            // The alphanumeric local part alone still matches it as a prefix, same as a username
+            // search does for e.g. "bob" against "bobothy".
+            assert_eq!(
+                search("alice", conn),
+                vec![from_alice.id.to_proto_id()]
+            );
+            assert_eq!(search("bob", conn), vec![from_bob.id.to_proto_id()]);
+
+            // "from" only ever appears in email_headers as a JSON key, on every message here
+            // (both have `email_headers.from` set) -- if it matched, both would come back.
+            assert!(search("from", conn).is_empty());
+            Ok(())
+        });
+    }
 }
 
 mod by_message_id {
@@ -337,6 +401,98 @@ mod by_message_group_id {
             let err = result.unwrap_err();
             assert_eq!(err.code(), Code::NotFound);
             assert_eq!(err.message(), "messaging_group_not_found");
+            Ok(())
+        });
+    }
+}
+
+mod by_from_email {
+    use super::*;
+
+    #[test]
+    fn returns_matching_messages_for_recipient() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let me = create_user(conn, "gmfe_me");
+            let me = grant_permissions(conn, &me, vec![Permission::ReadPersonalMessages]);
+
+            let older = create_message(
+                conn,
+                None,
+                &[&me],
+                MessageOpts {
+                    created_at: Some(ago(2)),
+                    from_email: Some("Alice <alice@example.com>".to_string()),
+                    ..Default::default()
+                },
+            );
+            let newer = create_message(
+                conn,
+                None,
+                &[&me],
+                MessageOpts {
+                    created_at: Some(ago(1)),
+                    from_email: Some("Alice <alice@example.com>".to_string()),
+                    ..Default::default()
+                },
+            );
+            let different_sender = create_message(
+                conn,
+                None,
+                &[&me],
+                MessageOpts {
+                    from_email: Some("Bob <bob@example.com>".to_string()),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_messages(
+                GetMessagesRequest {
+                    from_email: Some("Alice <alice@example.com>".to_string()),
+                    ..Default::default()
+                },
+                &Some(&me),
+                conn,
+            )?;
+
+            let response_ids = ids(&response);
+            assert_eq!(
+                response_ids,
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
+            assert!(!response_ids.contains(&different_sender.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn excludes_messages_the_caller_cannot_access() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let me = create_user(conn, "gmfe_outsider");
+            let me = grant_permissions(conn, &me, vec![Permission::ReadPersonalMessages]);
+            let other = create_user(conn, "gmfe_other");
+
+            let not_mine = create_message(
+                conn,
+                None,
+                &[&other],
+                MessageOpts {
+                    from_email: Some("Alice <alice@example.com>".to_string()),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_messages(
+                GetMessagesRequest {
+                    from_email: Some("Alice <alice@example.com>".to_string()),
+                    ..Default::default()
+                },
+                &Some(&me),
+                conn,
+            )?;
+
+            assert!(!ids(&response).contains(&not_mine.id.to_proto_id()));
             Ok(())
         });
     }

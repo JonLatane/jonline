@@ -1752,9 +1752,9 @@ type alias Proto__Jonline__GetMessagesResponse =
 
 -}
 fieldNumbersProto__Jonline__GetMessagesRequest :
-    { listingType : Int, messageId : Int, messageGroupId : Int, searchText : Int, sentBefore : Int }
+    { listingType : Int, messageId : Int, messageGroupId : Int, searchText : Int, sentBefore : Int, fromEmail : Int }
 fieldNumbersProto__Jonline__GetMessagesRequest =
-    { listingType = 1, messageId = 2, messageGroupId = 3, searchText = 7, sentBefore = 8 }
+    { listingType = 1, messageId = 2, messageGroupId = 3, searchText = 7, sentBefore = 8, fromEmail = 9 }
 
 
 {-| Default for Proto__Jonline__GetMessagesRequest. Should only be used for 'required' decoders as an initial value.
@@ -1767,6 +1767,7 @@ defaultProto__Jonline__GetMessagesRequest =
     , messageGroupId = Nothing
     , searchText = Nothing
     , sentBefore = Nothing
+    , fromEmail = Nothing
     }
 
 
@@ -1791,6 +1792,7 @@ decodeProto__Jonline__GetMessagesRequest =
             8
             (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
             (\a r -> { r | sentBefore = a })
+        , Protobuf.Decode.optional 9 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | fromEmail = a })
         ]
 
 
@@ -1810,6 +1812,7 @@ encodeProto__Jonline__GetMessagesRequest value =
             )
                 value.sentBefore
           )
+        , ( 9, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.fromEmail )
         ]
 
 
@@ -1822,6 +1825,7 @@ type alias Proto__Jonline__GetMessagesRequest =
     , messageGroupId : Maybe String
     , searchText : Maybe String
     , sentBefore : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
+    , fromEmail : Maybe String
     }
 
 

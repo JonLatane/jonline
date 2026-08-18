@@ -215,6 +215,9 @@ pub struct MessageOpts {
     /// Postgres transaction, so specs asserting on `GetMessages`' recency ordering need distinct,
     /// explicit timestamps (mirroring `PostOpts::created_at`).
     pub created_at: Option<SystemTime>,
+    /// Sets `email_headers.from` (only - `to`/`cc`/`bcc` are left empty), simulating an inbound
+    /// email from this address - see `get_by_from_email`'s own spec module.
+    pub from_email: Option<String>,
 }
 
 impl Default for MessageOpts {
@@ -223,6 +226,7 @@ impl Default for MessageOpts {
             subject: Some("Test Subject".to_string()),
             body_text: Some("Test body".to_string()),
             created_at: None,
+            from_email: None,
         }
     }
 }
@@ -248,7 +252,13 @@ pub fn create_message(
             from_user_id: sender.map(|u| u.id),
             subject: opts.subject,
             body_text: opts.body_text,
-            email_headers: None,
+            email_headers: opts.from_email.map(|from| {
+                serde_json::to_value(models::EmailHeaders {
+                    from: Some(from),
+                    ..Default::default()
+                })
+                .unwrap()
+            }),
             email_message_id: None,
             email_minio_path: None,
             messaging_group_id,
