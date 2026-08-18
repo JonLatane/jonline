@@ -70,16 +70,6 @@ impl ImageMagick {
         }
     }
 
-    fn identify_command(&self) -> Command {
-        if self.modern {
-            let mut command = Command::new("magick");
-            command.arg("identify");
-            command
-        } else {
-            Command::new("identify")
-        }
-    }
-
     fn convert_command(&self) -> Command {
         if self.modern {
             Command::new("magick")
@@ -88,17 +78,27 @@ impl ImageMagick {
         }
     }
 
+    /// Dimensions as actually displayed -- i.e. *after* correcting for any EXIF orientation tag,
+    /// same as `resize()`'s own `-auto-orient` does. Deliberately routed through
+    /// `convert_command()` (writing to the `info:` pseudo-format) rather than bare `identify
+    /// -format`: `identify` reports raw, undecoded pixel dimensions and ignores EXIF orientation
+    /// entirely, so a photo shot in portrait but stored with landscape pixel data plus a rotate
+    /// tag (extremely common -- most phone/DSLR cameras never physically rotate the pixels) would
+    /// otherwise be detected -- and thus `aspect_ratio`'d -- as landscape, while every actual
+    /// viewer (browsers, `resize()`'s own output) shows it upright.
     fn dimensions(&self, path: &Path) -> Result<(u32, u32)> {
         let output = self
-            .identify_command()
+            .convert_command()
+            .arg(path)
+            .arg("-auto-orient")
             .arg("-format")
             .arg("%w %h")
-            .arg(path)
+            .arg("info:")
             .output()
-            .context("failed to run identify")?;
+            .context("failed to run convert/magick for dimensions")?;
         if !output.status.success() {
             bail!(
-                "identify exited with {}: {}",
+                "convert/magick exited with {}: {}",
                 output.status,
                 String::from_utf8_lossy(&output.stderr)
             );
@@ -146,6 +146,15 @@ impl FFmpeg {
         }
     }
 
+    /// Dimensions as actually displayed -- i.e. *after* accounting for any rotation transform on
+    /// the stream. Phone-recorded video is commonly stored at the camera sensor's native
+    /// (landscape) pixel dimensions plus a rotation transform telling players to display it
+    /// upright, rather than physically rotating the pixels -- browsers' `<video>` honor that
+    /// transform (same as `resize()`'s own scale filter does, since it operates on the decoded,
+    /// already-rotated frames), so a portrait recording would otherwise be detected -- and thus
+    /// `aspect_ratio`'d -- as landscape. The transform surfaces as either `stream_side_data`'s
+    /// `rotation` (modern "Display Matrix" side data) or the legacy `rotate` stream tag,
+    /// depending on how the file was produced; either is honored here.
     fn dimensions(&self, path: &Path) -> Result<(u32, u32)> {
         let output = Command::new("ffprobe")
             .arg("-v")
@@ -153,9 +162,9 @@ impl FFmpeg {
             .arg("-select_streams")
             .arg("v:0")
             .arg("-show_entries")
-            .arg("stream=width,height")
+            .arg("stream=width,height:stream_tags=rotate:stream_side_data=rotation")
             .arg("-of")
-            .arg("csv=s=x:p=0")
+            .arg("default=noprint_wrappers=1")
             .arg(path)
             .output()
             .context("failed to run ffprobe")?;
@@ -167,10 +176,30 @@ impl FFmpeg {
             );
         }
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let mut parts = stdout.trim().split('x');
-        let width: u32 = parts.next().context("missing width")?.parse()?;
-        let height: u32 = parts.next().context("missing height")?.parse()?;
-        Ok((width, height))
+        let mut width: Option<u32> = None;
+        let mut height: Option<u32> = None;
+        let mut rotation: Option<f64> = None;
+        for line in stdout.lines() {
+            match line.split_once('=') {
+                Some(("width", value)) => width = value.trim().parse().ok(),
+                Some(("height", value)) => height = value.trim().parse().ok(),
+                Some(("TAG:rotate" | "rotation", value)) => {
+                    rotation = value.trim().parse().ok().or(rotation)
+                }
+                _ => {}
+            }
+        }
+        let width = width.context("missing width")?;
+        let height = height.context("missing height")?;
+
+        let quarter_turned = rotation
+            .map(|degrees| (degrees.round() as i64).rem_euclid(360) / 90 % 2 == 1)
+            .unwrap_or(false);
+        Ok(if quarter_turned {
+            (height, width)
+        } else {
+            (width, height)
+        })
     }
 
     /// Resizes `input` to fit within `max_dimension`x`max_dimension`, preserving aspect ratio and

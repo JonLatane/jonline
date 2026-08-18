@@ -3545,7 +3545,14 @@ connectionUrl connection =
 {-| Media (avatars, server logos) is served over plain HTTP(S) on the standard
 web port -- not the gRPC(-web) port a `Connection` was negotiated against for
 actual API calls -- so this omits the port entirely (the browser defaults to
-80/443 per scheme).
+80/443 per scheme). Uses `frontendHost` (the server's branded domain, e.g.
+`ato.band` standing in for the literal `ato.band.getj.online` host actual API
+calls connect to -- see `resolvedFrontendHost`), not `backendHost`, since a
+server declaring an `ExternalCdnConfig` is fully reverse-proxying that
+branded domain through to the backend, `/media` included -- unlike
+`connectionUrl`, which stays on `backendHost` for gRPC(-web) calls
+specifically, since that's the host `candidatePorts` actually negotiated a
+working connection against.
 -}
 mediaBaseUrl : Connection -> String
 mediaBaseUrl connection =
@@ -3555,7 +3562,7 @@ mediaBaseUrl connection =
      else
         "http://"
     )
-        ++ connection.backendHost
+        ++ connection.frontendHost
 
 
 {-| A server's raw `ServerInfo` (name, description, privacy/media policy
