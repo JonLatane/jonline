@@ -26,6 +26,7 @@ const Media$json = {
     {'1': 'moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
     {'1': 'generated', '3': 8, '4': 1, '5': 8, '10': 'generated'},
     {'1': 'processed', '3': 9, '4': 1, '5': 8, '10': 'processed'},
+    {'1': 'aspect_ratio', '3': 10, '4': 1, '5': 2, '9': 3, '10': 'aspectRatio', '17': true},
     {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'updatedAt'},
     {'1': 'metadata', '3': 17, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
@@ -34,6 +35,7 @@ const Media$json = {
     {'1': '_user_id'},
     {'1': '_name'},
     {'1': '_description'},
+    {'1': '_aspect_ratio'},
   ],
 };
 
@@ -44,11 +46,12 @@ final $typed_data.Uint8List mediaDescriptor = $convert.base64Decode(
     'AQESJQoLZGVzY3JpcHRpb24YBSABKAlIAlILZGVzY3JpcHRpb26IAQESMwoKdmlzaWJpbGl0eR'
     'gGIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGAcg'
     'ASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEhwKCWdlbmVyYXRlZBgIIAEoCF'
-    'IJZ2VuZXJhdGVkEhwKCXByb2Nlc3NlZBgJIAEoCFIJcHJvY2Vzc2VkEjkKCmNyZWF0ZWRfYXQY'
-    'DyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF'
-    '9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdBIyCghtZXRh'
-    'ZGF0YRgRIAEoCzIWLmpvbmxpbmUuTWVkaWFNZXRhZGF0YVIIbWV0YWRhdGFCCgoIX3VzZXJfaW'
-    'RCBwoFX25hbWVCDgoMX2Rlc2NyaXB0aW9u');
+    'IJZ2VuZXJhdGVkEhwKCXByb2Nlc3NlZBgJIAEoCFIJcHJvY2Vzc2VkEiYKDGFzcGVjdF9yYXRp'
+    'bxgKIAEoAkgDUgthc3BlY3RSYXRpb4gBARI5CgpjcmVhdGVkX2F0GA8gASgLMhouZ29vZ2xlLn'
+    'Byb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0EjkKCnVwZGF0ZWRfYXQYECABKAsyGi5nb29n'
+    'bGUucHJvdG9idWYuVGltZXN0YW1wUgl1cGRhdGVkQXQSMgoIbWV0YWRhdGEYESABKAsyFi5qb2'
+    '5saW5lLk1lZGlhTWV0YWRhdGFSCG1ldGFkYXRhQgoKCF91c2VyX2lkQgcKBV9uYW1lQg4KDF9k'
+    'ZXNjcmlwdGlvbkIPCg1fYXNwZWN0X3JhdGlv');
 
 @$core.Deprecated('Use mediaMetadataDescriptor instead')
 const MediaMetadata$json = {
@@ -75,9 +78,11 @@ const MediaReference$json = {
     {'1': 'name', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'name', '17': true},
     {'1': 'generated', '3': 4, '4': 1, '5': 8, '10': 'generated'},
     {'1': 'metadata', '3': 5, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
+    {'1': 'aspect_ratio', '3': 10, '4': 1, '5': 2, '9': 1, '10': 'aspectRatio', '17': true},
   ],
   '8': [
     {'1': '_name'},
+    {'1': '_aspect_ratio'},
   ],
 };
 
@@ -86,7 +91,8 @@ final $typed_data.Uint8List mediaReferenceDescriptor = $convert.base64Decode(
     'Cg5NZWRpYVJlZmVyZW5jZRIhCgxjb250ZW50X3R5cGUYASABKAlSC2NvbnRlbnRUeXBlEg4KAm'
     'lkGAIgASgJUgJpZBIXCgRuYW1lGAMgASgJSABSBG5hbWWIAQESHAoJZ2VuZXJhdGVkGAQgASgI'
     'UglnZW5lcmF0ZWQSMgoIbWV0YWRhdGEYBSABKAsyFi5qb25saW5lLk1lZGlhTWV0YWRhdGFSCG'
-    '1ldGFkYXRhQgcKBV9uYW1l');
+    '1ldGFkYXRhEiYKDGFzcGVjdF9yYXRpbxgKIAEoAkgBUgthc3BlY3RSYXRpb4gBAUIHCgVfbmFt'
+    'ZUIPCg1fYXNwZWN0X3JhdGlv');
 
 @$core.Deprecated('Use getMediaRequestDescriptor instead')
 const GetMediaRequest$json = {

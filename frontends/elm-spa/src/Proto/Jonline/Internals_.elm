@@ -6724,9 +6724,9 @@ type alias Proto__Jonline__GetMediaRequest =
 
 -}
 fieldNumbersProto__Jonline__MediaReference :
-    { contentType : Int, id : Int, name : Int, generated : Int, metadata : Int }
+    { contentType : Int, id : Int, name : Int, generated : Int, metadata : Int, aspectRatio : Int }
 fieldNumbersProto__Jonline__MediaReference =
-    { contentType = 1, id = 2, name = 3, generated = 4, metadata = 5 }
+    { contentType = 1, id = 2, name = 3, generated = 4, metadata = 5, aspectRatio = 10 }
 
 
 {-| Default for Proto__Jonline__MediaReference. Should only be used for 'required' decoders as an initial value.
@@ -6734,7 +6734,7 @@ fieldNumbersProto__Jonline__MediaReference =
 -}
 defaultProto__Jonline__MediaReference : Proto__Jonline__MediaReference
 defaultProto__Jonline__MediaReference =
-    { contentType = "", id = "", name = Nothing, generated = False, metadata = Nothing }
+    { contentType = "", id = "", name = Nothing, generated = False, metadata = Nothing, aspectRatio = Nothing }
 
 
 {-| Declares how to decode a `Proto__Jonline__MediaReference` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -6752,6 +6752,7 @@ decodeProto__Jonline__MediaReference =
             5
             (Protobuf.Decode.map Just decodeProto__Jonline__MediaMetadata)
             (\a r -> { r | metadata = a })
+        , Protobuf.Decode.optional 10 (Protobuf.Decode.map Just Protobuf.Decode.float) (\a r -> { r | aspectRatio = a })
         ]
 
 
@@ -6768,6 +6769,7 @@ encodeProto__Jonline__MediaReference value =
         , ( 5
           , (Maybe.map encodeProto__Jonline__MediaMetadata >> Maybe.withDefault Protobuf.Encode.none) value.metadata
           )
+        , ( 10, (Maybe.map Protobuf.Encode.float >> Maybe.withDefault Protobuf.Encode.none) value.aspectRatio )
         ]
 
 
@@ -6780,6 +6782,7 @@ type alias Proto__Jonline__MediaReference =
     , name : Maybe String
     , generated : Bool
     , metadata : Maybe Proto__Jonline__MediaMetadata
+    , aspectRatio : Maybe Float
     }
 
 
@@ -6842,6 +6845,7 @@ fieldNumbersProto__Jonline__Media :
     , moderation : Int
     , generated : Int
     , processed : Int
+    , aspectRatio : Int
     , createdAt : Int
     , updatedAt : Int
     , metadata : Int
@@ -6856,6 +6860,7 @@ fieldNumbersProto__Jonline__Media =
     , moderation = 7
     , generated = 8
     , processed = 9
+    , aspectRatio = 10
     , createdAt = 15
     , updatedAt = 16
     , metadata = 17
@@ -6876,6 +6881,7 @@ defaultProto__Jonline__Media =
     , moderation = Proto.Jonline.Moderation.defaultModeration
     , generated = False
     , processed = False
+    , aspectRatio = Nothing
     , createdAt = Nothing
     , updatedAt = Nothing
     , metadata = Nothing
@@ -6898,6 +6904,7 @@ decodeProto__Jonline__Media =
         , Protobuf.Decode.optional 7 Proto.Jonline.Moderation.decodeModeration (\a r -> { r | moderation = a })
         , Protobuf.Decode.optional 8 Protobuf.Decode.bool (\a r -> { r | generated = a })
         , Protobuf.Decode.optional 9 Protobuf.Decode.bool (\a r -> { r | processed = a })
+        , Protobuf.Decode.optional 10 (Protobuf.Decode.map Just Protobuf.Decode.float) (\a r -> { r | aspectRatio = a })
         , Protobuf.Decode.optional
             15
             (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
@@ -6928,6 +6935,7 @@ encodeProto__Jonline__Media value =
         , ( 7, Proto.Jonline.Moderation.encodeModeration value.moderation )
         , ( 8, Protobuf.Encode.bool value.generated )
         , ( 9, Protobuf.Encode.bool value.processed )
+        , ( 10, (Maybe.map Protobuf.Encode.float >> Maybe.withDefault Protobuf.Encode.none) value.aspectRatio )
         , ( 15
           , (Maybe.map Proto.Google.Protobuf.Internals_.encodeProto__Google__Protobuf__Timestamp
                 >> Maybe.withDefault Protobuf.Encode.none
@@ -6959,6 +6967,7 @@ type alias Proto__Jonline__Media =
     , moderation : Proto.Jonline.Moderation.Moderation
     , generated : Bool
     , processed : Bool
+    , aspectRatio : Maybe Float
     , createdAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , updatedAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , metadata : Maybe Proto__Jonline__MediaMetadata

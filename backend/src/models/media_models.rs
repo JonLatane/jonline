@@ -53,6 +53,7 @@ pub struct Media {
     pub updated_at: SystemTime,
     pub converted_sizes: serde_json::Value,
     pub metadata: serde_json::Value,
+    pub aspect_ratio: Option<f32>,
 }
 
 impl Media {
@@ -174,12 +175,14 @@ pub const MEDIA_REFERENCE_COLUMNS: (
     media::name,
     media::generated,
     media::metadata,
+    media::aspect_ratio,
 ) = (
     media::id,
     media::content_type,
     media::name,
     media::generated,
     media::metadata,
+    media::aspect_ratio,
 );
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -190,6 +193,7 @@ pub struct MediaReference {
     pub name: Option<String>,
     pub generated: bool,
     pub metadata: serde_json::Value,
+    pub aspect_ratio: Option<f32>,
 }
 
 impl MediaReference {
