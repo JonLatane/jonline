@@ -13,6 +13,7 @@ module Components.Messages exposing
     , hasEligibleAccount
     , isUnread
     , markMessagesRead
+    , messageKey
     , messageMillis
     , parseGroupRouteId
     )
@@ -304,6 +305,24 @@ field.
 conversationKey : Conversation -> String
 conversationKey conversation =
     conversationHost conversation ++ "|" ++ conversationId conversation
+
+
+{-| `"<host>|<id>"` for `message`, on `host` -- the message-level analog of
+`conversationKey`, and for exactly the same reason: `Message.id` (like
+`Conversation`'s own backing id) is a plain per-server sequence, not a
+globally-unique value, so two messages from two different hosts can
+perfectly well share the same raw id. Anywhere a `Message`'s own id is used
+as a `Dict` key, an equality check, or otherwise compared against another
+message from a *different, not-yet-confirmed-same* host needs this, not the
+bare `.id` -- see `Components.Pages.MessagesPage`'s own `Model.sidebarAnimations`/
+`.detailThreadAnimations`/`.highlightMessageId`/`.pendingScrollMessageId`
+for what this guards against (a real bug this session: the sidebar's own
+flattened message list, spanning every inline-open group across every host
+at once, collided on exactly this).
+-}
+messageKey : String -> Message -> String
+messageKey host message =
+    host ++ "|" ++ message.id
 
 
 {-| One `MessagingGroup` (or `FromEmail`/`SoloMessage` pseudo-group, see

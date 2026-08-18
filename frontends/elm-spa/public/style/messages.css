@@ -124,6 +124,12 @@
   border-color: var(--fg);
 }
 
+/* .messages-page .flip-animated-item:has(>* .messages-group-expand-toggle) {
+  position: sticky;
+  top: 16px;
+  z-index: 1;
+} */
+
 .messages-group-expand-toggle {
   flex: 0 0 auto;
   width: 1.5rem;
@@ -358,6 +364,29 @@
   cursor: pointer;
 }
 
+/* `MessagesPage.messageEmailHeadersView`'s own compact alert icon -- the
+   sidebar's own (space-constrained) stand-in for `.messages-spoofable-warning`'s
+   full sentence, shown on the two-pane detail side instead (room for it
+   there). Same warning text either way, just as this icon's own `title`
+   tooltip here rather than always-visible body text. */
+.messages-spoofable-warning-icon {
+  font-size: 0.75rem;
+  cursor: help;
+}
+
+/* `MessagesPage.messageEmailHeadersView`'s own From/To/Cc/Bcc dump -- shown
+   above `.message-row-header` on *every* message with any of the four
+   present (regardless of which kind of conversation it's in, unlike
+   `.messages-from-email`'s own whole-conversation summary) -- small and
+   half-opacity, same "technical detail, not the point of the message"
+   treatment `.message-row-time` already gives its own secondary text,
+   just as a small block instead of a single inline span. */
+.message-row-email-headers {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
 .message-row-header {
   display: flex;
   align-items: center;
@@ -437,6 +466,19 @@
 .message-row-body {
   margin: 0.3rem 0 0;
   white-space: pre-wrap;
+}
+
+/* The sidebar/listing's own copy only (`.messages-group-list` -- both the
+   manually-expanded thread, `.messages-sidebar-message-row`, and the
+   search-mode one, `.messages-thread-list` nested under a `.messages-group`
+   card -- never the two-pane detail's own full read view, scoped separately
+   under `.messages-thread`) -- a smaller, half-opacity preview line reads as
+   a snippet rather than competing with the sender/subject above it, the way
+   `.message-row-time`/`.messages-from-email` already de-emphasize their own
+   secondary text. */
+.messages-group-list .message-row-body {
+  font-size: 0.85rem;
+  opacity: 0.5;
 }
 
 .messages-two-pane {

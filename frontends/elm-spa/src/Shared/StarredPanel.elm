@@ -1142,7 +1142,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
             in
             div [ classes [ hostnameToCSSClass host, "starred-post-entry", "post-error" ] ]
                 [ text ("Couldn't load Post " ++ key ++ ". Maybe it doesn't exist, or maybe you need to be logged in?")
-                , button [ onClick (UnstarFailedPost key), class "background-color-primary" ] [ text "Unstar" ]
+                , button [ onClick (UnstarFailedPost key), classes [ "background-color-primary", hostnameToCSSClass host ] ] [ text "Unstar" ]
                 ]
 
         Just ServerUnavailable ->
@@ -1247,7 +1247,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
         Just EventFetchFailed ->
             div [ class "starred-post-entry post-error" ]
                 [ text ("Couldn't load Event for Post " ++ key ++ ".")
-                , button [ onClick (UnstarFailedPost key), class "background-color-primary" ] [ text "Unstar" ]
+                , button [ onClick (UnstarFailedPost key), classes [ "background-color-primary", hostnameToCSSClass host ] ] [ text "Unstar" ]
                 ]
 
         Nothing ->
