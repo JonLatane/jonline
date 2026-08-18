@@ -1840,7 +1840,10 @@ instanceIsLong instance =
         ( Just startsAt, Just endsAt ) ->
             Time.posixToMillis (Conversions.timestampToPosix endsAt)
                 - Time.posixToMillis (Conversions.timestampToPosix startsAt)
-                > longEventThresholdHours * 60 * 60 * 1000
+                > longEventThresholdHours
+                * 60
+                * 60
+                * 1000
 
         _ ->
             False
@@ -1921,6 +1924,7 @@ option (set once, calendar-wide) is what makes those classes' `background-color`
 actually visible -- FullCalendar's default month-view style is a small
 `border-color`-only dot otherwise, which a `background-color` class alone
 wouldn't paint.
+
 -}
 calendarEventEncoder : ( String, Event, EventInstance ) -> Encode.Value
 calendarEventEncoder ( host, event, instance ) =
@@ -2141,6 +2145,7 @@ while closed, see `calendarPreviewEvents`' own doc) each time
 `model.calendarPreview` changes, so `scrollToCalendarPreviewCard` has real,
 measurable card elements to find without waiting on any enter animation to
 clear first.
+
 -}
 calendarPreviewModalView : Shared.Model -> Model -> Html Msg
 calendarPreviewModalView shared model =
@@ -2170,8 +2175,8 @@ currently-`Loaded` event, potentially hundreds -- see that function's own
 doc) made `scrollToCalendarPreviewCard` unreliable for anything tapped far
 into a long month: confirmed live, a card deep into a list that size either
 measured wrong or just took long enough to lay out that the scroll fired
-before it settled. A card only ever needs to scroll a *little* into view
-relative to its own near neighbors, never the *whole* list, so bounding how
+before it settled. A card only ever needs to scroll a _little_ into view
+relative to its own near neighbors, never the _whole_ list, so bounding how
 much this ever has to render fixes both the measurement and the cost of
 building it in the first place.
 -}
@@ -2575,7 +2580,7 @@ modeButtonView current target =
         [ classes
             ("events-mode-button"
                 :: (if target == current then
-                        [ "background-color-nav" ]
+                        [ "background-color-accent" ]
 
                     else
                         []
@@ -2698,13 +2703,13 @@ via `calendarAnimationView`) -- normally one or the other is empty (cards
 while `model.mode /= Calendar`, the calendar item while it is), but both can
 be simultaneously non-empty for the short window `syncAnimations`/
 `syncCalendarAnimations` are cross-fading them (`DisplayModeChanged`'s own
-handling for any transition to/from `Calendar` calls both): switching *into*
+handling for any transition to/from `Calendar` calls both): switching _into_
 `Calendar`, every real card starts its own `remove` fade-out (`currentEvents`
 going empty) at the same moment the calendar item starts its `enter` fade-in,
 so they're both present -- one shrinking away, one growing in -- sharing this
 same single-column list/container the whole time, which is what makes it
 read as one list cross-fading rather than two unrelated views hard-cutting.
-Switching *out* of `Calendar` runs the same thing in reverse (cards
+Switching _out_ of `Calendar` runs the same thing in reverse (cards
 `reappear`, the calendar item `remove`s).
 
 -}
@@ -2788,7 +2793,7 @@ eventsListView shared model =
 {-| `calendarView` wrapped in the same fading/scaling/collapsing animated
 `<div>` convention as a real card (`eventAnimationView`'s own outer layer,
 via `anim.flip`/`UI.Flip.itemAttributes`) -- no inner `moveAttributes` layer
-though, unlike a card: `Calendar` never needs a position/size *slide* the way
+though, unlike a card: `Calendar` never needs a position/size _slide_ the way
 switching among `VerticalList`/`Grid`/`HorizontalList` does (there's nothing
 for it to slide relative to, it's the container's only item -- see
 `eventsListView`'s own `Calendar ->` branch), just the fade/collapse `flip`
@@ -2801,12 +2806,13 @@ unlike a real card (which shares whatever axis `eventsListView` derives from
 via `syncCalendarAnimations`), and `flip.css`'s row-axis collapse/`flex-shrink:0`
 rules are aimed at fixed-width tiles, not this full-height view -- hardcoding
 `Vertical` here sidesteps that regardless of which container it's
-transiently sitting inside (the *container's* own ancestor class, not this
+transiently sitting inside (the _container's_ own ancestor class, not this
 item's, is what actually picks which grid axis collapses -- see
 `flip.css`'s `.flip-animated-row .flip-animated-item.flip-collapsed`/
 `.flip-animated-column .flip-animated-item.flip-collapsed`, so this still
 collapses correctly along whichever axis the container it's inside actually
 is).
+
 -}
 calendarAnimationView : Bool -> ( String, CalendarAnimation ) -> ( String, Html Msg )
 calendarAnimationView embeddedPage ( key, anim ) =

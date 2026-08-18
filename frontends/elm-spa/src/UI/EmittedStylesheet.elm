@@ -92,7 +92,8 @@ mainFrontendServerRules theme accountsPanel =
         , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
         , ".nav-link:hover { background-color:" ++ theme.navColor ++ "88; }\n"
-        , colorRule ".events-calendar .fc .fc-button-primary:not(:disabled).fc-button-active" theme.navColor theme.navTextColor
+        , colorRule ".events-calendar .fc .fc-button-primary:not(:disabled).fc-button-active" theme.accentColor theme.accentTextColor
+        , borderColorRule ".events-calendar .fc .fc-button-primary:not(:disabled).fc-button-active" theme.accentColor
         , ":root { --calendar-accent: " ++ theme.navColor ++ "; }\n"
         , ".events-list:not(:has(>* .events-calendar)), .events-strip, .events-calendar { background-color:" ++ theme.backgroundColor ++ "BB; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }"
         ]
@@ -167,9 +168,11 @@ serverRules darkMode mainTheme mainFrontendHost server =
         , colorRule (withDescendants selector ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
         , colorRule (withDescendants selector ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
         , colorRule (withDescendants selector ".background-color-nav") theme.navColor theme.navTextColor
+        , colorRule (withDescendants selector ".background-color-accent") theme.accentColor theme.accentTextColor
         , colorRule (withDescendants selector ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (withDescendants selector ".border-color-primary") theme.primaryColor
         , borderColorRule (withDescendants selector ".border-color-nav") theme.navColor
+        , borderColorRule (withDescendants selector ".border-color-accent") theme.accentColor
         , borderColorRule (withDescendants selector ".border-color-primary-text") theme.primaryTextColor
         , borderColorRule (withDescendants selector ".border-color-primary-anchor") theme.primaryAnchorColor
         , borderColorRule (withDescendants selector ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")

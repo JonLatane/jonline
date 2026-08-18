@@ -1191,7 +1191,7 @@ over/undershoot at either end of the thread is harmless.
 The `Process.sleep` up front is load-bearing, not padding: every message in a
 just-loaded thread is a fresh `UI.Flip.enter` (`syncDetailThreadAnimations`),
 which mounts `flip-collapsed` -- zero height, per `flip.css` -- and only
-starts growing on the *next* animation frame once `entering` clears
+starts growing on the _next_ animation frame once `entering` clears
 (`UI.Flip.animate`). This `Cmd` fires in the very same update as the messages
 themselves first appearing, i.e. before that first frame, so an immediate
 `Dom.getElement` would measure every message (target included) still
@@ -1203,6 +1203,7 @@ to the bottom regardless of target" bug this sleep fixes: waiting out
 to notice the class change before it starts transitioning at all) lets every
 message reach its real, final height first, so the geometry above measures
 the thread as it'll actually look.
+
 -}
 scrollToPendingMessageCmd : Model -> Cmd Msg
 scrollToPendingMessageCmd model =
@@ -1508,7 +1509,7 @@ currentGroupSummaries model =
 
 
 {-| The true most-recent-message timestamp `summary`'s own group actually
-has, epoch millis -- `summary.mostRecent` alone (the *outer listing's* own
+has, epoch millis -- `summary.mostRecent` alone (the _outer listing's_ own
 snapshot, refreshed only every 30s by `Poll` or on demand by `ForceRefresh`)
 can be stale relative to a fresher, dedicated per-group fetch
 (`model.expandedGroups`, `fetchMessagingGroup`/`fetchFromEmail`/`fetchMessage`):
@@ -1518,7 +1519,7 @@ during) this group's own expand can show up in `eg.messages` without
 keeps `groupSortKey`/`messageSortKey` internally consistent -- see
 `groupSortKey`'s own doc on why that matters -- regardless of which of the
 two happens to be fresher at any given moment. A real bug this session: a
-`FromEmail` pseudo-group's own row rendered *after* one of its just-expanded
+`FromEmail` pseudo-group's own row rendered _after_ one of its just-expanded
 messages, because that message's own timestamp was newer than the (stale)
 outer listing had recorded as this group's `mostRecent`.
 -}
@@ -1539,7 +1540,7 @@ its own message rows (`messageSortKey`), so a whole group's block (its row
 plus, if inline-open, its messages) always sorts as one contiguous unit,
 newest group first. The secondary component just needs to sort _before_ any
 of that same group's own messages (see `messageSortKey`) -- one less than the
-group's own (negated) timestamp always does that, *provided* `mostRecentMillis`
+group's own (negated) timestamp always does that, _provided_ `mostRecentMillis`
 is genuinely the max across every message this group currently knows about
 (see `trueMostRecentMillis`'s own doc -- this doesn't derive it itself, since
 `flattenSidebar`/`groupMessageRows` only need to compute it once per group,
@@ -2837,7 +2838,7 @@ messageRowView time accountsPanelModel host interaction highlightMessageId isDet
                         []
                    )
                 ++ (if highlightMessageId == Just { host = host, id = message.id } then
-                        [ hostnameToCSSClass host, "border-color-nav" ]
+                        [ hostnameToCSSClass host, "border-color-accent" ]
 
                     else
                         []
