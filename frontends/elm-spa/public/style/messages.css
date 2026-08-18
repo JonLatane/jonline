@@ -309,6 +309,19 @@
   margin-left: 1.6rem;
 }
 
+.messages-show-more-button {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: center;
+  cursor: pointer;
+}
+
 /* Two-pane detail only -- `.messages-thread` (above) is `selectedGroupView`'s
    own wrapper; the sidebar's own message rows (`.messages-sidebar-message-row`,
    below) aren't nested in a `.messages-thread-list` of their own at all

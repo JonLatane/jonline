@@ -101,6 +101,15 @@ type alias Model =
     -- what lets *every* row stay inline-expandable, including whichever one
     -- is currently `selectedGroup` -- see `groupRowView`'s own doc.
     , inlineOpenGroups : Set String
+
+    -- Which `inlineOpenGroups` groups currently show *all* their messages
+    -- inline, rather than just the `inlineMessagePreviewLimit` most recent
+    -- (`groupMessageRows`) -- set by that group's own "Show more..." row
+    -- (`ShowMoreClicked`), reset (`Set.remove`) alongside `inlineOpenGroups`
+    -- itself every time that same group's chevron collapses (`ToggleExpand`),
+    -- so re-expanding it always starts back at the preview limit rather than
+    -- remembering it was fully shown before.
+    , fullyExpandedGroups : Set String
     , searchText : String
     , searchGeneration : Int
     , selectedGroup : Maybe Messages.Conversation
@@ -181,6 +190,14 @@ messages -- see that field's own doc.
 type SidebarRow
     = SidebarGroupRow Messages.ConversationSummary
     | SidebarMessageRow Messages.Conversation Message
+      -- Only ever appears when `groupMessageRows` has more messages loaded
+      -- than `inlineMessagePreviewLimit` and that group isn't (yet) in
+      -- `Model.fullyExpandedGroups` -- the `Int` is how many more messages
+      -- are hidden. Just another flat entry in the same list as every
+      -- `SidebarGroupRow`/`SidebarMessageRow`, so it gets the same FLIP
+      -- enter/remove treatment (appears the moment there's a 4th message to
+      -- hide, disappears the moment `ShowMoreClicked` reveals the rest).
+    | SidebarShowMoreRow Messages.Conversation Int
 
 
 type alias SidebarAnimation =
@@ -247,6 +264,13 @@ type Msg
     | Animate Animation.Msg
     | RemoveSidebarRow String
     | ToggleExpand Messages.ConversationSummary
+      -- Fired by an inline-open group's own "Show more..." row
+      -- (`groupMessageRows`'s `SidebarShowMoreRow`) -- reveals every message
+      -- that group's `expandedGroups` entry already has loaded, instead of
+      -- just the `inlineMessagePreviewLimit` most recent. See
+      -- `Model.fullyExpandedGroups`' own doc on why this is a separate `Set`
+      -- from `inlineOpenGroups` rather than, say, a per-group message count.
+    | ShowMoreClicked Messages.Conversation
     | GotGroupMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
       -- Fired once per thread, batching every still-`Messages.isUnread`
       -- message in it into one `MarkMessagesRead` call, right when that
@@ -406,6 +430,7 @@ empty =
     , sidebarAnimations = Dict.empty
     , expandedGroups = Dict.empty
     , inlineOpenGroups = Set.empty
+    , fullyExpandedGroups = Set.empty
     , searchText = ""
     , searchGeneration = 0
     , selectedGroup = Nothing
@@ -517,7 +542,14 @@ update accountsPanelModel msg model =
                     Messages.conversationKey summary.conversation
             in
             if Set.member key model.inlineOpenGroups then
-                ( syncSidebarAnimations { model | inlineOpenGroups = Set.remove key model.inlineOpenGroups }, Cmd.none, Nothing )
+                ( syncSidebarAnimations
+                    { model
+                        | inlineOpenGroups = Set.remove key model.inlineOpenGroups
+                        , fullyExpandedGroups = Set.remove key model.fullyExpandedGroups
+                    }
+                , Cmd.none
+                , Nothing
+                )
 
             else
                 let
@@ -527,6 +559,13 @@ update accountsPanelModel msg model =
                             summary.conversation
                 in
                 ( syncSidebarAnimations newModel, cmd, Nothing )
+
+        ShowMoreClicked conversation ->
+            ( syncSidebarAnimations
+                { model | fullyExpandedGroups = Set.insert (Messages.conversationKey conversation) model.fullyExpandedGroups }
+            , Cmd.none
+            , Nothing
+            )
 
         GotGroupMessages key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
@@ -1502,6 +1541,15 @@ messageSortKey mostRecentMillis message =
     ( negate mostRecentMillis, negate (Messages.messageMillis message) )
 
 
+{-| How many of an inline-open group's most recent messages `groupMessageRows`
+shows before collapsing the rest behind a `SidebarShowMoreRow` -- see
+`Model.fullyExpandedGroups`' own doc for how that row's click lifts the cap.
+-}
+inlineMessagePreviewLimit : Int
+inlineMessagePreviewLimit =
+    3
+
+
 {-| `summary`'s own message rows for `flattenSidebar`, in no particular order
 (their `sortKey` is what actually places them) -- `[]` whenever there's
 nothing to splice in: search mode has its own separate, non-animated
@@ -1511,7 +1559,9 @@ the group isn't inline-open at all, or its fetch hasn't resolved to
 the row rather than a flat entry of its own -- see `groupRowView`).
 `mostRecentMillis` is `flattenSidebar`'s own `trueMostRecentMillis`, passed
 through rather than re-derived here so it's computed once per group, not
-once per message.
+once per message. Caps at `inlineMessagePreviewLimit` most-recent messages
+(appending a `SidebarShowMoreRow` for the rest) unless this group is already
+in `Model.fullyExpandedGroups`.
 -}
 groupMessageRows : Model -> Int -> Messages.ConversationSummary -> List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
 groupMessageRows model mostRecentMillis summary =
@@ -1527,14 +1577,59 @@ groupMessageRows model mostRecentMillis summary =
         case Dict.get key model.expandedGroups of
             Just eg ->
                 if eg.status == ExpandLoaded then
-                    eg.messages
-                        |> Dict.values
-                        |> List.map
-                            (\message ->
-                                ( "message:" ++ Messages.messageKey (Messages.conversationHost summary.conversation) message
-                                , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey mostRecentMillis message }
-                                )
-                            )
+                    let
+                        -- Most-recent-first, matching `messageSortKey`'s own
+                        -- ordering, so `List.take` below really does keep
+                        -- the newest ones rather than an arbitrary `Dict`
+                        -- iteration order.
+                        sortedMessages : List Message
+                        sortedMessages =
+                            eg.messages |> Dict.values |> List.sortBy (messageSortKey mostRecentMillis)
+
+                        visibleMessages : List Message
+                        visibleMessages =
+                            if Set.member key model.fullyExpandedGroups then
+                                sortedMessages
+
+                            else
+                                List.take inlineMessagePreviewLimit sortedMessages
+
+                        hiddenCount : Int
+                        hiddenCount =
+                            List.length sortedMessages - List.length visibleMessages
+
+                        messageRows : List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+                        messageRows =
+                            visibleMessages
+                                |> List.map
+                                    (\message ->
+                                        ( "message:" ++ Messages.messageKey (Messages.conversationHost summary.conversation) message
+                                        , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey mostRecentMillis message }
+                                        )
+                                    )
+
+                        -- Sorts immediately after the last visible message
+                        -- (that message's own secondary sort component, plus
+                        -- one -- see `groupSortKey`'s own doc on why a `+ 1`
+                        -- there is safe/meaningful) and, since every hidden
+                        -- message is simply absent from this list rather
+                        -- than sorted after it, needs nothing more precise
+                        -- than that to land in the right place.
+                        showMoreRow : List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+                        showMoreRow =
+                            case ( hiddenCount > 0, List.reverse visibleMessages |> List.head ) of
+                                ( True, Just lastVisible ) ->
+                                    [ ( "showmore:" ++ key
+                                      , { row = SidebarShowMoreRow summary.conversation hiddenCount
+                                        , sortKey = Tuple.mapSecond ((+) 1) (messageSortKey mostRecentMillis lastVisible)
+                                        }
+                                      )
+                                    ]
+
+                                _ ->
+                                    []
+                    in
+                    messageRows ++ showMoreRow
 
                 else
                     []
@@ -1866,11 +1961,31 @@ sidebarRowView time accountsPanelModel model ( key, anim ) =
                 SidebarMessageRow conversation message ->
                     div [ class "messages-sidebar-message-row" ]
                         [ messageRowView time accountsPanelModel (Messages.conversationHost conversation) (messageInteractionFor accountsPanelModel model conversation) model.highlightMessageId False message ]
+
+                SidebarShowMoreRow conversation hiddenCount ->
+                    showMoreRowView conversation hiddenCount
     in
     ( key
     , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
         [ div pointerEventsAttr [ content ] ]
     )
+
+
+{-| A `SidebarShowMoreRow`'s own content -- a plain button revealing the rest
+of `conversation`'s already-loaded messages (`ShowMoreClicked`, see
+`Model.fullyExpandedGroups`' own doc). `stopPropagation`/`preventDefault` for
+the same reason as `expandChevron`'s own click handler: this row still sits
+inside whatever the group row's own click/`href` targets.
+-}
+showMoreRowView : Messages.Conversation -> Int -> Html Msg
+showMoreRowView conversation hiddenCount =
+    div [ class "messages-sidebar-message-row messages-show-more-row" ]
+        [ button
+            [ class "messages-show-more-button"
+            , Html.Events.custom "click" (Decode.succeed { message = ShowMoreClicked conversation, stopPropagation = True, preventDefault = True })
+            ]
+            [ text ("Show " ++ String.fromInt hiddenCount ++ " more…") ]
+        ]
 
 
 groupRowView : SharedTime.Model -> AccountsPanel.Model -> Model -> Messages.ConversationSummary -> Html Msg
