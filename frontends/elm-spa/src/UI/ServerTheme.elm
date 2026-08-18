@@ -59,6 +59,13 @@ type alias ServerTheme =
     , navBgColor : String
     , navAnchorColor : String
     , navLuma : Float
+    , accentColor : String
+    , accentTextColor : String
+    , accentDarkColor : String
+    , accentLightColor : String
+    , accentBgColor : String
+    , accentAnchorColor : String
+    , accentLuma : Float
     , textColor : String
     , backgroundColor : String
     , transparentBackgroundColor : String
@@ -147,6 +154,19 @@ every render.
 -}
 fromColorMetas : Bool -> ColorMeta -> ColorMeta -> ServerTheme
 fromColorMetas darkMode primary nav =
+    let
+        accentIsPrimary : Bool
+        accentIsPrimary =
+            saturationOfHex primary.color >= saturationOfHex nav.color + 0.65
+
+        accent : ColorMeta
+        accent =
+            if accentIsPrimary then
+                primary
+
+            else
+                nav
+    in
     { primaryColor = primary.color
     , primaryTextColor = primary.textColor
     , primaryDarkColor = primary.darkColor
@@ -181,6 +201,30 @@ fromColorMetas darkMode primary nav =
         else
             nav.lightColor
     , navLuma = nav.luma
+    , accentColor = accent.color
+    , accentTextColor = accent.textColor
+    , accentDarkColor = accent.darkColor
+    , accentLightColor = accent.lightColor
+    , accentBgColor =
+        if accentIsPrimary then
+            if darkMode then
+                accent.darkColor
+
+            else
+                accent.lightColor
+
+        else if not darkMode then
+            accent.darkColor
+
+        else
+            accent.lightColor
+    , accentAnchorColor =
+        if not darkMode then
+            accent.darkColor
+
+        else
+            accent.lightColor
+    , accentLuma = accent.luma
     , textColor =
         if darkMode then
             "#eaeaea"
@@ -333,6 +377,34 @@ shade colorHex percent =
 lumaOfHex : String -> Float
 lumaOfHex hex =
     lumaOfRgb (rgbFromHex hex)
+
+
+{-| HSV saturation (`[0, 1]`) of a `#rrggbb` color -- used to pick `accentColor`
+as whichever of `primary`/`nav` is more "vibrant" (higher saturation) rather
+than neutral/grayish (lower saturation).
+-}
+saturationOfHex : String -> Float
+saturationOfHex hex =
+    saturationOfRgb (rgbFromHex hex)
+
+
+saturationOfRgb : { r : Int, g : Int, b : Int } -> Float
+saturationOfRgb { r, g, b } =
+    let
+        maxChannel : Float
+        maxChannel =
+            toFloat (max r (max g b))
+    in
+    if maxChannel <= 0 then
+        0
+
+    else
+        let
+            minChannel : Float
+            minChannel =
+                toFloat (min r (min g b))
+        in
+        (maxChannel - minChannel) / maxChannel
 
 
 {-| The Tamagui app's simple (non-gamma-corrected) luma formula -- distinct

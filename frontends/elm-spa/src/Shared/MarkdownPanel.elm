@@ -314,10 +314,26 @@ update accountsPanelModel msg model =
 
         UserPickerMsg subMsg ->
             let
-                ( newRecipients, cmd, maybeAccountsPanelMsg ) =
+                ( newRecipients, cmd, ( maybeAccountsPanelMsg, justPickedRecipient ) ) =
                     UserPicker.update accountsPanelModel subMsg model.messageRecipients
+
+                -- A just-picked recipient's own search input has already
+                -- been cleared (`UserPicker.update`'s `ToggleSelected`
+                -- branch) -- refocus it so the next name can be typed
+                -- straight away, same `Dom.focus`/`NoOp` convention
+                -- `focusCmdFor` uses for this same id.
+                refocusCmd : Cmd Msg
+                refocusCmd =
+                    if justPickedRecipient then
+                        Task.attempt (\_ -> NoOp) (Dom.focus "user-picker-search-input")
+
+                    else
+                        Cmd.none
             in
-            ( { model | messageRecipients = newRecipients }, Cmd.map UserPickerMsg cmd, ( maybeAccountsPanelMsg, False, False ) )
+            ( { model | messageRecipients = newRecipients }
+            , Cmd.batch [ Cmd.map UserPickerMsg cmd, refocusCmd ]
+            , ( maybeAccountsPanelMsg, False, False )
+            )
 
         SaveClicked ->
             case model.target of

@@ -330,12 +330,17 @@
    scrolling row above `.my-media-panel-content`, same layout family as
    Accounts' own `.servers-strip`. `.flip-animated-row` (flip.css) supplies
    `display: flex; flex-direction: row` plus every item's own FLIP enter/
-   leave/reorder-slide behavior. */
+   leave/reorder-slide behavior. Deliberately no `gap` -- unlike
+   `.my-media-panel-grid`'s own `row-gap` just above (orthogonal to that
+   grid's width-only collapse, so it's safe), this strip's items collapse
+   along the *same* horizontal axis `gap` would space them on, which doesn't
+   shrink away as an item collapses to zero width -- see `messages.css`'s
+   `.messages-group-list` for the full "why not". `.flip-animated-item.horizontal`'s
+   own `padding-right` (flip.css) is this strip's real, animatable spacing. */
 .my-media-panel-selected-strip {
   align-items: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
-  gap: 0.5rem;
   padding: 0 0 0.5rem;
   flex: 0 0 auto;
 }

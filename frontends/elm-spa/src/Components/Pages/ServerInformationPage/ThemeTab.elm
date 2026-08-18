@@ -363,6 +363,7 @@ view server maybeAdminAccount model =
     div [ class "server-details-tab-content server-details-theme" ]
         [ colorEditorRow PrimaryColor "Primary Color" maybeAdminAccount model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
         , colorEditorRow NavigationColor "Navigation Color" maybeAdminAccount model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
+        , accentColorPreviewRow model info
         , logoEditorView maybeAdminAccount model.logoEdit server (info.logo |> Maybe.andThen .squareMediaId)
         , div [ class "server-details-setting" ]
             [ h3 [] [ text "Default Web UI" ]
@@ -429,6 +430,48 @@ colorEditorRow field label_ maybeAdminAccount maybeEdit argb =
                     Nothing ->
                         text ""
                 ]
+
+
+{-| A read-only preview of `UI.ServerTheme.accentColor` -- whichever of Primary/Navigation is more
+vibrant -- kept live against whichever of those two is currently being edited (via `effectiveColorMeta`, falling
+back to the saved value otherwise), so toggling between two colors in the editor updates this
+row immediately rather than only after Save.
+-}
+accentColorPreviewRow : Model -> Proto.Jonline.ServerInfo -> Html Msg
+accentColorPreviewRow model info =
+    let
+        primaryMeta : ServerTheme.ColorMeta
+        primaryMeta =
+            effectiveColorMeta model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
+
+        navMeta : ServerTheme.ColorMeta
+        navMeta =
+            effectiveColorMeta model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
+
+        accentColor : String
+        accentColor =
+            (ServerTheme.fromColorMetas False primaryMeta navMeta).accentColor
+    in
+    div [ class "server-details-color-row" ]
+        [ span [ class "server-details-color-label" ] [ text "Calculated Accent Color" ]
+        , span [ class "server-details-color-swatch", style "background-color" accentColor ] []
+        , span [ class "server-details-color-hex" ] [ text accentColor ]
+        ]
+
+
+{-| One `ServerColorField`'s effective `ColorMeta` right now: its in-progress edited hex if it's
+being edited, otherwise its saved `argb` (or `neutralColorMeta` if unset) -- same fallback
+`colorEditorRow`'s own swatch uses, factored out so `accentColorPreviewRow` can apply it to both
+colors independently.
+-}
+effectiveColorMeta : Maybe ColorEdit -> Maybe Int -> ServerTheme.ColorMeta
+effectiveColorMeta maybeEdit argb =
+    case maybeEdit of
+        Just edit ->
+            ServerTheme.colorMetaFromArgb (ServerTheme.argbFromHex edit.pending)
+
+        Nothing ->
+            argb |> Maybe.map ServerTheme.colorMetaFromArgb |> Maybe.withDefault ServerTheme.neutralColorMeta
 
 
 {-| The square logo, plus (only for an admin, and only once `logoEdit` is started) a

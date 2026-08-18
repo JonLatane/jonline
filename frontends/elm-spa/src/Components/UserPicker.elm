@@ -145,14 +145,23 @@ withInitialSelection authors model =
     }
 
 
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+{-| The inner tuple's trailing `Bool` is `True` only when `ToggleSelected`
+just *added* a user (as opposed to removing one, or any other `Msg`) --
+callers (today, just `Shared.MarkdownPanel`) use it to refocus their own
+search input, since this module doesn't own that concern (see
+`Shared.MarkdownPanel.focusCmdFor`, which already owns the `Browser.Dom.focus
+"user-picker-search-input"` / `NoOp` convention for this same id). Nested
+rather than a 4-tuple -- Elm only accepts tuples up to three items -- same
+convention `Shared.MarkdownPanel.update`'s own return type uses.
+-}
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Bool ) )
 update accountsPanelModel msg model =
     case msg of
         GotUsers (Ok ( maybeAccountsPanelMsg, response )) ->
-            ( { model | usersFeed = Loaded response.users } |> syncAnimations, Cmd.none, maybeAccountsPanelMsg )
+            ( { model | usersFeed = Loaded response.users } |> syncAnimations, Cmd.none, ( maybeAccountsPanelMsg, False ) )
 
         GotUsers (Err _) ->
-            ( { model | usersFeed = Failed } |> syncAnimations, Cmd.none, Nothing )
+            ( { model | usersFeed = Failed } |> syncAnimations, Cmd.none, ( Nothing, False ) )
 
         Animate animMsg ->
             let
@@ -167,22 +176,36 @@ update accountsPanelModel msg model =
                 ( newAnimations, cmds ) =
                     Dict.foldl step ( Dict.empty, [] ) model.userAnimations
             in
-            ( { model | userAnimations = newAnimations }, Cmd.batch cmds, Nothing )
+            ( { model | userAnimations = newAnimations }, Cmd.batch cmds, ( Nothing, False ) )
 
         RemoveUser key ->
-            ( { model | userAnimations = Dict.remove key model.userAnimations }, Cmd.none, Nothing )
+            ( { model | userAnimations = Dict.remove key model.userAnimations }, Cmd.none, ( Nothing, False ) )
 
         ToggleSelected user ->
             let
+                wasSelected : Bool
+                wasSelected =
+                    Dict.member user.id model.selected
+
                 newSelected : Dict String User
                 newSelected =
-                    if Dict.member user.id model.selected then
+                    if wasSelected then
                         Dict.remove user.id model.selected
 
                     else
                         Dict.insert user.id user model.selected
             in
-            ( { model | selected = newSelected }, Cmd.none, Nothing )
+            if wasSelected then
+                ( { model | selected = newSelected }, Cmd.none, ( Nothing, False ) )
+
+            else
+                -- Picking a recipient clears the search -- same "back to a
+                -- blank slate" state `ClearSearchClicked` leaves behind --
+                -- so the now-empty input is ready for the next name.
+                ( { model | selected = newSelected, searchText = "", searchGeneration = model.searchGeneration + 1, usersFeed = NotSearched } |> syncAnimations
+                , Cmd.none
+                , ( Nothing, True )
+                )
 
         SearchTextChanged text ->
             let
@@ -193,26 +216,26 @@ update accountsPanelModel msg model =
             if String.isEmpty (String.trim text) then
                 ( { model | searchText = text, searchGeneration = generation, usersFeed = NotSearched } |> syncAnimations
                 , Cmd.none
-                , Nothing
+                , ( Nothing, False )
                 )
 
             else
                 ( { model | searchText = text, searchGeneration = generation }
                 , Process.sleep 311 |> Task.perform (\_ -> SearchDebounceElapsed generation)
-                , Nothing
+                , ( Nothing, False )
                 )
 
         SearchDebounceElapsed generation ->
             if generation == model.searchGeneration then
-                ( { model | usersFeed = Loading }, fetchCmd accountsPanelModel model.host model.searchText, Nothing )
+                ( { model | usersFeed = Loading }, fetchCmd accountsPanelModel model.host model.searchText, ( Nothing, False ) )
 
             else
-                ( model, Cmd.none, Nothing )
+                ( model, Cmd.none, ( Nothing, False ) )
 
         ClearSearchClicked ->
             ( { model | searchText = "", searchGeneration = model.searchGeneration + 1, usersFeed = NotSearched } |> syncAnimations
             , Cmd.none
-            , Nothing
+            , ( Nothing, False )
             )
 
 

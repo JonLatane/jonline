@@ -51,8 +51,8 @@ jobs:
           sudo unzip -o "$PROTOC_ZIP" -d /usr/local bin/protoc 'include/*'
           rm "$PROTOC_ZIP"
           protoc --version
-      - name: Install Graphviz
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+      # - name: Install Graphviz
+      #   run: sudo apt-get update && sudo apt-get install -y graphviz
       # - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v7
         with:

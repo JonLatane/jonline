@@ -1754,12 +1754,19 @@ historyButtonLabel mode count =
             String.fromInt count ++ " upcoming " ++ dateWord
 
 
-{-| The 3 "switch scope" buttons to show above the strip, always all 3 (see
-`historyButtonView` for how the current one is highlighted instead of
-omitted, and how one more restrictive than `minimumHistoryDisplayFor now
-instance` -- which would hide `instance`, the very one this page is showing
--- is disabled instead of hidden). `now` is `Shared.Model.time.now` -- see its
-own doc.
+{-| The "switch scope" buttons to show above the strip (see `historyButtonView`
+for how the current one is highlighted instead of omitted, and how one more
+restrictive than `minimumHistoryDisplayFor now instance` -- which would hide
+`instance`, the very one this page is showing -- is disabled instead of
+hidden). Normally all 3, but a mode is dropped entirely when its count ties a
+strictly more restrictive mode's count -- since `OnlyFuture` ⊆
+`SinceTwoWeeksAgo` ⊆ `ShowAllInstances` (see `historyDisplayRank`), a tie
+means the wider mode wouldn't reveal anything beyond what the narrower one
+already shows, so offering it would just be a second button for the same set
+of instances (e.g. "1 date since 2 weeks ago" alongside "1 upcoming date"
+when that's the same single instance). `OnlyFuture` itself is never dropped
+this way, since nothing is more restrictive than it. `now` is
+`Shared.Model.time.now` -- see its own doc.
 -}
 historyButtons : Time.Posix -> Event -> List ( InstanceHistoryDisplay, Int )
 historyButtons now event =
@@ -1767,9 +1774,19 @@ historyButtons now event =
         countFor : InstanceHistoryDisplay -> Int
         countFor mode =
             event.instances |> List.filter (instanceMatchesHistoryDisplay now mode) |> List.length
+
+        allButtons : List ( InstanceHistoryDisplay, Int )
+        allButtons =
+            [ ShowAllInstances, SinceTwoWeeksAgo, OnlyFuture ]
+                |> List.map (\mode -> ( mode, countFor mode ))
+
+        isRedundant : ( InstanceHistoryDisplay, Int ) -> Bool
+        isRedundant ( mode, count ) =
+            allButtons
+                |> List.any (\( otherMode, otherCount ) -> historyDisplayRank otherMode < historyDisplayRank mode && otherCount == count)
     in
-    [ ShowAllInstances, SinceTwoWeeksAgo, OnlyFuture ]
-        |> List.map (\mode -> ( mode, countFor mode ))
+    allButtons
+        |> List.filter (\button -> not (isRedundant button))
 
 
 {-| One date chip -- links to `anim.instance`'s own page (see

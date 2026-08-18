@@ -933,6 +933,7 @@ configurableServerPermissions =
     , RSVPTOEVENTS
     , PUBLISHEVENTSLOCALLY
     , PUBLISHEVENTSGLOBALLY
+    , READPERSONALMESSAGES
     ]
 
 

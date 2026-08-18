@@ -126,7 +126,7 @@
 }
 
 .flip-animated-item.horizontal:last-child>* {
-  padding-right: 0;
+  /* padding-right: 0; */
 }
 
 /* Wrapping counterpart of `.flip-animated-row`, for a multi-row tile grid
