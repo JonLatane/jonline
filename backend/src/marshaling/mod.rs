@@ -34,6 +34,9 @@ pub use post_marshaling::*;
 mod message_marshaling;
 pub use message_marshaling::*;
 
+mod push_subscription_marshaling;
+pub use push_subscription_marshaling::*;
+
 mod link_marshaling;
 pub use link_marshaling::*;
 

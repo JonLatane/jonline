@@ -39,7 +39,10 @@ import {
   MarkMessagesReadRequest,
   MarkMessagesReadResponse,
   Message,
+  PushSubscription,
+  RegisterPushSubscriptionRequest,
   SendMessageRequest,
+  UnregisterPushSubscriptionRequest,
 } from "./messages";
 import {
   GetGroupPostsRequest,
@@ -629,6 +632,35 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+     * Messages sent/delivered to them (in-app or via email) push a notification to it even while the
+     * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
+     * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
+     * No-ops (server-side; not surfaced as an error to the caller) if the server has no
+     * `WebPushConfig` configured -- there's nothing to push notifications *with*.
+     */
+    registerPushSubscription: {
+      name: "RegisterPushSubscription",
+      requestType: RegisterPushSubscriptionRequest,
+      requestStream: false,
+      responseType: PushSubscription,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Unregisters a browser's Web Push subscription, e.g. on logout or when `PushManager.subscribe()`
+     * reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn't
+     * currently registered to the calling user.
+     */
+    unregisterPushSubscription: {
+      name: "UnregisterPushSubscription",
+      requestType: UnregisterPushSubscriptionRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /** Follow (or request to follow) a user. *Authenticated.* */
     createFollow: {
       name: "CreateFollow",
@@ -1135,6 +1167,27 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: MarkMessagesReadRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<MarkMessagesReadResponse>>;
+  /**
+   * Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+   * Messages sent/delivered to them (in-app or via email) push a notification to it even while the
+   * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
+   * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
+   * No-ops (server-side; not surfaced as an error to the caller) if the server has no
+   * `WebPushConfig` configured -- there's nothing to push notifications *with*.
+   */
+  registerPushSubscription(
+    request: RegisterPushSubscriptionRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<PushSubscription>>;
+  /**
+   * Unregisters a browser's Web Push subscription, e.g. on logout or when `PushManager.subscribe()`
+   * reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn't
+   * currently registered to the calling user.
+   */
+  unregisterPushSubscription(
+    request: UnregisterPushSubscriptionRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -1387,6 +1440,27 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<MarkMessagesReadRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<MarkMessagesReadResponse>;
+  /**
+   * Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+   * Messages sent/delivered to them (in-app or via email) push a notification to it even while the
+   * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
+   * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
+   * No-ops (server-side; not surfaced as an error to the caller) if the server has no
+   * `WebPushConfig` configured -- there's nothing to push notifications *with*.
+   */
+  registerPushSubscription(
+    request: DeepPartial<RegisterPushSubscriptionRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<PushSubscription>;
+  /**
+   * Unregisters a browser's Web Push subscription, e.g. on logout or when `PushManager.subscribe()`
+   * reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn't
+   * currently registered to the calling user.
+   */
+  unregisterPushSubscription(
+    request: DeepPartial<UnregisterPushSubscriptionRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */

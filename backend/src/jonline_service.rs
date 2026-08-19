@@ -199,7 +199,15 @@ impl Jonline for JonlineService {
         &self,
         request: Request<SendMessageRequest>,
     ) -> Result<Response<Message>, Status> {
-        unauthenticated_rpc!(self, rpcs::send_message, request)
+        // Not `unauthenticated_rpc!` -- `rpcs::send_message` takes an extra `pool` (beyond
+        // `unauthenticated_rpc!`'s usual `request`/`user`/`conn`) to spawn
+        // `web_push::notify_message_recipients` with its own connection; see that fn's own doc
+        // comment on why it can't just reuse this method's `conn`.
+        let mut conn = get_connection(&self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn)?;
+        let inner = request.into_inner();
+        let result = rpcs::send_message(inner, &user.as_ref(), &mut conn, self.pool.clone());
+        result.map(Response::new)
     }
     async fn get_messages(
         &self,
@@ -212,6 +220,19 @@ impl Jonline for JonlineService {
         request: Request<MarkMessagesReadRequest>,
     ) -> Result<Response<MarkMessagesReadResponse>, Status> {
         authenticated_rpc!(self, rpcs::mark_messages_read, request)
+    }
+
+    async fn register_push_subscription(
+        &self,
+        request: Request<RegisterPushSubscriptionRequest>,
+    ) -> Result<Response<PushSubscription>, Status> {
+        authenticated_rpc!(self, rpcs::register_push_subscription, request)
+    }
+    async fn unregister_push_subscription(
+        &self,
+        request: Request<UnregisterPushSubscriptionRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::unregister_push_subscription, request)
     }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {

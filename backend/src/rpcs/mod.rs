@@ -22,6 +22,9 @@ pub use posts::*;
 pub mod messages;
 pub use messages::*;
 
+pub mod push_subscriptions;
+pub use push_subscriptions::*;
+
 pub mod events;
 pub use events::*;
 

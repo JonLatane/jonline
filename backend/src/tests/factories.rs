@@ -2,6 +2,7 @@
 //! [`test_conn`] and should wrap its body in `conn.test_transaction(...)`, so nothing created
 //! here is ever committed to `TEST_DATABASE_URL`.
 
+use std::sync::Arc;
 use std::time::SystemTime;
 
 use diesel::*;
@@ -18,22 +19,31 @@ use crate::schema::{
     server_configurations, users,
 };
 
+lazy_static! {
+    static ref TEST_POOL: Arc<PgPool> = {
+        let pool = establish_test_pool();
+        pool.get()
+            .expect("failed to connect to TEST_DATABASE_URL")
+            .run_pending_migrations(MIGRATIONS)
+            .expect("failed to run migrations against TEST_DATABASE_URL");
+        Arc::new(pool)
+    };
+}
+
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
 /// binary process, since `Once`/`lazy_static` state doesn't cross the parallel test threads
 /// cargo spawns, but each of those threads shares this same process-wide pool/static).
 pub fn test_conn() -> PgPooledConnection {
-    lazy_static! {
-        static ref POOL: PgPool = {
-            let pool = establish_test_pool();
-            pool.get()
-                .expect("failed to connect to TEST_DATABASE_URL")
-                .run_pending_migrations(MIGRATIONS)
-                .expect("failed to run migrations against TEST_DATABASE_URL");
-            pool
-        };
-    }
-    POOL.get()
+    TEST_POOL
+        .get()
         .expect("failed to check out a pooled test connection")
+}
+
+/// The same process-wide pool `test_conn` checks connections out of -- for specs exercising an
+/// RPC (like `send_message`) that itself needs an `Arc<PgPool>`, e.g. to spawn
+/// `web_push::notify_message_recipients` with its own connection.
+pub fn test_pool() -> Arc<PgPool> {
+    TEST_POOL.clone()
 }
 
 pub fn create_user(conn: &mut PgPooledConnection, username: &str) -> models::User {

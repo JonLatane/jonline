@@ -216,6 +216,28 @@ pub async fn create_email_message(
             .map_err(|_| Status::InternalServerError)?;
     }
 
+    // Notify every recipient (To/Cc *and* Bcc alike -- unlike `message_recipients` above, this
+    // isn't about who can see the messaging_group, just who should hear about the message) via
+    // Web Push. The email's `From` header (unauthenticated/spoofable, per this file's own
+    // top-level doc comment; recomputed here since `email_headers` above already moved into
+    // `new_message`), if any, is surfaced as the notification's title so e.g. "jon@ato.band" reads
+    // better than a bare "New message".
+    let notify_user_ids: Vec<i64> = recipients.iter().map(|(user_id, _)| *user_id).collect();
+    let title = parsed
+        .from()
+        .and_then(display_address)
+        .unwrap_or_else(|| "New email".to_string());
+    let notification_body = new_message
+        .subject
+        .clone()
+        .unwrap_or_else(|| new_message.body_text.clone().unwrap_or_default());
+    crate::web_push::notify_message_recipients(
+        state.pool.clone(),
+        notify_user_ids,
+        title,
+        notification_body,
+    );
+
     Ok(RawJson(
         serde_json::to_string(&MtaHookResponse { action: "accept" }).unwrap(),
     ))

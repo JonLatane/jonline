@@ -90,6 +90,14 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/MarkMessagesRead',
       ($6.MarkMessagesReadRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $6.MarkMessagesReadResponse.fromBuffer(value));
+  static final _$registerPushSubscription = $grpc.ClientMethod<$6.RegisterPushSubscriptionRequest, $6.PushSubscription>(
+      '/jonline.Jonline/RegisterPushSubscription',
+      ($6.RegisterPushSubscriptionRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.PushSubscription.fromBuffer(value));
+  static final _$unregisterPushSubscription = $grpc.ClientMethod<$6.UnregisterPushSubscriptionRequest, $0.Empty>(
+      '/jonline.Jonline/UnregisterPushSubscription',
+      ($6.UnregisterPushSubscriptionRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$createFollow = $grpc.ClientMethod<$4.Follow, $4.Follow>(
       '/jonline.Jonline/CreateFollow',
       ($4.Follow value) => value.writeToBuffer(),
@@ -327,6 +335,14 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$6.MarkMessagesReadResponse> markMessagesRead($6.MarkMessagesReadRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$markMessagesRead, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.PushSubscription> registerPushSubscription($6.RegisterPushSubscriptionRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$registerPushSubscription, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> unregisterPushSubscription($6.UnregisterPushSubscriptionRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$unregisterPushSubscription, request, options: options);
   }
 
   $grpc.ResponseFuture<$4.Follow> createFollow($4.Follow request, {$grpc.CallOptions? options}) {
@@ -612,6 +628,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $6.MarkMessagesReadRequest.fromBuffer(value),
         ($6.MarkMessagesReadResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.RegisterPushSubscriptionRequest, $6.PushSubscription>(
+        'RegisterPushSubscription',
+        registerPushSubscription_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.RegisterPushSubscriptionRequest.fromBuffer(value),
+        ($6.PushSubscription value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.UnregisterPushSubscriptionRequest, $0.Empty>(
+        'UnregisterPushSubscription',
+        unregisterPushSubscription_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.UnregisterPushSubscriptionRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.Follow, $4.Follow>(
         'CreateFollow',
         createFollow_Pre,
@@ -975,6 +1005,14 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return markMessagesRead(call, await request);
   }
 
+  $async.Future<$6.PushSubscription> registerPushSubscription_Pre($grpc.ServiceCall call, $async.Future<$6.RegisterPushSubscriptionRequest> request) async {
+    return registerPushSubscription(call, await request);
+  }
+
+  $async.Future<$0.Empty> unregisterPushSubscription_Pre($grpc.ServiceCall call, $async.Future<$6.UnregisterPushSubscriptionRequest> request) async {
+    return unregisterPushSubscription(call, await request);
+  }
+
   $async.Future<$4.Follow> createFollow_Pre($grpc.ServiceCall call, $async.Future<$4.Follow> request) async {
     return createFollow(call, await request);
   }
@@ -1162,6 +1200,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$6.Message> sendMessage($grpc.ServiceCall call, $6.SendMessageRequest request);
   $async.Future<$6.GetMessagesResponse> getMessages($grpc.ServiceCall call, $6.GetMessagesRequest request);
   $async.Future<$6.MarkMessagesReadResponse> markMessagesRead($grpc.ServiceCall call, $6.MarkMessagesReadRequest request);
+  $async.Future<$6.PushSubscription> registerPushSubscription($grpc.ServiceCall call, $6.RegisterPushSubscriptionRequest request);
+  $async.Future<$0.Empty> unregisterPushSubscription($grpc.ServiceCall call, $6.UnregisterPushSubscriptionRequest request);
   $async.Future<$4.Follow> createFollow($grpc.ServiceCall call, $4.Follow request);
   $async.Future<$4.Follow> updateFollow($grpc.ServiceCall call, $4.Follow request);
   $async.Future<$0.Empty> deleteFollow($grpc.ServiceCall call, $4.Follow request);
