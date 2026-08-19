@@ -986,10 +986,6 @@ state until some unrelated later sync happened to catch it up.
 markSelectedMessageReadCmd : AccountsPanel.Model -> Model -> Messages.Conversation -> String -> ( Model, Cmd Msg )
 markSelectedMessageReadCmd accountsPanelModel model ref messageId =
     let
-        host : String
-        host =
-            Messages.conversationHost ref
-
         key : String
         key =
             Messages.conversationKey ref
@@ -1006,6 +1002,10 @@ markSelectedMessageReadCmd accountsPanelModel model ref messageId =
             readIds : Set String
             readIds =
                 Set.singleton messageId
+
+            host : String
+            host =
+                Messages.conversationHost ref
 
             newModel : Model
             newModel =
