@@ -382,6 +382,21 @@ type Msg
       -- the browser's own navigation is what put it in the URL bar here,
       -- not another `pushUrl`.
     | SyncSelectedMessage Messages.Conversation String
+      -- Fired by a message row's plain `onClick` *only* in the two-pane
+      -- detail view (`selectedGroupView`'s own `NoInteraction` rows -- see
+      -- that variant's own doc), and only while it's still
+      -- `Messages.isUnread` (`messageRowView` doesn't attach this at all to
+      -- an already-read detail row, same as `MessageSelected`'s
+      -- `SelectGroup` rows getting no onClick of their own once already
+      -- selected would be redundant). `selectedGroupView`'s rows otherwise
+      -- get no click handling at all (`NoInteraction` -- they're already the
+      -- thread being shown, nowhere to navigate) -- without this, a message
+      -- `MarkUnreadClicked` back to unread from the detail pane itself had no
+      -- way to be clicked back to read again short of a full page reload.
+      -- `markSelectedMessageReadCmd` alone (no `expand`/highlight/scroll/
+      -- `pushUrl` -- unlike `MessageSelected`, this never changes which
+      -- group/message is selected, only that one message's read state).
+    | DetailMessageClicked Messages.Conversation String
       -- The "Mark unread" button on an already-read message row (any
       -- context -- two-pane detail, sidebar inline-expand, or embedded
       -- panel). `host` (not a whole `Messages.Conversation`) is all `update` needs to
@@ -696,6 +711,13 @@ update accountsPanelModel msg model =
                         , messagesByServer = Dict.update host (Maybe.map (patchServerFeedUnread unreadIds)) model.messagesByServer
                     }
                         |> syncSidebarAnimations
+                        -- `markSelectedMessageReadCmd`'s own doc on why this
+                        -- is needed too -- the two-pane detail pane renders
+                        -- off `detailThreadAnimations`, not `expandedGroups`
+                        -- directly, so without this it kept showing this
+                        -- message's *previous* read state until something
+                        -- else happened to resync it.
+                        |> syncDetailThreadAnimations
 
                 accountUserId : Maybe String
                 accountUserId =
@@ -874,15 +896,32 @@ update accountsPanelModel msg model =
                                     |> syncDetailThreadAnimations
                                 )
                                 ref
+
+                        -- `markSelectedMessageReadCmd`'s own doc -- the
+                        -- `expandedModel` case above (thread already
+                        -- `ExpandLoaded`) is exactly the case
+                        -- `GotGroupMessages` never re-fires for, so a
+                        -- previously `MarkUnreadClicked` message wouldn't
+                        -- otherwise go back to read on a second click.
+                        ( readModel, readCmd ) =
+                            markSelectedMessageReadCmd accountsPanelModel expandedModel ref messageId
                     in
-                    ( expandedModel
+                    ( readModel
                     , Cmd.batch
                         [ expandCmd
-                        , scrollToPendingMessageCmd expandedModel
-                        , Browser.Navigation.pushUrl ctx.navKey (ctx.path ++ queryString accountsPanelModel expandedModel ++ "#" ++ messageDomId messageId)
+                        , readCmd
+                        , scrollToPendingMessageCmd readModel
+                        , Browser.Navigation.pushUrl ctx.navKey (ctx.path ++ queryString accountsPanelModel readModel ++ "#" ++ messageDomId messageId)
                         ]
                     , Nothing
                     )
+
+        DetailMessageClicked ref messageId ->
+            let
+                ( readModel, readCmd ) =
+                    markSelectedMessageReadCmd accountsPanelModel model ref messageId
+            in
+            ( readModel, readCmd, Nothing )
 
         MessageSent ref messageId ->
             case model.pageContext of
@@ -924,6 +963,75 @@ update accountsPanelModel msg model =
                     )
 
 
+{-| Marks `messageId` read again if `ref`'s thread is already `ExpandLoaded`
+and it's still `Messages.isUnread` there -- what actually lets re-clicking a
+`MarkUnreadClicked` message mark it read again: `expand` is a no-op once a
+thread's already loaded (see its own doc), so `GotGroupMessages` -- the thing
+that normally marks a freshly-loaded thread's unread messages read -- never
+re-fires just from selecting a message in it again. Mirrors
+`GotGroupMessages`'/`MarkUnreadClicked`'s own optimistic-patch-then-fire-the-
+RPC shape, just for this one message. A no-op (`model` unchanged, `Cmd.none`)
+if the thread isn't loaded yet (its own `GotGroupMessages` handling will mark
+it read once it lands) or the message is already read.
+
+`syncDetailThreadAnimations`, not just `syncSidebarAnimations` -- the
+two-pane detail (`selectedGroupView`) renders off `detailThreadAnimations`,
+not `expandedGroups` directly (see that field's own doc), so patching
+`expandedGroups` alone leaves the detail pane showing whatever it last synced
+to until something re-syncs it. Without this, marking a message read from the
+sidebar left the still-open detail pane showing the message's _previous_
+state until some unrelated later sync happened to catch it up.
+
+-}
+markSelectedMessageReadCmd : AccountsPanel.Model -> Model -> Messages.Conversation -> String -> ( Model, Cmd Msg )
+markSelectedMessageReadCmd accountsPanelModel model ref messageId =
+    let
+        host : String
+        host =
+            Messages.conversationHost ref
+
+        key : String
+        key =
+            Messages.conversationKey ref
+
+        stillUnread : Bool
+        stillUnread =
+            Dict.get key model.expandedGroups
+                |> Maybe.andThen (.messages >> Dict.get messageId)
+                |> Maybe.map Messages.isUnread
+                |> Maybe.withDefault False
+    in
+    if stillUnread then
+        let
+            readIds : Set String
+            readIds =
+                Set.singleton messageId
+
+            newModel : Model
+            newModel =
+                { model
+                    | expandedGroups =
+                        Dict.update key
+                            (Maybe.map (\eg -> { eg | messages = Dict.map (\_ message -> patchMessageRead readIds message) eg.messages }))
+                            model.expandedGroups
+                    , messagesByServer = Dict.update host (Maybe.map (patchServerFeedRead readIds)) model.messagesByServer
+                }
+                    |> syncSidebarAnimations
+                    |> syncDetailThreadAnimations
+
+            accountUserId : Maybe String
+            accountUserId =
+                Dict.get host model.messagesByServer |> Maybe.andThen .accountId
+        in
+        ( newModel
+        , Messages.markMessagesRead accountsPanelModel ( accountUserId, host ) False [ messageId ]
+            |> Task.attempt GotMarkReadResult
+        )
+
+    else
+        ( model, Cmd.none )
+
+
 {-| Shared guts of `SyncSelectedGroup`/`SyncSelectedMessage` -- expands `ref`,
 selects it, and highlights/scrolls to `messageId` (`Nothing` just lands on the
 top of the thread, same as `expand` alone) -- everything `GroupSelected`/
@@ -954,8 +1062,16 @@ syncSelection accountsPanelModel model ref messageId =
                     |> syncDetailThreadAnimations
                 )
                 ref
+
+        ( readModel, readCmd ) =
+            case messageId of
+                Just id ->
+                    markSelectedMessageReadCmd accountsPanelModel expandedModel ref id
+
+                Nothing ->
+                    ( expandedModel, Cmd.none )
     in
-    ( expandedModel, Cmd.batch [ expandCmd, scrollToPendingMessageCmd expandedModel ] )
+    ( readModel, Cmd.batch [ expandCmd, readCmd, scrollToPendingMessageCmd readModel ] )
 
 
 {-| The id of `conversation`'s own `ConversationSummary.mostRecent` message,
@@ -2363,7 +2479,7 @@ unreadBadgeView host count =
         text ""
 
     else
-        span [ classes [ "messages-count-badge", "messages-unread-badge", hostnameToCSSClass host, "background-color-nav", "border-color-primary-text" ] ]
+        span [ classes [ "messages-count-badge", "messages-unread-badge", hostnameToCSSClass host, "background-color-accent", "border-color-primary-text" ] ]
             [ text (String.fromInt count) ]
 
 
@@ -2479,19 +2595,22 @@ message in place (`SyncSelectedMessage`) instead of just updating the URL bar
 and stopping there (a same-path query/fragment-only change `Pages.Messages`'
 own `init`/`update` would never otherwise notice). The real page's own
 two-pane detail (`selectedGroupView`) is already showing the message, so its
-own rows are plain, non-navigating content (`NoInteraction`). The real page's
-_sidebar_ inline-expand (`groupRowView`'s chevron) is the one case with
-somewhere to go that isn't a full page navigation -- clicking one of its rows
-selects that message's group into the two-pane detail _and_ scrolls/highlights
-that exact message there, same as landing on its `#message-<id>` permalink
-directly (`SelectGroup`, see `MessageSelected`'s own doc). Deliberately
-_not_ affected by whether some _other_ group is currently `selectedGroup` --
-clicking a message is always a real choice, unlike merely toggling a row's
-chevron open (`ToggleExpand`, `inlineOpenGroups`), which never touches
-`selectedGroup` at all.
+own rows carry no group-selecting/navigating click of their own
+(`NoInteraction`) -- they still get a plain click-to-mark-read
+(`DetailMessageClicked`, see its own doc) while `Messages.isUnread`, since
+that's the one interaction left that makes sense on a row that's already
+exactly where it's going to be shown. The real page's _sidebar_ inline-expand
+(`groupRowView`'s chevron) is the one case with somewhere to go that isn't a
+full page navigation -- clicking one of its rows selects that message's group
+into the two-pane detail _and_ scrolls/highlights that exact message there,
+same as landing on its `#message-<id>` permalink directly (`SelectGroup`, see
+`MessageSelected`'s own doc). Deliberately _not_ affected by whether some
+_other_ group is currently `selectedGroup` -- clicking a message is always a
+real choice, unlike merely toggling a row's chevron open (`ToggleExpand`,
+`inlineOpenGroups`), which never touches `selectedGroup` at all.
 -}
 type MessageInteraction
-    = NoInteraction
+    = NoInteraction Messages.Conversation
     | ExternalLink MessageLinkTarget
     | SelectGroup Messages.Conversation
 
@@ -2669,7 +2788,7 @@ selectedGroupView time accountsPanelModel model selected =
                                 )
                             , replyButtonView accountsPanelModel selected eg
                             ]
-                        , messageThreadView time accountsPanelModel host NoInteraction model.highlightMessageId (Just messagesDetailThreadListId) model.detailThreadAnimations
+                        , messageThreadView time accountsPanelModel host (NoInteraction selected) model.highlightMessageId (Just messagesDetailThreadListId) model.detailThreadAnimations
                         ]
 
 
@@ -2904,8 +3023,12 @@ messageRowView time accountsPanelModel host interaction highlightMessageId isDet
                    )
     in
     case interaction of
-        NoInteraction ->
-            div [ classes rowClasses ] content
+        NoInteraction ref ->
+            if Messages.isUnread message then
+                div [ classes ("message-row-clickable" :: rowClasses), onClick (DetailMessageClicked ref message.id) ] content
+
+            else
+                div [ classes rowClasses ] content
 
         SelectGroup ref ->
             div [ classes ("message-row-clickable" :: rowClasses), onClick (MessageSelected ref message.id) ] content

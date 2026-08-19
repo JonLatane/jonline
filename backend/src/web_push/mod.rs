@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use serde::Serialize;
 use web_push::{
     ContentEncoding, IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder, WebPushClient,
@@ -78,6 +79,8 @@ async fn send_message_notifications(
         return Ok(());
     }
 
+    validate_private_vapid_key(&web_push_config.private_vapid_key)?;
+
     let partial_signature_builder =
         VapidSignatureBuilder::from_base64_no_sub(&web_push_config.private_vapid_key)
             .map_err(|e| format!("{:?}", e))?;
@@ -133,4 +136,61 @@ async fn send_message_notifications(
     }
 
     Ok(())
+}
+
+/// `VapidSignatureBuilder::from_base64_no_sub` hands its decoded bytes straight to `jwt_simple`'s
+/// `ES256KeyPair::from_bytes`, which -- for anything other than exactly 32 bytes (a P-256 private
+/// scalar) -- panics via a bare `assert_eq!` instead of returning a `Result`. Confirmed in
+/// production: a server with `public_vapid_key` set but `private_vapid_key` still blank (see
+/// `configure_server`'s merge-on-blank -- an admin who only ever saved the Public VAPID Key row
+/// never actually set this one) crashed both backend pods the moment a message first tried to
+/// notify. Decoding and length-checking it ourselves first turns that into an ordinary `Err`
+/// `send_message_notifications` already handles gracefully, before ever reaching the panicking
+/// call.
+fn validate_private_vapid_key(private_vapid_key: &str) -> Result<(), String> {
+    let len = BASE64_URL_SAFE_NO_PAD
+        .decode(private_vapid_key)
+        .map_err(|e| format!("invalid private_vapid_key (not valid base64url): {}", e))?
+        .len();
+    if len != 32 {
+        return Err(format!(
+            "invalid private_vapid_key: expected 32 bytes, got {} -- is WebPushConfig only half-configured?",
+            len
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A real 32-byte VAPID private key, base64url-no-pad encoded -- lifted from the `web-push`
+    /// crate's own test fixtures (`vapid::builder::tests::PRIVATE_BASE64`), so this is a
+    /// known-good value rather than something hand-rolled that might not actually decode to a
+    /// valid P-256 scalar.
+    const VALID_PRIVATE_KEY: &str = "IQ9Ur0ykXoHS9gzfYX0aBjy9lvdrjx_PFUXmie9YRcY";
+
+    #[test]
+    fn empty_private_vapid_key_is_rejected_not_panicked() {
+        // The exact production shape: `WebPushConfig.private_vapid_key` still `""` because only
+        // the Public VAPID Key row was ever saved (see `configure_server`'s merge-on-blank).
+        assert!(validate_private_vapid_key("").is_err());
+    }
+
+    #[test]
+    fn wrong_length_private_vapid_key_is_rejected() {
+        // Valid base64url, but decodes to fewer than 32 bytes.
+        assert!(validate_private_vapid_key("AAAAAAAAAAAAAAAAAAAAAA").is_err());
+    }
+
+    #[test]
+    fn malformed_base64_private_vapid_key_is_rejected() {
+        assert!(validate_private_vapid_key("not valid base64url!!!").is_err());
+    }
+
+    #[test]
+    fn well_formed_private_vapid_key_is_accepted() {
+        assert!(validate_private_vapid_key(VALID_PRIVATE_KEY).is_ok());
+    }
 }

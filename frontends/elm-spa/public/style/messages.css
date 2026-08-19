@@ -680,6 +680,10 @@ body:has(> [style*="2147483647"]) .messages-reply-button {
   cursor: pointer;
 }
 
+.messages-detail .messages-thread-list>*:first-child {
+  margin-bottom: 46px;
+}
+
 /* Phone-width screens (see this codebase's standard breakpoint, e.g.
    markdown_panel.css) -- there's no room for `.messages-sidebar` and
    `.messages-detail` side by side, so the sidebar becomes a drawer overlay
@@ -744,10 +748,6 @@ body:has(> [style*="2147483647"]) .messages-reply-button {
 
   .messages-thread-list {
     margin-bottom: 0;
-  }
-
-  .messages-detail .messages-thread-list>*:first-child {
-    margin-bottom: 46px;
   }
 
   .messages-mobile-sidebar-toggle {
