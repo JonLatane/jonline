@@ -127,3 +127,10 @@ get_backend_generated_certs:
 	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
 get_backend_generated_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
+
+# Web Push-related targets
+# Generates a VAPID keypair for Web Push notifications (see `backend/src/web_push`) -- paste the
+# printed Public/Private Key into a server's Web Push Configuration (FederationTab.elm, as an
+# admin) or directly into that server's `server_configurations.web_push_config` JSONB column.
+generate_vapid_push_key_pair:
+	npx web-push generate-vapid-keys

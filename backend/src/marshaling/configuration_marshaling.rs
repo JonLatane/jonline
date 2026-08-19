@@ -69,11 +69,18 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             .external_cdn_config
             .to_owned()
             .map(|c| serde_json::from_value(c).unwrap_or_else(|_| ExternalCdnConfig::default()));
+        // `WebPushConfig.private_vapid_key` is write-only -- never send the real value to a
+        // client, same reasoning (and same `configure_server` merge-on-blank counterpart) as
+        // `FacebookAuthConfig.app_secret` above.
         let web_push_config: Option<WebPushConfig> = self
             .web_push_config
             .to_owned()
             .map_or(Some(None), |c| serde_json::from_value(c).ok())
-            .flatten();
+            .flatten()
+            .map(|c| WebPushConfig {
+                private_vapid_key: String::new(),
+                ..c
+            });
         // .map(|c| serde_json::from_value(c).unwrap_or_else(|_| None));
         let custom_tabs: Option<CustomNavigationTabSet> = self
             .custom_tabs

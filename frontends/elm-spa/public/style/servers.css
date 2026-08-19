@@ -141,6 +141,7 @@
 .server-details-color-hex {
   color: var(--muted);
   font-family: monospace;
+  word-break: break-word;
 }
 
 .server-details-color-row-edit {

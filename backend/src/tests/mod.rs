@@ -24,3 +24,4 @@ mod send_message_tests;
 mod update_event_tests;
 mod update_post_tests;
 mod user_counts_tests;
+mod web_push_config_tests;

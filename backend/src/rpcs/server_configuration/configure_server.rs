@@ -43,6 +43,30 @@ pub fn configure_server(
         new_config.federation_info = serde_json::to_value(merged_federation_info).unwrap();
     }
 
+    // `WebPushConfig.private_vapid_key` is write-only -- `to_proto` always blanks it before it
+    // reaches a client (see `ToProtoServerConfiguration`), so an empty incoming value means
+    // "leave whatever's already stored alone," not "clear it." Setting `web_push_config` to
+    // `None` entirely is the only way to actually clear a previously-stored config.
+    if let Some(incoming_web_push_config) = request
+        .web_push_config
+        .as_ref()
+        .filter(|c| c.private_vapid_key.is_empty())
+    {
+        let existing_private_key = get_server_configuration_model(conn)
+            .ok()
+            .and_then(|c| c.web_push_config)
+            .and_then(|c| serde_json::from_value::<protos::WebPushConfig>(c).ok())
+            .map(|c| c.private_vapid_key)
+            .unwrap_or_default();
+        new_config.web_push_config = Some(
+            serde_json::to_value(protos::WebPushConfig {
+                public_vapid_key: incoming_web_push_config.public_vapid_key.clone(),
+                private_vapid_key: existing_private_key,
+            })
+            .unwrap(),
+        );
+    }
+
     let result =
         conn.transaction::<models::ServerConfiguration, diesel::result::Error, _>(|conn| {
             update(server_configurations)

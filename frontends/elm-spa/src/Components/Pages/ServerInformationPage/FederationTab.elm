@@ -1,12 +1,14 @@
 module Components.Pages.ServerInformationPage.FederationTab exposing (Model, Msg, init, subscriptions, update, view)
 
 {-| The Federation tab of `Components.Pages.ServerInformationPage` -- the server's federated-server
-chip strip (add/remove/reorder-animated via `UI.Flip`, see `FederationEdit`'s own doc) plus, below
-it, the Facebook App ID/Secret an admin connects so users can create Facebook Event Sync
-Destinations (see `logic::facebook_sync` on the backend). Both are backed by
-`federationInfo`/`federationInfo.facebookAuthConfig` on the same `ServerConfiguration`, saved
-through the same `AccountsPanel.updateServerConfig` "fetch fresh copy, then write" dance every
-other editor on this page uses.
+chip strip (add/remove/reorder-animated via `UI.Flip`, see `FederationEdit`'s own doc), the Facebook
+App ID/Secret an admin connects so users can create Facebook Event Sync Destinations (see
+`logic::facebook_sync` on the backend), and the Web Push VAPID public/private keys an admin sets so
+`RegisterPushSubscription`'d browsers actually receive notifications (see `backend/src/web_push`).
+All three are backed by fields on the same `ServerConfiguration`
+(`federationInfo`/`federationInfo.facebookAuthConfig`/`webPushConfig`), saved through the same
+`AccountsPanel.updateServerConfig` "fetch fresh copy, then write" dance every other editor on this
+page uses.
 -}
 
 import Animation
@@ -34,8 +36,10 @@ import UI.Flip
 
 type alias Model =
     { federationEdit : Maybe FederationEdit
-    , facebookAppIdEdit : Maybe FacebookAuthFieldEdit
-    , facebookAppSecretEdit : Maybe FacebookAuthFieldEdit
+    , facebookAppIdEdit : Maybe TextFieldEdit
+    , facebookAppSecretEdit : Maybe TextFieldEdit
+    , webPushPublicKeyEdit : Maybe TextFieldEdit
+    , webPushPrivateKeyEdit : Maybe TextFieldEdit
     }
 
 
@@ -67,6 +71,16 @@ type Msg
     | FacebookAppSecretCancelClicked
     | FacebookAppSecretSaveClicked
     | GotFacebookAppSecretSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | WebPushPublicKeyEditClicked
+    | WebPushPublicKeyChanged String
+    | WebPushPublicKeyCancelClicked
+    | WebPushPublicKeySaveClicked
+    | GotWebPushPublicKeySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | WebPushPrivateKeyEditClicked
+    | WebPushPrivateKeyChanged String
+    | WebPushPrivateKeyCancelClicked
+    | WebPushPrivateKeySaveClicked
+    | GotWebPushPrivateKeySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
 
 
 {-| Live only while the Federation tab's `FederatedServer` list is being edited by an admin --
@@ -91,14 +105,17 @@ type alias FederationEdit =
     }
 
 
-{-| Live only while the Facebook App ID or App Secret (see `facebookAuthConfigSection`) is being
-edited by an admin -- `pending` is the in-progress `<input>` value. The App Secret field always
-starts this at `""` (never pre-filled) since `FacebookAuthConfig.appSecret` is write-only and never
-actually sent back by the server (see `ToProtoServerConfiguration` on the backend) -- saving with
-`pending == ""` is a deliberate no-op there (leaves whatever secret is already stored alone), same
-as leaving a "change password" field blank.
+{-| Live only while one of this tab's simple "Edit" -> text field -> Save rows (Facebook App
+ID/Secret, see `facebookAuthConfigSection`; Web Push public/private VAPID key, see
+`webPushConfigSection`) is being edited by an admin -- `pending` is the in-progress `<input>` value.
+The two write-only fields (`FacebookAuthConfig.appSecret`, `WebPushConfig.privateVapidKey`) always
+start this at `""` (never pre-filled), since neither is ever actually sent back by the server (see
+`ToProtoServerConfiguration` on the backend) -- saving with `pending == ""` is a deliberate no-op
+there (leaves whatever's already stored alone), same as leaving a "change password" field blank. The
+other two (`appId`, `publicVapidKey`) aren't secret, so their own edits start pre-filled with the
+current value instead.
 -}
-type alias FacebookAuthFieldEdit =
+type alias TextFieldEdit =
     { pending : String
     , status : AccountsPanel.FormStatus
     }
@@ -109,6 +126,8 @@ init =
     { federationEdit = Nothing
     , facebookAppIdEdit = Nothing
     , facebookAppSecretEdit = Nothing
+    , webPushPublicKeyEdit = Nothing
+    , webPushPrivateKeyEdit = Nothing
     }
 
 
@@ -450,6 +469,86 @@ update shared targetHost isSecure maybeServer msg model =
             , Effect.none
             )
 
+        WebPushPublicKeyEditClicked ->
+            case maybeServer of
+                Just server ->
+                    let
+                        currentPublicKey : String
+                        currentPublicKey =
+                            (AccountsPanel.configurationOf server).webPushConfig
+                                |> Maybe.map .publicVapidKey
+                                |> Maybe.withDefault ""
+                    in
+                    ( { model | webPushPublicKeyEdit = Just { pending = currentPublicKey, status = AccountsPanel.Idle } }, Effect.none )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        WebPushPublicKeyChanged text ->
+            ( { model | webPushPublicKeyEdit = model.webPushPublicKeyEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        WebPushPublicKeyCancelClicked ->
+            ( { model | webPushPublicKeyEdit = Nothing }, Effect.none )
+
+        WebPushPublicKeySaveClicked ->
+            case ( model.webPushPublicKeyEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | webPushPublicKeyEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyWebPushPublicKey edit.pending)
+                        |> Task.attempt GotWebPushPublicKeySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotWebPushPublicKeySaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | webPushPublicKeyEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotWebPushPublicKeySaveResult (Err err) ->
+            ( { model | webPushPublicKeyEdit = model.webPushPublicKeyEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        WebPushPrivateKeyEditClicked ->
+            ( { model | webPushPrivateKeyEdit = Just { pending = "", status = AccountsPanel.Idle } }, Effect.none )
+
+        WebPushPrivateKeyChanged text ->
+            ( { model | webPushPrivateKeyEdit = model.webPushPrivateKeyEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        WebPushPrivateKeyCancelClicked ->
+            ( { model | webPushPrivateKeyEdit = Nothing }, Effect.none )
+
+        WebPushPrivateKeySaveClicked ->
+            case ( model.webPushPrivateKeyEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | webPushPrivateKeyEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyWebPushPrivateKey edit.pending)
+                        |> Task.attempt GotWebPushPrivateKeySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotWebPushPrivateKeySaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | webPushPrivateKeyEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotWebPushPrivateKeySaveResult (Err err) ->
+            ( { model | webPushPrivateKeyEdit = model.webPushPrivateKeyEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
 
 {-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
 every other editor's transform is -- overlays `servers` (the edit's `pending` list, in its edit's
@@ -471,7 +570,7 @@ applyFederatedServers servers config =
 way `applyFederatedServers`'s result is -- overlays a new `appId` onto a freshly re-fetched
 `ServerConfiguration`'s `federationInfo.facebookAuthConfig`, leaving `servers` untouched. `appSecret`
 is always sent blank here: the backend's `ConfigureServer` treats a blank incoming `appSecret` as
-"leave whatever's already stored alone" (it's write-only -- see `FacebookAuthFieldEdit`'s own doc),
+"leave whatever's already stored alone" (it's write-only -- see `TextFieldEdit`'s own doc),
 so this can never accidentally clobber it.
 -}
 applyFacebookAppId : String -> ServerConfiguration -> ServerConfiguration
@@ -506,6 +605,30 @@ applyFacebookAppSecret appSecret config =
         | federationInfo =
             Just { federationInfo | facebookAuthConfig = Just { appId = existingAppId, appSecret = appSecret } }
     }
+
+
+{-| `WebPushPublicKeySaveClicked`'s transform -- overlays a new `publicVapidKey` onto a freshly
+re-fetched `ServerConfiguration`'s `webPushConfig`. `privateVapidKey` is always sent blank here:
+same "blank means leave it alone" merge `applyFacebookAppId`'s own `appSecret` relies on, this time
+in `ConfigureServer`'s `WebPushConfig`-specific merge block (see that RPC's own doc comment).
+-}
+applyWebPushPublicKey : String -> ServerConfiguration -> ServerConfiguration
+applyWebPushPublicKey publicKey config =
+    { config | webPushConfig = Just { publicVapidKey = publicKey, privateVapidKey = "" } }
+
+
+{-| `WebPushPrivateKeySaveClicked`'s transform -- mirrors `applyWebPushPublicKey`, just overlaying a
+new `privateVapidKey` (this time actually non-blank, since this _is_ the save that's meant to change
+it) instead. Keeps whatever `publicVapidKey` the freshly re-fetched config already has.
+-}
+applyWebPushPrivateKey : String -> ServerConfiguration -> ServerConfiguration
+applyWebPushPrivateKey privateKey config =
+    let
+        existingPublicKey : String
+        existingPublicKey =
+            config.webPushConfig |> Maybe.map .publicVapidKey |> Maybe.withDefault ""
+    in
+    { config | webPushConfig = Just { publicVapidKey = existingPublicKey, privateVapidKey = privateKey } }
 
 
 {-| Updates the one entry of `edit.pending` matching `host`, if any --
@@ -582,6 +705,7 @@ view shared server maybeAdminAccount model =
             _ ->
                 text ""
         , facebookAuthConfigSection server model maybeAdminAccount
+        , webPushConfigSection server model maybeAdminAccount
         ]
 
 
@@ -608,7 +732,7 @@ facebookAuthConfigSection server model maybeAdminAccount =
         )
 
 
-facebookAppIdRow : String -> Maybe FacebookAuthFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
 facebookAppIdRow currentAppId maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -648,12 +772,12 @@ facebookAppIdRow currentAppId maybeEdit maybeAdminAccount =
 
 
 {-| Unlike `facebookAppIdRow`, there's no "current value" to show when not editing -- the server
-never sends the real `appSecret` back (see `FacebookAuthFieldEdit`'s doc), so the placeholder below
+never sends the real `appSecret` back (see `TextFieldEdit`'s doc), so the placeholder below
 is shown regardless of whether a secret is actually configured. Clicking Edit always starts from a
 blank `<input>`; saving it blank is a no-op on the backend, same as leaving a "change password"
 field untouched.
 -}
-facebookAppSecretRow : Maybe FacebookAuthFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
 facebookAppSecretRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -680,6 +804,111 @@ facebookAppSecretRow maybeEdit maybeAdminAccount =
                 , case maybeAdminAccount of
                     Just _ ->
                         button [ class "server-details-rename-button", onClick FacebookAppSecretEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+{-| Mirrors `facebookAuthConfigSection`: the VAPID public/private key pair an admin sets so Web
+Push notifications (see `Shared.AccountsPanel`'s "Enable notifications", `backend/src/web_push`) can
+actually be sent to this server's subscribers. Only ever shown to an admin -- there's nothing for a
+non-admin to configure here, unlike the Facebook section (which shows the read-only App ID to
+everyone).
+-}
+webPushConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+webPushConfigSection server model maybeAdminAccount =
+    case maybeAdminAccount of
+        Nothing ->
+            text ""
+
+        Just _ ->
+            let
+                currentPublicKey : String
+                currentPublicKey =
+                    (AccountsPanel.configurationOf server).webPushConfig
+                        |> Maybe.map .publicVapidKey
+                        |> Maybe.withDefault ""
+            in
+            div [ class "server-details-facebook-auth" ]
+                [ h3 [ class "section-title" ] [ text "Web Push Configuration" ]
+                , webPushPublicKeyRow currentPublicKey model.webPushPublicKeyEdit maybeAdminAccount
+                , webPushPrivateKeyRow model.webPushPrivateKeyEdit maybeAdminAccount
+                ]
+
+
+webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+webPushPublicKeyRow currentPublicKey maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "Public VAPID Key" ]
+                , input
+                    [ class "server-details-rename-input"
+                    , value edit.pending
+                    , onInput WebPushPublicKeyChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , Common.editSaveButton WebPushPublicKeySaveClicked edit.status
+                , Common.editCancelButton WebPushPublicKeyCancelClicked edit.status
+                , Common.editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "Public VAPID Key" ]
+                , span [ class "server-details-color-hex" ]
+                    [ text
+                        (if String.isEmpty currentPublicKey then
+                            "Not set."
+
+                         else
+                            currentPublicKey
+                        )
+                    ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick WebPushPublicKeyEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+{-| Unlike `webPushPublicKeyRow`, there's no "current value" to show when not editing -- the server
+never sends the real `privateVapidKey` back (see `TextFieldEdit`'s doc), so the placeholder below is
+shown regardless of whether a key is actually configured. Clicking Edit always starts from a blank
+`<input>`; saving it blank is a no-op on the backend, same as leaving a "change password" field
+untouched.
+-}
+webPushPrivateKeyRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+webPushPrivateKeyRow maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "Private VAPID Key" ]
+                , input
+                    [ Html.Attributes.type_ "password"
+                    , class "server-details-rename-input"
+                    , placeholder "New Private VAPID Key"
+                    , value edit.pending
+                    , onInput WebPushPrivateKeyChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , Common.editSaveButton WebPushPrivateKeySaveClicked edit.status
+                , Common.editCancelButton WebPushPrivateKeyCancelClicked edit.status
+                , Common.editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "Private VAPID Key" ]
+                , span [ class "server-details-color-hex" ] [ text "Never shown" ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick WebPushPrivateKeyEditClicked ] [ text "Edit" ]
 
                     Nothing ->
                         text ""

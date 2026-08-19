@@ -20,15 +20,15 @@ clean_protos:
 	cargo clean -p prost-build
 
 rebuild_fe_and_run:
-	cd ../frontends/tamagui && $(MAKE) rebuild_fe
+	$(MAKE) -C ../frontends/tamagui rebuild_fe
 	$(MAKE) run
 
 rebuild_tamagui_and_run:
-	cd ../frontends/tamagui && $(MAKE) rebuild_fe
+	$(MAKE) -C ../frontends/tamagui rebuild_fe
 	$(MAKE) run
 
 rebuild_elm_and_run:
-	cd ../frontends/elm-spa && $(MAKE) build
+	$(MAKE) -C ../frontends/elm-spa build
 	$(MAKE) run
 
 rebuild_protos: clean_protos build

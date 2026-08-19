@@ -38,7 +38,7 @@ deploy_email_get_ip:
 # Suppress echoing this so `make deploy_email_get_ip` is easily composable -- this is what your
 # domains' MX records should point at (see ../README.md). Stalwart has no Service IP of its own
 # any more -- this is just the shared ingress's IP, from ../ingress/Makefile.
-	@cd ../ingress && $(MAKE) get_ingress_external_ip
+	@$(MAKE) -C ../ingress get_ingress_external_ip
 
 deploy_email_restart:
 	kubectl rollout restart deployment stalwart -n jonline-email
