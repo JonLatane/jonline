@@ -206,8 +206,10 @@ type alias SidebarAnimation =
     -- Frozen at whatever it was computed to be the last time this entry was
     -- still `current` (`flattenSidebar`) -- see `Model.sidebarAnimations`'
     -- own doc on why a live re-lookup at render time would break a
-    -- mid-fade-out row's position.
-    , sortKey : ( Int, Int )
+    -- mid-fade-out row's position. The middle `String` is the owning
+    -- conversation's own key -- see `groupSortKey`/`messageSortKey`'s own doc
+    -- on why a plain `( Int, Int )` isn't enough.
+    , sortKey : ( Int, String, Int )
     , flip : UI.Flip.State Msg
     }
 
@@ -1308,7 +1310,7 @@ patchServerFeedUnread unreadIds feed =
             feed
 
 
-{-| Every currently-known `ConversationSummary.unreadCount`, summed -- what
+{-| Every currently-fetched unread message, counted once each -- what
 `Shared.MessagingPanel`/`UI.messagingToggle` badge with a number, mirroring
 `Shared.StarredPanel`'s own `Set.size starredPostIds` badge. Unlike that one,
 though, this can only ever reflect what's _already been fetched_ into this
@@ -1319,13 +1321,32 @@ boot, no RPC needed) -- so a freshly-opened `Shared.MessagingPanel` that
 hasn't fetched anything yet (`empty`, see its own doc) reads `0` here until
 its first `Poll`/`ToggleOpen` fetch resolves, same as every other count this
 module surfaces.
+
+Deliberately _not_ `currentGroupSummaries |> Dict.values |> List.map
+.unreadCount |> List.sum`: per `Messages.conversationMessages`'s own doc, a
+message with both a `messagingGroup` and a `from` counts toward two different
+`ConversationSummary`s at once, each incrementing its own `unreadCount` --
+summing those would double-count that message here, even though it's a
+single unread item to the user. Counting straight off each host's flat
+`Loaded messages` list (one entry per message, per `GetMessagesResponse`)
+avoids that.
+
 -}
 totalUnreadCount : Model -> Int
 totalUnreadCount model =
-    currentGroupSummaries model
+    model.messagesByServer
         |> Dict.values
-        |> List.map .unreadCount
-        |> List.sum
+        |> List.concatMap
+            (\feed ->
+                case feed.status of
+                    Loaded messages ->
+                        messages
+
+                    _ ->
+                        []
+            )
+        |> List.filter Messages.isUnread
+        |> List.length
 
 
 eligibleEntries : AccountsPanel.Model -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
@@ -1535,30 +1556,47 @@ trueMostRecentMillis model summary =
     max (Messages.messageMillis summary.mostRecent) expandedMillis
 
 
-{-| A group row's own sort key -- primary component shared with every one of
+{-| A group row's own sort key -- first component shared with every one of
 its own message rows (`messageSortKey`), so a whole group's block (its row
 plus, if inline-open, its messages) always sorts as one contiguous unit,
-newest group first. The secondary component just needs to sort _before_ any
-of that same group's own messages (see `messageSortKey`) -- one less than the
+newest group first. The third component just needs to sort _before_ any of
+that same group's own messages (see `messageSortKey`) -- one less than the
 group's own (negated) timestamp always does that, _provided_ `mostRecentMillis`
 is genuinely the max across every message this group currently knows about
 (see `trueMostRecentMillis`'s own doc -- this doesn't derive it itself, since
 `flattenSidebar`/`groupMessageRows` only need to compute it once per group,
 not once per `groupSortKey`/`messageSortKey` call).
+
+The middle `String` (`key`, always `Messages.conversationKey summary.conversation`
+at every call site) exists because the first/third `Int`s alone aren't unique
+enough: a message can belong to two different conversations at once (a real
+`MessagingGroup` and the sender's `FromEmail` pseudo-group, see
+`Messages.conversationMessages`' own doc) -- when that message is each
+conversation's own most recent, _both_ conversations compute the same
+`mostRecentMillis`, so their two group rows tie at the same `( t, t - 1 )`.
+That tie alone is harmless (stable sort just picks one first), but the _other_
+conversation's row, at `t - 1`, then sorts _before_ this conversation's own
+top message at `t` -- landing between this group's own row and its own
+messages instead of staying out of its block entirely. Keying every sort key
+by its own conversation first prevents that: two different conversations'
+entries only ever compare by that `key` once their leading `Int`s tie, so one
+conversation's row can never land inside another's block regardless of
+shared timestamps.
+
 -}
-groupSortKey : Int -> ( Int, Int )
-groupSortKey mostRecentMillis =
+groupSortKey : String -> Int -> ( Int, String, Int )
+groupSortKey key mostRecentMillis =
     let
         t : Int
         t =
             negate mostRecentMillis
     in
-    ( t, t - 1 )
+    ( t, key, t - 1 )
 
 
-messageSortKey : Int -> Message -> ( Int, Int )
-messageSortKey mostRecentMillis message =
-    ( negate mostRecentMillis, negate (Messages.messageMillis message) )
+messageSortKey : String -> Int -> Message -> ( Int, String, Int )
+messageSortKey key mostRecentMillis message =
+    ( negate mostRecentMillis, key, negate (Messages.messageMillis message) )
 
 
 {-| How many of an inline-open group's most recent messages `groupMessageRows`
@@ -1583,7 +1621,7 @@ once per message. Caps at `inlineMessagePreviewLimit` most-recent messages
 (appending a `SidebarShowMoreRow` for the rest) unless this group is already
 in `Model.fullyExpandedGroups`.
 -}
-groupMessageRows : Model -> Int -> Messages.ConversationSummary -> List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+groupMessageRows : Model -> Int -> Messages.ConversationSummary -> List ( String, { row : SidebarRow, sortKey : ( Int, String, Int ) } )
 groupMessageRows model mostRecentMillis summary =
     let
         key : String
@@ -1604,7 +1642,7 @@ groupMessageRows model mostRecentMillis summary =
                         -- iteration order.
                         sortedMessages : List Message
                         sortedMessages =
-                            eg.messages |> Dict.values |> List.sortBy (messageSortKey mostRecentMillis)
+                            eg.messages |> Dict.values |> List.sortBy (messageSortKey key mostRecentMillis)
 
                         visibleMessages : List Message
                         visibleMessages =
@@ -1618,30 +1656,34 @@ groupMessageRows model mostRecentMillis summary =
                         hiddenCount =
                             List.length sortedMessages - List.length visibleMessages
 
-                        messageRows : List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+                        messageRows : List ( String, { row : SidebarRow, sortKey : ( Int, String, Int ) } )
                         messageRows =
                             visibleMessages
                                 |> List.map
                                     (\message ->
                                         ( "message:" ++ key ++ "|" ++ Messages.messageKey (Messages.conversationHost summary.conversation) message
-                                        , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey mostRecentMillis message }
+                                        , { row = SidebarMessageRow summary.conversation message, sortKey = messageSortKey key mostRecentMillis message }
                                         )
                                     )
 
                         -- Sorts immediately after the last visible message
-                        -- (that message's own secondary sort component, plus
+                        -- (that message's own third sort component, plus
                         -- one -- see `groupSortKey`'s own doc on why a `+ 1`
                         -- there is safe/meaningful) and, since every hidden
                         -- message is simply absent from this list rather
                         -- than sorted after it, needs nothing more precise
                         -- than that to land in the right place.
-                        showMoreRow : List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+                        showMoreRow : List ( String, { row : SidebarRow, sortKey : ( Int, String, Int ) } )
                         showMoreRow =
                             case ( hiddenCount > 0, List.reverse visibleMessages |> List.head ) of
                                 ( True, Just lastVisible ) ->
+                                    let
+                                        ( primary, _, tertiary ) =
+                                            messageSortKey key mostRecentMillis lastVisible
+                                    in
                                     [ ( "showmore:" ++ key
                                       , { row = SidebarShowMoreRow summary.conversation hiddenCount
-                                        , sortKey = Tuple.mapSecond ((+) 1) (messageSortKey mostRecentMillis lastVisible)
+                                        , sortKey = ( primary, key, tertiary + 1 )
                                         }
                                       )
                                     ]
@@ -1662,18 +1704,22 @@ groupMessageRows model mostRecentMillis summary =
 order (each with its own `sortKey`, not that a `Dict`'s own iteration order
 means anything) -- see that field's own doc.
 -}
-flattenSidebar : Model -> List ( String, { row : SidebarRow, sortKey : ( Int, Int ) } )
+flattenSidebar : Model -> List ( String, { row : SidebarRow, sortKey : ( Int, String, Int ) } )
 flattenSidebar model =
     currentGroupSummaries model
         |> Dict.values
         |> List.concatMap
             (\summary ->
                 let
+                    key : String
+                    key =
+                        Messages.conversationKey summary.conversation
+
                     mostRecentMillis : Int
                     mostRecentMillis =
                         trueMostRecentMillis model summary
                 in
-                ( "group:" ++ Messages.conversationKey summary.conversation, { row = SidebarGroupRow summary, sortKey = groupSortKey mostRecentMillis } )
+                ( "group:" ++ key, { row = SidebarGroupRow summary, sortKey = groupSortKey key mostRecentMillis } )
                     :: groupMessageRows model mostRecentMillis summary
             )
 
@@ -1691,7 +1737,7 @@ animation for free.
 syncSidebarAnimations : Model -> Model
 syncSidebarAnimations model =
     let
-        current : Dict String { row : SidebarRow, sortKey : ( Int, Int ) }
+        current : Dict String { row : SidebarRow, sortKey : ( Int, String, Int ) }
         current =
             Dict.fromList (flattenSidebar model)
     in
@@ -2370,11 +2416,17 @@ kind of conversation it landed in -- a `MessagingGroup`-kind thread can
 perfectly well mix ordinary in-app replies with an email that got matched
 into it. `[]` (nothing shown) when none of the four are present.
 
-`isDetailPane` picks which spoofable-warning representation to show: the
-full sentence on the right (`selectedGroupView`, room for it), just a small
-alert emoji (with the same sentence as its own `title` tooltip) on the left
-where sidebar rows are already tight on space -- see `messageRowView`'s own
-doc on the two call sites.
+Spliced onto the end of `.message-row-header` by `messageRowView` (its own
+two call sites) -- a single `.message-row-email-headers-row` that wraps onto
+its own line below the avatar/sender/time row (via `.message-row-header`'s
+own `flex-wrap`), since it's always the last (and only ever one) extra
+child. `isDetailPane` picks which spoofable-warning representation goes in
+that row: sidebar rows are tight on space, so they get just a small alert
+emoji (the same sentence as its own `title` tooltip) to the _left_ of
+`.message-row-email-headers`, which flexes to fill whatever width is left
+next to it; the two-pane detail has room, so it gets the full sentence
+instead, folded into `.message-row-email-headers` itself (as its first
+line, above the From/To/Cc/Bcc dump) rather than a separate icon alongside it.
 
 -}
 messageEmailHeadersView : Bool -> Message -> List (Html msg)
@@ -2397,17 +2449,23 @@ messageEmailHeadersView isDetailPane message =
             warningText =
                 "Email senders aren't verified. Anyone could have sent this claiming to be this address."
 
-            warningView : Html msg
-            warningView =
-                if isDetailPane then
-                    p [ class "messages-spoofable-warning" ] [ text warningText ]
-
-                else
-                    span [ class "messages-spoofable-warning-icon", title warningText ] [ text "⚠️" ]
+            headerLineViews : List (Html msg)
+            headerLineViews =
+                List.map (\line -> div [] [ text line ]) headerLines
         in
-        [ warningView
-        , div [ class "message-row-email-headers" ] (List.map (\line -> div [] [ text line ]) headerLines)
-        ]
+        if isDetailPane then
+            [ div [ class "message-row-email-headers-row" ]
+                [ div [ class "message-row-email-headers" ]
+                    (p [ class "messages-spoofable-warning" ] [ text warningText ] :: headerLineViews)
+                ]
+            ]
+
+        else
+            [ div [ class "message-row-email-headers-row" ]
+                [ span [ class "messages-spoofable-warning-icon", title warningText ] [ text "⚠️" ]
+                , div [ class "message-row-email-headers" ] headerLineViews
+                ]
+            ]
 
 
 {-| What clicking a message row (`messageRowView`) actually does, per
@@ -2803,22 +2861,23 @@ messageRowView time accountsPanelModel host interaction highlightMessageId isDet
 
         content : List (Html Msg)
         content =
-            messageEmailHeadersView isDetailPane message
-                ++ [ div [ class "message-row-header" ]
-                        [ avatarView "message-row-avatar" senderName senderAvatarUrl
-                        , span [ class "message-row-sender" ] [ text senderName ]
-                        , if Messages.isUnread message then
-                            span [ classes [ "message-row-unread-dot", hostnameToCSSClass host, "background-color-nav" ] ] []
+            [ div [ class "message-row-header" ]
+                ([ avatarView "message-row-avatar" senderName senderAvatarUrl
+                 , span [ class "message-row-sender" ] [ text senderName ]
+                 , if Messages.isUnread message then
+                    span [ classes [ "message-row-unread-dot", hostnameToCSSClass host, "background-color-accent-anchor" ] ] []
 
-                          else
-                            text ""
-                        , span [ class "message-row-time" ]
-                            [ text (SharedTime.formatMoment time (Messages.messageMillis message |> Time.millisToPosix)) ]
-                        ]
-                   , messageSubjectView message
-                   , p [ class "message-row-body" ] [ text message.bodyText ]
-                   , markUnreadButtonView host message
-                   ]
+                   else
+                    text ""
+                 , span [ class "message-row-time" ]
+                    [ text (SharedTime.formatMoment time (Messages.messageMillis message |> Time.millisToPosix)) ]
+                 ]
+                    ++ messageEmailHeadersView isDetailPane message
+                )
+            , messageSubjectView message
+            , p [ class "message-row-body" ] [ text message.bodyText ]
+            , markUnreadButtonView host message
+            ]
 
         -- `border-color-nav` -- see `Model.highlightMessageId`'s own doc --
         -- relies on `.message-row`'s already-existing `border` (messages.css)

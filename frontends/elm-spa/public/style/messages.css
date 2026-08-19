@@ -377,31 +377,55 @@
   cursor: pointer;
 }
 
-/* `MessagesPage.messageEmailHeadersView`'s own compact alert icon -- the
-   sidebar's own (space-constrained) stand-in for `.messages-spoofable-warning`'s
-   full sentence, shown on the two-pane detail side instead (room for it
-   there). Same warning text either way, just as this icon's own `title`
-   tooltip here rather than always-visible body text. */
+/* `MessagesPage.messageEmailHeadersView`'s own wrapper around the compact alert icon +
+   `.message-row-email-headers` (sidebar rows), or `.message-row-email-headers` alone (two-pane
+   detail, which folds its warning into that block instead -- see `.messages-spoofable-warning-icon`'s
+   own comment). Spliced onto the very end of `.message-row-header`'s children; `flex: 1 0 100%`
+   forces the pair onto their own line below the avatar/sender/time row rather than trying to flow
+   inline with them -- see `.message-row-header`'s own `flex-wrap`. A `display: flex` row of its
+   own so the icon (fixed-width, to its left) and `.message-row-email-headers` (flexing to fill
+   whatever's left) sit together on that line. */
+.message-row-email-headers-row {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+/* `MessagesPage.messageEmailHeadersView`'s own compact alert icon -- the sidebar's own
+   (space-constrained) stand-in for `.messages-spoofable-warning`'s full sentence, folded into
+   `.message-row-email-headers` instead on the two-pane detail side (room for it there). Same
+   warning text either way, just as this icon's own `title` tooltip here rather than always-visible
+   body text. `flex: 0 0 auto` so it doesn't stretch/shrink alongside `.message-row-email-headers`'s
+   own `flex: 1` within their shared `.message-row-email-headers-row`. */
 .messages-spoofable-warning-icon {
+  flex: 0 0 auto;
   font-size: 0.75rem;
   cursor: help;
 }
 
-/* `MessagesPage.messageEmailHeadersView`'s own From/To/Cc/Bcc dump -- shown
-   above `.message-row-header` on *every* message with any of the four
-   present (regardless of which kind of conversation it's in, unlike
-   `.messages-from-email`'s own whole-conversation summary) -- small and
-   half-opacity, same "technical detail, not the point of the message"
-   treatment `.message-row-time` already gives its own secondary text,
-   just as a small block instead of a single inline span. */
+/* `MessagesPage.messageEmailHeadersView`'s own From/To/Cc/Bcc dump (plus, on the two-pane detail
+   side, `.messages-spoofable-warning`'s full sentence as its first line -- see that class' own
+   comment) on *every* message with any of the four present (regardless of which kind of
+   conversation it's in, unlike `.messages-from-email`'s own whole-conversation summary). `flex: 1`
+   fills whatever width `.message-row-email-headers-row` has left next to the alert icon (sidebar
+   rows) or the block's own full width (two-pane detail, no icon sibling there). Small and
+   half-opacity, same "technical detail, not the point of the message" treatment
+   `.message-row-time` already gives its own secondary text, just as a small block instead of a
+   single inline span. */
 .message-row-email-headers {
+  flex: 1;
   margin: 0 0 0.3rem 0;
   font-size: 0.75rem;
-  opacity: 0.5;
+}
+
+.message-row-email-headers :not(.messages-spoofable-warning) {
+  opacity: 0.66;
 }
 
 .message-row-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
@@ -585,9 +609,13 @@
 }
 
 /* `MessagesPage.spoofableEmailWarningView` -- see its own doc on why a
-   `FromEmail` group needs this at all. Deliberately `--danger`, not
-   `--muted`: this is a caution about identity spoofing, not routine
-   secondary text. */
+   `FromEmail` group needs this at all. Also reused, unchanged, by
+   `messageEmailHeadersView`'s own two-pane-detail variant, where it's the first line inside
+   `.message-row-email-headers` rather than a standalone element -- note that nesting it there
+   means it renders at that container's own `opacity: 0.5`, same as everything else inside it;
+   composited opacity can't be un-done by a child's own `opacity`, so this reads fainter there than
+   `spoofableEmailWarningView`'s own full-strength copy. Deliberately `--danger`, not `--muted`:
+   this is a caution about identity spoofing, not routine secondary text. */
 .messages-spoofable-warning {
   color: var(--danger);
   font-size: 0.75rem;
