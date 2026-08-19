@@ -18,12 +18,15 @@ port module Ports exposing
     , persistStarredPosts
     , persistThemePreference
     , persistUserPreferences
+    , pushSubscribed
     , renderCalendar
     , scrollElementLeft
     , setNavBarColor
     , setTheme
     , starredPostsUpdated
+    , subscribeToPush
     , systemPrefersDarkChanged
+    , unsubscribeFromPush
     )
 
 import Json.Encode as Encode
@@ -284,3 +287,36 @@ success, or an error message on failure (wrong key, tampered ciphertext,
 etc).
 -}
 port federatedAuthDecrypted : (Encode.Value -> msg) -> Sub msg
+
+
+
+-- WEB PUSH (see `Shared.AccountsPanel`'s "Enable notifications") -- browser
+-- Service Worker push subscription registration. See `public/index.html` for
+-- the JS side and `public/service-worker.js` for the `push`/`notificationclick`
+-- handlers themselves.
+
+
+{-| Requests a browser Web Push subscription for `{ accountId : String, publicKey : String }`
+(`publicKey` is that account's server's VAPID public key, base64url) --
+registers the service worker (if not already), prompts for Notification
+permission if needed, then calls `PushManager.subscribe()`. The result
+(success or failure, either way carrying the same `accountId` back) arrives
+via `pushSubscribed`.
+-}
+port subscribeToPush : Encode.Value -> Cmd msg
+
+
+{-| `{ accountId : String, ok : Bool, endpoint : String, p256dhKey : String, authKey : String }`
+on success, or `{ accountId : String, ok : Bool, error : String }` (`ok = False`) on failure --
+e.g. permission denied, or the browser doesn't support Push. `accountId` is always the same value
+`subscribeToPush` was called with, so the Elm side can tell which account's request this answers.
+-}
+port pushSubscribed : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Unsubscribes the browser's Web Push subscription for `{ accountId : String, endpoint : String }`,
+if the browser's current subscription still matches `endpoint` -- fire-and-forget, no response port;
+the Elm side already optimistically drops its own record of the subscription (and calls
+`UnregisterPushSubscription` server-side) the moment this is sent.
+-}
+port unsubscribeFromPush : Encode.Value -> Cmd msg

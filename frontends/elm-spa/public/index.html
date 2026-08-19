@@ -393,6 +393,72 @@
       });
     });
 
+    // WEB PUSH (see Ports.elm's subscribeToPush/pushSubscribed/unsubscribeFromPush doc comments,
+    // and public/service-worker.js for the `push`/`notificationclick` handlers themselves).
+    // Registered unconditionally -- harmless no-op in browsers without `serviceWorker` support,
+    // and a no-op everywhere until a user actually clicks "Enable notifications".
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register(jonlineBasePath + "/service-worker.js").catch(function (e) {
+        console.error("Failed to register service worker", e);
+      });
+    }
+
+    function pushManagerAvailable() {
+      return !!(window.PushManager && navigator.serviceWorker);
+    }
+
+    app.ports.subscribeToPush.subscribe(function (request) {
+      if (!pushManagerAvailable()) {
+        app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: "Push notifications aren't supported in this browser." });
+        return;
+      }
+      if (Notification.permission === "denied") {
+        app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: "Notifications are blocked for this site in your browser settings." });
+        return;
+      }
+      Notification.requestPermission()
+        .then(function (permission) {
+          if (permission !== "granted") {
+            app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: "Notification permission wasn't granted." });
+            return null;
+          }
+          return navigator.serviceWorker.ready.then(function (registration) {
+            return registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: base64UrlDecode(request.publicKey)
+            });
+          });
+        })
+        .then(function (subscription) {
+          if (!subscription) { return; }
+          var keys = subscription.toJSON().keys;
+          app.ports.pushSubscribed.send({
+            ok: true,
+            accountId: request.accountId,
+            endpoint: subscription.endpoint,
+            p256dhKey: keys.p256dh,
+            authKey: keys.auth
+          });
+        })
+        .catch(function (e) {
+          app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: String((e && e.message) || e) });
+        });
+    });
+
+    app.ports.unsubscribeFromPush.subscribe(function (request) {
+      if (!pushManagerAvailable()) { return; }
+      navigator.serviceWorker.ready
+        .then(function (registration) { return registration.pushManager.getSubscription(); })
+        .then(function (subscription) {
+          if (subscription && subscription.endpoint === request.endpoint) {
+            return subscription.unsubscribe();
+          }
+        })
+        .catch(function (e) {
+          console.error("Failed to unsubscribe from push", e);
+        });
+    });
+
     darkMediaQuery.addEventListener("change", function (e) {
       app.ports.systemPrefersDarkChanged.send(e.matches);
       if (currentThemePreference === "auto") {
