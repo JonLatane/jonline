@@ -22,6 +22,7 @@ lazy_static! {
         elm_root_vendor,
         elm_root_markdown_js,
         elm_root_facebook_callback,
+        elm_root_service_worker,
     ];
 }
 
@@ -135,6 +136,22 @@ async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<Named
 #[rocket::get("/facebook-callback.html")]
 async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(Path::new("facebook-callback.html")).await;
+    CacheResponse::public(result, 60)
+}
+
+/// The service worker script `index.html` registers for Web Push (see `Ports.subscribeToPush`'s
+/// own doc comment) -- same reasoning as `elm_root_facebook_callback` just above: when Elm is
+/// served at root, `jonlineBasePath == ""`, so the browser fetches this at the literal root
+/// `/service-worker.js`, which would otherwise fall through to `spa_file_or_username_or_custom_tab`'s
+/// catch-all and get served `index.html` -- the wrong content (and MIME type: browsers refuse to
+/// register a service worker whose script doesn't come back as JavaScript). Also load-bearing for
+/// *scope*, not just content: a service worker's default max scope is everything at or below its
+/// own script's own path, so this has to actually be served from `/`, not `/elm/`, for it to be
+/// able to control the whole origin. (Under `/elm`, `elm_file`'s own asset fallback already serves
+/// it at `/elm/service-worker.js`, correctly scoped to `/elm/` -- no separate route needed there.)
+#[rocket::get("/service-worker.js")]
+async fn elm_root_service_worker(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(Path::new("service-worker.js")).await;
     CacheResponse::public(result, 60)
 }
 
