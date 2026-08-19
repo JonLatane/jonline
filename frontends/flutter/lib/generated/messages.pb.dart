@@ -791,6 +791,232 @@ class GetMessagesResponse extends $pb.GeneratedMessage {
   $core.List<Message> get messages => $_getList(0);
 }
 
+/// A browser's Web Push subscription (see https://developer.mozilla.org/en-US/docs/Web/API/Push_API),
+/// registered so the server can push new-Message notifications to it even while the browser tab is
+/// closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+/// users' subscriptions.
+class PushSubscription extends $pb.GeneratedMessage {
+  factory PushSubscription({
+    $core.String? id,
+    $core.String? endpoint,
+    $10.Timestamp? createdAt,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (endpoint != null) {
+      $result.endpoint = endpoint;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    return $result;
+  }
+  PushSubscription._() : super();
+  factory PushSubscription.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory PushSubscription.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PushSubscription', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'endpoint')
+    ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  PushSubscription clone() => PushSubscription()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  PushSubscription copyWith(void Function(PushSubscription) updates) => super.copyWith((message) => updates(message as PushSubscription)) as PushSubscription;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static PushSubscription create() => PushSubscription._();
+  PushSubscription createEmptyInstance() => create();
+  static $pb.PbList<PushSubscription> createRepeated() => $pb.PbList<PushSubscription>();
+  @$core.pragma('dart2js:noInline')
+  static PushSubscription getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PushSubscription>(create);
+  static PushSubscription? _defaultInstance;
+
+  /// The ID of the subscription.
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => clearField(1);
+
+  /// The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`.
+  @$pb.TagNumber(2)
+  $core.String get endpoint => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set endpoint($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasEndpoint() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEndpoint() => clearField(2);
+
+  /// The time the subscription was registered.
+  @$pb.TagNumber(20)
+  $10.Timestamp get createdAt => $_getN(2);
+  @$pb.TagNumber(20)
+  set createdAt($10.Timestamp v) { setField(20, v); }
+  @$pb.TagNumber(20)
+  $core.bool hasCreatedAt() => $_has(2);
+  @$pb.TagNumber(20)
+  void clearCreatedAt() => clearField(20);
+  @$pb.TagNumber(20)
+  $10.Timestamp ensureCreatedAt() => $_ensure(2);
+}
+
+/// Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+/// Messages sent/delivered to them push a notification even while the browser tab is closed.
+/// See `RegisterPushSubscription`'s own RPC doc comment.
+class RegisterPushSubscriptionRequest extends $pb.GeneratedMessage {
+  factory RegisterPushSubscriptionRequest({
+    $core.String? endpoint,
+    $core.String? p256dhKey,
+    $core.String? authKey,
+  }) {
+    final $result = create();
+    if (endpoint != null) {
+      $result.endpoint = endpoint;
+    }
+    if (p256dhKey != null) {
+      $result.p256dhKey = p256dhKey;
+    }
+    if (authKey != null) {
+      $result.authKey = authKey;
+    }
+    return $result;
+  }
+  RegisterPushSubscriptionRequest._() : super();
+  factory RegisterPushSubscriptionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RegisterPushSubscriptionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RegisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'endpoint')
+    ..aOS(2, _omitFieldNames ? '' : 'p256dhKey')
+    ..aOS(3, _omitFieldNames ? '' : 'authKey')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RegisterPushSubscriptionRequest clone() => RegisterPushSubscriptionRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RegisterPushSubscriptionRequest copyWith(void Function(RegisterPushSubscriptionRequest) updates) => super.copyWith((message) => updates(message as RegisterPushSubscriptionRequest)) as RegisterPushSubscriptionRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RegisterPushSubscriptionRequest create() => RegisterPushSubscriptionRequest._();
+  RegisterPushSubscriptionRequest createEmptyInstance() => create();
+  static $pb.PbList<RegisterPushSubscriptionRequest> createRepeated() => $pb.PbList<RegisterPushSubscriptionRequest>();
+  @$core.pragma('dart2js:noInline')
+  static RegisterPushSubscriptionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RegisterPushSubscriptionRequest>(create);
+  static RegisterPushSubscriptionRequest? _defaultInstance;
+
+  /// The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`.
+  @$pb.TagNumber(1)
+  $core.String get endpoint => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set endpoint($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasEndpoint() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEndpoint() => clearField(1);
+
+  /// The subscription's `p256dh` key (base64url), as given by `PushSubscription.getKey('p256dh')`.
+  @$pb.TagNumber(2)
+  $core.String get p256dhKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set p256dhKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasP256dhKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearP256dhKey() => clearField(2);
+
+  /// The subscription's `auth` key (base64url), as given by `PushSubscription.getKey('auth')`.
+  @$pb.TagNumber(3)
+  $core.String get authKey => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set authKey($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAuthKey() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAuthKey() => clearField(3);
+}
+
+/// Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
+/// `PushManager.subscribe()` reports the subscription as no longer valid. See
+/// `UnregisterPushSubscription`'s own RPC doc comment.
+class UnregisterPushSubscriptionRequest extends $pb.GeneratedMessage {
+  factory UnregisterPushSubscriptionRequest({
+    $core.String? endpoint,
+  }) {
+    final $result = create();
+    if (endpoint != null) {
+      $result.endpoint = endpoint;
+    }
+    return $result;
+  }
+  UnregisterPushSubscriptionRequest._() : super();
+  factory UnregisterPushSubscriptionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UnregisterPushSubscriptionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UnregisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'endpoint')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UnregisterPushSubscriptionRequest clone() => UnregisterPushSubscriptionRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UnregisterPushSubscriptionRequest copyWith(void Function(UnregisterPushSubscriptionRequest) updates) => super.copyWith((message) => updates(message as UnregisterPushSubscriptionRequest)) as UnregisterPushSubscriptionRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UnregisterPushSubscriptionRequest create() => UnregisterPushSubscriptionRequest._();
+  UnregisterPushSubscriptionRequest createEmptyInstance() => create();
+  static $pb.PbList<UnregisterPushSubscriptionRequest> createRepeated() => $pb.PbList<UnregisterPushSubscriptionRequest>();
+  @$core.pragma('dart2js:noInline')
+  static UnregisterPushSubscriptionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UnregisterPushSubscriptionRequest>(create);
+  static UnregisterPushSubscriptionRequest? _defaultInstance;
+
+  /// The Web Push subscription endpoint URL to unregister, as previously passed to
+  /// `RegisterPushSubscription`.
+  @$pb.TagNumber(1)
+  $core.String get endpoint => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set endpoint($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasEndpoint() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEndpoint() => clearField(1);
+}
+
 
 const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
 const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

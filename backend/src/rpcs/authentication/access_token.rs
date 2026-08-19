@@ -46,9 +46,10 @@ pub fn access_token(
                     < SystemTime::now() =>
             {
                 log::info!(
-                            "Generating both refresh token and access token for user_id={}, refresh_token_id={}...",
-                            user_id, refresh_token_id
-                        );
+                    "Generating both refresh token and access token for user_id={}, refresh_token_id={}...",
+                    user_id,
+                    refresh_token_id
+                );
                 let new_expiry =
                     SystemTime::now().add(Duration::from_secs(60 * 60 * 24 * LIFETIME_DAYS));
                 let new_token_pair =
@@ -71,9 +72,12 @@ pub fn access_token(
                 })
             }
             None => {
-                match rand::rng().random_range(0..=2) {
+                match rand::rng().random_range(0..=20) {
                     0 => {
-                        log::info!("Randomly generating new refresh/access token pair for non-expiring refresh token for user_id={}; current token will expire in 360s.", user_id);
+                        log::info!(
+                            "Randomly generating new refresh/access token pair for non-expiring refresh token for user_id={}; current token will expire in 360s.",
+                            user_id
+                        );
                         // log::warn!("Randomly failing to generate access token for user_id={}", user_id);
 
                         let new_expiry = SystemTime::now().add(Duration::from_secs(360));

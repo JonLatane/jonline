@@ -197,3 +197,48 @@ final $typed_data.Uint8List getMessagesResponseDescriptor = $convert.base64Decod
     'ChNHZXRNZXNzYWdlc1Jlc3BvbnNlEiwKCG1lc3NhZ2VzGAEgAygLMhAuam9ubGluZS5NZXNzYW'
     'dlUghtZXNzYWdlcw==');
 
+@$core.Deprecated('Use pushSubscriptionDescriptor instead')
+const PushSubscription$json = {
+  '1': 'PushSubscription',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'endpoint', '3': 2, '4': 1, '5': 9, '10': 'endpoint'},
+    {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+  ],
+};
+
+/// Descriptor for `PushSubscription`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List pushSubscriptionDescriptor = $convert.base64Decode(
+    'ChBQdXNoU3Vic2NyaXB0aW9uEg4KAmlkGAEgASgJUgJpZBIaCghlbmRwb2ludBgCIAEoCVIIZW'
+    '5kcG9pbnQSOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBS'
+    'CWNyZWF0ZWRBdA==');
+
+@$core.Deprecated('Use registerPushSubscriptionRequestDescriptor instead')
+const RegisterPushSubscriptionRequest$json = {
+  '1': 'RegisterPushSubscriptionRequest',
+  '2': [
+    {'1': 'endpoint', '3': 1, '4': 1, '5': 9, '10': 'endpoint'},
+    {'1': 'p256dh_key', '3': 2, '4': 1, '5': 9, '10': 'p256dhKey'},
+    {'1': 'auth_key', '3': 3, '4': 1, '5': 9, '10': 'authKey'},
+  ],
+};
+
+/// Descriptor for `RegisterPushSubscriptionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List registerPushSubscriptionRequestDescriptor = $convert.base64Decode(
+    'Ch9SZWdpc3RlclB1c2hTdWJzY3JpcHRpb25SZXF1ZXN0EhoKCGVuZHBvaW50GAEgASgJUghlbm'
+    'Rwb2ludBIdCgpwMjU2ZGhfa2V5GAIgASgJUglwMjU2ZGhLZXkSGQoIYXV0aF9rZXkYAyABKAlS'
+    'B2F1dGhLZXk=');
+
+@$core.Deprecated('Use unregisterPushSubscriptionRequestDescriptor instead')
+const UnregisterPushSubscriptionRequest$json = {
+  '1': 'UnregisterPushSubscriptionRequest',
+  '2': [
+    {'1': 'endpoint', '3': 1, '4': 1, '5': 9, '10': 'endpoint'},
+  ],
+};
+
+/// Descriptor for `UnregisterPushSubscriptionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List unregisterPushSubscriptionRequestDescriptor = $convert.base64Decode(
+    'CiFVbnJlZ2lzdGVyUHVzaFN1YnNjcmlwdGlvblJlcXVlc3QSGgoIZW5kcG9pbnQYASABKAlSCG'
+    'VuZHBvaW50');
+

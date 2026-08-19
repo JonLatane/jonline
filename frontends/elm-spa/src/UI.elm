@@ -1655,12 +1655,61 @@ accountRow shared count mainCount index account =
             [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveUp ) ] ] [ reorderPair.backward ]
             , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveDown ) ] ] [ reorderPair.forward ]
             ]
+        , notificationsButton shared account
         , button
             [ class "remove-btn"
             , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
             ]
             [ text "╳" ]
         ]
+
+
+{-| "Enable notifications"/"🔔" toggle for `account`'s row (see `AccountsPanel.EnableNotificationsClicked`/
+`DisableNotificationsClicked`) -- only rendered at all if `account.server` is both connected and
+has a `WebPushConfig` (`AccountsPanel.serverWebPushPublicKey`), i.e. there's actually something to
+subscribe to; disabled (like the rest of the row's actions) while the account itself
+`needsPassword`, since registering a subscription needs a working access/refresh token.
+-}
+notificationsButton : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+notificationsButton shared account =
+    case AccountsPanel.serverWebPushPublicKey shared.accounts.servers account.server of
+        Nothing ->
+            text ""
+
+        Just _ ->
+            let
+                enabled : Bool
+                enabled =
+                    Dict.member (AccountsPanel.accountId account) shared.accounts.pushSubscriptions
+            in
+            button
+                [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ) ]
+                , disabled account.needsPassword
+                , title
+                    (if enabled then
+                        "Disable browser notifications for this account"
+
+                     else
+                        "Enable browser notifications for this account"
+                    )
+                , stopPropagationAndPreventDefaultOnClick
+                    (Shared.AccountsPanelMsg
+                        (if enabled then
+                            AccountsPanel.DisableNotificationsClicked account
+
+                         else
+                            AccountsPanel.EnableNotificationsClicked account
+                        )
+                    )
+                ]
+                [ text
+                    (if enabled then
+                        "🔔"
+
+                     else
+                        "🔕"
+                    )
+                ]
 
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg

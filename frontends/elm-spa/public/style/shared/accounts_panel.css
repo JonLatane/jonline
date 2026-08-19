@@ -857,6 +857,36 @@
   white-space: nowrap;
 }
 
+/* "Enable notifications" toggle -- see `UI.notificationsButton`. Sized/shaped like `.remove-btn`
+   (same row of small circular icon buttons), neutral-colored except when a subscription is
+   currently active (`.notifications-btn-enabled`). */
+.notifications-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  line-height: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.notifications-btn:hover:not(:disabled) {
+  background: var(--chip-bg);
+}
+
+.notifications-btn-enabled {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.notifications-btn:disabled {
+  opacity: 0.5;
+}
+
 .remove-btn {
   display: flex;
   align-items: center;

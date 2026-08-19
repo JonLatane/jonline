@@ -54,7 +54,10 @@
     - [Message](#jonline-Message)
     - [MessageRead](#jonline-MessageRead)
     - [MessagingGroup](#jonline-MessagingGroup)
+    - [PushSubscription](#jonline-PushSubscription)
+    - [RegisterPushSubscriptionRequest](#jonline-RegisterPushSubscriptionRequest)
     - [SendMessageRequest](#jonline-SendMessageRequest)
+    - [UnregisterPushSubscriptionRequest](#jonline-UnregisterPushSubscriptionRequest)
   
     - [MessageListingType](#jonline-MessageListingType)
   
@@ -568,6 +571,8 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | SendMessage | [SendMessageRequest](#jonline-SendMessageRequest) | [Message](#jonline-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
 | GetMessages | [GetMessagesRequest](#jonline-GetMessagesRequest) | [GetMessagesResponse](#jonline-GetMessagesResponse) | Gets Messages. *Authenticated.* `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received. `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns every Message on the server. |
 | MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse) | Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it&#39;s been opened. *Authenticated.* Only needs the recipient/sender access `GetMessages` already requires for each Message -- no separate permission. Atomic: if the caller lacks access to *any* of `message_ids`, none of them are marked (matching `MarkMessagesReadRequest.message_ids`&#39; own doc), so a client never has to reconcile a partially-applied batch. |
+| RegisterPushSubscription | [RegisterPushSubscriptionRequest](#jonline-RegisterPushSubscriptionRequest) | [PushSubscription](#jonline-PushSubscription) | Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g. because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no `WebPushConfig` configured -- there&#39;s nothing to push notifications *with*. |
+| UnregisterPushSubscription | [UnregisterPushSubscriptionRequest](#jonline-UnregisterPushSubscriptionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unregisters a browser&#39;s Web Push subscription, e.g. on logout or when `PushManager.subscribe()` reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn&#39;t currently registered to the calling user. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
@@ -1523,6 +1528,45 @@ Most servers will probably have a (dynamically created) &#34;empty group&#34; fo
 
 
 
+<a name="jonline-PushSubscription"></a>
+
+### PushSubscription
+A browser&#39;s Web Push subscription (see https://developer.mozilla.org/en-US/docs/Web/API/Push_API),
+registered so the server can push new-Message notifications to it even while the browser tab is
+closed. Only ever surfaced back to the user who registered it -- there&#39;s no RPC to list other
+users&#39; subscriptions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The ID of the subscription. |
+| endpoint | [string](#string) |  | The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the subscription was registered. |
+
+
+
+
+
+
+<a name="jonline-RegisterPushSubscriptionRequest"></a>
+
+### RegisterPushSubscriptionRequest
+Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new
+Messages sent/delivered to them push a notification even while the browser tab is closed.
+See `RegisterPushSubscription`&#39;s own RPC doc comment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) |  | The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`. |
+| p256dh_key | [string](#string) |  | The subscription&#39;s `p256dh` key (base64url), as given by `PushSubscription.getKey(&#39;p256dh&#39;)`. |
+| auth_key | [string](#string) |  | The subscription&#39;s `auth` key (base64url), as given by `PushSubscription.getKey(&#39;auth&#39;)`. |
+
+
+
+
+
+
 <a name="jonline-SendMessageRequest"></a>
 
 ### SendMessageRequest
@@ -1535,6 +1579,23 @@ The server will create a new messaging group for the message, and send it to the
 | to_user_ids | [string](#string) | repeated |  |
 | subject | [string](#string) | optional |  |
 | body_text | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name="jonline-UnregisterPushSubscriptionRequest"></a>
+
+### UnregisterPushSubscriptionRequest
+Unregisters a browser&#39;s Web Push subscription for the current user, e.g. on logout or when
+`PushManager.subscribe()` reports the subscription as no longer valid. See
+`UnregisterPushSubscription`&#39;s own RPC doc comment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) |  | The Web Push subscription endpoint URL to unregister, as previously passed to `RegisterPushSubscription`. |
 
 
 

@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::db_connection::PgPooledConnection;
+use crate::db_connection::{PgPool, PgPooledConnection};
 use crate::marshaling::*;
 use crate::models;
 use crate::models::find_or_create_messaging_group;
@@ -17,6 +19,7 @@ pub fn send_message(
     request: SendMessageRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
+    pool: Arc<PgPool>,
 ) -> Result<Message, Status> {
     if request.to_user_ids.is_empty() {
         return Err(Status::new(Code::InvalidArgument, "to_user_ids_required"));
@@ -47,6 +50,15 @@ pub fn send_message(
         .to_string();
     validate_length(&body_text, "body_text", 1, 10000)?;
     validate_max_length(request.subject.to_owned(), "subject", 255)?;
+    // Captured before `body_text` moves into `NewMessage` below -- used as the push notification
+    // body if there's no `subject` (see the `notify_message_recipients` call at the bottom of
+    // this function).
+    let body_preview = body_text.clone();
+
+    // Captured before the sender is folded into `to_user_ids` below -- this is the actual
+    // "notify these people" set for `web_push::notify_message_recipients`; a sender shouldn't get
+    // pushed a notification for a message they just sent themselves.
+    let notify_user_ids = to_user_ids.clone();
 
     // The messaging group covers the sender too, if any - so they see their own sent message
     // alongside the recipients' in a `PERSONAL_MESSAGES` listing (mirroring how `web/email.rs`
@@ -78,6 +90,21 @@ pub fn send_message(
         .map(|user| models::get_author(user.id, conn))
         .transpose()?;
     let viewing_user_id = user.map(|user| user.id);
+
+    if !notify_user_ids.is_empty() {
+        let title = match user {
+            Some(user) if !user.real_name.is_empty() => user.real_name.clone(),
+            Some(user) => user.username.clone(),
+            None => "New message".to_string(),
+        };
+        let notification_body = request.subject.clone().unwrap_or(body_preview);
+        crate::web_push::notify_message_recipients(
+            pool,
+            notify_user_ids,
+            title,
+            notification_body,
+        );
+    }
 
     Ok(convert_messages(
         &vec![MarshalableMessage(

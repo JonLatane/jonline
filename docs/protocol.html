@@ -210,7 +210,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-MessagingGroup">MessagingGroup</a></p>
           </li>
           <li>
+            <p><a href="#jonline-PushSubscription">PushSubscription</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-RegisterPushSubscriptionRequest">RegisterPushSubscriptionRequest</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-SendMessageRequest">SendMessageRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-UnregisterPushSubscriptionRequest">UnregisterPushSubscriptionRequest</a></p>
           </li>
           <li>
             <p><a href="#jonline-MessageListingType">MessageListingType</a></p>
@@ -1021,6 +1030,18 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></td>
           <td><a href="#jonline-MarkMessagesReadResponse">MarkMessagesReadResponse</a></td>
           <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <code>GetMessages</code> already requires for each Message -- no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
+        </tr>
+        <tr>
+          <td>RegisterPushSubscription</td>
+          <td><a href="#jonline-RegisterPushSubscriptionRequest">RegisterPushSubscriptionRequest</a></td>
+          <td><a href="#jonline-PushSubscription">PushSubscription</a></td>
+          <td>Registers (or re-registers) a browser's Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. <em>Authenticated.</em> Re-registering an already-registered <code>endpoint</code> (e.g. because <code>PushManager.subscribe()</code> refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no <code>WebPushConfig</code> configured -- there's nothing to push notifications <em>with</em>.</td>
+        </tr>
+        <tr>
+          <td>UnregisterPushSubscription</td>
+          <td><a href="#jonline-UnregisterPushSubscriptionRequest">UnregisterPushSubscriptionRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Unregisters a browser's Web Push subscription, e.g. on logout or when <code>PushManager.subscribe()</code> reports the subscription as no longer valid. <em>Authenticated.</em> Not an error if <code>endpoint</code> isn't currently registered to the calling user.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -3278,6 +3299,81 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-PushSubscription"></a></p>
+    <h3 id="pushsubscription"><a class="anchor" aria-hidden="true" tabindex="-1" href="#pushsubscription"><span class="octicon octicon-link"></span></a>PushSubscription</h3>
+    <p>
+      A browser's Web Push subscription (see <a href="https://developer.mozilla.org/en-US/docs/Web/API/Push_API">https://developer.mozilla.org/en-US/docs/Web/API/Push_API</a>),
+      registered so the server can push new-Message notifications to it even while the browser tab is
+      closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+      users' subscriptions.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The ID of the subscription.</td>
+        </tr>
+        <tr>
+          <td>endpoint</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Web Push subscription endpoint URL, as given by <code>PushManager.subscribe()</code>.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the subscription was registered.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-RegisterPushSubscriptionRequest"></a></p>
+    <h3 id="registerpushsubscriptionrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#registerpushsubscriptionrequest"><span class="octicon octicon-link"></span></a>RegisterPushSubscriptionRequest</h3>
+    <p>
+      Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+      Messages sent/delivered to them push a notification even while the browser tab is closed.
+      See <code>RegisterPushSubscription</code>'s own RPC doc comment.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>endpoint</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Web Push subscription endpoint URL, as given by <code>PushManager.subscribe()</code>.</td>
+        </tr>
+        <tr>
+          <td>p256dh_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The subscription's <code>p256dh</code> key (base64url), as given by <code>PushSubscription.getKey(&#x26;#39;p256dh&#x26;#39;)</code>.</td>
+        </tr>
+        <tr>
+          <td>auth_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The subscription's <code>auth</code> key (base64url), as given by <code>PushSubscription.getKey(&#x26;#39;auth&#x26;#39;)</code>.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-SendMessageRequest"></a></p>
     <h3 id="sendmessagerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#sendmessagerequest"><span class="octicon octicon-link"></span></a>SendMessageRequest</h3>
     <p>
@@ -3311,6 +3407,31 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-UnregisterPushSubscriptionRequest"></a></p>
+    <h3 id="unregisterpushsubscriptionrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#unregisterpushsubscriptionrequest"><span class="octicon octicon-link"></span></a>UnregisterPushSubscriptionRequest</h3>
+    <p>
+      Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
+      <code>PushManager.subscribe()</code> reports the subscription as no longer valid. See
+      <code>UnregisterPushSubscription</code>'s own RPC doc comment.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>endpoint</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Web Push subscription endpoint URL to unregister, as previously passed to <code>RegisterPushSubscription</code>.</td>
         </tr>
       </tbody>
     </table>

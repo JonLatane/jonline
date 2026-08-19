@@ -23,6 +23,7 @@ fn authenticated_send_sets_sender_and_group() {
             },
             &Some(&sender),
             conn,
+            test_pool(),
         )?;
 
         assert_eq!(message.subject, Some("Hello".to_string()));
@@ -55,6 +56,7 @@ fn anonymous_send_has_no_sender() {
             },
             &None,
             conn,
+            test_pool(),
         )?;
 
         assert!(message.sender.is_none());
@@ -86,6 +88,7 @@ fn requires_at_least_one_recipient() {
             },
             &Some(&sender),
             conn,
+            test_pool(),
         );
 
         let err = result.unwrap_err();
@@ -109,6 +112,7 @@ fn rejects_nonexistent_recipient() {
             },
             &Some(&sender),
             conn,
+            test_pool(),
         );
 
         let err = result.unwrap_err();
@@ -133,6 +137,7 @@ fn requires_non_empty_body_text() {
             },
             &Some(&sender),
             conn,
+            test_pool(),
         );
 
         let err = result.unwrap_err();

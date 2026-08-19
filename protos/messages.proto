@@ -150,6 +150,40 @@ message GetMessagesResponse {
 }
 
 
+// A browser's Web Push subscription (see https://developer.mozilla.org/en-US/docs/Web/API/Push_API),
+// registered so the server can push new-Message notifications to it even while the browser tab is
+// closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+// users' subscriptions.
+message PushSubscription {
+  // The ID of the subscription.
+  string id = 1;
+  // The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`.
+  string endpoint = 2;
+  // The time the subscription was registered.
+  google.protobuf.Timestamp created_at = 20;
+}
+
+// Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+// Messages sent/delivered to them push a notification even while the browser tab is closed.
+// See `RegisterPushSubscription`'s own RPC doc comment.
+message RegisterPushSubscriptionRequest {
+  // The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`.
+  string endpoint = 1;
+  // The subscription's `p256dh` key (base64url), as given by `PushSubscription.getKey('p256dh')`.
+  string p256dh_key = 2;
+  // The subscription's `auth` key (base64url), as given by `PushSubscription.getKey('auth')`.
+  string auth_key = 3;
+}
+
+// Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
+// `PushManager.subscribe()` reports the subscription as no longer valid. See
+// `UnregisterPushSubscription`'s own RPC doc comment.
+message UnregisterPushSubscriptionRequest {
+  // The Web Push subscription endpoint URL to unregister, as previously passed to
+  // `RegisterPushSubscription`.
+  string endpoint = 1;
+}
+
 enum MessageListingType {
   // Gets messages sent to the current user, and messages (purportedly) sent by the user.
   PERSONAL_MESSAGES = 0;

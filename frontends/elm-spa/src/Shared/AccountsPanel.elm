@@ -53,6 +53,7 @@ module Shared.AccountsPanel exposing
     , serverNameAndLogo
     , serverThemeOf
     , serverUrl
+    , serverWebPushPublicKey
     , shouldShowAddAccountForm
     , subscriptions
     , unreachableAccountHosts
@@ -77,7 +78,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -245,6 +246,15 @@ type alias Model =
     , activeTab : Tab
     , debugTab : DebugTab.Model
     , adminTab : AdminTab.Model
+
+    -- Accounts (keyed by `accountId`) with an active Web Push subscription registered by this
+    -- browser -- the value is the subscription's `endpoint`, so `DisableNotificationsClicked` can
+    -- pass it back to both `Ports.unsubscribeFromPush` and `UnregisterPushSubscription`. Session-
+    -- only, not persisted: a fresh page load always starts empty and shows "Enable notifications"
+    -- again even for an account whose subscription is still active server-side -- re-registering
+    -- is harmless (`RegisterPushSubscription` upserts on `(user_id, endpoint)`), just a minor UX
+    -- rough edge rather than a correctness one.
+    , pushSubscriptions : Dict String String
     }
 
 
@@ -313,6 +323,11 @@ type Msg
     | FinishRemoveAccount String
     | FinishRemoveServer String
     | AnimateItemFlip Animation.Msg
+    | EnableNotificationsClicked Account
+    | DisableNotificationsClicked Account
+    | PushSubscriptionPortReceived Decode.Value
+    | GotRegisterPushSubscriptionResult (Result Grpc.Error ( Account, PushSubscription ))
+    | GotUnregisterPushSubscriptionResult (Result Grpc.Error Account)
     | NoOp
 
 
@@ -1308,6 +1323,7 @@ init req flags =
       , activeTab = TabAccountsAndServers
       , debugTab = DebugTab.init
       , adminTab = AdminTab.init
+      , pushSubscriptions = Dict.empty
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1324,6 +1340,7 @@ subscriptions model =
         , UI.Flip.subscription AnimateItemFlip
             (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
         , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
+        , Ports.pushSubscribed PushSubscriptionPortReceived
         ]
 
 
@@ -2598,6 +2615,123 @@ sendUpdate req msg model =
                 in
                 ( newModel, persist newModel )
 
+        EnableNotificationsClicked account ->
+            case serverWebPushPublicKey model.servers account.server of
+                Nothing ->
+                    -- No `WebPushConfig` on this account's server (see `UI.accountRow`, which
+                    -- only shows the button at all when this is `Just _`) -- unreachable in
+                    -- practice.
+                    ( model, Cmd.none )
+
+                Just publicKey ->
+                    ( model
+                    , Ports.subscribeToPush
+                        (Encode.object
+                            [ ( "accountId", Encode.string (accountId account) )
+                            , ( "publicKey", Encode.string publicKey )
+                            ]
+                        )
+                    )
+
+        DisableNotificationsClicked account ->
+            let
+                id : String
+                id =
+                    accountId account
+            in
+            case ( Dict.get id model.pushSubscriptions, serverForHost model.servers account.server |> Maybe.andThen connectionOf ) of
+                ( Just endpoint, Just connection ) ->
+                    ( { model | pushSubscriptions = Dict.remove id model.pushSubscriptions }
+                    , Cmd.batch
+                        [ Ports.unsubscribeFromPush
+                            (Encode.object
+                                [ ( "accountId", Encode.string id )
+                                , ( "endpoint", Encode.string endpoint )
+                                ]
+                            )
+                        , performWithAccount
+                            connection
+                            account
+                            (\accessToken ->
+                                Grpc.new Jonline.unregisterPushSubscription { endpoint = endpoint }
+                                    |> Grpc.setHost (connectionUrl connection)
+                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.toTask
+                            )
+                            |> Task.map Tuple.first
+                            |> Task.attempt GotUnregisterPushSubscriptionResult
+                        ]
+                    )
+
+                _ ->
+                    -- Not currently tracked as subscribed (or the server's since gone
+                    -- disconnected) -- nothing to unregister.
+                    ( { model | pushSubscriptions = Dict.remove id model.pushSubscriptions }, Cmd.none )
+
+        PushSubscriptionPortReceived value ->
+            case Decode.decodeValue pushSubscriptionPortDecoder value of
+                Ok ( id, Ok keys ) ->
+                    case
+                        model.accounts
+                            |> List.filter (\a -> accountId a == id)
+                            |> List.head
+                            |> Maybe.andThen (\account -> serverForHost model.servers account.server |> Maybe.andThen connectionOf |> Maybe.map (Tuple.pair account))
+                    of
+                        Just ( account, connection ) ->
+                            ( model
+                            , performWithAccount
+                                connection
+                                account
+                                (\accessToken ->
+                                    Grpc.new Jonline.registerPushSubscription
+                                        { endpoint = keys.endpoint, p256dhKey = keys.p256dhKey, authKey = keys.authKey }
+                                        |> Grpc.setHost (connectionUrl connection)
+                                        |> withAccessToken (Just accessToken)
+                                        |> Grpc.toTask
+                                )
+                                |> Task.attempt GotRegisterPushSubscriptionResult
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                -- Permission denied, unsupported browser, subscribe failed, etc. -- same "no-op,
+                -- user can retry" convention as `GotSetWebUserInterfaceResult`'s own `Err` case.
+                Ok ( _, Err _ ) ->
+                    ( model, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        GotRegisterPushSubscriptionResult result ->
+            case result of
+                Ok ( refreshedAccount, pushSubscription ) ->
+                    let
+                        newModel : Model
+                        newModel =
+                            { model
+                                | accounts = upsertAccount refreshedAccount model.accounts
+                                , pushSubscriptions = Dict.insert (accountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        GotUnregisterPushSubscriptionResult result ->
+            case result of
+                Ok refreshedAccount ->
+                    let
+                        newModel : Model
+                        newModel =
+                            { model | accounts = upsertAccount refreshedAccount model.accounts }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -2764,6 +2898,20 @@ account's `server` field.
 serverForHost : List Server -> String -> Maybe Server
 serverForHost servers frontendHost =
     servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
+
+
+{-| The VAPID public key `frontendHost`'s server would want a `RegisterPushSubscription` call
+signed with -- `Nothing` if the server isn't connected, or is connected but has no `WebPushConfig`
+(the admin hasn't set one up), either of which means there's nothing to actually push
+notifications with. `UI.accountRow` only shows its "Enable notifications" button when this is
+`Just _`.
+-}
+serverWebPushPublicKey : List Server -> String -> Maybe String
+serverWebPushPublicKey servers frontendHost =
+    serverForHost servers frontendHost
+        |> Maybe.andThen .connected
+        |> Maybe.andThen (\connected -> connected.configuration.webPushConfig)
+        |> Maybe.map .publicVapidKey
 
 
 {-| `serverForHost`, but only if that entry is both known _and_ actually
@@ -3780,6 +3928,43 @@ encodePersistedServer server =
 emptyPersistedState : PersistedState
 emptyPersistedState =
     { accounts = [], servers = [] }
+
+
+{-| The `PushManager.subscribe()` result Ports.pushSubscribed's JS side hands back on success --
+see `RegisterPushSubscriptionRequest`, which this maps directly onto.
+-}
+type alias PushSubscriptionKeys =
+    { endpoint : String
+    , p256dhKey : String
+    , authKey : String
+    }
+
+
+{-| Decodes `Ports.pushSubscribed`'s payload: `{ accountId, ok, endpoint, p256dhKey, authKey }` on
+success, or `{ accountId, ok, error }` (`ok = False`) on failure -- see that port's own doc
+comment. `accountId` comes back either way, so `PushSubscriptionPortReceived` can always tell which
+account's `subscribeToPush` call this answers.
+-}
+pushSubscriptionPortDecoder : Decoder ( String, Result String PushSubscriptionKeys )
+pushSubscriptionPortDecoder =
+    Decode.field "accountId" Decode.string
+        |> Decode.andThen
+            (\id ->
+                Decode.field "ok" Decode.bool
+                    |> Decode.andThen
+                        (\ok ->
+                            if ok then
+                                Decode.map3 PushSubscriptionKeys
+                                    (Decode.field "endpoint" Decode.string)
+                                    (Decode.field "p256dhKey" Decode.string)
+                                    (Decode.field "authKey" Decode.string)
+                                    |> Decode.map (\keys -> ( id, Ok keys ))
+
+                            else
+                                Decode.field "error" Decode.string
+                                    |> Decode.map (\error -> ( id, Err error ))
+                        )
+            )
 
 
 persistedStateDecoder : Decoder PersistedState

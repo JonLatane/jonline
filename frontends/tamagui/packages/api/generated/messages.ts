@@ -239,6 +239,48 @@ export interface GetMessagesResponse {
   messages: Message[];
 }
 
+/**
+ * A browser's Web Push subscription (see https://developer.mozilla.org/en-US/docs/Web/API/Push_API),
+ * registered so the server can push new-Message notifications to it even while the browser tab is
+ * closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+ * users' subscriptions.
+ */
+export interface PushSubscription {
+  /** The ID of the subscription. */
+  id: string;
+  /** The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`. */
+  endpoint: string;
+  /** The time the subscription was registered. */
+  createdAt: string | undefined;
+}
+
+/**
+ * Registers (or re-registers) a browser's Web Push subscription for the current user, so new
+ * Messages sent/delivered to them push a notification even while the browser tab is closed.
+ * See `RegisterPushSubscription`'s own RPC doc comment.
+ */
+export interface RegisterPushSubscriptionRequest {
+  /** The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`. */
+  endpoint: string;
+  /** The subscription's `p256dh` key (base64url), as given by `PushSubscription.getKey('p256dh')`. */
+  p256dhKey: string;
+  /** The subscription's `auth` key (base64url), as given by `PushSubscription.getKey('auth')`. */
+  authKey: string;
+}
+
+/**
+ * Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
+ * `PushManager.subscribe()` reports the subscription as no longer valid. See
+ * `UnregisterPushSubscription`'s own RPC doc comment.
+ */
+export interface UnregisterPushSubscriptionRequest {
+  /**
+   * The Web Push subscription endpoint URL to unregister, as previously passed to
+   * `RegisterPushSubscription`.
+   */
+  endpoint: string;
+}
+
 function createBaseMessage(): Message {
   return {
     id: "",
@@ -1115,6 +1157,254 @@ export const GetMessagesResponse: MessageFns<GetMessagesResponse> = {
   fromPartial<I extends Exact<DeepPartial<GetMessagesResponse>, I>>(object: I): GetMessagesResponse {
     const message = createBaseGetMessagesResponse();
     message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePushSubscription(): PushSubscription {
+  return { id: "", endpoint: "", createdAt: undefined };
+}
+
+export const PushSubscription: MessageFns<PushSubscription> = {
+  encode(message: PushSubscription, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.endpoint !== "") {
+      writer.uint32(18).string(message.endpoint);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PushSubscription {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePushSubscription();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PushSubscription {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+    };
+  },
+
+  toJSON(message: PushSubscription): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PushSubscription>, I>>(base?: I): PushSubscription {
+    return PushSubscription.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PushSubscription>, I>>(object: I): PushSubscription {
+    const message = createBasePushSubscription();
+    message.id = object.id ?? "";
+    message.endpoint = object.endpoint ?? "";
+    message.createdAt = object.createdAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRegisterPushSubscriptionRequest(): RegisterPushSubscriptionRequest {
+  return { endpoint: "", p256dhKey: "", authKey: "" };
+}
+
+export const RegisterPushSubscriptionRequest: MessageFns<RegisterPushSubscriptionRequest> = {
+  encode(message: RegisterPushSubscriptionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.endpoint !== "") {
+      writer.uint32(10).string(message.endpoint);
+    }
+    if (message.p256dhKey !== "") {
+      writer.uint32(18).string(message.p256dhKey);
+    }
+    if (message.authKey !== "") {
+      writer.uint32(26).string(message.authKey);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegisterPushSubscriptionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterPushSubscriptionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.p256dhKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.authKey = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RegisterPushSubscriptionRequest {
+    return {
+      endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
+      p256dhKey: isSet(object.p256dhKey) ? globalThis.String(object.p256dhKey) : "",
+      authKey: isSet(object.authKey) ? globalThis.String(object.authKey) : "",
+    };
+  },
+
+  toJSON(message: RegisterPushSubscriptionRequest): unknown {
+    const obj: any = {};
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
+    if (message.p256dhKey !== "") {
+      obj.p256dhKey = message.p256dhKey;
+    }
+    if (message.authKey !== "") {
+      obj.authKey = message.authKey;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RegisterPushSubscriptionRequest>, I>>(base?: I): RegisterPushSubscriptionRequest {
+    return RegisterPushSubscriptionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegisterPushSubscriptionRequest>, I>>(
+    object: I,
+  ): RegisterPushSubscriptionRequest {
+    const message = createBaseRegisterPushSubscriptionRequest();
+    message.endpoint = object.endpoint ?? "";
+    message.p256dhKey = object.p256dhKey ?? "";
+    message.authKey = object.authKey ?? "";
+    return message;
+  },
+};
+
+function createBaseUnregisterPushSubscriptionRequest(): UnregisterPushSubscriptionRequest {
+  return { endpoint: "" };
+}
+
+export const UnregisterPushSubscriptionRequest: MessageFns<UnregisterPushSubscriptionRequest> = {
+  encode(message: UnregisterPushSubscriptionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.endpoint !== "") {
+      writer.uint32(10).string(message.endpoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnregisterPushSubscriptionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnregisterPushSubscriptionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnregisterPushSubscriptionRequest {
+    return { endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "" };
+  },
+
+  toJSON(message: UnregisterPushSubscriptionRequest): unknown {
+    const obj: any = {};
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnregisterPushSubscriptionRequest>, I>>(
+    base?: I,
+  ): UnregisterPushSubscriptionRequest {
+    return UnregisterPushSubscriptionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnregisterPushSubscriptionRequest>, I>>(
+    object: I,
+  ): UnregisterPushSubscriptionRequest {
+    const message = createBaseUnregisterPushSubscriptionRequest();
+    message.endpoint = object.endpoint ?? "";
     return message;
   },
 };

@@ -281,19 +281,12 @@ diesel::table! {
 }
 
 diesel::table! {
-    push_token_posts (id) {
+    push_subscriptions (id) {
         id -> Int8,
-        push_token_id -> Int8,
-        post_id -> Int8,
-        created_at -> Timestamp,
-    }
-}
-
-diesel::table! {
-    push_tokens (id) {
-        id -> Int8,
-        token -> Varchar,
-        user_id -> Nullable<Int8>,
+        user_id -> Int8,
+        endpoint -> Varchar,
+        p256dh_key -> Varchar,
+        auth_key -> Varchar,
         created_at -> Timestamp,
     }
 }
@@ -418,9 +411,7 @@ diesel::joinable!(message_recipients -> users (user_id));
 diesel::joinable!(messages -> messaging_groups (messaging_group_id));
 diesel::joinable!(messages -> users (from_user_id));
 diesel::joinable!(posts -> users (user_id));
-diesel::joinable!(push_token_posts -> posts (post_id));
-diesel::joinable!(push_token_posts -> push_tokens (push_token_id));
-diesel::joinable!(push_tokens -> users (user_id));
+diesel::joinable!(push_subscriptions -> users (user_id));
 diesel::joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
 diesel::joinable!(user_devices -> users (user_id));
 diesel::joinable!(user_posts -> posts (post_id));
@@ -448,8 +439,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     messaging_groups,
     posts,
-    push_token_posts,
-    push_tokens,
+    push_subscriptions,
     server_configurations,
     user_access_tokens,
     user_devices,
