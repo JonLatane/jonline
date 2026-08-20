@@ -444,16 +444,25 @@
             // is already active under a *different* key than the one being requested (e.g. this
             // browser subscribed once before, and the server's VAPID key has since changed/been
             // corrected). Clearing any existing subscription first makes re-subscribing always
-            // work, at the cost of a harmless new `endpoint` each time this actually happens --
-            // no worse than the ordinary "browser subscribed before, model.pushSubscriptions
-            // starts empty on a fresh load anyway" churn `Model.pushSubscriptions`'s own doc
-            // comment already accepts.
+            // work in that case, at the cost of a harmless new `endpoint`.
+            //
+            // But if the existing subscription's key already *matches* the one being requested --
+            // the common case once a second local account on the same server enables notifications
+            // too -- reuse it as-is instead: unsubscribing and resubscribing would still yield a
+            // browser-level subscription, but Web Push services aren't required to hand back the
+            // same `endpoint` for a fresh `subscribe()` call, so it'd risk orphaning whichever other
+            // account(s) already registered the *old* endpoint server-side for no reason at all.
             return registration.pushManager.getSubscription().then(function (existing) {
-              return existing ? existing.unsubscribe() : null;
-            }).then(function () {
-              return registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: base64UrlDecode(request.publicKey)
+              var existingKeyBytes = existing && existing.options && existing.options.applicationServerKey;
+              var existingKeyEncoded = existingKeyBytes ? base64UrlEncode(existingKeyBytes) : null;
+              if (existing && existingKeyEncoded === request.publicKey) {
+                return existing;
+              }
+              return Promise.resolve(existing ? existing.unsubscribe() : null).then(function () {
+                return registration.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: base64UrlDecode(request.publicKey)
+                });
               });
             });
           });

@@ -1017,6 +1017,110 @@ class UnregisterPushSubscriptionRequest extends $pb.GeneratedMessage {
   void clearEndpoint() => clearField(1);
 }
 
+/// Checks whether the current user has already registered a given Web Push subscription endpoint.
+/// See `GetPushSubscriptionStatus`'s own RPC doc comment.
+class GetPushSubscriptionStatusRequest extends $pb.GeneratedMessage {
+  factory GetPushSubscriptionStatusRequest({
+    $core.String? endpoint,
+  }) {
+    final $result = create();
+    if (endpoint != null) {
+      $result.endpoint = endpoint;
+    }
+    return $result;
+  }
+  GetPushSubscriptionStatusRequest._() : super();
+  factory GetPushSubscriptionStatusRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetPushSubscriptionStatusRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'endpoint')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetPushSubscriptionStatusRequest clone() => GetPushSubscriptionStatusRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetPushSubscriptionStatusRequest copyWith(void Function(GetPushSubscriptionStatusRequest) updates) => super.copyWith((message) => updates(message as GetPushSubscriptionStatusRequest)) as GetPushSubscriptionStatusRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetPushSubscriptionStatusRequest create() => GetPushSubscriptionStatusRequest._();
+  GetPushSubscriptionStatusRequest createEmptyInstance() => create();
+  static $pb.PbList<GetPushSubscriptionStatusRequest> createRepeated() => $pb.PbList<GetPushSubscriptionStatusRequest>();
+  @$core.pragma('dart2js:noInline')
+  static GetPushSubscriptionStatusRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPushSubscriptionStatusRequest>(create);
+  static GetPushSubscriptionStatusRequest? _defaultInstance;
+
+  /// The Web Push subscription endpoint URL to check, as given by `PushManager.subscribe()`.
+  @$pb.TagNumber(1)
+  $core.String get endpoint => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set endpoint($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasEndpoint() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEndpoint() => clearField(1);
+}
+
+class GetPushSubscriptionStatusResponse extends $pb.GeneratedMessage {
+  factory GetPushSubscriptionStatusResponse({
+    $core.bool? registered,
+  }) {
+    final $result = create();
+    if (registered != null) {
+      $result.registered = registered;
+    }
+    return $result;
+  }
+  GetPushSubscriptionStatusResponse._() : super();
+  factory GetPushSubscriptionStatusResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetPushSubscriptionStatusResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'registered')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetPushSubscriptionStatusResponse clone() => GetPushSubscriptionStatusResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetPushSubscriptionStatusResponse copyWith(void Function(GetPushSubscriptionStatusResponse) updates) => super.copyWith((message) => updates(message as GetPushSubscriptionStatusResponse)) as GetPushSubscriptionStatusResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetPushSubscriptionStatusResponse create() => GetPushSubscriptionStatusResponse._();
+  GetPushSubscriptionStatusResponse createEmptyInstance() => create();
+  static $pb.PbList<GetPushSubscriptionStatusResponse> createRepeated() => $pb.PbList<GetPushSubscriptionStatusResponse>();
+  @$core.pragma('dart2js:noInline')
+  static GetPushSubscriptionStatusResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPushSubscriptionStatusResponse>(create);
+  static GetPushSubscriptionStatusResponse? _defaultInstance;
+
+  /// Whether the current user has a `PushSubscription` registered for this exact `endpoint`.
+  @$pb.TagNumber(1)
+  $core.bool get registered => $_getBF(0);
+  @$pb.TagNumber(1)
+  set registered($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasRegistered() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRegistered() => clearField(1);
+}
+
 
 const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
 const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

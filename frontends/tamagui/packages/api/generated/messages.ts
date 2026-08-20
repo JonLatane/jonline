@@ -281,6 +281,20 @@ export interface UnregisterPushSubscriptionRequest {
   endpoint: string;
 }
 
+/**
+ * Checks whether the current user has already registered a given Web Push subscription endpoint.
+ * See `GetPushSubscriptionStatus`'s own RPC doc comment.
+ */
+export interface GetPushSubscriptionStatusRequest {
+  /** The Web Push subscription endpoint URL to check, as given by `PushManager.subscribe()`. */
+  endpoint: string;
+}
+
+export interface GetPushSubscriptionStatusResponse {
+  /** Whether the current user has a `PushSubscription` registered for this exact `endpoint`. */
+  registered: boolean;
+}
+
 function createBaseMessage(): Message {
   return {
     id: "",
@@ -1405,6 +1419,130 @@ export const UnregisterPushSubscriptionRequest: MessageFns<UnregisterPushSubscri
   ): UnregisterPushSubscriptionRequest {
     const message = createBaseUnregisterPushSubscriptionRequest();
     message.endpoint = object.endpoint ?? "";
+    return message;
+  },
+};
+
+function createBaseGetPushSubscriptionStatusRequest(): GetPushSubscriptionStatusRequest {
+  return { endpoint: "" };
+}
+
+export const GetPushSubscriptionStatusRequest: MessageFns<GetPushSubscriptionStatusRequest> = {
+  encode(message: GetPushSubscriptionStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.endpoint !== "") {
+      writer.uint32(10).string(message.endpoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetPushSubscriptionStatusRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetPushSubscriptionStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.endpoint = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetPushSubscriptionStatusRequest {
+    return { endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "" };
+  },
+
+  toJSON(message: GetPushSubscriptionStatusRequest): unknown {
+    const obj: any = {};
+    if (message.endpoint !== "") {
+      obj.endpoint = message.endpoint;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetPushSubscriptionStatusRequest>, I>>(
+    base?: I,
+  ): GetPushSubscriptionStatusRequest {
+    return GetPushSubscriptionStatusRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetPushSubscriptionStatusRequest>, I>>(
+    object: I,
+  ): GetPushSubscriptionStatusRequest {
+    const message = createBaseGetPushSubscriptionStatusRequest();
+    message.endpoint = object.endpoint ?? "";
+    return message;
+  },
+};
+
+function createBaseGetPushSubscriptionStatusResponse(): GetPushSubscriptionStatusResponse {
+  return { registered: false };
+}
+
+export const GetPushSubscriptionStatusResponse: MessageFns<GetPushSubscriptionStatusResponse> = {
+  encode(message: GetPushSubscriptionStatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.registered !== false) {
+      writer.uint32(8).bool(message.registered);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetPushSubscriptionStatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetPushSubscriptionStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.registered = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetPushSubscriptionStatusResponse {
+    return { registered: isSet(object.registered) ? globalThis.Boolean(object.registered) : false };
+  },
+
+  toJSON(message: GetPushSubscriptionStatusResponse): unknown {
+    const obj: any = {};
+    if (message.registered !== false) {
+      obj.registered = message.registered;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetPushSubscriptionStatusResponse>, I>>(
+    base?: I,
+  ): GetPushSubscriptionStatusResponse {
+    return GetPushSubscriptionStatusResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetPushSubscriptionStatusResponse>, I>>(
+    object: I,
+  ): GetPushSubscriptionStatusResponse {
+    const message = createBaseGetPushSubscriptionStatusResponse();
+    message.registered = object.registered ?? false;
     return message;
   },
 };

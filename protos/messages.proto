@@ -184,6 +184,18 @@ message UnregisterPushSubscriptionRequest {
   string endpoint = 1;
 }
 
+// Checks whether the current user has already registered a given Web Push subscription endpoint.
+// See `GetPushSubscriptionStatus`'s own RPC doc comment.
+message GetPushSubscriptionStatusRequest {
+  // The Web Push subscription endpoint URL to check, as given by `PushManager.subscribe()`.
+  string endpoint = 1;
+}
+
+message GetPushSubscriptionStatusResponse {
+  // Whether the current user has a `PushSubscription` registered for this exact `endpoint`.
+  bool registered = 1;
+}
+
 enum MessageListingType {
   // Gets messages sent to the current user, and messages (purportedly) sent by the user.
   PERSONAL_MESSAGES = 0;

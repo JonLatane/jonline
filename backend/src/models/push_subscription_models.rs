@@ -78,6 +78,24 @@ pub fn get_push_subscriptions_for_users(
         .map_err(|_| Status::new(Code::Internal, "error_loading_push_subscriptions"))
 }
 
+/// Whether `user_id` has a `PushSubscription` registered for `endpoint` -- see
+/// `GetPushSubscriptionStatus`'s own RPC doc comment on why the frontend needs this at all (a
+/// browser subscription's own endpoint says nothing about which locally-known account, if any, is
+/// actually registered against it server-side).
+pub fn push_subscription_exists(
+    user_id: i64,
+    endpoint: &str,
+    conn: &mut PgPooledConnection,
+) -> Result<bool, Status> {
+    diesel::select(diesel::dsl::exists(
+        push_subscriptions::table
+            .filter(push_subscriptions::user_id.eq(user_id))
+            .filter(push_subscriptions::endpoint.eq(endpoint)),
+    ))
+    .get_result(conn)
+    .map_err(|_| Status::new(Code::Internal, "error_checking_push_subscription_status"))
+}
+
 /// Deletes a subscription by its database id -- used once the push service itself reports one
 /// Gone (404/410), so a dead endpoint stops being retried on every future Message. See
 /// `web_push::send_push`.

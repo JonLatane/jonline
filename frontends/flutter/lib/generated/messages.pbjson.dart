@@ -242,3 +242,29 @@ final $typed_data.Uint8List unregisterPushSubscriptionRequestDescriptor = $conve
     'CiFVbnJlZ2lzdGVyUHVzaFN1YnNjcmlwdGlvblJlcXVlc3QSGgoIZW5kcG9pbnQYASABKAlSCG'
     'VuZHBvaW50');
 
+@$core.Deprecated('Use getPushSubscriptionStatusRequestDescriptor instead')
+const GetPushSubscriptionStatusRequest$json = {
+  '1': 'GetPushSubscriptionStatusRequest',
+  '2': [
+    {'1': 'endpoint', '3': 1, '4': 1, '5': 9, '10': 'endpoint'},
+  ],
+};
+
+/// Descriptor for `GetPushSubscriptionStatusRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getPushSubscriptionStatusRequestDescriptor = $convert.base64Decode(
+    'CiBHZXRQdXNoU3Vic2NyaXB0aW9uU3RhdHVzUmVxdWVzdBIaCghlbmRwb2ludBgBIAEoCVIIZW'
+    '5kcG9pbnQ=');
+
+@$core.Deprecated('Use getPushSubscriptionStatusResponseDescriptor instead')
+const GetPushSubscriptionStatusResponse$json = {
+  '1': 'GetPushSubscriptionStatusResponse',
+  '2': [
+    {'1': 'registered', '3': 1, '4': 1, '5': 8, '10': 'registered'},
+  ],
+};
+
+/// Descriptor for `GetPushSubscriptionStatusResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getPushSubscriptionStatusResponseDescriptor = $convert.base64Decode(
+    'CiFHZXRQdXNoU3Vic2NyaXB0aW9uU3RhdHVzUmVzcG9uc2USHgoKcmVnaXN0ZXJlZBgBIAEoCF'
+    'IKcmVnaXN0ZXJlZA==');
+

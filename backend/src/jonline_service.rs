@@ -234,6 +234,12 @@ impl Jonline for JonlineService {
     ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::unregister_push_subscription, request)
     }
+    async fn get_push_subscription_status(
+        &self,
+        request: Request<GetPushSubscriptionStatusRequest>,
+    ) -> Result<Response<GetPushSubscriptionStatusResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_push_subscription_status, request)
+    }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
         authenticated_rpc!(self, rpcs::create_follow, request)

@@ -473,6 +473,13 @@ service Jonline {
   // reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn't
   // currently registered to the calling user.
   rpc UnregisterPushSubscription(UnregisterPushSubscriptionRequest) returns (google.protobuf.Empty) {}
+  // Checks whether the calling user specifically (not just "some account on this browser") has a
+  // `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only
+  // ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
+  // registered against it -- multiple local accounts on the same server can share one browser
+  // subscription (see `RegisterPushSubscription`'s own doc comment), so knowing the endpoint alone
+  // isn't enough to know which of them are actually notified by it.
+  rpc GetPushSubscriptionStatus(GetPushSubscriptionStatusRequest) returns (GetPushSubscriptionStatusResponse) {}
 
   // Follow (or request to follow) a user. *Authenticated.*
   rpc CreateFollow(Follow) returns (Follow) {}

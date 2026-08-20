@@ -195,6 +195,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-GetMessagesResponse">GetMessagesResponse</a></p>
           </li>
           <li>
+            <p><a href="#jonline-GetPushSubscriptionStatusRequest">GetPushSubscriptionStatusRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetPushSubscriptionStatusResponse">GetPushSubscriptionStatusResponse</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></p>
           </li>
           <li>
@@ -1042,6 +1048,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-UnregisterPushSubscriptionRequest">UnregisterPushSubscriptionRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Unregisters a browser's Web Push subscription, e.g. on logout or when <code>PushManager.subscribe()</code> reports the subscription as no longer valid. <em>Authenticated.</em> Not an error if <code>endpoint</code> isn't currently registered to the calling user.</td>
+        </tr>
+        <tr>
+          <td>GetPushSubscriptionStatus</td>
+          <td><a href="#jonline-GetPushSubscriptionStatusRequest">GetPushSubscriptionStatusRequest</a></td>
+          <td><a href="#jonline-GetPushSubscriptionStatusResponse">GetPushSubscriptionStatusResponse</a></td>
+          <td>Checks whether the calling user specifically (not just "some account on this browser") has a <code>PushSubscription</code> registered for <code>endpoint</code>. <em>Authenticated.</em> Exists because a browser only ever exposes its own subscription's <code>endpoint</code>/keys, never <em>who</em> on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see <code>RegisterPushSubscription</code>'s own doc comment), so knowing the endpoint alone isn't enough to know which of them are actually notified by it.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -3076,6 +3088,50 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-Message">Message</a></td>
           <td>repeated</td>
           <td>The messages that match the request. May be empty if no messages match. May be shortened to a server-defined limit, dependent on service version, configuration, load, etc.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetPushSubscriptionStatusRequest"></a></p>
+    <h3 id="getpushsubscriptionstatusrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpushsubscriptionstatusrequest"><span class="octicon octicon-link"></span></a>GetPushSubscriptionStatusRequest</h3>
+    <p>
+      Checks whether the current user has already registered a given Web Push subscription endpoint.
+      See <code>GetPushSubscriptionStatus</code>'s own RPC doc comment.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>endpoint</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Web Push subscription endpoint URL to check, as given by <code>PushManager.subscribe()</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetPushSubscriptionStatusResponse"></a></p>
+    <h3 id="getpushsubscriptionstatusresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpushsubscriptionstatusresponse"><span class="octicon octicon-link"></span></a>GetPushSubscriptionStatusResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>registered</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether the current user has a <code>PushSubscription</code> registered for this exact <code>endpoint</code>.</td>
         </tr>
       </tbody>
     </table>

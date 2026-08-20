@@ -3,3 +3,6 @@ pub use register_push_subscription::register_push_subscription;
 
 mod unregister_push_subscription;
 pub use unregister_push_subscription::unregister_push_subscription;
+
+mod get_push_subscription_status;
+pub use get_push_subscription_status::get_push_subscription_status;

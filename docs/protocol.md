@@ -49,6 +49,8 @@
 - [messages.proto](#messages-proto)
     - [GetMessagesRequest](#jonline-GetMessagesRequest)
     - [GetMessagesResponse](#jonline-GetMessagesResponse)
+    - [GetPushSubscriptionStatusRequest](#jonline-GetPushSubscriptionStatusRequest)
+    - [GetPushSubscriptionStatusResponse](#jonline-GetPushSubscriptionStatusResponse)
     - [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest)
     - [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse)
     - [Message](#jonline-Message)
@@ -573,6 +575,7 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse) | Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it&#39;s been opened. *Authenticated.* Only needs the recipient/sender access `GetMessages` already requires for each Message -- no separate permission. Atomic: if the caller lacks access to *any* of `message_ids`, none of them are marked (matching `MarkMessagesReadRequest.message_ids`&#39; own doc), so a client never has to reconcile a partially-applied batch. |
 | RegisterPushSubscription | [RegisterPushSubscriptionRequest](#jonline-RegisterPushSubscriptionRequest) | [PushSubscription](#jonline-PushSubscription) | Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g. because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no `WebPushConfig` configured -- there&#39;s nothing to push notifications *with*. |
 | UnregisterPushSubscription | [UnregisterPushSubscriptionRequest](#jonline-UnregisterPushSubscriptionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unregisters a browser&#39;s Web Push subscription, e.g. on logout or when `PushManager.subscribe()` reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn&#39;t currently registered to the calling user. |
+| GetPushSubscriptionStatus | [GetPushSubscriptionStatusRequest](#jonline-GetPushSubscriptionStatusRequest) | [GetPushSubscriptionStatusResponse](#jonline-GetPushSubscriptionStatusResponse) | Checks whether the calling user specifically (not just &#34;some account on this browser&#34;) has a `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only ever exposes its own subscription&#39;s `endpoint`/keys, never *who* on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see `RegisterPushSubscription`&#39;s own doc comment), so knowing the endpoint alone isn&#39;t enough to know which of them are actually notified by it. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
@@ -1422,6 +1425,37 @@ Response to a `GetMessagesRequest`, containing the requested messages.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | messages | [Message](#jonline-Message) | repeated | The messages that match the request. May be empty if no messages match. May be shortened to a server-defined limit, dependent on service version, configuration, load, etc. |
+
+
+
+
+
+
+<a name="jonline-GetPushSubscriptionStatusRequest"></a>
+
+### GetPushSubscriptionStatusRequest
+Checks whether the current user has already registered a given Web Push subscription endpoint.
+See `GetPushSubscriptionStatus`&#39;s own RPC doc comment.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) |  | The Web Push subscription endpoint URL to check, as given by `PushManager.subscribe()`. |
+
+
+
+
+
+
+<a name="jonline-GetPushSubscriptionStatusResponse"></a>
+
+### GetPushSubscriptionStatusResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| registered | [bool](#bool) |  | Whether the current user has a `PushSubscription` registered for this exact `endpoint`. |
 
 
 

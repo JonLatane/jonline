@@ -36,6 +36,8 @@ import { GetMediaRequest, GetMediaResponse, Media } from "./media";
 import {
   GetMessagesRequest,
   GetMessagesResponse,
+  GetPushSubscriptionStatusRequest,
+  GetPushSubscriptionStatusResponse,
   MarkMessagesReadRequest,
   MarkMessagesReadResponse,
   Message,
@@ -661,6 +663,22 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Checks whether the calling user specifically (not just "some account on this browser") has a
+     * `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only
+     * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
+     * registered against it -- multiple local accounts on the same server can share one browser
+     * subscription (see `RegisterPushSubscription`'s own doc comment), so knowing the endpoint alone
+     * isn't enough to know which of them are actually notified by it.
+     */
+    getPushSubscriptionStatus: {
+      name: "GetPushSubscriptionStatus",
+      requestType: GetPushSubscriptionStatusRequest,
+      requestStream: false,
+      responseType: GetPushSubscriptionStatusResponse,
+      responseStream: false,
+      options: {},
+    },
     /** Follow (or request to follow) a user. *Authenticated.* */
     createFollow: {
       name: "CreateFollow",
@@ -1188,6 +1206,18 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: UnregisterPushSubscriptionRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
+  /**
+   * Checks whether the calling user specifically (not just "some account on this browser") has a
+   * `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only
+   * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
+   * registered against it -- multiple local accounts on the same server can share one browser
+   * subscription (see `RegisterPushSubscription`'s own doc comment), so knowing the endpoint alone
+   * isn't enough to know which of them are actually notified by it.
+   */
+  getPushSubscriptionStatus(
+    request: GetPushSubscriptionStatusRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetPushSubscriptionStatusResponse>>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: Follow, context: CallContext & CallContextExt): Promise<DeepPartial<Follow>>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -1461,6 +1491,18 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<UnregisterPushSubscriptionRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
+  /**
+   * Checks whether the calling user specifically (not just "some account on this browser") has a
+   * `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only
+   * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
+   * registered against it -- multiple local accounts on the same server can share one browser
+   * subscription (see `RegisterPushSubscription`'s own doc comment), so knowing the endpoint alone
+   * isn't enough to know which of them are actually notified by it.
+   */
+  getPushSubscriptionStatus(
+    request: DeepPartial<GetPushSubscriptionStatusRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetPushSubscriptionStatusResponse>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, options?: CallOptions & CallOptionsExt): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */

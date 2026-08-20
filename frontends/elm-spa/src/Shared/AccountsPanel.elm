@@ -78,7 +78,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -247,19 +247,23 @@ type alias Model =
     , debugTab : DebugTab.Model
     , adminTab : AdminTab.Model
 
-    -- At most the *one* account (keyed by `accountId`) with an active Web Push subscription
-    -- registered by this browser -- the value is the subscription's `endpoint`, so
-    -- `DisableNotificationsClicked` can pass it back to both `Ports.unsubscribeFromPush` and
-    -- `UnregisterPushSubscription`. Genuinely can't ever hold more than one entry: the Push API
-    -- allows only one active subscription per browser *origin* (not per account, not per server)
-    -- -- enabling notifications for a second account always silently disables them for whichever
-    -- account held the browser's one subscription before (`Ports.subscribeToPush`'s JS side
-    -- unsubscribes it first), so `GotRegisterPushSubscriptionResult`/
-    -- `resolvePendingPushSubscriptionCheck` both use `Dict.singleton`, never `Dict.insert`, to
-    -- keep this in sync with that reality instead of leaving a stale "enabled" badge behind on
-    -- the account that just lost it. Not persisted across page loads either way --
-    -- `Ports.checkPushSubscription` (fired at `init`) re-derives whichever single entry actually
-    -- belongs here from the browser's real subscription instead.
+    -- Every account (keyed by `accountId`) with an active Web Push subscription registered by
+    -- this browser -- the value is the subscription's `endpoint`, so `DisableNotificationsClicked`
+    -- can pass it back to both `Ports.unsubscribeFromPush` and `UnregisterPushSubscription`. The
+    -- Push API allows only *one* active subscription per browser origin, tied to one VAPID key --
+    -- but `UI.notificationsButton` is only ever shown for an account on `browsingHost`, so every
+    -- account that can appear here shares that same one server, and so that same one key/endpoint:
+    -- several entries can (and normally will, once more than one local account on `browsingHost`
+    -- has notifications on) legitimately share the exact same `endpoint` value at once, all riding
+    -- the browser's one real subscription together. `DisableNotificationsClicked` only actually
+    -- tears that subscription down (`Ports.unsubscribeFromPush`) once no other entry here still
+    -- points at the same `endpoint` -- see its own `lastAccountOnThisEndpoint`. Not persisted
+    -- across page loads -- `Ports.checkPushSubscription` (fired at `init`) tells us the browser's
+    -- current `endpoint`, but not *which* local accounts on that server are actually registered
+    -- for it (a browser subscription carries no notion of "account") -- so
+    -- `resolvePendingPushSubscriptionCheck` verifies each candidate individually via
+    -- `GetPushSubscriptionStatus` (see `GotPushSubscriptionStatusResult`) before adding it here,
+    -- rather than assuming every local account on that server is registered.
     , pushSubscriptions : Dict String String
 
     -- Last known reason "Enable notifications" (or the register/unregister RPC that follows it)
@@ -360,6 +364,7 @@ type Msg
     | GotRegisterPushSubscriptionResult (Result Grpc.Error ( Account, PushSubscription ))
     | GotUnregisterPushSubscriptionResult (Result Grpc.Error Account)
     | PushSubscriptionCheckReceived Decode.Value
+    | GotPushSubscriptionStatusResult String (Result Grpc.Error ( Account, GetPushSubscriptionStatusResponse ))
     | NoOp
 
 
@@ -1389,11 +1394,17 @@ small) to run after every single message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
-    sendUpdate req msg model
-        |> Tuple.mapFirst syncItemAnimations
-        |> Tuple.mapFirst sortMainServerFirst
-        |> Tuple.mapFirst sortMainServerAccountsFirst
-        |> Tuple.mapFirst resolvePendingPushSubscriptionCheck
+    let
+        ( updatedModel, cmd ) =
+            sendUpdate req msg model
+                |> Tuple.mapFirst syncItemAnimations
+                |> Tuple.mapFirst sortMainServerFirst
+                |> Tuple.mapFirst sortMainServerAccountsFirst
+
+        ( resolvedModel, resolveCmd ) =
+            resolvePendingPushSubscriptionCheck updatedModel
+    in
+    ( resolvedModel, Cmd.batch [ cmd, resolveCmd ] )
 
 
 {-| Retries matching `pendingPushSubscriptionCheck` (see its own doc comment) against
@@ -1401,31 +1412,55 @@ update req msg model =
 `PushSubscriptionCheck`'s `publicKey` needs to match against are usually still reconnecting (no
 `Server.connected` yet) at the moment `checkPushSubscription`'s result actually comes back, so the
 very first attempt almost always finds nothing. A no-op once there's nothing pending, or once a
-match has already been found -- cheap enough to run unconditionally alongside
+match has already been dispatched -- cheap enough to run unconditionally alongside
 `syncItemAnimations`/etc.
+
+Doesn't just trust every matching account straight into `pushSubscriptions` -- the browser's
+subscription only proves _some_ account on this server is registered for it, not which ones (see
+`GetPushSubscriptionStatus`'s own RPC doc comment) -- so instead this fires one verification call
+per matching account and lets `GotPushSubscriptionStatusResult` fill in `pushSubscriptions` only
+for the ones the server actually confirms.
+
 -}
-resolvePendingPushSubscriptionCheck : Model -> Model
+resolvePendingPushSubscriptionCheck : Model -> ( Model, Cmd Msg )
 resolvePendingPushSubscriptionCheck model =
     case model.pendingPushSubscriptionCheck of
         Nothing ->
-            model
+            ( model, Cmd.none )
 
         Just check ->
-            case
-                model.accounts
-                    |> List.filter (\account -> serverWebPushPublicKey model.servers account.server == Just check.publicKey)
-                    |> List.head
-            of
-                Just account ->
-                    { model
-                        -- `Dict.singleton`, not `Dict.insert` -- see `GotRegisterPushSubscriptionResult`'s
-                        -- own comment on why this dict can only ever have one entry.
-                        | pushSubscriptions = Dict.singleton (accountId account) check.endpoint
-                        , pendingPushSubscriptionCheck = Nothing
-                    }
+            let
+                matchingAccounts : List Account
+                matchingAccounts =
+                    model.accounts
+                        |> List.filter (\account -> serverWebPushPublicKey model.servers account.server == Just check.publicKey)
+            in
+            if List.isEmpty matchingAccounts then
+                ( model, Cmd.none )
 
-                Nothing ->
-                    model
+            else
+                ( { model | pendingPushSubscriptionCheck = Nothing }
+                , matchingAccounts
+                    |> List.filterMap
+                        (\account ->
+                            serverForHost model.servers account.server
+                                |> Maybe.andThen connectionOf
+                                |> Maybe.map
+                                    (\connection ->
+                                        performWithAccount
+                                            connection
+                                            account
+                                            (\accessToken ->
+                                                Grpc.new Jonline.getPushSubscriptionStatus { endpoint = check.endpoint }
+                                                    |> Grpc.setHost (connectionUrl connection)
+                                                    |> withAccessToken (Just accessToken)
+                                                    |> Grpc.toTask
+                                            )
+                                            |> Task.attempt (GotPushSubscriptionStatusResult check.endpoint)
+                                    )
+                        )
+                    |> Cmd.batch
+                )
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
@@ -2713,18 +2748,36 @@ sendUpdate req msg model =
             in
             case ( Dict.get id model.pushSubscriptions, serverForHost model.servers account.server |> Maybe.andThen connectionOf ) of
                 ( Just endpoint, Just connection ) ->
+                    let
+                        -- Multiple accounts on the same server share one real browser
+                        -- subscription/`endpoint` (see `pushSubscriptions`'s own doc comment) --
+                        -- only actually tear it down at the browser level if this was the *last*
+                        -- account still relying on it, otherwise every other account sharing it
+                        -- would silently stop receiving notifications too. Either way, this
+                        -- account's own server-side registration is dropped.
+                        lastAccountOnThisEndpoint : Bool
+                        lastAccountOnThisEndpoint =
+                            model.pushSubscriptions
+                                |> Dict.toList
+                                |> List.any (\( otherId, otherEndpoint ) -> otherId /= id && otherEndpoint == endpoint)
+                                |> not
+                    in
                     ( { model
                         | pushSubscriptions = Dict.remove id model.pushSubscriptions
                         , notificationErrors = Dict.remove id model.notificationErrors
                         , pendingNotificationAccountId = Just id
                       }
                     , Cmd.batch
-                        [ Ports.unsubscribeFromPush
-                            (Encode.object
-                                [ ( "accountId", Encode.string id )
-                                , ( "endpoint", Encode.string endpoint )
-                                ]
-                            )
+                        [ if lastAccountOnThisEndpoint then
+                            Ports.unsubscribeFromPush
+                                (Encode.object
+                                    [ ( "accountId", Encode.string id )
+                                    , ( "endpoint", Encode.string endpoint )
+                                    ]
+                                )
+
+                          else
+                            Cmd.none
                         , performWithAccount
                             connection
                             account
@@ -2790,16 +2843,14 @@ sendUpdate req msg model =
                             { model
                                 | accounts = upsertAccount refreshedAccount model.accounts
 
-                                -- The Push API allows at most one active subscription per browser
-                                -- origin, full stop -- not one per account, and not one per
-                                -- server. `Ports.subscribeToPush`'s JS side already unsubscribes
-                                -- any prior subscription before creating this one (see its own
-                                -- doc comment), so whichever *other* account this dict previously
-                                -- showed as enabled is actually disabled now too, in reality --
-                                -- `Dict.singleton` (not `Dict.insert`) keeps this in sync with
-                                -- that, instead of leaving a stale "enabled" badge on an account
-                                -- that just silently lost its subscription.
-                                , pushSubscriptions = Dict.singleton (accountId refreshedAccount) pushSubscription.endpoint
+                                -- `Dict.insert`, not `Dict.singleton` -- `Ports.subscribeToPush`'s
+                                -- JS side reuses the existing browser subscription when its key
+                                -- already matches the one being requested (see its own doc
+                                -- comment), which is exactly what happens when a *second* local
+                                -- account on the same server enables notifications -- both truly
+                                -- do end up sharing one active subscription, so both stay recorded
+                                -- here instead of this one evicting the other.
+                                , pushSubscriptions = Dict.insert (accountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
                                 , notificationErrors = Dict.remove (accountId refreshedAccount) model.notificationErrors
                             }
                     in
@@ -2830,6 +2881,31 @@ sendUpdate req msg model =
             ( { model | pendingPushSubscriptionCheck = Decode.decodeValue pushSubscriptionCheckDecoder value |> Result.withDefault Nothing }
             , Cmd.none
             )
+
+        GotPushSubscriptionStatusResult endpoint result ->
+            case result of
+                Ok ( refreshedAccount, response ) ->
+                    let
+                        newModel : Model
+                        newModel =
+                            { model
+                                | accounts = upsertAccount refreshedAccount model.accounts
+                                , pushSubscriptions =
+                                    if response.registered then
+                                        Dict.insert (accountId refreshedAccount) endpoint model.pushSubscriptions
+
+                                    else
+                                        model.pushSubscriptions
+                            }
+                    in
+                    ( newModel, Cmd.none )
+
+                Err _ ->
+                    -- Best-effort hydration -- if the check itself fails (network blip, an
+                    -- unrefreshable expired token, etc.), just leave that account showing as
+                    -- disabled; nothing here was user-initiated, so there's no `notificationErrors`
+                    -- entry to fill in the way a real click's failure gets one.
+                    ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )

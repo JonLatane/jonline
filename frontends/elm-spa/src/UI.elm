@@ -1693,82 +1693,77 @@ accountRowAlerts shared account =
 has a `WebPushConfig` (`AccountsPanel.serverWebPushPublicKey`), i.e. there's actually something to
 subscribe to; disabled (like the rest of the row's actions) while the account itself
 `needsPassword`, since registering a subscription needs a working access/refresh token.
+
+Also only rendered for an account whose `server` is `shared.accounts.browsingHost` -- the browser
+holds at most one Web Push subscription today (see `AccountsPanel.pushSubscriptions`'s own doc
+comment), tied to whichever single server's VAPID key it was created with, and that's always
+`browsingHost`'s (the one server this tab's service worker/subscription could ever meaningfully be
+scoped to). Offering the toggle for a federated-in account on some *other* server would just
+silently fail or steal the slot from `browsingHost`'s own account the moment it's clicked -- there's
+no way to make it actually work without each server getting its own independently-scoped
+subscription (a real, not-yet-built feature; see this button's own git history for the
+investigation).
 -}
 notificationsButton : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 notificationsButton shared account =
-    case AccountsPanel.serverWebPushPublicKey shared.accounts.servers account.server of
-        Nothing ->
-            text ""
+    if account.server /= shared.accounts.browsingHost then
+        text ""
 
-        Just _ ->
-            let
-                id : String
-                id =
-                    AccountsPanel.accountId account
+    else
+        case AccountsPanel.serverWebPushPublicKey shared.accounts.servers account.server of
+            Nothing ->
+                text ""
 
-                enabled : Bool
-                enabled =
-                    Dict.member id shared.accounts.pushSubscriptions
+            Just _ ->
+                let
+                    id : String
+                    id =
+                        AccountsPanel.accountId account
 
-                error : Maybe String
-                error =
-                    Dict.get id shared.accounts.notificationErrors
-            in
-            button
-                [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ), ( "notifications-btn-errored", error /= Nothing ) ]
-                , disabled account.needsPassword
-                , title
-                    (case error of
-                        Just reason ->
-                            reason
+                    enabled : Bool
+                    enabled =
+                        Dict.member id shared.accounts.pushSubscriptions
 
-                        Nothing ->
-                            if enabled then
-                                "Disable browser notifications for this account"
+                    error : Maybe String
+                    error =
+                        Dict.get id shared.accounts.notificationErrors
+                in
+                button
+                    [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ), ( "notifications-btn-errored", error /= Nothing ) ]
+                    , disabled account.needsPassword
+                    , title
+                        (case error of
+                            Just reason ->
+                                reason
 
-                            else
-                                let
-                                    -- The browser allows only *one* active push subscription per origin, not one per
-                                    -- account (see `AccountsPanel.pushSubscriptions`'s own doc comment) -- so enabling
-                                    -- this account, if some other account currently holds that one slot, will silently
-                                    -- disable notifications there. Surfaced up front, in the tooltip, rather than
-                                    -- letting someone discover it only after their other account's badge goes dark.
-                                    otherEnabledAccount : Maybe AccountsPanel.Account
-                                    otherEnabledAccount =
-                                        Dict.keys shared.accounts.pushSubscriptions
-                                            |> List.head
-                                            |> Maybe.andThen (\otherId -> List.filter (\a -> AccountsPanel.accountId a == otherId) shared.accounts.accounts |> List.head)
-                                in
-                                case otherEnabledAccount of
-                                    Just other ->
-                                        "Enable browser notifications for this account (this browser can only notify one account at a time -- will disable notifications for "
-                                            ++ AccountsPanel.displayName other
-                                            ++ ")"
+                            Nothing ->
+                                if enabled then
+                                    "Disable browser notifications for this account"
 
-                                    Nothing ->
-                                        "Enable browser notifications for this account"
-                    )
-                , stopPropagationAndPreventDefaultOnClick
-                    (Shared.AccountsPanelMsg
+                                else
+                                    "Enable browser notifications for this account"
+                        )
+                    , stopPropagationAndPreventDefaultOnClick
+                        (Shared.AccountsPanelMsg
+                            (if enabled then
+                                AccountsPanel.DisableNotificationsClicked account
+
+                             else
+                                AccountsPanel.EnableNotificationsClicked account
+                            )
+                        )
+                    ]
+                    [ text
                         (if enabled then
-                            AccountsPanel.DisableNotificationsClicked account
+                            "🔔"
+
+                         else if error /= Nothing then
+                            "⚠️"
 
                          else
-                            AccountsPanel.EnableNotificationsClicked account
+                            "🔕"
                         )
-                    )
-                ]
-                [ text
-                    (if enabled then
-                        "🔔"
-
-                     else if error /= Nothing then
-                        "⚠️"
-
-                     else
-                        "🔕"
-                    )
-                ]
+                    ]
 
 
 {-| The actual text of `notificationsButton`'s last failure, if any (see `AccountsPanel.notificationErrors`) --
