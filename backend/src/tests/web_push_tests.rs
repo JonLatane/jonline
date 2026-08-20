@@ -19,6 +19,12 @@ use crate::web_push::stored_web_push_config;
 /// value rather than something hand-rolled that might not actually decode to a valid P-256 scalar.
 const VALID_PRIVATE_KEY: &str = "IQ9Ur0ykXoHS9gzfYX0aBjy9lvdrjx_PFUXmie9YRcY";
 
+/// A real 65-byte VAPID public key (uncompressed P-256 point), base64url-no-pad encoded --
+/// `configure_server` now validates this shape (`validate_vapid_public_key`), so a placeholder
+/// like `"public-key"` no longer saves successfully.
+const VALID_PUBLIC_KEY: &str =
+    "BCzG8GfIlqc_jCOKNGc2CvLyWowp3AONLdtlEE3vTlB45AFnm2CpLD6KESfO43K5O_A29tQQLv8w8kmYRTTlyfA";
+
 #[test]
 fn stored_web_push_config_returns_the_unblanked_private_key() {
     let mut conn = test_conn();
@@ -29,7 +35,7 @@ fn stored_web_push_config_returns_the_unblanked_private_key() {
         let mut config =
             get_server_configuration_proto(conn).expect("failed to fetch base config");
         config.web_push_config = Some(WebPushConfig {
-            public_vapid_key: "public-key".to_string(),
+            public_vapid_key: VALID_PUBLIC_KEY.to_string(),
             private_vapid_key: VALID_PRIVATE_KEY.to_string(),
         });
         configure_server(config, &admin, conn).expect("configure should succeed");

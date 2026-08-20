@@ -2,6 +2,7 @@
 // use super::{validate_email, validate_phone, validate_username};
 use std::collections::HashSet;
 
+use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use tonic::{Code, Status};
 
 // use crate::conversions::*;
@@ -68,6 +69,61 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
                 "default_client_domain_cannot_be_empty",
             ))
         }
+    }
+
+    if let Some(web_push_config) = config.web_push_config.as_ref() {
+        validate_vapid_public_key(&web_push_config.public_vapid_key)?;
+        validate_vapid_private_key(&web_push_config.private_vapid_key)?;
+    }
+
+    Ok(())
+}
+
+/// A VAPID public key is a P-256 point in SEC1 uncompressed form -- `0x04` followed by 32-byte X
+/// and Y coordinates, 65 bytes total, base64url-no-pad encoded (87 characters). Rejects anything
+/// else up front, at save time, with a clear error -- confirmed in production: a corrupted paste
+/// (a handful of characters from the *private* key, sitting right next to the public key in
+/// `web-push generate-vapid-keys`'s own output, swept up in the same copy) saved successfully and
+/// only surfaced later as a cryptic "applicationServerKey is not valid" browser error the moment
+/// someone actually tried to subscribe.
+fn validate_vapid_public_key(public_vapid_key: &str) -> Result<(), Status> {
+    if public_vapid_key.is_empty() {
+        // Not yet configured -- see `WebPushPublicKeyEditClicked`'s own initial blank pending
+        // value, and `applyWebPushPrivateKey`'s `existingPublicKey` fallback.
+        return Ok(());
+    }
+    let decoded = BASE64_URL_SAFE_NO_PAD
+        .decode(public_vapid_key)
+        .map_err(|_| Status::new(Code::InvalidArgument, "public_vapid_key_is_not_valid_base64url"))?;
+    if decoded.len() != 65 || decoded[0] != 0x04 {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "public_vapid_key_must_be_a_65_byte_uncompressed_p256_point",
+        ));
+    }
+    Ok(())
+}
+
+/// A VAPID private key is the raw 32-byte P-256 scalar, base64url-no-pad encoded (43 characters).
+/// Blank means "leave whatever's already stored alone" (see `configure_server`'s merge-on-blank
+/// block) -- not validated here, since a blank incoming value is never actually what ends up
+/// stored either way. A non-blank value that's the wrong shape, though, previously saved
+/// successfully and only surfaced much later as either a production panic (`jwt_simple`'s bare
+/// `assert_eq!` on the decoded byte count) or, once that crash was fixed to a graceful error
+/// instead, a permanently and silently broken send (see `web_push::validate_private_vapid_key`'s
+/// own doc comment for both) -- catching it here means neither ever happens.
+fn validate_vapid_private_key(private_vapid_key: &str) -> Result<(), Status> {
+    if private_vapid_key.is_empty() {
+        return Ok(());
+    }
+    let decoded = BASE64_URL_SAFE_NO_PAD
+        .decode(private_vapid_key)
+        .map_err(|_| Status::new(Code::InvalidArgument, "private_vapid_key_is_not_valid_base64url"))?;
+    if decoded.len() != 32 {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "private_vapid_key_must_be_a_32_byte_p256_scalar",
+        ));
     }
     Ok(())
 }
