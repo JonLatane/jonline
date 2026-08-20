@@ -342,6 +342,8 @@ type Msg
     | GotSetWebUserInterfaceResult (Result Grpc.Error ( Account, ServerConfiguration ))
     | RenameServerClicked String String
     | GotRenameServerResult (Result Grpc.Error ( Account, ServerConfiguration ))
+    | ChangeServerShortNameClicked String String
+    | GotChangeServerShortNameResult (Result Grpc.Error ( Account, ServerConfiguration ))
     | GotServerConfigSaveResult String ServerConfiguration
     | FocusInput String
     | ClearFieldClicked String Msg
@@ -2674,6 +2676,52 @@ sendUpdate req msg model =
                     -- `Result` passing through `Main.notifyPageOfSharedMsg`.
                     ( model, Cmd.none )
 
+        ChangeServerShortNameClicked id newShortName ->
+            let
+                maybeAccount : Maybe Account
+                maybeAccount =
+                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+
+                maybeServer : Maybe Server
+                maybeServer =
+                    maybeAccount
+                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
+            in
+            case ( maybeAccount, maybeServer ) of
+                ( Just account, Just server ) ->
+                    ( model, changeServerShortName server account newShortName )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        GotChangeServerShortNameResult result ->
+            case result of
+                Ok ( refreshedAccount, newConfig ) ->
+                    let
+                        newModel : Model
+                        newModel =
+                            { model
+                                | accounts = upsertAccount refreshedAccount model.accounts
+                                , servers =
+                                    List.map
+                                        (\s ->
+                                            if s.frontendHost == refreshedAccount.server then
+                                                updateServerConfiguration newConfig s
+
+                                            else
+                                                s
+                                        )
+                                        model.servers
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    -- Server unreachable, refresh token rejected, etc. -- surfaced to
+                    -- the caller (see `AboutTab`) via this same `Result` passing
+                    -- through `Main.notifyPageOfSharedMsg`, same as `GotRenameServerResult`.
+                    ( model, Cmd.none )
+
         GotServerConfigSaveResult host newConfig ->
             let
                 newModel : Model
@@ -3639,6 +3687,60 @@ renameServer server account newName =
                             )
                 )
                 |> Task.attempt GotRenameServerResult
+
+
+{-| Sets `server`'s short name (`ServerInfo.short_name`) via `ConfigureServer`, authenticated as
+`account` -- same fetch-then-overlay-then-write shape as `renameServer` just above (only `name`
+vs. `shortName` differs), for the same reason: don't clobber a config change made elsewhere in
+between. A blank `newShortName` clears the field back to unset rather than saving an empty string,
+so `Components.Pages.ServerInformationPage.AboutTab`'s display falls back to "Not set." instead of
+showing nothing.
+-}
+changeServerShortName : Server -> Account -> String -> Cmd Msg
+changeServerShortName server account newShortName =
+    case connectionOf server of
+        -- `server` is disconnected (see `Server.connected`) -- callers only ever
+        -- reach this for a server the account panel shows as connected, so
+        -- this is unreachable in practice.
+        Nothing ->
+            Cmd.none
+
+        Just connection ->
+            performWithAccount
+                connection
+                account
+                (\accessToken ->
+                    Grpc.new Jonline.getServerConfiguration {}
+                        |> Grpc.setHost (connectionUrl connection)
+                        |> withAccessToken (Just accessToken)
+                        |> Grpc.toTask
+                        |> Task.andThen
+                            (\freshConfig ->
+                                let
+                                    info : ServerInfo
+                                    info =
+                                        Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+
+                                    trimmedShortName : Maybe String
+                                    trimmedShortName =
+                                        case String.trim newShortName of
+                                            "" ->
+                                                Nothing
+
+                                            trimmed ->
+                                                Just trimmed
+
+                                    newConfig : ServerConfiguration
+                                    newConfig =
+                                        { freshConfig | serverInfo = Just { info | shortName = trimmedShortName } }
+                                in
+                                Grpc.new Jonline.configureServer newConfig
+                                    |> Grpc.setHost (connectionUrl connection)
+                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.toTask
+                            )
+                )
+                |> Task.attempt GotChangeServerShortNameResult
 
 
 {-| Re-fetches `maybeAccountServer`'s server configuration fresh

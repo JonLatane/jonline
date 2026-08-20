@@ -16,7 +16,7 @@ import Components.Markdown as Markdown
 import Components.Pages.ServerInformationPage.Common as Common
 import Components.Users as Users
 import Effect exposing (Effect)
-import Html exposing (Html, button, div, h2, h3, input, p, text)
+import Html exposing (Html, button, div, h2, h3, input, p, span, text)
 import Html.Attributes exposing (class, disabled, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (User)
@@ -31,6 +31,7 @@ import Shared.MarkdownPanel as MarkdownPanel
 
 type alias Model =
     { renameStatus : RenameStatus
+    , shortNameStatus : RenameStatus
     }
 
 
@@ -39,14 +40,19 @@ type Msg
     | RenameChanged String
     | RenameCancelClicked
     | RenameSaveClicked
+    | ShortNameEditClicked String
+    | ShortNameChanged String
+    | ShortNameCancelClicked
+    | ShortNameSaveClicked
     | EditDescriptionClicked AccountsPanel.Server
     | EditPrivacyPolicyClicked AccountsPanel.Server
     | EditMediaPolicyClicked AccountsPanel.Server
 
 
-{-| Live only while the server's name is being edited by an admin -- `pending` is the in-progress
-`<input>` value, independent of the actual name until `RenameSaveClicked` succeeds. Mirrors
-`Pages.Post.PostId_`'s `VisibilityEdit`.
+{-| Live only while the server's name (or, via `Model.shortNameStatus`, its short name) is being
+edited by an admin -- `pending` is the in-progress `<input>` value, independent of the actual
+field until the corresponding `*SaveClicked` succeeds. Mirrors `Pages.Post.PostId_`'s
+`VisibilityEdit`.
 -}
 type RenameStatus
     = NotRenaming
@@ -69,7 +75,7 @@ type VersionStatus
 
 init : Model
 init =
-    { renameStatus = NotRenaming }
+    { renameStatus = NotRenaming, shortNameStatus = NotRenaming }
 
 
 
@@ -108,6 +114,35 @@ update shared targetHost msg model =
                 _ ->
                     ( model, Effect.none )
 
+        ShortNameEditClicked currentShortName ->
+            ( { model | shortNameStatus = Renaming currentShortName AccountsPanel.Idle }, Effect.none )
+
+        ShortNameChanged newText ->
+            ( { model
+                | shortNameStatus =
+                    case model.shortNameStatus of
+                        Renaming _ status ->
+                            Renaming newText status
+
+                        NotRenaming ->
+                            NotRenaming
+              }
+            , Effect.none
+            )
+
+        ShortNameCancelClicked ->
+            ( { model | shortNameStatus = NotRenaming }, Effect.none )
+
+        ShortNameSaveClicked ->
+            case ( model.shortNameStatus, Common.adminAccountFor shared targetHost ) of
+                ( Renaming pendingShortName _, Just account ) ->
+                    ( { model | shortNameStatus = Renaming pendingShortName AccountsPanel.Submitting }
+                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ChangeServerShortNameClicked (AccountsPanel.accountId account) pendingShortName))
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
         EditDescriptionClicked server ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerDescription server) targetHost)) )
 
@@ -118,9 +153,10 @@ update shared targetHost msg model =
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerMediaPolicy server) targetHost)) )
 
 
-{-| Reacts to a `Shared.Msg` forwarded through by the parent's own `SharedMsg` branch -- only
-`AccountsPanel.GotRenameServerResult` (the Rename save's own result) matters here; everything else
-leaves `renameStatus` untouched.
+{-| Reacts to a `Shared.Msg` forwarded through by the parent's own `SharedMsg` branch --
+`AccountsPanel.GotRenameServerResult` (the Rename save's own result) and
+`AccountsPanel.GotChangeServerShortNameResult` (the Short Name save's own result) are the only
+ones that matter here; everything else leaves both fields' status untouched.
 -}
 applySharedMsg : Shared.Msg -> Model -> Model
 applySharedMsg subMsg model =
@@ -140,6 +176,21 @@ applySharedMsg subMsg model =
 
                 _ ->
                     model.renameStatus
+        , shortNameStatus =
+            case subMsg of
+                Shared.AccountsPanelMsg (AccountsPanel.GotChangeServerShortNameResult (Ok _)) ->
+                    NotRenaming
+
+                Shared.AccountsPanelMsg (AccountsPanel.GotChangeServerShortNameResult (Err err)) ->
+                    case model.shortNameStatus of
+                        Renaming pending _ ->
+                            Renaming pending (AccountsPanel.Errored (AccountsPanel.grpcErrorToString err))
+
+                        NotRenaming ->
+                            NotRenaming
+
+                _ ->
+                    model.shortNameStatus
     }
 
 
@@ -160,6 +211,7 @@ view shared server maybeAdminAccount adminsStatus versionStatus model =
     in
     div [ class "server-details-tab-content server-details-about" ]
         [ h2 [ class "server-details-name" ] (nameView name model.renameStatus maybeAdminAccount)
+        , shortNameView info.shortName model.shortNameStatus maybeAdminAccount
         , versionView versionStatus
         , policySectionView "server-details-description" Nothing (EditDescriptionClicked server) maybeAdminAccount info.description
         , policySectionView "server-details-policy" (Just "Privacy Policy") (EditPrivacyPolicyClicked server) maybeAdminAccount info.privacyPolicy
@@ -228,6 +280,60 @@ nameView name renameStatus maybeAdminAccount =
                 Nothing ->
                     text ""
             ]
+
+
+{-| The server's short name, editable in place by an admin -- unlike `nameView` (an `h2`'s own
+children), this is a full label-left/value-right row, styled like
+`Components.Pages.ServerInformationPage.FederationTab`'s `facebookAppIdRow` (`.server-details-color-row`
+et al, not `Common.settingsRow` -- that helper's shared Save/Cancel doesn't fit a single
+self-contained field like this one). Renders nothing for a non-admin viewer when unset, same as
+`policySectionView`.
+-}
+shortNameView : Maybe String -> RenameStatus -> Maybe AccountsPanel.Account -> Html Msg
+shortNameView maybeShortName shortNameStatus maybeAdminAccount =
+    case ( shortNameStatus, maybeAdminAccount ) of
+        ( Renaming pendingShortName status, Just _ ) ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "Short Name" ]
+                , input
+                    [ class "server-details-rename-input"
+                    , value pendingShortName
+                    , onInput ShortNameChanged
+                    , disabled (status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , Common.editSaveButton ShortNameSaveClicked status
+                , Common.editCancelButton ShortNameCancelClicked status
+                , Common.editErrorView status
+                ]
+
+        ( NotRenaming, Nothing ) ->
+            case maybeShortName of
+                Just shortName ->
+                    div [ class "server-details-color-row" ]
+                        [ span [ class "server-details-color-label" ] [ text "Short Name" ]
+                        , span [ class "server-details-color-hex" ] [ text shortName ]
+                        ]
+
+                Nothing ->
+                    text ""
+
+        ( NotRenaming, Just _ ) ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "Short Name" ]
+                , span [ class "server-details-color-hex" ] [ text (Maybe.withDefault "Not set." maybeShortName) ]
+                , button
+                    [ class "server-details-rename-button"
+                    , onClick (ShortNameEditClicked (Maybe.withDefault "" maybeShortName))
+                    ]
+                    [ text "Edit" ]
+                ]
+
+        -- `Renaming` with no admin account is unreachable in practice -- only
+        -- `ShortNameEditClicked` (gated on `maybeAdminAccount` being `Just` at its
+        -- own call site above) ever enters `Renaming` to begin with.
+        ( Renaming _ _, Nothing ) ->
+            text ""
 
 
 versionView : VersionStatus -> Html Msg

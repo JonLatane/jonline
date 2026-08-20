@@ -84,6 +84,12 @@ async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse
         .map(|i| i.name)
         .flatten()
         .unwrap_or("Jonline".to_string());
+    let server_short_name = configuration
+        .clone()
+        .server_info
+        .map(|i| i.short_name)
+        .flatten()
+        .unwrap_or(server_name.clone());
     // let server_logo_id = configuration
     //     .server_info
     //     .as_ref()
@@ -121,7 +127,7 @@ async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse
 }}
 ",
             server_name.replace("\"", "\\\""),
-            server_name.replace("\"", "\\\""),
+            server_short_name.replace("\"", "\\\""),
             primary_color,
             primary_color,
         )
