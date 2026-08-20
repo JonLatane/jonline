@@ -887,6 +887,36 @@
   opacity: 0.5;
 }
 
+.notifications-btn-errored {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Positions `.notifications-btn-error` (the actual failure reason -- e.g. "Notification
+   permission wasn't granted." -- see `AccountsPanel.notificationErrors`) relative to the button
+   itself, rather than as a flex sibling that would otherwise disturb `.account-row`'s layout. */
+.notifications-btn-wrapper {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.notifications-btn-error {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  width: max-content;
+  max-width: 12rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--bg);
+  background: var(--danger);
+  border-radius: 4px;
+}
+
 .remove-btn {
   display: flex;
   align-items: center;

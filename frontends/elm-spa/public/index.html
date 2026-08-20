@@ -407,7 +407,23 @@
       return !!(window.PushManager && navigator.serviceWorker);
     }
 
+    // iOS/iPadOS Safari only supports the Push API for a site that's been added to the Home
+    // Screen (running "standalone") -- a regular browser tab can still resolve
+    // `Notification.requestPermission()` (explaining why the permission prompt shows up), but
+    // `pushManager.subscribe()` itself is unavailable/rejects there. Detected explicitly, ahead of
+    // even asking for permission, so the error `pushSubscribed` reports is the actionable "add to
+    // Home Screen first" rather than a bare "not supported"/AbortError once `subscribe()` fails.
+    function isIosNonStandalone() {
+      var isIos = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      var isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      return isIos && !isStandalone;
+    }
+
     app.ports.subscribeToPush.subscribe(function (request) {
+      if (isIosNonStandalone()) {
+        app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: "On iOS, add this site to your Home Screen first (Share → Add to Home Screen), then enable notifications from there." });
+        return;
+      }
       if (!pushManagerAvailable()) {
         app.ports.pushSubscribed.send({ ok: false, accountId: request.accountId, error: "Push notifications aren't supported in this browser." });
         return;

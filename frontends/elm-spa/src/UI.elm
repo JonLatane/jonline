@@ -1678,37 +1678,61 @@ notificationsButton shared account =
 
         Just _ ->
             let
+                id : String
+                id =
+                    AccountsPanel.accountId account
+
                 enabled : Bool
                 enabled =
-                    Dict.member (AccountsPanel.accountId account) shared.accounts.pushSubscriptions
-            in
-            button
-                [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ) ]
-                , disabled account.needsPassword
-                , title
-                    (if enabled then
-                        "Disable browser notifications for this account"
+                    Dict.member id shared.accounts.pushSubscriptions
 
-                     else
-                        "Enable browser notifications for this account"
-                    )
-                , stopPropagationAndPreventDefaultOnClick
-                    (Shared.AccountsPanelMsg
+                error : Maybe String
+                error =
+                    Dict.get id shared.accounts.notificationErrors
+            in
+            span [ class "notifications-btn-wrapper" ]
+                [ button
+                    [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ), ( "notifications-btn-errored", error /= Nothing ) ]
+                    , disabled account.needsPassword
+                    , title
+                        (case error of
+                            Just reason ->
+                                reason
+
+                            Nothing ->
+                                if enabled then
+                                    "Disable browser notifications for this account"
+
+                                else
+                                    "Enable browser notifications for this account"
+                        )
+                    , stopPropagationAndPreventDefaultOnClick
+                        (Shared.AccountsPanelMsg
+                            (if enabled then
+                                AccountsPanel.DisableNotificationsClicked account
+
+                             else
+                                AccountsPanel.EnableNotificationsClicked account
+                            )
+                        )
+                    ]
+                    [ text
                         (if enabled then
-                            AccountsPanel.DisableNotificationsClicked account
+                            "🔔"
+
+                         else if error /= Nothing then
+                            "⚠️"
 
                          else
-                            AccountsPanel.EnableNotificationsClicked account
+                            "🔕"
                         )
-                    )
-                ]
-                [ text
-                    (if enabled then
-                        "🔔"
+                    ]
+                , case error of
+                    Just reason ->
+                        span [ class "notifications-btn-error" ] [ text reason ]
 
-                     else
-                        "🔕"
-                    )
+                    Nothing ->
+                        text ""
                 ]
 
 

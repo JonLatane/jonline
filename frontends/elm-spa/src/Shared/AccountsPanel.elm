@@ -255,6 +255,21 @@ type alias Model =
     -- is harmless (`RegisterPushSubscription` upserts on `(user_id, endpoint)`), just a minor UX
     -- rough edge rather than a correctness one.
     , pushSubscriptions : Dict String String
+
+    -- Last known reason "Enable notifications" (or the register/unregister RPC that follows it)
+    -- failed for a given `accountId`, if any -- e.g. "Notification permission wasn't granted.",
+    -- or a `grpcErrorToString`. Surfaced by `UI.notificationsButton` so a failure (silently
+    -- swallowed prior to this field's existence -- see its own git history) is actually visible
+    -- instead of the button just doing nothing. Cleared whenever that account's button is clicked
+    -- again, so a retry starts from a clean slate.
+    , notificationErrors : Dict String String
+
+    -- The `accountId` `EnableNotificationsClicked`/`DisableNotificationsClicked` most recently
+    -- fired for -- `PushSubscriptionPortReceived` already carries its own `accountId` back, but
+    -- `GotRegisterPushSubscriptionResult`/`GotUnregisterPushSubscriptionResult`'s `Err` case is
+    -- just a bare `Grpc.Error` with no account info of its own, so this is what lets those two
+    -- still know which `notificationErrors` entry to fill in.
+    , pendingNotificationAccountId : Maybe String
     }
 
 
@@ -1324,6 +1339,8 @@ init req flags =
       , debugTab = DebugTab.init
       , adminTab = AdminTab.init
       , pushSubscriptions = Dict.empty
+      , notificationErrors = Dict.empty
+      , pendingNotificationAccountId = Nothing
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -2624,7 +2641,10 @@ sendUpdate req msg model =
                     ( model, Cmd.none )
 
                 Just publicKey ->
-                    ( model
+                    ( { model
+                        | notificationErrors = Dict.remove (accountId account) model.notificationErrors
+                        , pendingNotificationAccountId = Just (accountId account)
+                      }
                     , Ports.subscribeToPush
                         (Encode.object
                             [ ( "accountId", Encode.string (accountId account) )
@@ -2641,7 +2661,11 @@ sendUpdate req msg model =
             in
             case ( Dict.get id model.pushSubscriptions, serverForHost model.servers account.server |> Maybe.andThen connectionOf ) of
                 ( Just endpoint, Just connection ) ->
-                    ( { model | pushSubscriptions = Dict.remove id model.pushSubscriptions }
+                    ( { model
+                        | pushSubscriptions = Dict.remove id model.pushSubscriptions
+                        , notificationErrors = Dict.remove id model.notificationErrors
+                        , pendingNotificationAccountId = Just id
+                      }
                     , Cmd.batch
                         [ Ports.unsubscribeFromPush
                             (Encode.object
@@ -2695,10 +2719,12 @@ sendUpdate req msg model =
                         Nothing ->
                             ( model, Cmd.none )
 
-                -- Permission denied, unsupported browser, subscribe failed, etc. -- same "no-op,
-                -- user can retry" convention as `GotSetWebUserInterfaceResult`'s own `Err` case.
-                Ok ( _, Err _ ) ->
-                    ( model, Cmd.none )
+                -- Permission denied, unsupported browser, subscribe failed, etc. -- surfaced via
+                -- `notificationErrors` (see `UI.notificationsButton`) instead of silently no-oping,
+                -- so a real failure (e.g. the browser blocking notifications for this site, or iOS
+                -- Safari requiring the site be added to the Home Screen first) is actually visible.
+                Ok ( id, Err reason ) ->
+                    ( { model | notificationErrors = Dict.insert id reason model.notificationErrors }, Cmd.none )
 
                 Err _ ->
                     ( model, Cmd.none )
@@ -2712,12 +2738,18 @@ sendUpdate req msg model =
                             { model
                                 | accounts = upsertAccount refreshedAccount model.accounts
                                 , pushSubscriptions = Dict.insert (accountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
+                                , notificationErrors = Dict.remove (accountId refreshedAccount) model.notificationErrors
                             }
                     in
                     ( newModel, persist newModel )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Err error ->
+                    case model.pendingNotificationAccountId of
+                        Just id ->
+                            ( { model | notificationErrors = Dict.insert id (grpcErrorToString error) model.notificationErrors }, Cmd.none )
+
+                        Nothing ->
+                            ( model, Cmd.none )
 
         GotUnregisterPushSubscriptionResult result ->
             case result of
