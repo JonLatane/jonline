@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use serde::Serialize;
 use web_push::{
     ContentEncoding, IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder, WebPushClient,
@@ -69,9 +69,8 @@ async fn send_message_notifications(
         return Ok(());
     };
 
-    let subscriptions =
-        models::get_push_subscriptions_for_users(&recipient_user_ids, &mut conn)
-            .map_err(|e| e.to_string())?;
+    let subscriptions = models::get_push_subscriptions_for_users(&recipient_user_ids, &mut conn)
+        .map_err(|e| e.to_string())?;
     if subscriptions.is_empty() {
         return Ok(());
     }
@@ -113,8 +112,7 @@ async fn send_message_notifications(
             // on every future Message. Any other error (network blip, server error, bad VAPID
             // config, ...) is just logged; the subscription might still be good next time.
             Err(WebPushError::EndpointNotValid(_)) | Err(WebPushError::EndpointNotFound(_)) => {
-                if let Err(e) = models::delete_push_subscription_by_id(subscription.id, &mut conn)
-                {
+                if let Err(e) = models::delete_push_subscription_by_id(subscription.id, &mut conn) {
                     log::warn!(
                         "Failed to prune dead push subscription {}: {:?}",
                         subscription.id,
@@ -145,7 +143,7 @@ async fn send_message_notifications(
 /// the now-always-empty key) even with a fully valid key stored. Parsing the raw model's own
 /// `web_push_config` column directly is the same "read the unblanked value" pattern
 /// `configure_server`'s own merge-on-blank block already relies on.
-fn stored_web_push_config(
+pub(crate) fn stored_web_push_config(
     conn: &mut crate::db_connection::PgPooledConnection,
 ) -> Result<Option<protos::WebPushConfig>, String> {
     Ok(get_server_configuration_model(conn)
@@ -208,39 +206,5 @@ mod tests {
     #[test]
     fn well_formed_private_vapid_key_is_accepted() {
         assert!(validate_private_vapid_key(VALID_PRIVATE_KEY).is_ok());
-    }
-
-    /// Regression test for the production bug this module's own doc comment on
-    /// `stored_web_push_config` describes: reading `web_push_config` via `.to_proto()` (the
-    /// client-facing path) always blanks `private_vapid_key`, so a naive implementation of this
-    /// function would pass `well_formed_private_vapid_key_is_accepted` in isolation yet still
-    /// never actually be able to sign anything for real, because the key it fetched was already
-    /// empty by the time it got here -- exactly what happened in production even with a fully
-    /// valid key stored.
-    #[test]
-    fn stored_web_push_config_returns_the_unblanked_private_key() {
-        use diesel::Connection;
-
-        let mut conn = crate::tests::factories::test_conn();
-        conn.test_transaction::<_, tonic::Status, _>(|conn| {
-            let admin = crate::tests::factories::create_user(conn, "wp_stored_config_unblanked");
-            let admin =
-                crate::tests::factories::grant_permissions(conn, &admin, vec![protos::Permission::Admin]);
-
-            let mut config = crate::rpcs::get_server_configuration_proto(conn)
-                .expect("failed to fetch base config");
-            config.web_push_config = Some(protos::WebPushConfig {
-                public_vapid_key: "public-key".to_string(),
-                private_vapid_key: VALID_PRIVATE_KEY.to_string(),
-            });
-            crate::rpcs::configure_server(config, &admin, conn).expect("configure should succeed");
-
-            let stored = stored_web_push_config(conn)
-                .expect("should not error")
-                .expect("web_push_config should be set");
-            assert_eq!(stored.private_vapid_key, VALID_PRIVATE_KEY);
-
-            Ok(())
-        });
     }
 }
