@@ -8,8 +8,8 @@ use web_push::{
 };
 
 use crate::db_connection::PgPool;
-use crate::marshaling::ToProtoServerConfiguration;
 use crate::models;
+use crate::protos;
 use crate::rpcs::get_server_configuration_model;
 
 /// The JSON shape delivered (encrypted, per the Web Push standard) to the browser's service
@@ -61,10 +61,18 @@ async fn send_message_notifications(
 ) -> Result<(), String> {
     let mut conn = pool.get().map_err(|e| e.to_string())?;
 
+    // Deliberately *not* `get_server_configuration_model(&mut conn)?.to_proto().web_push_config`
+    // -- `to_proto` (see `ToProtoServerConfiguration`) always blanks `private_vapid_key` before a
+    // *client* sees it, since it's meant to never leave the server. Going through that here would
+    // blank it before this, the one place that's actually supposed to use it, ever sees it either
+    // -- confirmed in production: every send silently no-op'd (`validate_private_vapid_key`
+    // rightfully rejecting the now-always-empty key) even with a fully valid key stored. Parsing
+    // the raw model's own `web_push_config` column directly is the same "read the unblanked
+    // value" pattern `configure_server`'s own merge-on-blank block already relies on.
     let web_push_config = get_server_configuration_model(&mut conn)
         .map_err(|e| e.to_string())?
-        .to_proto()
-        .web_push_config;
+        .web_push_config
+        .and_then(|c| serde_json::from_value::<protos::WebPushConfig>(c).ok());
     // No VAPID keys configured on this server -- nothing to sign/send with, and nothing to
     // configure this behind (see `RegisterPushSubscription`'s own doc comment on why registration
     // itself doesn't gate on this).

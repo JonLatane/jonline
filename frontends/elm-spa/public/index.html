@@ -439,9 +439,22 @@
             return null;
           }
           return navigator.serviceWorker.ready.then(function (registration) {
-            return registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: base64UrlDecode(request.publicKey)
+            // The Push API allows only one subscription per service worker at a time --
+            // `subscribe()` rejects outright ("...applicationServerKey ... already exists") if one
+            // is already active under a *different* key than the one being requested (e.g. this
+            // browser subscribed once before, and the server's VAPID key has since changed/been
+            // corrected). Clearing any existing subscription first makes re-subscribing always
+            // work, at the cost of a harmless new `endpoint` each time this actually happens --
+            // no worse than the ordinary "browser subscribed before, model.pushSubscriptions
+            // starts empty on a fresh load anyway" churn `Model.pushSubscriptions`'s own doc
+            // comment already accepts.
+            return registration.pushManager.getSubscription().then(function (existing) {
+              return existing ? existing.unsubscribe() : null;
+            }).then(function () {
+              return registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: base64UrlDecode(request.publicKey)
+              });
             });
           });
         })
