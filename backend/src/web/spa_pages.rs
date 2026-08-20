@@ -1,8 +1,9 @@
 use lazy_static::lazy_static;
 
 use rocket::{
-    http::{uri::Origin, Status},
-    routes, Route, State,
+    Route, State,
+    http::{Status, uri::Origin},
+    routes,
 };
 use rocket_cache_response::CacheResponse;
 
@@ -18,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    root_app, spa_prefix, spa_web_path, strip_spa_prefix, JonlineResponder, JonlineSummary, SpaApp,
+    JonlineResponder, JonlineSummary, SpaApp, root_app, spa_prefix, spa_web_path, strip_spa_prefix,
 };
 
 // Pages shared by both SPA frontends: each of these is mounted three times
@@ -43,6 +44,7 @@ lazy_static! {
         user_followers,
         user_following,
         people,
+        messages,
         follow_requests,
         server,
         group_home,
@@ -273,6 +275,22 @@ webui!(
         Some(JonlineSummary {
             title: Some(format!("People | {}", server_name)),
             description: Some("User listings for a Jonline community".to_string()),
+            image: server_logo.or(Some("/favicon.png".to_string())),
+        })
+    }
+);
+
+webui!(
+    messages,
+    "/messages",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |_connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     _path: &str| {
+        Some(JonlineSummary {
+            title: Some(format!("Messages | {}", server_name)),
+            description: Some("Direct messages and emails on a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
