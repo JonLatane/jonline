@@ -1,3 +1,6 @@
+# The PVC (postgres-pv-claim) lives in the sibling k8s-postgres-pvc-$(K8S_PROVIDER).yaml, not
+# here -- see that file for why. create_backend_postgres applies both; update_backend_postgres
+# (which may run often, e.g. via upgrade_backend_postgres) only applies this one.
 apiVersion: v1
 kind: Service
 metadata:
@@ -33,7 +36,7 @@ spec:
         persistentVolumeClaim:
           claimName: postgres-pv-claim
       containers:
-        - image: postgres:14.5-alpine
+        - image: postgres:17.6-alpine
           name: db
           env:
             - name: POSTGRES_USER
@@ -45,21 +48,33 @@ spec:
           ports:
             - containerPort: 5432
               name: db
+          # Without these, kubelet marks the container Ready as soon as its process starts --
+          # not once Postgres is actually accepting connections. On a fresh initdb (e.g. right
+          # after upgrade_backend_postgres swaps in a new major version) that's a ~10s gap, which
+          # raced `kubectl wait --for=condition=ready` ahead of real readiness and made
+          # restore_backend_postgres hit "connection refused" against a Postgres that hadn't
+          # finished starting yet.
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "jonline"]
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "jonline"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           volumeMounts:
           - name: pv-data
             mountPath: /var/lib/postgresql/data
-            subPath: postgres
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    app: postgres
-  name: postgres-pv-claim
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  storageClassName: do-block-storage-retain
+            # Deliberately a *different* subPath than the old pg14.5 data (which lived at
+            # subPath "postgres") -- a Postgres major-version upgrade needs a fresh data
+            # directory (initdb'd by the new image on first boot), and this lets that new
+            # directory live alongside the untouched old one on the same PVC/PV, so the old
+            # data survives as an instant rollback until deliberately removed (see
+            # `delete_backend_postgres_old_data` in ../Makefile).
+            subPath: postgres17
