@@ -488,6 +488,37 @@
         });
     });
 
+    app.ports.checkPushSubscription.subscribe(function () {
+      if (!pushManagerAvailable()) {
+        app.ports.pushSubscriptionChecked.send(null);
+        return;
+      }
+      navigator.serviceWorker.getRegistration()
+        .then(function (registration) {
+          return registration ? registration.pushManager.getSubscription() : null;
+        })
+        .then(function (subscription) {
+          if (!subscription) {
+            app.ports.pushSubscriptionChecked.send(null);
+            return;
+          }
+          // `subscription.options.applicationServerKey` is the raw bytes the subscription was
+          // actually created with -- re-encoding it lets the Elm side match it back against a
+          // specific account's server (`AccountsPanel.serverWebPushPublicKey`) without this port
+          // needing to know anything about accounts itself. Not supported in every browser
+          // (`options` can be missing), in which case the match just fails harmlessly and the
+          // toggle falls back to its normal "off" state, same as before this port existed.
+          var key = subscription.options && subscription.options.applicationServerKey;
+          app.ports.pushSubscriptionChecked.send({
+            endpoint: subscription.endpoint,
+            publicKey: key ? base64UrlEncode(key) : ""
+          });
+        })
+        .catch(function () {
+          app.ports.pushSubscriptionChecked.send(null);
+        });
+    });
+
     darkMediaQuery.addEventListener("change", function (e) {
       app.ports.systemPrefersDarkChanged.send(e.matches);
       if (currentThemePreference === "auto") {

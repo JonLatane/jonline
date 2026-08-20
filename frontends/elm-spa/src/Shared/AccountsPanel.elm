@@ -270,6 +270,16 @@ type alias Model =
     -- just a bare `Grpc.Error` with no account info of its own, so this is what lets those two
     -- still know which `notificationErrors` entry to fill in.
     , pendingNotificationAccountId : Maybe String
+
+    -- `Ports.checkPushSubscription`'s result, still waiting to be matched against an account (see
+    -- `resolvePendingPushSubscriptionCheck`) -- fired once at `init`, but `model.servers` doesn't
+    -- have any `Server.connected`/`webPushConfig` populated yet at that point (reconnects are all
+    -- still in flight), so the very first match attempt almost always fails. Kept around (instead
+    -- of discarded on that first failed attempt) and retried on every subsequent update until it
+    -- either resolves or the app decides there's truly no matching account, so a page refresh
+    -- correctly restores the notification toggle's "on" state once the relevant server actually
+    -- finishes reconnecting, rather than only working by lucky timing.
+    , pendingPushSubscriptionCheck : Maybe PushSubscriptionCheck
     }
 
 
@@ -343,6 +353,7 @@ type Msg
     | PushSubscriptionPortReceived Decode.Value
     | GotRegisterPushSubscriptionResult (Result Grpc.Error ( Account, PushSubscription ))
     | GotUnregisterPushSubscriptionResult (Result Grpc.Error Account)
+    | PushSubscriptionCheckReceived Decode.Value
     | NoOp
 
 
@@ -1341,8 +1352,9 @@ init req flags =
       , pushSubscriptions = Dict.empty
       , notificationErrors = Dict.empty
       , pendingNotificationAccountId = Nothing
+      , pendingPushSubscriptionCheck = Nothing
       }
-    , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
+    , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
 
 
@@ -1358,6 +1370,7 @@ subscriptions model =
             (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
         , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
         , Ports.pushSubscribed PushSubscriptionPortReceived
+        , Ports.pushSubscriptionChecked PushSubscriptionCheckReceived
         ]
 
 
@@ -1374,6 +1387,37 @@ update req msg model =
         |> Tuple.mapFirst syncItemAnimations
         |> Tuple.mapFirst sortMainServerFirst
         |> Tuple.mapFirst sortMainServerAccountsFirst
+        |> Tuple.mapFirst resolvePendingPushSubscriptionCheck
+
+
+{-| Retries matching `pendingPushSubscriptionCheck` (see its own doc comment) against
+`model.accounts`/`model.servers` on every update, not just when it first arrives -- the servers a
+`PushSubscriptionCheck`'s `publicKey` needs to match against are usually still reconnecting (no
+`Server.connected` yet) at the moment `checkPushSubscription`'s result actually comes back, so the
+very first attempt almost always finds nothing. A no-op once there's nothing pending, or once a
+match has already been found -- cheap enough to run unconditionally alongside
+`syncItemAnimations`/etc.
+-}
+resolvePendingPushSubscriptionCheck : Model -> Model
+resolvePendingPushSubscriptionCheck model =
+    case model.pendingPushSubscriptionCheck of
+        Nothing ->
+            model
+
+        Just check ->
+            case
+                model.accounts
+                    |> List.filter (\account -> serverWebPushPublicKey model.servers account.server == Just check.publicKey)
+                    |> List.head
+            of
+                Just account ->
+                    { model
+                        | pushSubscriptions = Dict.insert (accountId account) check.endpoint model.pushSubscriptions
+                        , pendingPushSubscriptionCheck = Nothing
+                    }
+
+                Nothing ->
+                    model
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
@@ -2764,6 +2808,11 @@ sendUpdate req msg model =
                 Err _ ->
                     ( model, Cmd.none )
 
+        PushSubscriptionCheckReceived value ->
+            ( { model | pendingPushSubscriptionCheck = Decode.decodeValue pushSubscriptionCheckDecoder value |> Result.withDefault Nothing }
+            , Cmd.none
+            )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -3997,6 +4046,27 @@ pushSubscriptionPortDecoder =
                                     |> Decode.map (\error -> ( id, Err error ))
                         )
             )
+
+
+{-| `Ports.pushSubscriptionChecked`'s payload when the browser has an active Web Push subscription
+-- see that port's own doc comment for why `publicKey` (not an `accountId`, which the Push API has
+no concept of) is what identifies which account it belongs to.
+-}
+type alias PushSubscriptionCheck =
+    { endpoint : String
+    , publicKey : String
+    }
+
+
+{-| Decodes `Ports.pushSubscriptionChecked`'s payload: `null`, or `{ endpoint, publicKey }`.
+-}
+pushSubscriptionCheckDecoder : Decoder (Maybe PushSubscriptionCheck)
+pushSubscriptionCheckDecoder =
+    Decode.nullable
+        (Decode.map2 PushSubscriptionCheck
+            (Decode.field "endpoint" Decode.string)
+            (Decode.field "publicKey" Decode.string)
+        )
 
 
 persistedStateDecoder : Decoder PersistedState

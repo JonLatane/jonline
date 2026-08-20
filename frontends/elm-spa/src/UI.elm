@@ -1600,69 +1600,91 @@ accountRow shared count mainCount index account =
             :: classes [ "account-row", hostnameToCSSClass account.server, "background-color-primary" ]
             :: moveAttrs
         )
-        [ switchInput account.enabled account.needsPassword (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
-        , a
-            [ class "account-row-profile-link"
-            , href (Users.profileHref shared.basePath shared.accounts.mainFrontendHost account.server { userId = account.userId, username = account.username })
-            , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
-            ]
-            [ button
-                [ class "media-btn"
-                , if account.needsPassword then
-                    title "Sign in to view media"
-
-                  else
-                    stopPropagationAndPreventDefaultOnClick (Shared.MyMediaPanelOpenForAccount account)
+        [ div [ class "account-row-main" ]
+            [ div [ class "reorder-buttons" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveUp ) ] ] [ reorderPair.backward ]
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveDown ) ] ] [ reorderPair.forward ]
                 ]
-                [ avatarOrPlaceholder shared.accounts.servers account ]
-            , div [ class "account-row-label" ]
-                [ div [ class "account-row-username" ]
-                    [ text (AccountsPanel.displayName account)
-                    , if AccountsPanel.isAdmin account then
-                        span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
+            , switchInput account.enabled account.needsPassword (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
+            , a
+                [ class "account-row-profile-link"
+                , href (Users.profileHref shared.basePath shared.accounts.mainFrontendHost account.server { userId = account.userId, username = account.username })
+                , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+                ]
+                [ button
+                    [ class "media-btn"
+                    , if account.needsPassword then
+                        title "Sign in to view media"
 
                       else
-                        text ""
+                        stopPropagationAndPreventDefaultOnClick (Shared.MyMediaPanelOpenForAccount account)
                     ]
-                , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
-                    [ text (account.server ++ " | " ++ branding.name) ]
-                , if account.needsPassword then
-                    let
-                        -- "reauthentication" (not "password") when this account isn't on the
-                        -- server we're actually browsing from -- clicking it still routes
-                        -- through `PasswordNeededClicked`, but the wording makes clear it's
-                        -- logging back into a different server, not this one.
-                        needsPasswordLabel : String
-                        needsPasswordLabel =
-                            if account.server /= shared.accounts.browsingHost then
-                                "Reauthentication Required"
+                    [ avatarOrPlaceholder shared.accounts.servers account ]
+                , div [ class "account-row-label" ]
+                    [ div [ class "account-row-username" ]
+                        [ text (AccountsPanel.displayName account)
+                        , if AccountsPanel.isAdmin account then
+                            span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
 
-                            else
-                                "Password Required"
-                    in
-                    button
-                        [ type_ "button"
-                        , class "account-needs-password"
-                        , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg (AccountsPanel.ReauthenticateButtonClicked account))
+                          else
+                            text ""
                         ]
-                        [ text needsPasswordLabel ]
-
-                  else
-                    text ""
-                , notificationError shared account
+                    , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
+                        [ text (account.server ++ " | " ++ branding.name) ]
+                    ]
                 ]
+            , notificationsButton shared account
+            , button
+                [ class "remove-btn"
+                , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
+                ]
+                [ text "╳" ]
             ]
-        , div [ class "reorder-buttons" ]
-            [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveUp ) ] ] [ reorderPair.backward ]
-            , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveDown ) ] ] [ reorderPair.forward ]
-            ]
-        , notificationsButton shared account
-        , button
-            [ class "remove-btn"
-            , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
-            ]
-            [ text "╳" ]
+        , accountRowAlerts shared account
         ]
+
+
+{-| Second row of `accountRow`, below `.account-row-main` -- the reauth button and/or push
+notification error, if either applies to `account`. Renders nothing (not even an empty div) when
+neither applies, so rows with nothing to report stay single-row.
+-}
+accountRowAlerts : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+accountRowAlerts shared account =
+    let
+        hasNotificationError : Bool
+        hasNotificationError =
+            Dict.member (AccountsPanel.accountId account) shared.accounts.notificationErrors
+    in
+    if not account.needsPassword && not hasNotificationError then
+        text ""
+
+    else
+        div [ class "account-row-alerts" ]
+            [ if account.needsPassword then
+                let
+                    -- "reauthentication" (not "password") when this account isn't on the
+                    -- server we're actually browsing from -- clicking it still routes
+                    -- through `PasswordNeededClicked`, but the wording makes clear it's
+                    -- logging back into a different server, not this one.
+                    needsPasswordLabel : String
+                    needsPasswordLabel =
+                        if account.server /= shared.accounts.browsingHost then
+                            "Reauthentication Required"
+
+                        else
+                            "Password Required"
+                in
+                button
+                    [ type_ "button"
+                    , class "account-needs-password"
+                    , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg (AccountsPanel.ReauthenticateButtonClicked account))
+                    ]
+                    [ text needsPasswordLabel ]
+
+              else
+                text ""
+            , notificationError shared account
+            ]
 
 
 {-| "Enable notifications"/"🔔" toggle for `account`'s row (see `AccountsPanel.EnableNotificationsClicked`/
@@ -1730,11 +1752,11 @@ notificationsButton shared account =
 
 
 {-| The actual text of `notificationsButton`'s last failure, if any (see `AccountsPanel.notificationErrors`) --
-shown in-flow under `account`'s username/server badge (mirrors the `account-needs-password` badge
-right below it) rather than as a tooltip or a floating bubble anchored to the button itself: the
-button lives inside `.nav-panel`, which sets its own `overflow-y: auto` (and, per the CSS spec,
-therefore also computes `overflow-x` to `auto`), so anything positioned to poke outside the button
-just gets silently clipped instead of actually being readable.
+shown in-flow in `accountRowAlerts`, `account`'s row's second line (alongside the
+`account-needs-password` badge), rather than as a tooltip or a floating bubble anchored to the
+button itself: the button lives inside `.nav-panel`, which sets its own `overflow-y: auto` (and,
+per the CSS spec, therefore also computes `overflow-x` to `auto`), so anything positioned to poke
+outside the button just gets silently clipped instead of actually being readable.
 -}
 notificationError : Shared.Model -> AccountsPanel.Account -> Html msg
 notificationError shared account =

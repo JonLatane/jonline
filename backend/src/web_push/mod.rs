@@ -108,10 +108,19 @@ async fn send_message_notifications(
 
         match send_result {
             Ok(()) => {}
-            // The push service itself says this endpoint is dead -- prune it so it isn't retried
-            // on every future Message. Any other error (network blip, server error, bad VAPID
-            // config, ...) is just logged; the subscription might still be good next time.
-            Err(WebPushError::EndpointNotValid(_)) | Err(WebPushError::EndpointNotFound(_)) => {
+            // The push service itself says this endpoint is dead, or is otherwise permanently
+            // unusable -- prune it so it isn't retried on every future Message. Confirmed in
+            // production: a subscription registered under a since-rotated VAPID public key (see
+            // today's key-corruption/regeneration saga) comes back as `BadRequest` with FCM's own
+            // `{"reason":"VapidPkHashMismatch"}` -- that subscription's `endpoint` is permanently
+            // tied to the *old* key and will never succeed no matter how many times it's retried,
+            // same as an outright-dead endpoint. Any other error (network blip, server error, a
+            // currently-misconfigured VAPID key that might get fixed) is just logged; those
+            // aren't necessarily about this one subscription, so the subscription might still be
+            // good next time.
+            Err(WebPushError::EndpointNotValid(_))
+            | Err(WebPushError::EndpointNotFound(_))
+            | Err(WebPushError::BadRequest(_)) => {
                 if let Err(e) = models::delete_push_subscription_by_id(subscription.id, &mut conn) {
                     log::warn!(
                         "Failed to prune dead push subscription {}: {:?}",

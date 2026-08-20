@@ -692,6 +692,14 @@
   margin-bottom: -5px;
 }
 
+/* .accounts-list .reorder-buttons {
+  max-width: 21px;
+  transition: max-width 0.2 ease;
+} */
+
+.accounts-list .reorder-buttons:has(>.reorder-arrow-hidden + .reorder-arrow-hidden) {
+  width: 0px;
+}
 
 .accounts-empty {
   color: var(--muted);
@@ -784,11 +792,32 @@
   /* max-width: 100%;
   width: 100%; */
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.3rem;
   padding: 0.4rem;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+/* First line of `.account-row` (see `UI.accountRow`) -- the switch, avatar/label link, reorder
+   arrows, notification toggle and remove button. Everything that isn't a conditional alert lives
+   here, so a row with nothing to report stays this one line. */
+.account-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Second line of `.account-row` (see `UI.accountRowAlerts`), only rendered when there's a reauth
+   button and/or push notification error to show. Indented to align under the account name/badge
+   in `.account-row-main` rather than starting under the switch/avatar -- 34px switch + 32px avatar
+   + 2 * 0.5rem row gap. */
+.account-row-alerts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  margin-left: 34px;
 }
 
 .account-avatar {
@@ -827,7 +856,6 @@
 .account-needs-password {
   display: inline-block;
   max-width: 100%;
-  margin-top: 0.2rem;
   padding: 0.05rem 0.4rem;
   border: none;
   border-radius: 999px;
@@ -837,6 +865,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
 }
 
 .account-needs-password:hover {
@@ -893,16 +922,15 @@
 }
 
 /* The actual failure reason (e.g. "Notification permission wasn't granted." -- see
-   `AccountsPanel.notificationErrors`), shown in-flow under the account's username/server badge
-   (see `UI.notificationError`) -- *not* positioned relative to `.notifications-btn` itself, since
-   that button lives inside `.nav-panel`'s own `overflow-y: auto` (which also computes
-   `overflow-x` to `auto`), silently clipping anything that pokes outside it. Sized/shaped like
-   `.account-needs-password` just above, except allowed to actually wrap instead of ellipsizing --
-   these messages are meant to be read in full, not just hinted at. */
+   `AccountsPanel.notificationErrors`), shown in `.account-row-alerts` (see `UI.notificationError`)
+   -- *not* positioned relative to `.notifications-btn` itself, since that button lives inside
+   `.nav-panel`'s own `overflow-y: auto` (which also computes `overflow-x` to `auto`), silently
+   clipping anything that pokes outside it. Sized/shaped like `.account-needs-password` just above,
+   except allowed to actually wrap instead of ellipsizing -- these messages are meant to be read in
+   full, not just hinted at. */
 .account-notification-error {
   display: block;
   max-width: 100%;
-  margin-top: 0.2rem;
   padding: 0.1rem 0.4rem;
   border-radius: 8px;
   background: var(--danger);

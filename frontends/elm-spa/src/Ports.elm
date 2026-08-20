@@ -1,6 +1,7 @@
 port module Ports exposing
     ( accountsAndServersUpdated
     , calendarEventClicked
+    , checkPushSubscription
     , clearFederatedAuthKeyPair
     , copyToClipboard
     , elementsMeasured
@@ -19,6 +20,7 @@ port module Ports exposing
     , persistThemePreference
     , persistUserPreferences
     , pushSubscribed
+    , pushSubscriptionChecked
     , renderCalendar
     , scrollElementLeft
     , setNavBarColor
@@ -320,3 +322,24 @@ the Elm side already optimistically drops its own record of the subscription (an
 `UnregisterPushSubscription` server-side) the moment this is sent.
 -}
 port unsubscribeFromPush : Encode.Value -> Cmd msg
+
+
+{-| Asks the browser for whatever Web Push subscription (if any) currently exists for this
+origin's service worker -- there's at most one, browser-wide, no matter how many Jonline accounts
+are signed in (`PushSubscriptionCheckReceived`'s own doc comment covers how that's reconciled back
+to a specific account). Called once at `Shared.AccountsPanel.init`, since `pushSubscriptions` is
+otherwise session-only state -- without this, a page refresh would show every account's
+notification toggle as off even though the browser (and server) still have an active subscription.
+The argument is unused (ports need a JSON-encodable payload) -- always call with `Encode.null`.
+-}
+port checkPushSubscription : Encode.Value -> Cmd msg
+
+
+{-| `{ endpoint : String, publicKey : String } | null` -- the browser's current Web Push
+subscription's endpoint and the VAPID public key (base64url) it was created with, or `null` if
+there's no active subscription at all. `publicKey` is what lets `PushSubscriptionCheckReceived`
+figure out *which* account this belongs to: matched against each signed-in account's own server's
+`AccountsPanel.serverWebPushPublicKey`, since the Push API itself has no concept of "which
+account" -- only one subscription can ever exist per origin.
+-}
+port pushSubscriptionChecked : (Encode.Value -> msg) -> Sub msg
