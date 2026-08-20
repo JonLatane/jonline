@@ -66,8 +66,22 @@
      itself is a fixed `--nav-toggle-height` (44px) centered within that via
      `.nav-links-scroll`'s own `align-items: center`, leaving (68 - 44) / 2 =
      12px above it -- so this stays correct regardless of whether a
-     breadcrumbs bar is also present below the toggle row. */
-  top: calc(12px + var(--nav-toggle-height) - 1px);
+     breadcrumbs bar is also present below the toggle row.
+
+     `env(safe-area-inset-top)` on top of that -- this panel is a `.navbar`
+     child positioned against `.navbar`'s own padding-box top edge, which
+     sits *above* `.navbar`'s `padding-top: env(safe-area-inset-top)`
+     (nav.css) -- padding shifts the in-flow toggle row down, but doesn't
+     move an absolutely-positioned sibling's `top: 0` origin, so without
+     this the panel hangs exactly `safe-area-inset-top` too high, under the
+     status bar. 0 in a regular browser tab (no inset there); only nonzero
+     -- and only actually noticeable -- in an iOS PWA installed to the home
+     screen, which is why this doesn't show up in ordinary Safari/Chrome.
+     `.accounts-menu`/`.create-new-panel-toggle`'s own panels don't need
+     this: they're positioned relative to their own toggle buttons, already
+     inside `.navbar-inner`'s padded content, so they inherit the shift for
+     free. */
+  top: calc(12px + var(--nav-toggle-height) - 1px + env(safe-area-inset-top));
 }
 
 /* Notification-style count bubble on the Starred toggle's corner --

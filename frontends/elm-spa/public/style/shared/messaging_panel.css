@@ -7,11 +7,11 @@
 }
 
 /* Positioned identically to `.starred-panel` (see that rule's own doc for
-   the full `left`/`top` derivation) -- safe to reuse verbatim since
-   `Shared.elm` keeps the two mutually exclusive (opening either closes the
-   other outright, same as it does for the Accounts Panel on narrow
-   screens), so they never need to coexist on screen at two different
-   positions. */
+   the full `left`/`top` derivation, including why `top` also needs
+   `env(safe-area-inset-top)`) -- safe to reuse verbatim since `Shared.elm`
+   keeps the two mutually exclusive (opening either closes the other
+   outright, same as it does for the Accounts Panel on narrow screens), so
+   they never need to coexist on screen at two different positions. */
 .messaging-panel,
 .nav-panel.messaging-panel {
   z-index: 24;
@@ -20,7 +20,7 @@
   max-width: calc(100vw - 2rem);
   right: auto;
   left: calc(max(0px, (100vw - 800px) / 2) + max(2px, 188px - var(--panel-width)));
-  top: calc(12px + var(--nav-toggle-height) - 1px);
+  top: calc(12px + var(--nav-toggle-height) - 1px + env(safe-area-inset-top));
   padding: 0.6rem 0.8rem;
   padding-top: 0;
 }
