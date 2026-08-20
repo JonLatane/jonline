@@ -228,6 +228,19 @@
   font-size: 0.65rem;
 }
 
+/* `MessagesPage.participantChipView`'s own "You" badge -- marks the
+   signed-in account when it shows up among a group's participants (normally
+   excluded by `visibleParticipants`, except for a group messaging someone to
+   themselves). Sized to match `Components/Authors.elm`'s `.author-badge`
+   (profiles.css), which rides alongside it in the same chip. */
+.messages-participant-you {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 0 3px;
+}
+
 /* `clear: both` (needing `display: block` first -- a `span`, per
    `MessagesPage.groupRowView`, doesn't otherwise honor `clear` at all) is
    what guarantees this always starts its own line below both

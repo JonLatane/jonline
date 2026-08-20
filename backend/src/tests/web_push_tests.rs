@@ -1,18 +1,22 @@
-//! Regression test for a production bug in `web_push::stored_web_push_config`'s own doc comment:
-//! reading `web_push_config` via `.to_proto()` (the client-facing path) always blanks
-//! `private_vapid_key`, so a naive implementation would read back an always-empty key even with a
-//! fully valid one stored -- exactly what happened in production. Lives here (rather than inline
-//! in `web_push/mod.rs`, alongside its module's other tests) because `main.rs` independently
+//! Specs for `web_push`'s own DB-backed helpers (`stored_web_push_config`, `notification_url`)
+//! that need a real `test_conn`/`configure_server` round trip. Lives here (rather than inline in
+//! `web_push/mod.rs`, alongside its module's other, DB-free tests) because `main.rs` independently
 //! redeclares `pub mod web_push;`, so that file is compiled twice -- once under the `jonline` lib
 //! crate root (where `crate::tests` exists) and once under the `jonline` bin crate root (where it
 //! doesn't) -- and a `crate::tests::factories` reference inside it fails to resolve for the latter.
+//!
+//! `stored_web_push_config_returns_the_unblanked_private_key` is a regression test for a real
+//! production bug (see that function's own doc comment): reading `web_push_config` via
+//! `.to_proto()` (the client-facing path) always blanks `private_vapid_key`, so a naive
+//! implementation would read back an always-empty key even with a fully valid one stored.
 
 use diesel::Connection;
 
+use crate::marshaling::ToProtoId;
 use crate::protos::*;
 use crate::rpcs::{configure_server, get_server_configuration_proto};
 use crate::tests::factories::*;
-use crate::web_push::stored_web_push_config;
+use crate::web_push::{notification_url, stored_web_push_config};
 
 /// A real 32-byte VAPID private key, base64url-no-pad encoded -- lifted from the `web-push`
 /// crate's own test fixtures (`vapid::builder::tests::PRIVATE_BASE64`), so this is a known-good
@@ -44,6 +48,50 @@ fn stored_web_push_config_returns_the_unblanked_private_key() {
             .expect("should not error")
             .expect("web_push_config should be set");
         assert_eq!(stored.private_vapid_key, VALID_PRIVATE_KEY);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn notification_url_builds_a_deep_link_from_the_configured_frontend_host() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "wp_notification_url");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        let mut config =
+            get_server_configuration_proto(conn).expect("failed to fetch base config");
+        config.external_cdn_config = Some(ExternalCdnConfig {
+            frontend_host: "example.social".to_string(),
+            backend_host: "example.social".to_string(),
+            ..Default::default()
+        });
+        configure_server(config, &admin, conn).expect("configure should succeed");
+
+        let url = notification_url(conn, 42, 99)
+            .expect("should not error")
+            .expect("frontend_host is configured, so a url should be built");
+        assert_eq!(
+            url,
+            format!(
+                "https://example.social/messages?messaging_group={}#message-{}",
+                42i64.to_proto_id(),
+                99i64.to_proto_id()
+            )
+        );
+
+        Ok(())
+    });
+}
+
+#[test]
+fn notification_url_is_none_without_a_configured_frontend_host() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        // No `configure_server` call at all -- the default config has no `external_cdn_config`.
+        let url = notification_url(conn, 1, 2).expect("should not error");
+        assert_eq!(url, None);
 
         Ok(())
     });

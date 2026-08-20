@@ -1481,6 +1481,7 @@ Also collapsed (same `flip-collapsed` FLIP treatment as a real removal, via
 one the New Account/Login flow's Server/Username fields currently name, while
 that flow is active -- reusing the same collapsing-grid-track CSS transition
 rather than a separate ad hoc show/hide animation.
+
 -}
 accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
 accountRowFlip shared count mainCount index account =
@@ -1726,7 +1727,26 @@ notificationsButton shared account =
                                 "Disable browser notifications for this account"
 
                             else
-                                "Enable browser notifications for this account"
+                                let
+                                    -- The browser allows only *one* active push subscription per origin, not one per
+                                    -- account (see `AccountsPanel.pushSubscriptions`'s own doc comment) -- so enabling
+                                    -- this account, if some other account currently holds that one slot, will silently
+                                    -- disable notifications there. Surfaced up front, in the tooltip, rather than
+                                    -- letting someone discover it only after their other account's badge goes dark.
+                                    otherEnabledAccount : Maybe AccountsPanel.Account
+                                    otherEnabledAccount =
+                                        Dict.keys shared.accounts.pushSubscriptions
+                                            |> List.head
+                                            |> Maybe.andThen (\otherId -> List.filter (\a -> AccountsPanel.accountId a == otherId) shared.accounts.accounts |> List.head)
+                                in
+                                case otherEnabledAccount of
+                                    Just other ->
+                                        "Enable browser notifications for this account (this browser can only notify one account at a time -- will disable notifications for "
+                                            ++ AccountsPanel.displayName other
+                                            ++ ")"
+
+                                    Nothing ->
+                                        "Enable browser notifications for this account"
                     )
                 , stopPropagationAndPreventDefaultOnClick
                     (Shared.AccountsPanelMsg

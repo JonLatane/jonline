@@ -236,6 +236,8 @@ pub async fn create_email_message(
         notify_user_ids,
         title,
         notification_body,
+        messaging_group_id,
+        message.id,
     );
 
     Ok(RawJson(

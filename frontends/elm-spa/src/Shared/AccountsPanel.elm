@@ -247,13 +247,19 @@ type alias Model =
     , debugTab : DebugTab.Model
     , adminTab : AdminTab.Model
 
-    -- Accounts (keyed by `accountId`) with an active Web Push subscription registered by this
-    -- browser -- the value is the subscription's `endpoint`, so `DisableNotificationsClicked` can
-    -- pass it back to both `Ports.unsubscribeFromPush` and `UnregisterPushSubscription`. Session-
-    -- only, not persisted: a fresh page load always starts empty and shows "Enable notifications"
-    -- again even for an account whose subscription is still active server-side -- re-registering
-    -- is harmless (`RegisterPushSubscription` upserts on `(user_id, endpoint)`), just a minor UX
-    -- rough edge rather than a correctness one.
+    -- At most the *one* account (keyed by `accountId`) with an active Web Push subscription
+    -- registered by this browser -- the value is the subscription's `endpoint`, so
+    -- `DisableNotificationsClicked` can pass it back to both `Ports.unsubscribeFromPush` and
+    -- `UnregisterPushSubscription`. Genuinely can't ever hold more than one entry: the Push API
+    -- allows only one active subscription per browser *origin* (not per account, not per server)
+    -- -- enabling notifications for a second account always silently disables them for whichever
+    -- account held the browser's one subscription before (`Ports.subscribeToPush`'s JS side
+    -- unsubscribes it first), so `GotRegisterPushSubscriptionResult`/
+    -- `resolvePendingPushSubscriptionCheck` both use `Dict.singleton`, never `Dict.insert`, to
+    -- keep this in sync with that reality instead of leaving a stale "enabled" badge behind on
+    -- the account that just lost it. Not persisted across page loads either way --
+    -- `Ports.checkPushSubscription` (fired at `init`) re-derives whichever single entry actually
+    -- belongs here from the browser's real subscription instead.
     , pushSubscriptions : Dict String String
 
     -- Last known reason "Enable notifications" (or the register/unregister RPC that follows it)
@@ -1412,7 +1418,9 @@ resolvePendingPushSubscriptionCheck model =
             of
                 Just account ->
                     { model
-                        | pushSubscriptions = Dict.insert (accountId account) check.endpoint model.pushSubscriptions
+                        -- `Dict.singleton`, not `Dict.insert` -- see `GotRegisterPushSubscriptionResult`'s
+                        -- own comment on why this dict can only ever have one entry.
+                        | pushSubscriptions = Dict.singleton (accountId account) check.endpoint
                         , pendingPushSubscriptionCheck = Nothing
                     }
 
@@ -2781,7 +2789,17 @@ sendUpdate req msg model =
                         newModel =
                             { model
                                 | accounts = upsertAccount refreshedAccount model.accounts
-                                , pushSubscriptions = Dict.insert (accountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
+
+                                -- The Push API allows at most one active subscription per browser
+                                -- origin, full stop -- not one per account, and not one per
+                                -- server. `Ports.subscribeToPush`'s JS side already unsubscribes
+                                -- any prior subscription before creating this one (see its own
+                                -- doc comment), so whichever *other* account this dict previously
+                                -- showed as enabled is actually disabled now too, in reality --
+                                -- `Dict.singleton` (not `Dict.insert`) keeps this in sync with
+                                -- that, instead of leaving a stale "enabled" badge on an account
+                                -- that just silently lost its subscription.
+                                , pushSubscriptions = Dict.singleton (accountId refreshedAccount) pushSubscription.endpoint
                                 , notificationErrors = Dict.remove (accountId refreshedAccount) model.notificationErrors
                             }
                     in

@@ -8,22 +8,33 @@ use web_push::{
 };
 
 use crate::db_connection::PgPool;
+use crate::marshaling::ToProtoId;
 use crate::models;
 use crate::protos;
 use crate::rpcs::get_server_configuration_model;
 
 /// The JSON shape delivered (encrypted, per the Web Push standard) to the browser's service
-/// worker `push` event -- see this file's own module doc comment. Kept deliberately small: no
-/// message id/deep link yet, since there's no frontend service worker consuming this yet either.
+/// worker `push` event -- see this file's own module doc comment. `url` (see
+/// `notification_url`) is the full deep link `service-worker.js`'s `notificationclick` handler
+/// navigates to -- `None` (omitted entirely, not sent as `null`, via `skip_serializing_if`) when
+/// this server has no configured `ExternalCdnConfig.frontend_host` to build one from, in which
+/// case that handler just falls back to opening `/`.
 #[derive(Serialize)]
 struct PushPayload<'a> {
     title: &'a str,
     body: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    url: Option<String>,
 }
 
 /// Fans a new-Message notification out to every push subscription belonging to
 /// `recipient_user_ids`, via the server's configured `WebPushConfig` (VAPID keys) -- see
 /// `send_message::send_message`/`web::email::create_email_message`, this module's two callers.
+/// `messaging_group_id`/`message_id` (the raw DB ids, not yet `to_proto_id()`-encoded -- this
+/// does that itself, see `notification_url`) are the `Message`'s own, used to build a deep link
+/// straight to it (`?messaging_group=<id>#message-<id>`, the same shape
+/// `Components.Pages.MessagesPage.groupQueryParams`/`messageDomId` build client-side) rather than
+/// just bringing the app to the front with no context.
 ///
 /// Runs entirely in a spawned background task: neither trigger point should have its own
 /// response (an in-app `SendMessage` RPC, or Stalwart's inbound-email MTA hook) wait on however
@@ -39,14 +50,23 @@ pub fn notify_message_recipients(
     recipient_user_ids: Vec<i64>,
     title: String,
     body: String,
+    messaging_group_id: i64,
+    message_id: i64,
 ) {
     let Ok(handle) = tokio::runtime::Handle::try_current() else {
         log::warn!("notify_message_recipients: no Tokio runtime available, skipping");
         return;
     };
     handle.spawn(async move {
-        if let Err(error) =
-            send_message_notifications(pool, recipient_user_ids, &title, &body).await
+        if let Err(error) = send_message_notifications(
+            pool,
+            recipient_user_ids,
+            &title,
+            &body,
+            messaging_group_id,
+            message_id,
+        )
+        .await
         {
             log::warn!("notify_message_recipients failed: {:?}", error);
         }
@@ -58,6 +78,8 @@ async fn send_message_notifications(
     recipient_user_ids: Vec<i64>,
     title: &str,
     body: &str,
+    messaging_group_id: i64,
+    message_id: i64,
 ) -> Result<(), String> {
     let mut conn = pool.get().map_err(|e| e.to_string())?;
 
@@ -77,11 +99,14 @@ async fn send_message_notifications(
 
     validate_private_vapid_key(&web_push_config.private_vapid_key)?;
 
+    let url = notification_url(&mut conn, messaging_group_id, message_id)?;
+
     let partial_signature_builder =
         VapidSignatureBuilder::from_base64_no_sub(&web_push_config.private_vapid_key)
             .map_err(|e| format!("{:?}", e))?;
     let client = IsahcWebPushClient::new().map_err(|e| format!("{:?}", e))?;
-    let payload = serde_json::to_vec(&PushPayload { title, body }).map_err(|e| e.to_string())?;
+    let payload =
+        serde_json::to_vec(&PushPayload { title, body, url }).map_err(|e| e.to_string())?;
 
     for subscription in subscriptions {
         let subscription_info = SubscriptionInfo::new(
@@ -159,6 +184,40 @@ pub(crate) fn stored_web_push_config(
         .map_err(|e| e.to_string())?
         .web_push_config
         .and_then(|c| serde_json::from_value::<protos::WebPushConfig>(c).ok()))
+}
+
+/// Builds the full `https://<frontend_host>/messages?messaging_group=<id>#message-<id>` deep
+/// link a push notification's `PushPayload.url` should point to -- the same query
+/// param/fragment shape `Components.Pages.MessagesPage.groupQueryParams`/`messageDomId` build
+/// client-side for a `MessagingGroup` conversation, given plain ids (no `@<host>` federation
+/// suffix): a notification is always about a Message that lives on *this* server, so the
+/// deep link's own host and the Message's group's host are always the same one, exactly the case
+/// `groupRouteId` already renders as a bare id with no suffix.
+///
+/// `Message.messaging_group_id` is never null (`find_or_create_messaging_group` runs for every
+/// Message, in-app or inbound email alike -- see `send_message`/`web::email::create_email_message`,
+/// this function's two callers by way of `send_message_notifications`), so the only reason this
+/// can come back `Ok(None)` is `ExternalCdnConfig.frontend_host` itself not being configured --
+/// in which case there's no known public host to build a real URL against at all, and
+/// `send_message_notifications` just omits `url` from the payload entirely rather than guessing.
+pub(crate) fn notification_url(
+    conn: &mut crate::db_connection::PgPooledConnection,
+    messaging_group_id: i64,
+    message_id: i64,
+) -> Result<Option<String>, String> {
+    let frontend_host = get_server_configuration_model(conn)
+        .map_err(|e| e.to_string())?
+        .external_cdn_config
+        .and_then(|c| serde_json::from_value::<protos::ExternalCdnConfig>(c).ok())
+        .map(|c| c.frontend_host);
+    Ok(frontend_host.map(|host| {
+        format!(
+            "https://{}/messages?messaging_group={}#message-{}",
+            host,
+            messaging_group_id.to_proto_id(),
+            message_id.to_proto_id()
+        )
+    }))
 }
 
 /// `VapidSignatureBuilder::from_base64_no_sub` hands its decoded bytes straight to `jwt_simple`'s

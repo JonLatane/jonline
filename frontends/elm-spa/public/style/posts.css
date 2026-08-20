@@ -234,7 +234,7 @@
    emoji themselves render the same size in both places). */
 .author-badge-compact {
   font-size: 0.8rem;
-  margin-left: 0.3rem;
+  /* margin-left: 0.3rem; */
 }
 
 /* Small avatar/placeholder next to a post's author name -- same size as the

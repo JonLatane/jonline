@@ -285,7 +285,21 @@ type Msg
       -- thread that failed to mark read server-side just looks read locally
       -- for the rest of this session, and gets a fresh attempt the next
       -- time it's opened (or reloaded) instead of any bespoke retry here.
+      --
+      -- Only actually true for the embedded panel's own inline-expand
+      -- (`embeddedPanel == True`) -- for the real two-pane page,
+      -- `GotGroupMessages`'s `Ok` branch leaves these messages unread and
+      -- schedules `DelayedMarkGroupRead` instead (see `markReadDelayMillis`).
     | GotMarkReadResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Proto.Jonline.MessageRead ))
+      -- Fired `markReadDelayMillis` after `GotGroupMessages` opens a thread
+      -- in the real two-pane page (`embeddedPanel == False`) with unread
+      -- messages in it. Re-derives the still-unread set from `expandedGroups`
+      -- fresh (not whatever was unread back when the timer was scheduled --
+      -- `MarkUnreadClicked` or a poll could've changed it since), and is a
+      -- no-op unless `Model.selectedGroup` is still this same thread: leaving
+      -- before the delay elapses means it never gets marked read at all,
+      -- which is the whole point of the delay.
+    | DelayedMarkGroupRead String
     | SearchTextChanged String
     | SearchDebounceElapsed Int
     | ClearSearchClicked
@@ -587,18 +601,23 @@ update accountsPanelModel msg model =
         GotGroupMessages key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 -- Every message in this thread that's still unread *as
-                -- fetched* -- what actually gets `markMessageRead`'d below,
-                -- and (via `patchMessageRead`) optimistically shown as read
-                -- immediately, rather than waiting on that RPC's own
-                -- round trip -- viewing a thread is what marks it read, see
-                -- `GotMarkReadResult`'s own doc.
+                -- fetched* -- what actually gets `markMessageRead`'d below.
+                -- Embedded-panel-only (`GotMarkReadResult`'s own doc): the
+                -- embedded panel's own inline-expand still patches these to
+                -- read (via `patchMessageRead`) and fires the RPC
+                -- immediately here; the real two-pane page leaves them
+                -- unread and defers both to `DelayedMarkGroupRead`.
                 unreadIds : Set String
                 unreadIds =
                     response.messages |> List.filter Messages.isUnread |> List.map .id |> Set.fromList
 
                 patchedMessages : List Message
                 patchedMessages =
-                    List.map (patchMessageRead unreadIds) response.messages
+                    if model.embeddedPanel then
+                        List.map (patchMessageRead unreadIds) response.messages
+
+                    else
+                        response.messages
 
                 -- The host this group's thread actually lives on -- carried
                 -- on `ExpandedGroup.conversation` itself (see that type's own
@@ -631,12 +650,16 @@ update accountsPanelModel msg model =
                         -- without this, the group card's own unread badge
                         -- wouldn't catch up until the next 30s `Poll`
                         -- refetches the outer listing fresh from the server.
+                        -- Skipped (same as `patchedMessages` above) for the
+                        -- real two-pane page -- `DelayedMarkGroupRead` is
+                        -- what eventually patches this and re-syncs the
+                        -- sidebar, once the delay actually elapses.
                         , messagesByServer =
-                            case host of
-                                Just h ->
+                            case ( model.embeddedPanel, host ) of
+                                ( True, Just h ) ->
                                     Dict.update h (Maybe.map (patchServerFeedRead unreadIds)) model.messagesByServer
 
-                                Nothing ->
+                                _ ->
                                     model.messagesByServer
                     }
                         |> syncSidebarAnimations
@@ -651,13 +674,17 @@ update accountsPanelModel msg model =
                 markReadCmd =
                     case ( host, Set.toList unreadIds ) of
                         ( Just h, (_ :: _) as ids ) ->
-                            let
-                                accountUserId : Maybe String
-                                accountUserId =
-                                    Dict.get h model.messagesByServer |> Maybe.andThen .accountId
-                            in
-                            Messages.markMessagesRead accountsPanelModel ( accountUserId, h ) False ids
-                                |> Task.attempt GotMarkReadResult
+                            if model.embeddedPanel then
+                                let
+                                    accountUserId : Maybe String
+                                    accountUserId =
+                                        Dict.get h model.messagesByServer |> Maybe.andThen .accountId
+                                in
+                                Messages.markMessagesRead accountsPanelModel ( accountUserId, h ) False ids
+                                    |> Task.attempt GotMarkReadResult
+
+                            else
+                                Process.sleep markReadDelayMillis |> Task.perform (\_ -> DelayedMarkGroupRead key)
 
                         _ ->
                             Cmd.none
@@ -675,6 +702,50 @@ update accountsPanelModel msg model =
 
         GotMarkReadResult (Err _) ->
             ( model, Cmd.none, Nothing )
+
+        DelayedMarkGroupRead key ->
+            let
+                stillOpen : Bool
+                stillOpen =
+                    (model.selectedGroup |> Maybe.map Messages.conversationKey) == Just key
+
+                unreadIds : Set String
+                unreadIds =
+                    Dict.get key model.expandedGroups
+                        |> Maybe.map (.messages >> Dict.values >> List.filter Messages.isUnread >> List.map .id >> Set.fromList)
+                        |> Maybe.withDefault Set.empty
+
+                host : Maybe String
+                host =
+                    Dict.get key model.expandedGroups |> Maybe.map (.conversation >> Messages.conversationHost)
+            in
+            case ( stillOpen && not (Set.isEmpty unreadIds), host ) of
+                ( True, Just h ) ->
+                    let
+                        newModel : Model
+                        newModel =
+                            { model
+                                | expandedGroups =
+                                    Dict.update key
+                                        (Maybe.map (\eg -> { eg | messages = Dict.map (\_ message -> patchMessageRead unreadIds message) eg.messages }))
+                                        model.expandedGroups
+                                , messagesByServer = Dict.update h (Maybe.map (patchServerFeedRead unreadIds)) model.messagesByServer
+                            }
+                                |> syncSidebarAnimations
+                                |> syncDetailThreadAnimations
+
+                        accountUserId : Maybe String
+                        accountUserId =
+                            Dict.get h model.messagesByServer |> Maybe.andThen .accountId
+                    in
+                    ( newModel
+                    , Messages.markMessagesRead accountsPanelModel ( accountUserId, h ) False (Set.toList unreadIds)
+                        |> Task.attempt GotMarkReadResult
+                    , Nothing
+                    )
+
+                _ ->
+                    ( model, Cmd.none, Nothing )
 
         MarkUnreadClicked host messageId ->
             let
@@ -981,6 +1052,11 @@ not `expandedGroups` directly (see that field's own doc), so patching
 to until something re-syncs it. Without this, marking a message read from the
 sidebar left the still-open detail pane showing the message's _previous_
 state until some unrelated later sync happened to catch it up.
+
+Deliberately immediate, unlike `DelayedMarkGroupRead`'s own delay for a
+thread's passively-unread messages (`markReadDelayMillis`'s own doc) -- every
+caller here is a real click on this specific message, not just having its
+thread open, so there's no glance-then-navigate-away case to guard against.
 
 -}
 markSelectedMessageReadCmd : AccountsPanel.Model -> Model -> Messages.Conversation -> String -> ( Model, Cmd Msg )
@@ -1724,6 +1800,23 @@ inlineMessagePreviewLimit =
     3
 
 
+{-| How long a thread has to stay open in the two-pane detail
+(`embeddedPanel == False`) before `DelayedMarkGroupRead` actually marks its
+passively-unread messages (the ones that were just sitting there unread when
+the thread was opened, not clicked on directly) read -- a glance that
+navigates away before this elapses never marks them read at all
+(`DelayedMarkGroupRead` re-checks `Model.selectedGroup` when the timer
+fires). Doesn't apply to a message clicked directly
+(`markSelectedMessageReadCmd`'s own doc -- that's still immediate), nor to
+the embedded panel's own inline-expand (`ToggleExpand`/`GotGroupMessages`) --
+opening it from the sidebar chevron is already a deliberate "read this"
+gesture, so it still marks read immediately too.
+-}
+markReadDelayMillis : Float
+markReadDelayMillis =
+    5000
+
+
 {-| `summary`'s own message rows for `flattenSidebar`, in no particular order
 (their `sortKey` is what actually places them) -- `[]` whenever there's
 nothing to splice in: search mode has its own separate, non-animated
@@ -2307,7 +2400,11 @@ groupRowView time accountsPanelModel model summary =
 `Components.Pages.UserProfilePage`'s "Federated Profiles" chip
 (`profile-federated-link`/`-avatar`/`-names`), just built from an `Author`
 (what a `MessagingGroup`'s `members` -- and a `Message`'s own `sender` --
-already carry) instead of a `User`.
+already carry) instead of a `User`. Also appends a "You" badge, if this
+participant is whoever's actually signed in on `host` (normally excluded
+entirely by `visibleParticipants` before this is ever called, except for a
+group messaging someone to themselves), and `Components.Authors.badges`'
+Admin/Run Bots badges.
 -}
 participantChipView : AccountsPanel.Model -> String -> Author -> Html msg
 participantChipView accountsPanelModel host author =
@@ -2322,11 +2419,24 @@ participantChipView accountsPanelModel host author =
                 (AccountsPanel.serverForHost accountsPanelModel.servers host)
                 (AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host)
                 (Just author)
+
+        isCurrentUser : Bool
+        isCurrentUser =
+            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                |> Maybe.map (\account -> account.userId == author.userId)
+                |> Maybe.withDefault False
     in
     span [ class "messages-participant-chip" ]
-        [ avatarView "messages-participant-avatar" name maybeUrl
-        , span [ class "messages-participant-name" ] [ text name ]
-        ]
+        (avatarView "messages-participant-avatar" name maybeUrl
+            :: span [ class "messages-participant-name" ] [ text name ]
+            :: Authors.compactBadges author
+            ++ (if isCurrentUser then
+                    [ span [ classes [ "messages-participant-you", "background-color-accent-anchor" ] ] [ text "You" ] ]
+
+                else
+                    []
+               )
+        )
 
 
 {-| All of a group's members, each as `participantChipView` -- what a group
