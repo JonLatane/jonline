@@ -892,29 +892,23 @@
   color: var(--danger);
 }
 
-/* Positions `.notifications-btn-error` (the actual failure reason -- e.g. "Notification
-   permission wasn't granted." -- see `AccountsPanel.notificationErrors`) relative to the button
-   itself, rather than as a flex sibling that would otherwise disturb `.account-row`'s layout. */
-.notifications-btn-wrapper {
-  position: relative;
-  display: flex;
-  flex: 0 0 auto;
-}
-
-.notifications-btn-error {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 10;
-  margin-top: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  width: max-content;
-  max-width: 12rem;
-  font-size: 0.7rem;
-  line-height: 1.2;
-  color: var(--bg);
+/* The actual failure reason (e.g. "Notification permission wasn't granted." -- see
+   `AccountsPanel.notificationErrors`), shown in-flow under the account's username/server badge
+   (see `UI.notificationError`) -- *not* positioned relative to `.notifications-btn` itself, since
+   that button lives inside `.nav-panel`'s own `overflow-y: auto` (which also computes
+   `overflow-x` to `auto`), silently clipping anything that pokes outside it. Sized/shaped like
+   `.account-needs-password` just above, except allowed to actually wrap instead of ellipsizing --
+   these messages are meant to be read in full, not just hinted at. */
+.account-notification-error {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
   background: var(--danger);
-  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  overflow-wrap: break-word;
 }
 
 .remove-btn {

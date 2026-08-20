@@ -1649,6 +1649,7 @@ accountRow shared count mainCount index account =
 
                   else
                     text ""
+                , notificationError shared account
                 ]
             ]
         , div [ class "reorder-buttons" ]
@@ -1690,50 +1691,59 @@ notificationsButton shared account =
                 error =
                     Dict.get id shared.accounts.notificationErrors
             in
-            span [ class "notifications-btn-wrapper" ]
-                [ button
-                    [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ), ( "notifications-btn-errored", error /= Nothing ) ]
-                    , disabled account.needsPassword
-                    , title
-                        (case error of
-                            Just reason ->
-                                reason
+            button
+                [ classList [ ( "notifications-btn", True ), ( "notifications-btn-enabled", enabled ), ( "notifications-btn-errored", error /= Nothing ) ]
+                , disabled account.needsPassword
+                , title
+                    (case error of
+                        Just reason ->
+                            reason
 
-                            Nothing ->
-                                if enabled then
-                                    "Disable browser notifications for this account"
+                        Nothing ->
+                            if enabled then
+                                "Disable browser notifications for this account"
 
-                                else
-                                    "Enable browser notifications for this account"
-                        )
-                    , stopPropagationAndPreventDefaultOnClick
-                        (Shared.AccountsPanelMsg
-                            (if enabled then
-                                AccountsPanel.DisableNotificationsClicked account
-
-                             else
-                                AccountsPanel.EnableNotificationsClicked account
-                            )
-                        )
-                    ]
-                    [ text
+                            else
+                                "Enable browser notifications for this account"
+                    )
+                , stopPropagationAndPreventDefaultOnClick
+                    (Shared.AccountsPanelMsg
                         (if enabled then
-                            "🔔"
-
-                         else if error /= Nothing then
-                            "⚠️"
+                            AccountsPanel.DisableNotificationsClicked account
 
                          else
-                            "🔕"
+                            AccountsPanel.EnableNotificationsClicked account
                         )
-                    ]
-                , case error of
-                    Just reason ->
-                        span [ class "notifications-btn-error" ] [ text reason ]
-
-                    Nothing ->
-                        text ""
+                    )
                 ]
+                [ text
+                    (if enabled then
+                        "🔔"
+
+                     else if error /= Nothing then
+                        "⚠️"
+
+                     else
+                        "🔕"
+                    )
+                ]
+
+
+{-| The actual text of `notificationsButton`'s last failure, if any (see `AccountsPanel.notificationErrors`) --
+shown in-flow under `account`'s username/server badge (mirrors the `account-needs-password` badge
+right below it) rather than as a tooltip or a floating bubble anchored to the button itself: the
+button lives inside `.nav-panel`, which sets its own `overflow-y: auto` (and, per the CSS spec,
+therefore also computes `overflow-x` to `auto`), so anything positioned to poke outside the button
+just gets silently clipped instead of actually being readable.
+-}
+notificationError : Shared.Model -> AccountsPanel.Account -> Html msg
+notificationError shared account =
+    case Dict.get (AccountsPanel.accountId account) shared.accounts.notificationErrors of
+        Just reason ->
+            div [ class "account-notification-error" ] [ text reason ]
+
+        Nothing ->
+            text ""
 
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
