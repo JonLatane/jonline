@@ -16,15 +16,46 @@ use crate::rpcs::get_server_configuration_model;
 /// The JSON shape delivered (encrypted, per the Web Push standard) to the browser's service
 /// worker `push` event -- see this file's own module doc comment. `url` (see
 /// `notification_url`) is the full deep link `service-worker.js`'s `notificationclick` handler
-/// navigates to -- `None` (omitted entirely, not sent as `null`, via `skip_serializing_if`) when
-/// this server has no configured `ExternalCdnConfig.frontend_host` to build one from, in which
-/// case that handler just falls back to opening `/`.
+/// navigates to, and `icon` (see `build_icon_url`) the sender's avatar to show alongside it --
+/// both omitted entirely (not sent as `null`, via `skip_serializing_if`) rather than guessed at
+/// when there's nothing to build them from (no configured `ExternalCdnConfig.frontend_host`, or,
+/// for `icon`, no sender avatar/an inbound email with no local sender at all).
 #[derive(Serialize)]
-struct PushPayload<'a> {
-    title: &'a str,
-    body: &'a str,
+struct PushPayload {
+    title: String,
+    body: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
+}
+
+/// The "who" half of a notification's title -- see `build_title`. Two shapes, not one generic
+/// `{ from: String, to: String }`, because they render differently: an in-app Message always has
+/// a real sender/recipient(s) on *this* server, so the title also names the server (disambiguating
+/// once a browser can ever hold subscriptions to more than one); an inbound email's From/To are
+/// raw, unauthenticated header text with no such guarantee, so it's shown as-is with no host
+/// suffix. See `send_message::send_message`/`web::email::create_email_message`, the two sites that
+/// build one of these each.
+pub enum NotificationParticipants {
+    Email { from: String, to: String },
+    InApp { from_username: String, to_usernames: String },
+}
+
+/// Everything `notify_message_recipients` needs to actually render a notification's content --
+/// gathered by its two callers (see `NotificationParticipants`'s own doc comment), but *rendered*
+/// here rather than there, since the in-app title's host suffix needs `ExternalCdnConfig` (see
+/// `build_title`), which only this module already fetches.
+pub struct MessageNotificationContent {
+    pub participants: NotificationParticipants,
+    pub subject: Option<String>,
+    /// The Message's full body text (not pre-truncated) -- `build_body` decides for itself how
+    /// much of it to show, since that depends on whether `subject` is present too.
+    pub body_text: String,
+    /// The sender's own `avatar_media_id` (see `models::Author`) -- always `None` for
+    /// `NotificationParticipants::Email` (no local sender to have one), and for an anonymous or
+    /// avatar-less in-app sender.
+    pub sender_avatar_media_id: Option<i64>,
 }
 
 /// Fans a new-Message notification out to every push subscription belonging to
@@ -48,8 +79,7 @@ struct PushPayload<'a> {
 pub fn notify_message_recipients(
     pool: Arc<PgPool>,
     recipient_user_ids: Vec<i64>,
-    title: String,
-    body: String,
+    content: MessageNotificationContent,
     messaging_group_id: i64,
     message_id: i64,
 ) {
@@ -61,8 +91,7 @@ pub fn notify_message_recipients(
         if let Err(error) = send_message_notifications(
             pool,
             recipient_user_ids,
-            &title,
-            &body,
+            content,
             messaging_group_id,
             message_id,
         )
@@ -76,8 +105,7 @@ pub fn notify_message_recipients(
 async fn send_message_notifications(
     pool: Arc<PgPool>,
     recipient_user_ids: Vec<i64>,
-    title: &str,
-    body: &str,
+    content: MessageNotificationContent,
     messaging_group_id: i64,
     message_id: i64,
 ) -> Result<(), String> {
@@ -99,14 +127,18 @@ async fn send_message_notifications(
 
     validate_private_vapid_key(&web_push_config.private_vapid_key)?;
 
-    let url = notification_url(&mut conn, messaging_group_id, message_id)?;
+    let frontend_host = stored_frontend_host(&mut conn)?;
+    let url = notification_url(frontend_host.as_deref(), messaging_group_id, message_id);
+    let title = build_title(&content.participants, frontend_host.as_deref());
+    let body = build_body(content.subject.as_deref(), &content.body_text);
+    let icon = build_icon_url(frontend_host.as_deref(), content.sender_avatar_media_id);
 
     let partial_signature_builder =
         VapidSignatureBuilder::from_base64_no_sub(&web_push_config.private_vapid_key)
             .map_err(|e| format!("{:?}", e))?;
     let client = IsahcWebPushClient::new().map_err(|e| format!("{:?}", e))?;
-    let payload =
-        serde_json::to_vec(&PushPayload { title, body, url }).map_err(|e| e.to_string())?;
+    let payload = serde_json::to_vec(&PushPayload { title, body, url, icon })
+        .map_err(|e| e.to_string())?;
 
     for subscription in subscriptions {
         let subscription_info = SubscriptionInfo::new(
@@ -186,6 +218,22 @@ pub(crate) fn stored_web_push_config(
         .and_then(|c| serde_json::from_value::<protos::WebPushConfig>(c).ok()))
 }
 
+/// Fetches this server's own public-facing frontend host (`ExternalCdnConfig.frontend_host`), if
+/// configured -- used to build a full `https://` deep link/avatar URL for a push notification
+/// (`notification_url`/`build_icon_url`), since a push payload has no notion of "this server" the
+/// way an in-app fetch already scoped to a connection does. Also what `build_title` names an
+/// in-app Message's sender/recipients "on", so a browser that can ever hold subscriptions from
+/// more than one server can tell them apart at a glance.
+pub(crate) fn stored_frontend_host(
+    conn: &mut crate::db_connection::PgPooledConnection,
+) -> Result<Option<String>, String> {
+    Ok(get_server_configuration_model(conn)
+        .map_err(|e| e.to_string())?
+        .external_cdn_config
+        .and_then(|c| serde_json::from_value::<protos::ExternalCdnConfig>(c).ok())
+        .map(|c| c.frontend_host))
+}
+
 /// Builds the full `https://<frontend_host>/messages?messaging_group=<id>#message-<id>` deep
 /// link a push notification's `PushPayload.url` should point to -- the same query
 /// param/fragment shape `Components.Pages.MessagesPage.groupQueryParams`/`messageDomId` build
@@ -197,27 +245,79 @@ pub(crate) fn stored_web_push_config(
 /// `Message.messaging_group_id` is never null (`find_or_create_messaging_group` runs for every
 /// Message, in-app or inbound email alike -- see `send_message`/`web::email::create_email_message`,
 /// this function's two callers by way of `send_message_notifications`), so the only reason this
-/// can come back `Ok(None)` is `ExternalCdnConfig.frontend_host` itself not being configured --
-/// in which case there's no known public host to build a real URL against at all, and
+/// can come back `None` is `frontend_host` itself being `None` (no `ExternalCdnConfig` configured)
+/// -- in which case there's no known public host to build a real URL against at all, and
 /// `send_message_notifications` just omits `url` from the payload entirely rather than guessing.
-pub(crate) fn notification_url(
-    conn: &mut crate::db_connection::PgPooledConnection,
+fn notification_url(
+    frontend_host: Option<&str>,
     messaging_group_id: i64,
     message_id: i64,
-) -> Result<Option<String>, String> {
-    let frontend_host = get_server_configuration_model(conn)
-        .map_err(|e| e.to_string())?
-        .external_cdn_config
-        .and_then(|c| serde_json::from_value::<protos::ExternalCdnConfig>(c).ok())
-        .map(|c| c.frontend_host);
-    Ok(frontend_host.map(|host| {
+) -> Option<String> {
+    frontend_host.map(|host| {
         format!(
             "https://{}/messages?messaging_group={}#message-{}",
             host,
             messaging_group_id.to_proto_id(),
             message_id.to_proto_id()
         )
-    }))
+    })
+}
+
+/// Renders `participants` into a notification's title -- see `NotificationParticipants`'s own
+/// doc comment for why the two variants render differently. `▶` stands in for "to" between the
+/// sender and recipient(s) (a deliberate stylistic choice, not a fallback for anything -- plain
+/// ASCII "to" would be just as valid UTF-8 in a push payload). Falls back to just the "from" half
+/// alone if `to`/`to_usernames` came back empty (shouldn't happen in practice -- both callers
+/// always have at least one recipient, per `notify_message_recipients`'s own
+/// `recipient_user_ids`), or, for `InApp`, if `frontend_host` is `None` (nothing to name it after).
+fn build_title(participants: &NotificationParticipants, frontend_host: Option<&str>) -> String {
+    match participants {
+        NotificationParticipants::Email { from, to } => {
+            if to.is_empty() {
+                from.clone()
+            } else {
+                format!("{} ▶ {}", from, to)
+            }
+        }
+        NotificationParticipants::InApp { from_username, to_usernames } => {
+            match (frontend_host, to_usernames.is_empty()) {
+                (Some(host), false) => format!("{} ▶ {} on {}", from_username, to_usernames, host),
+                (Some(host), true) => format!("{} on {}", from_username, host),
+                (None, false) => format!("{} ▶ {}", from_username, to_usernames),
+                (None, true) => from_username.clone(),
+            }
+        }
+    }
+}
+
+/// Renders a notification's body: `subject` plus the Message's own first line of body text if
+/// `subject` is non-blank, otherwise the body's own first *two* lines -- either way, two lines
+/// total. `\n`-joined; every browser this has been checked against (Chrome, Firefox, Safari)
+/// renders an embedded newline in a `Notification`'s `body` as an actual line break, not literal
+/// text.
+fn build_body(subject: Option<&str>, body_text: &str) -> String {
+    let mut body_lines = body_text.lines().map(str::trim).filter(|line| !line.is_empty());
+    match subject.map(str::trim).filter(|subject| !subject.is_empty()) {
+        Some(subject) => match body_lines.next() {
+            Some(first_line) => format!("{}\n{}", subject, first_line),
+            None => subject.to_string(),
+        },
+        None => body_lines.take(2).collect::<Vec<_>>().join("\n"),
+    }
+}
+
+/// Builds a full `https://<frontend_host>/media/<id>?size=small` URL for a notification's `icon`
+/// -- `?size=small` (see `models::ConvertedSizeSpec`) rather than the original upload: a
+/// notification icon renders tiny (well under 320px on every platform this has been checked
+/// against), so serving the original would just waste bandwidth decoding/downscaling an image far
+/// larger than anything actually shown. `None` if either piece is missing -- no configured
+/// `frontend_host`, or (the common case: an inbound email, or an avatar-less/anonymous in-app
+/// sender) no `avatar_media_id` to build one from at all.
+fn build_icon_url(frontend_host: Option<&str>, avatar_media_id: Option<i64>) -> Option<String> {
+    match (frontend_host, avatar_media_id) {
+        (Some(host), Some(id)) => Some(format!("https://{}/media/{}?size=small", host, id.to_proto_id())),
+        _ => None,
+    }
 }
 
 /// `VapidSignatureBuilder::from_base64_no_sub` hands its decoded bytes straight to `jwt_simple`'s
@@ -274,5 +374,108 @@ mod tests {
     #[test]
     fn well_formed_private_vapid_key_is_accepted() {
         assert!(validate_private_vapid_key(VALID_PRIVATE_KEY).is_ok());
+    }
+
+    #[test]
+    fn notification_url_builds_a_deep_link_from_the_given_frontend_host() {
+        let url = notification_url(Some("example.social"), 42, 99)
+            .expect("frontend_host is given, so a url should be built");
+        assert_eq!(
+            url,
+            format!(
+                "https://example.social/messages?messaging_group={}#message-{}",
+                42i64.to_proto_id(),
+                99i64.to_proto_id()
+            )
+        );
+    }
+
+    #[test]
+    fn notification_url_is_none_without_a_frontend_host() {
+        assert_eq!(notification_url(None, 1, 2), None);
+    }
+
+    #[test]
+    fn email_title_includes_from_and_to() {
+        let participants = NotificationParticipants::Email {
+            from: "jonlatane@armothy.local".to_string(),
+            to: "jon@ato.band".to_string(),
+        };
+        assert_eq!(
+            build_title(&participants, Some("ato.band")),
+            "jonlatane@armothy.local ▶ jon@ato.band"
+        );
+    }
+
+    #[test]
+    fn email_title_falls_back_to_just_from_without_a_to() {
+        let participants = NotificationParticipants::Email {
+            from: "jonlatane@armothy.local".to_string(),
+            to: "".to_string(),
+        };
+        assert_eq!(build_title(&participants, Some("ato.band")), "jonlatane@armothy.local");
+    }
+
+    #[test]
+    fn in_app_title_includes_from_to_and_host() {
+        let participants = NotificationParticipants::InApp {
+            from_username: "ato".to_string(),
+            to_usernames: "jon".to_string(),
+        };
+        assert_eq!(build_title(&participants, Some("ato.band")), "ato ▶ jon on ato.band");
+    }
+
+    #[test]
+    fn in_app_title_without_a_frontend_host_drops_the_on_suffix() {
+        let participants = NotificationParticipants::InApp {
+            from_username: "ato".to_string(),
+            to_usernames: "jon".to_string(),
+        };
+        assert_eq!(build_title(&participants, None), "ato ▶ jon");
+    }
+
+    #[test]
+    fn body_with_a_subject_is_the_subject_plus_the_bodys_first_line() {
+        assert_eq!(
+            build_body(Some("Hi!"), "Testing from swaks.\r\n\r\nSecond line."),
+            "Hi!\nTesting from swaks."
+        );
+    }
+
+    #[test]
+    fn body_without_a_subject_is_the_bodys_first_two_lines() {
+        assert_eq!(
+            build_body(None, "First line.\r\n\r\nSecond line.\r\n\r\nThird line."),
+            "First line.\nSecond line."
+        );
+    }
+
+    #[test]
+    fn body_without_a_subject_and_only_one_body_line_is_just_that_line() {
+        assert_eq!(build_body(None, "Only line."), "Only line.");
+    }
+
+    #[test]
+    fn blank_subject_is_treated_the_same_as_no_subject() {
+        assert_eq!(
+            build_body(Some("   "), "First line.\r\nSecond line."),
+            "First line.\nSecond line."
+        );
+    }
+
+    #[test]
+    fn icon_url_combines_frontend_host_and_avatar_media_id() {
+        let url = build_icon_url(Some("ato.band"), Some(42)).expect("both pieces given");
+        assert_eq!(url, format!("https://ato.band/media/{}?size=small", 42i64.to_proto_id()));
+    }
+
+    #[test]
+    fn icon_url_is_none_without_an_avatar() {
+        assert_eq!(build_icon_url(Some("ato.band"), None), None);
+    }
+
+    #[test]
+    fn icon_url_is_none_without_a_frontend_host() {
+        assert_eq!(build_icon_url(None, Some(42)), None);
     }
 }

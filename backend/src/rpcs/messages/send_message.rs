@@ -50,9 +50,9 @@ pub fn send_message(
         .to_string();
     validate_length(&body_text, "body_text", 1, 10000)?;
     validate_max_length(request.subject.to_owned(), "subject", 255)?;
-    // Captured before `body_text` moves into `NewMessage` below -- used as the push notification
-    // body if there's no `subject` (see the `notify_message_recipients` call at the bottom of
-    // this function).
+    // Captured before `body_text` moves into `NewMessage` below -- the push notification's own
+    // body is built from this (see `web_push::build_body`, via the `notify_message_recipients`
+    // call at the bottom of this function).
     let body_preview = body_text.clone();
 
     // Captured before the sender is folded into `to_user_ids` below -- this is the actual
@@ -92,17 +92,26 @@ pub fn send_message(
     let viewing_user_id = user.map(|user| user.id);
 
     if !notify_user_ids.is_empty() {
-        let title = match user {
-            Some(user) if !user.real_name.is_empty() => user.real_name.clone(),
-            Some(user) => user.username.clone(),
-            None => "New message".to_string(),
-        };
-        let notification_body = request.subject.clone().unwrap_or(body_preview);
+        let from_username = user
+            .map(|user| user.username.clone())
+            .unwrap_or_else(|| "Someone".to_string());
+        let to_usernames: Vec<String> = users::table
+            .select(users::username)
+            .filter(users::id.eq_any(&notify_user_ids))
+            .load(conn)
+            .unwrap_or_default();
         crate::web_push::notify_message_recipients(
             pool,
             notify_user_ids,
-            title,
-            notification_body,
+            crate::web_push::MessageNotificationContent {
+                participants: crate::web_push::NotificationParticipants::InApp {
+                    from_username,
+                    to_usernames: to_usernames.join(", "),
+                },
+                subject: request.subject.clone(),
+                body_text: body_preview,
+                sender_avatar_media_id: sender.as_ref().and_then(|sender| sender.avatar_media_id),
+            },
             messaging_group_id,
             message.id,
         );

@@ -100,6 +100,9 @@ async fn main() {
             to: collect_addresses(parsed.to()),
             cc: collect_addresses(parsed.cc()),
             bcc: vec![],
+            date: parsed.header_raw("Date").map(sanitize_header_value),
+            message_id: parsed.message_id().map(|id| id.to_string()),
+            x_mailer: parsed.header_raw("X-Mailer").map(sanitize_header_value),
         };
         let subject = parsed.subject().map(|subject| subject.to_string());
         let body_text = parsed.body_text(0).map(|body| body.to_string());

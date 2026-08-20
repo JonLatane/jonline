@@ -145,7 +145,10 @@ pub fn find_or_create_messaging_group(
 
 /// `Message.email_headers`' typed shape. Address fields hold raw `To`/`Cc`/`Bcc`/`From` header
 /// values (e.g. `"Jon Latané <jon@jonline.io>"`), not just bare addresses, since that's what's
-/// useful to render without re-parsing the MIME blob in MinIO.
+/// useful to render without re-parsing the MIME blob in MinIO. `date`/`message_id`/`x_mailer` are
+/// backend-only for now (not surfaced on the `Message` proto -- `subject` already is, as its own
+/// top-level field, so it has no counterpart here). New fields are all `Option`/default-on-missing
+/// so existing stored rows (JSONB, no migration) still deserialize fine without them.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EmailHeaders {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -156,6 +159,12 @@ pub struct EmailHeaders {
     pub cc: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub bcc: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub message_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub x_mailer: Option<String>,
 }
 
 /// Which envelope field a [`MessageRecipient`] was addressed through, backed by the Postgres

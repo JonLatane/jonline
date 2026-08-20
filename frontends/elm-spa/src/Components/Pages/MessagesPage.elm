@@ -244,6 +244,19 @@ type alias ExpandedGroup =
     -- `host` (`Messages.conversationHost`), so nothing here needs a separate
     -- `host` field of its own.
     , conversation : Messages.Conversation
+
+    -- The account this thread was last fetched (or, for a `SoloMessage`,
+    -- seeded straight from `currentGroupSummaries`) as -- `messagesByServer`'s
+    -- own `accountId` for `conversation`'s host at that moment, see
+    -- `fetchExpand`. `refreshStaleExpansions` compares this against that same
+    -- dict's *current* value every `Poll` to notice an account switch
+    -- (`Shared.AccountsPanel.ToggleAccountEnabled`) that's already moved
+    -- `messagesByServer` on: without a per-thread record of which account it
+    -- was last fetched as, nothing here would ever re-fetch an already-
+    -- `ExpandLoaded`/`ExpandFailed` thread just because the signed-in account
+    -- underneath it changed -- only the outer listing (`fetchNewServers`)
+    -- would catch up.
+    , accountId : Maybe String
     }
 
 
@@ -544,10 +557,13 @@ update accountsPanelModel msg model =
                 ( newModel, cmd ) =
                     fetchNewServers accountsPanelModel model
 
+                ( refreshedModel, refreshCmd ) =
+                    refreshStaleExpansions accountsPanelModel newModel
+
                 ( retriedModel, retryCmd ) =
-                    retryPendingExpansions accountsPanelModel newModel
+                    retryPendingExpansions accountsPanelModel refreshedModel
             in
-            ( retriedModel, Cmd.batch [ cmd, retryCmd ], Nothing )
+            ( retriedModel, Cmd.batch [ cmd, refreshCmd, retryCmd ], Nothing )
 
         ForceRefresh ->
             let
@@ -1203,6 +1219,7 @@ expand accountsPanelModel model conversation =
                                         { status = ExpandLoaded
                                         , messages = Dict.singleton summary.mostRecent.id summary.mostRecent
                                         , conversation = conversation
+                                        , accountId = Dict.get (Messages.conversationHost conversation) model.messagesByServer |> Maybe.andThen .accountId
                                         }
                                         model.expandedGroups
                               }
@@ -1252,6 +1269,18 @@ fetchExpand accountsPanelModel model conversation =
         existingMessages =
             Dict.get key model.expandedGroups |> Maybe.map .messages |> Maybe.withDefault Dict.empty
 
+        feed : Maybe ServerFeed
+        feed =
+            Dict.get host model.messagesByServer
+
+        -- Hoisted above the `knownConnectedServer` check below (unlike the
+        -- `cmd` that actually uses it) so it's available to seed the
+        -- inserted `ExpandedGroup.accountId` even when this host isn't a
+        -- known-connected server yet -- see that field's own doc.
+        accountUserId : Maybe String
+        accountUserId =
+            feed |> Maybe.andThen .accountId
+
         cmd : Cmd Msg
         cmd =
             case AccountsPanel.knownConnectedServer accountsPanelModel.servers host of
@@ -1260,14 +1289,6 @@ fetchExpand accountsPanelModel model conversation =
 
                 Just _ ->
                     let
-                        feed : Maybe ServerFeed
-                        feed =
-                            Dict.get host model.messagesByServer
-
-                        accountUserId : Maybe String
-                        accountUserId =
-                            feed |> Maybe.andThen .accountId
-
                         listingType : MessageListingType
                         listingType =
                             feed |> Maybe.map .listingType |> Maybe.withDefault PERSONALMESSAGES
@@ -1294,7 +1315,7 @@ fetchExpand accountsPanelModel model conversation =
     ( { model
         | expandedGroups =
             Dict.insert key
-                { status = ExpandLoading, messages = existingMessages, conversation = conversation }
+                { status = ExpandLoading, messages = existingMessages, conversation = conversation, accountId = accountUserId }
                 model.expandedGroups
       }
     , cmd
@@ -1338,6 +1359,64 @@ retryPendingExpansions accountsPanelModel model =
         )
         ( model, [] )
         pending
+        |> Tuple.mapSecond Cmd.batch
+
+
+{-| Re-fetches every already-loaded (`ExpandLoaded`/`ExpandFailed`, i.e. not
+`retryPendingExpansions`' own `ExpandLoading`) `expandedGroups` entry whose
+`ExpandedGroup.accountId` no longer matches `messagesByServer`'s *current*
+account for that same host -- called from `Poll` right after `fetchNewServers`
+has had a chance to move `messagesByServer` on, so the comparison is against
+the account that's actually signed in now, not whatever was current when this
+function itself started.
+
+This is what makes an account switch (`Shared.AccountsPanel.ToggleAccountEnabled`,
+which fires `Poll` unconditionally -- see `Shared.elm`'s own `AccountsPanelMsg`
+handling, and `Pages.Messages`' `SharedMsg` forwarding for the real two-pane
+page) actually refresh an already-open thread/group, not just the outer
+sidebar listing: `fetchNewServers` alone only notices a changed account for
+*servers it's about to refetch the listing for* -- it never looks at
+`expandedGroups` at all, so a group that was already expanded (sidebar
+inline-open, or the two-pane detail's own `selectedGroup`) before the switch
+would otherwise keep showing whichever account's messages it last fetched,
+indefinitely.
+
+Reuses `fetchExpand` (not `expand`) unconditionally, same as
+`retryPendingExpansions` -- there's no "no-op if already expanded" check to
+route around here, since the whole point is a *stale* already-expanded entry.
+-}
+refreshStaleExpansions : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
+refreshStaleExpansions accountsPanelModel model =
+    let
+        stale : List Messages.Conversation
+        stale =
+            model.expandedGroups
+                |> Dict.values
+                |> List.filterMap
+                    (\eg ->
+                        let
+                            currentAccountId : Maybe String
+                            currentAccountId =
+                                Dict.get (Messages.conversationHost eg.conversation) model.messagesByServer
+                                    |> Maybe.andThen .accountId
+                        in
+                        if eg.status /= ExpandLoading && eg.accountId /= currentAccountId then
+                            Just eg.conversation
+
+                        else
+                            Nothing
+                    )
+    in
+    List.foldl
+        (\ref ( accModel, cmds ) ->
+            let
+                ( newModel, cmd ) =
+                    fetchExpand accountsPanelModel accModel ref
+            in
+            ( newModel, cmd :: cmds )
+        )
+        ( model, [] )
+        stale
         |> Tuple.mapSecond Cmd.batch
 
 

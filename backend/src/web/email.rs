@@ -147,6 +147,16 @@ pub async fn create_email_message(
         // Bcc recipients are (by design) never present in the message's own headers -- see
         // `recipients` above, derived from the SMTP envelope instead.
         bcc: vec![],
+        // Raw header text (not `parsed.date()`'s normalized `DateTime`) -- consistent with this
+        // struct's own "useful to render without re-parsing" doc comment, and preserved as-sent
+        // even if it fails to parse as a valid date.
+        date: parsed.header_raw("Date").map(sanitize_header_value),
+        // `None` (not the synthetic `<generated-*@jonline.internal>` fallback `message_id` above
+        // falls back to for dedup purposes) when there was no real `Message-Id` header at all --
+        // this is meant to reflect what the sender actually sent, not this endpoint's own
+        // bookkeeping.
+        message_id: parsed.message_id().map(|id| id.to_string()),
+        x_mailer: parsed.header_raw("X-Mailer").map(sanitize_header_value),
     };
 
     // The messaging_group is keyed on To/Cc recipients only -- Bcc'd recipients are deliberately
@@ -178,23 +188,31 @@ pub async fn create_email_message(
         messaging_group_id,
     };
 
-    let message = match insert_into(messages::table)
+    // `is_fresh` -- not just `message` itself -- is what `notify_message_recipients` below gates
+    // on: confirmed in production, Stalwart calls this hook *twice* in quick succession (~130ms
+    // apart) for a single actual email, not just on a genuine retry-after-failure. Without this,
+    // the second call's `UniqueViolation` branch would reuse the already-stored row but still push
+    // a second, duplicate notification for it.
+    let (message, is_fresh) = match insert_into(messages::table)
         .values(&new_message)
         .returning(MESSAGE_COLUMNS)
         .get_result::<models::Message>(&mut conn)
     {
-        Ok(message) => message,
+        Ok(message) => (message, true),
         // Stalwart retries delivery on transient failure -- a unique violation here means we've
         // already stored this Message-ID, so treat it as success and reuse the existing row
         // rather than storing (and MinIO-uploading) a duplicate.
         Err(diesel::result::Error::DatabaseError(
             diesel::result::DatabaseErrorKind::UniqueViolation,
             _,
-        )) => messages::table
-            .select(MESSAGE_COLUMNS)
-            .filter(messages::email_message_id.eq(&message_id))
-            .first::<models::Message>(&mut conn)
-            .map_err(|_| Status::InternalServerError)?,
+        )) => (
+            messages::table
+                .select(MESSAGE_COLUMNS)
+                .filter(messages::email_message_id.eq(&message_id))
+                .first::<models::Message>(&mut conn)
+                .map_err(|_| Status::InternalServerError)?,
+            false,
+        ),
         Err(_) => return Err(Status::InternalServerError),
     };
 
@@ -218,27 +236,33 @@ pub async fn create_email_message(
 
     // Notify every recipient (To/Cc *and* Bcc alike -- unlike `message_recipients` above, this
     // isn't about who can see the messaging_group, just who should hear about the message) via
-    // Web Push. The email's `From` header (unauthenticated/spoofable, per this file's own
-    // top-level doc comment; recomputed here since `email_headers` above already moved into
-    // `new_message`), if any, is surfaced as the notification's title so e.g. "jon@ato.band" reads
-    // better than a bare "New message".
-    let notify_user_ids: Vec<i64> = recipients.iter().map(|(user_id, _)| *user_id).collect();
-    let title = parsed
-        .from()
-        .and_then(display_address)
-        .unwrap_or_else(|| "New email".to_string());
-    let notification_body = new_message
-        .subject
-        .clone()
-        .unwrap_or_else(|| new_message.body_text.clone().unwrap_or_default());
-    crate::web_push::notify_message_recipients(
-        state.pool.clone(),
-        notify_user_ids,
-        title,
-        notification_body,
-        messaging_group_id,
-        message.id,
-    );
+    // Web Push -- but only for the call that actually stored this Message, not Stalwart's
+    // duplicate re-delivery of it (see `is_fresh`'s own doc comment above): the second call's
+    // `notify_user_ids` would be identical, so sending it again would just double-notify for the
+    // exact same email. The email's `From`/`To` headers (unauthenticated/spoofable, per this
+    // file's own top-level doc comment; recomputed here since `email_headers` above already moved
+    // into `new_message`) are surfaced as-is (see `web_push::NotificationParticipants::Email`) so
+    // e.g. "jon@ato.band" reads better than a bare "New message".
+    if is_fresh {
+        let notify_user_ids: Vec<i64> = recipients.iter().map(|(user_id, _)| *user_id).collect();
+        let from = parsed
+            .from()
+            .and_then(display_address)
+            .unwrap_or_else(|| "New email".to_string());
+        let to = collect_addresses(parsed.to()).join(", ");
+        crate::web_push::notify_message_recipients(
+            state.pool.clone(),
+            notify_user_ids,
+            crate::web_push::MessageNotificationContent {
+                participants: crate::web_push::NotificationParticipants::Email { from, to },
+                subject: new_message.subject.clone(),
+                body_text: new_message.body_text.clone().unwrap_or_default(),
+                sender_avatar_media_id: None,
+            },
+            messaging_group_id,
+            message.id,
+        );
+    }
 
     Ok(RawJson(
         serde_json::to_string(&MtaHookResponse { action: "accept" }).unwrap(),
@@ -382,5 +406,67 @@ mod tests {
 
         assert_eq!(parsed.subject(), Some("Test"));
         assert_eq!(parsed.body_text(0).as_deref(), Some("Test message.\r\n"));
+    }
+
+    #[test]
+    fn email_headers_captures_date_message_id_and_x_mailer() {
+        let headers = vec![
+            (
+                "Date".to_string(),
+                "Thu, 20 Aug 2026 15:49:14 -0400".to_string(),
+            ),
+            ("To".to_string(), "jon@ato.band".to_string()),
+            ("From".to_string(), "jonlatane@armothy.local".to_string()),
+            ("Subject".to_string(), "Hi!".to_string()),
+            (
+                "Message-Id".to_string(),
+                "<20260820154914.071401@armothy.local>".to_string(),
+            ),
+            (
+                "X-Mailer".to_string(),
+                "swaks v20240103.0 jetmore.org/john/code/swaks/".to_string(),
+            ),
+        ];
+        let raw_message = build_raw_message(&headers, "Testing.\r\n");
+        let parsed = mail_parser::MessageParser::default()
+            .parse(&raw_message)
+            .expect("should parse as a valid message");
+
+        let email_headers = models::EmailHeaders {
+            from: parsed.from().and_then(display_address),
+            to: collect_addresses(parsed.to()),
+            cc: collect_addresses(parsed.cc()),
+            bcc: vec![],
+            date: parsed.header_raw("Date").map(sanitize_header_value),
+            message_id: parsed.message_id().map(|id| id.to_string()),
+            x_mailer: parsed.header_raw("X-Mailer").map(sanitize_header_value),
+        };
+
+        assert_eq!(email_headers.date.as_deref(), Some("Thu, 20 Aug 2026 15:49:14 -0400"));
+        assert_eq!(
+            email_headers.message_id.as_deref(),
+            Some("20260820154914.071401@armothy.local")
+        );
+        assert_eq!(
+            email_headers.x_mailer.as_deref(),
+            Some("swaks v20240103.0 jetmore.org/john/code/swaks/")
+        );
+    }
+
+    /// `EmailHeaders` is stored as JSONB with no migration backing it -- existing rows written
+    /// before `date`/`message_id`/`x_mailer` existed just don't have those keys in their stored
+    /// JSON at all. Confirms deserializing that old shape still works, with the new fields simply
+    /// coming back `None` rather than failing to parse.
+    #[test]
+    fn email_headers_deserializes_the_pre_existing_shape_without_the_new_fields() {
+        let old_shape_json = r#"{"from":"someone@example.com","to":["jon@ato.band"]}"#;
+        let email_headers: models::EmailHeaders =
+            serde_json::from_str(old_shape_json).expect("should deserialize the old shape");
+
+        assert_eq!(email_headers.from.as_deref(), Some("someone@example.com"));
+        assert_eq!(email_headers.to, vec!["jon@ato.band".to_string()]);
+        assert_eq!(email_headers.date, None);
+        assert_eq!(email_headers.message_id, None);
+        assert_eq!(email_headers.x_mailer, None);
     }
 }

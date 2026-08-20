@@ -7,11 +7,14 @@
 
 // Push payloads arrive already decrypted by the browser (Web Push's own encryption, handled
 // before this event fires) as the plaintext JSON `backend/src/web_push`'s `PushPayload` sends:
-// `{ title, body, url? }` -- `url` (a full `https://<frontend_host>/messages?...#message-<id>`
-// deep link straight to the Message, see `web_push::notification_url`) is only present if the
-// server has a configured `ExternalCdnConfig.frontend_host` to build one from. Stashed on the
-// notification's own `data` (not just closed over here) since `notificationclick` below fires as
-// a *separate* event, with no other way to recover which push it's reacting to.
+// `{ title, body, url?, icon? }` -- `url` (a full `https://<frontend_host>/messages?...#message-<id>`
+// deep link straight to the Message, see `web_push::notification_url`) and `icon` (the sender's
+// own avatar, see `web_push::build_icon_url` -- absent for inbound email, which has no local
+// sender) are only present if the server has a configured `ExternalCdnConfig.frontend_host` to
+// build them from. `icon` falls back to the site's own favicon, same as before this payload ever
+// carried one. `url` is stashed on the notification's own `data` (not just closed over here)
+// since `notificationclick` below fires as a *separate* event, with no other way to recover which
+// push it's reacting to.
 self.addEventListener('push', function (event) {
   var payload = { title: 'Jonline', body: 'You have a new message.' };
   if (event.data) {
@@ -24,7 +27,7 @@ self.addEventListener('push', function (event) {
   event.waitUntil(
     self.registration.showNotification(payload.title || 'Jonline', {
       body: payload.body || '',
-      icon: '/favicon.png',
+      icon: payload.icon || '/favicon.png',
       badge: '/favicon.png',
       data: { url: payload.url || '/' }
     })
