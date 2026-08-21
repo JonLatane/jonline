@@ -13,3 +13,7 @@
 # Generated YAML from deploy scripts. May contain emails, names, etc.
 *.generated.yaml
 .minio-data
+
+# Postgres dumps from deploys/Makefile's dump_backend_postgres/upgrade_backend_postgres. Contain
+# real user data.
+/deploys/backups/

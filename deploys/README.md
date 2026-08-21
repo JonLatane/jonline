@@ -14,6 +14,7 @@
     - [Example Kubernetes Cluster Setups](#example-kubernetes-cluster-setups)
       - [K8s cluster with multiple Kubernetes LoadBalancers (without a shared ingress)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-a-shared-ingress)
       - [K8s cluster with multiple Jonline servers/deployments behind a single shared LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-shared-loadbalancer)
+  - [Upgrading your deployed PostgreSQL](#upgrading-your-deployed-postgresql)
 
 Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment takes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
 
@@ -225,3 +226,12 @@ This is how Jonline was originally deployed, and still is by default for a singl
 #### K8s cluster with multiple Jonline servers/deployments behind a single shared LoadBalancer
 This is what [`deploys/ingress/`](./ingress/README.md) sets up.
 ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Traefik_Kubernetes_Deployment.svg)
+
+## Upgrading your deployed PostgreSQL
+The Postgres image tag lives in `k8s/k8s-postgres-$(K8S_PROVIDER).yaml`. For a **minor** version bump (e.g. `17.5` → `17.6`), just edit the tag and run `make update_backend_postgres`. For a **major** version bump (e.g. `14` → `17`), the on-disk data format changes, so don't just `update_backend_postgres` -- use:
+
+```bash
+NAMESPACE=my_namespace make upgrade_backend_postgres
+```
+
+This handles the whole migration: it dumps your current database (via a temporary port-forward, no `kubectl exec` needed), stops the app and the old Postgres, brings up the new version (initdb'd fresh on a new PVC subPath, so the old data directory is never touched), restores the dump into it, then restarts the app. Your old version's data stays on disk as an instant rollback until you're confident in the new one, at which point `make delete_backend_postgres_old_data NAMESPACE=my_namespace` permanently deletes it.
