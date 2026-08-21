@@ -1,5 +1,6 @@
 port module Ports exposing
     ( accountsAndServersUpdated
+    , broadcastPushSubscriptionChange
     , calendarEventClicked
     , checkPushSubscription
     , clearFederatedAuthKeyPair
@@ -20,6 +21,7 @@ port module Ports exposing
     , persistThemePreference
     , persistUserPreferences
     , pushSubscribed
+    , pushSubscriptionChangeReceived
     , pushSubscriptionChecked
     , renderCalendar
     , scrollElementLeft
@@ -343,3 +345,22 @@ figure out *which* account this belongs to: matched against each signed-in accou
 account" -- only one subscription can ever exist per origin.
 -}
 port pushSubscriptionChecked : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Broadcasts a change to *this* tab's own understanding of `AccountsPanel.pushSubscriptions` --
+`{ accountId : String, endpoint : String } | { accountId : String, endpoint : null }` (present
+`endpoint` for an account just enabled, `null` for one just disabled) -- to every other open tab on
+this origin, so an Enable/Disable click in one tab is reflected in the others immediately instead
+of only on their own next reload. Mirrors `persistAccountsAndServers`'s cross-tab `BroadcastChannel`
+sync, but deliberately *not* combined with an actual `persist*`-style port: `pushSubscriptions` is
+itself never written to `localStorage` (see its own doc comment -- it's re-derived fresh from the
+browser's real subscription every page load), so there's nothing to persist here, only to announce.
+-}
+port broadcastPushSubscriptionChange : Encode.Value -> Cmd msg
+
+
+{-| Fires in *other* tabs (never the tab that called `broadcastPushSubscriptionChange` itself)
+whenever one tab's `pushSubscriptions` changes, carrying the same value that port was given --
+decode with `AccountsPanel.pushSubscriptionChangeDecoder`.
+-}
+port pushSubscriptionChangeReceived : (Encode.Value -> msg) -> Sub msg

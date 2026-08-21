@@ -367,6 +367,7 @@ type Msg
     | GotUnregisterPushSubscriptionResult (Result Grpc.Error Account)
     | PushSubscriptionCheckReceived Decode.Value
     | GotPushSubscriptionStatusResult String (Result Grpc.Error ( Account, GetPushSubscriptionStatusResponse ))
+    | PushSubscriptionChangeReceived Decode.Value
     | NoOp
 
 
@@ -1384,6 +1385,7 @@ subscriptions model =
         , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
         , Ports.pushSubscribed PushSubscriptionPortReceived
         , Ports.pushSubscriptionChecked PushSubscriptionCheckReceived
+        , Ports.pushSubscriptionChangeReceived PushSubscriptionChangeReceived
         ]
 
 
@@ -2837,6 +2839,7 @@ sendUpdate req msg model =
                             )
                             |> Task.map Tuple.first
                             |> Task.attempt GotUnregisterPushSubscriptionResult
+                        , broadcastPushSubscriptionChangeCmd id Nothing
                         ]
                     )
 
@@ -2902,7 +2905,12 @@ sendUpdate req msg model =
                                 , notificationErrors = Dict.remove (accountId refreshedAccount) model.notificationErrors
                             }
                     in
-                    ( newModel, persist newModel )
+                    ( newModel
+                    , Cmd.batch
+                        [ persist newModel
+                        , broadcastPushSubscriptionChangeCmd (accountId refreshedAccount) (Just pushSubscription.endpoint)
+                        ]
+                    )
 
                 Err error ->
                     case model.pendingNotificationAccountId of
@@ -2953,6 +2961,22 @@ sendUpdate req msg model =
                     -- unrefreshable expired token, etc.), just leave that account showing as
                     -- disabled; nothing here was user-initiated, so there's no `notificationErrors`
                     -- entry to fill in the way a real click's failure gets one.
+                    ( model, Cmd.none )
+
+        PushSubscriptionChangeReceived value ->
+            case Decode.decodeValue pushSubscriptionChangeDecoder value of
+                Ok ( id, Just endpoint ) ->
+                    ( { model
+                        | pushSubscriptions = Dict.insert id endpoint model.pushSubscriptions
+                        , notificationErrors = Dict.remove id model.notificationErrors
+                      }
+                    , Cmd.none
+                    )
+
+                Ok ( id, Nothing ) ->
+                    ( { model | pushSubscriptions = Dict.remove id model.pushSubscriptions }, Cmd.none )
+
+                Err _ ->
                     ( model, Cmd.none )
 
         NoOp ->
@@ -4262,6 +4286,32 @@ pushSubscriptionCheckDecoder =
         (Decode.map2 PushSubscriptionCheck
             (Decode.field "endpoint" Decode.string)
             (Decode.field "publicKey" Decode.string)
+        )
+
+
+{-| Decodes `Ports.broadcastPushSubscriptionChange`/`pushSubscriptionChangeReceived`'s payload:
+`{ accountId, endpoint }`, `endpoint` being the account's new endpoint (just enabled) or `null`
+(just disabled).
+-}
+pushSubscriptionChangeDecoder : Decoder ( String, Maybe String )
+pushSubscriptionChangeDecoder =
+    Decode.map2 Tuple.pair
+        (Decode.field "accountId" Decode.string)
+        (Decode.field "endpoint" (Decode.nullable Decode.string))
+
+
+{-| Tells every other open tab on this origin that `id`'s own `pushSubscriptions` entry just
+changed -- `Just endpoint` for an Enable, `Nothing` for a Disable -- so they immediately reflect it
+instead of only picking it up on their own next reload. See `Ports.broadcastPushSubscriptionChange`'s
+own doc comment for why this doesn't also persist anything.
+-}
+broadcastPushSubscriptionChangeCmd : String -> Maybe String -> Cmd Msg
+broadcastPushSubscriptionChangeCmd id endpoint =
+    Ports.broadcastPushSubscriptionChange
+        (Encode.object
+            [ ( "accountId", Encode.string id )
+            , ( "endpoint", endpoint |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+            ]
         )
 
 

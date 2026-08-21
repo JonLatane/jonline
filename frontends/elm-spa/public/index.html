@@ -528,6 +528,22 @@
         });
     });
 
+    // Same cross-tab sync as `accountsAndServersChannel`/`starredPostsChannel` above, but with no
+    // `localStorage` write -- `pushSubscriptions` is itself never persisted (see its own doc
+    // comment), so there's nothing to write, only to announce to already-open tabs.
+    var pushSubscriptionChannel = window.BroadcastChannel ? new BroadcastChannel("jonlinePushSubscriptions") : null;
+    if (pushSubscriptionChannel) {
+      pushSubscriptionChannel.onmessage = function (e) {
+        app.ports.pushSubscriptionChangeReceived.send(e.data);
+      };
+    }
+
+    app.ports.broadcastPushSubscriptionChange.subscribe(function (change) {
+      if (pushSubscriptionChannel) {
+        pushSubscriptionChannel.postMessage(change);
+      }
+    });
+
     darkMediaQuery.addEventListener("change", function (e) {
       app.ports.systemPrefersDarkChanged.send(e.matches);
       if (currentThemePreference === "auto") {
