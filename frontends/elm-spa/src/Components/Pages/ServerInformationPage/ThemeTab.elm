@@ -482,19 +482,6 @@ clickable `h3` itself, so tapping it doesn't also bubble into `ColorMetaExpanded
 -}
 colorMetaSection : Shared.Model -> Model -> Proto.Jonline.ServerInfo -> Html Msg
 colorMetaSection shared model info =
-    let
-        primaryMeta : ServerTheme.ColorMeta
-        primaryMeta =
-            effectiveColorMeta model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
-
-        navMeta : ServerTheme.ColorMeta
-        navMeta =
-            effectiveColorMeta model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
-
-        theme : ServerTheme.ServerTheme
-        theme =
-            ServerTheme.fromColorMetas False primaryMeta navMeta
-    in
     div [ class "server-details-color-meta" ]
         (div [ class "server-details-color-meta-header" ]
             [ h3
@@ -519,6 +506,17 @@ colorMetaSection shared model info =
                 text ""
             ]
             :: (if model.colorMetaExpanded then
+                    let
+                        primaryMeta : ServerTheme.ColorMeta
+                        primaryMeta =
+                            effectiveColorMeta model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
+                        navMeta : ServerTheme.ColorMeta
+                        navMeta =
+                            effectiveColorMeta model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
+                        theme : ServerTheme.ServerTheme
+                        theme =
+                            ServerTheme.fromColorMetas False primaryMeta navMeta
+                    in
                     [ colorMetaColorRow "Primary Text Color" theme.primaryTextColor
                     , colorMetaColorRow "Primary Dark Color" theme.primaryDarkColor
                     , colorMetaColorRow "Primary Light Color" theme.primaryLightColor
