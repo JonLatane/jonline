@@ -6,7 +6,9 @@ module Shared.MediaViewerPanel exposing (Model, Msg(..), init, subscriptions, up
 "current" item the user can page through, like a carousel. One shared
 instance, opened from wherever a `Post`'s media is tapped (`Pages.Home_`,
 `Pages.Post.PostId_`, `Shared.StarredPanel`) rather than each caller
-owning its own viewer state, same reasoning as `Shared.MarkdownPanel`.
+owning its own viewer state, same reasoning as `Shared.MarkdownPanel`. Also
+opened, with no backing `Post` at all, from `Shared.MyMediaPanel`'s own
+Browse-mode grid -- see `Msg`'s own doc on `Open`.
 
 Doesn't need `AccountsPanel.Model` in `update` (no RPCs to make, nothing to
 forward -- see `Shared.AccountsPanel.DebugTab` for the same minimal shape); `view` still
@@ -24,8 +26,10 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (on, onClick, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
+import Process
 import Proto.Jonline exposing (MediaReference, Post)
 import Shared.AccountsPanel as AccountsPanel
+import Task
 import UI.Classes exposing (classes, openClosedClass)
 
 
@@ -57,11 +61,30 @@ type alias Model =
     -- to decide whether the gesture was a swipe at all and, if so, which one
     -- (see `applySwipe`).
     , touchStart : Maybe ( Float, Float )
+
+    -- Debounces the neighbor-preload elements (see `view`'s `preloadMedia`)
+    -- behind `preloadDelayMs` of no further paging: every `Open`/`Next`/
+    -- `Prev`/`SetCurrent` that lands on a new `currentMediaReference` clears
+    -- this back to `Nothing` and schedules a fresh `PreloadReady` for that
+    -- id (see `schedulePreload`) -- `view` only actually renders the hidden
+    -- preload elements once this equals `currentMediaReference` again, i.e.
+    -- once the *last* scheduled timer has actually landed without a further
+    -- page superseding it first. A fast flick through several items in a
+    -- row -- or a fast double-tap of `Next` -- never preloads anything for
+    -- the items flown past, only whichever one the user actually stops on.
+    , preloadFor : Maybe String
     }
 
 
 type Msg
-    = Open Post String String
+      -- `Open media maybePost initialId host` -- `media` is the full
+      -- paging list (a `Post`'s own `.media`, or, from `Shared.MyMediaPanel`'s
+      -- Browse mode, every currently-shown grid item converted to
+      -- `MediaReference`); `maybePost` is `Just` only in the `Post`-backed
+      -- case, purely so `view`'s toolbar can show that post's title --
+      -- `Nothing` renders no title at all, same as before this panel could
+      -- be opened any other way.
+    = Open (List MediaReference) (Maybe Post) String String
     | SetCurrent String
     | Next
     | Prev
@@ -69,6 +92,11 @@ type Msg
     | TouchStart Float Float
     | TouchMove
     | TouchEnd Float Float
+      -- Fired `preloadDelayMs` after landing on a new `currentMediaReference`
+      -- -- see `Model.preloadFor`'s own doc. Carries the id it was scheduled
+      -- for so a stale timer (superseded by further paging before it fired)
+      -- can tell itself apart from the live one.
+    | PreloadReady String
 
 
 {-| See `Model.direction`'s doc.
@@ -81,7 +109,7 @@ type Direction
 
 init : Model
 init =
-    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering, touchStart = Nothing }
+    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering, touchStart = Nothing, preloadFor = Nothing }
 
 
 {-| Left/right arrow keys page `Prev`/`Next`, same as the toolbar's `‹`/`›`
@@ -97,54 +125,62 @@ subscriptions model =
         Sub.none
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Open post initialId host ->
-            { media = post.media
-            , currentMediaReference = validCurrent post.media initialId
-            , maybePost = Just post
-            , targetHost = host
-            , direction = Entering
-            , touchStart = Nothing
-            }
+        Open media maybePost initialId host ->
+            let
+                newCurrent : Maybe String
+                newCurrent =
+                    validCurrent media initialId
+            in
+            ( { media = media
+              , currentMediaReference = newCurrent
+              , maybePost = maybePost
+              , targetHost = host
+              , direction = Entering
+              , touchStart = Nothing
+              , preloadFor = Nothing
+              }
+            , schedulePreload newCurrent
+            )
 
         SetCurrent id ->
             case validCurrent model.media id of
                 Just validId ->
-                    { model | currentMediaReference = Just validId }
+                    ( { model | currentMediaReference = Just validId, preloadFor = Nothing }, schedulePreload (Just validId) )
 
                 Nothing ->
-                    model
+                    ( model, Cmd.none )
 
         Next ->
             case adjacent 1 model of
                 Just nextMedia ->
-                    { model | currentMediaReference = Just nextMedia.id, direction = Forward }
+                    ( { model | currentMediaReference = Just nextMedia.id, direction = Forward, preloadFor = Nothing }, schedulePreload (Just nextMedia.id) )
 
                 Nothing ->
-                    model
+                    ( model, Cmd.none )
 
         Prev ->
             case adjacent -1 model of
                 Just prevMedia ->
-                    { model | currentMediaReference = Just prevMedia.id, direction = Backward }
+                    ( { model | currentMediaReference = Just prevMedia.id, direction = Backward, preloadFor = Nothing }, schedulePreload (Just prevMedia.id) )
 
                 Nothing ->
-                    model
+                    ( model, Cmd.none )
 
         CloseClicked ->
-            init
+            ( init, Cmd.none )
 
         TouchStart x y ->
-            { model | touchStart = Just ( x, y ) }
+            ( { model | touchStart = Just ( x, y ) }, Cmd.none )
 
         -- No-op on the model -- exists only so `view` has a `Msg` to attach
         -- `preventDefaultOn` to (see there), stopping iOS Safari from
         -- treating an in-progress swipe as a page scroll/bounce or an
         -- edge-swipe-back gesture before `TouchEnd` gets a chance to fire.
         TouchMove ->
-            model
+            ( model, Cmd.none )
 
         TouchEnd x y ->
             case model.touchStart of
@@ -152,7 +188,43 @@ update msg model =
                     applySwipe start ( x, y ) { model | touchStart = Nothing }
 
                 Nothing ->
-                    model
+                    ( model, Cmd.none )
+
+        -- See `Model.preloadFor`'s own doc -- only actually starts
+        -- preloading if `id` is still what's current; a stale timer that
+        -- lost the race to a further page is silently dropped.
+        PreloadReady id ->
+            if model.currentMediaReference == Just id then
+                ( { model | preloadFor = Just id }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
+
+{-| Schedules `PreloadReady maybeId` (a no-op if `maybeId` is `Nothing` --
+`Open`'s own initial id can fail `validCurrent`) `preloadDelayMs` from now --
+see `Model.preloadFor`'s own doc for why every `currentMediaReference` change
+calls this.
+-}
+schedulePreload : Maybe String -> Cmd Msg
+schedulePreload maybeId =
+    case maybeId of
+        Just id ->
+            Process.sleep preloadDelayMs |> Task.perform (\_ -> PreloadReady id)
+
+        Nothing ->
+            Cmd.none
+
+
+{-| How long `view`'s neighbor-preload elements (`preloadMedia`) wait, with no
+further `Open`/`Next`/`Prev`/`SetCurrent`, before actually starting -- long
+enough that a user flicking rapidly through a gallery (arrow keys held down,
+or several fast swipes) never fires off a preload fetch for every item flown
+past, only the one they actually stop on.
+-}
+preloadDelayMs : Float
+preloadDelayMs =
+    1500
 
 
 {-| What a completed swipe gesture (see `TouchStart`/`TouchEnd`) amounts to,
@@ -162,7 +234,7 @@ points -- horizontal swipes page `Next`/`Prev` (left mirrors the toolbar's
 about to slide in from), vertical swipes close the panel, same as tapping
 the backdrop. Below `swipeThreshold` in both axes, nothing happens.
 -}
-applySwipe : ( Float, Float ) -> ( Float, Float ) -> Model -> Model
+applySwipe : ( Float, Float ) -> ( Float, Float ) -> Model -> ( Model, Cmd Msg )
 applySwipe ( startX, startY ) ( endX, endY ) model =
     let
         dx : Float
@@ -181,13 +253,13 @@ applySwipe ( startX, startY ) ( endX, endY ) model =
             update Prev model
 
         else
-            model
+            ( model, Cmd.none )
 
     else if abs dy >= swipeThreshold then
-        init
+        ( init, Cmd.none )
 
     else
-        model
+        ( model, Cmd.none )
 
 
 view : AccountsPanel.Model -> Model -> Html Msg
@@ -201,6 +273,54 @@ view accountsPanelModel model =
         maybeServer : Maybe AccountsPanel.Server
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost
+
+        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount =
+            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+
+        -- The would-be `Prev`/`Next` targets, once `model.preloadFor` (see
+        -- its own doc) confirms the user's actually settled on
+        -- `currentMediaReference` rather than mid-flick through several in a
+        -- row -- `[]` the entire time before that, so nothing renders (and
+        -- so nothing fetches) until then. Images/videos only: a hidden
+        -- `<object>` (PDF/etc, see `Components.MediaRenderer.view`) would
+        -- start an eager download with no matching payoff -- unlike an
+        -- image/video, landing on it doesn't get any snappier from having
+        -- pre-fetched a plugin embed nobody's looked at yet.
+        preloadMedia : List ( String, MediaReference )
+        preloadMedia =
+            if model.preloadFor == model.currentMediaReference then
+                [ ( "preload-prev", adjacent -1 model ), ( "preload-next", adjacent 1 model ) ]
+                    |> List.filterMap (\( key, maybeMedia ) -> maybeMedia |> Maybe.map (Tuple.pair key))
+                    |> List.filter (\( _, media ) -> isImage media || isVideo media)
+
+            else
+                []
+
+        -- Same `MediaRenderer.view` call the currently-shown media itself
+        -- uses (`Natural`/`ToWidthAndHeight`, same `server`/`maybeAccount`)
+        -- so the URL it requests is byte-for-byte what paging to this item
+        -- will actually render -- a mismatched URL (e.g. a different size
+        -- param) would just be a second, wasted fetch instead of a cache
+        -- hit. `media_viewer_panel.css`'s own `.media-viewer-panel-preload`
+        -- hides these visually (`opacity: 0`, not `display: none`) and takes
+        -- them out of interaction (`pointer-events: none`) while still
+        -- keeping them laid out on-screen -- `MediaRenderer.view`'s own
+        -- `loading="lazy"` on the `<img>` case only defers a fetch while an
+        -- element is far from the viewport; an on-screen-but-invisible one
+        -- (as opposed to `display: none`, which many browsers just never
+        -- schedule a lazy fetch for at all) loads immediately, same as a
+        -- visible one would.
+        preloadView : AccountsPanel.Server -> List ( String, Html Msg )
+        preloadView server =
+            preloadMedia
+                |> List.map
+                    (\( key, media ) ->
+                        ( key
+                        , div [ class "media-viewer-panel-preload" ]
+                            [ MediaRenderer.view MediaRenderer.Natural MediaRenderer.ToWidthAndHeight server maybeAccount SetCurrent media ]
+                        )
+                    )
 
         indexLabel : List (Html Msg)
         indexLabel =
@@ -246,11 +366,6 @@ view accountsPanelModel model =
         , div [ class "media-viewer-panel-content" ]
             [ case ( currentMedia, maybeServer ) of
                 ( Just media, Just server ) ->
-                    let
-                        maybeAccount : Maybe AccountsPanel.Account
-                        maybeAccount =
-                            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
-                    in
                     -- Keyed on `media.id` so paging to a different item swaps
                     -- in a brand-new DOM node rather than patching the old
                     -- `<img>`/`<video>`'s attributes in place -- that fresh
@@ -280,11 +395,17 @@ view accountsPanelModel model =
                                 , preventDefaultOn "touchmove" (Decode.succeed ( TouchMove, model.touchStart /= Nothing ))
                                 , on "touchend" (touchPoint "changedTouches" TouchEnd)
                                 ]
-                                [ MediaRenderer.view MediaRenderer.Natural MediaRenderer.ToWidthAndHeight server maybeAccount SetCurrent media ]
+                                [ MediaRenderer.viewAutoplay MediaRenderer.Natural MediaRenderer.ToWidthAndHeight server maybeAccount SetCurrent media ]
                           )
                         ]
 
                 _ ->
+                    text ""
+            , case maybeServer of
+                Just server ->
+                    Html.Keyed.node "div" [ class "media-viewer-panel-preload-stage" ] (preloadView server)
+
+                Nothing ->
                     text ""
             ]
         , div [ class "media-viewer-panel-toolbar" ]
@@ -394,6 +515,17 @@ their native `controls`, same as before this behavior existed).
 isImage : MediaReference -> Bool
 isImage media =
     (String.split "/" media.contentType |> List.head) == Just "image"
+
+
+{-| Whether `media` is a video, by its MIME type's top-level part -- mirrors
+`isImage` (see its own doc), just for `view`'s `preloadMedia`, which -- unlike
+`isImage`'s own callers -- needs to tell both playable media types apart from
+everything else `Components.MediaRenderer.view` falls back to (`Media.object`,
+e.g. a PDF).
+-}
+isVideo : MediaReference -> Bool
+isVideo media =
+    (String.split "/" media.contentType |> List.head) == Just "video"
 
 
 {-| The item before/after the current one in `media`, wrapping around --

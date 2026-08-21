@@ -810,31 +810,31 @@ facebookAppSecretRow maybeEdit maybeAdminAccount =
                 ]
 
 
-{-| Mirrors `facebookAuthConfigSection`: the VAPID public/private key pair an admin sets so Web
-Push notifications (see `Shared.AccountsPanel`'s "Enable notifications", `backend/src/web_push`) can
-actually be sent to this server's subscribers. Only ever shown to an admin -- there's nothing for a
-non-admin to configure here, unlike the Facebook section (which shows the read-only App ID to
-everyone).
+{-| Mirrors `facebookAuthConfigSection`: the read-only Public VAPID key (needed by any browser
+calling `pushManager.subscribe`, see `Shared.AccountsPanel`'s "Enable notifications") is shown to
+everyone, same as the Facebook section's App ID; the Private VAPID key (needed only to sign
+outgoing pushes, see `backend/src/web_push`) is admin-only, same as the App Secret.
 -}
 webPushConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
 webPushConfigSection server model maybeAdminAccount =
-    case maybeAdminAccount of
-        Nothing ->
-            text ""
+    let
+        currentPublicKey : String
+        currentPublicKey =
+            (AccountsPanel.configurationOf server).webPushConfig
+                |> Maybe.map .publicVapidKey
+                |> Maybe.withDefault ""
+    in
+    div [ class "server-details-facebook-auth" ]
+        (h3 [ class "section-title" ] [ text "Web Push Configuration" ]
+            :: webPushPublicKeyRow currentPublicKey model.webPushPublicKeyEdit maybeAdminAccount
+            :: (case maybeAdminAccount of
+                    Just _ ->
+                        [ webPushPrivateKeyRow model.webPushPrivateKeyEdit maybeAdminAccount ]
 
-        Just _ ->
-            let
-                currentPublicKey : String
-                currentPublicKey =
-                    (AccountsPanel.configurationOf server).webPushConfig
-                        |> Maybe.map .publicVapidKey
-                        |> Maybe.withDefault ""
-            in
-            div [ class "server-details-facebook-auth" ]
-                [ h3 [ class "section-title" ] [ text "Web Push Configuration" ]
-                , webPushPublicKeyRow currentPublicKey model.webPushPublicKeyEdit maybeAdminAccount
-                , webPushPrivateKeyRow model.webPushPrivateKeyEdit maybeAdminAccount
-                ]
+                    Nothing ->
+                        []
+               )
+        )
 
 
 webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg

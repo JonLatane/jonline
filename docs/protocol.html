@@ -710,6 +710,56 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       isn't linked to <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a> or <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>.
     </p>
     <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="http://localhost/docs/protocol#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
+    <h5 id="federated-messaging"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-messaging"><span class="octicon octicon-link"></span></a>Federated Messaging</h5>
+    <p>
+      Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
+      from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
+    </p>
+    <h5 id="external-integrations-facebook-ical-jonline-sync"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-integrations-facebook-ical-jonline-sync"><span class="octicon octicon-link"></span></a>External Integrations (Facebook, iCal): Jonline Sync</h5>
+    <p>
+      Jonline Sync currently only supports <a href="#jonline-Event"><code>Event</code></a>s, letting us sync events in from iCal and out to Facebook, but presents
+      a "shape" -- a user-owned source/destination plus a <code>oneof configuration</code> for each -- meant to allow arbitrary input/output types.
+      Contributions for Instagram, Meetup, anything else would be much obliged.
+    </p>
+    <h6 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h6>
+    <p>
+      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> is a user-owned external calendar to pull <code>Event</code>s in from -- currently
+      only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the <code>oneof</code> leaves room for other source types.
+      It's the parent <code>Event</code> (not the <code>EventInstance</code>) that gets synced in and tagged with its source
+      (<code>Event.event_sync_source</code>); the relationship is 1:(0 or 1), since a single source can back many synced <code>Event</code>s but each
+      <code>Event</code> has at most one source it came from. A background job re-pulls each source on its own
+      <code>sync_interval_seconds</code> cadence, recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
+    </p>
+    <p>
+      Sources are managed via <a href="#grpc-api-GetEventSyncSources"><code>GetEventSyncSources</code></a>, <a href="#grpc-api-CreateEventSyncSource"><code>CreateEventSyncSource</code></a>
+      (requires <code>SYNCHRONIZE_EVENTS</code>, or Admin), <a href="#grpc-api-UpdateEventSyncSource"><code>UpdateEventSyncSource</code></a>, and
+      <a href="#grpc-api-DeleteEventSyncSource"><code>DeleteEventSyncSource</code></a>.
+    </p>
+    <h6 id="eventsyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination"><span class="octicon octicon-link"></span></a>EventSyncDestination</h6>
+    <p>
+      An <a href="#jonline-EventSyncDestination"><code>EventSyncDestination</code></a> mirrors <code>EventSyncSource</code>, but for pushing <code>EventInstance</code>s out
+      rather than pulling <code>Event</code>s in -- currently only a connected Facebook Page (<code>configuration.facebook_page</code>, a
+      <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). Unlike <code>EventSyncSource</code>, this is a many-to-many relationship: it's each
+      <code>EventInstance</code> (not the parent <code>Event</code>) that syncs out, and each instance may push to several destinations at once,
+      tracked per-destination via the repeated <code>EventInstance.sync_destinations</code> (each an
+      <a href="#jonline-EventInstanceSyncDestination"><code>EventInstanceSyncDestination</code></a>, carrying the destination's resulting post
+      ID/URL and last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an
+      interval, so <code>synced_event_instance_count</code> is computed with a <code>COUNT</code> at request time instead of being
+      recomputed-and-stored.
+    </p>
+    <p>
+      Connecting a <code>FacebookPage</code> requires a short-lived user access token from client-side Facebook Login
+      (<code>FacebookPage.short_lived_user_access_token</code>), which the server exchanges for a long-lived Page access token; the
+      short-lived token is write-only and never populated back in responses.
+    </p>
+    <p>
+      Destinations are managed via <a href="#grpc-api-GetEventSyncDestinations"><code>GetEventSyncDestinations</code></a>,
+      <a href="#grpc-api-CreateEventSyncDestination"><code>CreateEventSyncDestination</code></a>, <a href="#grpc-api-UpdateEventSyncDestination"><code>UpdateEventSyncDestination</code></a>
+      (each requiring <code>SYNC_EVENTS_TO_FACEBOOK</code>, or Admin), and <a href="#grpc-api-DeleteEventSyncDestination"><code>DeleteEventSyncDestination</code></a>. Actually
+      syncing (or un-syncing) a given <code>EventInstance</code> to a destination is a separate step, via
+      <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a> and <a href="#grpc-api-DeleteEventInstanceSyncDestination"><code>DeleteEventInstanceSyncDestination</code></a>
+      (both also requiring <code>SYNC_EVENTS_TO_FACEBOOK</code>, or Admin).
+    </p>
     <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
     <h5 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h5>
     <h6 id="post-email-stalwart-email-integration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-email-stalwart-email-integration"><span class="octicon octicon-link"></span></a><code>POST /email</code>: Stalwart Email Integration</h6>
@@ -2151,7 +2201,7 @@ directory</a> is (<code>{name}</code> denotes a
       </tbody>
     </table>
     <p><a name="jonline-EventSyncDestination"></a></p>
-    <h3 id="eventsyncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination"><span class="octicon octicon-link"></span></a>EventSyncDestination</h3>
+    <h3 id="eventsyncdestination-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncdestination-1"><span class="octicon octicon-link"></span></a>EventSyncDestination</h3>
     <p>
       A user-owned destination to sync (cross-post) EventInstances to. Mirrors <code>EventSyncSource</code>,
       but for pushing instances out rather than pulling events in.
@@ -2205,7 +2255,7 @@ directory</a> is (<code>{name}</code> denotes a
       </tbody>
     </table>
     <p><a name="jonline-EventSyncSource"></a></p>
-    <h3 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
+    <h3 id="eventsyncsource-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource-1"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
     <p>A user-owned source to sync events from.</p>
     <table>
       <thead>

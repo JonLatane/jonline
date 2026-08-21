@@ -529,7 +529,7 @@ tabContent shared model server =
             Html.map AboutTabMsg (AboutTab.view shared server maybeAdminAccount model.adminsStatus model.versionStatus model.aboutTab)
 
         TabTheme ->
-            Html.map ThemeTabMsg (ThemeTab.view server maybeAdminAccount model.themeTab)
+            Html.map ThemeTabMsg (ThemeTab.view shared server maybeAdminAccount model.themeTab)
 
         TabSettings ->
             Html.map SettingsTabMsg (SettingsTab.view server maybeAdminAccount model.settingsTab)

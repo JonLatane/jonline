@@ -116,7 +116,7 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.3s ease, background-color 0.5s ease;
 }
 
 .messages-group-row.selected {
@@ -381,6 +381,7 @@
   border-radius: 8px;
   color: inherit;
   text-decoration: none;
+  transition: border-color 0.2s ease, background-color 0.3s ease;
 }
 
 /* `MessagesPage.MessageInteraction.SelectGroup` -- a sidebar inline-expand

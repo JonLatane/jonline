@@ -1,4 +1,4 @@
-module Components.MediaRenderer exposing (MediaSize(..), SizeConstraint(..), view)
+module Components.MediaRenderer exposing (MediaSize(..), SizeConstraint(..), view, viewAutoplay)
 
 {-| Renders a single `Proto.Jonline.MediaReference` -- an image, a video, or
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
@@ -33,11 +33,15 @@ the only caller today: tapping an image opens it fullscreen there; tapping a
 video just plays/pauses/scrubs it in place, same as before that panel
 existed).
 
+`viewAutoplay` is the same rendering, just with a video's `autoplay`/`muted`/
+`playsinline` set -- see its own doc.
+
 -}
 
 import Html exposing (Html, a, div, img, object, text, video)
-import Html.Attributes exposing (alt, attribute, class, controls, href, src, style, target, type_)
+import Html.Attributes exposing (alt, attribute, class, controls, href, property, src, style, target, type_)
 import Html.Events exposing (onClick)
+import Json.Encode as Encode
 import Proto.Jonline exposing (MediaReference)
 import Shared.AccountsPanel as AccountsPanel
 
@@ -60,7 +64,35 @@ type SizeConstraint
 
 
 view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
-view mediaSize sizeConstraint server maybeAccount onImageClicked media =
+view =
+    viewHelper False
+
+
+{-| Same as `view`, except a video renders with `autoplay`/`muted`/`playsinline`
+set, so it starts playing (silently) as soon as it's mounted, rather than
+waiting for a tap on its native controls -- used by `Shared.MediaViewerPanel`
+for whichever media is actually on stage (never its own hidden preload
+elements -- an invisible video isn't something the user is watching, so
+starting playback -- and burning bandwidth -- on one would be pure waste).
+`muted` is required for `autoplay` to actually take effect at all in every
+browser tested (Chrome/Safari both silently ignore unmuted autoplay unless
+it's the direct, synchronous result of a user gesture, which a virtual-dom-
+inserted element never counts as, even from a click handler) -- the "tap
+controls to unmute" affordance this leaves in place mirrors how e.g.
+Twitter/Instagram's own feed autoplay behaves. `playsinline` is iOS Safari's
+own opt-out from its default of forcing fullscreen for `autoplay` video,
+without which it wouldn't play in this panel's own frame at all. `muted`
+isn't in `elm/html`'s own `Html.Attributes` (unlike `autoplay`/`controls`),
+and needs setting via `property` rather than `attribute` regardless -- see
+`autoplayAttributes`'s own doc.
+-}
+viewAutoplay : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+viewAutoplay =
+    viewHelper True
+
+
+viewHelper : Bool -> MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+viewHelper autoplay mediaSize sizeConstraint server maybeAccount onImageClicked media =
     let
         mediaUrl : String
         mediaUrl =
@@ -89,10 +121,16 @@ view mediaSize sizeConstraint server maybeAccount onImageClicked media =
                 (List.filterMap identity
                     [ Just (class ("media-renderer-video " ++ sizeClass))
                     , Just (controls True)
-                    , Just (attribute "preload" "metadata")
+                    , Just (attribute "preload" (if autoplay then "auto" else "metadata"))
                     , Just (src (mediaUrl ++ previewTimeFragment media))
                     , aspectRatioStyle media
                     ]
+                    ++ (if autoplay then
+                            autoplayAttributes
+
+                        else
+                            []
+                       )
                 )
                 [ text "Your browser doesn't support embedded video." ]
 
@@ -103,6 +141,26 @@ view mediaSize sizeConstraint server maybeAccount onImageClicked media =
                     , a [ href mediaUrl, target "_blank" ] [ text "Download it instead." ]
                     ]
                 ]
+
+
+{-| `autoplay`/`muted`/`playsinline` for `viewHelper`'s `True` (i.e.
+`viewAutoplay`) branch -- see its own doc for why each is needed. `muted` has
+to be `property`, not `attribute`: the `muted` *content* attribute only sets
+a `<video>`'s default muted state as parsed from literal HTML source: setting
+it via `setAttribute` (what `Html.Attributes.attribute` boils down to) on an
+already-constructed element -- exactly how virtual-dom always creates this
+one -- does nothing, in every browser tested; only the `.muted` *IDL
+property* (what `Html.Attributes.property`/`boolProperty` -- see `autoplay`'s
+own elm/html source -- assign instead) actually mutes an existing element.
+`elm/html` doesn't expose `muted` itself the way it does `autoplay`/
+`controls`/`loop`, so it's built here directly.
+-}
+autoplayAttributes : List (Html.Attribute msg)
+autoplayAttributes =
+    [ Html.Attributes.autoplay True
+    , property "muted" (Encode.bool True)
+    , attribute "playsinline" "true"
+    ]
 
 
 mediaSizeClass : MediaSize -> String

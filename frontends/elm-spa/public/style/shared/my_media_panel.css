@@ -182,6 +182,8 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .my-media-panel-message {
@@ -202,7 +204,16 @@
    collapses on delete, same "no `gap`" reasoning `flip.css` gives for every
    other FLIP list. */
 .my-media-panel-grid {
-  row-gap: 0.75rem;
+  /* row-gap: 0.75rem; */
+  justify-content: space-evenly;
+}
+
+.my-media-panel-grid .flip-animated-item.horizontal>* {
+  padding-right: 0;
+}
+
+.my-media-panel-grid .flip-animated-item>* {
+  padding-bottom: 0;
 }
 
 /* The whole tile is clickable (see `mediaItemView`'s own `onClick`) -- a thin
@@ -219,9 +230,15 @@
   width: var(--my-media-zoom-size, 238px);
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0.3rem;
+  padding: 0.16rem;
   border-radius: 8px;
   cursor: pointer;
+
+  /* Named size container so `.my-media-panel-item-delete` (below) can query
+     this tile's own rendered width -- which tracks `--my-media-zoom-size`
+     above 1:1 (`box-sizing: border-box` folds the padding back in) -- rather
+     than needing an Elm-side "zoomed out" flag. */
+  container: my-media-item / inline-size;
 }
 
 /* Wraps the preview so `.my-media-panel-item-delete` (below) can be
@@ -272,6 +289,21 @@
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Below this tile width (~zoom slider value under 120, since the tile's
+   width tracks `--my-media-zoom-size` 1:1 -- see `.my-media-panel-item`'s
+   own doc) the "✕" overlay is too cramped to hit reliably and mostly just
+   obscures the shrunken preview, so fade it out of the way rather than
+   forcing a minimum tile size. `pointer-events: none` (not `display: none`)
+   keeps the opacity transition itself intact instead of snapping instantly. */
+@container my-media-item (max-width: 119px) {
+  .my-media-panel-item-delete {
+    pointer-events: none;
+    opacity: 0;
+  }
 }
 
 .my-media-panel-item-name {

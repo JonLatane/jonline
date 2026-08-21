@@ -623,14 +623,13 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( model.accounts, Cmd.none )
 
-                mediaViewerPanelModel : MediaViewerPanel.Model
-                mediaViewerPanelModel =
+                ( mediaViewerPanelModel, mediaViewerPanelCmd ) =
                     case maybeMediaViewerPanelMsg of
                         Just mediaViewerPanelMsg ->
                             MediaViewerPanel.update mediaViewerPanelMsg panels.mediaViewerPanel
 
                         Nothing ->
-                            panels.mediaViewerPanel
+                            ( panels.mediaViewerPanel, Cmd.none )
 
                 -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
                 -- branch, above -- see `UI.Responsive`.
@@ -715,6 +714,7 @@ sharedUpdate req msg model =
                 , Cmd.map AccountsPanelMsg closeCmd
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 , Cmd.map MessagingPanelMsg closeMessagingCmd
+                , Cmd.map MediaViewerPanelMsg mediaViewerPanelCmd
                 ]
             )
 
@@ -730,8 +730,11 @@ sharedUpdate req msg model =
                 panels : Panels
                 panels =
                     model.panels
+
+                ( subModel, subCmd ) =
+                    MediaViewerPanel.update subMsg panels.mediaViewerPanel
             in
-            ( { model | panels = { panels | mediaViewerPanel = MediaViewerPanel.update subMsg panels.mediaViewerPanel } }, Cmd.none )
+            ( { model | panels = { panels | mediaViewerPanel = subModel } }, Cmd.map MediaViewerPanelMsg subCmd )
 
         BreadcrumbsMsg subMsg ->
             let
@@ -895,7 +898,7 @@ sharedUpdate req msg model =
                         _ ->
                             Nothing
 
-                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest, maybeMediaViewerPanelMsg ) ) =
                     MyMediaPanel.update model.accounts subMsg panels.myMediaPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
@@ -932,15 +935,34 @@ sharedUpdate req msg model =
 
                         Nothing ->
                             ( panels.createNewPanel, Cmd.none )
+
+                -- `MediaItemClicked` in Browse mode (see `MyMediaPanel.update`'s
+                -- own doc) -- opens `Shared.MediaViewerPanel` on the tapped
+                -- tile, same forwarding convention `StarredPanelMsg`'s own
+                -- `maybeMediaViewerPanelMsg` uses above.
+                ( mediaViewerPanelModel, mediaViewerPanelCmd ) =
+                    case maybeMediaViewerPanelMsg of
+                        Just mediaViewerPanelMsg ->
+                            MediaViewerPanel.update mediaViewerPanelMsg panels.mediaViewerPanel
+
+                        Nothing ->
+                            ( panels.mediaViewerPanel, Cmd.none )
             in
             ( { model
                 | accounts = accountsPanelModel
-                , panels = { panels | myMediaPanel = subModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
+                , panels =
+                    { panels
+                        | myMediaPanel = subModel
+                        , confirmingDeleteFor = confirmingDeleteFor
+                        , createNewPanel = createNewPanelModel
+                        , mediaViewerPanel = mediaViewerPanelModel
+                    }
               }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                , Cmd.map MediaViewerPanelMsg mediaViewerPanelCmd
                 ]
             )
 
@@ -1294,12 +1316,13 @@ sharedUpdate req msg model =
                 -- state), this actually calls `DeleteMedia` -- see
                 -- `MyMediaPanel.deleteTask`. Its own `maybeAccountsPanelMsg`
                 -- is forwarded the same way `MyMediaPanelMsg` above does;
-                -- `DeleteConfirmed` never produces a delete request of its
-                -- own (that's only `DeleteClicked`), so its second value is
-                -- ignored here.
+                -- `DeleteConfirmed` never produces a delete request or a
+                -- `MediaViewerPanel.Open` of its own (those are only
+                -- `DeleteClicked`/`MediaItemClicked`), so its other two
+                -- values are ignored here.
                 Just (ConfirmMediaDelete media) ->
                     let
-                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
+                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _, _ ) ) =
                             MyMediaPanel.update model.accounts (MyMediaPanel.DeleteConfirmed media) panels.myMediaPanel
 
                         ( accountsPanelModel, accountsPanelCmd ) =

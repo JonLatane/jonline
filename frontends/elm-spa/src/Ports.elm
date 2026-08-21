@@ -20,6 +20,7 @@ port module Ports exposing
     , persistStarredPosts
     , persistThemePreference
     , persistUserPreferences
+    , pushMessageReceived
     , pushSubscribed
     , pushSubscriptionChangeReceived
     , pushSubscriptionChecked
@@ -364,3 +365,14 @@ whenever one tab's `pushSubscriptions` changes, carrying the same value that por
 decode with `AccountsPanel.pushSubscriptionChangeDecoder`.
 -}
 port pushSubscriptionChangeReceived : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Fires whenever `service-worker.js`'s `push` handler tells this (already-open, possibly not
+even focused) tab a new Message just arrived -- the `String | null` value is `PushPayload.host`
+(the server it's for), or `null` if the server had no `ExternalCdnConfig.frontend_host` configured
+to know its own host by. See `Components.Pages.MessagesPage.PushNotificationReceived`, the only
+subscriber -- both `Shared.MessagingPanel` and `Pages.Messages` delegate their own subscriptions to
+that same module, so this refreshes whichever of them is currently mounted (possibly both at once)
+without either needing its own separate wiring.
+-}
+port pushMessageReceived : (Encode.Value -> msg) -> Sub msg

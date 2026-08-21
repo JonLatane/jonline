@@ -4,7 +4,9 @@ module Components.Pages.MessagesPage exposing
     , PageContext
     , empty
     , init
+    , pushSubscription
     , subscriptions
+    , timerAndAnimationSubscriptions
     , totalUnreadCount
     , update
     , view
@@ -42,6 +44,7 @@ import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Process
+import Ports
 import Proto.Jonline exposing (Author, Message, defaultMessageRead)
 import Proto.Jonline.MessageListingType exposing (MessageListingType(..))
 import Set exposing (Set)
@@ -155,6 +158,14 @@ type alias Model =
     -- selected group's arrive (`UI.Flip.enter`) -- see
     -- `syncDetailThreadAnimations`.
     , detailThreadAnimations : Dict String MessageAnimation
+
+    -- One debounce generation counter per host (see `SearchDebounceElapsed`'s own generation
+    -- pattern, which this mirrors) -- `PushNotificationReceived` bumps the entry for whichever
+    -- host a push notification just named, `PushRefreshDebounceElapsed` only actually refetches
+    -- that host if its generation still matches (i.e. no *newer* push for the same host arrived
+    -- during the debounce window). Per-host, not one global counter, so a burst of pushes for
+    -- host A doesn't delay an already-in-flight refresh for host B.
+    , pushRefreshGenerations : Dict String Int
     }
 
 
@@ -458,6 +469,16 @@ type Msg
       -- all until some other refetch (a poll, a collapse/re-expand) happened
       -- to catch it up.
     | MessageSent Messages.Conversation String
+      -- `Ports.pushMessageReceived`'s payload: `Just host` when
+      -- `service-worker.js`'s `push` handler named a server (it knows its own `PushPayload.host`
+      -- either way, but only from a *fully* configured server -- see that payload field's own
+      -- doc), `Nothing` otherwise (nothing to refresh -- no `frontend_host` configured on the
+      -- server that sent it, so there's no way to know which `eligibleEntries` host it was even
+      -- for). Debounced (`PushRefreshDebounceElapsed`) rather than refetching immediately, so a
+      -- burst of several pushes for the same host in quick succession triggers one refetch, not
+      -- one per push.
+    | PushNotificationReceived (Maybe String)
+    | PushRefreshDebounceElapsed String Int
 
 
 {-| A `Model` with nothing fetched yet and no `PageContext` -- what
@@ -482,6 +503,7 @@ empty =
     , highlightMessageId = Nothing
     , mobileSidebarOpen = False
     , detailThreadAnimations = Dict.empty
+    , pushRefreshGenerations = Dict.empty
     }
 
 
@@ -519,13 +541,37 @@ init accountsPanelModel pageContext selectedGroup pendingScrollMessageIdFragment
     ( expandedModel, Cmd.batch [ fetchCmd, expandCmd ] )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+{-| Everything a *mounted-but-not-necessarily-visible* instance still needs live: right now, just
+`Ports.pushMessageReceived`. Exposed separately from `subscriptions` (which includes this too, for
+`Pages.Messages`' own always-visible-when-mounted case) specifically for
+`Shared.MessagingPanel`, whose own `subscriptions` only forwards the *rest* of this module's
+subscriptions (`timerAndAnimationSubscriptions`) while its dropdown is open -- a push notification
+has to be able to trigger `PushNotificationReceived` regardless of whether that dropdown happens to
+be open at the moment it arrives, otherwise the panel would show stale data for however long it
+stayed closed after.
+-}
+pushSubscription : Sub Msg
+pushSubscription =
+    Ports.pushMessageReceived
+        (Decode.decodeValue (Decode.nullable Decode.string) >> Result.withDefault Nothing >> PushNotificationReceived)
+
+
+{-| The rest of this module's subscriptions -- everything that only matters while actually
+visible, unlike `pushSubscription`. See that function's own doc for why `Shared.MessagingPanel`
+needs the two split apart instead of just gating the whole of `subscriptions` behind `model.open`.
+-}
+timerAndAnimationSubscriptions : Model -> Sub Msg
+timerAndAnimationSubscriptions model =
     Sub.batch
         [ Time.every 30000 (\_ -> Poll)
         , UI.Flip.subscription Animate (List.map .flip (Dict.values model.sidebarAnimations))
         , UI.Flip.subscription DetailMessageAnimate (Dict.values model.detailThreadAnimations |> List.map .flip)
         ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch [ pushSubscription, timerAndAnimationSubscriptions model ]
 
 
 
@@ -1049,6 +1095,33 @@ update accountsPanelModel msg model =
                     , Nothing
                     )
 
+        PushNotificationReceived Nothing ->
+            ( model, Cmd.none, Nothing )
+
+        PushNotificationReceived (Just host) ->
+            let
+                generation : Int
+                generation =
+                    (Dict.get host model.pushRefreshGenerations |> Maybe.withDefault 0) + 1
+            in
+            ( { model | pushRefreshGenerations = Dict.insert host generation model.pushRefreshGenerations }
+            , Process.sleep 3000 |> Task.perform (\_ -> PushRefreshDebounceElapsed host generation)
+            , Nothing
+            )
+
+        PushRefreshDebounceElapsed host generation ->
+            if Dict.get host model.pushRefreshGenerations == Just generation then
+                let
+                    ( refreshedModel, cmd ) =
+                        refetchServers accountsPanelModel
+                            model
+                            (eligibleEntries accountsPanelModel |> List.filter (\entry -> entry.server.frontendHost == host))
+                in
+                ( refreshedModel, cmd, Nothing )
+
+            else
+                ( model, Cmd.none, Nothing )
+
 
 {-| Marks `messageId` read again if `ref`'s thread is already `ExpandLoaded`
 and it's still `Messages.isUnread` there -- what actually lets re-clicking a
@@ -1364,7 +1437,7 @@ retryPendingExpansions accountsPanelModel model =
 
 {-| Re-fetches every already-loaded (`ExpandLoaded`/`ExpandFailed`, i.e. not
 `retryPendingExpansions`' own `ExpandLoading`) `expandedGroups` entry whose
-`ExpandedGroup.accountId` no longer matches `messagesByServer`'s *current*
+`ExpandedGroup.accountId` no longer matches `messagesByServer`'s _current_
 account for that same host -- called from `Poll` right after `fetchNewServers`
 has had a chance to move `messagesByServer` on, so the comparison is against
 the account that's actually signed in now, not whatever was current when this
@@ -1375,7 +1448,7 @@ which fires `Poll` unconditionally -- see `Shared.elm`'s own `AccountsPanelMsg`
 handling, and `Pages.Messages`' `SharedMsg` forwarding for the real two-pane
 page) actually refresh an already-open thread/group, not just the outer
 sidebar listing: `fetchNewServers` alone only notices a changed account for
-*servers it's about to refetch the listing for* -- it never looks at
+_servers it's about to refetch the listing for_ -- it never looks at
 `expandedGroups` at all, so a group that was already expanded (sidebar
 inline-open, or the two-pane detail's own `selectedGroup`) before the switch
 would otherwise keep showing whichever account's messages it last fetched,
@@ -1383,7 +1456,8 @@ indefinitely.
 
 Reuses `fetchExpand` (not `expand`) unconditionally, same as
 `retryPendingExpansions` -- there's no "no-op if already expanded" check to
-route around here, since the whole point is a *stale* already-expanded entry.
+route around here, since the whole point is a _stale_ already-expanded entry.
+
 -}
 refreshStaleExpansions : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 refreshStaleExpansions accountsPanelModel model =
@@ -3205,7 +3279,7 @@ messageRowView time accountsPanelModel host interaction highlightMessageId isDet
                         []
                    )
                 ++ (if highlightMessageId == Just { host = host, id = message.id } then
-                        [ hostnameToCSSClass host, "border-color-accent" ]
+                        [ hostnameToCSSClass host, "border-color-accent", "background-color-accent-5" ]
 
                     else
                         []

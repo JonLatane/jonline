@@ -216,6 +216,46 @@
   pointer-events: none;
 }
 
+/* Holds `Shared.MediaViewerPanel.view`'s own `preloadMedia` -- the `Prev`/
+   `Next` neighbors of whatever's actually on stage, rendered via the exact
+   same `MediaRenderer.view` call (so their request URL is byte-for-byte what
+   paging there will render, letting the browser's own HTTP cache serve it
+   instantly) but kept invisible and out of the way. Deliberately `opacity: 0`
+   rather than `display: none`: a `display: none` element is never laid out
+   at all, and browsers commonly treat that as "not eligible to load yet"
+   for `Components.MediaRenderer.view`'s own `loading="lazy"` `<img>`s --
+   opacity alone still lays this out on-screen (within
+   `.media-viewer-panel-content`'s own `position: relative` box, itself part
+   of the fullscreen panel while open), which lazy-loading's distance-from-
+   viewport check reads as "may as well load now". Explicit `pointer-events:
+   none` here (plus, below, on the actual `<img>`/`<video>`/`<object>` it
+   wraps -- needed since `.media-viewer-panel-content`'s own `.media-renderer-
+   natural.*` rule above re-enables `auto` on exactly this class list, and a
+   later, equally-specific selector wins by source order) keeps this
+   1px-and-clipped box from ever being an accidental tap target. */
+.media-viewer-panel-preload-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.media-viewer-panel-preload {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.media-viewer-panel-preload .media-renderer-natural.media-renderer-image,
+.media-viewer-panel-preload .media-renderer-natural.media-renderer-video,
+.media-viewer-panel-preload .media-renderer-natural.media-renderer-object {
+  pointer-events: none;
+}
+
 .media-viewer-panel-media-entering {
   animation-name: media-viewer-fade-in;
 }

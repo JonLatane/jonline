@@ -1,30 +1,67 @@
 digraph G {
-  size = "100,100";
-  browser [shape = doublecircle;style = filled;color = ".7 .3 1.0";label = <<b>Web Browser</b>>;];
+  size = "100,150";
+  subgraph cluster_end_user_services {
+    label = <<b>End User Services</b>>;
+    style = filled;
+    color = "gray95";
+
+    browser [shape = doublecircle;style = filled;color = ".7 .3 1.0";group = end_user_stack;label = <<b>Web Browser</b>>;];
+    email_client [shape = doublecircle;style = filled;color = ".7 .3 1.0";group = end_user_stack;label = <<b>Email Client</b>>;];
+    ical_feeds [shape = doublecircle;style = filled;color = ".7 .3 1.0";group = end_user_stack;label = <<b>Public iCal Feeds</b>>;];
+    facebook_service [shape = doublecircle;style = filled;color = ".7 .3 1.0";group = end_user_stack;label = <<b>Facebook</b>>;];
+
+    // Invisible, rank-only chain: stacks End User Services vertically in this exact order
+    // (top to bottom) instead of the side-by-side row dot would otherwise default to.
+    browser -> email_client [style = invis; weight = 100000; minlen = 6;];
+    email_client -> ical_feeds [style = invis; weight = 100000; minlen = 6;];
+    ical_feeds -> facebook_service [style = invis; weight = 100000; minlen = 6;];
+  }
+  vapid_push_service [shape = oval;style = filled;color = lightgrey;group = end_user_stack;label = <<b>Browser-Specific VAPID Push Service</b>>;];
+  // Continues the End User Services column one rank further down, placing this below the whole
+  // subgraph (not just facebook_service specifically).
+  facebook_service -> vapid_push_service [style = invis; weight = 100000; minlen = 6;];
+
+
+  browser -> traefik [style = bold; weight = 100000;];
+  email_client -> traefik [style = "bold,dashed";];
   
-  browser -> traefik [style = bold; label = <<table><tr><td><i>Single</i>&nbsp;<b>$12/mo</b>&nbsp;ingress</td></tr><tr><td>Host Header:<br/>jonline.io | oakcity.social | bullcity.social</td></tr></table>>;];
   resolve_dns [shape = parallelogram;label = "DNS Lookup";];
-  browser -> resolve_dns [style = bold;];
+  browser -> resolve_dns [style = bold; constraint = false;];
+  email_client -> resolve_dns [style = "bold,dashed"; constraint = false;];
+  
   
   jonlineio_dns [shape = note;label = "jonline.io";];
   oakcitysocial_dns [shape = note;label = "oakcity.social";];
   bullcitysocial_dns [shape = note;label = "bullcity.social";];
+  atoband_dns [shape = note;label = "ato.band";];
   
   resolve_dns -> jonlineio_dns [style = dotted;];
   resolve_dns -> oakcitysocial_dns [style = dotted;];
   resolve_dns -> bullcitysocial_dns [style = dotted;];
+  resolve_dns -> atoband_dns [style = dotted;];
   
   jonlineio_dns -> traefik [style = dotted;];
   oakcitysocial_dns -> traefik [style = dotted;];
   bullcitysocial_dns -> traefik [style = dotted;];
+  atoband_dns -> traefik [style = dotted;];
   
-  subgraph cluster0 {
-    label = <<table><tr><td><b>traefik-ingress</b></td></tr><tr><td>(K8s Namespace)</td></tr><tr><td>(could be the same as another namespace)</td></tr></table>>;
+  subgraph cluster_kubernetes {
+    label = <<b>Kubernetes Cluster</b>&nbsp;(one $24/mo, 2vCPU/4GB/80GB, node)>;
+    style = filled;
+    color = "gray95";
+
+    subgraph cluster_routing {
+      label = <<b>Routing</b>>;
+      style = filled;
+      color = "gray90";
+
+  subgraph cluster_traefik_ingress {
+    label = <<b>traefik-ingress</b>&nbsp;(K8s Namespace)>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    traefik [shape = oval;style = filled;color = white;label = <<table><tr><td><b>traefik</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
+    traefik [shape = oval;style = filled;color = white;label = <<table><tr><td><b>traefik</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr><tr><td><i>Single</i>&nbsp;<b>$12/mo</b>&nbsp;ingress</td></tr></table>>;];
     configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <
       <table>
       <tr>
@@ -44,75 +81,393 @@ digraph G {
     parse_host [shape = parallelogram;label = "Parse SNI";];
     resolve_namespace [shape = parallelogram;label = "Resolve Namespace from SNI based on Trafik Configuration";];
     // traefik -> resolve_namespace [weight = 8;];
-    traefik -> parse_host [weight = 8;];
+    traefik -> parse_host [weight = 8; label = "web :80, web-alt :8000,\nwebsecure :443, grpc :27707";];
     parse_host -> resolve_namespace [weight = 8;];
     
     
     jonlineio [shape = note;label = "jonline.io";];
     oakcitysocial [shape = note;label = "oakcity.social";];
     bullcitysocial [shape = note;label = "bullcity.social";];
+    atoband [shape = note;label = "ato.band";];
     
     resolve_namespace -> jonlineio [style = dotted;];
     resolve_namespace -> oakcitysocial [style = dotted;];
     resolve_namespace -> bullcitysocial [style = dotted;];
+    resolve_namespace -> atoband [style = dotted;];
+    
+    // SMTP has its own entrypoint (:25) that never touches parse_host/resolve_namespace above:
+    // plaintext SMTP has no TLS ClientHello to peek an SNI from (STARTTLS upgrades the same
+    // already-routed connection in place, it doesn't open a new one), and there's nothing to
+    // choose *between* anyway -- Stalwart is the only destination cluster-wide.
+    smtp_catchall [shape = parallelogram;label = "Match HostSNI(`*`)\n(plaintext TCP, no SNI to parse)";];
+    traefik -> smtp_catchall [weight = 8; label = "smtp :25"; style = dashed;];
   }
   
-  
-  subgraph cluster1 {
-    label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
+  subgraph cluster_jonline_email {
+    label = <<b>jonline-email</b>&nbsp;(K8s Namespace)>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline0 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    minio0 [shape = cylinder;label = "Minio";];
-    postgres0 [shape = cylinder;label = "Postgres";];
-    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
+    stalwart [label = <<table><tr><td><b>stalwart</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    stalwart_configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <
+      <table>
+      <tr>
+      <td><b>Stalwart Configuration</b></td>
+      </tr>
+      <tr>
+      <td>Maps accepted domains -&gt; K8s namespace<br/>(via per-domain MTA Hooks)</td>
+      </tr>
+      <tr>
+      <td>Configurable with deploys/email/Makefile</td>
+      </tr>
+      </table>
+      >;];
     
-    jonline0 -> minio0 [label = <5GB @ <b>50¢/mo</b>>;];
-    jonline0 -> postgres0 [label = <1GB @ <b>10¢/mo</b>>;];
+    stalwart_configuration -> resolve_mta_hook [style = "bold,dashed";];
+    
+    parse_domain [shape = parallelogram;label = "Parse Recipient Domain\n(envelope rcpt_domain)";];
+    resolve_mta_hook [shape = parallelogram;label = <Resolve MTA Hook Target<br/>from Stalwart Configuration<br/><font face="Courier"> POST /email :27705</font>&nbsp;to configured namespace>;];
+    stalwart -> parse_domain [weight = 8; style = dashed;];
+    parse_domain -> resolve_mta_hook [weight = 8; style = dashed;];
+    
+    
+    jonlineio_mta [shape = note;label = "jonline.io";];
+    oakcitysocial_mta [shape = note;label = "oakcity.social";];
+    bullcitysocial_mta [shape = note;label = "bullcity.social";];
+    atoband_mta [shape = note;label = "ato.band";];
+    
+    resolve_mta_hook -> jonlineio_mta [style = "dotted,dashed";];
+    resolve_mta_hook -> oakcitysocial_mta [style = "dotted,dashed";];
+    resolve_mta_hook -> bullcitysocial_mta [style = "dotted,dashed";];
+    resolve_mta_hook -> atoband_mta [style = "dotted,dashed";];
+    // minio0 [shape = cylinder;label = "Minio";];
+    // postgres0 [shape = cylinder;label = "Postgres";];
+    // tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    
+    // jonline0 -> minio0 [label = <5GB @ <b>50¢/mo</b>>;];
+    // jonline0 -> postgres0 [label = <1GB @ <b>10¢/mo</b>>;];
   }
-  
+
+    }
+
+    subgraph cluster_instances {
+      label = <<b>Instances</b>>;
+      style = filled;
+      color = "gray90";
+
+  subgraph cluster_jonline {
+    label = <<b>jonline</b>&nbsp;(K8s Namespace)>;
+    node [style = filled; color = white;];
+    style = filled;
+    color = lightgrey;
+    
+    jonline0 [shape = oval;style = filled;color = white;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+
+    // VAPID/Facebook config live as JSON columns on the same ServerConfiguration row inside this
+    // Postgres (see backend/src/models/server_configuration_models.rs) -- shown once here, not
+    // repeated per-namespace like jonline-tls, since this diagram only tracks one server's
+    // push/Facebook setup at a time.
+    subgraph cluster_jonline_storage {
+      label = <<b>Storage</b>>;
+      style = filled;
+      color = "#88f5df";
+      node [style = filled; color = white;];
+
+      minio0 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>MinIO</b></td></tr><tr><td>5GB @ <b>50¢/mo</b></td></tr></table>>;color = black;fillcolor = gray80;];
+
+      subgraph cluster_jonline_postgres {
+        label = "";
+        style = filled;
+        color = lightgrey;
+        node [style = filled; color = white;];
+
+        postgres0 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>Postgres</b></td></tr><tr><td>1GB @ <b>10&#162;/mo</b></td></tr></table>>;color = black;fillcolor = white;];
+        subgraph cluster_jonline_postgres_server {
+          label = <<b>Server Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          vapid_configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>VAPID Push Configuration</b>>;];
+          facebook_configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Facebook App Configuration</b>>;];
+        }
+
+        subgraph cluster_jonline_postgres_user {
+          label = <<b>User Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          event_sync_sources [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          event_sync_destinations [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+        }
+        // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
+        vapid_configuration -> event_sync_sources [style = invis;];
+      }
+    }
+    jonline0 -> minio0;
+    jonline0 -> postgres0;
+
+    vapid_push [shape = parallelogram;label = "VAPID Push";];
+    jonline0 -> vapid_push [weight = 8; style = tapered; penwidth = 6;];
+    vapid_configuration -> vapid_push [style = tapered; penwidth = 6;];
+
+    pull_events [shape = parallelogram;label = "Pull Events From Source";];
+    push_events [shape = parallelogram;label = "Push Events To Destination";];
+    jonline0 -> pull_events [weight = 8;];
+    jonline0 -> push_events [weight = 8;];
+    event_sync_sources -> pull_events [style = bold;];
+    event_sync_destinations -> push_events [style = bold;];
+    facebook_configuration -> push_events [style = bold;];
+  }
+
+  subgraph cluster_oakcitysocial {
+    label = <<b>oakcitysocial</b>&nbsp;(K8s Namespace)>;
+    node [style = filled; color = white;];
+    style = filled;
+    color = lightgrey;
+    
+    jonline1 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+
+    subgraph cluster_oakcitysocial_storage {
+      label = <<b>Storage</b>>;
+      style = filled;
+      color = "#88f5df";
+      node [style = filled; color = white;];
+
+      minio1 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>MinIO</b></td></tr><tr><td>5GB @ <b>50¢/mo</b></td></tr></table>>;color = black;fillcolor = gray80;];
+
+      subgraph cluster_oakcitysocial_postgres {
+        label = "";
+        style = filled;
+        color = lightgrey;
+        node [style = filled; color = white;];
+
+        postgres1 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>Postgres</b></td></tr><tr><td>1GB @ <b>10&#162;/mo</b></td></tr></table>>;color = black;fillcolor = white;];
+        subgraph cluster_oakcitysocial_postgres_server {
+          label = <<b>Server Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          vapid_configuration1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>VAPID Push Configuration</b>>;];
+          facebook_configuration1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Facebook App Configuration</b>>;];
+        }
+
+        subgraph cluster_oakcitysocial_postgres_user {
+          label = <<b>User Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          event_sync_sources1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          event_sync_destinations1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+        }
+        // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
+        vapid_configuration1 -> event_sync_sources1 [style = invis;];
+      }
+    }
+    jonline1 -> minio1;
+    jonline1 -> postgres1;
+
+    vapid_push1 [shape = parallelogram;label = "VAPID Push";];
+    jonline1 -> vapid_push1 [weight = 8; style = tapered; penwidth = 6;];
+    vapid_configuration1 -> vapid_push1 [style = tapered; penwidth = 6;];
+
+    pull_events1 [shape = parallelogram;label = "Pull Events From Source";];
+    push_events1 [shape = parallelogram;label = "Push Events To Destination";];
+    jonline1 -> pull_events1 [weight = 8;];
+    jonline1 -> push_events1 [weight = 8;];
+    event_sync_sources1 -> pull_events1 [style = bold;];
+    event_sync_destinations1 -> push_events1 [style = bold;];
+    facebook_configuration1 -> push_events1 [style = bold;];
+
+    tls1 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+  }
+  subgraph cluster_bullcitysocial {
+    label = <<b>bullcitysocial</b>&nbsp;(K8s Namespace)>;
+    node [style = filled; color = white;];
+    style = filled;
+    color = lightgrey;
+    
+    jonline2 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+
+    subgraph cluster_bullcitysocial_storage {
+      label = <<b>Storage</b>>;
+      style = filled;
+      color = "#88f5df";
+      node [style = filled; color = white;];
+
+      minio2 [label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>MinIO</b></td></tr><tr><td>5GB @ <b>50¢/mo</b></td></tr></table>>;shape = cylinder;color = black;fillcolor = gray80;];
+
+      subgraph cluster_bullcitysocial_postgres {
+        label = "";
+        style = filled;
+        color = lightgrey;
+        node [style = filled; color = white;];
+
+        postgres2 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>Postgres</b></td></tr><tr><td>1GB @ <b>10&#162;/mo</b></td></tr></table>>;color = black;fillcolor = white;];
+        subgraph cluster_bullcitysocial_postgres_server {
+          label = <<b>Server Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          vapid_configuration2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>VAPID Push Configuration</b>>;];
+          facebook_configuration2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Facebook App Configuration</b>>;];
+        }
+
+        subgraph cluster_bullcitysocial_postgres_user {
+          label = <<b>User Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          event_sync_sources2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          event_sync_destinations2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+        }
+        // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
+        vapid_configuration2 -> event_sync_sources2 [style = invis;];
+      }
+    }
+    jonline2 -> minio2;
+    jonline2 -> postgres2;
+
+    vapid_push2 [shape = parallelogram;label = "VAPID Push";];
+    jonline2 -> vapid_push2 [weight = 8; style = tapered; penwidth = 6;];
+    vapid_configuration2 -> vapid_push2 [style = tapered; penwidth = 6;];
+
+    pull_events2 [shape = parallelogram;label = "Pull Events From Source";];
+    push_events2 [shape = parallelogram;label = "Push Events To Destination";];
+    jonline2 -> pull_events2 [weight = 8;];
+    jonline2 -> push_events2 [weight = 8;];
+    event_sync_sources2 -> pull_events2 [style = bold;];
+    event_sync_destinations2 -> push_events2 [style = bold;];
+    facebook_configuration2 -> push_events2 [style = bold;];
+
+    tls2 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+  }
+  subgraph cluster_atoband {
+    label = <<b>atoband</b>&nbsp;(K8s Namespace)>;
+    node [style = filled; color = white;];
+    style = filled;
+    color = lightgrey;
+    
+    jonline3 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+
+    subgraph cluster_atoband_storage {
+      label = <<b>Storage</b>>;
+      style = filled;
+      color = "#88f5df";
+      node [style = filled; color = white;];
+
+      minio3 [label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>MinIO</b></td></tr><tr><td>5GB @ <b>50¢/mo</b></td></tr></table>>;shape = cylinder;color = black;fillcolor = gray80;];
+
+      subgraph cluster_atoband_postgres {
+        label = "";
+        style = filled;
+        color = lightgrey;
+        node [style = filled; color = white;];
+
+        postgres3 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>Postgres</b></td></tr><tr><td>1GB @ <b>10&#162;/mo</b></td></tr></table>>;color = black;fillcolor = white;];
+        subgraph cluster_atoband_postgres_server {
+          label = <<b>Server Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          vapid_configuration3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>VAPID Push Configuration</b>>;];
+          facebook_configuration3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Facebook App Configuration</b>>;];
+        }
+
+        subgraph cluster_atoband_postgres_user {
+          label = <<b>User Level</b>>;
+          style = filled;
+          color = white;
+          node [style = filled; color = white;];
+
+          event_sync_sources3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          event_sync_destinations3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+        }
+        // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
+        vapid_configuration3 -> event_sync_sources3 [style = invis;];
+      }
+    }
+    jonline3 -> minio3;
+    jonline3 -> postgres3;
+
+    vapid_push3 [shape = parallelogram;label = "VAPID Push";];
+    jonline3 -> vapid_push3 [weight = 8; style = tapered; penwidth = 6;];
+    vapid_configuration3 -> vapid_push3 [style = tapered; penwidth = 6;];
+
+    pull_events3 [shape = parallelogram;label = "Pull Events From Source";];
+    push_events3 [shape = parallelogram;label = "Push Events To Destination";];
+    jonline3 -> pull_events3 [weight = 8;];
+    jonline3 -> push_events3 [weight = 8;];
+    event_sync_sources3 -> pull_events3 [style = bold;];
+    event_sync_destinations3 -> push_events3 [style = bold;];
+    facebook_configuration3 -> push_events3 [style = bold;];
+
+    tls3 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+  }
+
+    }
+
+  }
+
+  // ---- Cross-cutting edges (span multiple clusters/namespaces) live at the top level from here
+  // down -- edge placement inside a subgraph's braces has no effect on cluster membership (only
+  // node declarations do), so nesting them there was purely cosmetic noise.
+
+  smtp_catchall -> stalwart [weight = 8; style = dashed;];
+
+  // Once Stalwart's MTA Hook resolves the message's recipient domain to a namespace, it fires a
+  // POST straight to that domain's own namespace -- bypassing Traefik entirely, since this is an
+  // in-cluster Service-to-Service call, not external traffic.
+  jonlineio_mta -> jonline0 [style = dashed;];
+  oakcitysocial_mta -> jonline1 [style = dashed;];
+  bullcitysocial_mta -> jonline2 [style = dashed;];
+  atoband_mta -> jonline3 [style = dashed;];
+
   jonlineio -> jonline0;
-  
-  subgraph cluster2 {
-    label = <<table><tr><td><b>oakcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
-    node [style = filled; color = white;];
-    style = filled;
-    color = lightgrey;
-    
-    jonline1 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    minio1 [shape = cylinder;label = "Minio";];
-    postgres1 [shape = cylinder;label = "Postgres";];
-    
-    jonline1 -> minio1 [label = <5GB @ <b>50¢/mo</b>>;];
-    jonline1 -> postgres1 [label = <1GB @ <b>10¢/mo</b>>;];
-    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
-  }
   oakcitysocial -> jonline1;
-  
-  subgraph cluster3 {
-    label = <<table><tr><td><b>bullcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
-    node [style = filled; color = white;];
-    style = filled;
-    color = lightgrey;
-    
-    jonline2 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    minio2 [label = "Minio";shape = cylinder;];
-    postgres2 [label = "Postgres";shape = cylinder;];
-    
-    jonline2 -> minio2 [label = <5GB @ <b>50¢/mo</b>>;];
-    jonline2 -> postgres2 [label = <1GB @ <b>10¢/mo</b>>;];
-    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
-  }
   bullcitysocial -> jonline2;
-  
-  // resolve_namespace ->  [style=dotted] bullcitysocial;
-  // execute -> { make_string; printf}
-  // jonlineio -> make_string;
-  // edge [color=red];
-  // traefik -> printf [style=bold,label="100 times"];
-  // make_string [label="make a\nstring"];
-  // node [shape=box,style=filled,color=".7 .3 1.0"];
-  // execute -> compare;
+  atoband -> jonline3;
+
+  // Invisible, rank-only edges arrange the four Instances namespaces in a 2x2 grid: row 1 is
+  // jonline/oakcitysocial (same rank, left-to-right in that order via minlen=0), row 2 is
+  // bullcitysocial/atoband (same rank as each other, anchored below row 1's deepest nodes so it
+  // starts below row 1's full height instead of overlapping it).
+  jonline0 -> jonline1 [style = invis; weight = 100000; minlen = 0;];
+  jonline2 -> jonline3 [style = invis; weight = 100000; minlen = 0;];
+  pull_events -> jonline2 [style = invis; weight = 100000;];
+  push_events -> jonline2 [style = invis; weight = 100000;];
+  pull_events1 -> jonline2 [style = invis; weight = 100000;];
+  push_events1 -> jonline2 [style = invis; weight = 100000;];
+
+  // Push delivery never touches Traefik -- jonline calls straight out to the subscription
+  // endpoint URL the browser's own push service handed it at subscribe time (see
+  // backend/src/web_push/mod.rs), the reverse direction of every other edge in this diagram.
+  // That endpoint is chosen by the browser (FCM for Chrome, Mozilla's autopush for Firefox,
+  // etc.), not by jonline -- vapid_push_service stands in for whichever one a given
+  // subscription actually points at.
+  vapid_push -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
+  vapid_push1 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
+  vapid_push2 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
+  vapid_push3 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
+  vapid_push_service -> browser [constraint = false; style = tapered; penwidth = 6;];
+
+  // EventSyncSource (an iCal subscription) is pulled *in*; EventSyncDestination (e.g. a Facebook
+  // Page) is pushed *out* -- see backend/src/protos/jonline.rs's EventSyncSource/
+  // EventSyncDestination doc comments. Arrow direction follows the data, same as VAPID push above.
+  ical_feeds -> pull_events [constraint = false; style = dotted;];
+  ical_feeds -> pull_events1 [constraint = false; style = dotted;];
+  ical_feeds -> pull_events2 [constraint = false; style = dotted;];
+  ical_feeds -> pull_events3 [constraint = false; style = dotted;];
+  push_events -> facebook_service [constraint = false; style = dotted;];
+  push_events1 -> facebook_service [constraint = false; style = dotted;];
+  push_events2 -> facebook_service [constraint = false; style = dotted;];
+  push_events3 -> facebook_service [constraint = false; style = dotted;];
 }

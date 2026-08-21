@@ -383,7 +383,7 @@ update shared req msg model =
             ( { model | eventStatus = EventFailed }, Effect.none )
 
         MediaClicked post mediaId ->
-            ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
+            ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post.media (Just post) mediaId model.targetHost)) )
 
         MediaEditClicked post ->
             ( { model | mediaEditActive = True }

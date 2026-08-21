@@ -62,6 +62,7 @@ import Proto.Jonline.Jonline as Jonline
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -352,6 +353,36 @@ subscriptions model =
         Sub.none
 
 
+{-| Wraps `sendUpdate` to also compute a `Maybe MediaViewerPanel.Msg` --
+`MediaItemClicked` while Browse mode (`model.selectionType == Nothing`)
+doesn't touch this panel's own state at all (see `sendUpdate`'s `Nothing`
+branch), it just needs `Shared.update` to open `Shared.MediaViewerPanel` on
+this tile's whole grid, same forwarding convention
+`Shared.StarredPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`
+(computed directly from `msg`/`model` here too, rather than from
+`sendUpdate`'s result, since -- same as there -- no `Model` state is
+involved). `browseMediaReferences model`, not `model.status`'s raw `Fetched`
+list, so the viewer's own paging order (and its item count) matches the grid
+exactly -- see that function's own doc.
+-}
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media, Maybe MediaViewerPanel.Msg ) )
+update accountsPanelModel msg model =
+    let
+        ( newModel, cmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
+            sendUpdate accountsPanelModel msg model
+
+        maybeMediaViewerPanelMsg : Maybe MediaViewerPanel.Msg
+        maybeMediaViewerPanelMsg =
+            case ( msg, model.selectionType ) of
+                ( MediaItemClicked mediaId, Nothing ) ->
+                    Just (MediaViewerPanel.Open (browseMediaReferences model) Nothing mediaId model.targetHost)
+
+                _ ->
+                    Nothing
+    in
+    ( newModel, cmd, ( maybeAccountsPanelMsg, maybeDeleteRequest, maybeMediaViewerPanelMsg ) )
+
+
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
 `Server`/signed-in `Account` to fetch/upload as -- see `resolve`) and can
 itself surface an `AccountsPanel.Msg` it needs forwarded on its behalf (an
@@ -361,10 +392,12 @@ account's token first -- see `AccountsPanel.performWithAccountServer`) for
 `Shared.MarkdownPanel.update`. The extra `Maybe Media` alongside it is
 `DeleteClicked`'s own request for `Shared.update` to open the shared delete
 confirmation dialog for -- same "second forwarded value" convention
-`Shared.StarredPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`.
+`Shared.StarredPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`
+(this module's own `update`, above, adds a third forwarded value on top of
+this function's pair, for that exact `MediaViewerPanel.Msg`).
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
-update accountsPanelModel msg model =
+sendUpdate : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
+sendUpdate accountsPanelModel msg model =
     case msg of
         Open selectionType host ->
             let
@@ -975,6 +1008,24 @@ toMediaReference media =
     { contentType = media.contentType, id = media.id, name = media.name, generated = media.generated, metadata = media.metadata, aspectRatio = media.aspectRatio }
 
 
+{-| Every item Browse mode's grid is currently actually showing, converted to
+`MediaReference` and in the exact same order `contentView`'s grid renders
+them in -- so `Shared.MediaViewerPanel.Open`'s own left/right paging (see
+`update`'s `MediaItemClicked` branch) lines up with the tap the user just
+made, and lands on the same neighbors a swipe from that tile would visually
+suggest. Reuses `mediaAnimationsInOrder`/`mediaAllowed` rather than
+`model.status`'s raw `Fetched` list for exactly the reasoning
+`contentView`'s own `orderedAnimations` gives -- a stable sort that doesn't
+reshuffle a tile mid removing-fade, and (here, incidentally) one that also
+naturally excludes a just-deleted tile's stale id from ever being paged to.
+-}
+browseMediaReferences : Model -> List MediaReference
+browseMediaReferences model =
+    mediaAnimationsInOrder model
+        |> List.filter (\( _, anim ) -> mediaAllowed model.selectionType anim.media)
+        |> List.map (\( _, anim ) -> toMediaReference anim.media)
+
+
 
 -- VIEW
 
@@ -997,8 +1048,8 @@ briefly while dragging over a media item -- a cosmetic rough edge, not
 something `Drop`'s own correctness depends on.
 
 -}
-view : AccountsPanel.Model -> Model -> Html Msg
-view accountsPanelModel model =
+view : Int -> AccountsPanel.Model -> Model -> Html Msg
+view windowWidth accountsPanelModel model =
     div
         (classes
             ([ "my-media-panel", "nav-panel", openClosedClass (isOpen model) ]
@@ -1029,7 +1080,7 @@ view accountsPanelModel model =
         , selectedMediaStripView accountsPanelModel model
         , div [ class "my-media-panel-content" ] (contentView accountsPanelModel model)
         , if hasMedia model then
-            zoomSliderView model
+            zoomSliderView windowWidth model
 
           else
             text ""
@@ -1539,14 +1590,14 @@ every item's size via a CSS custom property rather than each `input` event
 re-rendering the whole grid through `Sizing` -- see `contentView`'s `Fetched`
 branch.
 -}
-zoomSliderView : Model -> Html Msg
-zoomSliderView model =
+zoomSliderView : Int -> Model -> Html Msg
+zoomSliderView windowWidth model =
     div [ class "my-media-panel-zoom" ]
         [ span [ class "my-media-panel-zoom-icon" ] [ text "🔍" ]
         , input
             [ type_ "range"
-            , Html.Attributes.min "48"
-            , Html.Attributes.max "1080"
+            , Html.Attributes.min "42"
+            , Html.Attributes.max (String.fromFloat (min 800 (0.9 * toFloat windowWidth)))
             , step "8"
             , value (String.fromFloat model.zoom)
             , onInput (\v -> ZoomChanged (String.toFloat v |> Maybe.withDefault model.zoom))

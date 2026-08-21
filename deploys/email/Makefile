@@ -97,7 +97,17 @@ add_email_domain:
 	    exit 1; \
 	  fi; \
 	fi; \
-	jq -n --arg domain "$(DOMAIN)" --arg url "http://jonline.$(NAMESPACE).svc.cluster.local:27705/email" --arg expr "rcpt_domain == '$(DOMAIN)'" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {create: {d1: {name: $$domain, allowRelaying: true}}}, "c1"], ["x:MtaHook/set", {create: {h1: {url: $$url, stages: {data: true}, httpAuth: {"@type": "Unauthenticated"}, enable: {match: {"0": {"if": $$expr, then: "true"}}, "else": "false"}}}}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
+	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
+	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
+	did="$$(printf '%s\n' "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id' | head -1)"; \
+	hid="$$(printf '%s\n' "$$resp" | jq -r --arg u "$$hurl" '.methodResponses[1][1].list[] | select(.url==$$u) | .id' | head -1)"; \
+	if [ -n "$$did" ]; then echo "Domain '$(DOMAIN)' already exists (id $$did) -- leaving it as-is."; fi; \
+	if [ -n "$$hid" ]; then echo "MTA hook for '$$hurl' already exists (id $$hid) -- leaving it as-is."; fi; \
+	jq -n --arg domain "$(DOMAIN)" --arg url "$$hurl" --arg expr "rcpt_domain == '$(DOMAIN)'" --arg did "$$did" --arg hid "$$hid" \
+	  '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [ \
+	     ["x:Domain/set", (if $$did == "" then {create: {d1: {name: $$domain, allowRelaying: true}}} else {} end), "c1"], \
+	     ["x:MtaHook/set", (if $$hid == "" then {create: {h1: {url: $$url, stages: {data: true}, httpAuth: {"@type": "Unauthenticated"}, enable: {match: {"0": {"if": $$expr, then: "true"}}, "else": "false"}}}} else {} end), "c2"] \
+	   ]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
 	if [ $$started_pf -eq 1 ]; then \
 	  $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \
 	fi
@@ -123,16 +133,17 @@ remove_email_domain:
 	    exit 1; \
 	  fi; \
 	fi; \
-	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
-	did="$$(echo "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id')"; \
+	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"], ["x:DkimSignature/get", {ids: null}, "c3"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
+	did="$$(printf '%s\n' "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id')"; \
 	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
-	hid="$$(echo "$$resp" | jq -r --arg u "$$hurl" '.methodResponses[1][1].list[] | select(.url==$$u) | .id')"; \
+	hids="$$(printf '%s\n' "$$resp" | jq -c --arg u "$$hurl" '[.methodResponses[1][1].list[] | select(.url==$$u) | .id]')"; \
+	kids="$$(printf '%s\n' "$$resp" | jq -c --arg did "$$did" '[.methodResponses[2][1].list[] | select(.domainId==$$did) | .id]')"; \
 	rc=0; \
 	if [ -z "$$did" ]; then \
 	  echo "No domain named '$(DOMAIN)' found via the API."; \
 	  rc=1; \
 	else \
-	  jq -n --arg did "$$did" --arg hid "$$hid" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/set", {destroy: [$$did]}, "c1"], ["x:MtaHook/set", {destroy: (if $$hid == "" then [] else [$$hid] end)}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
+	  jq -n --arg did "$$did" --argjson hids "$$hids" --argjson kids "$$kids" '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:MtaHook/set", {destroy: $$hids}, "c1"], ["x:DkimSignature/set", {destroy: $$kids}, "c2"], ["x:Domain/set", {destroy: [$$did]}, "c3"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL) | jq .; \
 	fi; \
 	if [ $$started_pf -eq 1 ]; then \
 	  $(MAKE) --no-print-directory deploy_email_admin_stop_port_forwarding; \

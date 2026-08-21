@@ -19,7 +19,11 @@ use crate::rpcs::get_server_configuration_model;
 /// navigates to, and `icon` (see `build_icon_url`) the sender's avatar to show alongside it --
 /// both omitted entirely (not sent as `null`, via `skip_serializing_if`) rather than guessed at
 /// when there's nothing to build them from (no configured `ExternalCdnConfig.frontend_host`, or,
-/// for `icon`, no sender avatar/an inbound email with no local sender at all).
+/// for `icon`, no sender avatar/an inbound email with no local sender at all). `host` (the same
+/// `frontend_host` `url`/`icon` are built from, plain rather than baked into a URL) is what lets
+/// `service-worker.js`'s `push` handler tell an already-open tab *which* server's messages to
+/// refresh, via `Ports.pushMessageReceived` -- see `Components.Pages.MessagesPage`'s own
+/// `PushNotificationReceived`.
 #[derive(Serialize)]
 struct PushPayload {
     title: String,
@@ -28,6 +32,8 @@ struct PushPayload {
     url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    host: Option<String>,
 }
 
 /// The "who" half of a notification's title -- see `build_title`. Two shapes, not one generic
@@ -137,7 +143,7 @@ async fn send_message_notifications(
         VapidSignatureBuilder::from_base64_no_sub(&web_push_config.private_vapid_key)
             .map_err(|e| format!("{:?}", e))?;
     let client = IsahcWebPushClient::new().map_err(|e| format!("{:?}", e))?;
-    let payload = serde_json::to_vec(&PushPayload { title, body, url, icon })
+    let payload = serde_json::to_vec(&PushPayload { title, body, url, icon, host: frontend_host })
         .map_err(|e| e.to_string())?;
 
     for subscription in subscriptions {

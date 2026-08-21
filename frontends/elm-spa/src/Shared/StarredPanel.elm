@@ -291,7 +291,7 @@ update accountsPanelModel msg model =
         maybeMediaViewerPanelMsg =
             case msg of
                 MediaClicked host post mediaId ->
-                    Just (MediaViewerPanel.Open post mediaId host)
+                    Just (MediaViewerPanel.Open post.media (Just post) mediaId host)
 
                 _ ->
                     Nothing

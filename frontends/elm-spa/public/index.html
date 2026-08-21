@@ -401,6 +401,15 @@
       navigator.serviceWorker.register(jonlineBasePath + "/service-worker.js").catch(function (e) {
         console.error("Failed to register service worker", e);
       });
+      // See service-worker.js's own `push` handler doc comment: forwards its
+      // `{ type: 'push-received', host }` postMessage to `Ports.pushMessageReceived`, so
+      // `Components.Pages.MessagesPage` can refresh the relevant server's Messages the moment a
+      // push actually arrives, not just when the resulting notification gets clicked.
+      navigator.serviceWorker.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "push-received") {
+          app.ports.pushMessageReceived.send(event.data.host || null);
+        }
+      });
     }
 
     function pushManagerAvailable() {

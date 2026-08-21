@@ -88,6 +88,10 @@
   color: var(--fg);
 }
 
+.permission-badges+.server-details-rename-button {
+  margin-top: 8px;
+}
+
 .server-details-rename-input {
   font-size: 1.1rem;
   padding: 0.2rem 0.5rem;
@@ -158,8 +162,28 @@
   cursor: pointer;
 }
 
+/* The "Show Color Meta" expandable section's header row (ThemeTab.elm's
+   `colorMetaSection`) -- the collapsible `.expandable-section-title` label on
+   the left, `UI.themeToggle` pinned to the far right. A dedicated flex row
+   rather than relying on `.section-title`'s own `flex-basis: 100%` (main.css)
+   -- that's meant to force a title onto its own line above sibling controls
+   (see `.server-details-feature-settings-row`'s own actions), which here
+   would just push the theme toggle onto a second line instead of sharing
+   this one. */
+.server-details-color-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.server-details-color-meta-header .section-title {
+  flex-basis: auto;
+  margin: 0.8rem 0 0.4rem 0;
+}
+
 .server-details-logo {
-  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .server-details-logo-image {

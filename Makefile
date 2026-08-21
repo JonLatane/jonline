@@ -152,7 +152,10 @@ html_docs: documentation
 
 graphs:
 	cd docs/architecture && dot -Tsvg Kubernetes_Deployment.dot -o Kubernetes_Deployment.svg
+	cd docs/architecture && dot -Gdpi=150 -Twebp Kubernetes_Deployment.dot -o Kubernetes_Deployment.webp
 	cd docs/architecture && dot -Tsvg Traefik_Kubernetes_Deployment.dot -o Traefik_Kubernetes_Deployment.svg
+	cd docs/architecture && dot -Gdpi=150 -Twebp Traefik_Kubernetes_Deployment.dot -o Traefik_Kubernetes_Deployment.webp
 	cd docs/architecture && dot -Tsvg Service_Architecture.dot -o Service_Architecture.svg
+	cd docs/architecture && dot -Gdpi=150 -Twebp Service_Architecture.dot -o Service_Architecture.webp
 #	cd docs/architecture && neato -Tsvg Service_Architecture.dot -o Service_Architecture.svg
 

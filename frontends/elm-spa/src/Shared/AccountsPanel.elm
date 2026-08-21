@@ -306,6 +306,7 @@ type Msg
     | ChooseLoginClicked
     | ChooseCreateAccountClicked
     | NewAccountBackClicked
+    | HideAddAccountFormClicked
     | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotCreateAccountModalViewport (Result Dom.Error Dom.Viewport)
     | AccessTokenResponseReceived Account AccessTokenResponse
@@ -1535,6 +1536,9 @@ sendUpdate req msg model =
                 |> updateForm (\f -> { f | password = "", showPasswordAsText = False })
             , Cmd.none
             )
+
+        HideAddAccountFormClicked ->
+            ( { model | addAccountFormExpanded = False }, Cmd.none )
 
         LoginClicked ->
             let

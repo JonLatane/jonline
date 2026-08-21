@@ -86,13 +86,23 @@ update accountsPanelModel msg model =
             ( { model | page = newPage }, Cmd.map PageMsg cmd, maybeAccountsPanelMsg )
 
 
+{-| `MessagesPage.pushSubscription` on its own is *not* gated behind `model.open` -- a push
+notification needs to be able to refresh this panel's own data (see `MessagesPage.PushNotificationReceived`)
+whether or not its dropdown happens to be open at the moment it arrives, so it doesn't show stale
+data for however long it stayed closed after. `timerAndAnimationSubscriptions` (the 30s poll timer,
+FLIP animations) stays gated behind `open` as before -- pointless to keep polling/animating a
+closed panel nobody's looking at.
+-}
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.open then
-        Sub.map PageMsg (MessagesPage.subscriptions model.page)
+    Sub.batch
+        [ Sub.map PageMsg MessagesPage.pushSubscription
+        , if model.open then
+            Sub.map PageMsg (MessagesPage.timerAndAnimationSubscriptions model.page)
 
-    else
-        Sub.none
+          else
+            Sub.none
+        ]
 
 
 view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg

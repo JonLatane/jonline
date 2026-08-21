@@ -28,7 +28,8 @@ import Bitwise
 (normalized to `#rrggbb`), the text color that reads on it, and variants of
 itself dark/light enough to pair with white/black text respectively (`color`
 itself is already one of the two -- `darkColor` when `isDark`, `lightColor`
-otherwise).
+otherwise). `saturation` is the HSV saturation (`[0, 1]`), used elsewhere to
+judge how vibrant/grayish a color reads (see `saturationOfRgb`).
 -}
 type alias ColorMeta =
     { color : String
@@ -36,13 +37,17 @@ type alias ColorMeta =
     , darkColor : String
     , lightColor : String
     , luma : Float
+    , saturation : Float
     , isDark : Bool
     }
 
 
 {-| A server's full color scheme, combining its cached `primary`/`nav`
 `ColorMeta`s with the app's current dark/light mode. Field names match the
-Tamagui `ServerTheme` type.
+Tamagui `ServerTheme` type, except for the `*Saturation`/`*ContrastColor`
+fields, which are Elm-only: `*ContrastColor` is the raw `*Color` when it's
+saturated enough to read as itself against the background, falling back to
+`*AnchorColor` (the darkened/lightened variant) when it's too washed out.
 -}
 type alias ServerTheme =
     { primaryColor : String
@@ -52,6 +57,8 @@ type alias ServerTheme =
     , primaryBgColor : String
     , primaryAnchorColor : String
     , primaryLuma : Float
+    , primarySaturation : Float
+    , primaryContrastColor : String
     , navColor : String
     , navTextColor : String
     , navDarkColor : String
@@ -59,6 +66,8 @@ type alias ServerTheme =
     , navBgColor : String
     , navAnchorColor : String
     , navLuma : Float
+    , navSaturation : Float
+    , navContrastColor : String
     , accentColor : String
     , accentTextColor : String
     , accentDarkColor : String
@@ -66,6 +75,8 @@ type alias ServerTheme =
     , accentBgColor : String
     , accentAnchorColor : String
     , accentLuma : Float
+    , accentSaturation : Float
+    , accentContrastColor : String
     , textColor : String
     , backgroundColor : String
     , transparentBackgroundColor : String
@@ -128,6 +139,10 @@ colorMetaFromRgb rgb =
         isDark : Bool
         isDark =
             luma > 0.5
+
+        saturation : Float
+        saturation =
+            saturationOfRgb rgb
     in
     if isDark then
         { color = color
@@ -135,6 +150,7 @@ colorMetaFromRgb rgb =
         , lightColor = color
         , darkColor = darken color
         , luma = luma
+        , saturation = saturation
         , isDark = isDark
         }
 
@@ -144,6 +160,7 @@ colorMetaFromRgb rgb =
         , darkColor = color
         , lightColor = lighten color
         , luma = luma
+        , saturation = saturation
         , isDark = isDark
         }
 
@@ -166,6 +183,30 @@ fromColorMetas darkMode primary nav =
 
             else
                 nav
+
+        primaryAnchorColor : String
+        primaryAnchorColor =
+            if not darkMode then
+                primary.darkColor
+
+            else
+                primary.lightColor
+
+        navAnchorColor : String
+        navAnchorColor =
+            if not darkMode then
+                nav.darkColor
+
+            else
+                nav.lightColor
+
+        accentAnchorColor : String
+        accentAnchorColor =
+            if not darkMode then
+                accent.darkColor
+
+            else
+                accent.lightColor
     in
     { primaryColor = primary.color
     , primaryTextColor = primary.textColor
@@ -177,13 +218,15 @@ fromColorMetas darkMode primary nav =
 
         else
             primary.lightColor
-    , primaryAnchorColor =
-        if not darkMode then
-            primary.darkColor
+    , primaryAnchorColor = primaryAnchorColor
+    , primaryLuma = primary.luma
+    , primarySaturation = primary.saturation
+    , primaryContrastColor =
+        if primary.saturation > 0.5 then
+            primary.color
 
         else
-            primary.lightColor
-    , primaryLuma = primary.luma
+            primaryAnchorColor
     , navColor = nav.color
     , navTextColor = nav.textColor
     , navDarkColor = nav.darkColor
@@ -194,13 +237,15 @@ fromColorMetas darkMode primary nav =
 
         else
             nav.lightColor
-    , navAnchorColor =
-        if not darkMode then
-            nav.darkColor
+    , navAnchorColor = navAnchorColor
+    , navLuma = nav.luma
+    , navSaturation = nav.saturation
+    , navContrastColor =
+        if nav.saturation > 0.5 then
+            nav.color
 
         else
-            nav.lightColor
-    , navLuma = nav.luma
+            navAnchorColor
     , accentColor = accent.color
     , accentTextColor = accent.textColor
     , accentDarkColor = accent.darkColor
@@ -218,13 +263,15 @@ fromColorMetas darkMode primary nav =
 
         else
             accent.lightColor
-    , accentAnchorColor =
-        if not darkMode then
-            accent.darkColor
+    , accentAnchorColor = accentAnchorColor
+    , accentLuma = accent.luma
+    , accentSaturation = accent.saturation
+    , accentContrastColor =
+        if accent.saturation > 0.5 then
+            accent.color
 
         else
-            accent.lightColor
-    , accentLuma = accent.luma
+            accentAnchorColor
     , textColor =
         if darkMode then
             "#eaeaea"

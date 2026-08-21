@@ -1,4 +1,4 @@
-module UI exposing (imageOrInitial, layout, pageTitle, webUiToggleRow)
+module UI exposing (imageOrInitial, layout, pageTitle, themeToggle, webUiToggleRow)
 
 import Components.EventSyncSources as EventSyncSources
 import Components.Events as Events
@@ -1698,11 +1698,12 @@ Also only rendered for an account whose `server` is `shared.accounts.browsingHos
 holds at most one Web Push subscription today (see `AccountsPanel.pushSubscriptions`'s own doc
 comment), tied to whichever single server's VAPID key it was created with, and that's always
 `browsingHost`'s (the one server this tab's service worker/subscription could ever meaningfully be
-scoped to). Offering the toggle for a federated-in account on some *other* server would just
+scoped to). Offering the toggle for a federated-in account on some _other_ server would just
 silently fail or steal the slot from `browsingHost`'s own account the moment it's clicked -- there's
 no way to make it actually work without each server getting its own independently-scoped
 subscription (a real, not-yet-built feature; see this button's own git history for the
 investigation).
+
 -}
 notificationsButton : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 notificationsButton shared account =
@@ -1851,6 +1852,32 @@ formThemeHost accountsPanelModel =
 
     else
         accountsPanelModel.mainFrontendHost
+
+
+{-| Square "←" button that collapses the Add Account/Server form back behind
+its "Add Account/Server..." button (`AccountsPanel.HideAddAccountFormClicked`)
+-- the same thing closing and reopening the Accounts Panel already does once
+the form's idle (`AccountsPanel.collapseAddAccountFormIfIdle`), just reachable
+without doing that. Shown to the left of the Login/Create Account buttons,
+and (via `signInFromButton`) to the left of the SSO hand-off button -- the two
+places offering a choice before either flow's actually been picked. Never
+shown once there are no accounts yet (`AccountsPanel.shouldShowAddAccountForm`
+is unconditionally `True` then -- there'd be no button to collapse back to).
+-}
+hideAddAccountFormButton : Shared.Model -> Bool -> Html Shared.Msg
+hideAddAccountFormButton shared accountFieldsDisabled =
+    if List.isEmpty shared.accounts.accounts then
+        text ""
+
+    else
+        button
+            [ type_ "button"
+            , onClick (Shared.AccountsPanelMsg AccountsPanel.HideAddAccountFormClicked)
+            , disabled accountFieldsDisabled
+            , class "hide-add-account-form-button"
+            , title "Back"
+            ]
+            [ text "←" ]
 
 
 addAccountForm : Shared.Model -> Route -> Html Shared.Msg
@@ -2110,7 +2137,8 @@ addAccountForm shared currentRoute =
             div [ class "account-form-buttons" ]
                 (case newAccountType of
                     Nothing ->
-                        [ button
+                        [ hideAddAccountFormButton shared accountFieldsDisabled
+                        , button
                             [ type_ "button"
                             , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
                             , disabled accountFieldsDisabled
@@ -2239,24 +2267,27 @@ signInFromButton shared currentRoute accountFieldsDisabled =
     in
     case ( shared.panels.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
         ( Just publicKey, True ) ->
-            button
-                [ type_ "button"
-                , onClick
-                    (Shared.NavigateExternal
-                        ("https://"
-                            ++ server
-                            ++ "/elm/auth/to/"
-                            ++ FederatedAuth.publicKeyToUrlString publicKey
-                            ++ "@"
-                            ++ accountsPanelModel.browsingHost
-                            ++ "?start_path="
-                            ++ Url.percentEncode (Route.toHref currentRoute)
+            div [ class "sign-in-from-row" ]
+                [ hideAddAccountFormButton shared accountFieldsDisabled
+                , button
+                    [ type_ "button"
+                    , onClick
+                        (Shared.NavigateExternal
+                            ("https://"
+                                ++ server
+                                ++ "/elm/auth/to/"
+                                ++ FederatedAuth.publicKeyToUrlString publicKey
+                                ++ "@"
+                                ++ accountsPanelModel.browsingHost
+                                ++ "?start_path="
+                                ++ Url.percentEncode (Route.toHref currentRoute)
+                            )
                         )
-                    )
-                , disabled accountFieldsDisabled
-                , classes [ "sign-in-from-button", hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
+                    , disabled accountFieldsDisabled
+                    , classes [ "sign-in-from-button", hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
+                    ]
+                    [ text ("Sign in from " ++ server ++ "…") ]
                 ]
-                [ text ("Sign in from " ++ server ++ "…") ]
 
         _ ->
             text ""
@@ -2670,7 +2701,7 @@ messagingToggle shared currentRoute =
         currentPageClasses : List String
         currentPageClasses =
             if currentRoute == Route.Messages then
-                [ "background-color-nav" ]
+                [ "background-color-nav-contrast" ]
 
             else
                 []
@@ -2842,7 +2873,7 @@ though.
 -}
 myMediaPanel : Shared.Model -> Html Shared.Msg
 myMediaPanel shared =
-    Html.map Shared.MyMediaPanelMsg (MyMediaPanel.view shared.accounts shared.panels.myMediaPanel)
+    Html.map Shared.MyMediaPanelMsg (MyMediaPanel.view shared.windowSize.width shared.accounts shared.panels.myMediaPanel)
 
 
 {-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`

@@ -7,14 +7,20 @@
 
 // Push payloads arrive already decrypted by the browser (Web Push's own encryption, handled
 // before this event fires) as the plaintext JSON `backend/src/web_push`'s `PushPayload` sends:
-// `{ title, body, url?, icon? }` -- `url` (a full `https://<frontend_host>/messages?...#message-<id>`
-// deep link straight to the Message, see `web_push::notification_url`) and `icon` (the sender's
-// own avatar, see `web_push::build_icon_url` -- absent for inbound email, which has no local
-// sender) are only present if the server has a configured `ExternalCdnConfig.frontend_host` to
-// build them from. `icon` falls back to the site's own favicon, same as before this payload ever
-// carried one. `url` is stashed on the notification's own `data` (not just closed over here)
-// since `notificationclick` below fires as a *separate* event, with no other way to recover which
-// push it's reacting to.
+// `{ title, body, url?, icon?, host? }` -- `url` (a full `https://<frontend_host>/messages?...#message-<id>`
+// deep link straight to the Message, see `web_push::notification_url`), `icon` (the sender's own
+// avatar, see `web_push::build_icon_url` -- absent for inbound email, which has no local sender),
+// and `host` (the same `frontend_host`, plain) are only present if the server has a configured
+// `ExternalCdnConfig.frontend_host` to build them from. `icon` falls back to the site's own
+// favicon, same as before this payload ever carried one. `url` is stashed on the notification's
+// own `data` (not just closed over here) since `notificationclick` below fires as a *separate*
+// event, with no other way to recover which push it's reacting to.
+//
+// Also `postMessage`s every open client with `{ type: 'push-received', host }` -- picked up by
+// `index.html`'s `navigator.serviceWorker` listener and forwarded to `Ports.pushMessageReceived`,
+// so an already-open tab refreshes that server's Messages (`MessagingPanel`/`Pages.Messages`, see
+// `Components.Pages.MessagesPage.PushNotificationReceived`) instead of only finding out once the
+// notification itself is clicked.
 self.addEventListener('push', function (event) {
   var payload = { title: 'Jonline', body: 'You have a new message.' };
   if (event.data) {
@@ -25,12 +31,19 @@ self.addEventListener('push', function (event) {
     }
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Jonline', {
-      body: payload.body || '',
-      icon: payload.icon || '/favicon.png',
-      badge: '/favicon.png',
-      data: { url: payload.url || '/' }
-    })
+    Promise.all([
+      self.registration.showNotification(payload.title || 'Jonline', {
+        body: payload.body || '',
+        icon: payload.icon || '/favicon.png',
+        badge: '/favicon.png',
+        data: { url: payload.url || '/' }
+      }),
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
+        windowClients.forEach(function (client) {
+          client.postMessage({ type: 'push-received', host: payload.host || null });
+        });
+      })
+    ])
   );
 });
 

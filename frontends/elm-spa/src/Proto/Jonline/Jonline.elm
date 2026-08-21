@@ -199,6 +199,49 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  isn't linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.social/jon`](https://oakcity.social/jon).
 
  Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](http://localhost/docs/protocol#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
+ 
+ ##### Federated Messaging
+ Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
+ from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
+
+ ##### External Integrations (Facebook, iCal): Jonline Sync
+ Jonline Sync currently only supports [`Event`](#jonline-Event)s, letting us sync events in from iCal and out to Facebook, but presents
+ a "shape" -- a user-owned source/destination plus a `oneof configuration` for each -- meant to allow arbitrary input/output types.
+ Contributions for Instagram, Meetup, anything else would be much obliged.
+
+ ###### EventSyncSource
+ An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
+ only an iCal subscription URL (`configuration.ics_subscription_url`), though the `oneof` leaves room for other source types.
+ It's the parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
+ (`Event.event_sync_source`); the relationship is 1:(0 or 1), since a single source can back many synced `Event`s but each
+ `Event` has at most one source it came from. A background job re-pulls each source on its own
+ `sync_interval_seconds` cadence, recomputing `event_count`/`event_instance_count` on every sync.
+
+ Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
+ (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
+ [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
+
+ ###### EventSyncDestination
+ An [`EventSyncDestination`](#jonline-EventSyncDestination) mirrors `EventSyncSource`, but for pushing `EventInstance`s out
+ rather than pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
+ [`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it's each
+ `EventInstance` (not the parent `Event`) that syncs out, and each instance may push to several destinations at once,
+ tracked per-destination via the repeated `EventInstance.sync_destinations` (each an
+ [`EventInstanceSyncDestination`](#jonline-EventInstanceSyncDestination), carrying the destination's resulting post
+ ID/URL and last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an
+ interval, so `synced_event_instance_count` is computed with a `COUNT` at request time instead of being
+ recomputed-and-stored.
+
+ Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
+ (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+ short-lived token is write-only and never populated back in responses.
+
+ Destinations are managed via [`GetEventSyncDestinations`](#grpc-api-GetEventSyncDestinations),
+ [`CreateEventSyncDestination`](#grpc-api-CreateEventSyncDestination), [`UpdateEventSyncDestination`](#grpc-api-UpdateEventSyncDestination)
+ (each requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin), and [`DeleteEventSyncDestination`](#grpc-api-DeleteEventSyncDestination). Actually
+ syncing (or un-syncing) a given `EventInstance` to a destination is a separate step, via
+ [`SyncEventInstance`](#grpc-api-SyncEventInstance) and [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination)
+ (both also requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin).
 
  #### HTTP Endpoints
  ##### Internal HTTP server (27705)

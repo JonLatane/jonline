@@ -219,6 +219,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
+  margin: 7px 0;
 }
 
 /* One collapsible panel per admin-capable signed-in account -- see
@@ -1084,6 +1085,34 @@
    Account submit button taking the other two-thirds -- it's the less
    important of the pair, so gets the smaller target. */
 .account-form-buttons .back-button {
+  flex: 1;
+}
+
+/* The "←" button that collapses the Add Account/Server form back behind its
+   "Add Account/Server..." button (UI.elm's `hideAddAccountFormButton`) --
+   square (via `aspect-ratio` against the row's own stretched height, rather
+   than a hardcoded width) so it doesn't take much space next to whichever
+   row it's shown in (`.account-form-buttons` or `.sign-in-from-row`). */
+.hide-add-account-form-button {
+  aspect-ratio: 1;
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+}
+
+.account-form-buttons .hide-add-account-form-button {
+  flex: 0 0 auto;
+}
+
+.sign-in-from-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sign-in-from-row .sign-in-from-button {
   flex: 1;
 }
 

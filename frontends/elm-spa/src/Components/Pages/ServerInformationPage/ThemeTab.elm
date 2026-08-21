@@ -8,6 +8,7 @@ Primary/Navigation colors (editable by an admin, via `AccountsPanel.updateServer
 
 `author`/`admin`/`moderator` (the other three `ServerColors` fields) aren't shown at all -- this
 page has no UI for them yet, same as before this tab supported any editing.
+
 -}
 
 import Components.Pages.ServerInformationPage.Common as Common
@@ -15,7 +16,7 @@ import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, div, h3, img, input, p, span, text)
 import Html.Attributes exposing (class, disabled, src, style, type_, value)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (ServerConfiguration, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Shared
@@ -23,6 +24,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Task
 import UI
+import UI.Classes exposing (classes)
 import UI.ServerTheme as ServerTheme
 
 
@@ -34,6 +36,7 @@ type alias Model =
     { logoEdit : Maybe LogoEdit
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
+    , colorMetaExpanded : Bool
     }
 
 
@@ -48,6 +51,7 @@ type Msg
     | ColorCancelClicked ServerColorField
     | ColorSaveClicked ServerColorField
     | GotColorSaveResult ServerColorField (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | ColorMetaExpandedToggled
     | SharedMsg Shared.Msg
 
 
@@ -97,6 +101,7 @@ init =
     { logoEdit = Nothing
     , primaryColorEdit = Nothing
     , navigationColorEdit = Nothing
+    , colorMetaExpanded = False
     }
 
 
@@ -220,6 +225,9 @@ update shared targetHost maybeServer msg model =
                 model
             , Effect.none
             )
+
+        ColorMetaExpandedToggled ->
+            ( { model | colorMetaExpanded = not model.colorMetaExpanded }, Effect.none )
 
         SharedMsg subMsg ->
             ( model, Effect.fromShared subMsg )
@@ -345,8 +353,8 @@ setColorEditFor field edit model =
 -- VIEW
 
 
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
-view server maybeAdminAccount model =
+view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view shared server maybeAdminAccount model =
     let
         info : Proto.Jonline.ServerInfo
         info =
@@ -361,10 +369,11 @@ view server maybeAdminAccount model =
             config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
     in
     div [ class "server-details-tab-content server-details-theme" ]
-        [ colorEditorRow PrimaryColor "Primary Color" maybeAdminAccount model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
+        [ logoEditorView maybeAdminAccount model.logoEdit server (info.logo |> Maybe.andThen .squareMediaId)
+        , colorEditorRow PrimaryColor "Primary Color" maybeAdminAccount model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
         , colorEditorRow NavigationColor "Navigation Color" maybeAdminAccount model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
         , accentColorPreviewRow model info
-        , logoEditorView maybeAdminAccount model.logoEdit server (info.logo |> Maybe.andThen .squareMediaId)
+        , colorMetaSection shared model info
         , div [ class "server-details-setting" ]
             [ h3 [] [ text "Default Web UI" ]
             , case maybeAdminAccount of
@@ -457,6 +466,127 @@ accentColorPreviewRow model info =
         , span [ class "server-details-color-swatch", style "background-color" accentColor ] []
         , span [ class "server-details-color-hex" ] [ text accentColor ]
         ]
+
+
+{-| An expandable "Calculated Color Meta" section revealing every derived `ServerTheme` field (see
+`ServerTheme.fromColorMetas`) that `colorEditorRow`/`accentColorPreviewRow` above don't already show
+-- i.e. everything except the plain `primaryColor`/`navColor`/`accentColor` hexes themselves. Lets an
+admin see exactly how a color choice propagates (its text/dark/light/bg/anchor/contrast variants,
+luma, saturation) without cluttering the tab by default. Collapsed by default (`Model.colorMetaExpanded`),
+toggled by `ColorMetaExpandedToggled`, mirroring `UserProfilePage.expandableProfileSection`'s own
+Bool-driven toggle (just inlined here, since there's only one such section on this tab). Kept live
+against in-progress edits the same way `accentColorPreviewRow` is, via `effectiveColorMeta`. The
+header row also carries `UI.themeToggle` (the same 3-way Auto/Light/Dark control shown in the
+Accounts Panel's own tab bar) at its far right -- pinned there rather than nested inside the
+clickable `h3` itself, so tapping it doesn't also bubble into `ColorMetaExpandedToggled`.
+-}
+colorMetaSection : Shared.Model -> Model -> Proto.Jonline.ServerInfo -> Html Msg
+colorMetaSection shared model info =
+    let
+        primaryMeta : ServerTheme.ColorMeta
+        primaryMeta =
+            effectiveColorMeta model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
+
+        navMeta : ServerTheme.ColorMeta
+        navMeta =
+            effectiveColorMeta model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
+
+        theme : ServerTheme.ServerTheme
+        theme =
+            ServerTheme.fromColorMetas False primaryMeta navMeta
+    in
+    div [ class "server-details-color-meta" ]
+        (div [ class "server-details-color-meta-header" ]
+            [ h3
+                [ classes [ "section-title", "expandable-section-title" ]
+                , onClick ColorMetaExpandedToggled
+                ]
+                [ span [ class "expandable-section-arrow" ]
+                    [ text
+                        (if model.colorMetaExpanded then
+                            "▾"
+
+                         else
+                            "▸"
+                        )
+                    ]
+                , text "Calculated Color Meta"
+                ]
+            , if model.colorMetaExpanded then
+                Html.map SharedMsg (UI.themeToggle shared)
+
+              else
+                text ""
+            ]
+            :: (if model.colorMetaExpanded then
+                    [ colorMetaColorRow "Primary Text Color" theme.primaryTextColor
+                    , colorMetaColorRow "Primary Dark Color" theme.primaryDarkColor
+                    , colorMetaColorRow "Primary Light Color" theme.primaryLightColor
+                    , colorMetaColorRow "Primary Background Color" theme.primaryBgColor
+                    , colorMetaColorRow "Primary Anchor Color" theme.primaryAnchorColor
+                    , colorMetaValueRow "Primary Luma" (formatColorMetaFloat theme.primaryLuma)
+                    , colorMetaValueRow "Primary Saturation" (formatColorMetaFloat theme.primarySaturation)
+                    , colorMetaColorRow "Primary Contrast Color" theme.primaryContrastColor
+                    , colorMetaColorRow "Nav Text Color" theme.navTextColor
+                    , colorMetaColorRow "Nav Dark Color" theme.navDarkColor
+                    , colorMetaColorRow "Nav Light Color" theme.navLightColor
+                    , colorMetaColorRow "Nav Background Color" theme.navBgColor
+                    , colorMetaColorRow "Nav Anchor Color" theme.navAnchorColor
+                    , colorMetaValueRow "Nav Luma" (formatColorMetaFloat theme.navLuma)
+                    , colorMetaValueRow "Nav Saturation" (formatColorMetaFloat theme.navSaturation)
+                    , colorMetaColorRow "Nav Contrast Color" theme.navContrastColor
+                    , colorMetaColorRow "Accent Text Color" theme.accentTextColor
+                    , colorMetaColorRow "Accent Dark Color" theme.accentDarkColor
+                    , colorMetaColorRow "Accent Light Color" theme.accentLightColor
+                    , colorMetaColorRow "Accent Background Color" theme.accentBgColor
+                    , colorMetaColorRow "Accent Anchor Color" theme.accentAnchorColor
+                    , colorMetaValueRow "Accent Luma" (formatColorMetaFloat theme.accentLuma)
+                    , colorMetaValueRow "Accent Saturation" (formatColorMetaFloat theme.accentSaturation)
+                    , colorMetaColorRow "Accent Contrast Color" theme.accentContrastColor
+                    , colorMetaColorRow "Text Color" theme.textColor
+                    , colorMetaColorRow "Background Color" theme.backgroundColor
+                    , colorMetaColorRow "Transparent Background Color" theme.transparentBackgroundColor
+                    , colorMetaColorRow "Transparent Primary Color" theme.transparentPrimaryColor
+                    , colorMetaColorRow "Barely Transparent Background Color" theme.barelyTransparentBackgroundColor
+                    , colorMetaColorRow "Warning Anchor Color" theme.warningAnchorColor
+                    ]
+
+                else
+                    []
+               )
+        )
+
+
+{-| One `colorMetaSection` color row: left label, right swatch + hex -- same structure as
+`accentColorPreviewRow`'s own row.
+-}
+colorMetaColorRow : String -> String -> Html Msg
+colorMetaColorRow label_ color =
+    div [ class "server-details-color-row" ]
+        [ span [ class "server-details-color-label" ] [ text label_ ]
+        , span [ class "server-details-color-swatch", style "background-color" color ] []
+        , span [ class "server-details-color-hex" ] [ text color ]
+        ]
+
+
+{-| One `colorMetaSection` non-color row (luma/saturation/`darkMode`) -- left label, right
+monospaced value (`.server-details-color-hex` is already monospace), no swatch.
+-}
+colorMetaValueRow : String -> String -> Html Msg
+colorMetaValueRow label_ value_ =
+    div [ class "server-details-color-row" ]
+        [ span [ class "server-details-color-label" ] [ text label_ ]
+        , span [ class "server-details-color-hex" ] [ text value_ ]
+        ]
+
+
+{-| Formats a `ColorMeta`/`ServerTheme` luma/saturation `Float` (both always `[0, 1]`) to 3 decimal
+places for display -- `String.fromFloat` alone can print long floating-point tails (e.g.
+`0.30000000000000004`) that aren't useful to an admin reading this diagnostic panel.
+-}
+formatColorMetaFloat : Float -> String
+formatColorMetaFloat value =
+    String.fromFloat (toFloat (round (value * 1000)) / 1000)
 
 
 {-| One `ServerColorField`'s effective `ColorMeta` right now: its in-progress edited hex if it's

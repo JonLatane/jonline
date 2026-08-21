@@ -2876,7 +2876,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
         onMediaClicked mediaId =
             case event.post of
                 Just eventPost ->
-                    SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open eventPost mediaId host))
+                    SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open eventPost.media (Just eventPost) mediaId host))
 
                 Nothing ->
                     SharedMsg Shared.NoOp

@@ -168,7 +168,10 @@ serverRules darkMode mainTheme mainFrontendHost server =
         , colorRule (withDescendants selector ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
         , colorRule (withDescendants selector ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
         , colorRule (withDescendants selector ".background-color-nav") theme.navColor theme.navTextColor
+        , colorRule (withDescendants selector ".background-color-nav-contrast") theme.navContrastColor theme.backgroundColor
         , colorRule (withDescendants selector ".background-color-accent") theme.accentColor theme.accentTextColor
+        , colorRule (withDescendants selector ".background-color-accent-5") (theme.accentColor ++ "08") theme.textColor
+        , colorRule (withDescendants selector ".background-color-accent-10") (theme.accentColor ++ "10") theme.textColor
         , colorRule (withDescendants selector ".background-color-accent-anchor") theme.accentAnchorColor theme.backgroundColor
         , colorRule (withDescendants selector ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (withDescendants selector ".border-color-primary") theme.primaryColor

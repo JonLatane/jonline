@@ -1251,6 +1251,6 @@ postCardView shared ( host, post ) =
 
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =
-            SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
+            SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost.media (Just displayPost) mediaId host))
     in
     Posts.postCard shared.time shared.basePath shared.accounts.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost
