@@ -1,6 +1,8 @@
 module Shared.Time exposing
     ( BrowserTimeZone
     , Model
+    , RecurrenceUnit(..)
+    , addRecurrence
     , formatDate
     , formatDateRange
     , formatDateTime
@@ -672,3 +674,162 @@ posixFromDateTimeLocalInput zone raw =
 
         _ ->
             Nothing
+
+
+{-| How far apart `Pages.Event.EventId_`'s "Add More" recurrence menu spaces
+each newly-created `EventInstance` from the one before it -- `Daily`/`Weekly`
+step by a fixed number of days (`1`/`7`), `Monthly` steps the calendar month
+itself (clamping the day-of-month down when the target month is shorter,
+e.g. Jan 31 + 1 month -> Feb 28/29), all via `addRecurrence`.
+-}
+type RecurrenceUnit
+    = Daily
+    | Weekly
+    | Monthly
+
+
+{-| `posix`'s own wall-clock time-of-day (in `zone`), `n` `unit`s later on the
+calendar -- e.g. `addRecurrence zone Weekly 3 posix` is "3 weeks from
+`posix`, same local time of day". Always re-resolves the result against
+`zone`'s real DST transition history (via `posixFromDateTimeLocalInput`,
+same as every other wall-clock -> `Posix` conversion in this module), so a
+weekly 6-7PM series that crosses a DST change is still 6-7PM local time on
+the other side of it, not 6-7PM's UTC-equivalent hour drifted by the
+transition -- the same guarantee `formatRange`'s own doc describes for
+`instanceWhenText`, just in the create direction instead of display.
+
+`Daily`/`Weekly` add a fixed number of whole days (`n`/`n * 7`) to `posix`'s
+own wall-clock date, letting month/year rollover happen naturally (adding
+milliseconds to a UTC-as-if-local naive timestamp and reading the calendar
+fields back off it, the same trick `posixFromDateTimeLocalInput` itself
+uses internally). `Monthly` instead adds `n` to the month/year pair
+directly, so "Jan 31 + 1 month" lands on the last day of February rather
+than overflowing into March -- `daysInMonth` clamps the day-of-month down to
+whatever the target month actually has.
+-}
+addRecurrence : Time.Zone -> RecurrenceUnit -> Int -> Time.Posix -> Time.Posix
+addRecurrence zone unit n posix =
+    let
+        year : Int
+        year =
+            Time.toYear zone posix
+
+        month : Int
+        month =
+            Conversions.monthToNumber (Time.toMonth zone posix)
+
+        day : Int
+        day =
+            Time.toDay zone posix
+
+        hour : Int
+        hour =
+            Time.toHour zone posix
+
+        minute : Int
+        minute =
+            Time.toMinute zone posix
+
+        naiveMillisAt : Int -> Int -> Int -> Int
+        naiveMillisAt y m d =
+            (Conversions.daysFromCivil y m d * 86400 + hour * 3600 + minute * 60) * 1000
+
+        newNaiveMillis : Int
+        newNaiveMillis =
+            case unit of
+                Daily ->
+                    naiveMillisAt year month day + n * 86400000
+
+                Weekly ->
+                    naiveMillisAt year month day + n * 7 * 86400000
+
+                Monthly ->
+                    let
+                        totalMonths : Int
+                        totalMonths =
+                            year * 12 + (month - 1) + n
+
+                        newYear : Int
+                        newYear =
+                            totalMonths // 12
+
+                        newMonth : Int
+                        newMonth =
+                            modBy 12 totalMonths + 1
+                    in
+                    naiveMillisAt newYear newMonth (min day (daysInMonth newYear newMonth))
+
+        naiveUtc : Time.Posix
+        naiveUtc =
+            Time.millisToPosix newNaiveMillis
+
+        pad2 : Int -> String
+        pad2 v =
+            String.padLeft 2 '0' (String.fromInt v)
+
+        raw : String
+        raw =
+            String.padLeft 4 '0' (String.fromInt (Time.toYear Time.utc naiveUtc))
+                ++ "-"
+                ++ pad2 (Conversions.monthToNumber (Time.toMonth Time.utc naiveUtc))
+                ++ "-"
+                ++ pad2 (Time.toDay Time.utc naiveUtc)
+                ++ "T"
+                ++ pad2 (Time.toHour Time.utc naiveUtc)
+                ++ ":"
+                ++ pad2 (Time.toMinute Time.utc naiveUtc)
+    in
+    posixFromDateTimeLocalInput zone raw |> Maybe.withDefault posix
+
+
+{-| The number of days in `month` (`1`-`12`) of `year`, Gregorian leap years
+included -- the clamp `addRecurrence`'s `Monthly` case needs so "Jan 31 + 1
+month" lands on Feb 28/29 rather than overflowing into March.
+-}
+daysInMonth : Int -> Int -> Int
+daysInMonth year month =
+    case month of
+        1 ->
+            31
+
+        2 ->
+            if isLeapYear year then
+                29
+
+            else
+                28
+
+        3 ->
+            31
+
+        4 ->
+            30
+
+        5 ->
+            31
+
+        6 ->
+            30
+
+        7 ->
+            31
+
+        8 ->
+            31
+
+        9 ->
+            30
+
+        10 ->
+            31
+
+        11 ->
+            30
+
+        _ ->
+            31
+
+
+isLeapYear : Int -> Bool
+isLeapYear year =
+    (modBy 4 year == 0 && modBy 100 year /= 0) || modBy 400 year == 0

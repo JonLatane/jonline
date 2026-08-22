@@ -1,5 +1,6 @@
 module Components.Events exposing
-    ( deleteEvent
+    ( createNewEventInstances
+    , deleteEvent
     , deleteEventInstanceSyncDestination
     , eventCard
     , eventInstanceHref
@@ -19,6 +20,7 @@ module Components.Events exposing
     , parseEventRouteId
     , siblingInstanceWhenText
     , syncEventInstance
+    , updateEventInstances
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
@@ -154,6 +156,63 @@ deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventIn
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
+        )
+
+
+{-| Updates, in place, every `EventInstance` in `event.instances` that's
+already on the event (matched by id) -- any other instance in `event.instances`
+is silently ignored rather than created (`UpdateEventInstances`, owner-or-
+`MODERATEEVENTS`/`MODERATEPOSTS`/`ADMIN` gated server-side, see
+`backend/src/rpcs/events/update_event_instances.rs`). Used by
+`Pages.Event.EventId_`'s "Edit Time"/"Edit Location" saves, each sending just
+`event.id` plus a single-element `instances` list built from the
+currently-loaded `EventInstance` with only the field(s) being edited
+overridden -- carrying the rest of that `EventInstance` (notably its own
+`post`) along unchanged matters here: the backend treats an update entry with
+no `post` as an explicit request to reset that instance's own Post to
+`PRIVATE` (see that file's own doc comment), not "leave visibility alone".
+-}
+updateEventInstances :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Event
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
+updateEventInstances accountsPanelModel maybeAccountServer event =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.updateEventInstances event
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Creates a new `EventInstance` for every entry in `event.instances` that
+isn't already on the event -- since a not-yet-created instance has no `id` of
+its own to match against, every entry sent here ends up created
+(`CreateNewEventInstances`, same owner-or-moderator gating as
+`updateEventInstances`, see
+`backend/src/rpcs/events/create_new_event_instances.rs`). Used by
+`Pages.Event.EventId_`'s "Add More" recurrence menu, which builds
+`event.instances` as a batch of new `EventInstance`s (see
+`buildRecurringInstances`) all in one call, rather than one RPC per instance.
+-}
+createNewEventInstances :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Event
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
+createNewEventInstances accountsPanelModel maybeAccountServer event =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.createNewEventInstances event
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
         )
 
 

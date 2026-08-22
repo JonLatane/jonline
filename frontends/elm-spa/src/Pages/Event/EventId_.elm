@@ -30,28 +30,31 @@ import Effect exposing (Effect)
 import Gen.Params.Event.EventId_ exposing (Params)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h1, h2, option, p, select, span, text)
+import Html exposing (Html, a, button, div, h1, h2, h3, option, p, select, span, text)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Page
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, Post)
+import Proto.Jonline exposing (Event, EventInstance, Location, Post, defaultEvent, defaultEventInstance, defaultLocation)
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.Visibility exposing (Visibility)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.Conversions as Conversions
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
+import Shared.Time as SharedTime
 import Task
 import Time
 import UI
-import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 import View exposing (View)
 
@@ -97,6 +100,26 @@ type alias Model =
     -- Live only while the moderation-status selector (see `moderationView`)
     -- is open -- mirrors `postFieldEdit` in shape.
     , moderationEdit : Maybe ModerationEdit
+
+    -- Live only while the Event's own primary `Post`'s visibility selector
+    -- (see `visibilityView`) is open -- mirrors `moderationEdit` in shape,
+    -- `Components.Pages.PostPage.VisibilityEdit` in spirit.
+    , visibilityEdit : Maybe VisibilityEdit
+
+    -- Live only while the currently-viewed `EventInstance`'s start/end time
+    -- editor (see `instanceTimeEditFormView`) is open -- mirrors
+    -- `postFieldEdit` in shape, just with two pending fields instead of one
+    -- (mirrors `Shared.CreateNewPanel.Model`'s own `startsAt`/`endsAt` pair).
+    , instanceTimeEdit : Maybe InstanceTimeEdit
+
+    -- Live only while the currently-viewed `EventInstance`'s location editor
+    -- (see `instanceLocationEditFormView`) is open -- mirrors `postFieldEdit`
+    -- in shape, just a single free-text address field.
+    , instanceLocationEdit : Maybe InstanceLocationEdit
+
+    -- Live only while the "Add More" recurrence popover (see `addMoreView`)
+    -- is open -- `Nothing` is "closed", mirroring every other panel here.
+    , addMoreMenu : Maybe AddMoreMenu
 
     -- `Submitting`/`SubmitFailed` push status per `eventSyncDestinationId`,
     -- for the "synced to" listing's own Push/Push-again button (see
@@ -147,6 +170,44 @@ type Msg
     | ModerationCancelClicked
     | ModerationSaveClicked Event
     | GotModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- The Event's own `Post`'s visibility selector (see `visibilityView`)
+      -- -- shown to the post's own author or an Admin, also submitted via
+      -- plain `UpdatePost`, mirroring `Components.Pages.PostPage`'s own
+      -- `VisibilityEditClicked`/etc. family.
+    | VisibilityEditClicked Post
+    | VisibilityChanged String
+    | VisibilityCancelClicked
+    | VisibilitySaveClicked Post
+    | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- The currently-viewed `EventInstance`'s start/end time editor (see
+      -- `instanceTimeEditFormView`) -- unlike the Event's own `Post` fields
+      -- above, this *does* need `UpdateEventInstances` (there's no
+      -- `EventInstance`-only equivalent of `UpdatePost`).
+    | InstanceTimeEditClicked EventInstance
+    | InstanceStartsAtChanged String
+    | InstanceEndsAtChanged String
+    | InstanceTimeCancelClicked
+    | InstanceTimeSaveClicked EventInstance
+    | GotInstanceTimeSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- The currently-viewed `EventInstance`'s location editor (see
+      -- `instanceLocationEditFormView`) -- mirrors the time editor above,
+      -- also via `UpdateEventInstances`.
+    | InstanceLocationEditClicked EventInstance
+    | InstanceLocationChanged String
+    | InstanceLocationCancelClicked
+    | InstanceLocationSaveClicked EventInstance
+    | GotInstanceLocationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- The "Add More" recurrence popover (see `addMoreView`) -- a two-step
+      -- menu (`AddMoreMenu.step`): first how many more `EventInstance`s to
+      -- create (`AddMoreCountClicked`), then how far apart to space them
+      -- (`AddMoreFrequencyClicked`, which actually submits via
+      -- `CreateNewEventInstances`).
+    | AddMoreClicked
+    | AddMoreClosed
+    | AddMoreCountClicked Int
+    | AddMoreBackClicked
+    | AddMoreFrequencyClicked Int SharedTime.RecurrenceUnit
+    | GotAddMoreResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- The Event's own delete button (see `deleteButtonView`), shown to its
       -- owner -- opens the shared "are you sure?" dialog
       -- (`Shared.ConfirmEventDelete`); its result (`Shared.GotEventDeleteResult`)
@@ -274,6 +335,63 @@ type alias ModerationEdit =
     }
 
 
+{-| Live only while the Event's own primary `Post`'s visibility selector is
+open -- mirrors `ModerationEdit`/`Components.Pages.PostPage.VisibilityEdit`
+exactly, just for `Visibility` instead of `Moderation`.
+-}
+type alias VisibilityEdit =
+    { pending : Visibility
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the currently-viewed `EventInstance`'s start/end time
+editor is open -- mirrors `PostFieldEdit` in shape, just two pending fields
+(`Shared.CreateNewPanel.Model`'s own `startsAt`/`endsAt` pair) instead of
+one. Both `Nothing` only transiently, while the raw `<input
+type="datetime-local">` text doesn't parse (see `InstanceStartsAtChanged`/
+`InstanceEndsAtChanged`) -- `InstanceTimeSaveClicked` no-ops rather than
+submitting an incomplete pair.
+-}
+type alias InstanceTimeEdit =
+    { pendingStartsAt : Maybe Time.Posix
+    , pendingEndsAt : Maybe Time.Posix
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the currently-viewed `EventInstance`'s location editor is
+open -- mirrors `PostFieldEdit` exactly, `pending` being the in-progress
+`Location.uniformlyFormattedAddress` text (the only field `Location` has
+worth editing by hand -- see that message's own proto doc).
+-}
+type alias InstanceLocationEdit =
+    { pending : String
+    , status : SubmitStatus
+    }
+
+
+{-| Which half of the "Add More" recurrence popover (`addMoreView`) is
+showing -- `ChoosingCount` first (how many more `EventInstance`s), then
+`ChoosingFrequency count` (how far apart to space them -- see
+`availableFrequencies`/`frequencyLabel`), which is what actually submits via
+`AddMoreFrequencyClicked`.
+-}
+type AddMoreStep
+    = ChoosingCount
+    | ChoosingFrequency Int
+
+
+{-| Live only while the "Add More" popover (see `addMoreView`) is open --
+`Nothing` (rather than this type existing at all) is "closed", mirroring
+every other panel/edit-form's own `Maybe`-typed `Model` field here.
+-}
+type alias AddMoreMenu =
+    { step : AddMoreStep
+    , status : SubmitStatus
+    }
+
+
 init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     let
@@ -294,6 +412,10 @@ init shared params =
                 , mediaEditActive = False
                 , postFieldEdit = Nothing
                 , moderationEdit = Nothing
+                , visibilityEdit = Nothing
+                , instanceTimeEdit = Nothing
+                , instanceLocationEdit = Nothing
+                , addMoreMenu = Nothing
                 , syncDestinationPushStatuses = Dict.empty
                 }
     in
@@ -520,6 +642,294 @@ update shared req msg model =
             ( { model
                 | moderationEdit =
                     model.moderationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        VisibilityEditClicked post ->
+            ( { model | visibilityEdit = Just { pending = post.visibility, status = Idle } }, Effect.none )
+
+        VisibilityChanged text ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit
+                        |> Maybe.map (\edit -> { edit | pending = Posts.visibilityFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        VisibilityCancelClicked ->
+            ( { model | visibilityEdit = Nothing }, Effect.none )
+
+        VisibilitySaveClicked post ->
+            case ( model.visibilityEdit, serverAndAccount shared model ) of
+                ( Just edit, Just ( server, account ) ) ->
+                    ( { model | visibilityEdit = Just { edit | status = Submitting } }
+                    , Posts.updatePost
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        post.id
+                        (\freshPost -> { freshPost | visibility = edit.pending })
+                        |> Task.attempt GotVisibilitySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotVisibilitySaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            let
+                updatedModel : Model
+                updatedModel =
+                    applyUpdatedEventPost model updatedPost
+            in
+            ( { updatedModel | visibilityEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotVisibilitySaveResult (Err err) ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        InstanceTimeEditClicked instance ->
+            ( { model
+                | instanceTimeEdit =
+                    Just
+                        { pendingStartsAt = instance.startsAt |> Maybe.map Conversions.timestampToPosix
+                        , pendingEndsAt = instance.endsAt |> Maybe.map Conversions.timestampToPosix
+                        , status = Idle
+                        }
+              }
+            , Effect.none
+            )
+
+        InstanceStartsAtChanged raw ->
+            ( { model
+                | instanceTimeEdit =
+                    model.instanceTimeEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    newStartsAt : Maybe Time.Posix
+                                    newStartsAt =
+                                        SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw
+                                in
+                                { edit
+                                    | pendingStartsAt = newStartsAt
+
+                                    -- Mirrors `Shared.CreateNewPanel.update`'s own
+                                    -- `StartsAtChanged` exactly: shifts `pendingEndsAt` by
+                                    -- the same delta if both were already set, defaults it
+                                    -- to an hour after the new start otherwise.
+                                    , pendingEndsAt =
+                                        case ( newStartsAt, edit.pendingStartsAt, edit.pendingEndsAt ) of
+                                            ( Just newStart, Just oldStart, Just oldEnd ) ->
+                                                Just (Time.millisToPosix (Time.posixToMillis oldEnd + (Time.posixToMillis newStart - Time.posixToMillis oldStart)))
+
+                                            ( Just newStart, _, _ ) ->
+                                                Just (Time.millisToPosix (Time.posixToMillis newStart + 3600000))
+
+                                            ( Nothing, _, _ ) ->
+                                                edit.pendingEndsAt
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        InstanceEndsAtChanged raw ->
+            ( { model
+                | instanceTimeEdit =
+                    model.instanceTimeEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    newEndsAt : Maybe Time.Posix
+                                    newEndsAt =
+                                        SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw
+                                in
+                                { edit
+                                    -- Mirrors `Shared.CreateNewPanel.update`'s own
+                                    -- `EndsAtChanged` exactly: clamps to at least a minute
+                                    -- after `pendingStartsAt`, rather than rejecting
+                                    -- outright.
+                                    | pendingEndsAt =
+                                        case ( newEndsAt, edit.pendingStartsAt ) of
+                                            ( Just newEnd, Just startsAt ) ->
+                                                Just (Time.millisToPosix (max (Time.posixToMillis newEnd) (Time.posixToMillis startsAt + 60000)))
+
+                                            _ ->
+                                                newEndsAt
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        InstanceTimeCancelClicked ->
+            ( { model | instanceTimeEdit = Nothing }, Effect.none )
+
+        InstanceTimeSaveClicked instance ->
+            case ( model.instanceTimeEdit, model.eventStatus, serverAndAccount shared model ) of
+                ( Just edit, EventLoaded event _, Just ( server, account ) ) ->
+                    case ( edit.pendingStartsAt, edit.pendingEndsAt ) of
+                        ( Just startsAt, Just endsAt ) ->
+                            ( { model | instanceTimeEdit = Just { edit | status = Submitting } }
+                            , Events.updateEventInstances
+                                shared.accounts
+                                ( Just account.userId, server.frontendHost )
+                                { defaultEvent
+                                    | id = event.id
+                                    , instances =
+                                        [ { instance
+                                            | startsAt = Just (Conversions.posixToTimestamp startsAt)
+                                            , endsAt = Just (Conversions.posixToTimestamp endsAt)
+                                          }
+                                        ]
+                                }
+                                |> Task.attempt GotInstanceTimeSaveResult
+                                |> Effect.fromCmd
+                            )
+
+                        _ ->
+                            ( model, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotInstanceTimeSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
+            let
+                updatedModel : Model
+                updatedModel =
+                    applyUpdatedEvent shared.time.now model updatedEvent
+            in
+            ( { updatedModel | instanceTimeEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotInstanceTimeSaveResult (Err err) ->
+            ( { model
+                | instanceTimeEdit =
+                    model.instanceTimeEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        InstanceLocationEditClicked instance ->
+            ( { model
+                | instanceLocationEdit =
+                    Just
+                        { pending = instance.location |> Maybe.map .uniformlyFormattedAddress |> Maybe.withDefault ""
+                        , status = Idle
+                        }
+              }
+            , Effect.none
+            )
+
+        InstanceLocationChanged text ->
+            ( { model | instanceLocationEdit = model.instanceLocationEdit |> Maybe.map (\edit -> { edit | pending = text }) }
+            , Effect.none
+            )
+
+        InstanceLocationCancelClicked ->
+            ( { model | instanceLocationEdit = Nothing }, Effect.none )
+
+        InstanceLocationSaveClicked instance ->
+            case ( model.instanceLocationEdit, model.eventStatus, serverAndAccount shared model ) of
+                ( Just edit, EventLoaded event _, Just ( server, account ) ) ->
+                    let
+                        newLocation : Maybe Location
+                        newLocation =
+                            if String.isEmpty (String.trim edit.pending) then
+                                Nothing
+
+                            else
+                                Just { defaultLocation | uniformlyFormattedAddress = String.trim edit.pending }
+                    in
+                    ( { model | instanceLocationEdit = Just { edit | status = Submitting } }
+                    , Events.updateEventInstances
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        { defaultEvent | id = event.id, instances = [ { instance | location = newLocation } ] }
+                        |> Task.attempt GotInstanceLocationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotInstanceLocationSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
+            let
+                updatedModel : Model
+                updatedModel =
+                    applyUpdatedEvent shared.time.now model updatedEvent
+            in
+            ( { updatedModel | instanceLocationEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotInstanceLocationSaveResult (Err err) ->
+            ( { model
+                | instanceLocationEdit =
+                    model.instanceLocationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        AddMoreClicked ->
+            ( { model | addMoreMenu = Just { step = ChoosingCount, status = Idle } }, Effect.none )
+
+        AddMoreClosed ->
+            ( { model | addMoreMenu = Nothing }, Effect.none )
+
+        AddMoreCountClicked count ->
+            ( { model | addMoreMenu = model.addMoreMenu |> Maybe.map (\menu -> { menu | step = ChoosingFrequency count }) }
+            , Effect.none
+            )
+
+        AddMoreBackClicked ->
+            ( { model | addMoreMenu = model.addMoreMenu |> Maybe.map (\menu -> { menu | step = ChoosingCount }) }
+            , Effect.none
+            )
+
+        AddMoreFrequencyClicked count unit ->
+            case ( model.eventStatus, serverAndAccount shared model ) of
+                ( EventLoaded event instance, Just ( server, account ) ) ->
+                    case buildRecurringInstances shared.time.browserTimeZone.zone count unit instance of
+                        [] ->
+                            ( model, Effect.none )
+
+                        newInstances ->
+                            ( { model | addMoreMenu = model.addMoreMenu |> Maybe.map (\menu -> { menu | status = Submitting }) }
+                            , Events.createNewEventInstances
+                                shared.accounts
+                                ( Just account.userId, server.frontendHost )
+                                { defaultEvent | id = event.id, instances = newInstances }
+                                |> Task.attempt GotAddMoreResult
+                                |> Effect.fromCmd
+                            )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotAddMoreResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
+            let
+                updatedModel : Model
+                updatedModel =
+                    applyUpdatedEvent shared.time.now model updatedEvent
+            in
+            ( { updatedModel | addMoreMenu = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotAddMoreResult (Err err) ->
+            ( { model
+                | addMoreMenu =
+                    model.addMoreMenu |> Maybe.map (\menu -> { menu | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
               }
             , Effect.none
             )
@@ -810,6 +1220,125 @@ applyUpdatedEventPost model updatedPost =
 
         _ ->
             model
+
+
+{-| Applies a just-saved `updatedEvent` (`UpdateEventInstances`'/
+`CreateNewEventInstances`' own return value -- both hand back the `Event`'s
+full current state, not just the touched instance(s)) as this page's new
+`eventStatus` -- mirrors `GotEvent`'s own handling (re-clamping
+`instanceHistoryDisplay` and re-syncing `instanceAnimations`, since
+`CreateNewEventInstances` can change how many instances there are to animate)
+rather than just `applyUpdatedEventPost`'s plain field patch. Re-finds
+`model.eventInstanceId` in `updatedEvent.instances` (`Events.findInstance`)
+for the new "currently-viewed" `EventInstance`, falling back to whichever one
+was already loaded if -- unexpectedly -- it's gone missing (none of
+`InstanceTimeSaveClicked`/`InstanceLocationSaveClicked`/`AddMoreFrequencyClicked`
+can actually remove it). A no-op if the `Event` isn't loaded at all, same
+"shouldn't happen in practice" reasoning as `applyUpdatedEventPost`.
+-}
+applyUpdatedEvent : Time.Posix -> Model -> Event -> Model
+applyUpdatedEvent now model updatedEvent =
+    case model.eventStatus of
+        EventLoaded _ currentInstance ->
+            let
+                newInstance : EventInstance
+                newInstance =
+                    Events.findInstance model.eventInstanceId updatedEvent |> Maybe.withDefault currentInstance
+            in
+            { model | eventStatus = EventLoaded updatedEvent newInstance }
+                |> clampHistoryDisplay now newInstance
+                |> syncInstanceAnimations now
+
+        _ ->
+            model
+
+
+{-| Builds `count` new `EventInstance`s to send to `CreateNewEventInstances`
+(via `AddMoreFrequencyClicked`), each `unit` further from `instance`'s own
+`startsAt`/`endsAt` than the last (`n = 1..count`, via `SharedTime.addRecurrence`
+in `zone` -- see that function's own doc for the DST guarantee this relies
+on). Every duplicate copies `instance`'s own `post` (its title/link/content/
+visibility override, if any -- `create_instance` on the backend ignores
+whatever `id`/`author` a submitted `post` carries and always creates a fresh
+Post authored by the caller, so reusing the same record verbatim for every
+copy is safe) and `location` verbatim -- nothing about "add more like this
+one" should silently drop either. Each new instance's own `id` is left at
+`defaultEventInstance`'s blank default, so `CreateNewEventInstances` always
+treats it as new rather than matching some unrelated existing instance.
+`[]` (a no-op back in `AddMoreFrequencyClicked`) if `instance` is missing
+either `startsAt` or `endsAt`, which shouldn't happen in practice -- both are
+required fields everywhere an `EventInstance` is created.
+-}
+buildRecurringInstances : Time.Zone -> Int -> SharedTime.RecurrenceUnit -> EventInstance -> List EventInstance
+buildRecurringInstances zone count unit instance =
+    case ( instance.startsAt, instance.endsAt ) of
+        ( Just startsAtTimestamp, Just endsAtTimestamp ) ->
+            let
+                baseStartsAt : Time.Posix
+                baseStartsAt =
+                    Conversions.timestampToPosix startsAtTimestamp
+
+                baseEndsAt : Time.Posix
+                baseEndsAt =
+                    Conversions.timestampToPosix endsAtTimestamp
+            in
+            List.range 1 count
+                |> List.map
+                    (\n ->
+                        { defaultEventInstance
+                            | post = instance.post
+                            , location = instance.location
+                            , startsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseStartsAt))
+                            , endsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseEndsAt))
+                        }
+                    )
+
+        _ ->
+            []
+
+
+{-| `count`'s own "N more" `RecurrenceUnit` options for the "Add More"
+popover's second step (`ChoosingFrequency count`, see `addMoreMenuContentView`)
+-- `Monthly` is only offered under 12 (per this feature's own request: a
+monthly series past a year starts feeling like the wrong tool, and the
+day-of-month clamping `SharedTime.addRecurrence`'s own doc describes gets
+more noticeable the further out it compounds).
+-}
+availableFrequencies : Int -> List SharedTime.RecurrenceUnit
+availableFrequencies count =
+    if count < 12 then
+        [ SharedTime.Daily, SharedTime.Weekly, SharedTime.Monthly ]
+
+    else
+        [ SharedTime.Daily, SharedTime.Weekly ]
+
+
+{-| `unit`'s own label for `count`'s "Add More" frequency button
+(`addMoreMenuContentView`) -- `count == 1` reads as a plain calendar
+shorthand ("Tomorrow"/"Next Week"/"Next Month") rather than "Daily"/"Weekly"/
+"Monthly", which would misleadingly suggest an ongoing series for what's
+actually a single extra date.
+-}
+frequencyLabel : Int -> SharedTime.RecurrenceUnit -> String
+frequencyLabel count unit =
+    case ( count == 1, unit ) of
+        ( True, SharedTime.Daily ) ->
+            "Tomorrow"
+
+        ( True, SharedTime.Weekly ) ->
+            "Next Week"
+
+        ( True, SharedTime.Monthly ) ->
+            "Next Month"
+
+        ( False, SharedTime.Daily ) ->
+            "Daily"
+
+        ( False, SharedTime.Weekly ) ->
+            "Weekly"
+
+        ( False, SharedTime.Monthly ) ->
+            "Monthly"
 
 
 {-| `Just text` unless `text` is blank, `Nothing` otherwise -- used by
@@ -1143,13 +1672,11 @@ eventDetailView shared model event instance =
                     instanceDetailAndStrip =
                         div [ class "event-instance-detail-and-strip" ]
                             [ div [ class "event-instance-detail" ]
-                                [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.time instance) ]
-                                , case instance.location |> Maybe.andThen Events.locationText of
-                                    Just locationLine ->
-                                        div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
-
-                                    Nothing ->
-                                        text ""
+                                [ div [ class "event-instance-detail-info" ]
+                                    [ instanceTimeView shared maybeAccount model.instanceTimeEdit eventPost instance
+                                    , instanceLocationView maybeAccount model.instanceLocationEdit eventPost instance
+                                    ]
+                                , addMoreView maybeAccount model eventPost
                                 ]
                             , instanceHistoryView shared model event instance
                             ]
@@ -1161,7 +1688,7 @@ eventDetailView shared model event instance =
                         , div [ class "event-post-meta" ]
                             [ text "by "
                             , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount eventPost.author
-                            , text (" · " ++ Posts.postVisibilityText eventPost)
+                            , visibilityView maybeAccount model.visibilityEdit eventPost
                             , moderationView maybeAccount model.moderationEdit event eventPost
                             ]
                         , instanceDetailAndStrip
@@ -1406,25 +1933,27 @@ classes (posts.css) rather than `event-*` ones of its own.
 -}
 postFieldEditActionsView : PostFieldEdit -> Post -> List (Html Msg)
 postFieldEditActionsView edit post =
-    [ button
-        [ classes [ "post-visibility-save", "background-color-primary" ]
-        , onClick (PostFieldSaveClicked post)
-        , disabled (edit.status == Submitting)
-        ]
-        [ text
-            (if edit.status == Submitting then
-                "Saving…"
+    [ span [ class "event-instance-edit-actions" ]
+        [ button
+            [ classes [ "post-visibility-save", "background-color-primary" ]
+            , onClick (PostFieldSaveClicked post)
+            , disabled (edit.status == Submitting)
+            ]
+            [ text
+                (if edit.status == Submitting then
+                    "Saving…"
 
-             else
-                "Save"
-            )
+                 else
+                    "Save"
+                )
+            ]
+        , button
+            [ class "post-visibility-cancel"
+            , onClick PostFieldCancelClicked
+            , disabled (edit.status == Submitting)
+            ]
+            [ text "Cancel" ]
         ]
-    , button
-        [ class "post-visibility-cancel"
-        , onClick PostFieldCancelClicked
-        , disabled (edit.status == Submitting)
-        ]
-        [ text "Cancel" ]
     , case edit.status of
         SubmitFailed err ->
             span [ class "post-visibility-error" ] [ text err ]
@@ -1495,6 +2024,73 @@ deleteButtonView maybeAccount event post =
             text ""
 
 
+{-| The visibility segment slotted into the primary post section's byline
+(see `eventDetailView`), right before `moderationView` -- mirrors that
+function's own display-vs-editing split (and reuses its exact "Edit"-button
+gate, `Posts.isAuthor account post || ADMIN`, via `editButtonView`) but for
+`Visibility` instead of `Moderation`, submitted via plain `UpdatePost`
+(`VisibilitySaveClicked`) rather than `UpdateEventInstances`/
+`CreateNewEventInstances` -- see `Msg.VisibilityEditClicked`'s own doc for
+why the Event's own `Post` fields don't need the heavier RPCs. Options are
+narrowed to whatever `maybeAccount` can actually publish at
+(`Posts.allowedVisibilities`), mirroring
+`Components.Pages.PostPage.visibilityView` exactly.
+-}
+visibilityView : Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView maybeAccount maybeEdit post =
+    case ( maybeEdit, maybeAccount ) of
+        ( Just edit, Just account ) ->
+            span [ class "post-visibility-edit" ]
+                [ text " · "
+                , span [ class "post-visibility-edit-controls" ]
+                    [ select [ onInput VisibilityChanged ]
+                        (Posts.allowedVisibilities account.permissions post.context post.visibility
+                            |> List.map
+                                (\visibility ->
+                                    option
+                                        [ value (Posts.visibilityText visibility)
+                                        , selected (edit.pending == visibility)
+                                        ]
+                                        [ text (Posts.visibilityText visibility) ]
+                                )
+                        )
+                    , span [ class "event-instance-edit-actions" ]
+                        [ button
+                            [ classes [ "post-visibility-save", "background-color-primary" ]
+                            , onClick (VisibilitySaveClicked post)
+                            , disabled (edit.status == Submitting)
+                            ]
+                            [ text
+                                (if edit.status == Submitting then
+                                    "Saving…"
+
+                                 else
+                                    "Save"
+                                )
+                            ]
+                        , button
+                            [ class "post-visibility-cancel"
+                            , onClick VisibilityCancelClicked
+                            , disabled (edit.status == Submitting)
+                            ]
+                            [ text "Cancel" ]
+                        ]
+                    , case edit.status of
+                        SubmitFailed err ->
+                            span [ class "post-visibility-error" ] [ text err ]
+
+                        _ ->
+                            text ""
+                    ]
+                ]
+
+        _ ->
+            span [ class "post-visibility-display" ]
+                [ text (" · " ++ Posts.postVisibilityText post)
+                , editButtonView "Edit Visibility" (VisibilityEditClicked post) maybeAccount post
+                ]
+
+
 {-| The moderation-status segment slotted into the primary post section's
 byline (see `eventDetailView`) -- shown only to an Admin or a
 `MODERATEEVENTS` holder, mirroring `Pages.Post.PostId_.visibilityView`'s
@@ -1563,6 +2159,303 @@ moderationView maybeAccount maybeEdit event post =
                             [ text (" · " ++ Users.moderationText post.moderation)
                             , button [ class "post-moderation-edit-button", onClick (ModerationEditClicked event) ] [ text "Moderate" ]
                             ]
+
+
+{-| Whether `instance`'s own start/end time and location are safe to edit by
+hand at all -- an instance synced in from an ICS feed (`instance.eventSyncSourceInstanceId
+/= Nothing`, set by `logic::event_sync::reconcile_instances` when it creates
+an instance from a feed occurrence) has its `starts_at`/`ends_at`/`location`
+silently overwritten back to the feed's own values on every subsequent sync
+run (see that function's own `existing_instance.starts_at != starts_at_db ||
+...` check) -- exactly the same "would be clobbered on the next sync" problem
+`editable`/`Events.hasIcsSyncSource` already guards title/link/content
+against, just decided per-instance rather than per-`Event`: an `Event` with a
+sync source can still have manually-added instances (via "Add More", which
+never sets `eventSyncSourceInstanceId`) safely alongside feed-sourced ones,
+so this checks `instance` itself rather than reusing `eventDetailView`'s
+`editable`.
+-}
+instanceTimeLocationEditable : EventInstance -> Bool
+instanceTimeLocationEditable instance =
+    instance.eventSyncSourceInstanceId == Nothing
+
+
+{-| The currently-viewed `EventInstance`'s own start/end time row (see
+`eventDetailView`'s `instanceDetailAndStrip`) -- `Events.instanceWhenText`
+plus its own "Edit Time" button when `maybeEdit == Nothing`, gated the same
+way `editButtonView` gates every other field here (the Event's own `Post`'s
+author, or an Admin -- passing `eventPost`, not `instance.post`, since
+editing an `EventInstance`'s time/location is authorized against the
+_Event_'s ownership server-side, see
+`backend/src/rpcs/events/event_permissions.rs`'s `validate_event_edit_permission`,
+not the instance's own possibly-different-owner override `Post`) *and*
+`instanceTimeLocationEditable`; the inline `instanceTimeEditFormView` once
+editing.
+-}
+instanceTimeView : Shared.Model -> Maybe AccountsPanel.Account -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
+instanceTimeView shared maybeAccount maybeEdit eventPost instance =
+    case maybeEdit of
+        Just edit ->
+            div [ class "event-instance-when" ] [ text "📅 ", instanceTimeEditFormView shared.time.browserTimeZone.zone edit instance ]
+
+        Nothing ->
+            div [ class "event-instance-when" ]
+                [ text "📅 "
+                , text (Events.instanceWhenText shared.time instance)
+                , if instanceTimeLocationEditable instance then
+                    editButtonView "Edit Time" (InstanceTimeEditClicked instance) maybeAccount eventPost
+
+                  else
+                    text ""
+                ]
+
+
+{-| The actual start/end `<input type="datetime-local">` pair + Save/Cancel
+controls -- mirrors `Shared.CreateNewPanel.dateField`'s own
+`formatDateTimeLocalInput`/`onInput` round-trip (see `Msg.InstanceStartsAtChanged`/
+`InstanceEndsAtChanged` for the parse-back half), reusing
+`postFieldEditActionsView`'s `.post-visibility-save`/`.post-visibility-cancel`/
+`.post-visibility-error` classes for the controls, same convention that
+function's own doc explains.
+-}
+instanceTimeEditFormView : Time.Zone -> InstanceTimeEdit -> EventInstance -> Html Msg
+instanceTimeEditFormView zone edit instance =
+    span [ class "event-instance-time-edit" ]
+        [ Html.input
+            [ type_ "datetime-local"
+            , class "event-instance-time-edit-input"
+            , value (edit.pendingStartsAt |> Maybe.map (SharedTime.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
+            , onInput InstanceStartsAtChanged
+            ]
+            []
+        , text " to "
+        , Html.input
+            [ type_ "datetime-local"
+            , class "event-instance-time-edit-input"
+            , value (edit.pendingEndsAt |> Maybe.map (SharedTime.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
+            , onInput InstanceEndsAtChanged
+            ]
+            []
+        , span [ class "event-instance-edit-actions" ]
+            [ button
+                [ classes [ "post-visibility-save", "background-color-primary" ]
+                , onClick (InstanceTimeSaveClicked instance)
+                , disabled (edit.status == Submitting)
+                ]
+                [ text
+                    (if edit.status == Submitting then
+                        "Saving…"
+
+                     else
+                        "Save"
+                    )
+                ]
+            , button
+                [ class "post-visibility-cancel"
+                , onClick InstanceTimeCancelClicked
+                , disabled (edit.status == Submitting)
+                ]
+                [ text "Cancel" ]
+            ]
+        , case edit.status of
+            SubmitFailed err ->
+                span [ class "post-visibility-error" ] [ text err ]
+
+            _ ->
+                text ""
+        ]
+
+
+{-| The currently-viewed `EventInstance`'s own location row -- mirrors
+`instanceTimeView` exactly, just for `Location` instead of start/end time
+(including the same `instanceTimeLocationEditable` gate), plus one
+difference: with no location set yet, the display half reads "+ Add
+Location" (no separate location line to show) rather than a plain
+"Edit Location" next to existing text -- and, unlike the time row (which
+always has *something* to show), renders nothing at all when there's neither
+a location to show nor (a synced instance) a button to add one.
+-}
+instanceLocationView : Maybe AccountsPanel.Account -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
+instanceLocationView maybeAccount maybeEdit eventPost instance =
+    case maybeEdit of
+        Just edit ->
+            div [ class "event-instance-where" ] [ text "📍 ", instanceLocationEditFormView edit instance ]
+
+        Nothing ->
+            case ( instance.location |> Maybe.andThen Events.locationText, instanceTimeLocationEditable instance ) of
+                ( Just locationLine, True ) ->
+                    div [ class "event-instance-where" ]
+                        [ text "📍 "
+                        , text locationLine
+                        , editButtonView "Edit Location" (InstanceLocationEditClicked instance) maybeAccount eventPost
+                        ]
+
+                ( Just locationLine, False ) ->
+                    div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
+
+                ( Nothing, True ) ->
+                    div [ class "event-instance-where" ]
+                        [ editButtonView "+ Add Location" (InstanceLocationEditClicked instance) maybeAccount eventPost ]
+
+                ( Nothing, False ) ->
+                    text ""
+
+
+{-| The actual address `<input>` + Save/Cancel controls for the location
+editor -- mirrors `postFieldEditFormView` exactly (a single plain-text field,
+same Save/Cancel/error controls), just editing `Location.uniformlyFormattedAddress`
+via `UpdateEventInstances` instead of a `Post` field via `UpdatePost`.
+-}
+instanceLocationEditFormView : InstanceLocationEdit -> EventInstance -> Html Msg
+instanceLocationEditFormView edit instance =
+    span [ class "event-instance-location-edit" ]
+        [ Html.input
+            [ type_ "text"
+            , class "event-instance-location-edit-input"
+            , placeholder "Address"
+            , value edit.pending
+            , onInput InstanceLocationChanged
+            ]
+            []
+        , span [ class "event-instance-edit-actions" ]
+            [ button
+                [ classes [ "post-visibility-save", "background-color-primary" ]
+                , onClick (InstanceLocationSaveClicked instance)
+                , disabled (edit.status == Submitting)
+                ]
+                [ text
+                    (if edit.status == Submitting then
+                        "Saving…"
+
+                     else
+                        "Save"
+                    )
+                ]
+            , button
+                [ class "post-visibility-cancel"
+                , onClick InstanceLocationCancelClicked
+                , disabled (edit.status == Submitting)
+                ]
+                [ text "Cancel" ]
+            ]
+        , case edit.status of
+            SubmitFailed err ->
+                span [ class "post-visibility-error" ] [ text err ]
+
+            _ ->
+                text ""
+        ]
+
+
+{-| The "+ Add More" button + its popover (see `Model.addMoreMenu`) -- built
+on `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/
+`.popover-backdrop` pieces, the same way `Components.Pages.EventsPage.exportButtonView`
+uses them (see that function's own doc for what each class does). Gated the
+same way every other edit affordance in `instanceDetailAndStrip` is (the
+Event's own `Post`'s author, or an Admin) -- reuses `editButtonView`'s exact
+condition rather than rendering a bare button, so "who can add more dates"
+always matches "who can edit this date"'s own time/location buttons right
+above it.
+-}
+addMoreView : Maybe AccountsPanel.Account -> Model -> Post -> Html Msg
+addMoreView maybeAccount model eventPost =
+    case maybeAccount of
+        Nothing ->
+            text ""
+
+        Just account ->
+            if not (Posts.isAuthor account eventPost || List.member ADMIN account.permissions) then
+                text ""
+
+            else
+                let
+                    isOpen : Bool
+                    isOpen =
+                        model.addMoreMenu /= Nothing
+                in
+                div [ classes [ "event-instance-add-more", "popover-anchor" ] ]
+                    [ button
+                        [ classes [ "event-instance-add-more-toggle", "popover-toggle", "background-color-nav", openClosedClass isOpen ]
+                        , onClick
+                            (if isOpen then
+                                AddMoreClosed
+
+                             else
+                                AddMoreClicked
+                            )
+                        , type_ "button"
+                        ]
+                        [ text "+ Add More" ]
+                    , div [ classes [ "popover-backdrop", openClosedClass isOpen ], onClick AddMoreClosed ] []
+                    , div [ classes [ "event-instance-add-more-popover", "popover", openClosedClass isOpen ] ]
+                        (model.addMoreMenu
+                            |> Maybe.map addMoreMenuContentView
+                            |> Maybe.withDefault []
+                        )
+                    ]
+
+
+{-| The popover's actual content, per `AddMoreMenu.step` -- `ChoosingCount`
+lists every "N more" option `1..52` (per this feature's own request), each
+opening `ChoosingFrequency`'s "Daily"/"Weekly"/(`Monthly` under 12) buttons
+(`availableFrequencies`/`frequencyLabel`), which is what actually submits
+(`AddMoreFrequencyClicked`, via `Components.Events.createNewEventInstances`).
+`AddMoreFrequencyClicked` doesn't carry the `Event`/`EventInstance` it needs
+either -- `update` re-reads both from `model.eventStatus` at submit time,
+same as every other save handler in this module -- so this needs nothing
+beyond `menu` itself.
+-}
+addMoreMenuContentView : AddMoreMenu -> List (Html Msg)
+addMoreMenuContentView menu =
+    case menu.step of
+        ChoosingCount ->
+            [ h3 [ class "event-instance-add-more-heading" ] [ text "Add more dates" ]
+            , div [ class "event-instance-add-more-counts" ]
+                (List.range 1 52
+                    |> List.map
+                        (\count ->
+                            button
+                                [ class "event-instance-add-more-count"
+                                , onClick (AddMoreCountClicked count)
+                                , type_ "button"
+                                ]
+                                [ text (String.fromInt count ++ " more") ]
+                        )
+                )
+            ]
+
+        ChoosingFrequency count ->
+            [ h3 [ class "event-instance-add-more-heading" ] [ text (String.fromInt count ++ " more…") ]
+            , div [ class "event-instance-add-more-frequencies" ]
+                (availableFrequencies count
+                    |> List.map
+                        (\unit ->
+                            button
+                                [ classes [ "event-instance-add-more-frequency", "background-color-primary" ]
+                                , onClick (AddMoreFrequencyClicked count unit)
+                                , disabled (menu.status == Submitting)
+                                , type_ "button"
+                                ]
+                                [ text (frequencyLabel count unit) ]
+                        )
+                )
+            , button
+                [ class "event-instance-add-more-back"
+                , onClick AddMoreBackClicked
+                , disabled (menu.status == Submitting)
+                , type_ "button"
+                ]
+                [ text "← Back" ]
+            , case menu.status of
+                SubmitFailed err ->
+                    span [ class "event-instance-add-more-error" ] [ text err ]
+
+                Submitting ->
+                    span [ class "event-instance-add-more-status" ] [ text "Creating…" ]
+
+                Idle ->
+                    text ""
+            ]
 
 
 {-| The star button + comment count for `instance`'s own `Post` -- bottom
