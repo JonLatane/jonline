@@ -202,6 +202,22 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeleteEvent',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
+  static final _$updateEventDetails = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/jonline.Jonline/UpdateEventDetails',
+      ($9.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
+  static final _$createNewEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/jonline.Jonline/CreateNewEventInstances',
+      ($9.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
+  static final _$updateEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/jonline.Jonline/UpdateEventInstances',
+      ($9.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
+  static final _$deleteRemovedEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/jonline.Jonline/DeleteRemovedEventInstances',
+      ($9.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
   static final _$getEventSyncSources = $grpc.ClientMethod<$4.User, $9.GetEventSyncSourcesResponse>(
       '/jonline.Jonline/GetEventSyncSources',
       ($4.User value) => value.writeToBuffer(),
@@ -451,6 +467,22 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$9.Event> deleteEvent($9.Event request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteEvent, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$9.Event> updateEventDetails($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateEventDetails, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$9.Event> createNewEventInstances($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createNewEventInstances, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$9.Event> updateEventInstances($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateEventInstances, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$9.Event> deleteRemovedEventInstances($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteRemovedEventInstances, request, options: options);
   }
 
   $grpc.ResponseFuture<$9.GetEventSyncSourcesResponse> getEventSyncSources($4.User request, {$grpc.CallOptions? options}) {
@@ -832,6 +864,34 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
         ($9.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
+        'UpdateEventDetails',
+        updateEventDetails_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
+        ($9.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
+        'CreateNewEventInstances',
+        createNewEventInstances_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
+        ($9.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
+        'UpdateEventInstances',
+        updateEventInstances_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
+        ($9.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
+        'DeleteRemovedEventInstances',
+        deleteRemovedEventInstances_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
+        ($9.Event value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.User, $9.GetEventSyncSourcesResponse>(
         'GetEventSyncSources',
         getEventSyncSources_Pre,
@@ -1132,6 +1192,22 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteEvent(call, await request);
   }
 
+  $async.Future<$9.Event> updateEventDetails_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return updateEventDetails(call, await request);
+  }
+
+  $async.Future<$9.Event> createNewEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return createNewEventInstances(call, await request);
+  }
+
+  $async.Future<$9.Event> updateEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return updateEventInstances(call, await request);
+  }
+
+  $async.Future<$9.Event> deleteRemovedEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return deleteRemovedEventInstances(call, await request);
+  }
+
   $async.Future<$9.GetEventSyncSourcesResponse> getEventSyncSources_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
     return getEventSyncSources(call, await request);
   }
@@ -1247,6 +1323,10 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$9.Event> createEvent($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> updateEvent($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> deleteEvent($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> updateEventDetails($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> createNewEventInstances($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> updateEventInstances($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> deleteRemovedEventInstances($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.GetEventSyncSourcesResponse> getEventSyncSources($grpc.ServiceCall call, $4.User request);
   $async.Future<$4.EventSyncSource> createEventSyncSource($grpc.ServiceCall call, $4.EventSyncSource request);
   $async.Future<$4.EventSyncSource> updateEventSyncSource($grpc.ServiceCall call, $4.EventSyncSource request);
