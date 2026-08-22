@@ -1,61 +1,41 @@
-use diesel::*;
-use serde_json::json;
-use tonic::{Code, Status};
+use tonic::Status;
 
 use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, posts};
-// use crate::schema::event_instances::starts_at;
 
-// use crate::rpcs::validations::*;
-use std::collections::BTreeMap;
-use std::time::SystemTime;
+use super::create_new_event_instances::create_new_event_instances_impl;
+use super::delete_removed_event_instances::delete_removed_event_instances_impl;
+use super::event_permissions::validate_event_edit_permission;
+use super::update_event_details::update_event_details_impl;
+use super::update_event_instances::update_event_instances_impl;
 
+/// Updates an Event, driving the same logic `UpdateEventDetails`, `CreateNewEventInstances`,
+/// `UpdateEventInstances`, and `DeleteRemovedEventInstances` each expose standalone -- but calling
+/// their shared `_impl` functions directly (rather than those RPCs themselves) so this runs as one
+/// coherent operation instead of four independent ones:
+/// - Create must run before Delete, so a request that both drops an old instance and adds a new
+///   one never transiently leaves the event with zero instances (which `get_events`' `INNER JOIN`
+///   can't represent -- see `deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events`).
+/// - Delete needs Create's *resolved* instances (ids filled in for newly-created entries), not the
+///   original request -- otherwise a just-created instance (whose request entry has no id) looks
+///   indistinguishable from an omitted one and gets deleted immediately after being created.
+/// - Only one final `get_events` call, at the very end, builds the returned `Event`.
 pub fn update_event(
     request: Event,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     let event_id = request.id.to_db_id_or_err("id")?;
-    let mut existing_event = models::get_event(event_id, &Some(current_user), conn)?;
+    update_event_details_impl(event_id, &request, current_user, conn)?;
 
-    log::info!("Updating event: {:?}", existing_event);
-    existing_event.info = serde_json::to_value(request.info.to_owned()).unwrap();
-    existing_event = diesel::update(&existing_event)
-        .set(&existing_event)
-        .get_result::<models::Event>(conn)
-        .map_err(|e| {
-            log::error!("Failed to update event: {:?}", e);
-            Status::new(Code::Internal, "failed_to_update_event")
-        })?;
-
-    log::info!("Updating event post: {:?}", existing_event);
-    // The update_post will handle ownership checks.
-    let event_with_updated_post = request.post.map_or_else(
-        || {
-            Err(Status::new(
-                Code::InvalidArgument,
-                "event must contain associated post",
-            ))
-        },
-        |post| match post.id.to_db_id_or_err("post.id")? {
-            post_id if post_id == existing_event.post_id => {
-                crate::rpcs::update_post(post, current_user, conn).map(|updated_post| Event {
-                    post: Some(updated_post),
-                    ..request
-                })
-            }
-            _ => Err(Status::new(
-                Code::InvalidArgument,
-                "post ID mismatches event post ID",
-            )),
-        },
-    );
-
-    // let event_with_updated_instaces =
-    update_event_instances(event_with_updated_post?, current_user, conn)?;
+    let event = models::get_event(event_id, &Some(current_user), conn)?;
+    validate_event_edit_permission(&event, current_user, conn)?;
+    let resolved_instances =
+        create_new_event_instances_impl(&event, &request.instances, current_user, conn)?;
+    update_event_instances_impl(&event, &request.instances, conn)?;
+    delete_removed_event_instances_impl(&event, &resolved_instances, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {
@@ -67,256 +47,4 @@ pub fn update_event(
     )?
     .events[0]
         .clone())
-}
-
-fn update_event_instances(
-    request: Event,
-    current_user: &models::User,
-    conn: &mut PgPooledConnection,
-) -> Result<(), Status> {
-    let event = models::get_event(request.id.to_db_id_or_err("id")?, &Some(current_user), conn)?;
-    let existing_instance_data = models::get_event_instances(event.id, &Some(&current_user), conn)?;
-    let mut existing_instances = BTreeMap::new();
-    for (instance, post, user) in existing_instance_data.iter() {
-        existing_instances.insert(instance.id, (instance, post, user));
-    }
-    // existing_instance_data.iter();
-    let mut result_instance_data: Vec<models::EventInstance> = vec![];
-    for request_instance in request.instances.iter() {
-        println!("Processing input instance: {:?}", &request_instance);
-        let existing_instance_and_post: Option<(models::EventInstance, models::Post)> =
-            match request_instance.id.to_db_id_or_err("instance.id") {
-                Ok(instance_id) => {
-                    let instance_and_post = event_instances::table
-                        .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
-                        .select((models::EVENT_INSTANCE_COLUMNS, models::POST_COLUMNS))
-                        .filter(event_instances::id.eq(instance_id))
-                        .first::<(models::EventInstance, models::Post)>(conn)
-                        .ok();
-
-                    if instance_and_post.is_none()
-                        || instance_and_post.as_ref().unwrap().0.event_id != event.id
-                    {
-                        // println!("Creating new instance for UI id: {}", instance.id);
-                        Some(create_instance(
-                            &event,
-                            request_instance,
-                            current_user,
-                            conn,
-                        )?)
-                    } else {
-                        // println!("Found existing instance for UI id: {}", instance.id);
-                        instance_and_post
-                    }
-                }
-                Err(_) => {
-                    // println!("Creating new instance for UI id: {}", instance.id);
-                    Some(create_instance(
-                        &event,
-                        request_instance,
-                        current_user,
-                        conn,
-                    )?)
-                }
-            };
-        println!("Target instance: {:?}", &existing_instance_and_post);
-
-        // TODO: Update the instance to match the request changes
-
-        match existing_instance_and_post {
-            None => {
-                return Err(Status::new(
-                    Code::Internal,
-                    format!("failed_to_create_instance[{}]", request_instance.id),
-                ))
-            }
-            Some((existing_instance, existing_instance_post)) => {
-                let mut updated_instance = existing_instance.clone();
-                let starts_at = request_instance.starts_at.to_db()?;
-                let ends_at = request_instance.ends_at.to_db()?;
-                let location = request_instance
-                    .location
-                    .as_ref()
-                    .map(|c| serde_json::to_value(c).unwrap());
-                if starts_at > ends_at {
-                    return Err(Status::new(
-                        Code::InvalidArgument,
-                        format!(
-                            "instance[{}] starts_at must be before ends_at",
-                            existing_instance.id
-                        ),
-                    ));
-                }
-                println!(
-                    "Comparing instance times and locations: {:?} - {:?} (loc: {:?}) / {:?} - {:?} (loc: {:?})",
-                    starts_at, ends_at, &location, updated_instance.starts_at, updated_instance.ends_at, &updated_instance.location
-                );
-
-                if starts_at != updated_instance.starts_at
-                    || ends_at != updated_instance.ends_at
-                    || location != updated_instance.location
-                {
-                    updated_instance.starts_at = starts_at;
-                    updated_instance.ends_at = ends_at;
-                    updated_instance.location = location;
-                    updated_instance.updated_at = SystemTime::now().into();
-                }
-
-                // updated_instance.location = instance
-                //     .location
-                //     .as_ref()
-                //     .map(|c| serde_json::to_value(c).unwrap());
-                // updated_instance.info = json!({});
-                // updated_instance.post_id = None; //instance_post.as_ref().map(|p| p.id);
-
-                println!("Updating instance: {:?}", updated_instance);
-                updated_instance = diesel::update(&updated_instance)
-                    .set(&updated_instance)
-                    .returning(models::EVENT_INSTANCE_COLUMNS)
-                    .get_result::<models::EventInstance>(conn)
-                    .map_err(|e| {
-                        log::error!("Failed to update event instance: {:?}", e);
-                        Status::new(Code::Internal, "failed_to_update_event_instance")
-                    })?;
-
-                let mut updated_instance_post = existing_instance_post.clone();
-                let visibility = request_instance
-                    .post
-                    .as_ref()
-                    .map(|p| p.visibility())
-                    .unwrap_or(Visibility::Private);
-                if visibility.to_string_visibility() != updated_instance_post.visibility {
-                    updated_instance_post.visibility = visibility.to_string_visibility();
-                }
-                println!("Updating instance post: {:?}", updated_instance);
-                diesel::update(&updated_instance_post)
-                    .set(&updated_instance_post)
-                    .returning(models::POST_COLUMNS)
-                    .get_result::<models::Post>(conn)
-                    .map_err(|e| {
-                        log::error!("Failed to update event instance post: {:?}", e);
-                        Status::new(Code::Internal, "failed_to_update_event_instance")
-                    })?;
-
-                println!("Returning instance: {}", existing_instance.id);
-                result_instance_data.push(updated_instance);
-            }
-        }
-    }
-
-    // Delete non-present instances
-    let mut result_instances = BTreeMap::new();
-    for instance in result_instance_data.iter() {
-        result_instances.insert(instance.id, instance);
-    }
-    let removed_instance_ids: Vec<i64> = existing_instance_data
-        .iter()
-        .filter(|(instance, _, _)| !result_instances.contains_key(&instance.id))
-        .map(|(instance, _, _)| instance.id)
-        .collect();
-    // Instances owned by users other than `current_user` (e.g. an admin editing someone else's
-    // event) that are about to be deleted -- their `event_instance_count` needs refreshing too.
-    let removed_instance_owner_ids: Vec<i64> = existing_instance_data
-        .iter()
-        .filter(|(instance, _, _)| removed_instance_ids.contains(&instance.id))
-        .filter_map(|(_, post, _)| post.user_id)
-        .collect();
-
-    diesel::delete(event_instances::table.filter(event_instances::id.eq_any(removed_instance_ids)))
-        .execute(conn)
-        .map_err(|e| {
-            log::error!("Failed to delete event instances: {:?}", e);
-            Status::new(Code::Internal, "failed_to_delete_event_instances")
-        })?;
-
-    // New instances (via `create_instance`, above) are always owned by `current_user`; refresh
-    // their `event_instance_count` too, plus anyone who owned a just-deleted instance.
-    let mut affected_user_ids = removed_instance_owner_ids;
-    affected_user_ids.push(current_user.id);
-    affected_user_ids.sort_unstable();
-    affected_user_ids.dedup();
-    for user_id in affected_user_ids {
-        crate::logic::update_event_counts(user_id, conn)
-            .map_err(|_| Status::new(Code::Internal, "error_updating_event_counts"))?;
-    }
-
-    // Ok(Event {
-    //     instances: result_instance_data,
-    //     ..request
-    // })
-
-    Ok(())
-}
-
-pub fn create_instance(
-    event: &models::Event,
-    instance: &EventInstance,
-    user: &models::User,
-    conn: &mut PgPooledConnection,
-) -> Result<(models::EventInstance, models::Post), Status> {
-    let media_ids = instance
-        .post
-        .as_ref()
-        .map(|p| {
-            p.media
-                .iter()
-                .map(|m| m.id.to_db_id_or_err("instance.post.media"))
-                .collect::<Result<Vec<i64>, Status>>()
-        })
-        .transpose()?
-        .unwrap_or_default();
-    let new_post = instance.post.as_ref().map_or(
-        models::NewPost {
-            user_id: Some(user.id),
-            parent_post_id: None,
-            title: None,
-            link: None,
-            content: None,
-            visibility: "GLOBAL_PUBLIC".to_string(),
-            embed_link: false,
-            context: PostContext::EventInstance.as_str_name().to_string(),
-            moderation: "UNMODERATED".to_string(),
-            media: vec![],
-        },
-        |p| models::NewPost {
-            user_id: Some(user.id),
-            parent_post_id: None,
-            title: p.title.to_owned(),
-            link: p.link.to_link(),
-            content: p.content.to_owned(),
-            visibility: p.visibility.to_string_visibility(),
-            embed_link: p.embed_link.to_owned(),
-            context: PostContext::EventInstance.as_str_name().to_string(),
-            moderation: "UNMODERATED".to_string(),
-            media: media_ids,
-        },
-    );
-    let instance_post: models::Post = insert_into(posts::table)
-        .values(&new_post)
-        .returning(models::POST_COLUMNS)
-        .get_result::<models::Post>(conn)
-        .map_err(|e| {
-            log::error!("Failed to create event instance post: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_instance_post")
-        })?;
-    let instance = insert_into(event_instances::table)
-        .values(&models::NewEventInstance {
-            event_id: event.id,
-            post_id: instance_post.id,
-            starts_at: instance.starts_at.as_ref().unwrap().to_db(),
-            ends_at: instance.ends_at.as_ref().unwrap().to_db(),
-            location: instance
-                .location
-                .as_ref()
-                .map(|c| serde_json::to_value(c).unwrap()),
-            info: json!({}),
-            event_sync_source_instance_id: None,
-        })
-        .returning(models::EVENT_INSTANCE_COLUMNS)
-        .get_result::<models::EventInstance>(conn)
-        .map_err(|e| {
-            log::error!("Failed to create event instance: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_instance")
-        })?;
-    Ok((instance, instance_post))
 }

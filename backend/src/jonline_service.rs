@@ -362,6 +362,30 @@ impl Jonline for JonlineService {
     async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
         authenticated_rpc!(self, rpcs::delete_event, request)
     }
+    async fn update_event_details(
+        &self,
+        request: Request<Event>,
+    ) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::update_event_details, request)
+    }
+    async fn create_new_event_instances(
+        &self,
+        request: Request<Event>,
+    ) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::create_new_event_instances, request)
+    }
+    async fn update_event_instances(
+        &self,
+        request: Request<Event>,
+    ) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::update_event_instances, request)
+    }
+    async fn delete_removed_event_instances(
+        &self,
+        request: Request<Event>,
+    ) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::delete_removed_event_instances, request)
+    }
     async fn get_events(
         &self,
         request: Request<GetEventsRequest>,
