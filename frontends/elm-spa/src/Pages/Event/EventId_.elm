@@ -213,6 +213,13 @@ type Msg
       -- (`Shared.ConfirmEventDelete`); its result (`Shared.GotEventDeleteResult`)
       -- is picked up in `SharedMsg` below.
     | DeleteClicked Event
+      -- The "Delete Instance" button next to it (see
+      -- `deleteInstanceButtonView`), only shown once `event` has more than
+      -- one `EventInstance` -- opens the same shared dialog
+      -- (`Shared.ConfirmEventInstanceDelete`) for just `instance`; its result
+      -- (`Shared.GotEventInstanceDeleteResult`) is picked up in `SharedMsg`
+      -- below.
+    | DeleteInstanceClicked EventInstance Event
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
@@ -937,6 +944,9 @@ update shared req msg model =
         DeleteClicked event ->
             ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventDelete event model.targetHost)) )
 
+        DeleteInstanceClicked instance event ->
+            ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventInstanceDelete instance event model.targetHost)) )
+
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
             , AccountsPanel.connectToServer (AccountsPanel.isSecure req) model.targetHost
@@ -1113,6 +1123,41 @@ update shared req msg model =
                         -- there's nothing left here to show.
                         Shared.GotEventDeleteResult (Ok _) ->
                             ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
+
+                        -- This page's own `DeleteInstanceClicked` resolving
+                        -- successfully -- unlike `GotEventDeleteResult`
+                        -- above, the Event itself still exists (`updatedEvent`
+                        -- is `DeleteRemovedEventInstances`' own return value,
+                        -- carrying every surviving `EventInstance`), so
+                        -- navigate to one of those instead of bouncing away
+                        -- entirely -- `List.head` picks whichever happens to
+                        -- come back first, same "no particular ordering
+                        -- promised or needed" reasoning `instanceHistoryView`
+                        -- already accepts elsewhere on this page. Falls back
+                        -- to Home only if that list is somehow empty (deleting
+                        -- an instance never leaves zero behind -- this button
+                        -- only shows once there were at least two -- but
+                        -- covers it exactly as gracefully as `GotEventDeleteResult`
+                        -- would).
+                        Shared.GotEventInstanceDeleteResult (Ok ( _, updatedEvent )) ->
+                            case List.head updatedEvent.instances of
+                                Just sibling ->
+                                    let
+                                        routeId : String
+                                        routeId =
+                                            if model.targetHost == shared.accounts.mainFrontendHost then
+                                                sibling.id
+
+                                            else
+                                                sibling.id ++ "@" ++ model.targetHost
+                                    in
+                                    ( model
+                                    , Request.pushRoute (Gen.Route.Event__EventId_ { eventId = routeId }) req
+                                        |> Effect.fromCmd
+                                    )
+
+                                Nothing ->
+                                    ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
 
                         -- The "synced to" listing's own Delete button (see
                         -- `Model.syncDestinationPushStatuses`'s own doc)
@@ -1703,7 +1748,10 @@ eventDetailView shared model event instance =
                                 text ""
                         , contentDisplayView editable maybeAccount eventPost
                         ]
-                    , div [ class "post-detail-edit-row" ] [ deleteButtonView maybeAccount event eventPost ]
+                    , div [ class "post-detail-edit-row" ]
+                        [ deleteButtonView maybeAccount event eventPost
+                        , deleteInstanceButtonView maybeAccount event eventPost instance
+                        ]
                     ]
 
             Nothing ->
@@ -2001,21 +2049,47 @@ editButtonView label onClickMsg maybeAccount post =
 {-| The delete button for the Event's own `Post`, shown only to its own
 owner (per this feature's own scope -- unlike `postFieldEditButtonView`,
 not extended to Admins here) -- opens the shared "are you sure?" dialog via
-`DeleteClicked`/`Shared.ConfirmEventDelete`. Not tied to any one field (unlike
-title/link/content's own edit buttons), so it keeps its own
-`.post-detail-edit-row` below the primary post section (see
-`eventDetailView`) rather than sitting next to a field -- reuses that row's
-`.post-edit-button` class
-rather than `postActionsView`'s `.post-delete-button` (which only resolves
-its own styling via the `.post-actions` parent postDetail wraps it in, and
-would look inconsistent here).
+`DeleteClicked`/`Shared.ConfirmEventDelete`. Labeled "Delete Event" (not just
+"Delete") to read distinctly from `deleteInstanceButtonView`'s "Delete
+Instance" beside it -- deleting the whole Event is a much bigger action than
+deleting one of its dates. Not tied to any one field (unlike title/link/
+content's own edit buttons), so it keeps its own `.post-detail-edit-row`
+below the primary post section (see `eventDetailView`) rather than sitting
+next to a field -- reuses that row's `.post-edit-button` class rather than
+`postActionsView`'s `.post-delete-button` (which only resolves its own
+styling via the `.post-actions` parent postDetail wraps it in, and would look
+inconsistent here).
 -}
 deleteButtonView : Maybe AccountsPanel.Account -> Event -> Post -> Html Msg
 deleteButtonView maybeAccount event post =
     case maybeAccount of
         Just account ->
             if Posts.isAuthor account post then
-                button [ class "post-edit-button", onClick (DeleteClicked event) ] [ text "Delete" ]
+                button [ class "post-edit-button", onClick (DeleteClicked event) ] [ text "Delete Event" ]
+
+            else
+                text ""
+
+        Nothing ->
+            text ""
+
+
+{-| The "Delete Instance" button next to `deleteButtonView`'s "Delete Event"
+(same row, same `.post-edit-button` styling, same owner-only gate) --
+only rendered once `event` has more than one `EventInstance`: with exactly
+one, deleting it *is* deleting the Event (see `ConfirmEventInstanceDelete`'s
+own doc for why), so `deleteButtonView`'s own button already covers that
+case and a second one here would be redundant at best, misleading at worst.
+Opens the same shared "are you sure?" dialog as `deleteButtonView`, via
+`DeleteInstanceClicked`/`Shared.ConfirmEventInstanceDelete`, for just the
+currently-viewed `instance`.
+-}
+deleteInstanceButtonView : Maybe AccountsPanel.Account -> Event -> Post -> EventInstance -> Html Msg
+deleteInstanceButtonView maybeAccount event post instance =
+    case maybeAccount of
+        Just account ->
+            if Posts.isAuthor account post && List.length event.instances > 1 then
+                button [ class "post-edit-button", onClick (DeleteInstanceClicked instance event) ] [ text "Delete Instance" ]
 
             else
                 text ""

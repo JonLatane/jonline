@@ -35,7 +35,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User, defaultEvent)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -144,6 +144,14 @@ type Msg
     | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
+      -- (after which nothing about the deleted `Event` is left to look at, so
+      -- `Pages.Event.EventId_` just navigates Home), the `Event` here is the
+      -- *survivor*: `DeleteRemovedEventInstances`'s own return value, still
+      -- carrying every other `EventInstance` that wasn't deleted -- letting
+      -- that page navigate to one of those instead, keeping the viewer on the
+      -- same Event rather than bouncing them away from it entirely.
+    | GotEventInstanceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- `ConfirmEventInstanceSyncDestinationDelete`'s own result -- `host`
       -- mirrors `Components.Pages.EventsPage.GotPushResult`'s own (this is
       -- the Delete button's counterpart to that Push button's result), so
@@ -260,6 +268,17 @@ type DeleteConfirmation
     | ConfirmEventSyncSourceDelete EventSyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
+      -- Deletes just `instance` from `event` (every other `EventInstance` is
+      -- kept) rather than the whole `Event` -- `ConfirmDelete` fires
+      -- `DeleteRemovedEventInstances` with `event.instances` minus `instance`
+      -- as the "keep" list, same "no Shared-owned home needed" shape as
+      -- `ConfirmPostDelete`/`ConfirmEventDelete` above. Shown by
+      -- `Pages.Event.EventId_`'s "Delete Instance" button, next to "Delete
+      -- Event", only once an `Event` has more than one `EventInstance` (with
+      -- exactly one, deleting it *is* deleting the Event -- see
+      -- `backend/src/rpcs/events/get_events.rs`'s own `INNER JOIN`, which
+      -- makes a zero-instance Event unretrievable anyway).
+    | ConfirmEventInstanceDelete EventInstance Event String
     | ConfirmUserDelete User String
       -- Un-syncs `instance` from the `EventSyncDestination` (`String`) whose
       -- display name is the trailing-but-one `String` (for the confirmation
@@ -1394,6 +1413,18 @@ sharedUpdate req msg model =
                         |> Task.attempt GotEventDeleteResult
                     )
 
+                Just (ConfirmEventInstanceDelete instance event host) ->
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
+                    , Events.deleteRemovedEventInstances
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        { defaultEvent
+                            | id = event.id
+                            , instances = event.instances |> List.filter (\other -> other.id /= instance.id)
+                        }
+                        |> Task.attempt GotEventInstanceDeleteResult
+                    )
+
                 Just (ConfirmUserDelete user host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Users.deleteUser
@@ -1474,6 +1505,21 @@ sharedUpdate req msg model =
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventDeleteResult (Err _) ->
+            ( model, Cmd.none )
+
+        GotEventInstanceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+            in
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventInstanceDeleteResult (Err _) ->
             ( model, Cmd.none )
 
         GotUserDeleteResult deletedUser host (Ok ( maybeAccountsPanelMsg, _ )) ->

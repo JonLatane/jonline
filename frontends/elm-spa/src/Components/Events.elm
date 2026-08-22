@@ -2,6 +2,7 @@ module Components.Events exposing
     ( createNewEventInstances
     , deleteEvent
     , deleteEventInstanceSyncDestination
+    , deleteRemovedEventInstances
     , eventCard
     , eventInstanceHref
     , eventInstancePairs
@@ -210,6 +211,32 @@ createNewEventInstances accountsPanelModel maybeAccountServer event =
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.createNewEventInstances event
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Deletes every `EventInstance` currently on the event that *isn't* in
+`event.instances` -- i.e. `event.instances` is the "keep" list, not a batch to
+delete (`DeleteRemovedEventInstances`, same owner-or-moderator gating as
+`updateEventInstances`/`createNewEventInstances`, see
+`backend/src/rpcs/events/delete_removed_event_instances.rs`). Used by
+`Shared.update`'s `ConfirmEventInstanceDelete` handling to delete a single
+`EventInstance`: the caller passes every *other* instance the `Event`
+currently has, so this ends up deleting just the one omitted.
+-}
+deleteRemovedEventInstances :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Event
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
+deleteRemovedEventInstances accountsPanelModel maybeAccountServer event =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deleteRemovedEventInstances event
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
