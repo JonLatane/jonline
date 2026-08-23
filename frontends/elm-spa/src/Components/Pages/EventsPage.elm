@@ -52,7 +52,7 @@ import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, a, button, div, h2, h3, input, p, span, text)
 import Html.Attributes exposing (class, href, id, placeholder, style, target, title, type_, value)
-import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Html.Events exposing (onClick, onInput, onMouseDown, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -106,7 +106,32 @@ type alias Model =
     -- `scrollToCalendarPreviewCard` for whatever key this currently is. See
     -- `calendarPreviewModalView`'s own doc for why this needs no per-card
     -- animation dict of its own, unlike `eventAnimations`/`calendarAnimations`.
+    -- Persisted as `?calendar_preview=<key>` (see `queryParams`), round-tripped
+    -- back out of it at `init` -- always via `replaceUrl` (`pushUrl`), never
+    -- `pushUrl` the navigation function, so opening/closing it never itself
+    -- spams browser history (mirrors every other filter this page persists).
     , calendarPreview : Maybe String
+
+    -- A `calendarPreviewCardView` key waiting for `calendarPreviewEvents` to
+    -- actually contain it before `scrollToCalendarPreviewCard` can do
+    -- anything with it -- seeded at `init` from either the `#calendar-preview-<key>`
+    -- URL fragment or (absent one) `calendarPreview` itself, `Nothing`
+    -- otherwise. Exists because `init` sets `calendarPreview` (and thus opens
+    -- the modal) well before `eventsByServer` has any data to search for that
+    -- key in -- mirrors `Components.Pages.MessagesPage.Model.pendingScrollMessageId`/
+    -- `Pages.Messages`' own `#message-<id>` handling exactly, including the
+    -- "retried by every relevant `update`, cleared only once the attempt
+    -- actually fires" lifecycle -- see `pendingCalendarPreviewScrollEffect`.
+    --
+    -- The fragment (rather than always just `calendarPreview` itself) is what
+    -- lets `calendarPreviewCardView`'s own `onClick` (`CalendarPreviewCardNavigated`)
+    -- capture "which card, _within_ an already-open modal, was actually
+    -- clicked" separately from "which event opened the modal in the first
+    -- place" -- so leaving via that click and returning via the back button
+    -- lands back on `?calendar_preview=<original>#calendar-preview-<clicked>`,
+    -- restoring the modal centered on the original tap but scrolled to
+    -- wherever the user had actually scrolled to before clicking away.
+    , pendingCalendarPreviewScroll : Maybe String
     , mode : EventsDisplayMode
 
     -- The `EventsDisplayMode` `mode` defaults to absent an explicit
@@ -341,8 +366,32 @@ type Msg
       -- `scrollToCalendarPreviewCard`'s measurement resolving -- mirrors
       -- `Pages.Event.EventId_.GotScrollTarget` exactly, including giving up
       -- silently (`Err`) if the strip/card aren't found (e.g. the modal was
-      -- closed again before this resolved).
+      -- closed again before this resolved). Also clears `model.pendingCalendarPreviewScroll`
+      -- unconditionally (mirrors `Components.Pages.MessagesPage.ScrollAttempted`'s
+      -- own doc) -- whichever key it was waiting for, this was its one-shot
+      -- attempt.
     | GotCalendarPreviewScrollTarget (Result Dom.Error Float)
+      -- A `calendarPreviewCardView` fired via its own `onMouseDown` -- attached
+      -- to the whole card (not just its inner nav-overlay link) since the exact
+      -- element pressed doesn't matter here, only that a `mousedown` on this
+      -- card means a `click` (and, for the nav-overlay link, the browser's own
+      -- `<a href>` navigation) is about to follow. Deliberately `onMouseDown`,
+      -- not `onClick`: elm/browser's own internal-link interception (what
+      -- turns that `<a href>` click into `Main.ClickedLink`/`Nav.pushUrl`) is
+      -- registered on `document` for `"click"` *and* calls `stopPropagation`,
+      -- so an `onClick` here would never even fire for a click that actually
+      -- lands on the nav-overlay -- confirmed live (`run-elm`'s `driver.mjs`):
+      -- the fragment this handler writes only ever showed up for clicks that
+      -- *didn't* trigger real navigation. `mousedown` fires as an earlier,
+      -- separate event `click` interception has no hook into at all, so this
+      -- always gets to run first. Fires a `replaceUrl` that bakes the pressed
+      -- card's own key into a `#calendar-preview-<key>` fragment *before* the
+      -- `click`/navigation that follows -- both are plain `Browser.Navigation`
+      -- commands, processed synchronously in the order issued, so the
+      -- fragment is reliably part of the URL entry `Main.backStack` captures
+      -- for this page. See `Model.pendingCalendarPreviewScroll`'s own doc for
+      -- what reads that fragment back on return.
+    | CalendarPreviewCardNavigated String
 
 
 {-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
@@ -505,9 +554,18 @@ own copies -- see `Model.syncsCalendarPreference`'s own doc.
 -- `Nothing` for every caller except `Components.Pages.UserProfilePage`,
 which passes `Just user.eventSyncDestinations` (see that field's own doc).
 
+`fragment` is the raw URL fragment (`Url.fragment`, e.g. from `req.url.fragment`)
+-- seeds `Model.pendingCalendarPreviewScroll` alongside `calendarPreview`
+itself (see that field's own doc for the full `#calendar-preview-<key>`
+round-trip); `Nothing` for `Components.Pages.UserProfilePage`'s two embedded-preview
+copies (no `req`/`Url` in scope there to read one back out of, and a small
+preview widget restoring its exact scroll position across a full navigation
+is far lower value than the standalone `/events`-like pages this actually
+matters for).
+
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage syncsCalendarPreference availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
+init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -521,12 +579,26 @@ init shared author navKey path query embeddedPage syncsCalendarPreference availa
         computedDefaultDisplayMode =
             defaultMode embeddedPage shared.userPreferences.prefersCalendar
 
+        calendarPreview : Maybe String
+        calendarPreview =
+            Dict.get "calendar_preview" query
+
+        -- See `Model.pendingCalendarPreviewScroll`'s own doc -- the
+        -- `#calendar-preview-<key>` fragment (if any and if it parses)
+        -- wins over `calendarPreview` itself as the initial scroll target,
+        -- since it's the more specific "exactly where the user was" one.
+        pendingCalendarPreviewScroll : Maybe String
+        pendingCalendarPreviewScroll =
+            calendarPreview
+                |> Maybe.map (\key -> Maybe.withDefault key (calendarPreviewKeyFromFragment fragment))
+
         ( fetchedModel, fetchEffect ) =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
                 , calendarAnimations = Dict.empty
-                , calendarPreview = Nothing
+                , calendarPreview = calendarPreview
+                , pendingCalendarPreviewScroll = pendingCalendarPreviewScroll
                 , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault computedDefaultDisplayMode
                 , defaultDisplayMode = computedDefaultDisplayMode
                 , embeddedPage = embeddedPage
@@ -643,7 +715,14 @@ update shared msg model =
         ( newModel, effect ) =
             updateInner shared msg model
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, calendarRenderEffect shared model newModel ] )
+    ( newModel
+    , Effect.batch
+        [ effect
+        , setBreadcrumbsRoot shared newModel
+        , calendarRenderEffect shared model newModel
+        , pendingCalendarPreviewScrollEffect model newModel
+        ]
+    )
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -1041,15 +1120,23 @@ updateInner shared msg model =
                     )
 
         CalendarEventClicked key ->
-            ( { model | calendarPreview = Just key }
-            , scrollToCalendarPreviewCard 60 key
-            )
+            let
+                newModel : Model
+                newModel =
+                    { model | calendarPreview = Just key, pendingCalendarPreviewScroll = Nothing }
+            in
+            ( newModel, Effect.batch [ scrollToCalendarPreviewCard 60 key, pushUrl newModel ] )
 
         CalendarPreviewClosed ->
-            ( { model | calendarPreview = Nothing }, Effect.none )
+            let
+                newModel : Model
+                newModel =
+                    { model | calendarPreview = Nothing, pendingCalendarPreviewScroll = Nothing }
+            in
+            ( newModel, pushUrl newModel )
 
         GotCalendarPreviewScrollTarget (Ok target) ->
-            ( model
+            ( { model | pendingCalendarPreviewScroll = Nothing }
             , Ports.scrollElementLeft
                 (Encode.object
                     [ ( "id", Encode.string calendarPreviewStripDomId )
@@ -1060,7 +1147,10 @@ updateInner shared msg model =
             )
 
         GotCalendarPreviewScrollTarget (Err _) ->
-            ( model, Effect.none )
+            ( { model | pendingCalendarPreviewScroll = Nothing }, Effect.none )
+
+        CalendarPreviewCardNavigated key ->
+            ( model, pushCalendarPreviewHash model key )
 
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
@@ -1165,12 +1255,14 @@ defaultMode embeddedPage prefersCalendar =
 (see `displayModeParam`; omitted while `model.mode` is still exactly
 `model.defaultDisplayMode`, the default `init` seeded it with -- see that
 field's own doc), `search_text`
-(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
+(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention),
 `ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
 `Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
 active tab; `UpcomingEvents` -- the default -- omits it entirely, same
 "round-trip to/from absence" convention `display` already uses for its own
-default). Built as one combined list (rather than each concern pushing its
+default), and `calendar_preview` (`model.calendarPreview`'s own key, omitted
+whenever that's `Nothing` i.e. the modal is closed -- see that field's own
+doc). Built as one combined list (rather than each concern pushing its
 own `replaceUrl` independently) because
 `Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
 query string -- independent single-param pushes would each silently wipe
@@ -1195,6 +1287,13 @@ queryParams model =
                     [ Url.Builder.string "ends_after" (Conversions.isoUtcString endsAfter) ]
 
                 _ ->
+                    []
+           )
+        ++ (case model.calendarPreview of
+                Just key ->
+                    [ Url.Builder.string "calendar_preview" key ]
+
+                Nothing ->
                     []
            )
 
@@ -1238,6 +1337,53 @@ browser history) -- mirrors `PostsPage.pushSearchUrl`.
 pushUrl : Model -> Effect Msg
 pushUrl model =
     Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (queryParams model))
+        |> Effect.fromCmd
+
+
+{-| The URL fragment `calendarPreviewCardView`'s own `onClick` writes --
+`"calendar-preview-" ++ key`, parsed back out by `calendarPreviewKeyFromFragment`.
+Kept as one shared prefix constant (rather than each side hand-typing it) so
+`init`'s own parsing and `CalendarPreviewCardNavigated`'s own writing can't
+quietly drift apart -- mirrors `Pages.Messages`' own `"message-"` prefix
+convention for `#message-<id>`.
+-}
+calendarPreviewFragmentPrefix : String
+calendarPreviewFragmentPrefix =
+    "calendar-preview-"
+
+
+{-| Inverse of `calendarPreviewFragmentPrefix`'s own construction -- `Nothing`
+for a fragment that isn't one of these (including no fragment at all), same
+"give up silently" convention as everywhere else a URL is parsed back into
+state in this module.
+-}
+calendarPreviewKeyFromFragment : Maybe String -> Maybe String
+calendarPreviewKeyFromFragment fragment =
+    fragment
+        |> Maybe.andThen
+            (\value ->
+                if String.startsWith calendarPreviewFragmentPrefix value then
+                    Just (String.dropLeft (String.length calendarPreviewFragmentPrefix) value)
+
+                else
+                    Nothing
+            )
+
+
+{-| `CalendarPreviewCardNavigated`'s own effect -- `replaceUrl`s `queryParams model`
+(so `calendar_preview` itself is left exactly as-is, still the originally-tapped
+key) plus a `#calendar-preview-<key>` fragment for whichever card was just
+clicked, _before_ that click's own `<a href>` navigation runs -- see the `Msg`'s
+own doc for why the ordering between the two is safe to rely on. Deliberately
+its own function rather than a `pushUrl` variant that always includes the
+fragment: every other caller of `pushUrl` (`CalendarPreviewClosed`, tab/mode/search
+changes, ...) should keep dropping any stale fragment a previous click left
+behind, not preserve it forever.
+-}
+pushCalendarPreviewHash : Model -> String -> Effect Msg
+pushCalendarPreviewHash model key =
+    Browser.Navigation.replaceUrl model.navKey
+        (model.path ++ Url.Builder.toQuery (queryParams model) ++ "#" ++ calendarPreviewFragmentPrefix ++ key)
         |> Effect.fromCmd
 
 
@@ -2028,6 +2174,41 @@ calendarRenderEffect shared oldModel newModel =
         Effect.none
 
 
+{-| `model.pendingCalendarPreviewScroll`'s own retry loop -- mirrors
+`Components.Pages.MessagesPage.scrollToPendingMessageCmd`'s "gate on presence,
+only fire (and only then let the target get cleared, via `GotCalendarPreviewScrollTarget`)
+once the data actually contains it" shape exactly, just re-checked here on
+every `update` (like `calendarRenderEffect`) rather than from a handful of
+specific fetch-completion branches -- there's no harm in re-checking on
+messages that can't possibly have changed `eventsByServer` (the `oldModel.eventsByServer
+/= newModel.eventsByServer` guard makes those an immediate `Effect.none`), and
+this way nothing has to remember to call it from every place a fetch can land.
+
+Deliberately searches `calendarPreviewEvents newModel` (the small window
+already centered on `newModel.calendarPreview`), not the full `calendarEvents
+newModel` -- a pending target from a `#calendar-preview-<key>` fragment can
+only ever be a card the user actually saw and clicked from within that same
+window in the first place (see `Model.pendingCalendarPreviewScroll`'s own
+doc), so it's guaranteed to already be in range.
+
+-}
+pendingCalendarPreviewScrollEffect : Model -> Model -> Effect Msg
+pendingCalendarPreviewScrollEffect oldModel newModel =
+    case newModel.pendingCalendarPreviewScroll of
+        Nothing ->
+            Effect.none
+
+        Just key ->
+            if oldModel.eventsByServer == newModel.eventsByServer then
+                Effect.none
+
+            else if List.any (\( host, _, instance ) -> eventAnimationKey host instance == key) (calendarPreviewEvents newModel) then
+                scrollToCalendarPreviewCard 60 key
+
+            else
+                Effect.none
+
+
 {-| `Calendar` mode's container -- an outer `div` sized to span the full
 width of the page (mirrors `.events-grid`/`.events-strip`'s own
 `.container`-breakout convention, see `events.css`'s `.events-calendar`) and,
@@ -2229,6 +2410,10 @@ calendarPreviewEvents model =
                         |> List.map Tuple.second
 
 
+{-| `onMouseDown (CalendarPreviewCardNavigated key)` is attached to the whole
+card, not just its own inner nav-overlay link, and deliberately fires on
+`mousedown` rather than `click` -- see that `Msg`'s own doc for why.
+-}
 calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, EventInstance ) -> Html Msg
 calendarPreviewCardView shared model ( host, event, instance ) =
     let
@@ -2240,7 +2425,7 @@ calendarPreviewCardView shared model ( host, event, instance ) =
         current =
             model.calendarPreview == Just key
     in
-    div [ id (calendarPreviewCardDomId key), class "calendar-preview-card" ]
+    div [ id (calendarPreviewCardDomId key), class "calendar-preview-card", onMouseDown (CalendarPreviewCardNavigated key) ]
         [ eventCardView shared False current model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses ( host, event, instance ) ]
 
 

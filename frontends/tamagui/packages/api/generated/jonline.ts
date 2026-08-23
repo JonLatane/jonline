@@ -956,7 +956,8 @@ export const JonlineDefinition = {
     },
     /**
      * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
-     * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+     * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
+     * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
      * are provided as separate RPCs to break down what happens during this request.
      */
     updateEvent: {
@@ -1386,7 +1387,8 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   createEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /**
    * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
-   * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+   * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
+   * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
    * are provided as separate RPCs to break down what happens during this request.
    */
   updateEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
@@ -1689,7 +1691,8 @@ export interface JonlineClient<CallOptionsExt = {}> {
   createEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /**
    * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
-   * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+   * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
+   * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
    * are provided as separate RPCs to break down what happens during this request.
    */
   updateEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;

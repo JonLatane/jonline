@@ -742,7 +742,8 @@ visibilityView maybeAccount maybeEdit post =
                     Posts.allowedVisibilities account.permissions post.context post.visibility
             in
             span [ class "post-visibility-edit" ]
-                [ span [ class "post-visibility-edit-controls" ]
+                [ text " · "
+                , span [ class "post-visibility-edit-controls" ]
                     [ select [ onInput VisibilityChanged ]
                         (options
                             |> List.map
@@ -789,19 +790,23 @@ visibilityView maybeAccount maybeEdit post =
                 ]
 
         _ ->
-            span [ class "post-visibility-display" ]
-                [ text (Posts.postVisibilityText post)
-                , case maybeAccount of
-                    Just account ->
-                        if Posts.isAuthor account post then
-                            button [ class "post-visibility-edit-button", onClick (VisibilityEditClicked post) ] [ text "Edit" ]
+            if Posts.showPostVisibility maybeAccount post then
+                span [ class "post-visibility-display" ]
+                    [ text (" · " ++ Posts.postVisibilityText post)
+                    , case maybeAccount of
+                        Just account ->
+                            if Posts.isAuthor account post then
+                                button [ class "post-visibility-edit-button", onClick (VisibilityEditClicked post) ] [ text "Edit" ]
 
-                        else
+                            else
+                                text ""
+
+                        Nothing ->
                             text ""
+                    ]
 
-                    Nothing ->
-                        text ""
-                ]
+            else
+                text ""
 
 
 {-| The moderation-status segment of `postDetail`'s meta line (see

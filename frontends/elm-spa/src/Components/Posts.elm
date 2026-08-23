@@ -21,6 +21,7 @@ module Components.Posts exposing
     , postTitleText
     , postVisibilityText
     , replyCard
+    , showPostVisibility
     , starButton
     , stripLinkScheme
     , updatePost
@@ -589,10 +590,18 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
             [ span [ class "post-meta-left" ]
                 [ Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                 , text
-                    (" · "
-                        ++ postServerHost
-                        ++ " · "
-                        ++ postVisibilityText post
+                    ((if postServerHost == viewingServerHost then
+                        ""
+
+                      else
+                        " · " ++ postServerHost
+                     )
+                        ++ (if showPostVisibility maybeAccount post then
+                                " · " ++ postVisibilityText post
+
+                            else
+                                ""
+                           )
                     )
                 ]
             , span [ class "post-meta-right" ]
@@ -642,11 +651,11 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
         [ div [ class "post-reply-meta" ]
             [ span [ class "post-meta-left" ]
                 (Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-                    :: (if post.visibility == GLOBALPUBLIC then
-                            []
+                    :: (if showPostVisibility maybeAccount post then
+                            [ text (" · " ++ postVisibilityText post) ]
 
                         else
-                            [ text (" · " ++ postVisibilityText post) ]
+                            []
                        )
                 )
             , span [ class "post-meta-right" ]
@@ -819,7 +828,6 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
             [ span [ class "post-meta-left" ]
                 [ text "by "
                 , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-                , text " · "
                 , visibilityView
                 , moderationView
                 ]
@@ -930,6 +938,23 @@ badge on its preview.
 postVisibilityText : Post -> String
 postVisibilityText post =
     visibilityText post.visibility
+
+
+{-| Whether `post`'s visibility should be shown to a viewer signed in (or not)
+to its own server as `maybeAccount` -- hidden only when signed out and the
+visibility is the default `GLOBALPUBLIC`, since an anonymous viewer has no way
+to tell a `GLOBALPUBLIC` post apart from one with no visibility label at all;
+any other visibility, or being signed in, still shows it explicitly (e.g. so
+an author can confirm what they set).
+-}
+showPostVisibility : Maybe AccountsPanel.Account -> Post -> Bool
+showPostVisibility maybeAccount post =
+    case ( maybeAccount, post.visibility ) of
+        ( Nothing, GLOBALPUBLIC ) ->
+            False
+
+        _ ->
+            True
 
 
 {-| Display text for a bare `Visibility` value -- same mapping

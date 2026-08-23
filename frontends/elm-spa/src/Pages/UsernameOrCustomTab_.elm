@@ -148,7 +148,7 @@ initEmbedded : Shared.Model -> Request.With Params -> CustomNav.CustomTab -> ( M
 initEmbedded shared req tab =
     case tab.target of
         CustomNav.TargetTab EVENTSTAB ->
-            EventsPage.init shared Nothing req.key req.url.path req.query False True Nothing
+            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing
                 |> Tuple.mapFirst EmbeddedEvents
                 |> Tuple.mapSecond (Effect.map EventsMsg)
 

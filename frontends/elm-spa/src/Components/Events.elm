@@ -924,7 +924,11 @@ eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccou
                 , div [ class "event-card-meta" ]
                     [ span [ class "post-meta-left" ]
                         [ Authors.link basePath viewingServerHost eventServerHost maybeServer maybeAccount eventPost.author
-                        , text (" · " ++ Posts.postVisibilityText eventPost)
+                        , if Posts.showPostVisibility maybeAccount eventPost then
+                            text (" · " ++ Posts.postVisibilityText eventPost)
+
+                          else
+                            text ""
                         ]
                     , case instance.post of
                         Just instancePost ->

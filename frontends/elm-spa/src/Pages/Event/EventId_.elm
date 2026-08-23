@@ -1775,7 +1775,11 @@ eventDetailView shared model event instance =
                     , div [ class "event-post-meta" ]
                         [ text "by "
                         , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount instancePost.author
-                        , text (" · " ++ Posts.postVisibilityText instancePost)
+                        , if Posts.showPostVisibility maybeAccount instancePost then
+                            text (" · " ++ Posts.postVisibilityText instancePost)
+
+                          else
+                            text ""
                         ]
                     , case maybeServer of
                         Just server ->
@@ -2159,10 +2163,14 @@ visibilityView maybeAccount maybeEdit post =
                 ]
 
         _ ->
-            span [ class "post-visibility-display" ]
-                [ text (" · " ++ Posts.postVisibilityText post)
-                , editButtonView "Edit Visibility" (VisibilityEditClicked post) maybeAccount post
-                ]
+            if Posts.showPostVisibility maybeAccount post then
+                span [ class "post-visibility-display" ]
+                    [ text (" · " ++ Posts.postVisibilityText post)
+                    , editButtonView "Edit Visibility" (VisibilityEditClicked post) maybeAccount post
+                    ]
+
+            else
+                text ""
 
 
 {-| The moderation-status segment slotted into the primary post section's

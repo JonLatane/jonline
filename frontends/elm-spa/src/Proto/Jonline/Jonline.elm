@@ -865,7 +865,8 @@ deleteEvent =
 {-| A template for a gRPC call to the method 'UpdateEvent' sending a `Event` to get back a `Event`.
 
  Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
- Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+ Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails), 
+ [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
  are provided as separate RPCs to break down what happens during this request.
 
 
