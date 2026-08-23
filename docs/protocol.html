@@ -1247,13 +1247,37 @@ directory</a> is (<code>{name}</code> denotes a
           <td>UpdateEvent</td>
           <td><a href="#jonline-Event">Event</a></td>
           <td><a href="#jonline-Event">Event</a></td>
-          <td>Updates an Event. <em>Authenticated.</em></td>
+          <td>Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. <em>Authenticated.</em> Since Events are more complex structures, <code>UpdateEventDetails</code>, <code>CreateNewEventInstances</code>, <code>UpdateEventInstances</code>, and <code>DeleteRemovedEventInstances</code> are provided as separate RPCs to break down what happens during this request.</td>
         </tr>
         <tr>
           <td>DeleteEvent</td>
           <td><a href="#jonline-Event">Event</a></td>
           <td><a href="#jonline-Event">Event</a></td>
-          <td>(TODO) (Soft) deletes a Event. Returns the deleted version of the Event. <em>Authenticated.</em></td>
+          <td>(Soft) deletes a Event. Returns the deleted version of the Event. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>UpdateEventDetails</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Updates only the <code>Event</code>'s top-level details and those of its <code>Post</code> (not any <code>EventInstance</code>s or their <code>Post</code>s). <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>CreateNewEventInstances</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. <em>Authenticated.</em> Any other instances in the request are ignored.</td>
+        </tr>
+        <tr>
+          <td>UpdateEventInstances</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event. Any other instances in the request are ignored. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeleteRemovedEventInstances</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Deletes EventInstances in an existing Event that aren't present in the input Event. <em>Authenticated.</em></td>
         </tr>
         <tr>
           <td>GetEventSyncSources</td>

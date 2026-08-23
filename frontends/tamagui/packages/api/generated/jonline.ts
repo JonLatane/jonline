@@ -954,7 +954,11 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Updates an Event. *Authenticated.* */
+    /**
+     * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+     * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+     * are provided as separate RPCs to break down what happens during this request.
+     */
     updateEvent: {
       name: "UpdateEvent",
       requestType: Event,
@@ -963,9 +967,51 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
+    /** (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
     deleteEvent: {
       name: "DeleteEvent",
+      requestType: Event,
+      requestStream: false,
+      responseType: Event,
+      responseStream: false,
+      options: {},
+    },
+    /** Updates only the `Event`'s top-level details and those of its `Post` (not any `EventInstance`s or their `Post`s). *Authenticated.* */
+    updateEventDetails: {
+      name: "UpdateEventDetails",
+      requestType: Event,
+      requestStream: false,
+      responseType: Event,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
+     * Any other instances in the request are ignored.
+     */
+    createNewEventInstances: {
+      name: "CreateNewEventInstances",
+      requestType: Event,
+      requestStream: false,
+      responseType: Event,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
+     * Any other instances in the request are ignored. *Authenticated.*
+     */
+    updateEventInstances: {
+      name: "UpdateEventInstances",
+      requestType: Event,
+      requestStream: false,
+      responseType: Event,
+      responseStream: false,
+      options: {},
+    },
+    /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
+    deleteRemovedEventInstances: {
+      name: "DeleteRemovedEventInstances",
       requestType: Event,
       requestStream: false,
       responseType: Event,
@@ -1338,10 +1384,28 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   getEvents(request: GetEventsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<GetEventsResponse>>;
   /** Creates an Event. *Authenticated.* */
   createEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
-  /** Updates an Event. *Authenticated.* */
+  /**
+   * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+   * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+   * are provided as separate RPCs to break down what happens during this request.
+   */
   updateEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
-  /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
+  /** (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /** Updates only the `Event`'s top-level details and those of its `Post` (not any `EventInstance`s or their `Post`s). *Authenticated.* */
+  updateEventDetails(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /**
+   * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
+   * Any other instances in the request are ignored.
+   */
+  createNewEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /**
+   * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
+   * Any other instances in the request are ignored. *Authenticated.*
+   */
+  updateEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
+  deleteRemovedEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
   getEventSyncSources(
     request: User,
@@ -1623,10 +1687,28 @@ export interface JonlineClient<CallOptionsExt = {}> {
   getEvents(request: DeepPartial<GetEventsRequest>, options?: CallOptions & CallOptionsExt): Promise<GetEventsResponse>;
   /** Creates an Event. *Authenticated.* */
   createEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
-  /** Updates an Event. *Authenticated.* */
+  /**
+   * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+   * Since Events are more complex structures, `UpdateEventDetails`, `CreateNewEventInstances`, `UpdateEventInstances`, and `DeleteRemovedEventInstances`
+   * are provided as separate RPCs to break down what happens during this request.
+   */
   updateEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
-  /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
+  /** (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /** Updates only the `Event`'s top-level details and those of its `Post` (not any `EventInstance`s or their `Post`s). *Authenticated.* */
+  updateEventDetails(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /**
+   * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
+   * Any other instances in the request are ignored.
+   */
+  createNewEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /**
+   * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
+   * Any other instances in the request are ignored. *Authenticated.*
+   */
+  updateEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
+  deleteRemovedEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
   getEventSyncSources(
     request: DeepPartial<User>,

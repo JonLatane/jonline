@@ -2468,8 +2468,30 @@ deleteConfirmationModal shared =
                             )
 
                         Shared.ConfirmEventDelete event _ ->
+                            let
+                                instanceCount : Int
+                                instanceCount =
+                                    List.length event.instances
+                            in
                             ( "Delete Event?"
                             , "Delete \""
+                                ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
+                                ++ "\""
+                                ++ (if instanceCount > 1 then
+                                        " and all " ++ String.fromInt instanceCount ++ " of its dates"
+
+                                    else
+                                        ""
+                                   )
+                                ++ "? This can't be undone."
+                            , "Delete"
+                            )
+
+                        Shared.ConfirmEventInstanceDelete instance event _ ->
+                            ( "Delete This Date?"
+                            , "Delete "
+                                ++ Events.instanceWhenText shared.time instance
+                                ++ " from \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\"? This can't be undone."
                             , "Delete"
