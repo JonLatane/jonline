@@ -1131,6 +1131,7 @@
   gap: 0.3rem;
   max-height: 14rem;
   overflow-y: auto;
+  justify-content: space-around;
 }
 
 .event-instance-add-more-count {
