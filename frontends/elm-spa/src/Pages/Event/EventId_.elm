@@ -1721,7 +1721,7 @@ eventDetailView shared model event instance =
                                     [ instanceTimeView shared maybeAccount model.instanceTimeEdit eventPost instance
                                     , instanceLocationView maybeAccount model.instanceLocationEdit eventPost instance
                                     ]
-                                , addMoreView maybeAccount model eventPost
+                                , addMoreView maybeAccount model eventPost instance
                                 ]
                             , instanceHistoryView shared model event instance
                             ]
@@ -2247,10 +2247,14 @@ against, just decided per-instance rather than per-`Event`: an `Event` with a
 sync source can still have manually-added instances (via "Add More", which
 never sets `eventSyncSourceInstanceId`) safely alongside feed-sourced ones,
 so this checks `instance` itself rather than reusing `eventDetailView`'s
-`editable`.
+`editable`. Also gates `addMoreView`'s own button (see its own doc) -- "Add
+More" duplicates `instance`'s own `post`/`location` (see `buildRecurringInstances`),
+which reads as "add more dates like this synced one" in a way that doesn't
+make sense for an instance that isn't itself something the viewer set up by
+hand.
 -}
-instanceTimeLocationEditable : EventInstance -> Bool
-instanceTimeLocationEditable instance =
+instanceEditable : EventInstance -> Bool
+instanceEditable instance =
     instance.eventSyncSourceInstanceId == Nothing
 
 
@@ -2263,7 +2267,7 @@ editing an `EventInstance`'s time/location is authorized against the
 _Event_'s ownership server-side, see
 `backend/src/rpcs/events/event_permissions.rs`'s `validate_event_edit_permission`,
 not the instance's own possibly-different-owner override `Post`) *and*
-`instanceTimeLocationEditable`; the inline `instanceTimeEditFormView` once
+`instanceEditable`; the inline `instanceTimeEditFormView` once
 editing.
 -}
 instanceTimeView : Shared.Model -> Maybe AccountsPanel.Account -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
@@ -2276,7 +2280,7 @@ instanceTimeView shared maybeAccount maybeEdit eventPost instance =
             div [ class "event-instance-when" ]
                 [ text "📅 "
                 , text (Events.instanceWhenText shared.time instance)
-                , if instanceTimeLocationEditable instance then
+                , if instanceEditable instance then
                     editButtonView "Edit Time" (InstanceTimeEditClicked instance) maybeAccount eventPost
 
                   else
@@ -2342,7 +2346,7 @@ instanceTimeEditFormView zone edit instance =
 
 {-| The currently-viewed `EventInstance`'s own location row -- mirrors
 `instanceTimeView` exactly, just for `Location` instead of start/end time
-(including the same `instanceTimeLocationEditable` gate), plus one
+(including the same `instanceEditable` gate), plus one
 difference: with no location set yet, the display half reads "+ Add
 Location" (no separate location line to show) rather than a plain
 "Edit Location" next to existing text -- and, unlike the time row (which
@@ -2356,7 +2360,7 @@ instanceLocationView maybeAccount maybeEdit eventPost instance =
             div [ class "event-instance-where" ] [ text "📍 ", instanceLocationEditFormView edit instance ]
 
         Nothing ->
-            case ( instance.location |> Maybe.andThen Events.locationText, instanceTimeLocationEditable instance ) of
+            case ( instance.location |> Maybe.andThen Events.locationText, instanceEditable instance ) of
                 ( Just locationLine, True ) ->
                     div [ class "event-instance-where" ]
                         [ text "📍 "
@@ -2426,19 +2430,20 @@ on `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/
 `.popover-backdrop` pieces, the same way `Components.Pages.EventsPage.exportButtonView`
 uses them (see that function's own doc for what each class does). Gated the
 same way every other edit affordance in `instanceDetailAndStrip` is (the
-Event's own `Post`'s author, or an Admin) -- reuses `editButtonView`'s exact
+Event's own `Post`'s author, or an Admin -- reuses `editButtonView`'s exact
 condition rather than rendering a bare button, so "who can add more dates"
 always matches "who can edit this date"'s own time/location buttons right
-above it.
+above it) *and* `instanceEditable` (see its own doc for why "Add More" is
+gated the same way Edit Time/Edit Location are).
 -}
-addMoreView : Maybe AccountsPanel.Account -> Model -> Post -> Html Msg
-addMoreView maybeAccount model eventPost =
+addMoreView : Maybe AccountsPanel.Account -> Model -> Post -> EventInstance -> Html Msg
+addMoreView maybeAccount model eventPost instance =
     case maybeAccount of
         Nothing ->
             text ""
 
         Just account ->
-            if not (Posts.isAuthor account eventPost || List.member ADMIN account.permissions) then
+            if not ((Posts.isAuthor account eventPost || List.member ADMIN account.permissions) && instanceEditable instance) then
                 text ""
 
             else
