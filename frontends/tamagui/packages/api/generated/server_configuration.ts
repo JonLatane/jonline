@@ -619,7 +619,7 @@ export interface ServerLogo {
 export interface CustomNavigationTabSet {
   /**
    * Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-   * Its `target` is limited to only the `HOME_TAB` tab or a custom `post_id.
+   * Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
    */
   home?:
     | CustomNavigationTab
