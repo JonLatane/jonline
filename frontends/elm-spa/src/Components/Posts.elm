@@ -17,6 +17,7 @@ module Components.Posts exposing
     , postDetail
     , postHref
     , postLinkText
+    , postMediaLayoutFromText
     , postTimestamp
     , postTitleText
     , postVisibilityText
@@ -44,8 +45,8 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Users as Users
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h1, span, text)
-import Html.Attributes exposing (attribute, class, href, rel, style, target, title)
+import Html exposing (Html, a, button, div, h1, option, select, span, text)
+import Html.Attributes exposing (attribute, class, href, rel, selected, style, target, title, value)
 import Html.Events
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
@@ -53,6 +54,7 @@ import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.PostListingType exposing (PostListingType(..))
+import Proto.Jonline.PostMediaLayout exposing (PostMediaLayout(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
@@ -464,6 +466,48 @@ mediaEditButton maybeAccount onMediaEditClicked post =
             text ""
 
 
+{-| `mediaEditButton`'s companion in `postDetail`'s media block, on its own
+row directly below it (same `isAuthor`-or-`ADMIN` gate, plus only shown once
+`post` actually has media to lay out -- an empty gallery has nothing for the
+choice to affect) -- a `<select>` letting `post`'s own author pick between
+`Components.MultiMediaRenderer`'s two `PostMediaLayout`s (see
+`postMediaLayoutText`/`allPostMediaLayouts`). Styled the same as
+`visibilityView`/`moderationView`'s own `<select>`s (`.post-visibility-edit
+select`/`.post-moderation-edit select` in `posts.css`). Unlike those two
+(`Components.Pages.PostPage`'s own edit-mode-with-Save/Cancel flow, needed
+there since Save can trip permission checks or permanently set
+`publishedAt`), a layout choice has no such side effect worth confirming
+first, so this saves immediately on change via `onMediaLayoutChanged` -- the
+same one-click immediacy `mediaEditButton`'s own `Shared.MyMediaPanel`
+picker already has.
+-}
+mediaLayoutSelector : Maybe AccountsPanel.Account -> (String -> msg) -> Post -> Html msg
+mediaLayoutSelector maybeAccount onMediaLayoutChanged post =
+    case maybeAccount of
+        Just account ->
+            if (isAuthor account post || List.member ADMIN account.permissions) && not (List.isEmpty post.media) then
+                span [ class "post-media-layout-selector" ]
+                    [ span [ class "post-media-layout-label" ] [ text "Media Layout: " ]
+                    , select [ Html.Events.onInput onMediaLayoutChanged ]
+                        (allPostMediaLayouts
+                            |> List.map
+                                (\layout ->
+                                    option
+                                        [ value (postMediaLayoutText layout)
+                                        , selected (post.postMediaLayout == layout)
+                                        ]
+                                        [ text (postMediaLayoutText layout) ]
+                                )
+                        )
+                    ]
+
+            else
+                text ""
+
+        Nothing ->
+            text ""
+
+
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
 otherwise obvious once posts from several are mixed together by recency. Tinted
@@ -787,9 +831,15 @@ be a bare `postVisibilityText post` text node. `moderationView` is the same
 idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
 moderation-status segment.
 
+`onMediaLayoutChanged` drives `mediaLayoutSelector`, shown below
+`mediaEditButton` in the media block -- unlike `visibilityView`/
+`moderationView`, this one's a plain callback rather than caller-supplied
+`Html`, since (per `mediaLayoutSelector`'s own doc) it has no separate
+edit-mode/Save/Cancel state for the caller to own; it saves on every change.
+
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView moderationView post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -818,8 +868,9 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
         , case maybeServer of
             Just server ->
                 div []
-                    [ MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
+                    [ MultiMediaRenderer.view post.postMediaLayout server maybeAccount onMediaClicked post.media
                     , div [ class "post-detail-media-edit-row" ] [ mediaEditButton maybeAccount onMediaEditClicked post ]
+                    , div [ class "post-detail-media-layout-row" ] [ mediaLayoutSelector maybeAccount onMediaLayoutChanged post ]
                     ]
 
             Nothing ->
@@ -1099,6 +1150,41 @@ from `allVisibilities` in the first place).
 visibilityFromText : String -> Maybe Visibility
 visibilityFromText text =
     allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
+
+
+{-| The options offered by `mediaLayoutSelector`'s `<select>` -- every real
+`PostMediaLayout` (excludes `PostMediaLayoutUnrecognized_`, never a valid
+value to _set_). Order matches `posts.proto`'s own declaration order.
+-}
+allPostMediaLayouts : List PostMediaLayout
+allPostMediaLayouts =
+    [ MEDIALAYOUTSTANDARD, MEDIALAYOUTDYNAMICVERTICALSCROLL ]
+
+
+{-| Display text for a `PostMediaLayout` -- both `mediaLayoutSelector`'s
+`<select>` options (built from `allPostMediaLayouts`) and its own current
+selection. `PostMediaLayoutUnrecognized_` falls back to the standard
+layout's own label, same as an unset/zero-value field would decode to.
+-}
+postMediaLayoutText : PostMediaLayout -> String
+postMediaLayoutText layout =
+    case layout of
+        MEDIALAYOUTSTANDARD ->
+            "Standard"
+
+        MEDIALAYOUTDYNAMICVERTICALSCROLL ->
+            "Dynamic Vertically-Scrolling"
+
+        PostMediaLayoutUnrecognized_ _ ->
+            "Standard"
+
+
+{-| The reverse of `postMediaLayoutText` -- same `<select>`-value round-trip
+`visibilityFromText` does for `Visibility`.
+-}
+postMediaLayoutFromText : String -> Maybe PostMediaLayout
+postMediaLayoutFromText text =
+    allPostMediaLayouts |> List.filter (\layout -> postMediaLayoutText layout == text) |> List.head
 
 
 {-| The moderation-status options offered by a moderation-editing `<select>`

@@ -184,6 +184,39 @@ export function postContextToJSON(object: PostContext): string {
   }
 }
 
+export enum PostMediaLayout {
+  MEDIA_LAYOUT_STANDARD = 0,
+  MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function postMediaLayoutFromJSON(object: any): PostMediaLayout {
+  switch (object) {
+    case 0:
+    case "MEDIA_LAYOUT_STANDARD":
+      return PostMediaLayout.MEDIA_LAYOUT_STANDARD;
+    case 1:
+    case "MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL":
+      return PostMediaLayout.MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PostMediaLayout.UNRECOGNIZED;
+  }
+}
+
+export function postMediaLayoutToJSON(object: PostMediaLayout): string {
+  switch (object) {
+    case PostMediaLayout.MEDIA_LAYOUT_STANDARD:
+      return "MEDIA_LAYOUT_STANDARD";
+    case PostMediaLayout.MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL:
+      return "MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL";
+    case PostMediaLayout.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /**
  * Valid GetPostsRequest formats:
  *
@@ -309,6 +342,8 @@ export interface Post {
   visibility: Visibility;
   /** The moderation of the Post. */
   moderation: Moderation;
+  /** The desired end-user layout of Media attached to the post. */
+  postMediaLayout: PostMediaLayout;
   /**
    * If the Post was retrieved from GetPosts with a group_id, the GroupPost
    * metadata may be returned along with the Post.
@@ -689,6 +724,7 @@ function createBasePost(): Post {
     context: 0,
     visibility: 0,
     moderation: 0,
+    postMediaLayout: 0,
     currentGroupPost: undefined,
     replies: [],
     createdAt: undefined,
@@ -748,6 +784,9 @@ export const Post: MessageFns<Post> = {
     }
     if (message.moderation !== 0) {
       writer.uint32(128).int32(message.moderation);
+    }
+    if (message.postMediaLayout !== 0) {
+      writer.uint32(136).int32(message.postMediaLayout);
     }
     if (message.currentGroupPost !== undefined) {
       GroupPost.encode(message.currentGroupPost, writer.uint32(146).fork()).join();
@@ -908,6 +947,14 @@ export const Post: MessageFns<Post> = {
           message.moderation = reader.int32() as any;
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.postMediaLayout = reader.int32() as any;
+          continue;
+        }
         case 18: {
           if (tag !== 146) {
             break;
@@ -991,6 +1038,7 @@ export const Post: MessageFns<Post> = {
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
+      postMediaLayout: isSet(object.postMediaLayout) ? postMediaLayoutFromJSON(object.postMediaLayout) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
       replies: globalThis.Array.isArray(object?.replies) ? object.replies.map((e: any) => Post.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
@@ -1053,6 +1101,9 @@ export const Post: MessageFns<Post> = {
     if (message.moderation !== 0) {
       obj.moderation = moderationToJSON(message.moderation);
     }
+    if (message.postMediaLayout !== 0) {
+      obj.postMediaLayout = postMediaLayoutToJSON(message.postMediaLayout);
+    }
     if (message.currentGroupPost !== undefined) {
       obj.currentGroupPost = GroupPost.toJSON(message.currentGroupPost);
     }
@@ -1100,6 +1151,7 @@ export const Post: MessageFns<Post> = {
     message.context = object.context ?? 0;
     message.visibility = object.visibility ?? 0;
     message.moderation = object.moderation ?? 0;
+    message.postMediaLayout = object.postMediaLayout ?? 0;
     message.currentGroupPost = (object.currentGroupPost !== undefined && object.currentGroupPost !== null)
       ? GroupPost.fromPartial(object.currentGroupPost)
       : undefined;

@@ -414,6 +414,7 @@ import Proto.Jonline.NavigationTab
 import Proto.Jonline.Permission
 import Proto.Jonline.PostContext
 import Proto.Jonline.PostListingType
+import Proto.Jonline.PostMediaLayout
 import Proto.Jonline.PrivateUserStrategy
 import Proto.Jonline.UserListingType
 import Proto.Jonline.Visibility
@@ -4730,6 +4731,7 @@ fieldNumbersProto__Jonline__Post :
     , context : Int
     , visibility : Int
     , moderation : Int
+    , postMediaLayout : Int
     , currentGroupPost : Int
     , replies : Int
     , createdAt : Int
@@ -4755,6 +4757,7 @@ fieldNumbersProto__Jonline__Post =
     , context = 14
     , visibility = 15
     , moderation = 16
+    , postMediaLayout = 17
     , currentGroupPost = 18
     , replies = 19
     , createdAt = 20
@@ -4786,6 +4789,7 @@ defaultProto__Jonline__Post =
     , context = Proto.Jonline.PostContext.defaultPostContext
     , visibility = Proto.Jonline.Visibility.defaultVisibility
     , moderation = Proto.Jonline.Moderation.defaultModeration
+    , postMediaLayout = Proto.Jonline.PostMediaLayout.defaultPostMediaLayout
     , currentGroupPost = Nothing
     , replies = []
     , createdAt = Nothing
@@ -4825,6 +4829,10 @@ decodeProto__Jonline__Post =
         , Protobuf.Decode.optional 14 Proto.Jonline.PostContext.decodePostContext (\a r -> { r | context = a })
         , Protobuf.Decode.optional 15 Proto.Jonline.Visibility.decodeVisibility (\a r -> { r | visibility = a })
         , Protobuf.Decode.optional 16 Proto.Jonline.Moderation.decodeModeration (\a r -> { r | moderation = a })
+        , Protobuf.Decode.optional
+            17
+            Proto.Jonline.PostMediaLayout.decodePostMediaLayout
+            (\a r -> { r | postMediaLayout = a })
         , Protobuf.Decode.optional
             18
             (Protobuf.Decode.map Just decodeProto__Jonline__GroupPost)
@@ -4876,6 +4884,7 @@ encodeProto__Jonline__Post value =
         , ( 14, Proto.Jonline.PostContext.encodePostContext value.context )
         , ( 15, Proto.Jonline.Visibility.encodeVisibility value.visibility )
         , ( 16, Proto.Jonline.Moderation.encodeModeration value.moderation )
+        , ( 17, Proto.Jonline.PostMediaLayout.encodePostMediaLayout value.postMediaLayout )
         , ( 18
           , (Maybe.map encodeProto__Jonline__GroupPost >> Maybe.withDefault Protobuf.Encode.none) value.currentGroupPost
           )
@@ -4928,6 +4937,7 @@ type alias Proto__Jonline__Post =
     , context : Proto.Jonline.PostContext.PostContext
     , visibility : Proto.Jonline.Visibility.Visibility
     , moderation : Proto.Jonline.Moderation.Moderation
+    , postMediaLayout : Proto.Jonline.PostMediaLayout.PostMediaLayout
     , currentGroupPost : Maybe Proto__Jonline__GroupPost
     , replies : List Proto__Jonline__Post_
     , createdAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp

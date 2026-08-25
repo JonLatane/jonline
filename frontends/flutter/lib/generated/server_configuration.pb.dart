@@ -1276,7 +1276,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   static CustomNavigationTabSet? _defaultInstance;
 
   /// Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-  /// Its `target` is ignored and need not be set.
+  /// Its `target` is limited to only the `HOME_TAB` tab or a custom `post_id.
   @$pb.TagNumber(1)
   CustomNavigationTab get home => $_getN(0);
   @$pb.TagNumber(1)

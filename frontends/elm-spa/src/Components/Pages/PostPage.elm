@@ -107,6 +107,13 @@ type Msg
     | MediaClicked Post String
     | MediaEditClicked Post
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- `Components.Posts.mediaLayoutSelector`'s `onMediaLayoutChanged` --
+      -- unlike `MediaEditClicked`, this saves straight away (no picker panel,
+      -- no `mediaEditActive`-style "am I mid-edit" state) since a layout
+      -- choice is a plain `<select>`, not something with its own open/close
+      -- lifecycle.
+    | MediaLayoutChanged Post String
+    | GotMediaLayoutSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | VisibilityEditClicked Post
     | VisibilityChanged String
     | VisibilityCancelClicked
@@ -363,6 +370,32 @@ update shared msg model =
             ( postUpdatedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, postUpdatedEffect ] )
 
         GotMediaUpdateResult (Err _) ->
+            ( model, Effect.none )
+
+        MediaLayoutChanged post text ->
+            case ( Posts.postMediaLayoutFromText text, serverAndAccount shared model ) of
+                ( Just layout, Just ( server, account ) ) ->
+                    ( model
+                    , Posts.updatePost
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        post.id
+                        (\freshPost -> { freshPost | postMediaLayout = layout })
+                        |> Task.attempt GotMediaLayoutSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotMediaLayoutSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            let
+                ( postUpdatedModel, postUpdatedEffect ) =
+                    applyUpdatedPost model updatedPost
+            in
+            ( postUpdatedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, postUpdatedEffect ] )
+
+        GotMediaLayoutSaveResult (Err _) ->
             ( model, Effect.none )
 
         VisibilityEditClicked post ->
@@ -714,6 +747,7 @@ postDetailView shared model post =
         maybeAccount
         onMediaClicked
         (MediaEditClicked displayPost)
+        (MediaLayoutChanged displayPost)
         starred
         onStarClicked
         (EditClicked post)

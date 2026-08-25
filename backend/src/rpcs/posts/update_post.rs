@@ -133,6 +133,8 @@ pub fn update_post(
                 existing_post.shareable = request.shareable;
                 existing_post.updated_at = now.into();
                 existing_post.visibility = request.visibility.to_string_visibility();
+                existing_post.post_media_layout =
+                    request.post_media_layout.to_model_post_media_layout();
 
                 // `published_at` is set once, the first time a post becomes SERVER_PUBLIC/
                 // GLOBAL_PUBLIC, and is immutable thereafter - so only fill it in while it's

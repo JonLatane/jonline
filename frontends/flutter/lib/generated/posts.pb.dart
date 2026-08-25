@@ -301,6 +301,7 @@ class Post extends $pb.GeneratedMessage {
     PostContext? context,
     $11.Visibility? visibility,
     $11.Moderation? moderation,
+    PostMediaLayout? postMediaLayout,
     GroupPost? currentGroupPost,
     $core.Iterable<Post>? replies,
     $10.Timestamp? createdAt,
@@ -358,6 +359,9 @@ class Post extends $pb.GeneratedMessage {
     if (moderation != null) {
       $result.moderation = moderation;
     }
+    if (postMediaLayout != null) {
+      $result.postMediaLayout = postMediaLayout;
+    }
     if (currentGroupPost != null) {
       $result.currentGroupPost = currentGroupPost;
     }
@@ -402,6 +406,7 @@ class Post extends $pb.GeneratedMessage {
     ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
     ..e<$11.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..e<$11.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<PostMediaLayout>(17, _omitFieldNames ? '' : 'postMediaLayout', $pb.PbFieldType.OE, defaultOrMaker: PostMediaLayout.MEDIA_LAYOUT_STANDARD, valueOf: PostMediaLayout.valueOf, enumValues: PostMediaLayout.values)
     ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
     ..pc<Post>(19, _omitFieldNames ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
     ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
@@ -591,81 +596,91 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(16)
   void clearModeration() => clearField(16);
 
+  /// The desired end-user layout of Media attached to the post.
+  @$pb.TagNumber(17)
+  PostMediaLayout get postMediaLayout => $_getN(16);
+  @$pb.TagNumber(17)
+  set postMediaLayout(PostMediaLayout v) { setField(17, v); }
+  @$pb.TagNumber(17)
+  $core.bool hasPostMediaLayout() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearPostMediaLayout() => clearField(17);
+
   /// If the Post was retrieved from GetPosts with a group_id, the GroupPost
   /// metadata may be returned along with the Post.
   @$pb.TagNumber(18)
-  GroupPost get currentGroupPost => $_getN(16);
+  GroupPost get currentGroupPost => $_getN(17);
   @$pb.TagNumber(18)
   set currentGroupPost(GroupPost v) { setField(18, v); }
   @$pb.TagNumber(18)
-  $core.bool hasCurrentGroupPost() => $_has(16);
+  $core.bool hasCurrentGroupPost() => $_has(17);
   @$pb.TagNumber(18)
   void clearCurrentGroupPost() => clearField(18);
   @$pb.TagNumber(18)
-  GroupPost ensureCurrentGroupPost() => $_ensure(16);
+  GroupPost ensureCurrentGroupPost() => $_ensure(17);
 
   /// Hierarchical replies to this post. There will never be more than `reply_count` replies. However,
   /// there may be fewer than `reply_count` replies if some replies are
   /// hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
   /// in the frontend.
   @$pb.TagNumber(19)
-  $core.List<Post> get replies => $_getList(17);
+  $core.List<Post> get replies => $_getList(18);
 
   /// The time the post was created.
   @$pb.TagNumber(20)
-  $10.Timestamp get createdAt => $_getN(18);
+  $10.Timestamp get createdAt => $_getN(19);
   @$pb.TagNumber(20)
   set createdAt($10.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasCreatedAt() => $_has(18);
+  $core.bool hasCreatedAt() => $_has(19);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $10.Timestamp ensureCreatedAt() => $_ensure(18);
+  $10.Timestamp ensureCreatedAt() => $_ensure(19);
 
   /// The time the post was last updated.
   @$pb.TagNumber(21)
-  $10.Timestamp get updatedAt => $_getN(19);
+  $10.Timestamp get updatedAt => $_getN(20);
   @$pb.TagNumber(21)
   set updatedAt($10.Timestamp v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasUpdatedAt() => $_has(19);
+  $core.bool hasUpdatedAt() => $_has(20);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => clearField(21);
   @$pb.TagNumber(21)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(19);
+  $10.Timestamp ensureUpdatedAt() => $_ensure(20);
 
   /// The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   @$pb.TagNumber(22)
-  $10.Timestamp get publishedAt => $_getN(20);
+  $10.Timestamp get publishedAt => $_getN(21);
   @$pb.TagNumber(22)
   set publishedAt($10.Timestamp v) { setField(22, v); }
   @$pb.TagNumber(22)
-  $core.bool hasPublishedAt() => $_has(20);
+  $core.bool hasPublishedAt() => $_has(21);
   @$pb.TagNumber(22)
   void clearPublishedAt() => clearField(22);
   @$pb.TagNumber(22)
-  $10.Timestamp ensurePublishedAt() => $_ensure(20);
+  $10.Timestamp ensurePublishedAt() => $_ensure(21);
 
   /// The time the post was last interacted with (replied to, etc.)
   @$pb.TagNumber(23)
-  $10.Timestamp get lastActivityAt => $_getN(21);
+  $10.Timestamp get lastActivityAt => $_getN(22);
   @$pb.TagNumber(23)
   set lastActivityAt($10.Timestamp v) { setField(23, v); }
   @$pb.TagNumber(23)
-  $core.bool hasLastActivityAt() => $_has(21);
+  $core.bool hasLastActivityAt() => $_has(22);
   @$pb.TagNumber(23)
   void clearLastActivityAt() => clearField(23);
   @$pb.TagNumber(23)
-  $10.Timestamp ensureLastActivityAt() => $_ensure(21);
+  $10.Timestamp ensureLastActivityAt() => $_ensure(22);
 
   /// The number of unauthenticated stars on the post.
   @$pb.TagNumber(24)
-  $fixnum.Int64 get unauthenticatedStarCount => $_getI64(22);
+  $fixnum.Int64 get unauthenticatedStarCount => $_getI64(23);
   @$pb.TagNumber(24)
-  set unauthenticatedStarCount($fixnum.Int64 v) { $_setInt64(22, v); }
+  set unauthenticatedStarCount($fixnum.Int64 v) { $_setInt64(23, v); }
   @$pb.TagNumber(24)
-  $core.bool hasUnauthenticatedStarCount() => $_has(22);
+  $core.bool hasUnauthenticatedStarCount() => $_has(23);
   @$pb.TagNumber(24)
   void clearUnauthenticatedStarCount() => clearField(24);
 }

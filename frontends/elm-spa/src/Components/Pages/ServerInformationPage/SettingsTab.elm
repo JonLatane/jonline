@@ -77,6 +77,8 @@ type Msg
     | CustomTabEmojiChanged String String
     | CustomTabChooseImageClicked String
     | CustomTabRemoveImageClicked String
+    | CustomTabHomeTargetKindChanged String
+    | CustomTabHomePostIdChanged String
     | MoveCustomTabLeftClicked String
     | MoveCustomTabRightClicked String
     | GotPreMoveCustomTabPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
@@ -130,12 +132,18 @@ entries need a synthetic key for `UI.Flip`'s animation `Dict`s/DOM ids/list iden
 `editingIconFor` (which entry's icon `Shared.MyMediaPanel` is currently picking for, if any -- see
 `applySharedMsg`, mirroring `ThemeTab.LogoEdit`'s own `Shared.MyMediaPanel` integration).
 
-The `home` slot is deliberately not part of this edit at all (see this module's own doc on the
-"leave Home uneditable for now" scope decision) -- `pending` only ever holds `tabs`, not `home`.
+The `home` slot rides along as its own `home` field, not part of `pending` -- it's not a
+`CustomTabEntry` at all (no icon/title/path/reorder), just a plain `UI.CustomNav.CustomTabTarget`
+(reused directly rather than a bespoke type -- `home`'s own proto doc restriction to
+`HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB`/a `post_id` is enforced entirely by `homeTargetSelect` only ever
+offering `UI.CustomNav.selectableHomeTargetKinds`, never by the type itself). It saves/cancels in
+the same round-trip as `pending` (`CustomTabsSaveClicked`/`applyCustomTabs`, `CustomTabsCancelClicked`)
+since both live under the same "Navigation Tabs" section/Edit button.
 
 -}
 type alias CustomTabsEdit =
     { pending : List CustomTabEntry
+    , home : CustomNav.CustomTabTarget
     , nextEntryId : Int
     , editingIconFor : Maybe String
     , status : AccountsPanel.FormStatus
@@ -329,14 +337,19 @@ update shared targetHost maybeServer msg model =
             case maybeServer of
                 Just server ->
                     let
+                        config : ServerConfiguration
+                        config =
+                            AccountsPanel.configurationOf server
+
                         entries : List CustomTabEntry
                         entries =
-                            CustomNav.effectiveTabs (AccountsPanel.configurationOf server).customTabs |> List.indexedMap customTabEntryFrom
+                            CustomNav.effectiveTabs config.customTabs |> List.indexedMap customTabEntryFrom
                     in
                     ( { model
                         | customTabsEdit =
                             Just
                                 { pending = entries
+                                , home = CustomNav.homeTarget config.customTabs
                                 , nextEntryId = List.length entries
                                 , editingIconFor = Nothing
                                 , status = AccountsPanel.Idle
@@ -357,7 +370,7 @@ update shared targetHost maybeServer msg model =
             case ( model.customTabsEdit, Common.adminAccountFor shared targetHost ) of
                 ( Just edit, Just account ) ->
                     ( { model | customTabsEdit = Just { edit | status = AccountsPanel.Submitting } }
-                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyCustomTabs edit.pending)
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyCustomTabs edit)
                         |> Task.attempt GotCustomTabsSaveResult
                         |> Effect.fromCmd
                     )
@@ -595,6 +608,36 @@ update shared targetHost maybeServer msg model =
 
                 Nothing ->
                     ( model, Effect.none )
+
+        CustomTabHomeTargetKindChanged text ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                case CustomNav.homeTargetKindFromText text of
+                                    Just (CustomNav.KindTab navTab) ->
+                                        { edit | home = CustomNav.TargetTab navTab }
+
+                                    Just CustomNav.KindPost ->
+                                        case edit.home of
+                                            CustomNav.TargetPost _ ->
+                                                edit
+
+                                            _ ->
+                                                { edit | home = CustomNav.TargetPost "" }
+
+                                    _ ->
+                                        edit
+                            )
+              }
+            , Effect.none
+            )
+
+        CustomTabHomePostIdChanged text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (\edit -> { edit | home = CustomNav.TargetPost text }) }
+            , Effect.none
+            )
 
         FeatureSettingsSectionToggled set ->
             ( { model | collapsedFeatureSettings = toggleSetMember (featureSettingsKey set) model.collapsedFeatureSettings }, Effect.none )
@@ -1227,16 +1270,19 @@ mapPendingEntry entryId fn edit =
 
 
 {-| `CustomTabsSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
-every other editor's transform is -- overlays `entries` (in the edit's own order) onto a freshly
-re-fetched `ServerConfiguration`'s `customTabs.tabs`, leaving `customTabs.home` (never edited here --
-see this module's own doc) untouched. Each entry's blank `title` round-trips to `Nothing` (same
+every other editor's transform is -- overlays `edit.pending` (in the edit's own order) onto a
+freshly re-fetched `ServerConfiguration`'s `customTabs.tabs`, and `edit.home` onto `customTabs.home`
+(via `UI.CustomNav.toProtoHome`, which is what actually enforces the allowed-targets restriction,
+see that function's own doc). Each tab entry's blank `title` round-trips to `Nothing` (same
 `optionalString` convention as `applyFeatureSettingsFor`'s alias fields); `path` is sent as-is --
-the backend's `validate_configuration` is the actual authority on whether it's a valid `[a-z_]+` slug
-(see `CustomTabEntry`'s own doc), surfaced back through `GotCustomTabsSaveResult`'s `Err` branch same
-as any other rejected save.
+the backend's `validate_configuration` is the actual authority on whether it's a valid `[a-z_]+`
+slug (see `CustomTabEntry`'s own doc), surfaced back through `GotCustomTabsSaveResult`'s `Err`
+branch same as any other rejected save. A blank `edit.home`'s `TargetPost ""` (an admin who's
+switched Home to "Custom Post" but hasn't typed an id yet) round-trips through unvalidated too,
+same light-touch style.
 -}
-applyCustomTabs : List CustomTabEntry -> ServerConfiguration -> ServerConfiguration
-applyCustomTabs entries config =
+applyCustomTabs : CustomTabsEdit -> ServerConfiguration -> ServerConfiguration
+applyCustomTabs edit config =
     let
         existing : Proto.Jonline.CustomNavigationTabSet
         existing =
@@ -1251,7 +1297,14 @@ applyCustomTabs entries config =
             in
             { customTab = Just (CustomNav.toProtoTab tab), path = entry.path }
     in
-    { config | customTabs = Just { existing | tabs = entries |> List.map toTabWithPath } }
+    { config
+        | customTabs =
+            Just
+                { existing
+                    | tabs = edit.pending |> List.map toTabWithPath
+                    , home = CustomNav.toProtoHome edit.home
+                }
+    }
 
 
 {-| The DOM `id` a custom-tab chip is rendered with while `customTabsEdit` is active -- the
@@ -1363,12 +1416,16 @@ permissionEditBadge set permission =
         ]
 
 
-{-| The "Navigation Tabs" section -- a horizontal `Home` (uneditable, see this module's own doc)
-chip followed by one chip per `UI.CustomNav.effectiveTabs` entry, previewing exactly the order/icons
-`UI.headerNav` itself would show for this `server` if it were `Shared.AccountsPanel.Model.mainFrontendHost`
-(see `UI.CustomNav`'s own module doc). Plain display chips (`customTabsDisplayView`) when nothing's
-being edited, or the FLIP-reorderable editor (`customTabsEditorView`) once `CustomTabsEditClicked`
-has started one -- same split as `permissionsSection`/`featureSettingsSection`.
+{-| The "Navigation Tabs" section -- a horizontal `Home` chip (always the server's own logo/name,
+see `homeTabChip`'s own doc for why its _look_ stays fixed even though what it links to is editable
+too, via `edit.home`) followed by one chip per `UI.CustomNav.effectiveTabs` entry, previewing
+exactly the order/icons `UI.headerNav` itself would show for this `server` if it were
+`Shared.AccountsPanel.Model.mainFrontendHost` (see `UI.CustomNav`'s own module doc). Plain display
+chips (`customTabsDisplayView`) when nothing's being edited, or the FLIP-reorderable editor
+(`customTabsEditorView`) once `CustomTabsEditClicked` has started one -- same split as
+`permissionsSection`/`featureSettingsSection`. `Home`'s own target (Default vs. a custom Post,
+`homeEditChip`) saves/cancels in that same editor, alongside `pending` (see `CustomTabsEdit`'s own
+doc for why it isn't a `CustomTabEntry` itself).
 -}
 customTabsSection : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe CustomTabsEdit -> Html Msg
 customTabsSection server maybeAdminAccount maybeEdit =
@@ -1394,12 +1451,14 @@ customTabsDisplayView server tabs =
     div [ Html.Attributes.class "custom-tabs-strip" ] (homeTabChip server :: List.map (customTabChip server) tabs)
 
 
-{-| The `Home` slot's own chip -- always the server's own logo/name (`AccountsPanel.serverNameAndLogo`,
-same content `UI.homeLinkContent` shows in the real nav), regardless of `customTabs.home` (see this
-module's own doc on why that override isn't wired up to any editor yet). Shown in both
-`customTabsDisplayView` and `customTabsEditorView` so the preview always reads as "this is where Home
-sits, then your tabs" -- but only the latter also wraps it in FLIP/reorder chrome, since it's never
-itself reorderable.
+{-| The `Home` slot's own read-only chip (`customTabsDisplayView`) -- always the server's own
+logo/name (`AccountsPanel.serverNameAndLogo`, same content `UI.homeLinkContent` shows in the real
+nav), regardless of `customTabs.home`. Deliberately stays this way even though what it links to is
+editable (`homeEditChip`, `customTabsEditorView`'s own use while an edit is in progress): the chip
+strip previews _where the Home tab sits in the nav_, not what page it currently renders, and every
+other tab's own chip is keyed off its `icon`/`title`, neither of which a `home` override ever sets
+(see `UI.CustomNav.homeTarget`'s own doc). Shown in `customTabsDisplayView` so the preview always
+reads as "this is where Home sits, then your tabs."
 -}
 homeTabChip : AccountsPanel.Server -> Html msg
 homeTabChip server =
@@ -1423,15 +1482,16 @@ customTabChip server tab =
 
 {-| The chip strip (add/remove/reorder-animated via `UI.Flip`, mirroring `FederationTab.federationEditorView`
 almost exactly), the "Add Tab" button, and the Save/Cancel actions -- everything shown once
-`CustomTabsEditClicked` has started an edit. `homeTabChip` is always the strip's first, non-FLIP,
-non-reorderable entry (see its own doc).
+`CustomTabsEditClicked` has started an edit. `homeEditChip` is always the strip's first, non-FLIP,
+non-reorderable entry (see its own doc) -- it edits `edit.home` directly rather than being one of
+`edit.pending`.
 -}
 customTabsEditorView : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
 customTabsEditorView server edit =
     div [ Html.Attributes.class "server-details-custom-tabs-edit" ]
         [ Html.Keyed.node "div"
             [ classes [ "custom-tabs-strip", "flip-animated-row" ] ]
-            (( "home", homeTabChip server )
+            (( "home", homeEditChip server edit )
                 :: (edit.pending
                         |> List.indexedMap
                             (\index entry -> ( entry.entryId, customTabEditChipFlip server edit (List.length edit.pending) index entry ))
@@ -1609,6 +1669,59 @@ customTabTargetSelect entry =
                 (\kind ->
                     option
                         [ value (CustomNav.targetKindText kind), selected (CustomNav.targetKind entry.target == kind) ]
+                        [ text (CustomNav.targetKindText kind) ]
+                )
+        )
+
+
+{-| The `Home` slot's own editor chip -- shown in place of the plain `homeTabChip` while
+`customTabsEdit` is active (`customTabsEditorView`'s own use). No reorder arrows (`home` always
+sits first, isn't part of `edit.pending`), no icon editor (its look stays fixed, see
+`homeTabChip`'s own doc), no Title/Path `<input>` or remove button (`home` isn't a `CustomTabEntry`
+and can't be removed) -- just the server logo up top and `homeTargetSelect` (plus a conditional
+Post-id `<input>`, when `edit.home` is a `CustomNav.TargetPost`) below, mirroring
+`customTabEditChip`'s own bottom row.
+-}
+homeEditChip : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
+homeEditChip server edit =
+    div [ classes [ "server-chip", "custom-tab-chip", "custom-tab-chip-home", "custom-tab-chip-edit", hostnameToCSSClass server.frontendHost ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
+        , div [ classes [ "server-chip-bottom", "background-color-nav", "custom-tab-chip-edit-fields" ] ]
+            (List.concat
+                [ [ homeTargetSelect edit.home ]
+                , case edit.home of
+                    CustomNav.TargetPost postId ->
+                        [ input
+                            [ Html.Attributes.class "custom-tab-post-id-input"
+                            , placeholder "Post ID"
+                            , value postId
+                            , onInput CustomTabHomePostIdChanged
+                            ]
+                            []
+                        ]
+
+                    _ ->
+                        []
+                ]
+            )
+        ]
+
+
+{-| The "type" `<select>` for the `Home` slot -- `UI.CustomNav.selectableHomeTargetKinds` (Home
+Page/Events Page/Posts Page/Custom Post) rather than `customTabTargetSelect`'s fuller
+`selectableTargetKinds`, since `home`'s own proto doc restricts it to fewer choices (no
+People/About/Profile). Mirrors `customTabTargetSelect`'s own shape exactly, just over
+`UI.CustomNav.homeTargetKindFromText` instead of `targetKindFromText`.
+-}
+homeTargetSelect : CustomNav.CustomTabTarget -> Html Msg
+homeTargetSelect target =
+    select [ onInput CustomTabHomeTargetKindChanged ]
+        (CustomNav.selectableHomeTargetKinds
+            |> List.map
+                (\kind ->
+                    option
+                        [ value (CustomNav.targetKindText kind), selected (CustomNav.targetKind target == kind) ]
                         [ text (CustomNav.targetKindText kind) ]
                 )
         )

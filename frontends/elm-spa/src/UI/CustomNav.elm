@@ -5,13 +5,17 @@ module UI.CustomNav exposing
     , TargetKind(..)
     , defaultPathFor
     , effectiveTabs
+    , homeTarget
+    , homeTargetKindFromText
     , iconView
     , navLinkView
     , resolvedTitle
+    , selectableHomeTargetKinds
     , selectableTargetKinds
     , targetKind
     , targetKindFromText
     , targetKindText
+    , toProtoHome
     , toProtoTab
     )
 
@@ -33,7 +37,7 @@ hand-edited/future-versioned config).
 import Gen.Route as Route exposing (Route)
 import Html exposing (Html, a, img, span, text)
 import Html.Attributes exposing (alt, attribute, href, src, title)
-import Proto.Jonline exposing (CustomNavigationTab, CustomNavigationTabSet)
+import Proto.Jonline exposing (CustomNavigationTab, CustomNavigationTabSet, defaultCustomNavigationTab)
 import Proto.Jonline.CustomNavigationTab.Icon as ProtoIcon
 import Proto.Jonline.CustomNavigationTab.Target as ProtoTarget
 import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
@@ -142,6 +146,47 @@ toProtoTab tab =
     , icon = Just (toProtoIcon tab.icon)
     , title = tab.title
     }
+
+
+{-| `CustomNavigationTabSet.home`'s own `target`, resolved down to a `CustomTabTarget` -- `TargetTab
+HOMETAB` for either an unset `customTabs`/`home`, or a `home` explicitly saved back to the default
+`HOME_TAB` target (the two are indistinguishable, and don't need to be -- both mean "render the
+ordinary Home feed"). Unlike a regular `CustomTab`, `home`'s own proto doc restricts `target` to
+`HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB` or a `post_id` (never `IsProfile`, and its `icon`/`title` are
+never set/read either -- see `SettingsTab`'s own `homeEditChip`, the only place that ever constructs
+one), so a `TargetProfile` here (a malformed/hand-edited config -- see `fromProtoTarget`'s own doc)
+falls back to `TargetTab HOMETAB` the same as unset. Used by `Pages.Home_` (to render the matching
+top-level Events/Posts page or Post instead of the normal combined feed) and
+`Components.Pages.PostsPage.customNavPostIds` (to exclude a `TargetPost` override's Post from the
+generic listing, the same way a regular `TargetPost` tab's own Post already is).
+-}
+homeTarget : Maybe CustomNavigationTabSet -> CustomTabTarget
+homeTarget maybeSet =
+    case maybeSet |> Maybe.andThen .home |> Maybe.andThen .target |> Maybe.map fromProtoTarget of
+        Just TargetProfile ->
+            TargetTab HOMETAB
+
+        Just target ->
+            target
+
+        Nothing ->
+            TargetTab HOMETAB
+
+
+{-| `homeTarget`'s inverse -- `Nothing` (the default, unset `home`) for `TargetTab HOMETAB`,
+otherwise a `CustomNavigationTab` with only `target` set (`icon`/`title` stay unset, per
+`homeTarget`'s own doc). `SettingsTab.applyCustomTabs` is the only caller; `TargetProfile` is never
+actually passed in practice (`SettingsTab.homeTargetSelect` only ever offers
+`selectableHomeTargetKinds`), but round-trips through same as any other target if it somehow were.
+-}
+toProtoHome : CustomTabTarget -> Maybe CustomNavigationTab
+toProtoHome target =
+    case target of
+        TargetTab HOMETAB ->
+            Nothing
+
+        _ ->
+            Just { defaultCustomNavigationTab | target = Just (toProtoTarget target) }
 
 
 {-| The four tabs Jonline shows today (`Events`/`Posts`/`People`/`About`, see `UI.eventsLink`/etc.)
@@ -283,22 +328,46 @@ targetKind target =
             KindProfile
 
 
+{-| A `TargetKind`'s `<select>` option text -- `KindTab`'s own is suffixed "Page" (e.g. "Events
+Page," distinct from `navigationTabLabel`'s bare "Events", which is a live, user-facing fallback
+title elsewhere -- see `targetLabel`'s own doc) purely to disambiguate, in this settings UI, "the
+Events tab itself" from "a tab/Home pointed at the Events page." Shared by both
+`SettingsTab.customTabTargetSelect` (regular tabs, `selectableTargetKinds`) and
+`SettingsTab.homeTargetSelect` (`selectableHomeTargetKinds`) -- no other rendering path reads this.
+-}
 targetKindText : TargetKind -> String
 targetKindText kind =
     case kind of
         KindTab navTab ->
-            navigationTabLabel navTab
+            case navTab of
+                HOMETAB ->
+                    "Home Page"
+
+                EVENTSTAB ->
+                    "Events Page"
+
+                POSTSTAB ->
+                    "Posts Page"
+
+                PEOPLETAB ->
+                    "People Page"
+
+                ABOUTTAB ->
+                    "About Page"
+
+                NavigationTabUnrecognized_ _ ->
+                    "Tab"
 
         KindPost ->
-            "Post"
+            "Custom Post"
 
         KindProfile ->
             "Profile"
 
 
 {-| Every `TargetKind` `SettingsTab`'s "type of tab" `<select>` offers -- the four non-Home
-predefined tabs, plus Post and Profile. Mirrors `SettingsTab.allowedDefaultModerations`' own "the
-full enum has more values than are actually choosable here" reasoning.
+predefined tabs, plus Custom Post and Profile. Mirrors `SettingsTab.allowedDefaultModerations`' own
+"the full enum has more values than are actually choosable here" reasoning.
 -}
 selectableTargetKinds : List TargetKind
 selectableTargetKinds =
@@ -308,6 +377,21 @@ selectableTargetKinds =
 targetKindFromText : String -> Maybe TargetKind
 targetKindFromText text =
     selectableTargetKinds |> List.filter (\kind -> targetKindText kind == text) |> List.head
+
+
+{-| Every `TargetKind` `SettingsTab.homeTargetSelect` offers -- unlike `selectableTargetKinds`,
+`KindTab HOMETAB` _is_ included here (it's `home`'s own default, "no override" choice, see
+`homeTarget`'s own doc), and only `EVENTSTAB`/`POSTSTAB` join it among the predefined tabs --
+`home`'s own proto doc doesn't extend to People/About/Profile.
+-}
+selectableHomeTargetKinds : List TargetKind
+selectableHomeTargetKinds =
+    [ KindTab HOMETAB, KindTab EVENTSTAB, KindTab POSTSTAB, KindPost ]
+
+
+homeTargetKindFromText : String -> Maybe TargetKind
+homeTargetKindFromText text =
+    selectableHomeTargetKinds |> List.filter (\kind -> targetKindText kind == text) |> List.head
 
 
 {-| A `CustomTabIcon`'s content -- an emoji is wrapped in a `[data-glyph=<emoji>]` `span` (rather

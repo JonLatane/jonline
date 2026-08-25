@@ -3552,6 +3552,7 @@ fieldNumbersPost :
     , context : Int
     , visibility : Int
     , moderation : Int
+    , postMediaLayout : Int
     , currentGroupPost : Int
     , replies : Int
     , createdAt : Int
@@ -3654,6 +3655,11 @@ encodePost =
 ### moderation
 
  The moderation of the Post.
+
+
+### postMediaLayout
+
+ The desired end-user layout of Media attached to the post.
 
 
 ### replies

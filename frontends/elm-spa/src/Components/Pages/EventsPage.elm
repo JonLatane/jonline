@@ -65,6 +65,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
@@ -845,6 +846,9 @@ updateInner shared msg model =
                                 Nothing ->
                                     ( model, Effect.none )
 
+                        Shared.CreateNewPanelMsg (CreateNewPanel.GotSaveResult (Ok ( _, createdItem ))) ->
+                            applyCreatedItem shared createdItem model
+
                         _ ->
                             ( model, Effect.none )
             in
@@ -1562,6 +1566,55 @@ applySearchChange shared model =
             refetchServers shared model (relevantServers shared model)
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+
+{-| Reacts to `Shared.CreateNewPanel`'s own `GotSaveResult` succeeding --
+splices a freshly-created `CreateNewPanel.CreatedEvent` straight into this
+page's already-fetched `eventsByServer` (so the creator sees their own new
+event immediately, no round-trip needed) rather than waiting on the next
+`Poll`/account-change refetch to surface it -- `syncAnimations` still applies
+its usual `hiddenAsStarted`/`hiddenAsLong` filtering on top, same as any other
+fetch result. Mirrors `Components.Pages.PostsPage.applyCreatedItem` exactly,
+just over `(Event, EventInstance)` pairs instead of `Post`s: ignored entirely
+for a `CreatedPost` (irrelevant here -- `PostsPage` handles that half), a host
+that isn't one of `relevantServers`, or `model.tab == EventsAfterDate` (an
+explicit past-cutoff view a just-created "now" event has no business
+appearing under). While there's active search text, falls back to
+`applySearchChange`'s own full re-fetch instead, since a locally-spliced-in
+event wouldn't actually match the search server-side.
+-}
+applyCreatedItem : Shared.Model -> CreateNewPanel.CreatedItem -> Model -> ( Model, Effect Msg )
+applyCreatedItem shared createdItem model =
+    case createdItem of
+        CreateNewPanel.CreatedPost _ _ ->
+            ( model, Effect.none )
+
+        CreateNewPanel.CreatedEvent host event ->
+            if model.tab == UpcomingEvents && List.member host (List.map .frontendHost (relevantServers shared model)) then
+                if String.isEmpty (String.trim model.searchText) then
+                    ( { model
+                        | eventsByServer =
+                            Dict.update host (Maybe.map (\feed -> { feed | status = prependEvent event feed.status })) model.eventsByServer
+                      }
+                        |> syncAnimations
+                    , Effect.none
+                    )
+
+                else
+                    applySearchChange shared model
+
+            else
+                ( model, Effect.none )
+
+
+prependEvent : Event -> ServerEvents -> ServerEvents
+prependEvent event status =
+    case status of
+        Loaded pairs ->
+            Loaded (List.map (\instance -> ( event, instance )) event.instances ++ pairs)
+
+        _ ->
+            status
 
 
 {-| Mirrors `Components.Pages.PostsPage.fetchNewServers` exactly: same

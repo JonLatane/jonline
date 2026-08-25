@@ -570,7 +570,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone subModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now subModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
@@ -687,7 +687,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
@@ -865,7 +865,7 @@ sharedUpdate req msg model =
                         Just content ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
                             in
                             ( m, cmd )
 
@@ -948,7 +948,7 @@ sharedUpdate req msg model =
                         Just media ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
                             in
                             ( m, cmd )
 
@@ -992,7 +992,7 @@ sharedUpdate req msg model =
                     model.panels
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
-                    CreateNewPanel.update model.time.browserTimeZone.zone model.accounts subMsg panels.createNewPanel
+                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts subMsg panels.createNewPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1191,7 +1191,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 

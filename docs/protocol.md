@@ -84,6 +84,7 @@
   
     - [PostContext](#jonline-PostContext)
     - [PostListingType](#jonline-PostListingType)
+    - [PostMediaLayout](#jonline-PostMediaLayout)
   
 - [events.proto](#events-proto)
     - [AnonymousAttendee](#jonline-AnonymousAttendee)
@@ -999,6 +1000,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_POSTS_GLOBALLY | 23 | Allow the user to publish posts with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_POSTS | 24 | Allow the user to moderate posts. |
 | REPLY_TO_POSTS | 25 | Allow the user to reply to posts. |
+| EDIT_POST_TITLES_AND_LINKS | 26 | Allow the user to edit post titles and/or links. |
 | VIEW_EVENTS | 30 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility. Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
 | CREATE_EVENTS | 31 | As a user permission, allow the user to create `Event`s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create `GroupPost`s for `EVENT` and `FEDERATED_EVENT_INSTANCE` `PostContext`s.. |
 | PUBLISH_EVENTS_LOCALLY | 32 | Allow the user to publish events with `SERVER_PUBLIC` visibility. |
@@ -1999,6 +2001,7 @@ and Event Instances.
 | context | [PostContext](#jonline-PostContext) |  | Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.) |
 | visibility | [Visibility](#jonline-Visibility) |  | The visibility of the Post. |
 | moderation | [Moderation](#jonline-Moderation) |  | The moderation of the Post. |
+| post_media_layout | [PostMediaLayout](#jonline-PostMediaLayout) |  | The desired end-user layout of Media attached to the post. |
 | current_group_post | [GroupPost](#jonline-GroupPost) | optional | If the Post was retrieved from GetPosts with a group_id, the GroupPost metadata may be returned along with the Post. |
 | replies | [Post](#jonline-Post) | repeated | Hierarchical replies to this post. There will never be more than `reply_count` replies. However, there may be fewer than `reply_count` replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was created. |
@@ -2062,6 +2065,18 @@ A high-level enumeration of general ways of requesting posts.
 | TEXT_SEARCH | 5 | Returns posts matching the full-text `search_text` query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter. |
 | GROUP_POSTS | 10 | Returns posts from a specific group. Requires group_id parameter. |
 | GROUP_POSTS_PENDING_MODERATION | 11 | Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
+
+
+
+<a name="jonline-PostMediaLayout"></a>
+
+### PostMediaLayout
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MEDIA_LAYOUT_STANDARD | 0 |  |
+| MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL | 1 |  |
 
 
  
@@ -2568,7 +2583,7 @@ If set, should override the default tab set for the Elm navigation on a Jonline 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is ignored and need not be set. |
+| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is limited to only the `HOME_TAB` tab or a custom `post_id. |
 | tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via `CustomNavigationTabSet`.home instead. |
 
 

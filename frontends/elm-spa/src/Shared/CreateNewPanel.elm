@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (Mode, Model, Msg(..), hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -89,7 +89,20 @@ type alias Model =
     , startsAt : Maybe Time.Posix
     , endsAt : Maybe Time.Posix
     , status : SubmitStatus
+
+    -- Every Post/Event this panel has successfully created this session
+    -- (newest first), tagged with the `frontendHost` it was created on --
+    -- `GotSaveResult`'s own successful `Ok` appends to this rather than
+    -- `saveTask`/`GotSaveResult` just discarding the RPC's response the way
+    -- they used to. Lets `PostsPage`/`EventsPage` (reading this via
+    -- `shared.panels.createNewPanel.createdItems`, or more precisely
+    -- reacting to the very `GotSaveResult` that appended to it as it passes
+    -- through their own `SharedMsg`) splice a just-created Post/Event
+    -- straight into an already-fetched feed instead of needing a full
+    -- refetch to see your own new post/event appear.
+    , createdItems : List CreatedItem
     }
+
 
 
 type Msg
@@ -111,7 +124,7 @@ type Msg
     | ContentSaved String
     | MediaSaved (List MediaReference)
     | SaveClicked
-    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
+    | GotSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, CreatedItem ))
 
 
 type SubmitStatus
@@ -126,6 +139,15 @@ header's tabs (`modeTabsView`). See module doc.
 type Mode
     = PostMode
     | EventMode
+
+{-| One entry of `Model.createdItems` -- `String` is the `frontendHost` of
+the server the Post/Event was created on (`Resolved.server.frontendHost`,
+same as everywhere else in this module), needed alongside the Post/Event
+itself since neither carries its own server host.
+-}
+type CreatedItem
+    = CreatedPost String Proto.Jonline.Post
+    | CreatedEvent String Proto.Jonline.Event
 
 
 type alias Resolved =
@@ -147,6 +169,7 @@ init =
     , startsAt = Nothing
     , endsAt = Nothing
     , status = Idle
+    , createdItems = []
     }
 
 
@@ -169,14 +192,42 @@ Takes the viewer's own `Time.Zone` (`Shared.Model.time.browserTimeZone.zone`)
 purely to parse `StartsAtChanged`/`EndsAtChanged`'s raw `<input
 type="datetime-local">` strings (always local wall-clock time, no timezone of
 their own) back into absolute `Time.Posix` -- see
-`Shared.Time.posixFromDateTimeLocalInput`.
+`Shared.Time.posixFromDateTimeLocalInput`. Also takes the viewer's current
+`now` (`Shared.Model.time.now`), used only by `ToggleOpen` to default a blank
+`startsAt`/`endsAt` when opening into `EventMode` -- see below.
 
 -}
-update : Time.Zone -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
-update zone accountsPanelModel msg model =
+update : Time.Zone -> Time.Posix -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
+update zone now accountsPanelModel msg model =
     case msg of
         ToggleOpen ->
-            ( { model | open = not model.open }, Cmd.none, noForward )
+            let
+                opening : Bool
+                opening =
+                    not model.open
+
+                -- Opening into `EventMode` with no `startsAt` yet (either a
+                -- fresh `init` or a prior draft that never got a start time)
+                -- defaults it to an hour from now, mirroring
+                -- `StartsAtChanged`'s own "no prior end" default of an hour
+                -- after `startsAt` for `endsAt`.
+                withDefaultTimes : Model
+                withDefaultTimes =
+                    if opening && model.mode == EventMode && model.startsAt == Nothing then
+                        let
+                            defaultStartsAt : Time.Posix
+                            defaultStartsAt =
+                                Time.millisToPosix (Time.posixToMillis now + 3600000)
+                        in
+                        { model
+                            | startsAt = Just defaultStartsAt
+                            , endsAt = Just (Time.millisToPosix (Time.posixToMillis defaultStartsAt + 3600000))
+                        }
+
+                    else
+                        model
+            in
+            ( { withDefaultTimes | open = opening }, Cmd.none, noForward )
 
         CloseClicked ->
             ( { model | open = False }, Cmd.none, noForward )
@@ -280,8 +331,8 @@ update zone accountsPanelModel msg model =
                 Err err ->
                     ( { model | status = SubmitFailed err }, Cmd.none, noForward )
 
-        GotSaveResult (Ok maybeAccountsPanelMsg) ->
-            ( init, Cmd.none, ( maybeAccountsPanelMsg, Nothing, Nothing ) )
+        GotSaveResult (Ok ( maybeAccountsPanelMsg, createdItem )) ->
+            ( { init | createdItems = createdItem :: model.createdItems }, Cmd.none, ( maybeAccountsPanelMsg, Nothing, Nothing ) )
 
         GotSaveResult (Err err) ->
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, noForward )
@@ -512,13 +563,13 @@ nonEmptyTrimmed value =
 calls `Jonline.createEvent` with a single `EventInstance` (`startsAt`/
 `endsAt`, this panel's own two date fields) and no `Post` of its own -- see
 module doc for why that instance needs no visibility of its own. Both
-branches discard their own RPC's response (`Task.map (\\_ -> ())`) since
-there's nothing further to do with the created Post/Event beyond resetting
-this panel's draft (`GotSaveResult`) -- needed so both branches of this
-`case` agree on a single result type for `performWithAccountServer`'s own
-callback.
+branches tag their own RPC's response (the server-populated Post/Event
+itself, `id`/`createdAt`/etc. included) as a `CreatedItem` with
+`resolved.server.frontendHost` -- what `GotSaveResult` appends to
+`Model.createdItems` -- needed so both branches of this `case` agree on a
+single result type for `performWithAccountServer`'s own callback.
 -}
-saveTask : AccountsPanel.Model -> Resolved -> Model -> Task Grpc.Error (Maybe AccountsPanel.Msg)
+saveTask : AccountsPanel.Model -> Resolved -> Model -> Task Grpc.Error ( Maybe AccountsPanel.Msg, CreatedItem )
 saveTask accountsPanelModel resolved model =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
@@ -541,7 +592,7 @@ saveTask accountsPanelModel resolved model =
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
-                        |> Task.map (\_ -> ())
+                        |> Task.map (CreatedPost resolved.server.frontendHost)
 
                 EventMode ->
                     Grpc.new Jonline.createEvent
@@ -558,9 +609,8 @@ saveTask accountsPanelModel resolved model =
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
-                        |> Task.map (\_ -> ())
+                        |> Task.map (CreatedEvent resolved.server.frontendHost)
         )
-        |> Task.map Tuple.first
 
 
 

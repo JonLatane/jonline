@@ -10,6 +10,31 @@ use crate::protos::*;
 
 pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status> {
     if let Some(custom_tabs) = config.custom_tabs.as_ref() {
+        // `CustomNavigationTabSet.home`'s own proto doc restricts its `target` to only
+        // `HOME_TAB` (i.e. unset/default), `EVENTS_TAB`, `POSTS_TAB`, or a `post_id` -- never
+        // `PEOPLE_TAB`/`ABOUT_TAB`/`is_profile`. The Elm admin editor
+        // (`SettingsTab.applyCustomTabs`/`UI.CustomNav.toProtoHome`, gated on
+        // `UI.CustomNav.selectableHomeTargetKinds`) never constructs anything else, so this only
+        // ever actually fires for a hand-edited/future-versioned config.
+        if let Some(home) = custom_tabs.home.as_ref() {
+            let home_target_ok = match home.target.as_ref() {
+                None => true,
+                Some(custom_navigation_tab::Target::Tab(tab)) => {
+                    *tab == NavigationTab::HomeTab as i32
+                        || *tab == NavigationTab::EventsTab as i32
+                        || *tab == NavigationTab::PostsTab as i32
+                }
+                Some(custom_navigation_tab::Target::PostId(_)) => true,
+                Some(custom_navigation_tab::Target::IsProfile(_)) => false,
+            };
+            if !home_target_ok {
+                return Err(Status::new(
+                    Code::InvalidArgument,
+                    "home_target_must_be_home_events_posts_tab_or_post_id",
+                ));
+            }
+        }
+
         let mut seen_paths = HashSet::new();
         for tab in &custom_tabs.tabs {
             let is_profile_tab = matches!(

@@ -84,6 +84,9 @@ fieldNumbersPermission n_ =
         REPLYTOPOSTS ->
             25
 
+        EDITPOSTTITLESANDLINKS ->
+            26
+
         VIEWEVENTS ->
             30
 
@@ -220,6 +223,9 @@ encodePermission value =
             REPLYTOPOSTS ->
                 25
 
+            EDITPOSTTITLESANDLINKS ->
+                26
+
             VIEWEVENTS ->
                 30
 
@@ -350,6 +356,9 @@ decodePermission =
                     25 ->
                         REPLYTOPOSTS
 
+                    26 ->
+                        EDITPOSTTITLESANDLINKS
+
                     30 ->
                         VIEWEVENTS
 
@@ -436,6 +445,7 @@ type Permission
     | PUBLISHPOSTSGLOBALLY
     | MODERATEPOSTS
     | REPLYTOPOSTS
+    | EDITPOSTTITLESANDLINKS
     | VIEWEVENTS
     | CREATEEVENTS
     | PUBLISHEVENTSLOCALLY

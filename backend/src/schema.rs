@@ -2,6 +2,10 @@
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "post_media_layout"))]
+    pub struct PostMediaLayout;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "recipient_type"))]
     pub struct RecipientType;
 }
@@ -252,6 +256,7 @@ diesel::table! {
 diesel::table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::TsVector;
+    use super::sql_types::PostMediaLayout;
 
     posts (id) {
         id -> Int8,
@@ -277,6 +282,7 @@ diesel::table! {
         unauthenticated_star_count -> Int8,
         search_text -> TsVector,
         sort_published_at -> Timestamp,
+        post_media_layout -> PostMediaLayout,
     }
 }
 

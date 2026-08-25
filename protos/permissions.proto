@@ -60,6 +60,8 @@ enum Permission {
   MODERATE_POSTS = 24;
   // Allow the user to reply to posts.
   REPLY_TO_POSTS = 25;
+  // Allow the user to edit post titles and/or links.
+  EDIT_POST_TITLES_AND_LINKS = 26;
 
   // As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. 
   // As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility.

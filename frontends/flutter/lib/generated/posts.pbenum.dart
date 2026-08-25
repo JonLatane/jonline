@@ -63,5 +63,20 @@ class PostContext extends $pb.ProtobufEnum {
   const PostContext._($core.int v, $core.String n) : super(v, n);
 }
 
+class PostMediaLayout extends $pb.ProtobufEnum {
+  static const PostMediaLayout MEDIA_LAYOUT_STANDARD = PostMediaLayout._(0, _omitEnumNames ? '' : 'MEDIA_LAYOUT_STANDARD');
+  static const PostMediaLayout MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL = PostMediaLayout._(1, _omitEnumNames ? '' : 'MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL');
+
+  static const $core.List<PostMediaLayout> values = <PostMediaLayout> [
+    MEDIA_LAYOUT_STANDARD,
+    MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL,
+  ];
+
+  static final $core.Map<$core.int, PostMediaLayout> _byValue = $pb.ProtobufEnum.initByValue(values);
+  static PostMediaLayout? valueOf($core.int value) => _byValue[value];
+
+  const PostMediaLayout._($core.int v, $core.String n) : super(v, n);
+}
+
 
 const _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');

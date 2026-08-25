@@ -52,6 +52,20 @@ final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode(
     'CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFUkVQTFkQARIJCgVFVkVOVBACEhIKDkVWRU5UX0'
     'lOU1RBTkNFEAMSEwoPRkVERVJBVEVEX1JFUExZEAo=');
 
+@$core.Deprecated('Use postMediaLayoutDescriptor instead')
+const PostMediaLayout$json = {
+  '1': 'PostMediaLayout',
+  '2': [
+    {'1': 'MEDIA_LAYOUT_STANDARD', '2': 0},
+    {'1': 'MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL', '2': 1},
+  ],
+};
+
+/// Descriptor for `PostMediaLayout`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List postMediaLayoutDescriptor = $convert.base64Decode(
+    'Cg9Qb3N0TWVkaWFMYXlvdXQSGQoVTUVESUFfTEFZT1VUX1NUQU5EQVJEEAASKAokTUVESUFfTE'
+    'FZT1VUX0RZTkFNSUNfVkVSVElDQUxfU0NST0xMEAE=');
+
 @$core.Deprecated('Use getPostsRequestDescriptor instead')
 const GetPostsRequest$json = {
   '1': 'GetPostsRequest',
@@ -126,6 +140,7 @@ const Post$json = {
     {'1': 'context', '3': 14, '4': 1, '5': 14, '6': '.jonline.PostContext', '10': 'context'},
     {'1': 'visibility', '3': 15, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
     {'1': 'moderation', '3': 16, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    {'1': 'post_media_layout', '3': 17, '4': 1, '5': 14, '6': '.jonline.PostMediaLayout', '10': 'postMediaLayout'},
     {'1': 'current_group_post', '3': 18, '4': 1, '5': 11, '6': '.jonline.GroupPost', '9': 5, '10': 'currentGroupPost', '17': true},
     {'1': 'replies', '3': 19, '4': 3, '5': 11, '6': '.jonline.Post', '10': 'replies'},
     {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
@@ -158,17 +173,19 @@ final $typed_data.Uint8List postDescriptor = $convert.base64Decode(
     'VkEh0KCmVtYmVkX2xpbmsYDCABKAhSCWVtYmVkTGluaxIcCglzaGFyZWFibGUYDSABKAhSCXNo'
     'YXJlYWJsZRIuCgdjb250ZXh0GA4gASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dFIHY29udGV4dB'
     'IzCgp2aXNpYmlsaXR5GA8gASgOMhMuam9ubGluZS5WaXNpYmlsaXR5Ugp2aXNpYmlsaXR5EjMK'
-    'Cm1vZGVyYXRpb24YECABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SCm1vZGVyYXRpb24SRQoSY3'
-    'VycmVudF9ncm91cF9wb3N0GBIgASgLMhIuam9ubGluZS5Hcm91cFBvc3RIBVIQY3VycmVudEdy'
-    'b3VwUG9zdIgBARInCgdyZXBsaWVzGBMgAygLMg0uam9ubGluZS5Qb3N0UgdyZXBsaWVzEjkKCm'
-    'NyZWF0ZWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQS'
-    'PgoKdXBkYXRlZF9hdBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIBlIJdXBkYX'
-    'RlZEF0iAEBEkIKDHB1Ymxpc2hlZF9hdBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
-    'bXBIB1ILcHVibGlzaGVkQXSIAQESRAoQbGFzdF9hY3Rpdml0eV9hdBgXIAEoCzIaLmdvb2dsZS'
-    '5wcm90b2J1Zi5UaW1lc3RhbXBSDmxhc3RBY3Rpdml0eUF0EjwKGnVuYXV0aGVudGljYXRlZF9z'
-    'dGFyX2NvdW50GBggASgDUhh1bmF1dGhlbnRpY2F0ZWRTdGFyQ291bnRCCQoHX2F1dGhvckITCh'
-    'FfcmVwbHlfdG9fcG9zdF9pZEIICgZfdGl0bGVCBwoFX2xpbmtCCgoIX2NvbnRlbnRCFQoTX2N1'
-    'cnJlbnRfZ3JvdXBfcG9zdEINCgtfdXBkYXRlZF9hdEIPCg1fcHVibGlzaGVkX2F0');
+    'Cm1vZGVyYXRpb24YECABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SCm1vZGVyYXRpb24SRAoRcG'
+    '9zdF9tZWRpYV9sYXlvdXQYESABKA4yGC5qb25saW5lLlBvc3RNZWRpYUxheW91dFIPcG9zdE1l'
+    'ZGlhTGF5b3V0EkUKEmN1cnJlbnRfZ3JvdXBfcG9zdBgSIAEoCzISLmpvbmxpbmUuR3JvdXBQb3'
+    'N0SAVSEGN1cnJlbnRHcm91cFBvc3SIAQESJwoHcmVwbGllcxgTIAMoCzINLmpvbmxpbmUuUG9z'
+    'dFIHcmVwbGllcxI5CgpjcmVhdGVkX2F0GBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdG'
+    'FtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYFSABKAsyGi5nb29nbGUucHJvdG9idWYuVGlt'
+    'ZXN0YW1wSAZSCXVwZGF0ZWRBdIgBARJCCgxwdWJsaXNoZWRfYXQYFiABKAsyGi5nb29nbGUucH'
+    'JvdG9idWYuVGltZXN0YW1wSAdSC3B1Ymxpc2hlZEF0iAEBEkQKEGxhc3RfYWN0aXZpdHlfYXQY'
+    'FyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg5sYXN0QWN0aXZpdHlBdBI8Chp1bm'
+    'F1dGhlbnRpY2F0ZWRfc3Rhcl9jb3VudBgYIAEoA1IYdW5hdXRoZW50aWNhdGVkU3RhckNvdW50'
+    'QgkKB19hdXRob3JCEwoRX3JlcGx5X3RvX3Bvc3RfaWRCCAoGX3RpdGxlQgcKBV9saW5rQgoKCF'
+    '9jb250ZW50QhUKE19jdXJyZW50X2dyb3VwX3Bvc3RCDQoLX3VwZGF0ZWRfYXRCDwoNX3B1Ymxp'
+    'c2hlZF9hdA==');
 
 @$core.Deprecated('Use groupPostDescriptor instead')
 const GroupPost$json = {

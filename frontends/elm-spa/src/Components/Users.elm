@@ -789,6 +789,9 @@ permissionText permission =
         REPLYTOPOSTS ->
             "Reply To Posts"
 
+        EDITPOSTTITLESANDLINKS ->
+            "Edit Post Titles And Links"
+
         VIEWEVENTS ->
             "View Events"
 
@@ -877,6 +880,7 @@ allPermissions =
     , PUBLISHPOSTSGLOBALLY
     , MODERATEPOSTS
     , REPLYTOPOSTS
+    , EDITPOSTTITLESANDLINKS
     , VIEWEVENTS
     , CREATEEVENTS
     , PUBLISHEVENTSLOCALLY

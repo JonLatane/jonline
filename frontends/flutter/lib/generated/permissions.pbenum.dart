@@ -39,6 +39,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_POSTS_GLOBALLY = Permission._(23, _omitEnumNames ? '' : 'PUBLISH_POSTS_GLOBALLY');
   static const Permission MODERATE_POSTS = Permission._(24, _omitEnumNames ? '' : 'MODERATE_POSTS');
   static const Permission REPLY_TO_POSTS = Permission._(25, _omitEnumNames ? '' : 'REPLY_TO_POSTS');
+  static const Permission EDIT_POST_TITLES_AND_LINKS = Permission._(26, _omitEnumNames ? '' : 'EDIT_POST_TITLES_AND_LINKS');
   static const Permission VIEW_EVENTS = Permission._(30, _omitEnumNames ? '' : 'VIEW_EVENTS');
   static const Permission CREATE_EVENTS = Permission._(31, _omitEnumNames ? '' : 'CREATE_EVENTS');
   static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, _omitEnumNames ? '' : 'PUBLISH_EVENTS_LOCALLY');
@@ -80,6 +81,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_POSTS_GLOBALLY,
     MODERATE_POSTS,
     REPLY_TO_POSTS,
+    EDIT_POST_TITLES_AND_LINKS,
     VIEW_EVENTS,
     CREATE_EVENTS,
     PUBLISH_EVENTS_LOCALLY,

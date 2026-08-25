@@ -44,6 +44,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
@@ -383,6 +384,9 @@ updateInner shared msg model =
                         Shared.AccountsPanelMsg _ ->
                             fetchNewServers shared model
 
+                        Shared.CreateNewPanelMsg (CreateNewPanel.GotSaveResult (Ok ( _, createdItem ))) ->
+                            applyCreatedItem shared createdItem model
+
                         _ ->
                             ( model, Effect.none )
             in
@@ -530,28 +534,47 @@ relevantServers shared model =
 
 
 {-| Every Post id `frontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost` tab
-at -- what `GotServerPosts` excludes from `frontendHost`'s own feed (see its own doc), so a Post
-already featured via its own custom nav tab/url doesn't also clutter the generic listing. Applies
-to every known server, not just `mainFrontendHost` -- each federated server's custom nav tabs only
-ever point at that same server's own posts (see `UI.CustomNav.CustomTabTarget`'s own doc), so this
-is looked up per-`frontendHost` rather than once for `mainFrontendHost`.
+at, plus its `home` override's own Post id if it's using one (`UI.CustomNav.homeTarget`) -- what
+`GotServerPosts` excludes from `frontendHost`'s own feed (see its own doc), so a Post already
+featured via its own custom nav tab/url (or as the custom Home page) doesn't also clutter the
+generic listing. Applies to every known server, not just `mainFrontendHost` -- each federated
+server's custom nav tabs only ever point at that same server's own posts (see
+`UI.CustomNav.CustomTabTarget`'s own doc), so this is looked up per-`frontendHost` rather than once
+for `mainFrontendHost`.
 -}
 customNavPostIds : Shared.Model -> String -> Set String
 customNavPostIds shared frontendHost =
-    AccountsPanel.serverForHost shared.accounts.servers frontendHost
-        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
-        |> Maybe.map (\customTabs -> CustomNav.effectiveTabs (Just customTabs))
-        |> Maybe.withDefault []
-        |> List.filterMap
-            (\tab ->
-                case tab.target of
-                    CustomNav.TargetPost postId ->
-                        Just postId
+    let
+        maybeCustomTabs : Maybe Proto.Jonline.CustomNavigationTabSet
+        maybeCustomTabs =
+            AccountsPanel.serverForHost shared.accounts.servers frontendHost
+                |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
 
-                    _ ->
-                        Nothing
-            )
-        |> Set.fromList
+        tabPostIds : List String
+        tabPostIds =
+            maybeCustomTabs
+                |> Maybe.map (\customTabs -> CustomNav.effectiveTabs (Just customTabs))
+                |> Maybe.withDefault []
+                |> List.filterMap
+                    (\tab ->
+                        case tab.target of
+                            CustomNav.TargetPost postId ->
+                                Just postId
+
+                            _ ->
+                                Nothing
+                    )
+
+        homePostIds : List String
+        homePostIds =
+            case CustomNav.homeTarget maybeCustomTabs of
+                CustomNav.TargetPost postId ->
+                    [ postId ]
+
+                _ ->
+                    []
+    in
+    homePostIds ++ tabPostIds |> Set.fromList
 
 
 {-| Fetches `serversToFetch` using the current `model.searchText`/
@@ -711,6 +734,58 @@ applySearchChange shared model =
             refetchServers shared model (relevantServers shared model)
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+
+{-| Reacts to `Shared.CreateNewPanel`'s own `GotSaveResult` succeeding --
+splices a freshly-created `CreateNewPanel.CreatedPost` straight into this
+page's already-fetched `postsByServer` (so the poster sees their own new post
+immediately, no round-trip needed) rather than waiting on the next `Poll`/
+account-change refetch to surface it. Ignored entirely unless it's actually
+relevant to what's currently on screen: a `CreatedEvent` (irrelevant here --
+`EventsPage` handles that half), a host that isn't one of `relevantServers`
+(e.g. some other federated server this feed doesn't show), or a search/tab
+state a brand-new post wouldn't belong in anyway (`model.tab ==
+PostsBeforeDate`, an explicit past cutoff a just-created "now" post has no
+business appearing under, or `model.context == REPLY`, since this panel only
+ever creates top-level posts) are all left untouched.
+
+While there's active search text, a locally-spliced-in post wouldn't actually
+match the search server-side, so this instead falls back to
+`applySearchChange`'s own full re-fetch -- the one case here that's a genuine
+refresh rather than a purely local update.
+-}
+applyCreatedItem : Shared.Model -> CreateNewPanel.CreatedItem -> Model -> ( Model, Effect Msg )
+applyCreatedItem shared createdItem model =
+    case createdItem of
+        CreateNewPanel.CreatedEvent _ _ ->
+            ( model, Effect.none )
+
+        CreateNewPanel.CreatedPost host post ->
+            if model.tab == RecentPosts && model.context == POST && List.member host (List.map .frontendHost (relevantServers shared model)) then
+                if String.isEmpty (String.trim model.searchText) then
+                    ( { model
+                        | postsByServer =
+                            Dict.update host (Maybe.map (\feed -> { feed | status = prependPost post feed.status })) model.postsByServer
+                      }
+                        |> syncAnimations
+                    , Effect.none
+                    )
+
+                else
+                    applySearchChange shared model
+
+            else
+                ( model, Effect.none )
+
+
+prependPost : Post -> ServerPosts -> ServerPosts
+prependPost post status =
+    case status of
+        Loaded posts ->
+            Loaded (post :: posts)
+
+        _ ->
+            status
 
 
 {-| Keeps `Shared.Breadcrumbs` pointed at this feed's own root: `FromServerHost

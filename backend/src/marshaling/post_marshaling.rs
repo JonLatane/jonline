@@ -106,6 +106,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
             context: post.context.to_i32_post_context(),
             visibility: post.visibility.to_i32_visibility(),
             moderation: post.moderation.to_i32_moderation(),
+            post_media_layout: post.post_media_layout.to_i32_post_media_layout(),
 
             replies: replies
                 .iter()
@@ -214,5 +215,43 @@ pub trait ToI32PostContext {
 impl ToI32PostContext for String {
     fn to_i32_post_context(&self) -> i32 {
         self.to_proto_post_context().unwrap() as i32
+    }
+}
+
+pub trait ToProtoPostMediaLayout {
+    fn to_proto_post_media_layout(&self) -> PostMediaLayout;
+}
+impl ToProtoPostMediaLayout for models::PostMediaLayout {
+    fn to_proto_post_media_layout(&self) -> PostMediaLayout {
+        match self {
+            models::PostMediaLayout::MediaLayoutStandard => PostMediaLayout::MediaLayoutStandard,
+            models::PostMediaLayout::MediaLayoutDynamicVerticalScroll => {
+                PostMediaLayout::MediaLayoutDynamicVerticalScroll
+            }
+        }
+    }
+}
+
+pub trait ToI32PostMediaLayout {
+    fn to_i32_post_media_layout(&self) -> i32;
+}
+impl ToI32PostMediaLayout for models::PostMediaLayout {
+    fn to_i32_post_media_layout(&self) -> i32 {
+        self.to_proto_post_media_layout() as i32
+    }
+}
+
+/// The reverse of `ToProtoPostMediaLayout`: maps a request's raw proto `post_media_layout` i32
+/// back to the DB-backed `models::PostMediaLayout`, defaulting unrecognized values to the
+/// standard layout (matches how UpdatePost/CreatePost treat other unset/invalid enum fields).
+pub trait ToModelPostMediaLayout {
+    fn to_model_post_media_layout(&self) -> models::PostMediaLayout;
+}
+impl ToModelPostMediaLayout for i32 {
+    fn to_model_post_media_layout(&self) -> models::PostMediaLayout {
+        match PostMediaLayout::MediaLayoutDynamicVerticalScroll as i32 == *self {
+            true => models::PostMediaLayout::MediaLayoutDynamicVerticalScroll,
+            false => models::PostMediaLayout::MediaLayoutStandard,
+        }
     }
 }

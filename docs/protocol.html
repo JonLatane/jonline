@@ -288,6 +288,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li>
             <p><a href="#jonline-PostListingType">PostListingType</a></p>
           </li>
+          <li>
+            <p><a href="#jonline-PostMediaLayout">PostMediaLayout</a></p>
+          </li>
         </ul>
       </li>
       <li>
@@ -2033,6 +2036,11 @@ directory</a> is (<code>{name}</code> denotes a
           <td>REPLY_TO_POSTS</td>
           <td>25</td>
           <td>Allow the user to reply to posts.</td>
+        </tr>
+        <tr>
+          <td>EDIT_POST_TITLES_AND_LINKS</td>
+          <td>26</td>
+          <td>Allow the user to edit post titles and/or links.</td>
         </tr>
         <tr>
           <td>VIEW_EVENTS</td>
@@ -4281,6 +4289,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>The moderation of the Post.</td>
         </tr>
         <tr>
+          <td>post_media_layout</td>
+          <td><a href="#jonline-PostMediaLayout">PostMediaLayout</a></td>
+          <td></td>
+          <td>The desired end-user layout of Media attached to the post.</td>
+        </tr>
+        <tr>
           <td>current_group_post</td>
           <td><a href="#jonline-GroupPost">GroupPost</a></td>
           <td>optional</td>
@@ -4450,6 +4464,29 @@ directory</a> is (<code>{name}</code> denotes a
           <td>GROUP_POSTS_PENDING_MODERATION</td>
           <td>11</td>
           <td>Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-PostMediaLayout"></a></p>
+    <h3 id="postmedialayout"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postmedialayout"><span class="octicon octicon-link"></span></a>PostMediaLayout</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MEDIA_LAYOUT_STANDARD</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL</td>
+          <td>1</td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -5512,7 +5549,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>home</td>
           <td><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></td>
           <td>optional</td>
-          <td>Overrides the default <code>HOME_TAB</code> entry. If unset, the default Home tab is used. Its <code>target</code> is ignored and need not be set.</td>
+          <td>Overrides the default <code>HOME_TAB</code> entry. If unset, the default Home tab is used. Its <code>target</code> is limited to only the <code>HOME_TAB</code> tab or a custom `post_id.</td>
         </tr>
         <tr>
           <td>tabs</td>

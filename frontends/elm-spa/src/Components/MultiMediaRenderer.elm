@@ -5,12 +5,25 @@ module Components.MultiMediaRenderer exposing (preview, previewExtraSmall, view)
 ratio (portrait, landscape, square, whatever), capped by reasonable bounds
 rather than squashed into a fixed box (`.multi-media-single`/
 `.multi-media-single-item` in `media.css`, `Components.MediaRenderer`'s
-`Natural` sizing). Multiple items instead get a horizontally-scrolling strip
+`Natural` sizing). Multiple items otherwise follow the post's own
+`PostMediaLayout` (see `Components.Posts.mediaLayoutSelector`): the standard
+`MEDIALAYOUTSTANDARD` layout is a horizontally-scrolling strip
 (`.multi-media-strip`/`.multi-media-item`, the same horizontal-scroll pattern
 as the Accounts Panel's `.servers-strip`) of thumbnails, each still at its
 own aspect ratio, just capped to a small square (`Components.MediaRenderer`'s
-`Compact` sizing) rather than stretched/cropped to a fixed size. Mirrors the
-Tamagui app's `post_media_renderer.tsx`, minus its embed-link
+`Compact` sizing) rather than stretched/cropped to a fixed size;
+`MEDIALAYOUTDYNAMICVERTICALSCROLL` instead renders every item at the same big
+`Natural` sizing as the single-item case, wrapping into a `space-around` grid
+of rows (`.multi-media-gallery`/`.multi-media-gallery-item` in `media.css`,
+which also breaks the grid out past the page's usual 800px column on wide
+viewports) that scrolls vertically once it has more rows than fit -- a nicer
+fit for a post that's meant to showcase several full-size images rather than
+treat all-but-the-first as thumbnails. Only `view` (the full, non-preview
+rendering used by `Components.Posts.postDetail`) honors the layout choice --
+`preview`/`previewExtraSmall` (`Components.PostCard`'s compact cards,
+`Shared.StarredPanel`'s rows) always use the standard strip regardless, since
+a card's fixed-height layout has no room for a tall image gallery. Mirrors
+the Tamagui app's `post_media_renderer.tsx`, minus its embed-link
 (Twitter/Instagram/etc., which key off `Post.link` rather than `Post.media`)
 handling.
 -}
@@ -19,13 +32,14 @@ import Components.MediaRenderer as MediaRenderer
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import Proto.Jonline exposing (MediaReference)
+import Proto.Jonline.PostMediaLayout exposing (PostMediaLayout(..))
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 
 
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
-view server maybeAccount onImageClicked media =
-    render Nothing server maybeAccount onImageClicked media
+view : PostMediaLayout -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+view layout server maybeAccount onImageClicked media =
+    render layout Nothing server maybeAccount onImageClicked media
 
 
 {-| Same single-item-vs-scrolling-strip layout as `view`, just tighter
@@ -44,7 +58,7 @@ than falling through to `postCard`'s `.post-card-link-overlay` like
 -}
 preview : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 preview server maybeAccount onImageClicked media =
-    render (Just MediaRenderer.Small) server maybeAccount onImageClicked media
+    render MEDIALAYOUTSTANDARD (Just MediaRenderer.Small) server maybeAccount onImageClicked media
 
 
 {-| Same as `preview`, just with `MediaRenderer.ExtraSmall` sizing (half the
@@ -53,25 +67,30 @@ space than an ordinary post card, e.g. `Shared.StarredPanel`'s post rows.
 -}
 previewExtraSmall : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 previewExtraSmall server maybeAccount onImageClicked media =
-    render (Just MediaRenderer.ExtraSmall) server maybeAccount onImageClicked media
+    render MEDIALAYOUTSTANDARD (Just MediaRenderer.ExtraSmall) server maybeAccount onImageClicked media
 
 
 {-| `Nothing` renders full-size (`view`); `Just sizing` renders as a preview
 (`.multi-media-preview` layout) at `sizing`, used for both the single-item
-case and every thumbnail in the scrolling strip. `onImageClicked` (fired with
+case and every thumbnail in the scrolling strip -- `layout` is only ever
+consulted in the `Nothing`/multi-item combination (see `view`'s own doc for
+why `preview`/`previewExtraSmall` always pass `MEDIALAYOUTSTANDARD`
+regardless of the post's actual choice). `onImageClicked` (fired with
 a tapped image's `media.id`, see `Components.MediaRenderer`) is threaded
 through unconditionally -- opening `Shared.MediaViewerPanel` on tap is the
-same behavior everywhere a `Post`'s media renders, single item or strip.
+same behavior everywhere a `Post`'s media renders, single item, strip, or
+gallery.
 
-The single-item case uses `MediaRenderer.ToWidthAndHeight` (the usual
-default), but the strip forces `MediaRenderer.ToWidth` instead -- every
-thumbnail in `.multi-media-strip` ends up the same width regardless of its
-own aspect ratio, rather than each capped independently and so varying in
-width across the strip.
+The single-item case (and every item of a `MEDIALAYOUTDYNAMICVERTICALSCROLL`
+gallery) uses `MediaRenderer.ToWidthAndHeight` (the usual default), but the
+strip forces `MediaRenderer.ToWidth` instead -- every thumbnail in
+`.multi-media-strip` ends up the same width regardless of its own aspect
+ratio, rather than each capped independently and so varying in width across
+the strip.
 
 -}
-render : Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
-render previewSizing server maybeAccount onImageClicked media =
+render : PostMediaLayout -> Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+render layout previewSizing server maybeAccount onImageClicked media =
     let
         previewClasses : List String
         previewClasses =
@@ -98,16 +117,28 @@ render previewSizing server maybeAccount onImageClicked media =
                 ]
 
         _ ->
-            let
-                stripSizing : MediaRenderer.MediaSize
-                stripSizing =
-                    Maybe.withDefault MediaRenderer.Small previewSizing
-            in
-            div [ classes ("multi-media-strip" :: previewClasses) ]
-                (media
-                    |> List.map
-                        (\mediaRef ->
-                            div [ class "multi-media-item" ]
-                                [ MediaRenderer.view stripSizing MediaRenderer.ToHeight server maybeAccount onImageClicked mediaRef ]
+            case ( layout, previewSizing ) of
+                ( MEDIALAYOUTDYNAMICVERTICALSCROLL, Nothing ) ->
+                    div [ classes ("multi-media-gallery" :: previewClasses) ]
+                        (media
+                            |> List.map
+                                (\mediaRef ->
+                                    div [ class "multi-media-gallery-item" ]
+                                        [ MediaRenderer.view MediaRenderer.Natural MediaRenderer.ToWidthAndHeight server maybeAccount onImageClicked mediaRef ]
+                                )
                         )
-                )
+
+                _ ->
+                    let
+                        stripSizing : MediaRenderer.MediaSize
+                        stripSizing =
+                            Maybe.withDefault MediaRenderer.Small previewSizing
+                    in
+                    div [ classes ("multi-media-strip" :: previewClasses) ]
+                        (media
+                            |> List.map
+                                (\mediaRef ->
+                                    div [ class "multi-media-item" ]
+                                        [ MediaRenderer.view stripSizing MediaRenderer.ToHeight server maybeAccount onImageClicked mediaRef ]
+                                )
+                        )

@@ -483,6 +483,39 @@
   margin-top: 0.3rem;
 }
 
+/* `Components.Posts.mediaLayoutSelector`'s own row, directly below
+   `.post-detail-media-edit-row` -- kept as its own line (rather than sharing
+   `mediaEditButton`'s row) since it's a `<select>`, not another small
+   chip-button, and reads better on its own line than crowded in beside "Edit
+   Media". */
+.post-detail-media-layout-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.3rem;
+}
+
+.post-media-layout-selector {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.post-media-layout-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Matches `.post-visibility-edit select`/`.post-moderation-edit select`
+   exactly, so all three inline post-editing `<select>`s share one look. */
+.post-media-layout-selector select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
 /* Visibility picker -- `Pages.Post.PostId_`'s `visibilityView`, shown in
    `postDetail`'s meta line in place of the plain-text visibility (see
    `Components.PostCard.postDetail`'s own `visibilityView` parameter). Same

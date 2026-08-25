@@ -1740,7 +1740,7 @@ eventDetailView shared model event instance =
                         , case maybeServer of
                             Just server ->
                                 div []
-                                    [ MultiMediaRenderer.view server maybeAccount (MediaClicked eventPost) eventPost.media
+                                    [ MultiMediaRenderer.view eventPost.postMediaLayout server maybeAccount (MediaClicked eventPost) eventPost.media
                                     , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
                                     ]
 
@@ -1783,7 +1783,7 @@ eventDetailView shared model event instance =
                         ]
                     , case maybeServer of
                         Just server ->
-                            MultiMediaRenderer.view server maybeAccount (MediaClicked instancePost) instancePost.media
+                            MultiMediaRenderer.view instancePost.postMediaLayout server maybeAccount (MediaClicked instancePost) instancePost.media
 
                         Nothing ->
                             text ""

@@ -150,6 +150,59 @@
   flex: 0 0 auto;
 }
 
+/* Components.MultiMediaRenderer.view's MEDIALAYOUTDYNAMICVERTICALSCROLL layout -- an
+   "image gallery" alternative to .multi-media-strip above: every item renders at the same big
+   .media-renderer-natural sizing as the single-item case (rather than squashed to a small
+   .media-renderer-small thumbnail), wrapping into a `space-around` grid of rows (rather than
+   .multi-media-strip's single horizontally-scrolling row). No `max-height`/`overflow-y` of its
+   own -- unlike a small fixed-height preview strip, this is the post's own full-size gallery, so
+   it just grows to whatever height its rows need and the page scrolls normally past it, same as
+   any other tall post content (a long Markdown body, a long reply thread, etc.) rather than
+   being boxed into its own inner scroll region.
+
+   Deliberately breaks out past `.container`'s own 800px max-width (`main.css`) -- same
+   "`-49vw`, clamped by a fixed offset back to whichever edge is narrower" technique as
+   `.events-grid`/`.events-strip` (see events.css's own, more detailed comment on the general
+   pattern), just with a bigger fixed offset: those sit directly under `.container`, where this
+   sits under `.container > main` (`padding: 1rem`) `> .post-detail` (`padding: 0.6rem 0.8rem`
+   + a 1px border) too, so reaching the same target edge needs pulling back that extra `1rem +
+   0.8rem + 1px` (`main`'s padding + `.post-detail`'s own) of nested inset on top of
+   `.container`'s usual `400px` half-width, on both sides -- `1.8rem` (not a plain px literal)
+   so it still lands correctly if the root font size (and so `.post-detail`'s own rem-based
+   padding) isn't the default 16px. Only `.container` needs to not clip this (it doesn't -- see
+   main.css) since `.post-detail` itself has no `overflow` of its own to clip it either; the
+   images will render past `.post-detail`'s own bordered card edge at wide viewports, which is
+   the point -- a wide screen actually gets used rather than staying letterboxed to 800px. */
+.multi-media-gallery {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+  margin-left: calc(min(0px, -49vw + 400px + 1.8rem + 1px));
+  margin-right: calc(min(0px, -49vw + 400px + 1.8rem + 1px));
+  backdrop-filter: blur(4px);
+}
+
+.multi-media-gallery-item {
+  /* Without this, flex's default `flex-shrink: 1` compresses these items
+     (fighting the gallery's own `overflow-y: auto`) to force the whole
+     stack's content height down to `max-height: 80vh`, rather than letting
+     it overflow and scroll -- since each item's own height comes from its
+     `Natural`-sized img (see `Components.MediaRenderer`), that compression
+     doesn't shrink the img along with it, it just crops the excess off via
+     `overflow: hidden` below, which is what a squashed-looking aspect ratio
+     was actually caused by. `.multi-media-item` (the horizontal strip's own
+     item, `flex: 0 0 auto` above) has the same guard for the same reason. */
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chip-bg);
+  max-width: 100%;
+}
+
 /* Components.MultiMediaRenderer.preview -- the same .multi-media-single/
    .multi-media-strip layout as .view above, just tighter margins to fit
    Components.PostCard.postCard's compact card, and lifted to

@@ -2,12 +2,22 @@ use std::time::SystemTime;
 
 use super::User;
 use diesel::*;
+use diesel_derive_enum::DbEnum;
 use tonic::{Code, Status};
 
 use crate::{
     db_connection::PgPooledConnection,
     schema::{group_posts, posts, user_posts},
 };
+
+/// The end-user layout a [`Post`]'s attached Media should be rendered in, backed by the Postgres
+/// `post_media_layout` enum (see 2026-08-25-165450_add_post_media_layout_to_posts).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, DbEnum)]
+#[ExistingTypePath = "crate::schema::sql_types::PostMediaLayout"]
+pub enum PostMediaLayout {
+    MediaLayoutStandard,
+    MediaLayoutDynamicVerticalScroll,
+}
 
 pub fn get_post(post_id: i64, conn: &mut PgPooledConnection) -> Result<Post, Status> {
     posts::table
@@ -63,6 +73,8 @@ pub struct Post {
     pub last_activity_at: SystemTime,
 
     pub unauthenticated_star_count: i64,
+
+    pub post_media_layout: PostMediaLayout,
 }
 
 /// Explicit column list for `posts`, excluding:
@@ -97,6 +109,7 @@ pub const POST_COLUMNS: (
     posts::published_at,
     posts::last_activity_at,
     posts::unauthenticated_star_count,
+    posts::post_media_layout,
 ) = (
     posts::id,
     posts::user_id,
@@ -119,6 +132,7 @@ pub const POST_COLUMNS: (
     posts::published_at,
     posts::last_activity_at,
     posts::unauthenticated_star_count,
+    posts::post_media_layout,
 );
 
 #[derive(Debug, Insertable)]

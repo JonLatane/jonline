@@ -157,6 +157,9 @@ message Post {
   // The moderation of the Post.
   Moderation moderation = 16;
 
+  // The desired end-user layout of Media attached to the post.
+  PostMediaLayout post_media_layout = 17;
+
   // If the Post was retrieved from GetPosts with a group_id, the GroupPost
   // metadata may be returned along with the Post.
   optional GroupPost current_group_post = 18;
@@ -178,6 +181,11 @@ message Post {
 
   // The number of unauthenticated stars on the post.
   int64 unauthenticated_star_count = 24;
+}
+
+enum PostMediaLayout {
+  MEDIA_LAYOUT_STANDARD = 0;
+  MEDIA_LAYOUT_DYNAMIC_VERTICAL_SCROLL = 1;
 }
 
 // A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains

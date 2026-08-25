@@ -84,6 +84,8 @@ export enum Permission {
   MODERATE_POSTS = 24,
   /** REPLY_TO_POSTS - Allow the user to reply to posts. */
   REPLY_TO_POSTS = 25,
+  /** EDIT_POST_TITLES_AND_LINKS - Allow the user to edit post titles and/or links. */
+  EDIT_POST_TITLES_AND_LINKS = 26,
   /**
    * VIEW_EVENTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
    * As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility.
@@ -208,6 +210,9 @@ export function permissionFromJSON(object: any): Permission {
     case 25:
     case "REPLY_TO_POSTS":
       return Permission.REPLY_TO_POSTS;
+    case 26:
+    case "EDIT_POST_TITLES_AND_LINKS":
+      return Permission.EDIT_POST_TITLES_AND_LINKS;
     case 30:
     case "VIEW_EVENTS":
       return Permission.VIEW_EVENTS;
@@ -314,6 +319,8 @@ export function permissionToJSON(object: Permission): string {
       return "MODERATE_POSTS";
     case Permission.REPLY_TO_POSTS:
       return "REPLY_TO_POSTS";
+    case Permission.EDIT_POST_TITLES_AND_LINKS:
+      return "EDIT_POST_TITLES_AND_LINKS";
     case Permission.VIEW_EVENTS:
       return "VIEW_EVENTS";
     case Permission.CREATE_EVENTS:
