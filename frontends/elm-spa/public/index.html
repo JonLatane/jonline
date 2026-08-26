@@ -283,7 +283,34 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
         m.setAttribute("content", color);
       });
+      forceSafeAreaRepaint();
     });
+
+    // Works around a real WebKit/iOS bug (standalone/home-screen-installed PWAs only, where
+    // apple-mobile-web-app-status-bar-style=black-translucent makes the status bar transparent and
+    // shows .navbar's own background through it -- see this file's own comment on that meta tag):
+    // when .navbar's background-color changes via a *later* stylesheet update (UI.EmittedStylesheet,
+    // once a server's real ServerConfiguration/colors resolve, shortly after the app boots into a
+    // server whose colors weren't known synchronously) rather than at the very first paint, iOS
+    // sometimes fails to recomposite just the env(safe-area-inset-top) strip under the status bar --
+    // it stays stuck showing whatever color (or lack of one) was there first, even though .navbar
+    // itself repaints correctly right below it. Confirmed reproducing on some servers/posts and not
+    // others, and self-correcting on some once *something else* forces a reflow later -- consistent
+    // with a stuck compositor layer rather than a color actually being wrong. Toggling
+    // viewport-fit=cover off and back on is a standard, narrowly-targeted way to force iOS to redo
+    // safe-area layout/paint; called every time setNavBarColor fires (including the harmless initial
+    // one at boot) rather than only once, since a server's colors can change again later too (e.g.
+    // switching accounts to one on a different server).
+    function forceSafeAreaRepaint() {
+      var viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (!viewportMeta) { return; }
+      var original = viewportMeta.getAttribute("content");
+      if (!original || original.indexOf("viewport-fit=cover") === -1) { return; }
+      viewportMeta.setAttribute("content", original.replace("viewport-fit=cover", "viewport-fit=auto"));
+      requestAnimationFrame(function () {
+        viewportMeta.setAttribute("content", original);
+      });
+    }
 
     // See Main.elm's splashOverlay doc comment: the `#splash` node this hides is Elm's own
     // (re-rendered on every `view` call from app boot onward), not the static one originally
