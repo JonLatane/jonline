@@ -485,7 +485,7 @@ update req msg model =
         ( newModel, cmd ) =
             sharedUpdate req msg model
     in
-    ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel ] )
+    ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel, splashHiddenCmd model newModel ] )
 
 
 sharedUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -1676,6 +1676,21 @@ navBarColorCmd before after =
     in
     if colorOf before /= colorOf after then
         Ports.setNavBarColor (colorOf after)
+
+    else
+        Cmd.none
+
+
+{-| Fires `Ports.hideSplash` the moment `browsingHost`'s own `ServerConfiguration`
+request settles -- see `Shared.AccountsPanel.Model.browsingHostConfigResolved`'s
+own doc. The `False -> True` guard (rather than firing every time it's `True`)
+keeps this a genuine one-shot, same reasoning as `AccountsPanel.finishStartupUnit`'s
+own guard.
+-}
+splashHiddenCmd : Model -> Model -> Cmd Msg
+splashHiddenCmd before after =
+    if not before.accounts.browsingHostConfigResolved && after.accounts.browsingHostConfigResolved then
+        Ports.hideSplash ()
 
     else
         Cmd.none

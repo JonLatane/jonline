@@ -14,6 +14,7 @@ port module Ports exposing
     , federatedAuthEncrypted
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
+    , hideSplash
     , measureElements
     , persistAccountsAndServers
     , persistFederatedAuthKeyPair
@@ -195,6 +196,19 @@ actually changes -- `mainFrontendHost` switching, or its `Server`'s branding
 being (re)populated.
 -}
 port setNavBarColor : String -> Cmd msg
+
+
+{-| Hides `index.html`'s `#splash` overlay (adds its `.hidden` class -- see
+`Main.elm`'s `splashOverlay`, which renders the same `#splash`/`<img>` node
+Elm's own view owns from its very first render onward, so this survives every
+later re-render undisturbed: Elm's vdom only ever diffs attributes *it*
+declared on that node, and never declares a `class`, so it never touches or
+resets whatever this port adds). Called from `Shared.splashHiddenCmd` the
+moment `browsingHost`'s own `ServerConfiguration` request settles, success or
+failure alike -- see `Shared.AccountsPanel.Model.browsingHostConfigResolved`.
+Fire-and-forget, same as `setNavBarColor`/`copyToClipboard`.
+-}
+port hideSplash : () -> Cmd msg
 
 
 {-| Writes `text` to the system clipboard via `navigator.clipboard.writeText`

@@ -92,9 +92,50 @@
       '">'
     );
   </script>
+  <style>
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg, #ffffff);
+      transition: opacity 0.2s ease;
+      opacity: 1;
+    }
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    #splash img.loaded {
+      opacity: 1;
+    }
+  </style>
 </head>
 
 <body>
+  <div id="splash">
+    <!-- /favicon.png is generated on the fly by the Rust backend (see
+         `backend/src/web/server_information.rs`'s `favicon_png`) from
+         whichever server's logo is configured -- it doesn't exist as a
+         static file, so it never actually loads as an image when this SPA
+         is served standalone (e.g. `elm-spa`'s own dev server, outside the
+         backend) -- that dev server's own SPA-fallback routing serves
+         `index.html` itself (200 OK, `text/html`) for the unmatched
+         `/favicon.png` request, which an `onerror` handler wouldn't catch
+         (the request "succeeded"; the image just fails to decode). Starting
+         transparent and fading in `onload` (rather than fading out
+         `onerror`) covers that case as well as a genuine 404. -->
+    <img src="/favicon.png" alt="" onload="this.classList.add('loaded');">
+  </div>
   <script>
     document.write('<script src="' + jonlineBasePath + '/dist/elm.js"><\/script>');
   </script>
@@ -242,6 +283,17 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
         m.setAttribute("content", color);
       });
+    });
+
+    // See Main.elm's splashOverlay doc comment: the `#splash` node this hides is Elm's own
+    // (re-rendered on every `view` call from app boot onward), not the static one originally
+    // written here -- `Browser.application` replaces this file's `#splash` the instant Elm's
+    // first render runs, so this only ever needs to find Elm's copy.
+    app.ports.hideSplash.subscribe(function () {
+      setTimeout(() => {
+        var el = document.getElementById("splash");
+        if (el) { el.classList.add("hidden"); }
+      }, 110);
     });
 
     app.ports.copyToClipboard.subscribe(function (text) {

@@ -169,6 +169,17 @@ type alias Model =
     -- session -- it's a plain SPA reload to change it).
     , browsingHost : String
 
+    -- Whether `browsingHost`'s own `ServerConfiguration` request has settled,
+    -- success or failure alike -- flips `True` exactly once, in
+    -- `GotMainServerResult` (a first-ever visit to this host) or
+    -- `GotReconnectResult` for `browsingHost` specifically (an already-known
+    -- host, reconnected via `init`'s ordinary per-server sweep). Drives
+    -- `Shared.splashHiddenCmd`, which hides `index.html`'s `#splash` overlay
+    -- once this is `True` -- the app can still be used before every *other*
+    -- server's config has loaded, but not before this one's, since that's
+    -- what supplies the page's own theming.
+    , browsingHostConfigResolved : Bool
+
     -- The server that host resolves to, once known: usually `browsingHost`
     -- itself, but corrected to a CDN's public `frontendHost` if `browsingHost`
     -- turns out to be a backend host presenting a different public identity
@@ -1347,6 +1358,7 @@ init req flags =
       , createAccountConfirmation = Nothing
       , acceptedCreateAccount = Nothing
       , browsingHost = browsingHost
+      , browsingHostConfigResolved = False
       , mainFrontendHost = browsingHost
       , moveAnimations = Dict.empty
       , serverMoveAnimations = Dict.empty
@@ -1828,7 +1840,10 @@ sendUpdate req msg model =
 
                         newModel : Model
                         newModel =
-                            { model | servers = insert server model.servers }
+                            { model
+                                | servers = insert server model.servers
+                                , browsingHostConfigResolved = model.browsingHostConfigResolved || frontendHost == model.browsingHost
+                            }
                     in
                     -- Replaces (rather than just skipping) any existing entry for this host,
                     -- keeping its place in the list (see `upsertServer`) -- this fires on
@@ -1857,11 +1872,13 @@ sendUpdate req msg model =
                     let
                         newModel : Model
                         newModel =
-                            if List.any (\s -> s.frontendHost == frontendHost) model.servers then
+                            (if List.any (\s -> s.frontendHost == frontendHost) model.servers then
                                 model
 
-                            else
+                             else
                                 { model | servers = insert (disconnectedServer { frontendHost = frontendHost, enabled = enabled }) model.servers }
+                            )
+                                |> (\m -> { m | browsingHostConfigResolved = m.browsingHostConfigResolved || frontendHost == m.browsingHost })
                     in
                     settleStartupUnit newModel
 
@@ -1891,6 +1908,7 @@ sendUpdate req msg model =
                             { model
                                 | mainFrontendHost = resolvedFrontend
                                 , servers = upsertServer server model.servers
+                                , browsingHostConfigResolved = True
                             }
 
                         -- The base host may recommend other servers to federate with (see
@@ -1928,7 +1946,7 @@ sendUpdate req msg model =
                 Err _ ->
                     -- Still settles this server's startup-sweep unit, if one's pending -- see
                     -- `settleStartupUnit`.
-                    settleStartupUnit model
+                    settleStartupUnit { model | browsingHostConfigResolved = True }
 
         AccountsAndServersBroadcastReceived value ->
             case Decode.decodeValue persistedStateDecoder value of

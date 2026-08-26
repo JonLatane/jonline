@@ -57,6 +57,8 @@ import Gen.Model
 import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
+import Html exposing (Html)
+import Html.Attributes
 import Pages.About
 import Pages.Event.EventId_
 import Pages.Events
@@ -395,8 +397,46 @@ notifyPageOfSharedMsg sharedMsg shared page url key =
 -- VIEW
 
 
+{-| `index.html`'s `#splash` overlay covers the app until `elm.js` loads and
+this first `view` runs -- but `Browser.application` takes ownership of
+`<body>`'s contents on every render (see `init`'s own module doc, change 1),
+wiping out anything written there that Elm doesn't itself know about. So this
+prepends an Elm-rendered `#splash`/`<img>` node, identical in appearance, onto
+every `body` this produces from here on -- seamless the moment this first
+render replaces the static one, and stable afterwards since Elm's vdom only
+ever diffs attributes *this* code declares on it (never a `class`), letting
+`Ports.hideSplash` (see `Shared.splashHiddenCmd`) add/remove `.hidden` by hand
+without Elm ever fighting or resetting that change on a later render.
+-}
 view : Model -> Browser.Document Msg
 view model =
-    Pages.view model.page model.shared model.url model.key
-        |> View.map Page
-        |> View.toBrowserDocument
+    let
+        doc : Browser.Document Msg
+        doc =
+            Pages.view model.page model.shared model.url model.key
+                |> View.map Page
+                |> View.toBrowserDocument
+    in
+    { doc | body = splashOverlay :: doc.body }
+
+
+splashOverlay : Html Msg
+splashOverlay =
+    Html.div [ Html.Attributes.id "splash" ]
+        [ Html.img
+            [ Html.Attributes.src "/favicon.png"
+            , Html.Attributes.alt ""
+
+            -- See `public/index.html`'s matching `<img>` doc comment: `/favicon.png`
+            -- is generated on the fly by the Rust backend, so it never actually
+            -- decodes as an image when this SPA is served standalone (e.g.
+            -- `elm-spa`'s own dev server) -- the CSS starts it transparent, and this
+            -- fades it in only on a real successful load, covering both a plain
+            -- 404 and that dev server's own SPA-fallback 200. Note this deliberately
+            -- never declares a `class` here, same reasoning as `#splash`'s own
+            -- `hidden` class above -- Elm's vdom must never contest a class this
+            -- inline handler adds by hand.
+            , Html.Attributes.attribute "onload" "this.classList.add('loaded');"
+            ]
+            []
+        ]
