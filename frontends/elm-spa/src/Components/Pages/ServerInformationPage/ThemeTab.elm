@@ -1,10 +1,12 @@
-module Components.Pages.ServerInformationPage.ThemeTab exposing (Model, Msg, applySharedMsg, init, update, view)
+module Components.Pages.ServerInformationPage.ThemeTab exposing (Model, Msg, applySharedMsg, init, subscriptions, update, view)
 
 {-| The Theme tab of `Components.Pages.ServerInformationPage` -- the server's square logo and its
 Primary/Navigation colors (editable by an admin, via `AccountsPanel.updateServerConfig`'s own
-"fetch fresh copy, then write" dance), plus the Default Web UI picker, which directly reuses
+"fetch fresh copy, then write" dance), the Default Web UI picker, which directly reuses
 `UI.webUiToggleRow` -- the same control shown per-admin-account in the Accounts Panel's own
-`UI.adminAccountPanel` -- rather than duplicating it.
+`UI.adminAccountPanel` -- rather than duplicating it, plus (at the bottom) the "Navigation Tabs"
+section, wired in as a sub-component -- see `Components.Pages.ServerInformationPage.ThemeTab.CustomTabsConfiguration`'s
+own module doc for why that one's split out.
 
 `author`/`admin`/`moderator` (the other three `ServerColors` fields) aren't shown at all -- this
 page has no UI for them yet, same as before this tab supported any editing.
@@ -12,6 +14,7 @@ page has no UI for them yet, same as before this tab supported any editing.
 -}
 
 import Components.Pages.ServerInformationPage.Common as Common
+import Components.Pages.ServerInformationPage.ThemeTab.CustomTabsConfiguration as CustomTabsConfiguration
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, div, h3, img, input, p, span, text)
@@ -37,6 +40,7 @@ type alias Model =
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
     , colorMetaExpanded : Bool
+    , customTabsConfig : CustomTabsConfiguration.Model
     }
 
 
@@ -53,6 +57,7 @@ type Msg
     | GotColorSaveResult ServerColorField (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | ColorMetaExpandedToggled
     | SharedMsg Shared.Msg
+    | CustomTabsConfigurationMsg CustomTabsConfiguration.Msg
 
 
 {-| What `LogoSaveClicked` should do to `serverInfo.logo.squareMediaId` -- mirrors
@@ -102,7 +107,13 @@ init =
     , primaryColorEdit = Nothing
     , navigationColorEdit = Nothing
     , colorMetaExpanded = False
+    , customTabsConfig = CustomTabsConfiguration.init
     }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map CustomTabsConfigurationMsg (CustomTabsConfiguration.subscriptions model.customTabsConfig)
 
 
 
@@ -232,13 +243,21 @@ update shared targetHost maybeServer msg model =
         SharedMsg subMsg ->
             ( model, Effect.fromShared subMsg )
 
+        CustomTabsConfigurationMsg subMsg ->
+            CustomTabsConfiguration.update shared targetHost maybeServer subMsg model.customTabsConfig
+                |> Tuple.mapFirst (\customTabsConfig -> { model | customTabsConfig = customTabsConfig })
+                |> Tuple.mapSecond (Effect.map CustomTabsConfigurationMsg)
 
-{-| Reacts to a `Shared.Msg` forwarded through by the parent's own `SharedMsg` branch -- only the
-shared `Shared.MyMediaPanel` chooser (opened by `LogoEditClicked`) reporting a tap matters here (see
+
+{-| Reacts to a `Shared.Msg` forwarded through by the parent's own `SharedMsg` branch -- the shared
+`Shared.MyMediaPanel` chooser reporting a tap matters both here (opened by `LogoEditClicked`; see
 `Shared.MyMediaPanel`'s own module doc on why this forwarded `Shared.Msg`, not some
-closure/callback, is what delivers the pick back here). Gated on `logoEdit` already being `Just` so
-an unrelated Browse-mode tap (e.g. from the Accounts Panel) elsewhere can't be mistaken for a logo
-pick. Mirrors `UserProfilePage`'s own `MediaItemClicked` handling.
+closure/callback, is what delivers the pick back here) and, forwarded on, to
+`CustomTabsConfiguration.applySharedMsg` (opened by its own `CustomTabChooseImageClicked`) -- each
+gated on its own `logoEdit`/`customTabsEdit.editingIconFor` already being `Just` so an unrelated
+Browse-mode tap (e.g. from the Accounts Panel) elsewhere can't be mistaken for either's own pick,
+and the two are never both mid-pick at once in practice (`Shared.MyMediaPanel` is a single shared
+chooser). Mirrors `UserProfilePage`'s own `MediaItemClicked` handling.
 -}
 applySharedMsg : Shared.Msg -> Model -> Model
 applySharedMsg subMsg model =
@@ -250,6 +269,7 @@ applySharedMsg subMsg model =
 
                 _ ->
                     model.logoEdit
+        , customTabsConfig = CustomTabsConfiguration.applySharedMsg subMsg model.customTabsConfig
     }
 
 
@@ -383,6 +403,7 @@ view shared server maybeAdminAccount model =
                 Nothing ->
                     p [] [ text (webUserInterfaceText webUi) ]
             ]
+        , Html.map CustomTabsConfigurationMsg (CustomTabsConfiguration.view server maybeAdminAccount model.customTabsConfig)
         ]
 
 

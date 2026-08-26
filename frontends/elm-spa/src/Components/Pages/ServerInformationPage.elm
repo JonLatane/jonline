@@ -234,7 +234,7 @@ init shared pageIsSecure targetHost navKey path query =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map SettingsTabMsg (SettingsTab.subscriptions model.settingsTab)
+        [ Sub.map ThemeTabMsg (ThemeTab.subscriptions model.themeTab)
         , Sub.map FederationTabMsg (FederationTab.subscriptions model.federationTab)
         ]
 
@@ -325,7 +325,6 @@ updateInner shared msg model =
             ( { model
                 | aboutTab = AboutTab.applySharedMsg subMsg model.aboutTab
                 , themeTab = ThemeTab.applySharedMsg subMsg model.themeTab
-                , settingsTab = SettingsTab.applySharedMsg subMsg model.settingsTab
               }
             , Effect.fromShared subMsg
             )

@@ -84,8 +84,8 @@ macro_rules! html_sanitize_user_text {
 /// identical text, regardless of which app ends up serving the request.
 pub fn index_summary(server_name: &str, server_logo: Option<String>) -> Option<JonlineSummary> {
     Some(JonlineSummary {
-        title: Some(format!("Latest | {}", server_name)),
-        description: Some("Posts and Events from a Jonline community".to_string()),
+        title: Some(server_name.to_string()),
+        description: None,
         image: server_logo.or(Some("/favicon.png".to_string())),
     })
 }

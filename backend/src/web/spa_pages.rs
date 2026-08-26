@@ -474,7 +474,7 @@ webui!(
         let group_name = group_name(path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Latest | {}", group_name, server_name)),
+            title: Some(format!("{}: {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
