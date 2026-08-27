@@ -125,7 +125,7 @@ initFeed : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 initFeed shared req =
     let
         ( postsModel, postsEffect ) =
-            PostsPage.init shared Nothing req.key req.url.path req.query True
+            PostsPage.init shared Nothing req.key req.url.path req.query True Nothing
 
         ( eventsModel, eventsEffect ) =
             EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment True True Nothing
@@ -151,7 +151,7 @@ initForTarget shared req target =
                 |> Just
 
         CustomNav.TargetTab POSTSTAB ->
-            PostsPage.init shared Nothing req.key req.url.path req.query False
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
                 |> Tuple.mapFirst HomePosts
                 |> Tuple.mapSecond (Effect.map HomePostsMsg)
                 |> Just

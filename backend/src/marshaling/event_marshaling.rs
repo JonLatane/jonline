@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::mem::transmute;
 
 use super::{
-    load_media_lookup, MediaLookup, ToDbId, ToI32Moderation, ToProtoId, ToProtoMarshalablePost,
-    ToProtoTime,
+    load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost,
+    ToProtoSyncDestinationStatus, ToProtoTime,
 };
 use crate::db_connection::PgPooledConnection;
 use crate::protos::event_attendance::Attendee;
@@ -83,75 +83,6 @@ pub fn configuration_to_json(
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct MarshalableEventSyncDestination(pub models::EventSyncDestination, pub models::Author);
-
-pub trait ToProtoMarshalableEventSyncDestination {
-    fn to_proto(&self) -> EventSyncDestination;
-}
-
-impl ToProtoMarshalableEventSyncDestination for MarshalableEventSyncDestination {
-    fn to_proto(&self) -> EventSyncDestination {
-        let destination = &self.0;
-        let owner = &self.1;
-        EventSyncDestination {
-            id: destination.id.to_proto_id(),
-            owner: Some(owner.to_proto(None)),
-            created_at: Some(destination.created_at.to_proto()),
-            updated_at: destination.updated_at.map(|t| t.to_proto()),
-            // Left unset here -- see `attach_synced_event_instance_counts`, which every RPC
-            // handler that returns an `EventSyncDestination` calls as a second pass to fill this
-            // in (mirrors `get_events.rs`'s "build the response, then attach_event_instance_attendances"
-            // shape), rather than every caller of `to_proto` having to supply it up front.
-            synced_event_instance_count: None,
-            configuration: destination_configuration_to_proto(&destination.configuration),
-        }
-    }
-}
-
-/// Second-pass attach step for `synced_event_instance_count` -- batches one `GROUP BY` query
-/// (`models::get_event_sync_destination_synced_counts`) across every destination in `destinations`
-/// and mutates each in place, rather than each RPC handler querying per-row. Works the same for
-/// a single freshly created/updated destination (pass a one-element slice, e.g. via
-/// `std::slice::from_mut`) as it does for a whole `GetEventSyncDestinations` page.
-pub fn attach_synced_event_instance_counts(
-    destinations: &mut [EventSyncDestination],
-    conn: &mut PgPooledConnection,
-) {
-    let ids: Vec<i64> = destinations
-        .iter()
-        .filter_map(|d| d.id.to_db_id().ok())
-        .collect();
-    let counts = models::get_event_sync_destination_synced_counts(ids, conn);
-    for destination in destinations.iter_mut() {
-        if let Ok(id) = destination.id.to_db_id() {
-            destination.synced_event_instance_count =
-                Some(counts.get(&id).copied().unwrap_or(0) as u64);
-        }
-    }
-}
-
-/// `configuration` JSONB shape today: `{"facebook_page": {"page_id": ..., "page_name": ...,
-/// "access_token": ...}}` -- `access_token` is intentionally never surfaced here; it's
-/// server-side only (see `logic::facebook_sync`).
-pub fn destination_configuration_to_proto(
-    configuration: &serde_json::Value,
-) -> Option<event_sync_destination::Configuration> {
-    let facebook_page = configuration.get("facebook_page")?;
-    let page_id = facebook_page.get("page_id").and_then(|v| v.as_str())?;
-    let page_name = facebook_page
-        .get("page_name")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    Some(event_sync_destination::Configuration::FacebookPage(
-        FacebookPage {
-            page_id: page_id.to_string(),
-            page_name: page_name.to_string(),
-            short_lived_user_access_token: None,
-        },
-    ))
-}
-
 pub type EventInstanceSyncLookup = HashMap<i64, Vec<models::EventInstanceSyncDestination>>;
 
 pub fn load_event_instance_sync_lookup(
@@ -163,21 +94,6 @@ pub fn load_event_instance_sync_lookup(
         lookup.entry(row.event_instance_id).or_default().push(row);
     }
     lookup
-}
-
-pub trait ToProtoEventInstanceSyncDestination {
-    fn to_proto(&self) -> EventInstanceSyncDestination;
-}
-
-impl ToProtoEventInstanceSyncDestination for models::EventInstanceSyncDestination {
-    fn to_proto(&self) -> EventInstanceSyncDestination {
-        EventInstanceSyncDestination {
-            event_sync_destination_id: self.event_sync_destination_id.to_proto_id(),
-            destination_instance_id: self.destination_instance_id.clone(),
-            destination_url: self.destination_url.clone(),
-            synced_at: self.synced_at.map(|t| t.to_proto()),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -274,7 +190,7 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         // self.to_proto(username, None)
         Event {
             id: event.id.to_proto_id(),
-            post: Some(post.to_proto(media_lookup)),
+            post: Some(post.to_proto(media_lookup, None)),
             instances: instances
                 .iter()
                 .map(|i| i.to_proto(media_lookup, hide_location, instance_sync_lookup))
@@ -319,7 +235,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
         EventInstance {
             id: event_instance.id.to_proto_id(),
             event_id: event_instance.event_id.to_proto_id(),
-            post: Some(marshalable_post.to_proto(media_lookup)),
+            post: Some(marshalable_post.to_proto(media_lookup, None)),
             starts_at: Some(event_instance.starts_at.to_proto()),
             ends_at: Some(event_instance.ends_at.to_proto()),
             info: Some(EventInstanceInfo {

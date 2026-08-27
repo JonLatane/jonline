@@ -13,9 +13,9 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $10;
+import 'authors.pb.dart' as $14;
+import 'google/protobuf/timestamp.pb.dart' as $11;
 import 'messages.pbenum.dart';
-import 'users.pb.dart' as $4;
 
 export 'messages.pbenum.dart';
 
@@ -24,7 +24,7 @@ export 'messages.pbenum.dart';
 class Message extends $pb.GeneratedMessage {
   factory Message({
     $core.String? id,
-    $4.Author? sender,
+    $14.Author? sender,
     MessagingGroup? messagingGroup,
     $core.String? bodyText,
     $core.String? subject,
@@ -34,7 +34,7 @@ class Message extends $pb.GeneratedMessage {
     $core.String? cc,
     $core.String? bcc,
     MessageRead? currentUserRead,
-    $10.Timestamp? createdAt,
+    $11.Timestamp? createdAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -81,7 +81,7 @@ class Message extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Message', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$4.Author>(2, _omitFieldNames ? '' : 'sender', subBuilder: $4.Author.create)
+    ..aOM<$14.Author>(2, _omitFieldNames ? '' : 'sender', subBuilder: $14.Author.create)
     ..aOM<MessagingGroup>(3, _omitFieldNames ? '' : 'messagingGroup', subBuilder: MessagingGroup.create)
     ..aOS(4, _omitFieldNames ? '' : 'bodyText')
     ..aOS(5, _omitFieldNames ? '' : 'subject')
@@ -91,7 +91,7 @@ class Message extends $pb.GeneratedMessage {
     ..aOS(9, _omitFieldNames ? '' : 'cc')
     ..aOS(10, _omitFieldNames ? '' : 'bcc')
     ..aOM<MessageRead>(19, _omitFieldNames ? '' : 'currentUserRead', subBuilder: MessageRead.create)
-    ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -128,15 +128,15 @@ class Message extends $pb.GeneratedMessage {
 
   /// The sender of the message. Note that this is *purported* (we don't protect against spoofing).
   @$pb.TagNumber(2)
-  $4.Author get sender => $_getN(1);
+  $14.Author get sender => $_getN(1);
   @$pb.TagNumber(2)
-  set sender($4.Author v) { setField(2, v); }
+  set sender($14.Author v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasSender() => $_has(1);
   @$pb.TagNumber(2)
   void clearSender() => clearField(2);
   @$pb.TagNumber(2)
-  $4.Author ensureSender() => $_ensure(1);
+  $14.Author ensureSender() => $_ensure(1);
 
   /// Note that, on the backend, every message actually has a messaging group.
   /// From the client's perspective, if messaging_group is not set, you
@@ -240,15 +240,15 @@ class Message extends $pb.GeneratedMessage {
 
   /// The time the message was created.
   @$pb.TagNumber(20)
-  $10.Timestamp get createdAt => $_getN(11);
+  $11.Timestamp get createdAt => $_getN(11);
   @$pb.TagNumber(20)
-  set createdAt($10.Timestamp v) { setField(20, v); }
+  set createdAt($11.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(11);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $10.Timestamp ensureCreatedAt() => $_ensure(11);
+  $11.Timestamp ensureCreatedAt() => $_ensure(11);
 }
 
 /// Records that a user has read a particular Message -- one row (conceptually; see the composite
@@ -259,7 +259,7 @@ class MessageRead extends $pb.GeneratedMessage {
   factory MessageRead({
     $core.String? messageId,
     $core.String? userId,
-    $10.Timestamp? readAt,
+    $11.Timestamp? readAt,
   }) {
     final $result = create();
     if (messageId != null) {
@@ -280,7 +280,7 @@ class MessageRead extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessageRead', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'messageId')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
-    ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'readAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(20, _omitFieldNames ? '' : 'readAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -327,15 +327,15 @@ class MessageRead extends $pb.GeneratedMessage {
   /// -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
   /// a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
   @$pb.TagNumber(20)
-  $10.Timestamp get readAt => $_getN(2);
+  $11.Timestamp get readAt => $_getN(2);
   @$pb.TagNumber(20)
-  set readAt($10.Timestamp v) { setField(20, v); }
+  set readAt($11.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasReadAt() => $_has(2);
   @$pb.TagNumber(20)
   void clearReadAt() => clearField(20);
   @$pb.TagNumber(20)
-  $10.Timestamp ensureReadAt() => $_ensure(2);
+  $11.Timestamp ensureReadAt() => $_ensure(2);
 }
 
 /// Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
@@ -531,8 +531,8 @@ class SendMessageRequest extends $pb.GeneratedMessage {
 class MessagingGroup extends $pb.GeneratedMessage {
   factory MessagingGroup({
     $core.String? id,
-    $core.Iterable<$4.Author>? members,
-    $10.Timestamp? createdAt,
+    $core.Iterable<$14.Author>? members,
+    $11.Timestamp? createdAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -552,8 +552,8 @@ class MessagingGroup extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessagingGroup', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..pc<$4.Author>(2, _omitFieldNames ? '' : 'members', $pb.PbFieldType.PM, subBuilder: $4.Author.create)
-    ..aOM<$10.Timestamp>(10, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..pc<$14.Author>(2, _omitFieldNames ? '' : 'members', $pb.PbFieldType.PM, subBuilder: $14.Author.create)
+    ..aOM<$11.Timestamp>(10, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -590,19 +590,19 @@ class MessagingGroup extends $pb.GeneratedMessage {
 
   /// The users who are members of the group. Note that this is a superset of the users who are
   @$pb.TagNumber(2)
-  $core.List<$4.Author> get members => $_getList(1);
+  $core.List<$14.Author> get members => $_getList(1);
 
   /// The time the group was created.
   @$pb.TagNumber(10)
-  $10.Timestamp get createdAt => $_getN(2);
+  $11.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(10)
-  set createdAt($10.Timestamp v) { setField(10, v); }
+  set createdAt($11.Timestamp v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(10)
   void clearCreatedAt() => clearField(10);
   @$pb.TagNumber(10)
-  $10.Timestamp ensureCreatedAt() => $_ensure(2);
+  $11.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
 /// Request to get messages from the server. The request may be filtered by message ID, search text, or creation time.
@@ -614,7 +614,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
     $core.String? messageId,
     $core.String? messageGroupId,
     $core.String? searchText,
-    $10.Timestamp? sentBefore,
+    $11.Timestamp? sentBefore,
     $core.String? fromEmail,
   }) {
     final $result = create();
@@ -647,7 +647,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'messageId')
     ..aOS(3, _omitFieldNames ? '' : 'messageGroupId')
     ..aOS(7, _omitFieldNames ? '' : 'searchText')
-    ..aOM<$10.Timestamp>(8, _omitFieldNames ? '' : 'sentBefore', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(8, _omitFieldNames ? '' : 'sentBefore', subBuilder: $11.Timestamp.create)
     ..aOS(9, _omitFieldNames ? '' : 'fromEmail')
     ..hasRequiredFields = false
   ;
@@ -716,15 +716,15 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
 
   /// Request to only return posts that were published or created before the given timestamp.
   @$pb.TagNumber(8)
-  $10.Timestamp get sentBefore => $_getN(4);
+  $11.Timestamp get sentBefore => $_getN(4);
   @$pb.TagNumber(8)
-  set sentBefore($10.Timestamp v) { setField(8, v); }
+  set sentBefore($11.Timestamp v) { setField(8, v); }
   @$pb.TagNumber(8)
   $core.bool hasSentBefore() => $_has(4);
   @$pb.TagNumber(8)
   void clearSentBefore() => clearField(8);
   @$pb.TagNumber(8)
-  $10.Timestamp ensureSentBefore() => $_ensure(4);
+  $11.Timestamp ensureSentBefore() => $_ensure(4);
 
   /// Returns messages (assuming the user has access to each) whose email "from" header exactly
   /// matches the given value - i.e. `Message.from` as returned by a previous response. Meant for
@@ -799,7 +799,7 @@ class PushSubscription extends $pb.GeneratedMessage {
   factory PushSubscription({
     $core.String? id,
     $core.String? endpoint,
-    $10.Timestamp? createdAt,
+    $11.Timestamp? createdAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -820,7 +820,7 @@ class PushSubscription extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PushSubscription', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'endpoint')
-    ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -867,15 +867,15 @@ class PushSubscription extends $pb.GeneratedMessage {
 
   /// The time the subscription was registered.
   @$pb.TagNumber(20)
-  $10.Timestamp get createdAt => $_getN(2);
+  $11.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(20)
-  set createdAt($10.Timestamp v) { setField(20, v); }
+  set createdAt($11.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $10.Timestamp ensureCreatedAt() => $_ensure(2);
+  $11.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
 /// Registers (or re-registers) a browser's Web Push subscription for the current user, so new

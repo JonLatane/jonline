@@ -146,11 +146,11 @@ type Msg
     | MediaClicked String Post String
     | StarredPostsBroadcastReceived Decode.Value
     | PostUpdated String Post
-      -- Unreachable placeholder passed as `Events.eventCard`'s `onPush`/
-      -- `onDelete` -- this panel always passes `Nothing` for
-      -- `availableSyncDestinations` (see `starredPostView`'s own `eventCard`
-      -- call), so no Push/Delete button ever renders to actually produce
-      -- this.
+      -- Unreachable placeholder passed as `Events.eventCard`'s/`Posts.postCard`'s
+      -- `onPush`/`onDelete` -- this panel always passes `Nothing` for
+      -- `availableSyncDestinations` (see `starredPostView`'s own `eventCard`/
+      -- `postCard` calls), so no Push/Delete button ever renders to actually
+      -- produce this.
     | NoOp
 
 
@@ -1125,7 +1125,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
 
                         Nothing ->
                             text ""
-                    , Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
+                    , Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) post
                     ]
 
         Just FetchingPost ->

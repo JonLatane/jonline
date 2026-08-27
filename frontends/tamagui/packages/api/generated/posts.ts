@@ -6,9 +6,10 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { Author } from "./authors";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
-import { Author } from "./users";
+import { SyncDestinationStatus } from "./sync";
 import {
   Moderation,
   moderationFromJSON,
@@ -376,6 +377,27 @@ export interface Post {
     | undefined;
   /** The number of unauthenticated stars on the post. */
   unauthenticatedStarCount: number;
+  /** SyncDestinations this post has been synced (cross-posted) to, and their status. */
+  syncDestinations: SyncDestinationStatus[];
+}
+
+/** Syncs (cross-posts) a single Post to one SyncDestination. */
+export interface SyncPostRequest {
+  /** The Post to sync. */
+  postId: string;
+  /** The SyncDestination to sync it to. */
+  syncDestinationId: string;
+}
+
+/**
+ * Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+ * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
+ */
+export interface DeletePostSyncDestinationRequest {
+  /** The Post to un-sync. */
+  postId: string;
+  /** The SyncDestination to un-sync it from. */
+  syncDestinationId: string;
 }
 
 /**
@@ -732,6 +754,7 @@ function createBasePost(): Post {
     publishedAt: undefined,
     lastActivityAt: undefined,
     unauthenticatedStarCount: 0,
+    syncDestinations: [],
   };
 }
 
@@ -808,6 +831,9 @@ export const Post: MessageFns<Post> = {
     }
     if (message.unauthenticatedStarCount !== 0) {
       writer.uint32(192).int64(message.unauthenticatedStarCount);
+    }
+    for (const v of message.syncDestinations) {
+      SyncDestinationStatus.encode(v!, writer.uint32(202).fork()).join();
     }
     return writer;
   },
@@ -1011,6 +1037,14 @@ export const Post: MessageFns<Post> = {
           message.unauthenticatedStarCount = longToNumber(reader.int64());
           continue;
         }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.syncDestinations.push(SyncDestinationStatus.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1048,6 +1082,9 @@ export const Post: MessageFns<Post> = {
       unauthenticatedStarCount: isSet(object.unauthenticatedStarCount)
         ? globalThis.Number(object.unauthenticatedStarCount)
         : 0,
+      syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
+        ? object.syncDestinations.map((e: any) => SyncDestinationStatus.fromJSON(e))
+        : [],
     };
   },
 
@@ -1125,6 +1162,9 @@ export const Post: MessageFns<Post> = {
     if (message.unauthenticatedStarCount !== 0) {
       obj.unauthenticatedStarCount = Math.round(message.unauthenticatedStarCount);
     }
+    if (message.syncDestinations?.length) {
+      obj.syncDestinations = message.syncDestinations.map((e) => SyncDestinationStatus.toJSON(e));
+    }
     return obj;
   },
 
@@ -1161,6 +1201,163 @@ export const Post: MessageFns<Post> = {
     message.publishedAt = object.publishedAt ?? undefined;
     message.lastActivityAt = object.lastActivityAt ?? undefined;
     message.unauthenticatedStarCount = object.unauthenticatedStarCount ?? 0;
+    message.syncDestinations = object.syncDestinations?.map((e) => SyncDestinationStatus.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSyncPostRequest(): SyncPostRequest {
+  return { postId: "", syncDestinationId: "" };
+}
+
+export const SyncPostRequest: MessageFns<SyncPostRequest> = {
+  encode(message: SyncPostRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.postId !== "") {
+      writer.uint32(10).string(message.postId);
+    }
+    if (message.syncDestinationId !== "") {
+      writer.uint32(18).string(message.syncDestinationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncPostRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncPostRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.postId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.syncDestinationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncPostRequest {
+    return {
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : "",
+      syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
+    };
+  },
+
+  toJSON(message: SyncPostRequest): unknown {
+    const obj: any = {};
+    if (message.postId !== "") {
+      obj.postId = message.postId;
+    }
+    if (message.syncDestinationId !== "") {
+      obj.syncDestinationId = message.syncDestinationId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SyncPostRequest>, I>>(base?: I): SyncPostRequest {
+    return SyncPostRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SyncPostRequest>, I>>(object: I): SyncPostRequest {
+    const message = createBaseSyncPostRequest();
+    message.postId = object.postId ?? "";
+    message.syncDestinationId = object.syncDestinationId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeletePostSyncDestinationRequest(): DeletePostSyncDestinationRequest {
+  return { postId: "", syncDestinationId: "" };
+}
+
+export const DeletePostSyncDestinationRequest: MessageFns<DeletePostSyncDestinationRequest> = {
+  encode(message: DeletePostSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.postId !== "") {
+      writer.uint32(10).string(message.postId);
+    }
+    if (message.syncDestinationId !== "") {
+      writer.uint32(18).string(message.syncDestinationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeletePostSyncDestinationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeletePostSyncDestinationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.postId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.syncDestinationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeletePostSyncDestinationRequest {
+    return {
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : "",
+      syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
+    };
+  },
+
+  toJSON(message: DeletePostSyncDestinationRequest): unknown {
+    const obj: any = {};
+    if (message.postId !== "") {
+      obj.postId = message.postId;
+    }
+    if (message.syncDestinationId !== "") {
+      obj.syncDestinationId = message.syncDestinationId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeletePostSyncDestinationRequest>, I>>(
+    base?: I,
+  ): DeletePostSyncDestinationRequest {
+    return DeletePostSyncDestinationRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeletePostSyncDestinationRequest>, I>>(
+    object: I,
+  ): DeletePostSyncDestinationRequest {
+    const message = createBaseDeletePostSyncDestinationRequest();
+    message.postId = object.postId ?? "";
+    message.syncDestinationId = object.syncDestinationId ?? "";
     return message;
   },
 };

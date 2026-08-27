@@ -3,7 +3,7 @@ syntax = "proto3";
 package jonline;
 
 import "google/protobuf/timestamp.proto";
-import "users.proto";
+import "authors.proto";
 
 // Jonline Message/Email support is "low trust." You should not trust that people are who
 // they say they are, or ever exchange financial or private information with Jonline's

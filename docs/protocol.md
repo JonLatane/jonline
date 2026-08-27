@@ -26,11 +26,7 @@
     - [Permission](#jonline-Permission)
   
 - [users.proto](#users-proto)
-    - [Author](#jonline-Author)
     - [ContactMethod](#jonline-ContactMethod)
-    - [EventSyncDestination](#jonline-EventSyncDestination)
-    - [EventSyncSource](#jonline-EventSyncSource)
-    - [FacebookPage](#jonline-FacebookPage)
     - [Follow](#jonline-Follow)
     - [GetUsersRequest](#jonline-GetUsersRequest)
     - [GetUsersResponse](#jonline-GetUsersResponse)
@@ -74,12 +70,14 @@
     - [GroupListingType](#jonline-GroupListingType)
   
 - [posts.proto](#posts-proto)
+    - [DeletePostSyncDestinationRequest](#jonline-DeletePostSyncDestinationRequest)
     - [GetGroupPostsRequest](#jonline-GetGroupPostsRequest)
     - [GetGroupPostsResponse](#jonline-GetGroupPostsResponse)
     - [GetPostsRequest](#jonline-GetPostsRequest)
     - [GetPostsResponse](#jonline-GetPostsResponse)
     - [GroupPost](#jonline-GroupPost)
     - [Post](#jonline-Post)
+    - [SyncPostRequest](#jonline-SyncPostRequest)
     - [UserPost](#jonline-UserPost)
   
     - [PostContext](#jonline-PostContext)
@@ -89,8 +87,6 @@
 - [events.proto](#events-proto)
     - [AnonymousAttendee](#jonline-AnonymousAttendee)
     - [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest)
-    - [DeleteEventSyncDestinationRequest](#jonline-DeleteEventSyncDestinationRequest)
-    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
     - [Event](#jonline-Event)
     - [EventAttendance](#jonline-EventAttendance)
     - [EventAttendances](#jonline-EventAttendances)
@@ -98,10 +94,7 @@
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
     - [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo)
-    - [EventInstanceSyncDestination](#jonline-EventInstanceSyncDestination)
     - [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest)
-    - [GetEventSyncDestinationsResponse](#jonline-GetEventSyncDestinationsResponse)
-    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
     - [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest)
@@ -240,9 +233,9 @@ in a `Group`, tracking the user&#39;s `Permission`s within the group plus separa
 - **EventSyncSources**: A `User` can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
 pull `Event`s in from, e.g. an iCal subscription. See the Event section below for how these attach to `Event`s.
 
-- **EventSyncDestinations**: A `User` can also own many [`EventSyncDestination`](#jonline-EventSyncDestination)s -
-external targets to push `EventInstance`s out to, e.g. a connected Facebook Page (configured via
-[`FacebookPage`](#jonline-FacebookPage)). See the Event section below for how these attach to `EventInstance`s.
+- **SyncDestinations**: A `User` can also own many [`SyncDestination`](#jonline-SyncDestination)s -
+external targets to push `EventInstance`s and `Post`s out to, e.g. a connected Facebook Page (configured via
+[`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
 
 ##### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -261,6 +254,11 @@ moderation status and who shared it, separately from the Post&#39;s own (author-
 
 - **UserPosts**: A [`UserPost`](#jonline-UserPost) is a &#34;direct share&#34; of a `Post` to a `User` (see also `DIRECT`
 [`Visibility`](#jonline-Visibility)). Currently unused/unimplemented.
+
+- **SyncDestinations**: A `Post` may also be synced (cross-posted) out to a user-owned
+[`SyncDestination`](#jonline-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
+`EventInstance`s use (see below) - each Post may push to several destinations at once, tracked via the
+repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)).
 
 ##### Event
 An [`Event`](#jonline-Event) is a wrapper for *at least two* `Post`s. It always has its own top-level `Post`
@@ -284,12 +282,12 @@ An `Event` with zero instances is meaningless (no time or place to attach to), s
     1:(0 or 1): a single source can back many synced `Event`s, but each `Event` has *at most one* source it came from
     (`Event.event_sync_source` is a single optional field, not repeated).
 
-    - **EventSyncDestinations**: Conversely, it&#39;s each `EventInstance` (not the parent `Event`) that syncs *out* to
-    [`EventSyncDestination`](#jonline-EventSyncDestination)s (e.g. connected Facebook Pages). Unlike `EventSyncSource`,
-    this is the outlier&#39;s counterpart - a many-to-many relationship: each instance may push to several destinations
-    at once, tracked per-destination via the repeated `EventInstance.sync_destinations`
-    (each a [`EventInstanceSyncDestination`](#jonline-EventInstanceSyncDestination), carrying the destination&#39;s
-    resulting post ID/URL and last-synced time).
+    - **SyncDestinations**: Conversely, it&#39;s each `EventInstance` (not the parent `Event`) that syncs *out* to
+    [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism `Post`s use
+    (see above). Unlike `EventSyncSource`, this is the outlier&#39;s counterpart - a many-to-many relationship: each
+    instance may push to several destinations at once, tracked per-destination via the repeated
+    `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
+    the destination&#39;s resulting post ID/URL and last-synced time.
 
 ##### Group
 A [`Group`](#jonline-Group) organizes `User`s, `Post`s, and `Event`s together under shared visibility, moderation,
@@ -354,9 +352,9 @@ Jonline&#39;s Elm Messaging UI is generally a multi-server federated messenger. 
 from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 
 ##### External Integrations (Facebook, iCal): Jonline Sync
-Jonline Sync currently only supports [`Event`](#jonline-Event)s, letting us sync events in from iCal and out to Facebook, but presents
-a &#34;shape&#34; -- a user-owned source/destination plus a `oneof configuration` for each -- meant to allow arbitrary input/output types.
-Contributions for Instagram, Meetup, anything else would be much obliged.
+Jonline Sync lets us sync `Event`s in from iCal and sync `Event`s (well, `EventInstance`s) and `Post`s out to
+Facebook, presenting a &#34;shape&#34; -- a user-owned source/destination plus a `oneof configuration` for each -- meant
+to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
 
 ###### EventSyncSource
 An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
@@ -370,27 +368,29 @@ Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), 
 (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
 
-###### EventSyncDestination
-An [`EventSyncDestination`](#jonline-EventSyncDestination) mirrors `EventSyncSource`, but for pushing `EventInstance`s out
-rather than pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
+###### SyncDestination
+A [`SyncDestination`](#jonline-SyncDestination) mirrors `EventSyncSource`, but for pushing content out rather than
+pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
 [`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it&#39;s each
-`EventInstance` (not the parent `Event`) that syncs out, and each instance may push to several destinations at once,
-tracked per-destination via the repeated `EventInstance.sync_destinations` (each an
-[`EventInstanceSyncDestination`](#jonline-EventInstanceSyncDestination), carrying the destination&#39;s resulting post
-ID/URL and last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an
-interval, so `synced_event_instance_count` is computed with a `COUNT` at request time instead of being
+`EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several destinations
+at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+[`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination&#39;s resulting post ID/URL and
+last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
+so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
 recomputed-and-stored.
 
 Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
 (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
 short-lived token is write-only and never populated back in responses.
 
-Destinations are managed via [`GetEventSyncDestinations`](#grpc-api-GetEventSyncDestinations),
-[`CreateEventSyncDestination`](#grpc-api-CreateEventSyncDestination), [`UpdateEventSyncDestination`](#grpc-api-UpdateEventSyncDestination)
-(each requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin), and [`DeleteEventSyncDestination`](#grpc-api-DeleteEventSyncDestination). Actually
-syncing (or un-syncing) a given `EventInstance` to a destination is a separate step, via
-[`SyncEventInstance`](#grpc-api-SyncEventInstance) and [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination)
-(both also requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin).
+Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination)
+(each requiring `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`, or Admin), and
+[`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination). Actually syncing (or un-syncing) a given `EventInstance`
+or `Post` to a destination is a separate step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) (requiring
+`SYNC_EVENTS_TO_FACEBOOK`, or Admin) and [`SyncPost`](#grpc-api-SyncPost)/
+[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination) (requiring `SYNC_POSTS_TO_FACEBOOK`, or Admin).
 
 #### HTTP Endpoints
 ##### Internal HTTP server (27705)
@@ -637,6 +637,8 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
 | StarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Star a Post. *Unauthenticated.* |
 | UnstarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Unstar a Post. *Unauthenticated.* |
+| SyncPost | [SyncPostRequest](#jonline-SyncPostRequest) | [Post](#jonline-Post) | Syncs (cross-posts) a Post to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
+| DeletePostSyncDestination | [DeletePostSyncDestinationRequest](#jonline-DeletePostSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes a Post&#39;s sync (cross-post) to a SyncDestination, the reverse of `SyncPost`. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
 | UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
@@ -653,12 +655,12 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | CreateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). |
 | UpdateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNCHRONIZE_EVENTS` (or Admin). |
 | DeleteEventSyncSource | [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an EventSyncSource. *Authenticated* (owner, or Admin). |
-| GetEventSyncDestinations | [User](#jonline-User) | [GetEventSyncDestinationsResponse](#jonline-GetEventSyncDestinationsResponse) | Gets a user&#39;s EventSyncDestinations. *Authenticated* (self, or Admin for any user). |
-| CreateEventSyncDestination | [EventSyncDestination](#jonline-EventSyncDestination) | [EventSyncDestination](#jonline-EventSyncDestination) | Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| UpdateEventSyncDestination | [EventSyncDestination](#jonline-EventSyncDestination) | [EventSyncDestination](#jonline-EventSyncDestination) | Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| DeleteEventSyncDestination | [DeleteEventSyncDestinationRequest](#jonline-DeleteEventSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). |
-| SyncEventInstance | [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest) | [EventInstance](#jonline-EventInstance) | Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| GetSyncDestinations | [User](#jonline-User) | [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse) | Gets a user&#39;s SyncDestinations. *Authenticated* (self, or Admin for any user). |
+| CreateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
+| UpdateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Updates a SyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
+| DeleteSyncDestination | [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncDestination. *Authenticated* (owner, or Admin). |
+| SyncEventInstance | [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest) | [EventInstance](#jonline-EventInstance) | Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -1008,7 +1010,8 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
 | SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
-| SYNC_EVENTS_TO_FACEBOOK | 37 | Allow the user to create/update `EventSyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_FACEBOOK | 37 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_FACEBOOK | 38 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1037,26 +1040,6 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 
 
 
-<a name="jonline-Author"></a>
-
-### Author
-Post/authorship-centric version of User. UI can cross-reference user details
-from its own cache (for things like admin/bot icons).
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  | Permanent string ID for the user. Will never contain a `@` symbol. |
-| username | [string](#string) | optional | Impermanent string username for the user. Will never contain a `@` symbol. |
-| avatar | [MediaReference](#jonline-MediaReference) | optional | The user&#39;s avatar. |
-| real_name | [string](#string) | optional |  |
-| permissions | [Permission](#jonline-Permission) | repeated |  |
-
-
-
-
-
-
 <a name="jonline-ContactMethod"></a>
 
 ### ContactMethod
@@ -1070,67 +1053,6 @@ but verification RPCs are not yet implemented.
 | visibility | [Visibility](#jonline-Visibility) |  | The visibility of the contact method. |
 | supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. |
 | verified | [bool](#bool) |  | Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
-
-
-
-
-
-
-<a name="jonline-EventSyncDestination"></a>
-
-### EventSyncDestination
-A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
-but for pushing instances out rather than pulling events in.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the destination. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncDestination was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncDestination was last updated. |
-| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike `EventSyncSource`&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
-| facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances to. |
-
-
-
-
-
-
-<a name="jonline-EventSyncSource"></a>
-
-### EventSyncSource
-A user-owned source to sync events from.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the synchronization. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
-| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
-| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
-| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
-| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
-
-
-
-
-
-
-<a name="jonline-FacebookPage"></a>
-
-### FacebookPage
-A Facebook Page connected as an `EventSyncDestination`.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_id | [string](#string) |  | The Facebook Page&#39;s ID. |
-| page_name | [string](#string) |  | The Facebook Page&#39;s name, populated by the server when the connection is made. |
-| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses. |
 
 
 
@@ -1255,7 +1177,7 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
-| event_sync_destinations | [EventSyncDestination](#jonline-EventSyncDestination) | repeated | The target user&#39;s own linked EventSyncDestinations (e.g. Facebook Pages). Only ever populated by `GetUsers`&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`. |
+| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by `GetUsers`&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -1861,6 +1783,23 @@ The type of group listing to get.
 
 
 
+<a name="jonline-DeletePostSyncDestinationRequest"></a>
+
+### DeletePostSyncDestinationRequest
+Removes a single Post&#39;s sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| post_id | [string](#string) |  | The Post to un-sync. |
+| sync_destination_id | [string](#string) |  | The SyncDestination to un-sync it from. |
+
+
+
+
+
+
 <a name="jonline-GetGroupPostsRequest"></a>
 
 ### GetGroupPostsRequest
@@ -2009,6 +1948,23 @@ and Event Instances.
 | published_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`). |
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was last interacted with (replied to, etc.) |
 | unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
+| sync_destinations | [SyncDestinationStatus](#jonline-SyncDestinationStatus) | repeated | SyncDestinations this post has been synced (cross-posted) to, and their status. |
+
+
+
+
+
+
+<a name="jonline-SyncPostRequest"></a>
+
+### SyncPostRequest
+Syncs (cross-posts) a single Post to one SyncDestination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| post_id | [string](#string) |  | The Post to sync. |
+| sync_destination_id | [string](#string) |  | The SyncDestination to sync it to. |
 
 
 
@@ -2117,46 +2073,14 @@ make them visible to the event creator.
 <a name="jonline-DeleteEventInstanceSyncDestinationRequest"></a>
 
 ### DeleteEventInstanceSyncDestinationRequest
-Removes a single EventInstance&#39;s sync (cross-post) to one EventSyncDestination -- the reverse of `SyncEventInstance`.
+Removes a single EventInstance&#39;s sync (cross-post) to one SyncDestination -- the reverse of `SyncEventInstance`.
 Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | event_instance_id | [string](#string) |  | The EventInstance to un-sync. |
-| event_sync_destination_id | [string](#string) |  | The EventSyncDestination to un-sync it from. |
-
-
-
-
-
-
-<a name="jonline-DeleteEventSyncDestinationRequest"></a>
-
-### DeleteEventSyncDestinationRequest
-Request to delete an EventSyncDestination.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| destination | [EventSyncDestination](#jonline-EventSyncDestination) |  | The destination to be deleted. |
-| delete_synced_posts | [bool](#bool) |  | Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). |
-
-
-
-
-
-
-<a name="jonline-DeleteEventSyncSourceRequest"></a>
-
-### DeleteEventSyncSourceRequest
-Request to delete an EventSyncSource.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
-| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
+| sync_destination_id | [string](#string) |  | The SyncDestination to un-sync it from. |
 
 
 
@@ -2271,7 +2195,7 @@ a `Location`, and an optional `Post` (and discussion thread) specific to this pa
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
-| sync_destinations | [EventInstanceSyncDestination](#jonline-EventInstanceSyncDestination) | repeated | EventSyncDestinations this instance has been synced (cross-posted) to, and their status. |
+| sync_destinations | [SyncDestinationStatus](#jonline-SyncDestinationStatus) | repeated | SyncDestinations this instance has been synced (cross-posted) to, and their status. |
 
 
 
@@ -2318,24 +2242,6 @@ Curently, the `optional` counts below are *never* returned by the API.
 
 
 
-<a name="jonline-EventInstanceSyncDestination"></a>
-
-### EventInstanceSyncDestination
-The status of an EventInstance&#39;s sync (cross-post) to one EventSyncDestination.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| event_sync_destination_id | [string](#string) |  | The EventSyncDestination this status is for. |
-| destination_instance_id | [string](#string) | optional | The ID of the resulting post on the destination (e.g. a Facebook Post ID). |
-| destination_url | [string](#string) | optional | A link to the resulting post on the destination, if available. |
-| synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time this instance was last successfully synced to the destination. |
-
-
-
-
-
-
 <a name="jonline-GetEventAttendancesRequest"></a>
 
 ### GetEventAttendancesRequest
@@ -2346,36 +2252,6 @@ Request to get RSVP data for an event.
 | ----- | ---- | ----- | ----------- |
 | event_instance_id | [string](#string) |  | The ID of the event to get RSVP data for. |
 | anonymous_attendee_auth_token | [string](#string) | optional | If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.) |
-
-
-
-
-
-
-<a name="jonline-GetEventSyncDestinationsResponse"></a>
-
-### GetEventSyncDestinationsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| destinations | [EventSyncDestination](#jonline-EventSyncDestination) | repeated |  |
-
-
-
-
-
-
-<a name="jonline-GetEventSyncSourcesResponse"></a>
-
-### GetEventSyncSourcesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
 
 
 
@@ -2448,13 +2324,13 @@ effectively &#34;compacts&#34; all response into its own internal Events store, 
 <a name="jonline-SyncEventInstanceRequest"></a>
 
 ### SyncEventInstanceRequest
-Syncs (cross-posts) a single EventInstance to one EventSyncDestination.
+Syncs (cross-posts) a single EventInstance to one SyncDestination.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | event_instance_id | [string](#string) |  | The EventInstance to sync. |
-| event_sync_destination_id | [string](#string) |  | The EventSyncDestination to sync it to. |
+| sync_destination_id | [string](#string) |  | The SyncDestination to sync it to. |
 
 
 

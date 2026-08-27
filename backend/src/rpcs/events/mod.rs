@@ -32,3 +32,9 @@ pub use delete_event_attendance::delete_event_attendance;
 
 mod get_event_attendances;
 pub use get_event_attendances::get_event_attendances;
+
+mod sync_event_instance;
+pub use sync_event_instance::sync_event_instance;
+
+mod delete_event_instance_sync_destination;
+pub use delete_event_instance_sync_destination::delete_event_instance_sync_destination;

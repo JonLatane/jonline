@@ -16,8 +16,6 @@ import {
 } from "./authentication";
 import {
   DeleteEventInstanceSyncDestinationRequest,
-  DeleteEventSyncDestinationRequest,
-  DeleteEventSyncSourceRequest,
   Event,
   EventAttendance,
   EventAttendances,
@@ -25,8 +23,6 @@ import {
   GetEventAttendancesRequest,
   GetEventsRequest,
   GetEventsResponse,
-  GetEventSyncDestinationsResponse,
-  GetEventSyncSourcesResponse,
   SyncEventInstanceRequest,
 } from "./events";
 import { FederatedAccount, GetServiceVersionResponse } from "./federation";
@@ -47,23 +43,25 @@ import {
   UnregisterPushSubscriptionRequest,
 } from "./messages";
 import {
+  DeletePostSyncDestinationRequest,
   GetGroupPostsRequest,
   GetGroupPostsResponse,
   GetPostsRequest,
   GetPostsResponse,
   GroupPost,
   Post,
+  SyncPostRequest,
 } from "./posts";
 import { ServerConfiguration } from "./server_configuration";
 import {
-  EventSyncDestination,
+  DeleteEventSyncSourceRequest,
+  DeleteSyncDestinationRequest,
   EventSyncSource,
-  Follow,
-  GetUsersRequest,
-  GetUsersResponse,
-  Membership,
-  User,
-} from "./users";
+  GetEventSyncSourcesResponse,
+  GetSyncDestinationsResponse,
+  SyncDestination,
+} from "./sync";
+import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./users";
 
 export const protobufPackage = "jonline";
 
@@ -148,9 +146,9 @@ export const protobufPackage = "jonline";
  * - **EventSyncSources**: A `User` can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
  * pull `Event`s in from, e.g. an iCal subscription. See the Event section below for how these attach to `Event`s.
  *
- * - **EventSyncDestinations**: A `User` can also own many [`EventSyncDestination`](#jonline-EventSyncDestination)s -
- * external targets to push `EventInstance`s out to, e.g. a connected Facebook Page (configured via
- * [`FacebookPage`](#jonline-FacebookPage)). See the Event section below for how these attach to `EventInstance`s.
+ * - **SyncDestinations**: A `User` can also own many [`SyncDestination`](#jonline-SyncDestination)s -
+ * external targets to push `EventInstance`s and `Post`s out to, e.g. a connected Facebook Page (configured via
+ * [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
  *
  * ##### Media
  * [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -169,6 +167,11 @@ export const protobufPackage = "jonline";
  *
  * - **UserPosts**: A [`UserPost`](#jonline-UserPost) is a "direct share" of a `Post` to a `User` (see also `DIRECT`
  * [`Visibility`](#jonline-Visibility)). Currently unused/unimplemented.
+ *
+ * - **SyncDestinations**: A `Post` may also be synced (cross-posted) out to a user-owned
+ * [`SyncDestination`](#jonline-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
+ * `EventInstance`s use (see below) - each Post may push to several destinations at once, tracked via the
+ * repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)).
  *
  * ##### Event
  * An [`Event`](#jonline-Event) is a wrapper for *at least two* `Post`s. It always has its own top-level `Post`
@@ -192,12 +195,12 @@ export const protobufPackage = "jonline";
  *     1:(0 or 1): a single source can back many synced `Event`s, but each `Event` has *at most one* source it came from
  *     (`Event.event_sync_source` is a single optional field, not repeated).
  *
- *     - **EventSyncDestinations**: Conversely, it's each `EventInstance` (not the parent `Event`) that syncs *out* to
- *     [`EventSyncDestination`](#jonline-EventSyncDestination)s (e.g. connected Facebook Pages). Unlike `EventSyncSource`,
- *     this is the outlier's counterpart - a many-to-many relationship: each instance may push to several destinations
- *     at once, tracked per-destination via the repeated `EventInstance.sync_destinations`
- *     (each a [`EventInstanceSyncDestination`](#jonline-EventInstanceSyncDestination), carrying the destination's
- *     resulting post ID/URL and last-synced time).
+ *     - **SyncDestinations**: Conversely, it's each `EventInstance` (not the parent `Event`) that syncs *out* to
+ *     [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism `Post`s use
+ *     (see above). Unlike `EventSyncSource`, this is the outlier's counterpart - a many-to-many relationship: each
+ *     instance may push to several destinations at once, tracked per-destination via the repeated
+ *     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
+ *     the destination's resulting post ID/URL and last-synced time.
  *
  * ##### Group
  * A [`Group`](#jonline-Group) organizes `User`s, `Post`s, and `Event`s together under shared visibility, moderation,
@@ -262,9 +265,9 @@ export const protobufPackage = "jonline";
  * from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
  *
  * ##### External Integrations (Facebook, iCal): Jonline Sync
- * Jonline Sync currently only supports [`Event`](#jonline-Event)s, letting us sync events in from iCal and out to Facebook, but presents
- * a "shape" -- a user-owned source/destination plus a `oneof configuration` for each -- meant to allow arbitrary input/output types.
- * Contributions for Instagram, Meetup, anything else would be much obliged.
+ * Jonline Sync lets us sync `Event`s in from iCal and sync `Event`s (well, `EventInstance`s) and `Post`s out to
+ * Facebook, presenting a "shape" -- a user-owned source/destination plus a `oneof configuration` for each -- meant
+ * to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
  *
  * ###### EventSyncSource
  * An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
@@ -278,27 +281,29 @@ export const protobufPackage = "jonline";
  * (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
  * [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
  *
- * ###### EventSyncDestination
- * An [`EventSyncDestination`](#jonline-EventSyncDestination) mirrors `EventSyncSource`, but for pushing `EventInstance`s out
- * rather than pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
+ * ###### SyncDestination
+ * A [`SyncDestination`](#jonline-SyncDestination) mirrors `EventSyncSource`, but for pushing content out rather than
+ * pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
  * [`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it's each
- * `EventInstance` (not the parent `Event`) that syncs out, and each instance may push to several destinations at once,
- * tracked per-destination via the repeated `EventInstance.sync_destinations` (each an
- * [`EventInstanceSyncDestination`](#jonline-EventInstanceSyncDestination), carrying the destination's resulting post
- * ID/URL and last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an
- * interval, so `synced_event_instance_count` is computed with a `COUNT` at request time instead of being
+ * `EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several destinations
+ * at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+ * [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and
+ * last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
+ * so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
  * recomputed-and-stored.
  *
  * Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
  * (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
  * short-lived token is write-only and never populated back in responses.
  *
- * Destinations are managed via [`GetEventSyncDestinations`](#grpc-api-GetEventSyncDestinations),
- * [`CreateEventSyncDestination`](#grpc-api-CreateEventSyncDestination), [`UpdateEventSyncDestination`](#grpc-api-UpdateEventSyncDestination)
- * (each requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin), and [`DeleteEventSyncDestination`](#grpc-api-DeleteEventSyncDestination). Actually
- * syncing (or un-syncing) a given `EventInstance` to a destination is a separate step, via
- * [`SyncEventInstance`](#grpc-api-SyncEventInstance) and [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination)
- * (both also requiring `SYNC_EVENTS_TO_FACEBOOK`, or Admin).
+ * Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+ * [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination)
+ * (each requiring `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`, or Admin), and
+ * [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination). Actually syncing (or un-syncing) a given `EventInstance`
+ * or `Post` to a destination is a separate step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+ * [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) (requiring
+ * `SYNC_EVENTS_TO_FACEBOOK`, or Admin) and [`SyncPost`](#grpc-api-SyncPost)/
+ * [`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination) (requiring `SYNC_POSTS_TO_FACEBOOK`, or Admin).
  *
  * #### HTTP Endpoints
  * ##### Internal HTTP server (27705)
@@ -897,6 +902,24 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Syncs (cross-posts) a Post to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+    syncPost: {
+      name: "SyncPost",
+      requestType: SyncPostRequest,
+      requestStream: false,
+      responseType: Post,
+      responseStream: false,
+      options: {},
+    },
+    /** Removes a Post's sync (cross-post) to a SyncDestination, the reverse of `SyncPost`. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+    deletePostSyncDestination: {
+      name: "DeletePostSyncDestination",
+      requestType: DeletePostSyncDestinationRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
     getGroupPosts: {
       name: "GetGroupPosts",
@@ -1055,43 +1078,43 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
-    getEventSyncDestinations: {
-      name: "GetEventSyncDestinations",
+    /** Gets a user's SyncDestinations. *Authenticated* (self, or Admin for any user). */
+    getSyncDestinations: {
+      name: "GetSyncDestinations",
       requestType: User,
       requestStream: false,
-      responseType: GetEventSyncDestinationsResponse,
+      responseType: GetSyncDestinationsResponse,
       responseStream: false,
       options: {},
     },
-    /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-    createEventSyncDestination: {
-      name: "CreateEventSyncDestination",
-      requestType: EventSyncDestination,
+    /** Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+    createSyncDestination: {
+      name: "CreateSyncDestination",
+      requestType: SyncDestination,
       requestStream: false,
-      responseType: EventSyncDestination,
+      responseType: SyncDestination,
       responseStream: false,
       options: {},
     },
-    /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-    updateEventSyncDestination: {
-      name: "UpdateEventSyncDestination",
-      requestType: EventSyncDestination,
+    /** Updates a SyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+    updateSyncDestination: {
+      name: "UpdateSyncDestination",
+      requestType: SyncDestination,
       requestStream: false,
-      responseType: EventSyncDestination,
+      responseType: SyncDestination,
       responseStream: false,
       options: {},
     },
-    /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
-    deleteEventSyncDestination: {
-      name: "DeleteEventSyncDestination",
-      requestType: DeleteEventSyncDestinationRequest,
+    /** Deletes a SyncDestination. *Authenticated* (owner, or Admin). */
+    deleteSyncDestination: {
+      name: "DeleteSyncDestination",
+      requestType: DeleteSyncDestinationRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
       options: {},
     },
-    /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
     syncEventInstance: {
       name: "SyncEventInstance",
       requestType: SyncEventInstanceRequest,
@@ -1100,7 +1123,7 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
     deleteEventInstanceSyncDestination: {
       name: "DeleteEventInstanceSyncDestination",
       requestType: DeleteEventInstanceSyncDestinationRequest,
@@ -1367,6 +1390,13 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   starPost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
   /** Unstar a Post. *Unauthenticated.* */
   unstarPost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
+  /** Syncs (cross-posts) a Post to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  syncPost(request: SyncPostRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
+  /** Removes a Post's sync (cross-post) to a SyncDestination, the reverse of `SyncPost`. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  deletePostSyncDestination(
+    request: DeletePostSyncDestinationRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(
     request: GetGroupPostsRequest,
@@ -1428,32 +1458,32 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: DeleteEventSyncSourceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
-  /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
-  getEventSyncDestinations(
+  /** Gets a user's SyncDestinations. *Authenticated* (self, or Admin for any user). */
+  getSyncDestinations(
     request: User,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetEventSyncDestinationsResponse>>;
-  /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  createEventSyncDestination(
-    request: EventSyncDestination,
+  ): Promise<DeepPartial<GetSyncDestinationsResponse>>;
+  /** Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  createSyncDestination(
+    request: SyncDestination,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<EventSyncDestination>>;
-  /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  updateEventSyncDestination(
-    request: EventSyncDestination,
+  ): Promise<DeepPartial<SyncDestination>>;
+  /** Updates a SyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  updateSyncDestination(
+    request: SyncDestination,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<EventSyncDestination>>;
-  /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
-  deleteEventSyncDestination(
-    request: DeleteEventSyncDestinationRequest,
+  ): Promise<DeepPartial<SyncDestination>>;
+  /** Deletes a SyncDestination. *Authenticated* (owner, or Admin). */
+  deleteSyncDestination(
+    request: DeleteSyncDestinationRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
-  /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
   syncEventInstance(
     request: SyncEventInstanceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<EventInstance>>;
-  /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
   deleteEventInstanceSyncDestination(
     request: DeleteEventInstanceSyncDestinationRequest,
     context: CallContext & CallContextExt,
@@ -1671,6 +1701,13 @@ export interface JonlineClient<CallOptionsExt = {}> {
   starPost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
   /** Unstar a Post. *Unauthenticated.* */
   unstarPost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
+  /** Syncs (cross-posts) a Post to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  syncPost(request: DeepPartial<SyncPostRequest>, options?: CallOptions & CallOptionsExt): Promise<Post>;
+  /** Removes a Post's sync (cross-post) to a SyncDestination, the reverse of `SyncPost`. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  deletePostSyncDestination(
+    request: DeepPartial<DeletePostSyncDestinationRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
   /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(
     request: DeepPartial<GetGroupPostsRequest>,
@@ -1732,32 +1769,32 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<DeleteEventSyncSourceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
-  /** Gets a user's EventSyncDestinations. *Authenticated* (self, or Admin for any user). */
-  getEventSyncDestinations(
+  /** Gets a user's SyncDestinations. *Authenticated* (self, or Admin for any user). */
+  getSyncDestinations(
     request: DeepPartial<User>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<GetEventSyncDestinationsResponse>;
-  /** Creates an EventSyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  createEventSyncDestination(
-    request: DeepPartial<EventSyncDestination>,
+  ): Promise<GetSyncDestinationsResponse>;
+  /** Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  createSyncDestination(
+    request: DeepPartial<SyncDestination>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<EventSyncDestination>;
-  /** Updates an EventSyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  updateEventSyncDestination(
-    request: DeepPartial<EventSyncDestination>,
+  ): Promise<SyncDestination>;
+  /** Updates a SyncDestination. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). */
+  updateSyncDestination(
+    request: DeepPartial<SyncDestination>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<EventSyncDestination>;
-  /** Deletes an EventSyncDestination. *Authenticated* (owner, or Admin). */
-  deleteEventSyncDestination(
-    request: DeepPartial<DeleteEventSyncDestinationRequest>,
+  ): Promise<SyncDestination>;
+  /** Deletes a SyncDestination. *Authenticated* (owner, or Admin). */
+  deleteSyncDestination(
+    request: DeepPartial<DeleteSyncDestinationRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
-  /** Syncs (cross-posts) an EventInstance to an EventSyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
   syncEventInstance(
     request: DeepPartial<SyncEventInstanceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<EventInstance>;
-  /** Removes an EventInstance's sync (cross-post) to an EventSyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
   deleteEventInstanceSyncDestination(
     request: DeepPartial<DeleteEventInstanceSyncDestinationRequest>,
     options?: CallOptions & CallOptionsExt,

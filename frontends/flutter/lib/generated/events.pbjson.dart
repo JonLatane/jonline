@@ -163,91 +163,35 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     '9zb3VyY2UYBSABKAsyGC5qb25saW5lLkV2ZW50U3luY1NvdXJjZUgAUg9ldmVudFN5bmNTb3Vy'
     'Y2WIAQFCFAoSX2V2ZW50X3N5bmNfc291cmNl');
 
-@$core.Deprecated('Use getEventSyncSourcesResponseDescriptor instead')
-const GetEventSyncSourcesResponse$json = {
-  '1': 'GetEventSyncSourcesResponse',
-  '2': [
-    {'1': 'sources', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventSyncSource', '10': 'sources'},
-  ],
-};
-
-/// Descriptor for `GetEventSyncSourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getEventSyncSourcesResponseDescriptor = $convert.base64Decode(
-    'ChtHZXRFdmVudFN5bmNTb3VyY2VzUmVzcG9uc2USMgoHc291cmNlcxgBIAMoCzIYLmpvbmxpbm'
-    'UuRXZlbnRTeW5jU291cmNlUgdzb3VyY2Vz');
-
-@$core.Deprecated('Use deleteEventSyncSourceRequestDescriptor instead')
-const DeleteEventSyncSourceRequest$json = {
-  '1': 'DeleteEventSyncSourceRequest',
-  '2': [
-    {'1': 'source', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventSyncSource', '10': 'source'},
-    {'1': 'delete_synced_events', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedEvents'},
-  ],
-};
-
-/// Descriptor for `DeleteEventSyncSourceRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List deleteEventSyncSourceRequestDescriptor = $convert.base64Decode(
-    'ChxEZWxldGVFdmVudFN5bmNTb3VyY2VSZXF1ZXN0EjAKBnNvdXJjZRgBIAEoCzIYLmpvbmxpbm'
-    'UuRXZlbnRTeW5jU291cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhS'
-    'EmRlbGV0ZVN5bmNlZEV2ZW50cw==');
-
-@$core.Deprecated('Use getEventSyncDestinationsResponseDescriptor instead')
-const GetEventSyncDestinationsResponse$json = {
-  '1': 'GetEventSyncDestinationsResponse',
-  '2': [
-    {'1': 'destinations', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventSyncDestination', '10': 'destinations'},
-  ],
-};
-
-/// Descriptor for `GetEventSyncDestinationsResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getEventSyncDestinationsResponseDescriptor = $convert.base64Decode(
-    'CiBHZXRFdmVudFN5bmNEZXN0aW5hdGlvbnNSZXNwb25zZRJBCgxkZXN0aW5hdGlvbnMYASADKA'
-    'syHS5qb25saW5lLkV2ZW50U3luY0Rlc3RpbmF0aW9uUgxkZXN0aW5hdGlvbnM=');
-
-@$core.Deprecated('Use deleteEventSyncDestinationRequestDescriptor instead')
-const DeleteEventSyncDestinationRequest$json = {
-  '1': 'DeleteEventSyncDestinationRequest',
-  '2': [
-    {'1': 'destination', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventSyncDestination', '10': 'destination'},
-    {'1': 'delete_synced_posts', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedPosts'},
-  ],
-};
-
-/// Descriptor for `DeleteEventSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List deleteEventSyncDestinationRequestDescriptor = $convert.base64Decode(
-    'CiFEZWxldGVFdmVudFN5bmNEZXN0aW5hdGlvblJlcXVlc3QSPwoLZGVzdGluYXRpb24YASABKA'
-    'syHS5qb25saW5lLkV2ZW50U3luY0Rlc3RpbmF0aW9uUgtkZXN0aW5hdGlvbhIuChNkZWxldGVf'
-    'c3luY2VkX3Bvc3RzGAIgASgIUhFkZWxldGVTeW5jZWRQb3N0cw==');
-
 @$core.Deprecated('Use syncEventInstanceRequestDescriptor instead')
 const SyncEventInstanceRequest$json = {
   '1': 'SyncEventInstanceRequest',
   '2': [
     {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
-    {'1': 'event_sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+    {'1': 'sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'syncDestinationId'},
   ],
 };
 
 /// Descriptor for `SyncEventInstanceRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List syncEventInstanceRequestDescriptor = $convert.base64Decode(
     'ChhTeW5jRXZlbnRJbnN0YW5jZVJlcXVlc3QSKgoRZXZlbnRfaW5zdGFuY2VfaWQYASABKAlSD2'
-    'V2ZW50SW5zdGFuY2VJZBI5ChlldmVudF9zeW5jX2Rlc3RpbmF0aW9uX2lkGAIgASgJUhZldmVu'
-    'dFN5bmNEZXN0aW5hdGlvbklk');
+    'V2ZW50SW5zdGFuY2VJZBIuChNzeW5jX2Rlc3RpbmF0aW9uX2lkGAIgASgJUhFzeW5jRGVzdGlu'
+    'YXRpb25JZA==');
 
 @$core.Deprecated('Use deleteEventInstanceSyncDestinationRequestDescriptor instead')
 const DeleteEventInstanceSyncDestinationRequest$json = {
   '1': 'DeleteEventInstanceSyncDestinationRequest',
   '2': [
     {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
-    {'1': 'event_sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
+    {'1': 'sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'syncDestinationId'},
   ],
 };
 
 /// Descriptor for `DeleteEventInstanceSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteEventInstanceSyncDestinationRequestDescriptor = $convert.base64Decode(
     'CilEZWxldGVFdmVudEluc3RhbmNlU3luY0Rlc3RpbmF0aW9uUmVxdWVzdBIqChFldmVudF9pbn'
-    'N0YW5jZV9pZBgBIAEoCVIPZXZlbnRJbnN0YW5jZUlkEjkKGWV2ZW50X3N5bmNfZGVzdGluYXRp'
-    'b25faWQYAiABKAlSFmV2ZW50U3luY0Rlc3RpbmF0aW9uSWQ=');
+    'N0YW5jZV9pZBgBIAEoCVIPZXZlbnRJbnN0YW5jZUlkEi4KE3N5bmNfZGVzdGluYXRpb25faWQY'
+    'AiABKAlSEXN5bmNEZXN0aW5hdGlvbklk');
 
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
@@ -294,7 +238,7 @@ const EventInstance$json = {
     {'1': 'sync_missing_since', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'syncMissingSince', '17': true},
     {'1': 'attendances', '3': 10, '4': 1, '5': 11, '6': '.jonline.EventAttendances', '9': 3, '10': 'attendances', '17': true},
     {'1': 'current_user_attendance', '3': 11, '4': 1, '5': 11, '6': '.jonline.EventAttendance', '9': 4, '10': 'currentUserAttendance', '17': true},
-    {'1': 'sync_destinations', '3': 12, '4': 3, '5': 11, '6': '.jonline.EventInstanceSyncDestination', '10': 'syncDestinations'},
+    {'1': 'sync_destinations', '3': 12, '4': 3, '5': 11, '6': '.jonline.SyncDestinationStatus', '10': 'syncDestinations'},
   ],
   '8': [
     {'1': '_location'},
@@ -317,36 +261,11 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     '5nX3NpbmNlGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUhBzeW5jTWlzc2lu'
     'Z1NpbmNliAEBEkAKC2F0dGVuZGFuY2VzGAogASgLMhkuam9ubGluZS5FdmVudEF0dGVuZGFuY2'
     'VzSANSC2F0dGVuZGFuY2VziAEBElUKF2N1cnJlbnRfdXNlcl9hdHRlbmRhbmNlGAsgASgLMhgu'
-    'am9ubGluZS5FdmVudEF0dGVuZGFuY2VIBFIVY3VycmVudFVzZXJBdHRlbmRhbmNliAEBElIKEX'
-    'N5bmNfZGVzdGluYXRpb25zGAwgAygLMiUuam9ubGluZS5FdmVudEluc3RhbmNlU3luY0Rlc3Rp'
-    'bmF0aW9uUhBzeW5jRGVzdGluYXRpb25zQgsKCV9sb2NhdGlvbkIgCh5fZXZlbnRfc3luY19zb3'
-    'VyY2VfaW5zdGFuY2VfaWRCFQoTX3N5bmNfbWlzc2luZ19zaW5jZUIOCgxfYXR0ZW5kYW5jZXNC'
-    'GgoYX2N1cnJlbnRfdXNlcl9hdHRlbmRhbmNl');
-
-@$core.Deprecated('Use eventInstanceSyncDestinationDescriptor instead')
-const EventInstanceSyncDestination$json = {
-  '1': 'EventInstanceSyncDestination',
-  '2': [
-    {'1': 'event_sync_destination_id', '3': 1, '4': 1, '5': 9, '10': 'eventSyncDestinationId'},
-    {'1': 'destination_instance_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'destinationInstanceId', '17': true},
-    {'1': 'destination_url', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'destinationUrl', '17': true},
-    {'1': 'synced_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'syncedAt', '17': true},
-  ],
-  '8': [
-    {'1': '_destination_instance_id'},
-    {'1': '_destination_url'},
-    {'1': '_synced_at'},
-  ],
-};
-
-/// Descriptor for `EventInstanceSyncDestination`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List eventInstanceSyncDestinationDescriptor = $convert.base64Decode(
-    'ChxFdmVudEluc3RhbmNlU3luY0Rlc3RpbmF0aW9uEjkKGWV2ZW50X3N5bmNfZGVzdGluYXRpb2'
-    '5faWQYASABKAlSFmV2ZW50U3luY0Rlc3RpbmF0aW9uSWQSOwoXZGVzdGluYXRpb25faW5zdGFu'
-    'Y2VfaWQYAiABKAlIAFIVZGVzdGluYXRpb25JbnN0YW5jZUlkiAEBEiwKD2Rlc3RpbmF0aW9uX3'
-    'VybBgDIAEoCUgBUg5kZXN0aW5hdGlvblVybIgBARI8CglzeW5jZWRfYXQYBCABKAsyGi5nb29n'
-    'bGUucHJvdG9idWYuVGltZXN0YW1wSAJSCHN5bmNlZEF0iAEBQhoKGF9kZXN0aW5hdGlvbl9pbn'
-    'N0YW5jZV9pZEISChBfZGVzdGluYXRpb25fdXJsQgwKCl9zeW5jZWRfYXQ=');
+    'am9ubGluZS5FdmVudEF0dGVuZGFuY2VIBFIVY3VycmVudFVzZXJBdHRlbmRhbmNliAEBEksKEX'
+    'N5bmNfZGVzdGluYXRpb25zGAwgAygLMh4uam9ubGluZS5TeW5jRGVzdGluYXRpb25TdGF0dXNS'
+    'EHN5bmNEZXN0aW5hdGlvbnNCCwoJX2xvY2F0aW9uQiAKHl9ldmVudF9zeW5jX3NvdXJjZV9pbn'
+    'N0YW5jZV9pZEIVChNfc3luY19taXNzaW5nX3NpbmNlQg4KDF9hdHRlbmRhbmNlc0IaChhfY3Vy'
+    'cmVudF91c2VyX2F0dGVuZGFuY2U=');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

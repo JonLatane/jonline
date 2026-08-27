@@ -48,6 +48,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission RSVP_TO_EVENTS = Permission._(35, _omitEnumNames ? '' : 'RSVP_TO_EVENTS');
   static const Permission SYNCHRONIZE_EVENTS = Permission._(36, _omitEnumNames ? '' : 'SYNCHRONIZE_EVENTS');
   static const Permission SYNC_EVENTS_TO_FACEBOOK = Permission._(37, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
+  static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(38, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
   static const Permission VIEW_MEDIA = Permission._(40, _omitEnumNames ? '' : 'VIEW_MEDIA');
   static const Permission CREATE_MEDIA = Permission._(41, _omitEnumNames ? '' : 'CREATE_MEDIA');
   static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, _omitEnumNames ? '' : 'PUBLISH_MEDIA_LOCALLY');
@@ -90,6 +91,7 @@ class Permission extends $pb.ProtobufEnum {
     RSVP_TO_EVENTS,
     SYNCHRONIZE_EVENTS,
     SYNC_EVENTS_TO_FACEBOOK,
+    SYNC_POSTS_TO_FACEBOOK,
     VIEW_MEDIA,
     CREATE_MEDIA,
     PUBLISH_MEDIA_LOCALLY,

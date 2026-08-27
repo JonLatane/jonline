@@ -59,7 +59,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf exposing (Timestamp)
-import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, User)
+import Proto.Jonline exposing (Event, EventInstance, SyncDestination, User)
 import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -248,7 +248,7 @@ type alias Model =
     -- a resolved `User`, not a live UI toggle). `Nothing` for every caller
     -- except `Components.Pages.UserProfilePage`, which passes
     -- `Just user.eventSyncDestinations` -- see `init`'s own doc.
-    , availableSyncDestinations : Maybe (List EventSyncDestination)
+    , availableSyncDestinations : Maybe (List SyncDestination)
 
     -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
     -- destinationId` (many instances on screen at once, unlike
@@ -565,7 +565,7 @@ is far lower value than the standalone `/events`-like pages this actually
 matters for).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List EventSyncDestination) -> ( Model, Effect Msg )
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
 init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations =
     let
         ( tab, endsAfter ) =
@@ -3071,7 +3071,7 @@ The inner div's `event-card-move` class (see `events.css`) sets
 `transform-origin: top left` -- see `UI.Flip.startMoveScaled`'s own doc for
 why that's needed alongside a scale.
 -}
-eventAnimationView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
+eventAnimationView : Shared.Model -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> UI.Flip.Axis -> ( String, EventAnimation ) -> ( String, Html Msg )
 eventAnimationView shared embeddedPage showSyncSources showSyncDestinations availableSyncDestinations pushStatuses axis ( key, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
@@ -3099,7 +3099,7 @@ wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List EventSyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
 eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
         maybeServer : Maybe AccountsPanel.Server

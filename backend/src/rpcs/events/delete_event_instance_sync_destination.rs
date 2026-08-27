@@ -19,10 +19,10 @@ pub fn delete_event_instance_sync_destination(
         .event_instance_id
         .to_db_id_or_err("event_instance_id")?;
     let destination_id = request
-        .event_sync_destination_id
-        .to_db_id_or_err("event_sync_destination_id")?;
+        .sync_destination_id
+        .to_db_id_or_err("sync_destination_id")?;
 
-    let destination = models::get_event_sync_destination(destination_id, conn)?;
+    let destination = models::get_sync_destination(destination_id, conn)?;
     if destination.user_id != current_user.id {
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
@@ -31,7 +31,7 @@ pub fn delete_event_instance_sync_destination(
         event_instance_sync_destinations::table.filter(
             event_instance_sync_destinations::event_instance_id
                 .eq(instance_id)
-                .and(event_instance_sync_destinations::event_sync_destination_id.eq(destination.id)),
+                .and(event_instance_sync_destinations::sync_destination_id.eq(destination.id)),
         ),
     )
     .execute(conn)

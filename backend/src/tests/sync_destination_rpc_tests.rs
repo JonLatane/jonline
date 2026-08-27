@@ -1,8 +1,7 @@
-//! Specs for the 5 EventSyncDestination/sync RPCs: `get_event_sync_destinations`,
-//! `create_event_sync_destination`, `update_event_sync_destination`,
-//! `delete_event_sync_destination`, `sync_event_instance`. Facebook Graph API interaction
-//! correctness itself is covered by `facebook_sync_tests`; these specs focus on permissions,
-//! ownership, and validation.
+//! Specs for the 5 SyncDestination/sync RPCs: `get_sync_destinations`, `create_sync_destination`,
+//! `update_sync_destination`, `delete_sync_destination`, `sync_event_instance`. Facebook Graph API
+//! interaction correctness itself is covered by `facebook_sync_tests`; these specs focus on
+//! permissions, ownership, and validation.
 
 use diesel::prelude::*;
 use diesel::Connection;
@@ -11,35 +10,30 @@ use tonic::Code;
 use crate::marshaling::*;
 use crate::protos::*;
 use crate::rpcs::{
-    create_event_sync_destination, delete_event_sync_destination, get_event_sync_destinations,
-    sync_event_instance, update_event_sync_destination,
+    create_sync_destination, delete_sync_destination, get_sync_destinations, sync_event_instance,
+    update_sync_destination,
 };
-use crate::schema::event_sync_destinations;
+use crate::schema::sync_destinations;
 use crate::tests::factories::*;
 
-fn facebook_page_request(
-    page_id: &str,
-    short_lived_user_access_token: &str,
-) -> EventSyncDestination {
-    EventSyncDestination {
-        configuration: Some(event_sync_destination::Configuration::FacebookPage(
-            FacebookPage {
-                page_id: page_id.to_string(),
-                page_name: String::new(),
-                short_lived_user_access_token: Some(short_lived_user_access_token.to_string()),
-            },
-        )),
+fn facebook_page_request(page_id: &str, short_lived_user_access_token: &str) -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::FacebookPage(FacebookPage {
+            page_id: page_id.to_string(),
+            page_name: String::new(),
+            short_lived_user_access_token: Some(short_lived_user_access_token.to_string()),
+        })),
         ..Default::default()
     }
 }
 
 #[test]
-fn create_requires_sync_events_to_facebook_permission() {
+fn create_requires_sync_events_or_posts_to_facebook_permission() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let user = create_user(conn, "esdt_create_noperm");
+        let user = create_user(conn, "sdt_create_noperm");
 
-        let err = create_event_sync_destination(
+        let err = create_sync_destination(
             facebook_page_request("123", "short-lived-token"),
             &user,
             conn,
@@ -53,14 +47,40 @@ fn create_requires_sync_events_to_facebook_permission() {
 }
 
 #[test]
+fn create_succeeds_with_only_sync_posts_to_facebook_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_facebook_app(conn, "test-app-id", "test-app-secret");
+
+        let user = create_user(conn, "sdt_create_postperm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsToFacebook]);
+
+        // Once an app is configured, create_sync_destination goes on to hit the real Graph API
+        // base URL, which isn't reachable in tests -- see `facebook_sync_tests` for coverage of
+        // the actual Graph API interaction (against a mock server) via `logic::facebook_sync`'s
+        // `_at` functions. Reaching `FailedPrecondition` (rather than the permission check's
+        // `InvalidArgument`) proves `SyncPostsToFacebook` alone is sufficient here.
+        let err = create_sync_destination(
+            facebook_page_request("123", "short-lived-token"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
 fn create_requires_facebook_page_configuration() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let user = create_user(conn, "esdt_create_noconfig");
+        let user = create_user(conn, "sdt_create_noconfig");
         let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
 
-        let err = create_event_sync_destination(EventSyncDestination::default(), &user, conn)
-            .unwrap_err();
+        let err =
+            create_sync_destination(SyncDestination::default(), &user, conn).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
         assert_eq!(
             err.message(),
@@ -75,10 +95,10 @@ fn create_requires_facebook_page_configuration() {
 fn create_fails_when_facebook_app_not_configured() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let user = create_user(conn, "esdt_create_noapp");
+        let user = create_user(conn, "sdt_create_noapp");
         let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
 
-        let err = create_event_sync_destination(
+        let err = create_sync_destination(
             facebook_page_request("123", "short-lived-token"),
             &user,
             conn,
@@ -97,14 +117,14 @@ fn create_succeeds_and_owner_is_always_current_user() {
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         configure_facebook_app(conn, "test-app-id", "test-app-secret");
 
-        let user = create_user(conn, "esdt_create_ok");
+        let user = create_user(conn, "sdt_create_ok");
         let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToFacebook]);
 
-        // Once an app is configured, create_event_sync_destination goes on to hit the real Graph
-        // API base URL, which isn't reachable in tests -- see `facebook_sync_tests` for coverage
-        // of the actual Graph API interaction (against a mock server) via `logic::facebook_sync`'s
+        // Once an app is configured, create_sync_destination goes on to hit the real Graph API
+        // base URL, which isn't reachable in tests -- see `facebook_sync_tests` for coverage of
+        // the actual Graph API interaction (against a mock server) via `logic::facebook_sync`'s
         // `_at` functions.
-        let err = create_event_sync_destination(
+        let err = create_sync_destination(
             facebook_page_request("123", "short-lived-token"),
             &user,
             conn,
@@ -117,18 +137,18 @@ fn create_succeeds_and_owner_is_always_current_user() {
 }
 
 #[test]
-fn get_event_sync_destinations_self_only_by_default() {
+fn get_sync_destinations_self_only_by_default() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_get_owner");
-        let other = create_user(conn, "esdt_get_other");
-        create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_get_owner");
+        let other = create_user(conn, "sdt_get_other");
+        create_sync_destination_row(conn, &owner, "123");
 
-        let response = get_event_sync_destinations(User::default(), &owner, conn)
+        let response = get_sync_destinations(User::default(), &owner, conn)
             .expect("self get should succeed");
         assert_eq!(response.destinations.len(), 1);
 
-        let err = get_event_sync_destinations(
+        let err = get_sync_destinations(
             User {
                 id: owner.id.to_proto_id(),
                 ..Default::default()
@@ -145,15 +165,15 @@ fn get_event_sync_destinations_self_only_by_default() {
 }
 
 #[test]
-fn admin_can_get_another_users_event_sync_destinations() {
+fn admin_can_get_another_users_sync_destinations() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_get_owner2");
-        let admin = create_user(conn, "esdt_get_admin2");
+        let owner = create_user(conn, "sdt_get_owner2");
+        let admin = create_user(conn, "sdt_get_admin2");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
-        create_event_sync_destination_row(conn, &owner, "123");
+        create_sync_destination_row(conn, &owner, "123");
 
-        let response = get_event_sync_destinations(
+        let response = get_sync_destinations(
             User {
                 id: owner.id.to_proto_id(),
                 ..Default::default()
@@ -172,14 +192,14 @@ fn admin_can_get_another_users_event_sync_destinations() {
 fn returned_destination_never_includes_the_access_token() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_get_notoken");
-        create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_get_notoken");
+        create_sync_destination_row(conn, &owner, "123");
 
-        let response = get_event_sync_destinations(User::default(), &owner, conn)
+        let response = get_sync_destinations(User::default(), &owner, conn)
             .expect("self get should succeed");
         let destination = &response.destinations[0];
         match destination.configuration.as_ref().unwrap() {
-            event_sync_destination::Configuration::FacebookPage(page) => {
+            sync_destination::Configuration::FacebookPage(page) => {
                 assert_eq!(page.page_id, "123");
                 assert_eq!(page.short_lived_user_access_token, None);
             }
@@ -190,14 +210,14 @@ fn returned_destination_never_includes_the_access_token() {
 }
 
 #[test]
-fn update_requires_sync_events_to_facebook_permission_even_for_the_owner() {
+fn update_requires_sync_events_or_posts_to_facebook_permission_even_for_the_owner() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_update_noperm");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_update_noperm");
+        let destination = create_sync_destination_row(conn, &owner, "123");
 
-        let err = update_event_sync_destination(
-            EventSyncDestination {
+        let err = update_sync_destination(
+            SyncDestination {
                 id: destination.id.to_proto_id(),
                 ..Default::default()
             },
@@ -216,14 +236,14 @@ fn update_requires_sync_events_to_facebook_permission_even_for_the_owner() {
 fn update_rejects_non_owner_non_admin() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_update_owner");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_update_owner");
+        let destination = create_sync_destination_row(conn, &owner, "123");
 
-        let other = create_user(conn, "esdt_update_other");
+        let other = create_user(conn, "sdt_update_other");
         let other = grant_permissions(conn, &other, vec![Permission::SyncEventsToFacebook]);
 
-        let err = update_event_sync_destination(
-            EventSyncDestination {
+        let err = update_sync_destination(
+            SyncDestination {
                 id: destination.id.to_proto_id(),
                 ..Default::default()
             },
@@ -242,13 +262,13 @@ fn update_rejects_non_owner_non_admin() {
 fn delete_rejects_non_owner_non_admin() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_delete_owner");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
-        let other = create_user(conn, "esdt_delete_other");
+        let owner = create_user(conn, "sdt_delete_owner");
+        let destination = create_sync_destination_row(conn, &owner, "123");
+        let other = create_user(conn, "sdt_delete_other");
 
-        let err = delete_event_sync_destination(
-            DeleteEventSyncDestinationRequest {
-                destination: Some(EventSyncDestination {
+        let err = delete_sync_destination(
+            DeleteSyncDestinationRequest {
+                destination: Some(SyncDestination {
                     id: destination.id.to_proto_id(),
                     ..Default::default()
                 }),
@@ -269,12 +289,12 @@ fn delete_rejects_non_owner_non_admin() {
 fn delete_removes_the_destination() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_delete_ok");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_delete_ok");
+        let destination = create_sync_destination_row(conn, &owner, "123");
 
-        delete_event_sync_destination(
-            DeleteEventSyncDestinationRequest {
-                destination: Some(EventSyncDestination {
+        delete_sync_destination(
+            DeleteSyncDestinationRequest {
+                destination: Some(SyncDestination {
                     id: destination.id.to_proto_id(),
                     ..Default::default()
                 }),
@@ -285,8 +305,8 @@ fn delete_removes_the_destination() {
         )
         .expect("owner delete should succeed");
 
-        let remaining: i64 = event_sync_destinations::table
-            .filter(event_sync_destinations::id.eq(destination.id))
+        let remaining: i64 = sync_destinations::table
+            .filter(sync_destinations::id.eq(destination.id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -297,11 +317,64 @@ fn delete_removes_the_destination() {
 }
 
 #[test]
+fn delete_removes_synced_event_instance_and_post_join_rows() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let owner = create_user(conn, "sdt_delete_joins");
+        let destination = create_sync_destination_row(conn, &owner, "123");
+
+        let (event, _) = create_event(
+            conn,
+            &owner,
+            EventOpts {
+                default_instance: None,
+                ..Default::default()
+            },
+        );
+        let (instance, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
+        create_event_instance_sync_destination_row(conn, &instance, &destination);
+
+        let post = create_post(conn, Some(&owner), PostOpts::default());
+        create_post_sync_destination_row(conn, &post, &destination);
+
+        delete_sync_destination(
+            DeleteSyncDestinationRequest {
+                destination: Some(SyncDestination {
+                    id: destination.id.to_proto_id(),
+                    ..Default::default()
+                }),
+                delete_synced_posts: false,
+            },
+            &owner,
+            conn,
+        )
+        .expect("owner delete should succeed");
+
+        use crate::schema::{event_instance_sync_destinations, post_sync_destinations};
+        let remaining_instance_joins: i64 = event_instance_sync_destinations::table
+            .filter(event_instance_sync_destinations::sync_destination_id.eq(destination.id))
+            .count()
+            .get_result(conn)
+            .unwrap();
+        assert_eq!(remaining_instance_joins, 0);
+
+        let remaining_post_joins: i64 = post_sync_destinations::table
+            .filter(post_sync_destinations::sync_destination_id.eq(destination.id))
+            .count()
+            .get_result(conn)
+            .unwrap();
+        assert_eq!(remaining_post_joins, 0);
+
+        Ok(())
+    });
+}
+
+#[test]
 fn sync_event_instance_requires_sync_events_to_facebook_permission() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_sync_noperm");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_sync_noperm");
+        let destination = create_sync_destination_row(conn, &owner, "123");
         let (event, _) = create_event(
             conn,
             &owner,
@@ -315,7 +388,7 @@ fn sync_event_instance_requires_sync_events_to_facebook_permission() {
         let err = sync_event_instance(
             SyncEventInstanceRequest {
                 event_instance_id: instance.id.to_proto_id(),
-                event_sync_destination_id: destination.id.to_proto_id(),
+                sync_destination_id: destination.id.to_proto_id(),
             },
             &owner,
             conn,
@@ -332,8 +405,8 @@ fn sync_event_instance_requires_sync_events_to_facebook_permission() {
 fn sync_event_instance_rejects_non_owner_non_admin_of_the_destination() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_sync_owner");
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let owner = create_user(conn, "sdt_sync_owner");
+        let destination = create_sync_destination_row(conn, &owner, "123");
         let (event, _) = create_event(
             conn,
             &owner,
@@ -344,13 +417,13 @@ fn sync_event_instance_rejects_non_owner_non_admin_of_the_destination() {
         );
         let (instance, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
 
-        let other = create_user(conn, "esdt_sync_other");
+        let other = create_user(conn, "sdt_sync_other");
         let other = grant_permissions(conn, &other, vec![Permission::SyncEventsToFacebook]);
 
         let err = sync_event_instance(
             SyncEventInstanceRequest {
                 event_instance_id: instance.id.to_proto_id(),
-                event_sync_destination_id: destination.id.to_proto_id(),
+                sync_destination_id: destination.id.to_proto_id(),
             },
             &other,
             conn,
@@ -367,14 +440,14 @@ fn sync_event_instance_rejects_non_owner_non_admin_of_the_destination() {
 fn sync_event_instance_fails_for_unknown_instance() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "esdt_sync_noinstance");
+        let owner = create_user(conn, "sdt_sync_noinstance");
         let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsToFacebook]);
-        let destination = create_event_sync_destination_row(conn, &owner, "123");
+        let destination = create_sync_destination_row(conn, &owner, "123");
 
         let err = sync_event_instance(
             SyncEventInstanceRequest {
                 event_instance_id: 999_999_i64.to_proto_id(),
-                event_sync_destination_id: destination.id.to_proto_id(),
+                sync_destination_id: destination.id.to_proto_id(),
             },
             &owner,
             conn,

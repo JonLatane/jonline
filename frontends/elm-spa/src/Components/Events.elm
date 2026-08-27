@@ -40,14 +40,13 @@ import Components.Markdown as Markdown
 import Components.MediaRenderer as MediaRenderer
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
+import Components.SyncDestinations as SyncDestinations
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, span, text)
-import Html.Attributes exposing (attribute, class, disabled, href, rel, target)
-import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Event, EventInstance, EventSyncDestination, GetEventsRequest, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
+import Html exposing (Html, a, div, span, text)
+import Html.Attributes exposing (attribute, class, href, rel, target)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
-import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
@@ -106,9 +105,9 @@ deleteEvent accountsPanelModel maybeAccountServer eventId =
         )
 
 
-{-| Pushes (cross-posts) `eventInstanceId` to `eventSyncDestinationId` (`SyncEventInstance`,
+{-| Pushes (cross-posts) `eventInstanceId` to `syncDestinationId` (`SyncEventInstance`,
 owner-or-Admin gated server-side, see
-`backend/src/rpcs/event_sync_destinations/sync_event_instance.rs`) -- mirrors `deleteEvent`'s
+`backend/src/rpcs/events/sync_event_instance.rs`) -- mirrors `deleteEvent`'s
 shape exactly. The returned `EventInstance` carries a freshly updated `syncDestinations`, but
 callers here just reuse their own existing full refetch (`Pages.Event.EventId_.refetch`/
 `Components.Pages.EventsPage.refetchServers`) rather than patching it in by hand.
@@ -119,25 +118,25 @@ syncEventInstance :
     -> String
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance )
-syncEventInstance accountsPanelModel maybeAccountServer eventInstanceId eventSyncDestinationId =
+syncEventInstance accountsPanelModel maybeAccountServer eventInstanceId syncDestinationId =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.syncEventInstance
-                { eventInstanceId = eventInstanceId, eventSyncDestinationId = eventSyncDestinationId }
+                { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-{-| Removes `eventInstanceId`'s sync (cross-post) to `eventSyncDestinationId` (`DeleteEventInstanceSyncDestination`,
+{-| Removes `eventInstanceId`'s sync (cross-post) to `syncDestinationId` (`DeleteEventInstanceSyncDestination`,
 owner-or-Admin gated server-side, see
-`backend/src/rpcs/event_sync_destinations/delete_event_instance_sync_destination.rs`) -- the reverse of
+`backend/src/rpcs/events/delete_event_instance_sync_destination.rs`) -- the reverse of
 `syncEventInstance`, same shape. Doesn't delete the post already made on the destination (e.g. the Facebook Page
 post), only the local sync record, so the row goes back to its unsynced "Push" state (see
-`eventSyncDestinationsView`'s `notYetSyncedRows`). Used by `eventCardSyncDestinationRowView`'s Delete button, via
+`Components.SyncDestinations.syncDestinationsView`'s `notYetSyncedRows`). Used by that view's Delete button, via
 `Shared.ConfirmEventInstanceSyncDestinationDelete`.
 -}
 deleteEventInstanceSyncDestination :
@@ -146,13 +145,13 @@ deleteEventInstanceSyncDestination :
     -> String
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
-deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventInstanceId eventSyncDestinationId =
+deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventInstanceId syncDestinationId =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.deleteEventInstanceSyncDestination
-                { eventInstanceId = eventInstanceId, eventSyncDestinationId = eventSyncDestinationId }
+                { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -617,27 +616,15 @@ eventSyncSourceView event =
             text ""
 
 
-{-| `Nothing` renders one line per `instance.syncDestinations` entry with a
-`destinationUrl` set, linking out to wherever `instance` was synced to (e.g.
-the resulting Facebook post) -- read-only, no push controls -- used by every
-caller except `Components.Pages.UserProfilePage`'s embedded events feed.
-
-`Just availableDestinations` renders a unified row list instead: one row per
-destination id in `instance.syncDestinations` (already synced, shows its URL
-if any) unioned with any of `availableDestinations` not yet in that list
-(not yet synced, no URL), each with a "Push"/"Push again" button --
-`isPushing`/`pushError` (keyed by destination id) drive its disabled/error
-state, `onPush` fires the push. Already-synced rows also get a Delete button
-(`onDelete`, given the destination id and its display name for the confirmation
-dialog -- see `Shared.ConfirmEventInstanceSyncDestinationDelete`), which removes
-just the local sync record (`deleteEventInstanceSyncDestination`), putting the
-row back into its unsynced "Push" state. This `Maybe` is the *only* gate on
-whether push/delete controls show at all -- deciding when to pass `Just` (only
-`UserProfilePage`'s own embedded feed, for now) is entirely the caller's
-call; this module has no opinion on `AccountsPanel`/permissions.
+{-| Thin wrapper over `Components.SyncDestinations.syncDestinationsView`, extracting
+`instance.syncDestinations` -- see that function's own doc for the full
+already-synced/available-to-sync-to union and rendering rules; only
+`Components.Pages.UserProfilePage`'s embedded events feed ever passes `Just`
+for `availableSyncDestinations`, giving every other caller a read-only,
+no-push-controls rendering.
 -}
 eventSyncDestinationsView :
-    Maybe (List EventSyncDestination)
+    Maybe (List SyncDestination)
     -> (String -> Bool)
     -> (String -> Maybe String)
     -> (String -> msg)
@@ -645,132 +632,7 @@ eventSyncDestinationsView :
     -> EventInstance
     -> Html msg
 eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete instance =
-    case availableSyncDestinations of
-        Nothing ->
-            let
-                urls : List String
-                urls =
-                    instance.syncDestinations |> List.filterMap .destinationUrl
-            in
-            if List.isEmpty urls then
-                text ""
-
-            else
-                div [ class "event-synced-to" ]
-                    (urls
-                        |> List.map
-                            (\url ->
-                                div [ class "event-synced-to-line" ]
-                                    [ text "synced to "
-                                    , a [ href url, target "_blank", rel "noopener noreferrer", class "event-synced-to-link" ] [ text url ]
-                                    ]
-                            )
-                    )
-
-        Just availableDestinations ->
-            let
-                destinationName : String -> Maybe String
-                destinationName id =
-                    availableDestinations
-                        |> List.filter (\d -> d.id == id)
-                        |> List.head
-                        |> Maybe.andThen .configuration
-                        |> Maybe.map (\(DestinationConfiguration.FacebookPage page) -> page.pageName)
-
-                syncedRows : List { id : String, url : Maybe String, synced : Bool }
-                syncedRows =
-                    instance.syncDestinations
-                        |> List.map (\sd -> { id = sd.eventSyncDestinationId, url = sd.destinationUrl, synced = True })
-
-                syncedIds : List String
-                syncedIds =
-                    syncedRows |> List.map .id
-
-                notYetSyncedRows : List { id : String, url : Maybe String, synced : Bool }
-                notYetSyncedRows =
-                    availableDestinations
-                        |> List.filter (\d -> not (List.member d.id syncedIds))
-                        |> List.map (\d -> { id = d.id, url = Nothing, synced = False })
-
-                rows : List { id : String, url : Maybe String, synced : Bool }
-                rows =
-                    syncedRows ++ notYetSyncedRows
-            in
-            if List.isEmpty rows then
-                text ""
-
-            else
-                div [ class "event-card-sync-destinations" ]
-                    (rows |> List.map (eventCardSyncDestinationRowView destinationName isPushing pushError onPush onDelete))
-
-
-eventCardSyncDestinationRowView :
-    (String -> Maybe String)
-    -> (String -> Bool)
-    -> (String -> Maybe String)
-    -> (String -> msg)
-    -> (String -> String -> msg)
-    -> { id : String, url : Maybe String, synced : Bool }
-    -> Html msg
-eventCardSyncDestinationRowView destinationName isPushing pushError onPush onDelete row =
-    let
-        pushing : Bool
-        pushing =
-            isPushing row.id
-
-        label : String
-        label =
-            if pushing then
-                "Pushing…"
-
-            else if row.url == Nothing then
-                "Push"
-
-            else
-                "Push again"
-
-        name : String
-        name =
-            destinationName row.id |> Maybe.withDefault "Facebook Page"
-    in
-    div [ class "event-card-sync-destination-row" ]
-        [ span [ class "event-card-sync-destination-name" ]
-            [ text name ]
-        , case row.url of
-            Just url ->
-                a
-                    [ href url
-                    , target "_blank"
-                    , rel "noopener noreferrer"
-                    , class "event-card-sync-destination-link"
-                    ]
-                    [ text url ]
-
-            Nothing ->
-                text ""
-        , button
-            [ class "event-card-sync-destination-push"
-            , onClick (onPush row.id)
-            , disabled pushing
-            ]
-            [ text label ]
-        , if row.synced then
-            button
-                [ class "event-card-sync-destination-delete"
-                , onClick (onDelete row.id name)
-                , disabled pushing
-                ]
-                [ text "Delete" ]
-
-          else
-            text ""
-        , case pushError row.id of
-            Just err ->
-                div [ class "event-card-sync-destination-push-error" ] [ text err ]
-
-            Nothing ->
-                text ""
-        ]
+    SyncDestinations.syncDestinationsView instance.syncDestinations availableSyncDestinations isPushing pushError onPush onDelete
 
 
 {-| A compact, read-only card for one `(Event, EventInstance)` pair --
@@ -834,7 +696,7 @@ eventCard :
     -> Bool
     -> Bool
     -> Bool
-    -> Maybe (List EventSyncDestination)
+    -> Maybe (List SyncDestination)
     -> (String -> Bool)
     -> (String -> Maybe String)
     -> (String -> msg)

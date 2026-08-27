@@ -102,8 +102,12 @@ pub async fn delete_user(
         .await?;
     }
 
-    // EventSyncSources/EventSyncDestinations -- any events/instances they'd synced were already
+    // EventSyncSources/SyncDestinations -- any events/instances/posts they'd synced were already
     // covered above, so these are just detached rather than cascading further deletes.
+    // `delete_sync_destination` cleans up join rows in both `event_instance_sync_destinations` and
+    // `post_sync_destinations` for the destination, so a synced Post/EventInstance of *this*
+    // user's, still pointing at *another* user's destination, is also cleaned up correctly here
+    // without any extra Post-specific logic.
     let sync_sources = models::get_event_sync_sources_for_user(target_user_id, conn)?;
     for (source, _owner) in sync_sources {
         rpcs::delete_event_sync_source(
@@ -119,11 +123,11 @@ pub async fn delete_user(
         )?;
     }
 
-    let sync_destinations = models::get_event_sync_destinations_for_user(target_user_id, conn)?;
+    let sync_destinations = models::get_sync_destinations_for_user(target_user_id, conn)?;
     for (destination, _owner) in sync_destinations {
-        rpcs::delete_event_sync_destination(
-            DeleteEventSyncDestinationRequest {
-                destination: Some(EventSyncDestination {
+        rpcs::delete_sync_destination(
+            DeleteSyncDestinationRequest {
+                destination: Some(SyncDestination {
                     id: destination.id.to_proto_id(),
                     ..Default::default()
                 }),

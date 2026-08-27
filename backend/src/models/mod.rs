@@ -22,6 +22,9 @@ pub use event_loaders::*;
 mod event_models;
 pub use event_models::*;
 
+mod sync_models;
+pub use sync_models::*;
+
 mod push_subscription_models;
 pub use push_subscription_models::*;
 

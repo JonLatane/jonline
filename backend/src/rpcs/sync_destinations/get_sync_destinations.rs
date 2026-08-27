@@ -6,11 +6,11 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
 
-pub fn get_event_sync_destinations(
+pub fn get_sync_destinations(
     request: User,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<GetEventSyncDestinationsResponse, Status> {
+) -> Result<GetSyncDestinationsResponse, Status> {
     let target_user_id = if request.id.trim().is_empty() {
         current_user.id
     } else {
@@ -21,11 +21,11 @@ pub fn get_event_sync_destinations(
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
 
-    let destinations = models::get_event_sync_destinations_for_user(target_user_id, conn)?;
-    let mut destinations: Vec<EventSyncDestination> = destinations
+    let destinations = models::get_sync_destinations_for_user(target_user_id, conn)?;
+    let mut destinations: Vec<SyncDestination> = destinations
         .into_iter()
-        .map(|(destination, owner)| MarshalableEventSyncDestination(destination, owner).to_proto())
+        .map(|(destination, owner)| MarshalableSyncDestination(destination, owner).to_proto())
         .collect();
-    attach_synced_event_instance_counts(&mut destinations, conn);
-    Ok(GetEventSyncDestinationsResponse { destinations })
+    attach_synced_counts(&mut destinations, conn);
+    Ok(GetSyncDestinationsResponse { destinations })
 }

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::mem::transmute;
 
 use diesel::*;
@@ -7,7 +8,7 @@ use tonic::Status;
 
 use super::{
     load_media_lookup, MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoAuthor,
-    ToProtoId, ToProtoMediaReference, ToProtoTime,
+    ToProtoId, ToProtoMediaReference, ToProtoSyncDestinationStatus, ToProtoTime,
 };
 use crate::db_connection::PgPooledConnection;
 use crate::models;
@@ -15,6 +16,18 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{group_posts, groups, posts};
+
+pub type PostSyncLookup = HashMap<i64, Vec<models::PostSyncDestination>>;
+
+/// Mirrors `event_marshaling::load_event_instance_sync_lookup`, batched for Posts instead of
+/// EventInstances.
+pub fn load_post_sync_lookup(post_ids: Vec<i64>, conn: &mut PgPooledConnection) -> PostSyncLookup {
+    let mut lookup: PostSyncLookup = HashMap::new();
+    for row in models::get_post_sync_destinations(post_ids, conn) {
+        lookup.entry(row.post_id).or_default().push(row);
+    }
+    lookup
+}
 
 #[derive(Debug, Clone)]
 pub struct MarshalablePost(
@@ -52,17 +65,27 @@ pub fn convert_posts(data: &Vec<MarshalablePost>, conn: &mut PgPooledConnection)
 
     let lookup = load_media_lookup(media_ids, conn);
 
+    let post_ids: Vec<i64> = data
+        .iter()
+        .flat_map(|post| {
+            let mut ids = vec![post.0.id];
+            ids.extend(post.4.iter().map(|reply| reply.0.id));
+            ids
+        })
+        .collect();
+    let sync_lookup = load_post_sync_lookup(post_ids, conn);
+
     data.iter()
-        .map(|marshalable_post| marshalable_post.to_proto(lookup.as_ref()))
+        .map(|marshalable_post| marshalable_post.to_proto(lookup.as_ref(), Some(&sync_lookup)))
         .collect()
 }
 
 pub trait ToProtoMarshalablePost {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Post;
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>, sync_lookup: Option<&PostSyncLookup>) -> Post;
 }
 
 impl ToProtoMarshalablePost for MarshalablePost {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Post {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>, sync_lookup: Option<&PostSyncLookup>) -> Post {
         let post = &self.0;
         let author = &self.1;
         let group_post = &self.2;
@@ -110,13 +133,18 @@ impl ToProtoMarshalablePost for MarshalablePost {
 
             replies: replies
                 .iter()
-                .map(|r| r.to_proto(media_lookup))
+                .map(|r| r.to_proto(media_lookup, sync_lookup))
                 .collect_vec(),
 
             created_at: Some(post.created_at.to_proto()),
             updated_at: post.updated_at.map(|t| t.to_proto()),
             published_at: post.published_at.map(|t| t.to_proto()),
             last_activity_at: Some(post.last_activity_at.to_proto()),
+
+            sync_destinations: sync_lookup
+                .and_then(|lookup| lookup.get(&post.id))
+                .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
+                .unwrap_or_default(),
         }
     }
 }

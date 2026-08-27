@@ -1805,11 +1805,11 @@ eventDetailView shared model event instance =
         -- to (`eventSyncDestinationsView`'s `syncedRows`, built from
         -- `instance.syncDestinations` alone), never ones it isn't yet (that
         -- would need this page's own fetch of the account's configured
-        -- `EventSyncDestination`s, which only `UserProfilePage` currently
+        -- `SyncDestination`s, which only `UserProfilePage` currently
         -- has) -- an empty `availableDestinations` makes `notYetSyncedRows`
         -- empty too, so only the synced rows (each with a working
         -- Push-again/Delete pair) ever render. `destinationName` is always
-        -- `Nothing` for the same reason (no `EventSyncDestination` to read a
+        -- `Nothing` for the same reason (no `SyncDestination` to read a
         -- Facebook Page name off of), which just falls back to the row's
         -- generic "Facebook Page" label.
         , Events.eventSyncDestinationsView

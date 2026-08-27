@@ -1,13 +1,13 @@
 use std::time::SystemTime;
 
-use super::User;
+use super::{SyncDestination, User};
 use diesel::*;
 use diesel_derive_enum::DbEnum;
 use tonic::{Code, Status};
 
 use crate::{
     db_connection::PgPooledConnection,
-    schema::{group_posts, posts, user_posts},
+    schema::{group_posts, post_sync_destinations, posts, user_posts},
 };
 
 /// The end-user layout a [`Post`]'s attached Media should be rendered in, backed by the Postgres
@@ -183,4 +183,46 @@ pub struct UserPost {
 pub struct NewUserPost {
     pub user_id: i64,
     pub post_id: i64,
+}
+
+/// A single Post's sync status against a single SyncDestination -- exact mirror of
+/// `event_models::EventInstanceSyncDestination`, just for `Post`s instead of `EventInstance`s.
+/// Composite-keyed (no surrogate `id`), so it's `Identifiable` via both foreign keys rather than
+/// one.
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
+#[diesel(table_name = post_sync_destinations)]
+#[diesel(primary_key(post_id, sync_destination_id))]
+#[diesel(belongs_to(Post))]
+#[diesel(belongs_to(SyncDestination))]
+pub struct PostSyncDestination {
+    pub post_id: i64,
+    pub sync_destination_id: i64,
+    pub destination_instance_id: Option<String>,
+    pub destination_url: Option<String>,
+    pub synced_at: Option<SystemTime>,
+    pub created_at: SystemTime,
+}
+
+#[derive(Debug, Insertable, AsChangeset)]
+#[diesel(table_name = post_sync_destinations)]
+pub struct NewPostSyncDestination {
+    pub post_id: i64,
+    pub sync_destination_id: i64,
+    pub destination_instance_id: Option<String>,
+    pub destination_url: Option<String>,
+    pub synced_at: Option<SystemTime>,
+}
+
+/// Loads sync status rows for a set of Posts, keyed for `post_marshaling` to group by `post_id`.
+pub fn get_post_sync_destinations(
+    post_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Vec<PostSyncDestination> {
+    if post_ids.is_empty() {
+        return vec![];
+    }
+    post_sync_destinations::table
+        .filter(post_sync_destinations::post_id.eq_any(post_ids))
+        .load::<PostSyncDestination>(conn)
+        .unwrap_or_default()
 }

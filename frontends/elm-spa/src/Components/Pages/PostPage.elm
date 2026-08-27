@@ -28,6 +28,7 @@ import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
+import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
@@ -88,6 +89,13 @@ type alias Model =
     -- Captured once at `init` -- see the module doc.
     , pageIsSecure : Bool
     , navKey : Browser.Navigation.Key
+
+    -- `Submitting`/`SubmitFailed` push status per `syncDestinationId`, for the
+    -- "synced to" listing's own Push/Push-again button (see
+    -- `Posts.postSyncDestinationsView`'s `isPushing`/`pushError`) -- mirrors
+    -- `Pages.Event.EventId_.Model.syncDestinationPushStatuses` exactly, since
+    -- this page too only ever shows one Post's own sync status at a time.
+    , syncDestinationPushStatuses : Dict String SubmitStatus
     }
 
 
@@ -134,6 +142,14 @@ type Msg
       -- (`Shared.ConfirmPostDelete`); its result (`Shared.GotPostDeleteResult`)
       -- is picked up in `SharedMsg` below.
     | DeleteClicked Post
+      -- The Push button on `postDetailView`'s `Posts.postSyncDestinationsView`
+      -- row (see `Model.syncDestinationPushStatuses`'s own doc) -- the Delete
+      -- button on that same row instead goes straight through
+      -- `Shared.RequestDelete`/`Shared.ConfirmPostSyncDestinationDelete`
+      -- (see `postDetailView`), mirroring `Pages.Event.EventId_`'s identical
+      -- split exactly.
+    | PushSyncDestinationClicked String
+    | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -200,6 +216,7 @@ init shared pageIsSecure rawPostId navKey =
                 , mediaEditActive = False
                 , pageIsSecure = pageIsSecure
                 , navKey = navKey
+                , syncDestinationPushStatuses = Dict.empty
                 }
     in
     ( fetchedModel
@@ -494,6 +511,31 @@ update shared msg model =
         DeleteClicked post ->
             ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmPostDelete post model.targetHost)) )
 
+        PushSyncDestinationClicked destinationId ->
+            case ( model.postStatus, serverAndAccount shared model ) of
+                ( PostLoaded post, Just ( server, account ) ) ->
+                    ( { model | syncDestinationPushStatuses = Dict.insert destinationId Submitting model.syncDestinationPushStatuses }
+                    , Posts.syncPost shared.accounts ( Just account.userId, server.frontendHost ) post.id destinationId
+                        |> Task.attempt (GotSyncDestinationPushResult destinationId)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotSyncDestinationPushResult destinationId (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            ( { model
+                | syncDestinationPushStatuses = Dict.remove destinationId model.syncDestinationPushStatuses
+                , postStatus = PostLoaded updatedPost
+              }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotSyncDestinationPushResult destinationId (Err err) ->
+            ( { model | syncDestinationPushStatuses = Dict.insert destinationId (SubmitFailed (AccountsPanel.grpcErrorToString err)) model.syncDestinationPushStatuses }
+            , Effect.none
+            )
+
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
             , AccountsPanel.connectToServer model.pageIsSecure model.targetHost
@@ -580,6 +622,16 @@ update shared msg model =
                         -- there's nothing left here to show.
                         Shared.GotPostDeleteResult (Ok _) ->
                             ( model, Browser.Navigation.pushUrl model.navKey (Gen.Route.toHref Gen.Route.Home_) |> Effect.fromCmd )
+
+                        -- The "synced to" listing's own Delete button (see
+                        -- `Model.syncDestinationPushStatuses`'s own doc) resolving
+                        -- successfully -- mirrors `Pages.Event.EventId_`'s identical
+                        -- branch: refetch, since a successful un-sync changes
+                        -- `post.syncDestinations` behind this already-fetched copy's
+                        -- back the same way, and the result carries no destination id
+                        -- to patch it out by hand with.
+                        Shared.GotPostSyncDestinationDeleteResult _ (Ok _) ->
+                            refetch shared model
 
                         _ ->
                             ( model, Effect.none )
@@ -753,6 +805,19 @@ postDetailView shared model post =
         (EditClicked post)
         (visibilityView maybeAccount model.visibilityEdit displayPost)
         (moderationView maybeAccount model.moderationEdit displayPost)
+        (\destinationId -> Dict.get destinationId model.syncDestinationPushStatuses == Just Submitting)
+        (\destinationId ->
+            case Dict.get destinationId model.syncDestinationPushStatuses of
+                Just (SubmitFailed err) ->
+                    Just err
+
+                _ ->
+                    Nothing
+        )
+        PushSyncDestinationClicked
+        (\destinationId destinationLabel ->
+            SharedMsg (Shared.RequestDelete (Shared.ConfirmPostSyncDestinationDelete displayPost destinationId destinationLabel model.targetHost))
+        )
         displayPost
 
 

@@ -7,26 +7,33 @@ use crate::logic::{connect_facebook_page, server_facebook_app_credentials};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::validate_permission;
-use crate::schema::event_sync_destinations;
+use crate::rpcs::validate_any_permission;
+use crate::schema::sync_destinations;
 
-pub fn create_event_sync_destination(
-    request: EventSyncDestination,
+pub fn create_sync_destination(
+    request: SyncDestination,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<EventSyncDestination, Status> {
+) -> Result<SyncDestination, Status> {
     // Create is always for the current user -- admins may manage other users' destinations (see
-    // `update_event_sync_destination`/`delete_event_sync_destination`) but never create one on
-    // their behalf.
+    // `update_sync_destination`/`delete_sync_destination`) but never create one on their behalf.
     //
-    // Gated by `SYNC_EVENTS_TO_FACEBOOK` rather than the broader `SYNCHRONIZE_EVENTS` (used by
-    // `EventSyncSource`) since posting to a third-party Facebook Page is a more sensitive grant
-    // than pulling events in from one. Every `EventSyncDestination` today is a `FacebookPage`, so
-    // this is unconditional; a future non-Facebook destination type would need its own check.
-    validate_permission(&Some(current_user), Permission::SyncEventsToFacebook)?;
+    // Gated by `SyncEventsToFacebook` or `SyncPostsToFacebook` (whichever the caller holds)
+    // rather than the broader `SYNCHRONIZE_EVENTS` (used by `EventSyncSource`) since posting to a
+    // third-party Facebook Page is a more sensitive grant than pulling events in from one. Every
+    // `SyncDestination` today is a `FacebookPage`, so this is unconditional; a future non-Facebook
+    // destination type would need its own check.
+    validate_any_permission(
+        &Some(current_user),
+        vec![
+            Permission::SyncEventsToFacebook,
+            Permission::SyncPostsToFacebook,
+            Permission::Admin,
+        ],
+    )?;
 
     let configuration = match request.configuration {
-        Some(event_sync_destination::Configuration::FacebookPage(FacebookPage {
+        Some(sync_destination::Configuration::FacebookPage(FacebookPage {
             page_id,
             short_lived_user_access_token: Some(short_lived_user_access_token),
             ..
@@ -54,18 +61,18 @@ pub fn create_event_sync_destination(
         }
     };
 
-    let inserted = insert_into(event_sync_destinations::table)
-        .values(&models::NewEventSyncDestination {
+    let inserted = insert_into(sync_destinations::table)
+        .values(&models::NewSyncDestination {
             user_id: current_user.id,
             configuration,
         })
-        .get_result::<models::EventSyncDestination>(conn)
+        .get_result::<models::SyncDestination>(conn)
         .map_err(|e| {
-            log::error!("Failed to create event sync destination: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_sync_destination")
+            log::error!("Failed to create sync destination: {:?}", e);
+            Status::new(Code::Internal, "failed_to_create_sync_destination")
         })?;
 
-    let mut proto = MarshalableEventSyncDestination(inserted, current_user.to_author()).to_proto();
-    attach_synced_event_instance_counts(std::slice::from_mut(&mut proto), conn);
+    let mut proto = MarshalableSyncDestination(inserted, current_user.to_author()).to_proto();
+    attach_synced_counts(std::slice::from_mut(&mut proto), conn);
     Ok(proto)
 }

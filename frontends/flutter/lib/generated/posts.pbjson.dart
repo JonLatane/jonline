@@ -148,6 +148,7 @@ const Post$json = {
     {'1': 'published_at', '3': 22, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'publishedAt', '17': true},
     {'1': 'last_activity_at', '3': 23, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'lastActivityAt'},
     {'1': 'unauthenticated_star_count', '3': 24, '4': 1, '5': 3, '10': 'unauthenticatedStarCount'},
+    {'1': 'sync_destinations', '3': 25, '4': 3, '5': 11, '6': '.jonline.SyncDestinationStatus', '10': 'syncDestinations'},
   ],
   '8': [
     {'1': '_author'},
@@ -183,9 +184,38 @@ final $typed_data.Uint8List postDescriptor = $convert.base64Decode(
     'JvdG9idWYuVGltZXN0YW1wSAdSC3B1Ymxpc2hlZEF0iAEBEkQKEGxhc3RfYWN0aXZpdHlfYXQY'
     'FyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg5sYXN0QWN0aXZpdHlBdBI8Chp1bm'
     'F1dGhlbnRpY2F0ZWRfc3Rhcl9jb3VudBgYIAEoA1IYdW5hdXRoZW50aWNhdGVkU3RhckNvdW50'
-    'QgkKB19hdXRob3JCEwoRX3JlcGx5X3RvX3Bvc3RfaWRCCAoGX3RpdGxlQgcKBV9saW5rQgoKCF'
-    '9jb250ZW50QhUKE19jdXJyZW50X2dyb3VwX3Bvc3RCDQoLX3VwZGF0ZWRfYXRCDwoNX3B1Ymxp'
-    'c2hlZF9hdA==');
+    'EksKEXN5bmNfZGVzdGluYXRpb25zGBkgAygLMh4uam9ubGluZS5TeW5jRGVzdGluYXRpb25TdG'
+    'F0dXNSEHN5bmNEZXN0aW5hdGlvbnNCCQoHX2F1dGhvckITChFfcmVwbHlfdG9fcG9zdF9pZEII'
+    'CgZfdGl0bGVCBwoFX2xpbmtCCgoIX2NvbnRlbnRCFQoTX2N1cnJlbnRfZ3JvdXBfcG9zdEINCg'
+    'tfdXBkYXRlZF9hdEIPCg1fcHVibGlzaGVkX2F0');
+
+@$core.Deprecated('Use syncPostRequestDescriptor instead')
+const SyncPostRequest$json = {
+  '1': 'SyncPostRequest',
+  '2': [
+    {'1': 'post_id', '3': 1, '4': 1, '5': 9, '10': 'postId'},
+    {'1': 'sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'syncDestinationId'},
+  ],
+};
+
+/// Descriptor for `SyncPostRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List syncPostRequestDescriptor = $convert.base64Decode(
+    'Cg9TeW5jUG9zdFJlcXVlc3QSFwoHcG9zdF9pZBgBIAEoCVIGcG9zdElkEi4KE3N5bmNfZGVzdG'
+    'luYXRpb25faWQYAiABKAlSEXN5bmNEZXN0aW5hdGlvbklk');
+
+@$core.Deprecated('Use deletePostSyncDestinationRequestDescriptor instead')
+const DeletePostSyncDestinationRequest$json = {
+  '1': 'DeletePostSyncDestinationRequest',
+  '2': [
+    {'1': 'post_id', '3': 1, '4': 1, '5': 9, '10': 'postId'},
+    {'1': 'sync_destination_id', '3': 2, '4': 1, '5': 9, '10': 'syncDestinationId'},
+  ],
+};
+
+/// Descriptor for `DeletePostSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deletePostSyncDestinationRequestDescriptor = $convert.base64Decode(
+    'CiBEZWxldGVQb3N0U3luY0Rlc3RpbmF0aW9uUmVxdWVzdBIXCgdwb3N0X2lkGAEgASgJUgZwb3'
+    'N0SWQSLgoTc3luY19kZXN0aW5hdGlvbl9pZBgCIAEoCVIRc3luY0Rlc3RpbmF0aW9uSWQ=');
 
 @$core.Deprecated('Use groupPostDescriptor instead')
 const GroupPost$json = {

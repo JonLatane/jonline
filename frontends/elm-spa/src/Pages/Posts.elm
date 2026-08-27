@@ -46,7 +46,7 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( model, effect ) =
-            PostsPage.init shared Nothing req.key req.url.path req.query False
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
     in
     ( model, Effect.batch [ effect ] )
 

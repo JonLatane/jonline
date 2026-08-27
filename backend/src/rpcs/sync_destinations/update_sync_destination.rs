@@ -9,27 +9,34 @@ use crate::logic::{connect_facebook_page, server_facebook_app_credentials};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::validate_permission;
-use crate::schema::event_sync_destinations;
+use crate::rpcs::{validate_any_permission, validate_permission};
+use crate::schema::sync_destinations;
 
 /// Only used to reconnect (re-run the OAuth exchange for) an existing destination -- e.g. after
 /// the user revoked/re-granted Facebook access. `page_id` can't be changed this way; delete and
 /// create a new destination instead.
-pub fn update_event_sync_destination(
-    request: EventSyncDestination,
+pub fn update_sync_destination(
+    request: SyncDestination,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<EventSyncDestination, Status> {
-    validate_permission(&Some(current_user), Permission::SyncEventsToFacebook)?;
+) -> Result<SyncDestination, Status> {
+    validate_any_permission(
+        &Some(current_user),
+        vec![
+            Permission::SyncEventsToFacebook,
+            Permission::SyncPostsToFacebook,
+            Permission::Admin,
+        ],
+    )?;
 
     let destination_id = request.id.to_db_id_or_err("id")?;
-    let mut existing = models::get_event_sync_destination(destination_id, conn)?;
+    let mut existing = models::get_sync_destination(destination_id, conn)?;
 
     if existing.user_id != current_user.id {
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
 
-    if let Some(event_sync_destination::Configuration::FacebookPage(FacebookPage {
+    if let Some(sync_destination::Configuration::FacebookPage(FacebookPage {
         short_lived_user_access_token: Some(short_lived_user_access_token),
         ..
     })) = request.configuration
@@ -40,10 +47,7 @@ pub fn update_event_sync_destination(
             .and_then(|c| c.get("page_id"))
             .and_then(|v| v.as_str())
             .ok_or_else(|| {
-                Status::new(
-                    Code::FailedPrecondition,
-                    "event_sync_destination_not_configured",
-                )
+                Status::new(Code::FailedPrecondition, "sync_destination_not_configured")
             })?
             .to_string();
         let (app_id, app_secret) = server_facebook_app_credentials(conn)?;
@@ -63,18 +67,16 @@ pub fn update_event_sync_destination(
     }
     existing.updated_at = Some(SystemTime::now());
 
-    let updated = diesel::update(
-        event_sync_destinations::table.filter(event_sync_destinations::id.eq(existing.id)),
-    )
-    .set(&existing)
-    .get_result::<models::EventSyncDestination>(conn)
-    .map_err(|e| {
-        log::error!("Failed to update event sync destination: {:?}", e);
-        Status::new(Code::Internal, "failed_to_update_event_sync_destination")
-    })?;
+    let updated = diesel::update(sync_destinations::table.filter(sync_destinations::id.eq(existing.id)))
+        .set(&existing)
+        .get_result::<models::SyncDestination>(conn)
+        .map_err(|e| {
+            log::error!("Failed to update sync destination: {:?}", e);
+            Status::new(Code::Internal, "failed_to_update_sync_destination")
+        })?;
 
     let owner = models::get_author(updated.user_id, conn)?;
-    let mut proto = MarshalableEventSyncDestination(updated, owner).to_proto();
-    attach_synced_event_instance_counts(std::slice::from_mut(&mut proto), conn);
+    let mut proto = MarshalableSyncDestination(updated, owner).to_proto();
+    attach_synced_counts(std::slice::from_mut(&mut proto), conn);
     Ok(proto)
 }

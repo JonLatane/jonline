@@ -40,5 +40,8 @@ pub use push_subscription_marshaling::*;
 mod link_marshaling;
 pub use link_marshaling::*;
 
+mod sync_marshaling;
+pub use sync_marshaling::*;
+
 mod event_marshaling;
 pub use event_marshaling::*;

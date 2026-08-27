@@ -843,6 +843,9 @@ permissionText permission =
         SYNCEVENTSTOFACEBOOK ->
             "Sync Events To Facebook"
 
+        SYNCPOSTSTOFACEBOOK ->
+            "Sync Posts To Facebook"
+
         READPERSONALMESSAGES ->
             "Read Personal Messages"
 
@@ -889,6 +892,7 @@ allPermissions =
     , RSVPTOEVENTS
     , SYNCHRONIZEEVENTS
     , SYNCEVENTSTOFACEBOOK
+    , SYNCPOSTSTOFACEBOOK
     , VIEWMEDIA
     , CREATEMEDIA
     , PUBLISHMEDIALOCALLY

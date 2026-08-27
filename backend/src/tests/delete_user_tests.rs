@@ -1,8 +1,8 @@
 //! Specs for `delete_user`: who's allowed to call it, and that it actually cleans up everything
 //! the user owned -- Events (via `delete_event`), Posts/Replies (via `delete_post`), Media
-//! (via `delete_media`, including its MinIO objects), and EventSyncSources/EventSyncDestinations
-//! -- before removing the `users` row itself. Needs a real MinIO connection for the Media leg --
-//! see `factories::test_bucket`.
+//! (via `delete_media`, including its MinIO objects), and EventSyncSources/SyncDestinations --
+//! before removing the `users` row itself. Needs a real MinIO connection for the Media leg -- see
+//! `factories::test_bucket`.
 
 use diesel::prelude::*;
 use tonic::Code;
@@ -12,7 +12,8 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs::delete_user;
 use crate::schema::{
-    event_instances, event_sync_destinations, event_sync_sources, events, media, users,
+    event_instances, event_sync_sources, events, media, post_sync_destinations, sync_destinations,
+    users,
 };
 use crate::tests::factories::*;
 
@@ -147,10 +148,20 @@ fn delete_cascades_events_posts_media_and_sync_config() {
             .expect("failed to seed test MinIO object");
         let user_media = create_media(conn, Some(&user), &media_path);
 
-        // An EventSyncSource/EventSyncDestination the user configured.
+        // An EventSyncSource/SyncDestination the user configured.
         let sync_source =
             create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
-        let sync_destination = create_event_sync_destination_row(conn, &user, "test-page-id");
+        let sync_destination = create_sync_destination_row(conn, &user, "test-page-id");
+
+        // A post of `user`'s own synced to *another* user's destination -- proves delete_user's
+        // cascade only touches destinations `user` themselves owns (via `delete_sync_destination`
+        // on each of `get_sync_destinations_for_user(user)`), not every destination anything of
+        // `user`'s was ever synced to. The other user's destination -- and this join row -- should
+        // both survive `user`'s deletion untouched.
+        let other_owner = create_user(conn, "dut_cascade_other_owner");
+        let other_owner_destination =
+            create_sync_destination_row(conn, &other_owner, "other-owner-page-id");
+        create_post_sync_destination_row(conn, &post, &other_owner_destination);
 
         tb.block_on(delete_user(
             user.to_proto(&None, &None, None, None),
@@ -209,19 +220,35 @@ fn delete_cascades_events_posts_media_and_sync_config() {
         assert_eq!(remaining_media, 0);
         assert!(!tb.object_exists(&media_path));
 
-        // EventSyncSource/EventSyncDestination were removed.
+        // EventSyncSource/SyncDestination were removed.
         let remaining_sources: i64 = event_sync_sources::table
             .filter(event_sync_sources::id.eq(sync_source.id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_sources, 0);
-        let remaining_destinations: i64 = event_sync_destinations::table
-            .filter(event_sync_destinations::id.eq(sync_destination.id))
+        let remaining_destinations: i64 = sync_destinations::table
+            .filter(sync_destinations::id.eq(sync_destination.id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_destinations, 0);
+
+        // The *other* user's destination -- and the join row syncing `user`'s post to it -- are
+        // untouched: delete_user only cascades through destinations `user` themselves owned.
+        let remaining_other_destinations: i64 = sync_destinations::table
+            .filter(sync_destinations::id.eq(other_owner_destination.id))
+            .count()
+            .get_result(conn)
+            .unwrap();
+        assert_eq!(remaining_other_destinations, 1);
+        let remaining_other_joins: i64 = post_sync_destinations::table
+            .filter(post_sync_destinations::post_id.eq(post.id))
+            .filter(post_sync_destinations::sync_destination_id.eq(other_owner_destination.id))
+            .count()
+            .get_result(conn)
+            .unwrap();
+        assert_eq!(remaining_other_joins, 1);
 
         Ok(())
     });
