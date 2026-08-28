@@ -348,7 +348,8 @@ deletePostSyncDestination accountsPanelModel maybeAccountServer postId syncDesti
 
 
 {-| Thin wrapper over `Components.SyncDestinations.syncDestinationsView`, extracting
-`post.syncDestinations` -- see that function's own doc for the full already-synced/
+`post.syncDestinations` (and `not (List.isEmpty post.media)` for that view's `hasMedia`, which
+gates Instagram rows' Push button) -- see that function's own doc for the full already-synced/
 available-to-sync-to union and rendering rules; only `Components.Pages.UserProfilePage`'s
 embedded posts feed ever passes `Just` for `availableSyncDestinations`, giving every other caller
 a read-only, no-push-controls rendering.
@@ -362,7 +363,7 @@ postSyncDestinationsView :
     -> Post
     -> Html msg
 postSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete post =
-    SyncDestinations.syncDestinationsView post.syncDestinations availableSyncDestinations isPushing pushError onPush onDelete
+    SyncDestinations.syncDestinationsView post.syncDestinations availableSyncDestinations (not (List.isEmpty post.media)) isPushing pushError onPush onDelete
 
 
 {-| The "★ N" star button of a post's meta line -- clickable (unless

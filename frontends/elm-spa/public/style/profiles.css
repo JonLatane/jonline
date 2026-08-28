@@ -524,6 +524,38 @@
   font-size: 0.85rem;
 }
 
+/* Platform picker row (Facebook/Instagram/Mastodon/Bluesky/X) shown when no connect flow is in
+   progress -- see `Components.Pages.UserProfilePage.platformPickerView`. */
+.sync-destination-platform-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Mastodon/Bluesky's inline paste-a-credential forms -- see
+   `Components.Pages.UserProfilePage.mastodonConnectView`/`blueskyConnectView`. */
+.event-sync-destination-connect-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.event-sync-destination-connect-input {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  min-width: 220px;
+}
+
+.event-sync-destination-connect-cancel {
+  align-self: flex-start;
+}
+
 .profile-delete-section {
   margin: 1rem 0;
 }

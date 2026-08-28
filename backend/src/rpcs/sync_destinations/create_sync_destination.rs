@@ -3,7 +3,10 @@ use serde_json::json;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::{connect_facebook_page, server_facebook_app_credentials};
+use crate::logic::{
+    connect_facebook_page, create_session, get_linked_instagram_business_account,
+    server_facebook_app_credentials, verify_credentials,
+};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
@@ -18,19 +21,51 @@ pub fn create_sync_destination(
     // Create is always for the current user -- admins may manage other users' destinations (see
     // `update_sync_destination`/`delete_sync_destination`) but never create one on their behalf.
     //
-    // Gated by `SyncEventsToFacebook` or `SyncPostsToFacebook` (whichever the caller holds)
-    // rather than the broader `SYNCHRONIZE_EVENTS` (used by `EventSyncSource`) since posting to a
-    // third-party Facebook Page is a more sensitive grant than pulling events in from one. Every
-    // `SyncDestination` today is a `FacebookPage`, so this is unconditional; a future non-Facebook
-    // destination type would need its own check.
-    validate_any_permission(
-        &Some(current_user),
-        vec![
-            Permission::SyncEventsToFacebook,
-            Permission::SyncPostsToFacebook,
-            Permission::Admin,
-        ],
-    )?;
+    // Gated per-platform (`SyncEventsTo*`/`SyncPostsTo*`, whichever pair matches the platform of
+    // `request.configuration`, or Admin) rather than the broader `SYNCHRONIZE_EVENTS` (used by
+    // `EventSyncSource`) since posting to a third-party account is a more sensitive grant than
+    // pulling events in from one. Checked *before* validating the configuration's completeness
+    // below, matching this RPC's original (Facebook-only) behavior of always checking permission
+    // first; an unspecified/`None` configuration falls back to requiring the Facebook pair, same
+    // as before multiple platforms existed.
+    match &request.configuration {
+        Some(sync_destination::Configuration::FacebookPage(_)) | None => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToFacebook,
+                Permission::SyncPostsToFacebook,
+                Permission::Admin,
+            ],
+        )?,
+        Some(sync_destination::Configuration::InstagramAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToInstagram,
+                Permission::SyncPostsToInstagram,
+                Permission::Admin,
+            ],
+        )?,
+        Some(sync_destination::Configuration::MastodonAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToMastodon,
+                Permission::SyncPostsToMastodon,
+                Permission::Admin,
+            ],
+        )?,
+        Some(sync_destination::Configuration::BlueskyAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToBluesky,
+                Permission::SyncPostsToBluesky,
+                Permission::Admin,
+            ],
+        )?,
+        // No permission needed to reach the unconditional rejection below -- this server has no
+        // registered X Developer App, so an `XTwitterAccount` can never actually be created,
+        // regardless of what the caller holds (see `sync_destination_rpc_tests`).
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => {}
+    };
 
     let configuration = match request.configuration {
         Some(sync_destination::Configuration::FacebookPage(FacebookPage {
@@ -53,7 +88,92 @@ pub fn create_sync_destination(
                 }
             })
         }
-        _ => {
+        Some(sync_destination::Configuration::InstagramAccount(InstagramAccount {
+            page_id,
+            short_lived_user_access_token: Some(short_lived_user_access_token),
+            ..
+        })) if !page_id.trim().is_empty() && !short_lived_user_access_token.trim().is_empty() => {
+            // Instagram posting piggybacks on a linked Facebook Page's access token, so this
+            // reuses the exact same OAuth exchange as `FacebookPage` -- see `connect_facebook_page`.
+            let (app_id, app_secret) = server_facebook_app_credentials(conn)?;
+            let connection = connect_facebook_page(
+                &app_id,
+                &app_secret,
+                &short_lived_user_access_token,
+                &page_id,
+            )?;
+            let (instagram_business_account_id, username) =
+                get_linked_instagram_business_account(&connection.access_token, &connection.page_id)?;
+            json!({
+                "instagram_account": {
+                    "instagram_business_account_id": instagram_business_account_id,
+                    "username": username,
+                    "page_id": connection.page_id,
+                    "access_token": connection.access_token,
+                }
+            })
+        }
+        Some(sync_destination::Configuration::MastodonAccount(MastodonAccount {
+            instance_host,
+            access_token: Some(access_token),
+            ..
+        })) if !instance_host.trim().is_empty() && !access_token.trim().is_empty() => {
+            let username = verify_credentials(&instance_host, &access_token)?;
+            json!({
+                "mastodon_account": {
+                    "instance_host": instance_host,
+                    "username": username,
+                    "access_token": access_token,
+                }
+            })
+        }
+        Some(sync_destination::Configuration::BlueskyAccount(BlueskyAccount {
+            handle,
+            app_password: Some(app_password),
+            ..
+        })) if !handle.trim().is_empty() && !app_password.trim().is_empty() => {
+            // Only used to validate the handle/app-password pair (and learn the `did`) -- the
+            // session JWT itself is discarded; `logic::bluesky_sync::post_record` re-authenticates
+            // fresh on every post instead of storing/refreshing it.
+            let (did, _access_jwt) = create_session(&handle, &app_password)?;
+            json!({
+                "bluesky_account": {
+                    "handle": handle,
+                    "did": did,
+                    "app_password": app_password,
+                }
+            })
+        }
+        // This server has no registered X Developer App -- see `XTwitterAccount`'s own proto doc
+        // and `FederationInfo.x_twitter_auth_config`.
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
+            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        }
+        Some(sync_destination::Configuration::FacebookPage(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "facebook_page.page_id_and_short_lived_user_access_token_required",
+            ))
+        }
+        Some(sync_destination::Configuration::InstagramAccount(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "instagram_account.page_id_and_short_lived_user_access_token_required",
+            ))
+        }
+        Some(sync_destination::Configuration::MastodonAccount(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "mastodon_account.instance_host_and_access_token_required",
+            ))
+        }
+        Some(sync_destination::Configuration::BlueskyAccount(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "bluesky_account.handle_and_app_password_required",
+            ))
+        }
+        None => {
             return Err(Status::new(
                 Code::InvalidArgument,
                 "facebook_page.page_id_and_short_lived_user_access_token_required",

@@ -108,16 +108,6 @@ export enum Permission {
   /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
   SYNCHRONIZE_EVENTS = 36,
   /**
-   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
-   * connected Facebook Page, and to sync EventInstances to them.
-   */
-  SYNC_EVENTS_TO_FACEBOOK = 37,
-  /**
-   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
-   * connected Facebook Page, and to sync Posts to them.
-   */
-  SYNC_POSTS_TO_FACEBOOK = 38,
-  /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
    */
@@ -132,6 +122,62 @@ export enum Permission {
   MODERATE_MEDIA = 44,
   READ_PERSONAL_MESSAGES = 50,
   READ_ALL_SYSTEM_MESSAGES = 51,
+  /**
+   * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating `SyncDestination`s of that platform, and
+   * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
+   * since this is the most likely area to keep growing as new platforms are added.
+   *
+   * Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected Facebook Page, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_FACEBOOK = 1000,
+  /**
+   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Facebook Page, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_FACEBOOK = 1010,
+  /**
+   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected Instagram Business/Creator account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_INSTAGRAM = 1020,
+  /**
+   * SYNC_POSTS_TO_INSTAGRAM - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Instagram Business/Creator account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_INSTAGRAM = 1030,
+  /**
+   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected Mastodon account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_MASTODON = 1040,
+  /**
+   * SYNC_POSTS_TO_MASTODON - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Mastodon account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_MASTODON = 1050,
+  /**
+   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected Bluesky account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_BLUESKY = 1060,
+  /**
+   * SYNC_POSTS_TO_BLUESKY - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Bluesky account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_BLUESKY = 1070,
+  /**
+   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
+   * see `XTwitterAccount`'s own doc.
+   */
+  SYNC_EVENTS_TO_X_TWITTER = 1080,
+  /**
+   * SYNC_POSTS_TO_X_TWITTER - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
+   * `XTwitterAccount`'s own doc.
+   */
+  SYNC_POSTS_TO_X_TWITTER = 1090,
   /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
   BUSINESS = 9998,
   /**
@@ -239,12 +285,6 @@ export function permissionFromJSON(object: any): Permission {
     case 36:
     case "SYNCHRONIZE_EVENTS":
       return Permission.SYNCHRONIZE_EVENTS;
-    case 37:
-    case "SYNC_EVENTS_TO_FACEBOOK":
-      return Permission.SYNC_EVENTS_TO_FACEBOOK;
-    case 38:
-    case "SYNC_POSTS_TO_FACEBOOK":
-      return Permission.SYNC_POSTS_TO_FACEBOOK;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -266,6 +306,36 @@ export function permissionFromJSON(object: any): Permission {
     case 51:
     case "READ_ALL_SYSTEM_MESSAGES":
       return Permission.READ_ALL_SYSTEM_MESSAGES;
+    case 1000:
+    case "SYNC_EVENTS_TO_FACEBOOK":
+      return Permission.SYNC_EVENTS_TO_FACEBOOK;
+    case 1010:
+    case "SYNC_POSTS_TO_FACEBOOK":
+      return Permission.SYNC_POSTS_TO_FACEBOOK;
+    case 1020:
+    case "SYNC_EVENTS_TO_INSTAGRAM":
+      return Permission.SYNC_EVENTS_TO_INSTAGRAM;
+    case 1030:
+    case "SYNC_POSTS_TO_INSTAGRAM":
+      return Permission.SYNC_POSTS_TO_INSTAGRAM;
+    case 1040:
+    case "SYNC_EVENTS_TO_MASTODON":
+      return Permission.SYNC_EVENTS_TO_MASTODON;
+    case 1050:
+    case "SYNC_POSTS_TO_MASTODON":
+      return Permission.SYNC_POSTS_TO_MASTODON;
+    case 1060:
+    case "SYNC_EVENTS_TO_BLUESKY":
+      return Permission.SYNC_EVENTS_TO_BLUESKY;
+    case 1070:
+    case "SYNC_POSTS_TO_BLUESKY":
+      return Permission.SYNC_POSTS_TO_BLUESKY;
+    case 1080:
+    case "SYNC_EVENTS_TO_X_TWITTER":
+      return Permission.SYNC_EVENTS_TO_X_TWITTER;
+    case 1090:
+    case "SYNC_POSTS_TO_X_TWITTER":
+      return Permission.SYNC_POSTS_TO_X_TWITTER;
     case 9998:
     case "BUSINESS":
       return Permission.BUSINESS;
@@ -343,10 +413,6 @@ export function permissionToJSON(object: Permission): string {
       return "RSVP_TO_EVENTS";
     case Permission.SYNCHRONIZE_EVENTS:
       return "SYNCHRONIZE_EVENTS";
-    case Permission.SYNC_EVENTS_TO_FACEBOOK:
-      return "SYNC_EVENTS_TO_FACEBOOK";
-    case Permission.SYNC_POSTS_TO_FACEBOOK:
-      return "SYNC_POSTS_TO_FACEBOOK";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:
@@ -361,6 +427,26 @@ export function permissionToJSON(object: Permission): string {
       return "READ_PERSONAL_MESSAGES";
     case Permission.READ_ALL_SYSTEM_MESSAGES:
       return "READ_ALL_SYSTEM_MESSAGES";
+    case Permission.SYNC_EVENTS_TO_FACEBOOK:
+      return "SYNC_EVENTS_TO_FACEBOOK";
+    case Permission.SYNC_POSTS_TO_FACEBOOK:
+      return "SYNC_POSTS_TO_FACEBOOK";
+    case Permission.SYNC_EVENTS_TO_INSTAGRAM:
+      return "SYNC_EVENTS_TO_INSTAGRAM";
+    case Permission.SYNC_POSTS_TO_INSTAGRAM:
+      return "SYNC_POSTS_TO_INSTAGRAM";
+    case Permission.SYNC_EVENTS_TO_MASTODON:
+      return "SYNC_EVENTS_TO_MASTODON";
+    case Permission.SYNC_POSTS_TO_MASTODON:
+      return "SYNC_POSTS_TO_MASTODON";
+    case Permission.SYNC_EVENTS_TO_BLUESKY:
+      return "SYNC_EVENTS_TO_BLUESKY";
+    case Permission.SYNC_POSTS_TO_BLUESKY:
+      return "SYNC_POSTS_TO_BLUESKY";
+    case Permission.SYNC_EVENTS_TO_X_TWITTER:
+      return "SYNC_EVENTS_TO_X_TWITTER";
+    case Permission.SYNC_POSTS_TO_X_TWITTER:
+      return "SYNC_POSTS_TO_X_TWITTER";
     case Permission.BUSINESS:
       return "BUSINESS";
     case Permission.RUN_BOTS:

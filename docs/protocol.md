@@ -131,6 +131,7 @@
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
+    - [XAuthConfig](#jonline-XAuthConfig)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -351,46 +352,78 @@ Federated profiles are managed via the `federated_profiles` field (a `repeated` 
 Jonline&#39;s Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
 from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 
-##### External Integrations (Facebook, iCal): Jonline Sync
-Jonline Sync lets us sync `Event`s in from iCal and sync `Event`s (well, `EventInstance`s) and `Post`s out to
-Facebook, presenting a &#34;shape&#34; -- a user-owned source/destination plus a `oneof configuration` for each -- meant
-to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
+#### Synchronization
+While Federation is a first-class feature of Jonline, it also supports synchronization with other
+fediverse platforms as well as other less-open platforms. All API keys for external services are stored
+in `ServerConfiguration`&#39;s `federation_info`.
 
-###### EventSyncSource
-An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
-only an iCal subscription URL (`configuration.ics_subscription_url`), though the `oneof` leaves room for other source types.
-It&#39;s the parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
-(`Event.event_sync_source`); the relationship is 1:(0 or 1), since a single source can back many synced `Event`s but each
-`Event` has at most one source it came from. A background job re-pulls each source on its own
-`sync_interval_seconds` cadence, recomputing `event_count`/`event_instance_count` on every sync.
+##### SyncDestination
+A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push `EventInstance`s and
+`Post`s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it&#39;s
+each `EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several
+destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/
+`Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the
+destination&#39;s resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
+in bulk on an interval, so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request
+time instead of being recomputed-and-stored.
+
+Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
+and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+`SYNC_POSTS_TO_*` permission pair matching the destination&#39;s own platform (or Admin; see each platform&#39;s own
+section below). Actually syncing (or un-syncing) a given `EventInstance` or `Post` to a destination is a separate
+step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+[`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
+way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
+
+###### Facebook
+`configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
+Connecting one requires a short-lived user access token from client-side Facebook Login
+(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
+`SYNC_POSTS_TO_FACEBOOK`.
+
+###### Instagram
+`configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
+Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+the token for the chosen Page&#39;s access token, then looks up that Page&#39;s linked Instagram Business account
+(`instagram_business_account_id`). Unlike Facebook, Instagram&#39;s Graph API has no text-only post type; syncing a
+`Post`/`EventInstance` with no attached media fails with `instagram_requires_media`. Gated on
+`SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+
+###### Mastodon
+`configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
+account, on any instance the user names (`instance_host`) -- there&#39;s no single app to register the way
+Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+(`MastodonAccount.access_token`, generated on the user&#39;s own instance under Preferences &gt; Development) rather than
+an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+
+###### Bluesky
+`configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
+Protocol) account. Connecting one is a user-supplied &#34;App Password&#34; (`BlueskyAccount.app_password`, generated at
+Settings &gt; App Passwords -- not the account&#39;s main password) rather than an OAuth popup. Gated on
+`SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+
+###### X (Twitter)
+`configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is reserved for a connected X
+account, but **not yet functional** -- this server has no registered X Developer App
+(`FederationInfo.x_twitter_auth_config`), so every RPC touching an `XTwitterAccount` destination fails with
+`x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+
+##### EventSyncSource
+An [`EventSyncSource`](#jonline-EventSyncSource) mirrors `SyncDestination`, but for pulling `Event`s in rather than
+pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
+`oneof` leaves room for other source types. Unlike `SyncDestination`, this is a 1:(0 or 1) relationship: it&#39;s the
+parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
+(`Event.event_sync_source`), since a single source can back many synced `Event`s but each `Event` has at most one
+source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
+recomputing `event_count`/`event_instance_count` on every sync.
 
 Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
 (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
-
-###### SyncDestination
-A [`SyncDestination`](#jonline-SyncDestination) mirrors `EventSyncSource`, but for pushing content out rather than
-pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
-[`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it&#39;s each
-`EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several destinations
-at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
-[`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination&#39;s resulting post ID/URL and
-last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
-so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
-recomputed-and-stored.
-
-Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
-(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
-short-lived token is write-only and never populated back in responses.
-
-Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
-[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination)
-(each requiring `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`, or Admin), and
-[`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination). Actually syncing (or un-syncing) a given `EventInstance`
-or `Post` to a destination is a separate step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
-[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) (requiring
-`SYNC_EVENTS_TO_FACEBOOK`, or Admin) and [`SyncPost`](#grpc-api-SyncPost)/
-[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination) (requiring `SYNC_POSTS_TO_FACEBOOK`, or Admin).
 
 #### HTTP Endpoints
 ##### Internal HTTP server (27705)
@@ -1010,8 +1043,6 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
 | SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
-| SYNC_EVENTS_TO_FACEBOOK | 37 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_FACEBOOK | 38 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1019,6 +1050,18 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
+| SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating `SyncDestination`s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
+
+Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_FACEBOOK | 1010 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
+| SYNC_EVENTS_TO_INSTAGRAM | 1020 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_INSTAGRAM | 1030 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_MASTODON | 1040 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_MASTODON | 1050 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_BLUESKY | 1060 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_BLUESKY | 1070 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_X_TWITTER | 1080 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
+| SYNC_POSTS_TO_X_TWITTER | 1090 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
 | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
@@ -2837,6 +2880,7 @@ The federation configuration for a Jonline server.
 | ----- | ---- | ----- | ----------- |
 | servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
 | facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
+| x_twitter_auth_config | [XAuthConfig](#jonline-XAuthConfig) | optional | X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations always fail with `x_twitter_app_not_configured` regardless of this field. |
 
 
 
@@ -2852,6 +2896,22 @@ Version information for the Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | version | [string](#string) |  | The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server. |
+
+
+
+
+
+
+<a name="jonline-XAuthConfig"></a>
+
+### XAuthConfig
+X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| client_id | [string](#string) |  | The X Developer App&#39;s Client ID for the server. |
+| client_secret | [string](#string) |  | The X Developer App&#39;s Client Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
 
 
 

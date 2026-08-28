@@ -700,6 +700,7 @@ pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_s
             app_id: app_id.to_string(),
             app_secret: app_secret.to_string(),
         }),
+        x_twitter_auth_config: None,
     })
     .unwrap();
     insert_into(server_configurations::table)
@@ -842,6 +843,202 @@ pub fn serve_facebook_graph_api(page: Option<(&str, &str, &str)>, post_id: &str)
             let body = body.to_string();
             let response = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}
+
+/// A minimal mock of the Facebook Graph API endpoints `logic::facebook_sync`'s Instagram functions
+/// hit -- routes by request line, mirroring `serve_facebook_graph_api`: a
+/// `fields=instagram_business_account{id,username}` lookup returns `instagram_account` (or just
+/// `{"id": ...}` with no linked account, if `None`) for `get_linked_instagram_business_account_at`;
+/// `/media_publish` and `fields=permalink` requests both return `media_id` (the /publish response
+/// as `id`, the permalink lookup as `https://www.instagram.com/p/{media_id}-permalink/`); anything
+/// else (the `/media` creation-container POST) returns a synthetic creation ID -- for
+/// `post_to_instagram_at`.
+pub fn serve_facebook_graph_api_instagram(
+    instagram_account: Option<(&str, &str)>,
+    media_id: &str,
+) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .expect("failed to bind test Instagram Graph API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Instagram Graph API server port")
+        .port();
+    let instagram_account =
+        instagram_account.map(|(id, username)| (id.to_string(), username.to_string()));
+    let media_id = media_id.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let body = if request_line.contains("instagram_business_account") {
+                match &instagram_account {
+                    Some((id, username)) => serde_json::json!({
+                        "instagram_business_account": { "id": id, "username": username },
+                        "id": "123"
+                    }),
+                    None => serde_json::json!({ "id": "123" }),
+                }
+            } else if request_line.contains("/media_publish") {
+                serde_json::json!({ "id": media_id })
+            } else if request_line.contains("fields=permalink") {
+                serde_json::json!({
+                    "permalink": format!("https://www.instagram.com/p/{media_id}-permalink/")
+                })
+            } else {
+                serde_json::json!({ "id": format!("{media_id}-creation") })
+            };
+            let body = body.to_string();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}
+
+/// A minimal mock of the Mastodon REST API's `verify_credentials`/`statuses` endpoints for
+/// `logic::mastodon_sync` specs -- routes by request line and always responds `200` unless
+/// `valid_token` is `false` (simulating a rejected/invalid Personal Access Token, `401`) or
+/// `post_succeeds` is `false` (simulating a too-long status, `422`).
+pub fn serve_mastodon_api(
+    username: &str,
+    valid_token: bool,
+    post_succeeds: bool,
+    status_id: &str,
+    status_url: &str,
+) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener =
+        TcpListener::bind("127.0.0.1:0").expect("failed to bind test Mastodon API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Mastodon API server port")
+        .port();
+    let username = username.to_string();
+    let status_id = status_id.to_string();
+    let status_url = status_url.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let (status_line, body) = if request_line.contains("/api/v1/accounts/verify_credentials")
+            {
+                if valid_token {
+                    (
+                        "HTTP/1.1 200 OK",
+                        serde_json::json!({ "username": username }),
+                    )
+                } else {
+                    (
+                        "HTTP/1.1 401 Unauthorized",
+                        serde_json::json!({ "error": "The access token is invalid" }),
+                    )
+                }
+            } else if post_succeeds {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "id": status_id, "url": status_url }),
+                )
+            } else {
+                (
+                    "HTTP/1.1 422 Unprocessable Entity",
+                    serde_json::json!({ "error": "Text character limit exceeded" }),
+                )
+            };
+            let body = body.to_string();
+            let response = format!(
+                "{}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                status_line,
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}
+
+/// A minimal mock of the Bluesky (AT Protocol) `createSession`/`createRecord` XRPC endpoints for
+/// `logic::bluesky_sync` specs -- routes by request line, mirroring `serve_mastodon_api`:
+/// `valid_credentials: false` simulates a rejected handle/app-password (`401`), `post_succeeds:
+/// false` simulates a `createRecord` failure (`400`).
+pub fn serve_bluesky_api(
+    did: &str,
+    access_jwt: &str,
+    valid_credentials: bool,
+    post_succeeds: bool,
+    record_uri: &str,
+) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener =
+        TcpListener::bind("127.0.0.1:0").expect("failed to bind test Bluesky API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Bluesky API server port")
+        .port();
+    let did = did.to_string();
+    let access_jwt = access_jwt.to_string();
+    let record_uri = record_uri.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let (status_line, body) = if request_line.contains("createSession") {
+                if valid_credentials {
+                    (
+                        "HTTP/1.1 200 OK",
+                        serde_json::json!({ "did": did, "accessJwt": access_jwt }),
+                    )
+                } else {
+                    (
+                        "HTTP/1.1 401 Unauthorized",
+                        serde_json::json!({ "error": "AuthenticationRequired" }),
+                    )
+                }
+            } else if post_succeeds {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "uri": record_uri }),
+                )
+            } else {
+                (
+                    "HTTP/1.1 400 Bad Request",
+                    serde_json::json!({ "error": "InvalidRequest" }),
+                )
+            };
+            let body = body.to_string();
+            let response = format!(
+                "{}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                status_line,
                 body.len(),
                 body
             );

@@ -553,7 +553,7 @@ update shared targetHost isSecure maybeServer msg model =
 {-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
 every other editor's transform is -- overlays `servers` (the edit's `pending` list, in its edit's
 own order) onto a freshly re-fetched `ServerConfiguration`'s `federationInfo`, leaving
-`facebookAuthConfig` (and every other field) untouched.
+`facebookAuthConfig`/`xTwitterAuthConfig` (and every other field) untouched.
 -}
 applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
 applyFederatedServers servers config =
@@ -562,6 +562,7 @@ applyFederatedServers servers config =
             Just
                 { servers = servers
                 , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
+                , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
                 }
     }
 
@@ -578,7 +579,7 @@ applyFacebookAppId appId config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
     in
     { config
         | federationInfo =
@@ -595,7 +596,7 @@ applyFacebookAppSecret appSecret config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
 
         existingAppId : String
         existingAppId =

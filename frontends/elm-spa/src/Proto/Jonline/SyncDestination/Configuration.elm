@@ -22,6 +22,31 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  A connected Facebook Page to post EventInstances/Posts to.
 
 
+### InstagramAccount
+
+ A connected Instagram Business/Creator account to post EventInstances/Posts to.
+
+
+### MastodonAccount
+
+ A connected Mastodon account to post EventInstances/Posts to.
+
+
+### BlueskyAccount
+
+ A connected Bluesky account to post EventInstances/Posts to.
+
+
+### XTwitterAccount
+
+ A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
+ `XTwitterAccount`'s own doc.
+
+
 -}
-type Configuration a0
+type Configuration a0 a1 a2 a3 a4
     = FacebookPage a0
+    | InstagramAccount a1
+    | MastodonAccount a2
+    | BlueskyAccount a3
+    | XTwitterAccount a4

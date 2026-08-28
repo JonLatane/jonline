@@ -100,6 +100,7 @@ reqwest = { version = "0.13", default-features = false, features = [
   "blocking",
   "query",
   "form",
+  "json",
   # Avoids pulling in the aws-lc-rs crypto backend (which reqwest's plain
   # "rustls" feature defaults to); we install the ring CryptoProvider
   # globally at startup (see lib.rs) and rely on that everywhere, matching

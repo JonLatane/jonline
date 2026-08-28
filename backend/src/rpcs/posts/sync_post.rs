@@ -4,7 +4,7 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::{post_post, PostFacebookContent};
+use crate::logic::{build_post_message, post_post, post_record, post_status, post_to_instagram, PostMessageInput};
 use crate::marshaling::*;
 use crate::models;
 use crate::models::POST_COLUMNS;
@@ -17,8 +17,6 @@ pub fn sync_post(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Post, Status> {
-    validate_permission(&Some(current_user), Permission::SyncPostsToFacebook)?;
-
     let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let destination_id = request
         .sync_destination_id
@@ -35,26 +33,85 @@ pub fn sync_post(
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
 
-    // Only buildable when this server has `external_cdn_config.frontend_host` configured -- this
-    // RPC has no HTTP `Host` header to fall back on the way web-facing routes
-    // (`configured_frontend_domain`) do, so the link is simply omitted otherwise. See
-    // `docs/facebook_federation.md`.
-    let frontend_host = get_server_configuration_proto(conn)?
-        .external_cdn_config
-        .map(|c| c.frontend_host)
-        .filter(|h| !h.trim().is_empty());
-    let post_url =
-        frontend_host.map(|host| format!("https://{host}/post/{}", post.id.to_proto_id()));
+    // Gated per the destination's actual platform (`SYNC_POSTS_TO_*`) rather than the single
+    // `SyncPostsToFacebook` this used to hardcode -- see `sync_destination::Configuration`.
+    let configuration = destination_configuration_to_proto(&destination.configuration);
+    match &configuration {
+        Some(sync_destination::Configuration::FacebookPage(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToFacebook)?
+        }
+        Some(sync_destination::Configuration::InstagramAccount(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToInstagram)?
+        }
+        Some(sync_destination::Configuration::MastodonAccount(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToMastodon)?
+        }
+        Some(sync_destination::Configuration::BlueskyAccount(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToBluesky)?
+        }
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToXTwitter)?
+        }
+        None => {
+            return Err(Status::new(
+                Code::FailedPrecondition,
+                "sync_destination_not_configured",
+            ))
+        }
+    };
 
-    let (destination_instance_id, destination_url) = post_post(
-        &destination,
-        &PostFacebookContent {
-            title: &post.title,
-            content: &post.content,
-            link: &post.link,
-            post_url: &post_url,
-        },
-    )?;
+    // Only buildable when this server has `external_cdn_config.frontend_host`/`backend_host`
+    // configured -- this RPC has no HTTP `Host` header to fall back on the way web-facing routes
+    // (`configured_frontend_domain`) do, so both are simply omitted otherwise. See
+    // `docs/facebook_federation.md`.
+    let external_cdn_config = get_server_configuration_proto(conn)?.external_cdn_config;
+    let post_url = external_cdn_config
+        .as_ref()
+        .map(|c| c.frontend_host.clone())
+        .filter(|h| !h.trim().is_empty())
+        .map(|host| format!("https://{host}/post/{}", post.id.to_proto_id()));
+    let media: Vec<String> = external_cdn_config
+        .as_ref()
+        .map(|c| c.backend_host.clone())
+        .filter(|h| !h.trim().is_empty())
+        .map(|host| {
+            post.media
+                .iter()
+                .filter_map(|m| *m)
+                .map(|id| format!("https://{host}/media/{}", id.to_proto_id()))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let message = build_post_message(PostMessageInput {
+        title: &post.title,
+        content: &post.content,
+        link: &post.link,
+        post_url: &post_url,
+        media,
+    });
+
+    let (destination_instance_id, destination_url) = match &configuration {
+        Some(sync_destination::Configuration::FacebookPage(_)) => post_post(&destination, &message)?,
+        Some(sync_destination::Configuration::InstagramAccount(_)) => {
+            post_to_instagram(&destination, &message)?
+        }
+        Some(sync_destination::Configuration::MastodonAccount(_)) => {
+            post_status(&destination, &message)?
+        }
+        Some(sync_destination::Configuration::BlueskyAccount(_)) => {
+            post_record(&destination, &message)?
+        }
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
+            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        }
+        None => {
+            return Err(Status::new(
+                Code::FailedPrecondition,
+                "sync_destination_not_configured",
+            ))
+        }
+    };
 
     let new_row = models::NewPostSyncDestination {
         post_id: post.id,

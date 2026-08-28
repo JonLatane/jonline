@@ -617,7 +617,8 @@ eventSyncSourceView event =
 
 
 {-| Thin wrapper over `Components.SyncDestinations.syncDestinationsView`, extracting
-`instance.syncDestinations` -- see that function's own doc for the full
+`instance.syncDestinations` (and `instance.post`'s media, if any, for that view's `hasMedia`,
+which gates Instagram rows' Push button) -- see that function's own doc for the full
 already-synced/available-to-sync-to union and rendering rules; only
 `Components.Pages.UserProfilePage`'s embedded events feed ever passes `Just`
 for `availableSyncDestinations`, giving every other caller a read-only,
@@ -632,7 +633,12 @@ eventSyncDestinationsView :
     -> EventInstance
     -> Html msg
 eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete instance =
-    SyncDestinations.syncDestinationsView instance.syncDestinations availableSyncDestinations isPushing pushError onPush onDelete
+    let
+        hasMedia : Bool
+        hasMedia =
+            instance.post |> Maybe.map (\post -> not (List.isEmpty post.media)) |> Maybe.withDefault False
+    in
+    SyncDestinations.syncDestinationsView instance.syncDestinations availableSyncDestinations hasMedia isPushing pushError onPush onDelete
 
 
 {-| A compact, read-only card for one `(Event, EventInstance)` pair --

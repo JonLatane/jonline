@@ -846,6 +846,30 @@ permissionText permission =
         SYNCPOSTSTOFACEBOOK ->
             "Sync Posts To Facebook"
 
+        SYNCEVENTSTOINSTAGRAM ->
+            "Sync Events To Instagram"
+
+        SYNCPOSTSTOINSTAGRAM ->
+            "Sync Posts To Instagram"
+
+        SYNCEVENTSTOMASTODON ->
+            "Sync Events To Mastodon"
+
+        SYNCPOSTSTOMASTODON ->
+            "Sync Posts To Mastodon"
+
+        SYNCEVENTSTOBLUESKY ->
+            "Sync Events To Bluesky"
+
+        SYNCPOSTSTOBLUESKY ->
+            "Sync Posts To Bluesky"
+
+        SYNCEVENTSTOXTWITTER ->
+            "Sync Events To X (Twitter)"
+
+        SYNCPOSTSTOXTWITTER ->
+            "Sync Posts To X (Twitter)"
+
         READPERSONALMESSAGES ->
             "Read Personal Messages"
 
@@ -893,6 +917,14 @@ allPermissions =
     , SYNCHRONIZEEVENTS
     , SYNCEVENTSTOFACEBOOK
     , SYNCPOSTSTOFACEBOOK
+    , SYNCEVENTSTOINSTAGRAM
+    , SYNCPOSTSTOINSTAGRAM
+    , SYNCEVENTSTOMASTODON
+    , SYNCPOSTSTOMASTODON
+    , SYNCEVENTSTOBLUESKY
+    , SYNCPOSTSTOBLUESKY
+    , SYNCEVENTSTOXTWITTER
+    , SYNCPOSTSTOXTWITTER
     , VIEWMEDIA
     , CREATEMEDIA
     , PUBLISHMEDIALOCALLY

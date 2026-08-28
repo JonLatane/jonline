@@ -108,12 +108,6 @@ fieldNumbersPermission n_ =
         SYNCHRONIZEEVENTS ->
             36
 
-        SYNCEVENTSTOFACEBOOK ->
-            37
-
-        SYNCPOSTSTOFACEBOOK ->
-            38
-
         VIEWMEDIA ->
             40
 
@@ -134,6 +128,36 @@ fieldNumbersPermission n_ =
 
         READALLSYSTEMMESSAGES ->
             51
+
+        SYNCEVENTSTOFACEBOOK ->
+            1000
+
+        SYNCPOSTSTOFACEBOOK ->
+            1010
+
+        SYNCEVENTSTOINSTAGRAM ->
+            1020
+
+        SYNCPOSTSTOINSTAGRAM ->
+            1030
+
+        SYNCEVENTSTOMASTODON ->
+            1040
+
+        SYNCPOSTSTOMASTODON ->
+            1050
+
+        SYNCEVENTSTOBLUESKY ->
+            1060
+
+        SYNCPOSTSTOBLUESKY ->
+            1070
+
+        SYNCEVENTSTOXTWITTER ->
+            1080
+
+        SYNCPOSTSTOXTWITTER ->
+            1090
 
         BUSINESS ->
             9998
@@ -250,12 +274,6 @@ encodePermission value =
             SYNCHRONIZEEVENTS ->
                 36
 
-            SYNCEVENTSTOFACEBOOK ->
-                37
-
-            SYNCPOSTSTOFACEBOOK ->
-                38
-
             VIEWMEDIA ->
                 40
 
@@ -276,6 +294,36 @@ encodePermission value =
 
             READALLSYSTEMMESSAGES ->
                 51
+
+            SYNCEVENTSTOFACEBOOK ->
+                1000
+
+            SYNCPOSTSTOFACEBOOK ->
+                1010
+
+            SYNCEVENTSTOINSTAGRAM ->
+                1020
+
+            SYNCPOSTSTOINSTAGRAM ->
+                1030
+
+            SYNCEVENTSTOMASTODON ->
+                1040
+
+            SYNCPOSTSTOMASTODON ->
+                1050
+
+            SYNCEVENTSTOBLUESKY ->
+                1060
+
+            SYNCPOSTSTOBLUESKY ->
+                1070
+
+            SYNCEVENTSTOXTWITTER ->
+                1080
+
+            SYNCPOSTSTOXTWITTER ->
+                1090
 
             BUSINESS ->
                 9998
@@ -386,12 +434,6 @@ decodePermission =
                     36 ->
                         SYNCHRONIZEEVENTS
 
-                    37 ->
-                        SYNCEVENTSTOFACEBOOK
-
-                    38 ->
-                        SYNCPOSTSTOFACEBOOK
-
                     40 ->
                         VIEWMEDIA
 
@@ -412,6 +454,36 @@ decodePermission =
 
                     51 ->
                         READALLSYSTEMMESSAGES
+
+                    1000 ->
+                        SYNCEVENTSTOFACEBOOK
+
+                    1010 ->
+                        SYNCPOSTSTOFACEBOOK
+
+                    1020 ->
+                        SYNCEVENTSTOINSTAGRAM
+
+                    1030 ->
+                        SYNCPOSTSTOINSTAGRAM
+
+                    1040 ->
+                        SYNCEVENTSTOMASTODON
+
+                    1050 ->
+                        SYNCPOSTSTOMASTODON
+
+                    1060 ->
+                        SYNCEVENTSTOBLUESKY
+
+                    1070 ->
+                        SYNCPOSTSTOBLUESKY
+
+                    1080 ->
+                        SYNCEVENTSTOXTWITTER
+
+                    1090 ->
+                        SYNCPOSTSTOXTWITTER
 
                     9998 ->
                         BUSINESS
@@ -462,8 +534,6 @@ type Permission
     | MODERATEEVENTS
     | RSVPTOEVENTS
     | SYNCHRONIZEEVENTS
-    | SYNCEVENTSTOFACEBOOK
-    | SYNCPOSTSTOFACEBOOK
     | VIEWMEDIA
     | CREATEMEDIA
     | PUBLISHMEDIALOCALLY
@@ -471,6 +541,16 @@ type Permission
     | MODERATEMEDIA
     | READPERSONALMESSAGES
     | READALLSYSTEMMESSAGES
+    | SYNCEVENTSTOFACEBOOK
+    | SYNCPOSTSTOFACEBOOK
+    | SYNCEVENTSTOINSTAGRAM
+    | SYNCPOSTSTOINSTAGRAM
+    | SYNCEVENTSTOMASTODON
+    | SYNCPOSTSTOMASTODON
+    | SYNCEVENTSTOBLUESKY
+    | SYNCPOSTSTOBLUESKY
+    | SYNCEVENTSTOXTWITTER
+    | SYNCPOSTSTOXTWITTER
     | BUSINESS
     | RUNBOTS
     | ADMIN

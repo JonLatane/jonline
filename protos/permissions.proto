@@ -80,12 +80,6 @@ enum Permission {
   RSVP_TO_EVENTS = 35;
   // Allow the user to synchronize events from outside sources.
   SYNCHRONIZE_EVENTS = 36;
-  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
-  // connected Facebook Page, and to sync EventInstances to them.
-  SYNC_EVENTS_TO_FACEBOOK = 37;
-  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
-  // connected Facebook Page, and to sync Posts to them.
-  SYNC_POSTS_TO_FACEBOOK = 38;
 
   // Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
   // Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -101,6 +95,43 @@ enum Permission {
 
   READ_PERSONAL_MESSAGES = 50;
   READ_ALL_SYSTEM_MESSAGES = 51;
+
+  // Sync permissions -- each gates creating/updating `SyncDestination`s of that platform, and
+  // syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
+  // since this is the most likely area to keep growing as new platforms are added.
+  //
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected Facebook Page, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_FACEBOOK = 1000;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected Facebook Page, and to sync Posts to them.
+  SYNC_POSTS_TO_FACEBOOK = 1010;
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected Instagram Business/Creator account, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_INSTAGRAM = 1020;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected Instagram Business/Creator account, and to sync Posts to them.
+  SYNC_POSTS_TO_INSTAGRAM = 1030;
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected Mastodon account, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_MASTODON = 1040;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected Mastodon account, and to sync Posts to them.
+  SYNC_POSTS_TO_MASTODON = 1050;
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected Bluesky account, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_BLUESKY = 1060;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected Bluesky account, and to sync Posts to them.
+  SYNC_POSTS_TO_BLUESKY = 1070;
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
+  // see `XTwitterAccount`'s own doc.
+  SYNC_EVENTS_TO_X_TWITTER = 1080;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
+  // `XTwitterAccount`'s own doc.
+  SYNC_POSTS_TO_X_TWITTER = 1090;
 
   // Indicates the user is a business. Used purely for display purposes.
   BUSINESS = 9998;

@@ -410,6 +410,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
           <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
           <li><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></li>
+          <li><a href="#jonline-XAuthConfig">XAuthConfig</a></li>
         </ul>
       </li>
       <li>
@@ -705,52 +706,88 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
       from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
     </p>
-    <h5 id="external-integrations-facebook-ical-jonline-sync"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-integrations-facebook-ical-jonline-sync"><span class="octicon octicon-link"></span></a>External Integrations (Facebook, iCal): Jonline Sync</h5>
+    <h4 id="synchronization"><a class="anchor" aria-hidden="true" tabindex="-1" href="#synchronization"><span class="octicon octicon-link"></span></a>Synchronization</h4>
     <p>
-      Jonline Sync lets us sync <code>Event</code>s in from iCal and sync <code>Event</code>s (well, <code>EventInstance</code>s) and <code>Post</code>s out to
-      Facebook, presenting a "shape" -- a user-owned source/destination plus a <code>oneof configuration</code> for each -- meant
-      to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
+      While Federation is a first-class feature of Jonline, it also supports synchronization with other
+      fediverse platforms as well as other less-open platforms. All API keys for external services are stored
+      in <code>ServerConfiguration</code>'s <code>federation_info</code>.
     </p>
-    <h6 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h6>
+    <h5 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h5>
     <p>
-      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> is a user-owned external calendar to pull <code>Event</code>s in from -- currently
-      only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the <code>oneof</code> leaves room for other source types.
-      It's the parent <code>Event</code> (not the <code>EventInstance</code>) that gets synced in and tagged with its source
-      (<code>Event.event_sync_source</code>); the relationship is 1:(0 or 1), since a single source can back many synced <code>Event</code>s but each
-      <code>Event</code> has at most one source it came from. A background job re-pulls each source on its own
-      <code>sync_interval_seconds</code> cadence, recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
+      A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> is a user-owned external target to push <code>EventInstance</code>s and
+      <code>Post</code>s out to, via a <code>oneof configuration</code> naming which platform it is. This is a many-to-many relationship: it's
+      each <code>EventInstance</code> or <code>Post</code> (not, say, the parent <code>Event</code>) that syncs out, and each may push to several
+      destinations at once, tracked per-destination via the repeated <code>EventInstance.sync_destinations</code>/
+      <code>Post.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>, carrying the
+      destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
+      in bulk on an interval, so <code>synced_event_instance_count</code>/<code>synced_post_count</code> are computed with a <code>COUNT</code> at request
+      time instead of being recomputed-and-stored.
+    </p>
+    <p>
+      Destinations are managed via <a href="#grpc-api-GetSyncDestinations"><code>GetSyncDestinations</code></a>,
+      <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>, <a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>,
+      and <a href="#grpc-api-DeleteSyncDestination"><code>DeleteSyncDestination</code></a> -- each gated on the <code>SYNC_EVENTS_TO_*</code>/
+      <code>SYNC_POSTS_TO_*</code> permission pair matching the destination's own platform (or Admin; see each platform's own
+      section below). Actually syncing (or un-syncing) a given <code>EventInstance</code> or <code>Post</code> to a destination is a separate
+      step, via <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>/
+      <a href="#grpc-api-DeleteEventInstanceSyncDestination"><code>DeleteEventInstanceSyncDestination</code></a> and
+      <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>/<a href="#grpc-api-DeletePostSyncDestination"><code>DeletePostSyncDestination</code></a>, gated the same
+      way (the <code>_EVENTS_</code>/<code>_POSTS_</code> half matching which RPC).
+    </p>
+    <h6 id="facebook"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook"><span class="octicon octicon-link"></span></a>Facebook</h6>
+    <p>
+      <code>configuration.facebook_page</code> (a <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>) is a connected Facebook Page.
+      Connecting one requires a short-lived user access token from client-side Facebook Login
+      (<code>FacebookPage.short_lived_user_access_token</code>), which the server exchanges for a long-lived Page access token; the
+      short-lived token is write-only and never populated back in responses. Gated on <code>SYNC_EVENTS_TO_FACEBOOK</code>/
+      <code>SYNC_POSTS_TO_FACEBOOK</code>.
+    </p>
+    <h6 id="instagram"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagram"><span class="octicon octicon-link"></span></a>Instagram</h6>
+    <p>
+      <code>configuration.instagram_account</code> (an <a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>) is a connected Instagram
+      Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+      connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+      the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
+      (<code>instagram_business_account_id</code>). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
+      <code>Post</code>/<code>EventInstance</code> with no attached media fails with <code>instagram_requires_media</code>. Gated on
+      <code>SYNC_EVENTS_TO_INSTAGRAM</code>/<code>SYNC_POSTS_TO_INSTAGRAM</code>.
+    </p>
+    <h6 id="mastodon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodon"><span class="octicon octicon-link"></span></a>Mastodon</h6>
+    <p>
+      <code>configuration.mastodon_account</code> (a <a href="#jonline-MastodonAccount"><code>MastodonAccount</code></a>) is a connected Mastodon
+      account, on any instance the user names (<code>instance_host</code>) -- there's no single app to register the way
+      Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+      (<code>MastodonAccount.access_token</code>, generated on the user's own instance under Preferences > Development) rather than
+      an OAuth popup. Gated on <code>SYNC_EVENTS_TO_MASTODON</code>/<code>SYNC_POSTS_TO_MASTODON</code>.
+    </p>
+    <h6 id="bluesky"><a class="anchor" aria-hidden="true" tabindex="-1" href="#bluesky"><span class="octicon octicon-link"></span></a>Bluesky</h6>
+    <p>
+      <code>configuration.bluesky_account</code> (a <a href="#jonline-BlueskyAccount"><code>BlueskyAccount</code></a>) is a connected Bluesky (AT
+      Protocol) account. Connecting one is a user-supplied "App Password" (<code>BlueskyAccount.app_password</code>, generated at
+      Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
+      <code>SYNC_EVENTS_TO_BLUESKY</code>/<code>SYNC_POSTS_TO_BLUESKY</code>.
+    </p>
+    <h6 id="x-twitter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter"><span class="octicon octicon-link"></span></a>X (Twitter)</h6>
+    <p>
+      <code>configuration.x_twitter_account</code> (an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>) is reserved for a connected X
+      account, but <strong>not yet functional</strong> -- this server has no registered X Developer App
+      (<code>FederationInfo.x_twitter_auth_config</code>), so every RPC touching an <code>XTwitterAccount</code> destination fails with
+      <code>x_twitter_app_not_configured</code>. Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code> once functional.
+    </p>
+    <h5 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h5>
+    <p>
+      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> mirrors <code>SyncDestination</code>, but for pulling <code>Event</code>s in rather than
+      pushing content out -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the
+      <code>oneof</code> leaves room for other source types. Unlike <code>SyncDestination</code>, this is a 1:(0 or 1) relationship: it's the
+      parent <code>Event</code> (not the <code>EventInstance</code>) that gets synced in and tagged with its source
+      (<code>Event.event_sync_source</code>), since a single source can back many synced <code>Event</code>s but each <code>Event</code> has at most one
+      source it came from. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence,
+      recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
     </p>
     <p>
       Sources are managed via <a href="#grpc-api-GetEventSyncSources"><code>GetEventSyncSources</code></a>, <a href="#grpc-api-CreateEventSyncSource"><code>CreateEventSyncSource</code></a>
       (requires <code>SYNCHRONIZE_EVENTS</code>, or Admin), <a href="#grpc-api-UpdateEventSyncSource"><code>UpdateEventSyncSource</code></a>, and
       <a href="#grpc-api-DeleteEventSyncSource"><code>DeleteEventSyncSource</code></a>.
-    </p>
-    <h6 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h6>
-    <p>
-      A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> mirrors <code>EventSyncSource</code>, but for pushing content out rather than
-      pulling <code>Event</code>s in -- currently only a connected Facebook Page (<code>configuration.facebook_page</code>, a
-      <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). Unlike <code>EventSyncSource</code>, this is a many-to-many relationship: it's each
-      <code>EventInstance</code> or <code>Post</code> (not, say, the parent <code>Event</code>) that syncs out, and each may push to several destinations
-      at once, tracked per-destination via the repeated <code>EventInstance.sync_destinations</code>/<code>Post.sync_destinations</code> (each a
-      <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>, carrying the destination's resulting post ID/URL and
-      last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
-      so <code>synced_event_instance_count</code>/<code>synced_post_count</code> are computed with a <code>COUNT</code> at request time instead of being
-      recomputed-and-stored.
-    </p>
-    <p>
-      Connecting a <code>FacebookPage</code> requires a short-lived user access token from client-side Facebook Login
-      (<code>FacebookPage.short_lived_user_access_token</code>), which the server exchanges for a long-lived Page access token; the
-      short-lived token is write-only and never populated back in responses.
-    </p>
-    <p>
-      Destinations are managed via <a href="#grpc-api-GetSyncDestinations"><code>GetSyncDestinations</code></a>,
-      <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>, <a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>
-      (each requiring <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>, or Admin), and
-      <a href="#grpc-api-DeleteSyncDestination"><code>DeleteSyncDestination</code></a>. Actually syncing (or un-syncing) a given <code>EventInstance</code>
-      or <code>Post</code> to a destination is a separate step, via <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>/
-      <a href="#grpc-api-DeleteEventInstanceSyncDestination"><code>DeleteEventInstanceSyncDestination</code></a> (requiring
-      <code>SYNC_EVENTS_TO_FACEBOOK</code>, or Admin) and <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>/
-      <a href="#grpc-api-DeletePostSyncDestination"><code>DeletePostSyncDestination</code></a> (requiring <code>SYNC_POSTS_TO_FACEBOOK</code>, or Admin).
     </p>
     <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
     <h5 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h5>
@@ -2079,16 +2116,6 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Allow the user to synchronize events from outside sources.</td>
         </tr>
         <tr>
-          <td>SYNC_EVENTS_TO_FACEBOOK</td>
-          <td>37</td>
-          <td>Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them.</td>
-        </tr>
-        <tr>
-          <td>SYNC_POSTS_TO_FACEBOOK</td>
-          <td>38</td>
-          <td>Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them.</td>
-        </tr>
-        <tr>
           <td>VIEW_MEDIA</td>
           <td>40</td>
           <td>Allow the user to view media with <code>SERVER_PUBLIC</code> or higher visibility. <em>Not currently enforced.</em> Allow anonymous users to view media with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission). <em>Not currently enforced.</em></td>
@@ -2124,27 +2151,28 @@ directory</a> is (<code>{name}</code> denotes a
           <td></td>
         </tr>
         <tr>
-          <td>BUSINESS</td>
-          <td>9998</td>
-          <td>Indicates the user is a business. Used purely for display purposes.</td>
-        </tr>
-        <tr>
-          <td>RUN_BOTS</td>
-          <td>9999</td>
-          <td>Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots.</td>
-        </tr>
-        <tr>
-          <td>ADMIN</td>
-          <td>10000</td>
-          <td>Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <code>User</code>, <code>Group</code>, <code>Post</code> or <code>Event</code>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <code>GroupPost</code>s and <code>GroupEvent</code>s.</td>
-        </tr>
-        <tr>
-          <td>VIEW_PRIVATE_CONTACT_METHODS</td>
-          <td>10001</td>
-          <td>Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control.</td>
+          <td>SYNC_EVENTS_TO_FACEBOOK</td>
+          <td>1000</td>
+          <td>Sync permissions -- each gates creating/updating <code>SyncDestination</code>s of that platform, and syncing that content type to them (see <code>sync.proto</code>). A generous reserved block (<code>1000</code>+) since this is the most likely area to keep growing as new platforms are added.</td>
         </tr>
       </tbody>
     </table>
+    <p>
+      Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_FACEBOOK | 1010 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_INSTAGRAM | 1020 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_INSTAGRAM | 1030 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_MASTODON | 1040 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_MASTODON | 1050 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_BLUESKY | 1060 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_BLUESKY | 1070 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_X_TWITTER | 1080 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see <code>XTwitterAccount</code>'s own doc. |
+      | SYNC_POSTS_TO_X_TWITTER | 1090 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see <code>XTwitterAccount</code>'s own doc. |
+      | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
+      | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
+      | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <code>User</code>, <code>Group</code>, <code>Post</code> or <code>Event</code>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <code>GroupPost</code>s and <code>GroupEvent</code>s. |
+      | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control. |
+    </p>
     <p><a name="users-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="usersproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usersproto"><span class="octicon octicon-link"></span></a>users.proto</h2>
@@ -6138,6 +6166,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.</td>
         </tr>
+        <tr>
+          <td>x_twitter_auth_config</td>
+          <td><a href="#jonline-XAuthConfig">XAuthConfig</a></td>
+          <td>optional</td>
+          <td>X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, <code>XTwitterAccount</code> SyncDestinations always fail with <code>x_twitter_app_not_configured</code> regardless of this field.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetServiceVersionResponse"></a></p>
@@ -6158,6 +6192,33 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-XAuthConfig"></a></p>
+    <h3 id="xauthconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#xauthconfig"><span class="octicon octicon-link"></span></a>XAuthConfig</h3>
+    <p>X (Twitter) authentication configuration for the server. See <code>FederationInfo.x_twitter_auth_config</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>client_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The X Developer App's Client ID for the server.</td>
+        </tr>
+        <tr>
+          <td>client_secret</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The X Developer App's Client Secret for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
         </tr>
       </tbody>
     </table>

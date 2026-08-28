@@ -209,46 +209,78 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
  from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 
- ##### External Integrations (Facebook, iCal): Jonline Sync
- Jonline Sync lets us sync `Event`s in from iCal and sync `Event`s (well, `EventInstance`s) and `Post`s out to
- Facebook, presenting a "shape" -- a user-owned source/destination plus a `oneof configuration` for each -- meant
- to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
+ #### Synchronization
+ While Federation is a first-class feature of Jonline, it also supports synchronization with other
+ fediverse platforms as well as other less-open platforms. All API keys for external services are stored
+ in `ServerConfiguration`'s `federation_info`.
 
- ###### EventSyncSource
- An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
- only an iCal subscription URL (`configuration.ics_subscription_url`), though the `oneof` leaves room for other source types.
- It's the parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
- (`Event.event_sync_source`); the relationship is 1:(0 or 1), since a single source can back many synced `Event`s but each
- `Event` has at most one source it came from. A background job re-pulls each source on its own
- `sync_interval_seconds` cadence, recomputing `event_count`/`event_instance_count` on every sync.
+ ##### SyncDestination
+ A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push `EventInstance`s and
+ `Post`s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's
+ each `EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several
+ destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/
+ `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the
+ destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
+ in bulk on an interval, so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request
+ time instead of being recomputed-and-stored.
+
+ Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+ [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
+ and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+ `SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform's own
+ section below). Actually syncing (or un-syncing) a given `EventInstance` or `Post` to a destination is a separate
+ step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+ [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+ [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
+ way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
+
+ ###### Facebook
+ `configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
+ Connecting one requires a short-lived user access token from client-side Facebook Login
+ (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+ short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
+ `SYNC_POSTS_TO_FACEBOOK`.
+
+ ###### Instagram
+ `configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
+ Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+ connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+ the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
+ (`instagram_business_account_id`). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
+ `Post`/`EventInstance` with no attached media fails with `instagram_requires_media`. Gated on
+ `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+
+ ###### Mastodon
+ `configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
+ account, on any instance the user names (`instance_host`) -- there's no single app to register the way
+ Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+ (`MastodonAccount.access_token`, generated on the user's own instance under Preferences > Development) rather than
+ an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+
+ ###### Bluesky
+ `configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
+ Protocol) account. Connecting one is a user-supplied "App Password" (`BlueskyAccount.app_password`, generated at
+ Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
+ `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+
+ ###### X (Twitter)
+ `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is reserved for a connected X
+ account, but **not yet functional** -- this server has no registered X Developer App
+ (`FederationInfo.x_twitter_auth_config`), so every RPC touching an `XTwitterAccount` destination fails with
+ `x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+
+ ##### EventSyncSource
+ An [`EventSyncSource`](#jonline-EventSyncSource) mirrors `SyncDestination`, but for pulling `Event`s in rather than
+ pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
+ `oneof` leaves room for other source types. Unlike `SyncDestination`, this is a 1:(0 or 1) relationship: it's the
+ parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
+ (`Event.event_sync_source`), since a single source can back many synced `Event`s but each `Event` has at most one
+ source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
+ recomputing `event_count`/`event_instance_count` on every sync.
 
  Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
  (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
  [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
-
- ###### SyncDestination
- A [`SyncDestination`](#jonline-SyncDestination) mirrors `EventSyncSource`, but for pushing content out rather than
- pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
- [`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it's each
- `EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several destinations
- at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
- [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and
- last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
- so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
- recomputed-and-stored.
-
- Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
- (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
- short-lived token is write-only and never populated back in responses.
-
- Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
- [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination)
- (each requiring `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`, or Admin), and
- [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination). Actually syncing (or un-syncing) a given `EventInstance`
- or `Post` to a destination is a separate step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
- [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) (requiring
- `SYNC_EVENTS_TO_FACEBOOK`, or Admin) and [`SyncPost`](#grpc-api-SyncPost)/
- [`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination) (requiring `SYNC_POSTS_TO_FACEBOOK`, or Admin).
 
  #### HTTP Endpoints
  ##### Internal HTTP server (27705)

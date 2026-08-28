@@ -348,7 +348,11 @@
         "?client_id=" + encodeURIComponent(appId) +
         "&redirect_uri=" + encodeURIComponent(redirectUri) +
         "&response_type=token" +
-        "&scope=" + encodeURIComponent("pages_show_list,pages_manage_posts"),
+        // Requested unconditionally regardless of whether the user clicked "Sign in to Facebook
+        // Page" or "Sign in to Instagram" -- both flows start with the same "choose a Page" step
+        // (see Components.Pages.UserProfilePage's `FacebookConnectPlatform`), so the popup always
+        // asks for the union of scopes either flow could need.
+        "&scope=" + encodeURIComponent("pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish"),
         "jonline-facebook-login",
         "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
       );

@@ -5,7 +5,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::validate_permission;
+use crate::rpcs::{validate_any_permission, validate_permission};
 use crate::schema::post_sync_destinations;
 
 pub fn delete_post_sync_destination(
@@ -13,7 +13,19 @@ pub fn delete_post_sync_destination(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    validate_permission(&Some(current_user), Permission::SyncPostsToFacebook)?;
+    // Widened from a Facebook-only check to any `SYNC_POSTS_TO_*` -- see
+    // `delete_event_instance_sync_destination`'s identical comment.
+    validate_any_permission(
+        &Some(current_user),
+        vec![
+            Permission::SyncPostsToFacebook,
+            Permission::SyncPostsToInstagram,
+            Permission::SyncPostsToMastodon,
+            Permission::SyncPostsToBluesky,
+            Permission::SyncPostsToXTwitter,
+            Permission::Admin,
+        ],
+    )?;
 
     let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let destination_id = request

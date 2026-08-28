@@ -19,7 +19,7 @@ logic shared by `Components.Events.eventSyncDestinationsView` (wrapping
 
 import Grpc
 import Html exposing (Html, a, button, div, span, text)
-import Html.Attributes exposing (class, disabled, href, rel, target)
+import Html.Attributes exposing (class, disabled, href, rel, target, title)
 import Html.Events exposing (onClick)
 import Proto.Jonline exposing (SyncDestination, SyncDestinationStatus)
 import Proto.Jonline.Jonline as Jonline
@@ -95,16 +95,23 @@ wrappers over this. Kept on the `.event-*`-prefixed CSS classes `events.css` alr
 this row layout (`.event-card-sync-destinations`/`.event-card-sync-destination-*`,
 `.event-synced-to*`) rather than introducing a `.post-*` equivalent -- they're purely visual and
 carry no `.event-card`-specific selector, so they render identically for a Post card/detail view.
+
+`hasMedia` is whether the Post/EventInstance being synced has any attached media -- Instagram's
+Graph API has no text-only post type, so a row whose destination is an `InstagramAccount` gets its
+Push button disabled (with an explanatory label) when this is `False`, rather than letting the
+click round-trip to a guaranteed `instagram_requires_media` server error. Irrelevant to every other
+platform.
 -}
 syncDestinationsView :
     List SyncDestinationStatus
     -> Maybe (List SyncDestination)
+    -> Bool
     -> (String -> Bool)
     -> (String -> Maybe String)
     -> (String -> msg)
     -> (String -> String -> msg)
     -> Html msg
-syncDestinationsView syncDestinations availableSyncDestinations isPushing pushError onPush onDelete =
+syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushing pushError onPush onDelete =
     case availableSyncDestinations of
         Nothing ->
             let
@@ -129,13 +136,44 @@ syncDestinationsView syncDestinations availableSyncDestinations isPushing pushEr
 
         Just availableDestinations ->
             let
-                destinationName : String -> Maybe String
-                destinationName id =
+                lookupDestination : String -> Maybe SyncDestination
+                lookupDestination id =
                     availableDestinations
                         |> List.filter (\d -> d.id == id)
                         |> List.head
+
+                destinationName : String -> Maybe String
+                destinationName id =
+                    lookupDestination id
                         |> Maybe.andThen .configuration
-                        |> Maybe.map (\(DestinationConfiguration.FacebookPage page) -> page.pageName)
+                        |> Maybe.map
+                            (\config ->
+                                case config of
+                                    DestinationConfiguration.FacebookPage page ->
+                                        page.pageName
+
+                                    DestinationConfiguration.InstagramAccount account ->
+                                        "@" ++ account.username
+
+                                    DestinationConfiguration.MastodonAccount account ->
+                                        account.username ++ "@" ++ account.instanceHost
+
+                                    DestinationConfiguration.BlueskyAccount account ->
+                                        account.handle
+
+                                    DestinationConfiguration.XTwitterAccount account ->
+                                        "@" ++ account.username
+                            )
+
+                -- Instagram's Graph API has no text-only post type -- see `hasMedia`'s own doc.
+                isInstagramDestination : String -> Bool
+                isInstagramDestination id =
+                    case lookupDestination id |> Maybe.andThen .configuration of
+                        Just (DestinationConfiguration.InstagramAccount _) ->
+                            True
+
+                        _ ->
+                            False
 
                 syncedRows : List { id : String, url : Maybe String, synced : Bool }
                 syncedRows =
@@ -161,27 +199,39 @@ syncDestinationsView syncDestinations availableSyncDestinations isPushing pushEr
 
             else
                 div [ class "event-card-sync-destinations" ]
-                    (rows |> List.map (syncDestinationRowView destinationName isPushing pushError onPush onDelete))
+                    (rows |> List.map (syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing pushError onPush onDelete))
 
 
 syncDestinationRowView :
     (String -> Maybe String)
+    -> (String -> Bool)
+    -> Bool
     -> (String -> Bool)
     -> (String -> Maybe String)
     -> (String -> msg)
     -> (String -> String -> msg)
     -> { id : String, url : Maybe String, synced : Bool }
     -> Html msg
-syncDestinationRowView destinationName isPushing pushError onPush onDelete row =
+syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing pushError onPush onDelete row =
     let
         pushing : Bool
         pushing =
             isPushing row.id
 
+        -- See `syncDestinationsView`'s own doc on `hasMedia` -- Instagram can't post without an
+        -- attached image/video, so this row's Push button is disabled rather than letting the
+        -- click round-trip to a guaranteed `instagram_requires_media` server error.
+        instagramNeedsMedia : Bool
+        instagramNeedsMedia =
+            isInstagramDestination row.id && not hasMedia
+
         label : String
         label =
             if pushing then
                 "Pushing…"
+
+            else if instagramNeedsMedia then
+                "Instagram requires an image"
 
             else if row.url == Nothing then
                 "Push"
@@ -211,7 +261,14 @@ syncDestinationRowView destinationName isPushing pushError onPush onDelete row =
         , button
             [ class "event-card-sync-destination-push"
             , onClick (onPush row.id)
-            , disabled pushing
+            , disabled (pushing || instagramNeedsMedia)
+            , title
+                (if instagramNeedsMedia then
+                    "Instagram requires an image"
+
+                 else
+                    ""
+                )
             ]
             [ text label ]
         , if row.synced then

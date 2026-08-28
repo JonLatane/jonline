@@ -27,6 +27,61 @@ fn facebook_page_request(page_id: &str, short_lived_user_access_token: &str) -> 
     }
 }
 
+fn instagram_account_request(
+    page_id: &str,
+    short_lived_user_access_token: &str,
+) -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::InstagramAccount(
+            InstagramAccount {
+                instagram_business_account_id: String::new(),
+                username: String::new(),
+                page_id: page_id.to_string(),
+                short_lived_user_access_token: Some(short_lived_user_access_token.to_string()),
+            },
+        )),
+        ..Default::default()
+    }
+}
+
+fn mastodon_account_request(instance_host: &str, access_token: &str) -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::MastodonAccount(
+            MastodonAccount {
+                instance_host: instance_host.to_string(),
+                username: String::new(),
+                access_token: Some(access_token.to_string()),
+            },
+        )),
+        ..Default::default()
+    }
+}
+
+fn bluesky_account_request(handle: &str, app_password: &str) -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::BlueskyAccount(
+            BlueskyAccount {
+                handle: handle.to_string(),
+                did: String::new(),
+                app_password: Some(app_password.to_string()),
+            },
+        )),
+        ..Default::default()
+    }
+}
+
+fn x_twitter_account_request() -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::XTwitterAccount(
+            XTwitterAccount {
+                username: "test".to_string(),
+                short_lived_user_access_token: Some("test-token".to_string()),
+            },
+        )),
+        ..Default::default()
+    }
+}
+
 #[test]
 fn create_requires_sync_events_or_posts_to_facebook_permission() {
     let mut conn = test_conn();
@@ -203,6 +258,7 @@ fn returned_destination_never_includes_the_access_token() {
                 assert_eq!(page.page_id, "123");
                 assert_eq!(page.short_lived_user_access_token, None);
             }
+            _ => panic!("expected FacebookPage"),
         }
 
         Ok(())
@@ -454,6 +510,157 @@ fn sync_event_instance_fails_for_unknown_instance() {
         )
         .unwrap_err();
         assert_eq!(err.code(), Code::NotFound);
+
+        Ok(())
+    });
+}
+
+// -- New-platform `CreateSyncDestination` coverage --------------------------------------------
+//
+// None of these can reach a real success (the actual Instagram/Mastodon/Bluesky APIs aren't
+// reachable from this test environment, mirroring the existing Facebook specs above) -- each
+// proves its own permission gate, then that holding the right permission clears the gate and
+// reaches the network call (surfacing as `FailedPrecondition` once the fake host/credentials
+// can't actually be reached), same pattern as `create_succeeds_and_owner_is_always_current_user`.
+
+#[test]
+fn create_instagram_account_requires_sync_events_or_posts_to_instagram_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_ig_noperm");
+
+        let err = create_sync_destination(
+            instagram_account_request("123", "short-lived-token"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_TO_INSTAGRAM_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_instagram_account_succeeds_with_only_sync_events_to_instagram_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_facebook_app(conn, "test-app-id", "test-app-secret");
+        let user = create_user(conn, "sdt_ig_perm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToInstagram]);
+
+        // Instagram reuses the same Facebook OAuth exchange, so this reaches the real (unreachable
+        // in tests) Graph API base URL once the platform-specific permission passes.
+        let err = create_sync_destination(
+            instagram_account_request("123", "short-lived-token"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_mastodon_account_requires_sync_events_or_posts_to_mastodon_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_mn_noperm");
+
+        let err = create_sync_destination(
+            mastodon_account_request("mastodon.example.invalid", "test-pat"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_TO_MASTODON_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_mastodon_account_succeeds_with_only_sync_posts_to_mastodon_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_mn_perm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsToMastodon]);
+
+        // `mastodon.example.invalid` isn't a real, resolvable host -- proves the permission gate
+        // passed and the RPC went on to attempt `verify_credentials`.
+        let err = create_sync_destination(
+            mastodon_account_request("mastodon.example.invalid", "test-pat"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "mastodon_request_failed");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_bluesky_account_requires_sync_events_or_posts_to_bluesky_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_bs_noperm");
+
+        let err = create_sync_destination(
+            bluesky_account_request("jon.bsky.social", "app-password"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_TO_BLUESKY_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_bluesky_account_succeeds_with_only_sync_posts_to_bluesky_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_bs_perm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsToBluesky]);
+
+        // Once the platform-specific permission passes, this reaches the real (unreachable in
+        // tests) `bsky.social` -- proving the permission gate, not full connect success.
+        let err = create_sync_destination(
+            bluesky_account_request("jon.bsky.social", "app-password"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_x_twitter_account_is_always_rejected_regardless_of_permissions_held() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_x_noperm");
+
+        let err = create_sync_destination(x_twitter_account_request(), &user, conn).unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "x_twitter_app_not_configured");
+
+        // Even Admin can't create one -- there's no `XAuthConfig`-backed connect flow at all yet.
+        let admin = create_user(conn, "sdt_x_admin");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+        let err = create_sync_destination(x_twitter_account_request(), &admin, conn).unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "x_twitter_app_not_configured");
 
         Ok(())
     });
