@@ -373,8 +373,12 @@ import "server_configuration.proto";
 // ###### `GET /sitemap.xml`: Sitemap
 // Generated on the fly (not a static file) from the request's `Host` header, publicly cacheable for 1 hour. Lists a
 // fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
-// `/flutter` -- each qualified with the request's `Host`. It does not (yet) enumerate individual `Post`/`Event`/`User`
-// pages.
+// `/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
+// the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
+// request's `Host`. It also enumerates individual pages: every `Post` from an unauthenticated `GetPosts` (the same
+// "first page" an anonymous visitor sees) as `/post/{id}`, and every `Event` instance from an unauthenticated
+// `GetEvents` starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+// It does not (yet) enumerate individual `User` pages.
 //
 // ###### `GET /favicon.ico`: ICO Favicon
 // Serves the server's configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`

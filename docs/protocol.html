@@ -414,6 +414,24 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
       <li>
+        <p><a href="#sync-proto">sync.proto</a></p>
+        <ul>
+          <li><a href="#jonline-BlueskyAccount">BlueskyAccount</a></li>
+          <li><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></li>
+          <li><a href="#jonline-DeleteSyncDestinationRequest">DeleteSyncDestinationRequest</a></li>
+          <li><a href="#jonline-EventSyncSource">EventSyncSource</a></li>
+          <li><a href="#jonline-FacebookPage">FacebookPage</a></li>
+          <li><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></li>
+          <li><a href="#jonline-GetSyncDestinationsResponse">GetSyncDestinationsResponse</a></li>
+          <li><a href="#jonline-InstagramAccount">InstagramAccount</a></li>
+          <li><a href="#jonline-MastodonAccount">MastodonAccount</a></li>
+          <li><a href="#jonline-SyncDestination">SyncDestination</a></li>
+          <li><a href="#jonline-SyncDestinationStatus">SyncDestinationStatus</a></li>
+          <li><a href="#jonline-ThreadsAccount">ThreadsAccount</a></li>
+          <li><a href="#jonline-XTwitterAccount">XTwitterAccount</a></li>
+        </ul>
+      </li>
+      <li>
         <p><a href="#scalar-value-types">Scalar Value Types</a></p>
       </li>
     </ul>
@@ -902,8 +920,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Lists a
       fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_jonline</code>,
-      <code>/flutter</code> -- each qualified with the request's <code>Host</code>. It does not (yet) enumerate individual <code>Post</code>/<code>Event</code>/<code>User</code>
-      pages.
+      <code>/flutter</code>, <code>/tamagui</code>, <code>/elm</code> -- plus any <code>CustomNavigationTabSet.tabs</code> paths configured on the server (excluding
+      the reserved <code>posts</code>/<code>events</code>/<code>people</code>/<code>about</code> paths, which are always included above), each qualified with the
+      request's <code>Host</code>. It also enumerates individual pages: every <code>Post</code> from an unauthenticated <code>GetPosts</code> (the same
+      "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <code>Event</code> instance from an unauthenticated
+      <code>GetEvents</code> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{instance_id}</code>.
+      It does not (yet) enumerate individual <code>User</code> pages.
     </p>
     <h6 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h6>
     <p>
@@ -6232,6 +6254,532 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The X Developer App's Client Secret for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="sync-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="syncproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncproto"><span class="octicon octicon-link"></span></a>sync.proto</h2>
+    <p><a name="jonline-BlueskyAccount"></a></p>
+    <h3 id="blueskyaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyaccount"><span class="octicon octicon-link"></span></a>BlueskyAccount</h3>
+    <p>
+      A Bluesky (AT Protocol) account connected as a <code>SyncDestination</code> via an "App Password"
+      (generated at Settings > App Passwords -- not the account's main password), rather than an
+      OAuth popup.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>handle</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's handle, e.g. "jon.bsky.social".</td>
+        </tr>
+        <tr>
+          <td>did</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's DID (decentralized identifier), populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>app_password</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>/<code>UpdateSyncDestination</code>: the user's own App Password. Never populated in responses. Sessions are created fresh per post rather than stored/refreshed, since App Passwords don't expire.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-DeleteEventSyncSourceRequest"></a></p>
+    <h3 id="deleteeventsyncsourcerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventsyncsourcerequest"><span class="octicon octicon-link"></span></a>DeleteEventSyncSourceRequest</h3>
+    <p>Request to delete an EventSyncSource.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>source</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td></td>
+          <td>The source to be deleted.</td>
+        </tr>
+        <tr>
+          <td>delete_synced_events</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether to delete synced events.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-DeleteSyncDestinationRequest"></a></p>
+    <h3 id="deletesyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deletesyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeleteSyncDestinationRequest</h3>
+    <p>Request to delete a SyncDestination.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>destination</td>
+          <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
+          <td></td>
+          <td>The destination to be deleted.</td>
+        </tr>
+        <tr>
+          <td>delete_synced_posts</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether to also delete posts already made on the destination (e.g. the Facebook Page posts).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventSyncSource"></a></p>
+    <h3 id="eventsyncsource-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource-1"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
+    <p>A user-owned source to sync events from.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the synchronization.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this event sync.</td>
+        </tr>
+        <tr>
+          <td>sync_interval_seconds</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>How frequently the sync should happen in seconds.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the EventSyncSource was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last updated.</td>
+        </tr>
+        <tr>
+          <td>last_synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last synced.</td>
+        </tr>
+        <tr>
+          <td>event_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of events total associated with this EventSyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of event instances total associated with this EventSyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>ics_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The iCal subscription URL for the calendar sync.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-FacebookPage"></a></p>
+    <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
+    <p>A Facebook Page connected as a <code>SyncDestination</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>page_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's ID.</td>
+        </tr>
+        <tr>
+          <td>page_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Facebook Page's name, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>short_lived_user_access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetEventSyncSourcesResponse"></a></p>
+    <h3 id="geteventsyncsourcesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsyncsourcesresponse"><span class="octicon octicon-link"></span></a>GetEventSyncSourcesResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sources</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetSyncDestinationsResponse"></a></p>
+    <h3 id="getsyncdestinationsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getsyncdestinationsresponse"><span class="octicon octicon-link"></span></a>GetSyncDestinationsResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>destinations</td>
+          <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-InstagramAccount"></a></p>
+    <h3 id="instagramaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagramaccount"><span class="octicon octicon-link"></span></a>InstagramAccount</h3>
+    <p>
+      An Instagram Business/Creator account connected as a <code>SyncDestination</code>. Posting to Instagram
+      requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
+      popup and app credentials as <code>FacebookPage</code> -- the server exchanges the token for the Page's
+      access token, then looks up that Page's linked Instagram Business account.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>instagram_business_account_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Instagram Business/Creator account's ID, used for all Graph API posting calls.</td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Instagram account's @username, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>page_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The linked Facebook Page's ID, kept for reference/reconnect.</td>
+        </tr>
+        <tr>
+          <td>short_lived_user_access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>: a short-lived user access token from client-side Facebook Login (same flow as <code>FacebookPage</code>), exchanged server-side for a long-lived Page access token, which is also used to post to the linked Instagram account. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MastodonAccount"></a></p>
+    <h3 id="mastodonaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonaccount"><span class="octicon octicon-link"></span></a>MastodonAccount</h3>
+    <p>
+      A Mastodon account connected as a <code>SyncDestination</code> via a user-supplied Personal Access Token
+      (generated on the user's own instance, under Preferences > Development), rather than an OAuth
+      popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
+      register ahead of time the way Facebook/Instagram have one.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>instance_host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Mastodon instance's hostname, e.g. "mastodon.social".</td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's username on that instance, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>/<code>UpdateSyncDestination</code>: the user's own Personal Access Token for <code>instance_host</code>. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-SyncDestination"></a></p>
+    <h3 id="syncdestination-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination-1"><span class="octicon octicon-link"></span></a>SyncDestination</h3>
+    <p>
+      A user-owned destination to sync (cross-post) content out to. Mirrors <code>EventSyncSource</code>,
+      but for pushing content out rather than pulling events in. Originally Event-specific
+      (as <code>EventSyncDestination</code>), now shared by both <code>EventInstance</code>s (see <code>events.proto</code>'s
+      <code>SyncEventInstanceRequest</code>) and <code>Post</code>s (see <code>posts.proto</code>'s <code>SyncPostRequest</code>).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the destination.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this destination.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the SyncDestination was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the SyncDestination was last updated.</td>
+        </tr>
+        <tr>
+          <td>synced_event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td>optional</td>
+          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <code>EventSyncSource</code>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
+        </tr>
+        <tr>
+          <td>synced_post_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td>optional</td>
+          <td>The number of Posts synced to this destination so far. Computed the same way as <code>synced_event_instance_count</code>, just against Posts instead of EventInstances.</td>
+        </tr>
+        <tr>
+          <td>facebook_page</td>
+          <td><a href="#jonline-FacebookPage">FacebookPage</a></td>
+          <td></td>
+          <td>A connected Facebook Page to post EventInstances/Posts to.</td>
+        </tr>
+        <tr>
+          <td>instagram_account</td>
+          <td><a href="#jonline-InstagramAccount">InstagramAccount</a></td>
+          <td></td>
+          <td>A connected Instagram Business/Creator account to post EventInstances/Posts to.</td>
+        </tr>
+        <tr>
+          <td>mastodon_account</td>
+          <td><a href="#jonline-MastodonAccount">MastodonAccount</a></td>
+          <td></td>
+          <td>A connected Mastodon account to post EventInstances/Posts to.</td>
+        </tr>
+        <tr>
+          <td>bluesky_account</td>
+          <td><a href="#jonline-BlueskyAccount">BlueskyAccount</a></td>
+          <td></td>
+          <td>A connected Bluesky account to post EventInstances/Posts to.</td>
+        </tr>
+        <tr>
+          <td>x_twitter_account</td>
+          <td><a href="#jonline-XTwitterAccount">XTwitterAccount</a></td>
+          <td></td>
+          <td>A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see <code>XTwitterAccount</code>'s own doc.</td>
+        </tr>
+        <tr>
+          <td>threads_account</td>
+          <td><a href="#jonline-ThreadsAccount">ThreadsAccount</a></td>
+          <td></td>
+          <td>A connected Threads account to post EventInstances/Posts to.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-SyncDestinationStatus"></a></p>
+    <h3 id="syncdestinationstatus"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinationstatus"><span class="octicon octicon-link"></span></a>SyncDestinationStatus</h3>
+    <p>
+      The status of a single piece of content's (an <code>EventInstance</code> or <code>Post</code>) sync (cross-post) to
+      one <code>SyncDestination</code>. Shared/generic so both <code>EventInstance.sync_destinations</code> and
+      <code>Post.sync_destinations</code> can reuse it.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sync_destination_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The SyncDestination this status is for.</td>
+        </tr>
+        <tr>
+          <td>destination_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The ID of the resulting post on the destination (e.g. a Facebook Post ID).</td>
+        </tr>
+        <tr>
+          <td>destination_url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>A link to the resulting post on the destination, if available.</td>
+        </tr>
+        <tr>
+          <td>synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time this content was last successfully synced to the destination.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ThreadsAccount"></a></p>
+    <h3 id="threadsaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threadsaccount"><span class="octicon octicon-link"></span></a>ThreadsAccount</h3>
+    <p>
+      A connected Threads account. Threads API is a product added to this server's existing Meta App
+      (see <code>FacebookAuthConfig</code>) rather than a separately-registered app, so no separate auth config
+      is needed. Unlike <code>FacebookPage</code>/<code>InstagramAccount</code>, connecting one is a <code>response_type=code</code>
+      OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+      exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+      refreshable via <code>grant_type=th_refresh_token</code> -- not yet implemented; a connected destination
+      will need reconnecting after ~60 days until a refresh job exists).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>threads_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's Threads user ID, used for all posting calls.</td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's @username, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>authorization_code</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>: the OAuth authorization code from the Threads login popup. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-XTwitterAccount"></a></p>
+    <h3 id="xtwitteraccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#xtwitteraccount"><span class="octicon octicon-link"></span></a>XTwitterAccount</h3>
+    <p>
+      An X (Twitter) account connected as a <code>SyncDestination</code>. Not yet postable -- this server has no
+      registered X Developer App. Every RPC touching an <code>XTwitterAccount</code> destination fails with
+      <code>x_twitter_app_not_configured</code> until one is (see <code>FederationInfo.x_twitter_auth_config</code>), mirroring
+      <code>FacebookAuthConfig</code>/<code>facebook_app_not_configured</code>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's @username.</td>
+        </tr>
+        <tr>
+          <td>short_lived_user_access_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required) on <code>CreateSyncDestination</code>: reserved for a future OAuth flow. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>

@@ -133,6 +133,21 @@
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
     - [XAuthConfig](#jonline-XAuthConfig)
   
+- [sync.proto](#sync-proto)
+    - [BlueskyAccount](#jonline-BlueskyAccount)
+    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
+    - [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest)
+    - [EventSyncSource](#jonline-EventSyncSource)
+    - [FacebookPage](#jonline-FacebookPage)
+    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
+    - [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse)
+    - [InstagramAccount](#jonline-InstagramAccount)
+    - [MastodonAccount](#jonline-MastodonAccount)
+    - [SyncDestination](#jonline-SyncDestination)
+    - [SyncDestinationStatus](#jonline-SyncDestinationStatus)
+    - [ThreadsAccount](#jonline-ThreadsAccount)
+    - [XTwitterAccount](#jonline-XTwitterAccount)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -511,8 +526,12 @@ allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https:/
 ###### `GET /sitemap.xml`: Sitemap
 Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Lists a
 fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
-`/flutter` -- each qualified with the request&#39;s `Host`. It does not (yet) enumerate individual `Post`/`Event`/`User`
-pages.
+`/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
+the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
+request&#39;s `Host`. It also enumerates individual pages: every `Post` from an unauthenticated `GetPosts` (the same
+&#34;first page&#34; an anonymous visitor sees) as `/post/{id}`, and every `Event` instance from an unauthenticated
+`GetEvents` starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+It does not (yet) enumerate individual `User` pages.
 
 ###### `GET /favicon.ico`: ICO Favicon
 Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`
@@ -2924,6 +2943,275 @@ X (Twitter) authentication configuration for the server. See `FederationInfo.x_t
 | ----- | ---- | ----- | ----------- |
 | client_id | [string](#string) |  | The X Developer App&#39;s Client ID for the server. |
 | client_secret | [string](#string) |  | The X Developer App&#39;s Client Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="sync-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## sync.proto
+
+
+
+<a name="jonline-BlueskyAccount"></a>
+
+### BlueskyAccount
+A Bluesky (AT Protocol) account connected as a `SyncDestination` via an &#34;App Password&#34;
+(generated at Settings &gt; App Passwords -- not the account&#39;s main password), rather than an
+OAuth popup.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| handle | [string](#string) |  | The account&#39;s handle, e.g. &#34;jon.bsky.social&#34;. |
+| did | [string](#string) |  | The account&#39;s DID (decentralized identifier), populated by the server when the connection is made. |
+| app_password | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`/`UpdateSyncDestination`: the user&#39;s own App Password. Never populated in responses. Sessions are created fresh per post rather than stored/refreshed, since App Passwords don&#39;t expire. |
+
+
+
+
+
+
+<a name="jonline-DeleteEventSyncSourceRequest"></a>
+
+### DeleteEventSyncSourceRequest
+Request to delete an EventSyncSource.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
+| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
+
+
+
+
+
+
+<a name="jonline-DeleteSyncDestinationRequest"></a>
+
+### DeleteSyncDestinationRequest
+Request to delete a SyncDestination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destination | [SyncDestination](#jonline-SyncDestination) |  | The destination to be deleted. |
+| delete_synced_posts | [bool](#bool) |  | Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). |
+
+
+
+
+
+
+<a name="jonline-EventSyncSource"></a>
+
+### EventSyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+
+
+
+
+
+
+<a name="jonline-FacebookPage"></a>
+
+### FacebookPage
+A Facebook Page connected as a `SyncDestination`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_id | [string](#string) |  | The Facebook Page&#39;s ID. |
+| page_name | [string](#string) |  | The Facebook Page&#39;s name, populated by the server when the connection is made. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-GetEventSyncSourcesResponse"></a>
+
+### GetEventSyncSourcesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-GetSyncDestinationsResponse"></a>
+
+### GetSyncDestinationsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destinations | [SyncDestination](#jonline-SyncDestination) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-InstagramAccount"></a>
+
+### InstagramAccount
+An Instagram Business/Creator account connected as a `SyncDestination`. Posting to Instagram
+requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
+popup and app credentials as `FacebookPage` -- the server exchanges the token for the Page&#39;s
+access token, then looks up that Page&#39;s linked Instagram Business account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instagram_business_account_id | [string](#string) |  | The Instagram Business/Creator account&#39;s ID, used for all Graph API posting calls. |
+| username | [string](#string) |  | The Instagram account&#39;s @username, populated by the server when the connection is made. |
+| page_id | [string](#string) |  | The linked Facebook Page&#39;s ID, kept for reference/reconnect. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`: a short-lived user access token from client-side Facebook Login (same flow as `FacebookPage`), exchanged server-side for a long-lived Page access token, which is also used to post to the linked Instagram account. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-MastodonAccount"></a>
+
+### MastodonAccount
+A Mastodon account connected as a `SyncDestination` via a user-supplied Personal Access Token
+(generated on the user&#39;s own instance, under Preferences &gt; Development), rather than an OAuth
+popup -- Mastodon instances are user-chosen arbitrary domains, so there&#39;s no single app to
+register ahead of time the way Facebook/Instagram have one.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_host | [string](#string) |  | The Mastodon instance&#39;s hostname, e.g. &#34;mastodon.social&#34;. |
+| username | [string](#string) |  | The account&#39;s username on that instance, populated by the server when the connection is made. |
+| access_token | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`/`UpdateSyncDestination`: the user&#39;s own Personal Access Token for `instance_host`. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-SyncDestination"></a>
+
+### SyncDestination
+A user-owned destination to sync (cross-post) content out to. Mirrors `EventSyncSource`,
+but for pushing content out rather than pulling events in. Originally Event-specific
+(as `EventSyncDestination`), now shared by both `EventInstance`s (see `events.proto`&#39;s
+`SyncEventInstanceRequest`) and `Post`s (see `posts.proto`&#39;s `SyncPostRequest`).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the destination. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncDestination was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncDestination was last updated. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike `EventSyncSource`&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_event_instance_count`, just against Posts instead of EventInstances. |
+| facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances/Posts to. |
+| instagram_account | [InstagramAccount](#jonline-InstagramAccount) |  | A connected Instagram Business/Creator account to post EventInstances/Posts to. |
+| mastodon_account | [MastodonAccount](#jonline-MastodonAccount) |  | A connected Mastodon account to post EventInstances/Posts to. |
+| bluesky_account | [BlueskyAccount](#jonline-BlueskyAccount) |  | A connected Bluesky account to post EventInstances/Posts to. |
+| x_twitter_account | [XTwitterAccount](#jonline-XTwitterAccount) |  | A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see `XTwitterAccount`&#39;s own doc. |
+| threads_account | [ThreadsAccount](#jonline-ThreadsAccount) |  | A connected Threads account to post EventInstances/Posts to. |
+
+
+
+
+
+
+<a name="jonline-SyncDestinationStatus"></a>
+
+### SyncDestinationStatus
+The status of a single piece of content&#39;s (an `EventInstance` or `Post`) sync (cross-post) to
+one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
+`Post.sync_destinations` can reuse it.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sync_destination_id | [string](#string) |  | The SyncDestination this status is for. |
+| destination_instance_id | [string](#string) | optional | The ID of the resulting post on the destination (e.g. a Facebook Post ID). |
+| destination_url | [string](#string) | optional | A link to the resulting post on the destination, if available. |
+| synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time this content was last successfully synced to the destination. |
+
+
+
+
+
+
+<a name="jonline-ThreadsAccount"></a>
+
+### ThreadsAccount
+A connected Threads account. Threads API is a product added to this server&#39;s existing Meta App
+(see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
+is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+OAuth flow at threads.net (not facebook.com) with no &#34;choose a Page&#34; step -- the code is
+exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+will need reconnecting after ~60 days until a refresh job exists).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| threads_user_id | [string](#string) |  | The account&#39;s Threads user ID, used for all posting calls. |
+| username | [string](#string) |  | The account&#39;s @username, populated by the server when the connection is made. |
+| authorization_code | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`: the OAuth authorization code from the Threads login popup. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-XTwitterAccount"></a>
+
+### XTwitterAccount
+An X (Twitter) account connected as a `SyncDestination`. Not yet postable -- this server has no
+registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
+`x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
+`FacebookAuthConfig`/`facebook_app_not_configured`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The account&#39;s @username. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on `CreateSyncDestination`: reserved for a future OAuth flow. Never populated in responses. |
 
 
 
