@@ -201,7 +201,7 @@ digraph G {
           node [style = filled; color = white;];
 
           event_sync_sources [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
-          event_sync_destinations [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+          sync_destinations [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
         vapid_configuration -> event_sync_sources [style = invis;];
@@ -215,12 +215,12 @@ digraph G {
     vapid_configuration -> vapid_push [style = tapered; penwidth = 6;];
 
     pull_events [shape = parallelogram;label = "Pull Events From Source";];
-    push_events [shape = parallelogram;label = "Push Events To Destination";];
+    push_content [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline0 -> pull_events [weight = 8;];
-    jonline0 -> push_events [weight = 8;];
+    jonline0 -> push_content [weight = 8;];
     event_sync_sources -> pull_events [style = bold;];
-    event_sync_destinations -> push_events [style = bold;];
-    facebook_configuration -> push_events [style = bold;];
+    sync_destinations -> push_content [style = bold;];
+    facebook_configuration -> push_content [style = bold;];
   }
 
   subgraph cluster_oakcitysocial {
@@ -263,7 +263,7 @@ digraph G {
           node [style = filled; color = white;];
 
           event_sync_sources1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
-          event_sync_destinations1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+          sync_destinations1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
         vapid_configuration1 -> event_sync_sources1 [style = invis;];
@@ -277,12 +277,12 @@ digraph G {
     vapid_configuration1 -> vapid_push1 [style = tapered; penwidth = 6;];
 
     pull_events1 [shape = parallelogram;label = "Pull Events From Source";];
-    push_events1 [shape = parallelogram;label = "Push Events To Destination";];
+    push_content1 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline1 -> pull_events1 [weight = 8;];
-    jonline1 -> push_events1 [weight = 8;];
+    jonline1 -> push_content1 [weight = 8;];
     event_sync_sources1 -> pull_events1 [style = bold;];
-    event_sync_destinations1 -> push_events1 [style = bold;];
-    facebook_configuration1 -> push_events1 [style = bold;];
+    sync_destinations1 -> push_content1 [style = bold;];
+    facebook_configuration1 -> push_content1 [style = bold;];
 
     tls1 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
   }
@@ -326,7 +326,7 @@ digraph G {
           node [style = filled; color = white;];
 
           event_sync_sources2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
-          event_sync_destinations2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+          sync_destinations2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
         vapid_configuration2 -> event_sync_sources2 [style = invis;];
@@ -340,12 +340,12 @@ digraph G {
     vapid_configuration2 -> vapid_push2 [style = tapered; penwidth = 6;];
 
     pull_events2 [shape = parallelogram;label = "Pull Events From Source";];
-    push_events2 [shape = parallelogram;label = "Push Events To Destination";];
+    push_content2 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline2 -> pull_events2 [weight = 8;];
-    jonline2 -> push_events2 [weight = 8;];
+    jonline2 -> push_content2 [weight = 8;];
     event_sync_sources2 -> pull_events2 [style = bold;];
-    event_sync_destinations2 -> push_events2 [style = bold;];
-    facebook_configuration2 -> push_events2 [style = bold;];
+    sync_destinations2 -> push_content2 [style = bold;];
+    facebook_configuration2 -> push_content2 [style = bold;];
 
     tls2 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
   }
@@ -389,7 +389,7 @@ digraph G {
           node [style = filled; color = white;];
 
           event_sync_sources3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
-          event_sync_destinations3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Destinations</b>>;];
+          sync_destinations3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
         vapid_configuration3 -> event_sync_sources3 [style = invis;];
@@ -403,12 +403,12 @@ digraph G {
     vapid_configuration3 -> vapid_push3 [style = tapered; penwidth = 6;];
 
     pull_events3 [shape = parallelogram;label = "Pull Events From Source";];
-    push_events3 [shape = parallelogram;label = "Push Events To Destination";];
+    push_content3 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline3 -> pull_events3 [weight = 8;];
-    jonline3 -> push_events3 [weight = 8;];
+    jonline3 -> push_content3 [weight = 8;];
     event_sync_sources3 -> pull_events3 [style = bold;];
-    event_sync_destinations3 -> push_events3 [style = bold;];
-    facebook_configuration3 -> push_events3 [style = bold;];
+    sync_destinations3 -> push_content3 [style = bold;];
+    facebook_configuration3 -> push_content3 [style = bold;];
 
     tls3 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
   }
@@ -443,9 +443,9 @@ digraph G {
   jonline0 -> jonline1 [style = invis; weight = 100000; minlen = 0;];
   jonline2 -> jonline3 [style = invis; weight = 100000; minlen = 0;];
   pull_events -> jonline2 [style = invis; weight = 100000;];
-  push_events -> jonline2 [style = invis; weight = 100000;];
+  push_content -> jonline2 [style = invis; weight = 100000;];
   pull_events1 -> jonline2 [style = invis; weight = 100000;];
-  push_events1 -> jonline2 [style = invis; weight = 100000;];
+  push_content1 -> jonline2 [style = invis; weight = 100000;];
 
   // Push delivery never touches Traefik -- jonline calls straight out to the subscription
   // endpoint URL the browser's own push service handed it at subscribe time (see
@@ -459,15 +459,16 @@ digraph G {
   vapid_push3 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
   vapid_push_service -> browser [constraint = false; style = tapered; penwidth = 6;];
 
-  // EventSyncSource (an iCal subscription) is pulled *in*; EventSyncDestination (e.g. a Facebook
-  // Page) is pushed *out* -- see backend/src/protos/jonline.rs's EventSyncSource/
-  // EventSyncDestination doc comments. Arrow direction follows the data, same as VAPID push above.
+  // EventSyncSource (an iCal subscription) is pulled *in*; SyncDestination (e.g. a Facebook
+  // Page -- used to push out both Posts and EventInstances) is pushed *out* -- see
+  // backend/src/protos/jonline.rs's EventSyncSource/SyncDestination doc comments. Arrow direction
+  // follows the data, same as VAPID push above.
   ical_feeds -> pull_events [constraint = false; style = dotted;];
   ical_feeds -> pull_events1 [constraint = false; style = dotted;];
   ical_feeds -> pull_events2 [constraint = false; style = dotted;];
   ical_feeds -> pull_events3 [constraint = false; style = dotted;];
-  push_events -> facebook_service [constraint = false; style = dotted;];
-  push_events1 -> facebook_service [constraint = false; style = dotted;];
-  push_events2 -> facebook_service [constraint = false; style = dotted;];
-  push_events3 -> facebook_service [constraint = false; style = dotted;];
+  push_content -> facebook_service [constraint = false; style = dotted;];
+  push_content1 -> facebook_service [constraint = false; style = dotted;];
+  push_content2 -> facebook_service [constraint = false; style = dotted;];
+  push_content3 -> facebook_service [constraint = false; style = dotted;];
 }

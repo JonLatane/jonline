@@ -91,10 +91,10 @@ this module has no opinion on `AccountsPanel`/permissions.
 
 Shared by `Components.Events.eventSyncDestinationsView` (passing `instance.syncDestinations`) and
 `Components.Posts.postSyncDestinationsView` (passing `post.syncDestinations`) -- both thin
-wrappers over this. Kept on the `.event-*`-prefixed CSS classes `events.css` already defines for
-this row layout (`.event-card-sync-destinations`/`.event-card-sync-destination-*`,
-`.event-synced-to*`) rather than introducing a `.post-*` equivalent -- they're purely visual and
-carry no `.event-card`-specific selector, so they render identically for a Post card/detail view.
+wrappers over this. Rendered with the platform-agnostic `.card-sync-destinations`/
+`.card-sync-destination-*`/`.synced-to*` classes `events.css` defines for this row layout, rather
+than a separate `.post-*` set -- they're purely visual and carry no event- or post-specific
+selector, so they render identically for a Post card/detail view.
 
 `hasMedia` is whether the Post/EventInstance being synced has any attached media -- Instagram's
 Graph API has no text-only post type, so a row whose destination is an `InstagramAccount` gets its
@@ -123,13 +123,13 @@ syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushi
                 text ""
 
             else
-                div [ class "event-synced-to" ]
+                div [ class "synced-to" ]
                     (urls
                         |> List.map
                             (\url ->
-                                div [ class "event-synced-to-line" ]
+                                div [ class "synced-to-line" ]
                                     [ text "synced to "
-                                    , a [ href url, target "_blank", rel "noopener noreferrer", class "event-synced-to-link" ] [ text url ]
+                                    , a [ href url, target "_blank", rel "noopener noreferrer", class "synced-to-link" ] [ text url ]
                                     ]
                             )
                     )
@@ -201,7 +201,7 @@ syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushi
                 text ""
 
             else
-                div [ class "event-card-sync-destinations" ]
+                div [ class "card-sync-destinations" ]
                     (rows |> List.map (syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing pushError onPush onDelete))
 
 
@@ -246,8 +246,8 @@ syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing
         name =
             destinationName row.id |> Maybe.withDefault "Facebook Page"
     in
-    div [ class "event-card-sync-destination-row" ]
-        [ span [ class "event-card-sync-destination-name" ]
+    div [ class "card-sync-destination-row" ]
+        [ span [ class "card-sync-destination-name" ]
             [ text name ]
         , case row.url of
             Just url ->
@@ -255,14 +255,14 @@ syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing
                     [ href url
                     , target "_blank"
                     , rel "noopener noreferrer"
-                    , class "event-card-sync-destination-link"
+                    , class "card-sync-destination-link"
                     ]
                     [ text url ]
 
             Nothing ->
                 text ""
         , button
-            [ class "event-card-sync-destination-push"
+            [ class "card-sync-destination-push"
             , onClick (onPush row.id)
             , disabled (pushing || instagramNeedsMedia)
             , title
@@ -276,7 +276,7 @@ syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing
             [ text label ]
         , if row.synced then
             button
-                [ class "event-card-sync-destination-delete"
+                [ class "card-sync-destination-delete"
                 , onClick (onDelete row.id name)
                 , disabled pushing
                 ]
@@ -286,7 +286,7 @@ syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing
             text ""
         , case pushError row.id of
             Just err ->
-                div [ class "event-card-sync-destination-push-error" ] [ text err ]
+                div [ class "card-sync-destination-push-error" ] [ text err ]
 
             Nothing ->
                 text ""

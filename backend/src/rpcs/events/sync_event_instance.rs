@@ -84,7 +84,7 @@ pub fn sync_event_instance(
     // Only buildable when this server has `external_cdn_config.frontend_host`/`backend_host`
     // configured -- this RPC has no HTTP `Host` header to fall back on the way web-facing routes
     // (`configured_frontend_domain`) do, so both are simply omitted otherwise. See
-    // `docs/facebook_federation.md`.
+    // `docs/facebook_and_x_twitter_federation.md`.
     let external_cdn_config = get_server_configuration_proto(conn)?.external_cdn_config;
     let event_url = external_cdn_config
         .as_ref()

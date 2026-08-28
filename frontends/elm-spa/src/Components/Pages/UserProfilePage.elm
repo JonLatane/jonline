@@ -86,8 +86,8 @@ type alias Model =
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
     , eventSyncSources : EventSyncSourcesState
     , eventSyncSourcesExpanded : Bool
-    , eventSyncDestinations : EventSyncDestinationsState
-    , eventSyncDestinationsExpanded : Bool
+    , syncDestinations : SyncDestinationsState
+    , syncDestinationsExpanded : Bool
     , followStatusAndButton : FollowStatusAndButton.Model
 
     -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
@@ -167,7 +167,7 @@ type Msg
     | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
     | EventSyncSourceDeleteClicked EventSyncSource Bool
     | EventSyncSourcesExpandedToggled
-    | EventSyncDestinationsExpandedToggled
+    | SyncDestinationsExpandedToggled
     | FacebookLoginClicked
     | InstagramLoginClicked
     | GotFacebookLoginResult Decode.Value
@@ -189,8 +189,8 @@ type Msg
     | ThreadsLoginClicked
     | GotThreadsLoginResult Decode.Value
     | GotThreadsLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncDestination ))
-    | EventSyncDestinationDeleteClicked SyncDestination
-    | GotEventSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | SyncDestinationDeleteClicked SyncDestination
+    | GotSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | DeleteUserClicked
 
 
@@ -400,7 +400,7 @@ type FacebookConnectPlatform
 
 
 {-| The Facebook/Instagram "Sign in to Facebook Page" flow's own state machine (see
-`FacebookLoginClicked`/`InstagramLoginClicked` and `eventSyncDestinationsSection`). Each step
+`FacebookLoginClicked`/`InstagramLoginClicked` and `syncDestinationsSection`). Each step
 commits straight to the next -- there's no "form" to independently edit/cancel the way
 `RealNameEdit`/`EventSyncAddForm` have:
 
@@ -479,14 +479,14 @@ only mutable-from-here field, in effect, is "does it exist"), so this is just th
 flows' own state machines (`login` for Facebook/Instagram's shared popup flow, `mastodon`/
 `bluesky` for their own inline paste-a-credential forms, `threads` for Threads' own simpler popup
 flow -- see `ThreadsConnectStatus`), plus a per-destination-id `SubmitStatus` for
-`EventSyncDestinationDeleteClicked` (`Dict` rather than a single field since, in principle,
+`SyncDestinationDeleteClicked` (`Dict` rather than a single field since, in principle,
 more than one delete could be in flight -- e.g. an Admin clicking two rows quickly). At most one of
 `login`/`mastodon`/`bluesky`/`threads` is ever not-`NotStarted` at a time -- see
 `platformConnectView`, which renders whichever one is in progress (or a platform-picker row of
 buttons if none are). The destinations themselves are no longer fetched/held here at all --
 `Components.Users.Resolver` already resolves this profile's own `User` (via `GetUsers`), which
 (self-or-Admin gated server-side, see `protos/users.proto`'s own doc on `User.sync_destinations`)
-already carries them, so `eventSyncDestinationsSection` just reads `user.syncDestinations` directly.
+already carries them, so `syncDestinationsSection` just reads `user.syncDestinations` directly.
 
 Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
 a connected account is a low-stakes, easily-reversible action (nothing else gets deleted --
@@ -494,7 +494,7 @@ a connected account is a low-stakes, easily-reversible action (nothing else gets
 need for the global "are you sure?" overlay here.
 
 -}
-type alias EventSyncDestinationsState =
+type alias SyncDestinationsState =
     { login : FacebookLoginStatus
     , mastodon : MastodonConnectStatus
     , bluesky : BlueskyConnectStatus
@@ -503,8 +503,8 @@ type alias EventSyncDestinationsState =
     }
 
 
-initEventSyncDestinations : EventSyncDestinationsState
-initEventSyncDestinations =
+initSyncDestinations : SyncDestinationsState
+initSyncDestinations =
     { login = FacebookLoginNotStarted
     , mastodon = MastodonConnectNotStarted
     , bluesky = BlueskyConnectNotStarted
@@ -544,8 +544,8 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , federatedProfilesEdit = Nothing
             , eventSyncSources = initEventSyncSources
             , eventSyncSourcesExpanded = False
-            , eventSyncDestinations = initEventSyncDestinations
-            , eventSyncDestinationsExpanded = False
+            , syncDestinations = initSyncDestinations
+            , syncDestinationsExpanded = False
             , followStatusAndButton = FollowStatusAndButton.init
             , posts = Nothing
             , events = Nothing
@@ -694,7 +694,7 @@ updateInner shared msg model =
                                     in
                                     ( { eventSyncFetchedModel
                                         | posts =
-                                            Just { postsModel | showSyncDestinations = model.eventSyncDestinationsExpanded }
+                                            Just { postsModel | showSyncDestinations = model.syncDestinationsExpanded }
                                       }
                                     , Effect.map PostsMsg postsEffect
                                     )
@@ -714,7 +714,7 @@ updateInner shared msg model =
                                             Just
                                                 { eventsModel
                                                     | showSyncSources = model.eventSyncSourcesExpanded
-                                                    , showSyncDestinations = model.eventSyncDestinationsExpanded
+                                                    , showSyncDestinations = model.syncDestinationsExpanded
                                                 }
                                       }
                                     , Effect.map EventsMsg eventsEffect
@@ -1610,11 +1610,11 @@ updateInner shared msg model =
                 Nothing ->
                     ( { model | eventSyncSourcesExpanded = expanded }, Effect.none )
 
-        EventSyncDestinationsExpandedToggled ->
+        SyncDestinationsExpandedToggled ->
             let
                 expanded : Bool
                 expanded =
-                    not model.eventSyncDestinationsExpanded
+                    not model.syncDestinationsExpanded
 
                 ( eventsUpdatedModel, eventsEffect ) =
                     case model.events of
@@ -1623,15 +1623,15 @@ updateInner shared msg model =
                                 ( newEventsModel, effect ) =
                                     EventsPage.update shared (EventsPage.showSyncDestinationsChanged expanded) eventsModel
                             in
-                            ( { model | eventSyncDestinationsExpanded = expanded, events = Just newEventsModel }, effect )
+                            ( { model | syncDestinationsExpanded = expanded, events = Just newEventsModel }, effect )
 
                         Nothing ->
-                            ( { model | eventSyncDestinationsExpanded = expanded }, Effect.none )
+                            ( { model | syncDestinationsExpanded = expanded }, Effect.none )
 
                 -- Same toggle also drives the embedded `PostsPage.Model`'s own
                 -- `showSyncDestinations` -- mirrors the `model.events` handling just
                 -- above exactly, since "Sync Destinations" now covers both Events and
-                -- Posts (see `eventSyncDestinationsSection`'s own doc).
+                -- Posts (see `syncDestinationsSection`'s own doc).
                 ( postsUpdatedModel, postsEffect ) =
                     case eventsUpdatedModel.posts of
                         Just postsModel ->
@@ -1664,11 +1664,11 @@ updateInner shared msg model =
         -- `Ports.facebookLoginPopup`'s own doc), so a result meant for the Threads flow arrives
         -- here too and must be ignored rather than misrouted into this state machine.
         GotFacebookLoginResult value ->
-            case model.eventSyncDestinations.login of
+            case model.syncDestinations.login of
                 FacebookLoginPopupOpen platform ->
                     case facebookLoginResultDecoder value of
                         Ok accessToken ->
-                            ( setEventSyncDestinationsLogin (FacebookLoginFetchingPages platform accessToken) model
+                            ( setSyncDestinationsLogin (FacebookLoginFetchingPages platform accessToken) model
                             , fetchFacebookPages accessToken |> Effect.fromCmd
                             )
 
@@ -1676,18 +1676,18 @@ updateInner shared msg model =
                         -- than showing an "error" for a deliberate cancel (see
                         -- `Ports.facebookLoginResult`'s own doc).
                         Err "cancelled" ->
-                            ( setEventSyncDestinationsLogin FacebookLoginNotStarted model, Effect.none )
+                            ( setSyncDestinationsLogin FacebookLoginNotStarted model, Effect.none )
 
                         Err message ->
-                            ( setEventSyncDestinationsLogin (FacebookLoginFailed message) model, Effect.none )
+                            ( setSyncDestinationsLogin (FacebookLoginFailed message) model, Effect.none )
 
                 _ ->
                     ( model, Effect.none )
 
         GotFacebookPagesResult (Ok pages) ->
-            case model.eventSyncDestinations.login of
+            case model.syncDestinations.login of
                 FacebookLoginFetchingPages platform accessToken ->
-                    ( setEventSyncDestinationsLogin
+                    ( setSyncDestinationsLogin
                         (if List.isEmpty pages then
                             FacebookLoginNoPagesFound
 
@@ -1702,10 +1702,10 @@ updateInner shared msg model =
                     ( model, Effect.none )
 
         GotFacebookPagesResult (Err _) ->
-            ( setEventSyncDestinationsLogin (FacebookLoginFailed "Couldn't load your Facebook Pages.") model, Effect.none )
+            ( setSyncDestinationsLogin (FacebookLoginFailed "Couldn't load your Facebook Pages.") model, Effect.none )
 
         FacebookPageChosen page ->
-            case model.eventSyncDestinations.login of
+            case model.syncDestinations.login of
                 FacebookLoginChoosingPage platform accessToken _ ->
                     let
                         newDestination : SyncDestination
@@ -1736,7 +1736,7 @@ updateInner shared msg model =
                                         )
                             }
                     in
-                    ( setEventSyncDestinationsLogin (FacebookLoginLinking platform page) model
+                    ( setSyncDestinationsLogin (FacebookLoginLinking platform page) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
                         |> Task.attempt GotFacebookLinkResult
                         |> Effect.fromCmd
@@ -1747,13 +1747,13 @@ updateInner shared msg model =
 
         GotFacebookLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
 
                 loginResetModel : Model
                 loginResetModel =
-                    { model | eventSyncDestinations = { ed | login = FacebookLoginNotStarted } }
+                    { model | syncDestinations = { ed | login = FacebookLoginNotStarted } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared loginResetModel
@@ -1761,10 +1761,10 @@ updateInner shared msg model =
             ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotFacebookLinkResult (Err err) ->
-            ( setEventSyncDestinationsLogin (FacebookLoginFailed (facebookLinkErrorMessage err)) model, Effect.none )
+            ( setSyncDestinationsLogin (FacebookLoginFailed (facebookLinkErrorMessage err)) model, Effect.none )
 
         MastodonConnectClicked ->
-            ( setEventSyncDestinationsMastodon (MastodonConnectEditing { instanceHost = "", accessToken = "" }) model, Effect.none )
+            ( setSyncDestinationsMastodon (MastodonConnectEditing { instanceHost = "", accessToken = "" }) model, Effect.none )
 
         MastodonInstanceHostChanged instanceHost ->
             ( updateMastodonEditing (\form -> { form | instanceHost = instanceHost }) model, Effect.none )
@@ -1773,10 +1773,10 @@ updateInner shared msg model =
             ( updateMastodonEditing (\form -> { form | accessToken = accessToken }) model, Effect.none )
 
         MastodonConnectCancelled ->
-            ( setEventSyncDestinationsMastodon MastodonConnectNotStarted model, Effect.none )
+            ( setSyncDestinationsMastodon MastodonConnectNotStarted model, Effect.none )
 
         MastodonConnectSubmitted ->
-            case model.eventSyncDestinations.mastodon of
+            case model.syncDestinations.mastodon of
                 MastodonConnectEditing form ->
                     let
                         newDestination : SyncDestination
@@ -1792,7 +1792,7 @@ updateInner shared msg model =
                                         )
                             }
                     in
-                    ( setEventSyncDestinationsMastodon (MastodonConnectLinking form) model
+                    ( setSyncDestinationsMastodon (MastodonConnectLinking form) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
                         |> Task.attempt GotMastodonLinkResult
                         |> Effect.fromCmd
@@ -1803,13 +1803,13 @@ updateInner shared msg model =
 
         GotMastodonLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
 
                 mastodonResetModel : Model
                 mastodonResetModel =
-                    { model | eventSyncDestinations = { ed | mastodon = MastodonConnectNotStarted } }
+                    { model | syncDestinations = { ed | mastodon = MastodonConnectNotStarted } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared mastodonResetModel
@@ -1817,10 +1817,10 @@ updateInner shared msg model =
             ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotMastodonLinkResult (Err err) ->
-            ( setEventSyncDestinationsMastodon (MastodonConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
+            ( setSyncDestinationsMastodon (MastodonConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
 
         BlueskyConnectClicked ->
-            ( setEventSyncDestinationsBluesky (BlueskyConnectEditing { handle = "", appPassword = "" }) model, Effect.none )
+            ( setSyncDestinationsBluesky (BlueskyConnectEditing { handle = "", appPassword = "" }) model, Effect.none )
 
         BlueskyHandleChanged handle ->
             ( updateBlueskyEditing (\form -> { form | handle = handle }) model, Effect.none )
@@ -1829,10 +1829,10 @@ updateInner shared msg model =
             ( updateBlueskyEditing (\form -> { form | appPassword = appPassword }) model, Effect.none )
 
         BlueskyConnectCancelled ->
-            ( setEventSyncDestinationsBluesky BlueskyConnectNotStarted model, Effect.none )
+            ( setSyncDestinationsBluesky BlueskyConnectNotStarted model, Effect.none )
 
         BlueskyConnectSubmitted ->
-            case model.eventSyncDestinations.bluesky of
+            case model.syncDestinations.bluesky of
                 BlueskyConnectEditing form ->
                     let
                         newDestination : SyncDestination
@@ -1848,7 +1848,7 @@ updateInner shared msg model =
                                         )
                             }
                     in
-                    ( setEventSyncDestinationsBluesky (BlueskyConnectLinking form) model
+                    ( setSyncDestinationsBluesky (BlueskyConnectLinking form) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
                         |> Task.attempt GotBlueskyLinkResult
                         |> Effect.fromCmd
@@ -1859,13 +1859,13 @@ updateInner shared msg model =
 
         GotBlueskyLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
 
                 blueskyResetModel : Model
                 blueskyResetModel =
-                    { model | eventSyncDestinations = { ed | bluesky = BlueskyConnectNotStarted } }
+                    { model | syncDestinations = { ed | bluesky = BlueskyConnectNotStarted } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared blueskyResetModel
@@ -1873,7 +1873,7 @@ updateInner shared msg model =
             ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotBlueskyLinkResult (Err err) ->
-            ( setEventSyncDestinationsBluesky (BlueskyConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
+            ( setSyncDestinationsBluesky (BlueskyConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
 
         -- Opens the Threads popup (see `Ports.facebookLoginPopup`'s own doc) -- Threads rides the
         -- same Meta App as Facebook/Instagram, so this reuses `facebookAppId` the same way
@@ -1882,7 +1882,7 @@ updateInner shared msg model =
         ThreadsLoginClicked ->
             case facebookAppId shared model.resolver.targetHost of
                 Just appId ->
-                    ( setEventSyncDestinationsThreads ThreadsConnectPopupOpen model
+                    ( setSyncDestinationsThreads ThreadsConnectPopupOpen model
                     , Ports.facebookLoginPopup { provider = "threads", appId = appId } |> Effect.fromCmd
                     )
 
@@ -1894,7 +1894,7 @@ updateInner shared msg model =
         -- Unlike Facebook/Instagram, a successful result goes straight to building the create
         -- request -- there's no page-picker step to land on first.
         GotThreadsLoginResult value ->
-            case model.eventSyncDestinations.threads of
+            case model.syncDestinations.threads of
                 ThreadsConnectPopupOpen ->
                     case facebookLoginResultDecoder value of
                         Ok code ->
@@ -1916,7 +1916,7 @@ updateInner shared msg model =
                                                 )
                                     }
                             in
-                            ( setEventSyncDestinationsThreads ThreadsConnectLinking model
+                            ( setSyncDestinationsThreads ThreadsConnectLinking model
                             , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
                                 |> Task.attempt GotThreadsLinkResult
                                 |> Effect.fromCmd
@@ -1926,23 +1926,23 @@ updateInner shared msg model =
                         -- rather than showing an "error" for a deliberate cancel (see
                         -- `Ports.facebookLoginResult`'s own doc).
                         Err "cancelled" ->
-                            ( setEventSyncDestinationsThreads ThreadsConnectNotStarted model, Effect.none )
+                            ( setSyncDestinationsThreads ThreadsConnectNotStarted model, Effect.none )
 
                         Err message ->
-                            ( setEventSyncDestinationsThreads (ThreadsConnectFailed message) model, Effect.none )
+                            ( setSyncDestinationsThreads (ThreadsConnectFailed message) model, Effect.none )
 
                 _ ->
                     ( model, Effect.none )
 
         GotThreadsLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
 
                 threadsResetModel : Model
                 threadsResetModel =
-                    { model | eventSyncDestinations = { ed | threads = ThreadsConnectNotStarted } }
+                    { model | syncDestinations = { ed | threads = ThreadsConnectNotStarted } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared threadsResetModel
@@ -1950,44 +1950,44 @@ updateInner shared msg model =
             ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
         GotThreadsLinkResult (Err err) ->
-            ( setEventSyncDestinationsThreads (ThreadsConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
+            ( setSyncDestinationsThreads (ThreadsConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
 
         -- Unlike `EventSyncSourceDeleteClicked`, this deletes immediately rather than opening
-        -- the shared confirmation dialog -- see `EventSyncDestinationsState`'s own doc for why.
-        EventSyncDestinationDeleteClicked destination ->
+        -- the shared confirmation dialog -- see `SyncDestinationsState`'s own doc for why.
+        SyncDestinationDeleteClicked destination ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
             in
-            ( { model | eventSyncDestinations = { ed | deleteStatuses = Dict.insert destination.id Submitting ed.deleteStatuses } }
+            ( { model | syncDestinations = { ed | deleteStatuses = Dict.insert destination.id Submitting ed.deleteStatuses } }
             , performForOwner shared model (\accountServer -> SyncDestinations.deleteSyncDestination shared.accounts accountServer destination)
-                |> Task.attempt (GotEventSyncDestinationDeleteResult destination.id)
+                |> Task.attempt (GotSyncDestinationDeleteResult destination.id)
                 |> Effect.fromCmd
             )
 
-        GotEventSyncDestinationDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
+        GotSyncDestinationDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
 
                 clearedModel : Model
                 clearedModel =
-                    { model | eventSyncDestinations = { ed | deleteStatuses = Dict.remove id ed.deleteStatuses } }
+                    { model | syncDestinations = { ed | deleteStatuses = Dict.remove id ed.deleteStatuses } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared clearedModel
             in
             ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
 
-        GotEventSyncDestinationDeleteResult id (Err err) ->
+        GotSyncDestinationDeleteResult id (Err err) ->
             let
-                ed : EventSyncDestinationsState
+                ed : SyncDestinationsState
                 ed =
-                    model.eventSyncDestinations
+                    model.syncDestinations
             in
-            ( { model | eventSyncDestinations = { ed | deleteStatuses = Dict.insert id (SubmitFailed (AccountsPanel.grpcErrorToString err)) ed.deleteStatuses } }
+            ( { model | syncDestinations = { ed | deleteStatuses = Dict.insert id (SubmitFailed (AccountsPanel.grpcErrorToString err)) ed.deleteStatuses } }
             , Effect.none
             )
 
@@ -2288,7 +2288,7 @@ refetchEvents shared model =
                     Just
                         { eventsModel
                             | showSyncSources = model.eventSyncSourcesExpanded
-                            , showSyncDestinations = model.eventSyncDestinationsExpanded
+                            , showSyncDestinations = model.syncDestinationsExpanded
                         }
               }
             , Effect.map EventsMsg eventsEffect
@@ -2327,24 +2327,24 @@ fetchEventSyncSources shared host targetUserId model =
             )
 
 
-setEventSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
-setEventSyncDestinationsLogin login model =
+setSyncDestinationsLogin : FacebookLoginStatus -> Model -> Model
+setSyncDestinationsLogin login model =
     let
-        ed : EventSyncDestinationsState
+        ed : SyncDestinationsState
         ed =
-            model.eventSyncDestinations
+            model.syncDestinations
     in
-    { model | eventSyncDestinations = { ed | login = login } }
+    { model | syncDestinations = { ed | login = login } }
 
 
-setEventSyncDestinationsMastodon : MastodonConnectStatus -> Model -> Model
-setEventSyncDestinationsMastodon mastodon model =
+setSyncDestinationsMastodon : MastodonConnectStatus -> Model -> Model
+setSyncDestinationsMastodon mastodon model =
     let
-        ed : EventSyncDestinationsState
+        ed : SyncDestinationsState
         ed =
-            model.eventSyncDestinations
+            model.syncDestinations
     in
-    { model | eventSyncDestinations = { ed | mastodon = mastodon } }
+    { model | syncDestinations = { ed | mastodon = mastodon } }
 
 
 {-| Applies `f` to the in-progress Mastodon connect form's fields (a no-op if `mastodon` isn't
@@ -2353,22 +2353,22 @@ currently `MastodonConnectEditing`, e.g. a stray keystroke event after submit) -
 -}
 updateMastodonEditing : ({ instanceHost : String, accessToken : String } -> { instanceHost : String, accessToken : String }) -> Model -> Model
 updateMastodonEditing f model =
-    case model.eventSyncDestinations.mastodon of
+    case model.syncDestinations.mastodon of
         MastodonConnectEditing form ->
-            setEventSyncDestinationsMastodon (MastodonConnectEditing (f form)) model
+            setSyncDestinationsMastodon (MastodonConnectEditing (f form)) model
 
         _ ->
             model
 
 
-setEventSyncDestinationsBluesky : BlueskyConnectStatus -> Model -> Model
-setEventSyncDestinationsBluesky bluesky model =
+setSyncDestinationsBluesky : BlueskyConnectStatus -> Model -> Model
+setSyncDestinationsBluesky bluesky model =
     let
-        ed : EventSyncDestinationsState
+        ed : SyncDestinationsState
         ed =
-            model.eventSyncDestinations
+            model.syncDestinations
     in
-    { model | eventSyncDestinations = { ed | bluesky = bluesky } }
+    { model | syncDestinations = { ed | bluesky = bluesky } }
 
 
 {-| Applies `f` to the in-progress Bluesky connect form's fields -- mirrors
@@ -2376,22 +2376,22 @@ setEventSyncDestinationsBluesky bluesky model =
 -}
 updateBlueskyEditing : ({ handle : String, appPassword : String } -> { handle : String, appPassword : String }) -> Model -> Model
 updateBlueskyEditing f model =
-    case model.eventSyncDestinations.bluesky of
+    case model.syncDestinations.bluesky of
         BlueskyConnectEditing form ->
-            setEventSyncDestinationsBluesky (BlueskyConnectEditing (f form)) model
+            setSyncDestinationsBluesky (BlueskyConnectEditing (f form)) model
 
         _ ->
             model
 
 
-setEventSyncDestinationsThreads : ThreadsConnectStatus -> Model -> Model
-setEventSyncDestinationsThreads threads model =
+setSyncDestinationsThreads : ThreadsConnectStatus -> Model -> Model
+setSyncDestinationsThreads threads model =
     let
-        ed : EventSyncDestinationsState
+        ed : SyncDestinationsState
         ed =
-            model.eventSyncDestinations
+            model.syncDestinations
     in
-    { model | eventSyncDestinations = { ed | threads = threads } }
+    { model | syncDestinations = { ed | threads = threads } }
 
 
 {-| Opens the Facebook/Instagram popup for `platform` (see `FacebookLoginClicked`'s own doc for
@@ -2402,7 +2402,7 @@ startFacebookLogin : Shared.Model -> Model -> FacebookConnectPlatform -> ( Model
 startFacebookLogin shared model platform =
     case facebookAppId shared model.resolver.targetHost of
         Just appId ->
-            ( setEventSyncDestinationsLogin (FacebookLoginPopupOpen platform) model
+            ( setSyncDestinationsLogin (FacebookLoginPopupOpen platform) model
             , Ports.facebookLoginPopup { provider = "facebook", appId = appId } |> Effect.fromCmd
             )
 
@@ -2762,7 +2762,7 @@ profileDetail shared model server maybeAccount user =
             Nothing ->
                 text ""
         , eventSyncSourcesSection shared model canEdit (isOwnProfile maybeAccount user)
-        , eventSyncDestinationsSection shared model maybeAccount user
+        , syncDestinationsSection shared model maybeAccount user
         , h3 [] [ text (postsHeading model.posts) ]
         , case model.posts of
             Just postsModel ->
@@ -3718,21 +3718,21 @@ own profile, holding any of the 10 `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permissi
 (individual platform buttons within the section apply their own, more specific gate -- see
 `platformPickerView`). There's no "view-only for an Admin visiting someone else's profile" case the
 way sources have: a linked destination is always the _caller's own_
-(`create_event_sync_destination.rs` always creates for `current_user`), so there's nothing for
+(`create_sync_destination.rs` always creates for `current_user`), so there's nothing for
 anyone else to usefully see here.
 -}
-eventSyncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
-eventSyncDestinationsSection shared model maybeAccount user =
+syncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
+syncDestinationsSection shared model maybeAccount user =
     if not (isOwnProfile maybeAccount user && canUseSyncDestinations maybeAccount) then
         text ""
 
     else
-        expandableProfileSection "event-sync-destinations-section"
+        expandableProfileSection "sync-destinations-section"
             "Sync Destinations"
-            model.eventSyncDestinationsExpanded
-            EventSyncDestinationsExpandedToggled
-            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.syncDestinations)
-            , platformConnectView shared model.resolver.targetHost maybeAccount model.eventSyncDestinations
+            model.syncDestinationsExpanded
+            SyncDestinationsExpandedToggled
+            [ div [ class "sync-destinations-list" ] (syncDestinationsContentView model.syncDestinations user.syncDestinations)
+            , platformConnectView shared model.resolver.targetHost maybeAccount model.syncDestinations
             ]
 
 
@@ -3742,17 +3742,17 @@ eventSyncDestinationsSection shared model maybeAccount user =
 fetched/tracked status -- no "Loading…" state needed, same as nothing
 elsewhere shows a "loading permissions" spinner for other `User` fields.
 -}
-eventSyncDestinationsContentView : EventSyncDestinationsState -> List SyncDestination -> List (Html Msg)
-eventSyncDestinationsContentView ed destinations =
+syncDestinationsContentView : SyncDestinationsState -> List SyncDestination -> List (Html Msg)
+syncDestinationsContentView ed destinations =
     if List.isEmpty destinations then
-        [ div [ class "event-sync-destinations-message" ] [ text "No sync destinations linked yet." ] ]
+        [ div [ class "sync-destinations-message" ] [ text "No sync destinations linked yet." ] ]
 
     else
-        List.map (eventSyncDestinationRowView ed) destinations
+        List.map (syncDestinationRowView ed) destinations
 
 
-eventSyncDestinationRowView : EventSyncDestinationsState -> SyncDestination -> Html Msg
-eventSyncDestinationRowView ed destination =
+syncDestinationRowView : SyncDestinationsState -> SyncDestination -> Html Msg
+syncDestinationRowView ed destination =
     let
         platformLabel : String
         platformLabel =
@@ -3810,11 +3810,11 @@ eventSyncDestinationRowView ed destination =
         deleting =
             Dict.get destination.id ed.deleteStatuses == Just Submitting
     in
-    div [ class "event-sync-destination-row list-item-bordered-color-primary" ]
-        [ span [ class "event-sync-destination-name" ] [ text destinationName ]
-        , span [ class "event-sync-destination-count" ] [ text (pluralCount count "event" ++ " synced") ]
+    div [ class "sync-destination-row list-item-bordered-color-primary" ]
+        [ span [ class "sync-destination-name" ] [ text destinationName ]
+        , span [ class "sync-destination-count" ] [ text (pluralCount count "event" ++ " synced") ]
         , button
-            [ class "event-sync-destination-delete", onClick (EventSyncDestinationDeleteClicked destination), disabled deleting ]
+            [ class "sync-destination-delete", onClick (SyncDestinationDeleteClicked destination), disabled deleting ]
             [ text
                 (if deleting then
                     "Unlinking…"
@@ -3825,7 +3825,7 @@ eventSyncDestinationRowView ed destination =
             ]
         , case Dict.get destination.id ed.deleteStatuses of
             Just (SubmitFailed err) ->
-                div [ class "event-sync-destination-error" ] [ text err ]
+                div [ class "sync-destination-error" ] [ text err ]
 
             _ ->
                 text ""
@@ -3849,9 +3849,9 @@ pluralCount count noun =
 progress, or -- if none are -- `platformPickerView`'s row of platform buttons. At most one flow is
 ever in progress at a time (starting one doesn't clear the others' state, but the UI only ever
 lets one be started, since the picker itself is hidden once any is in progress) -- see
-`EventSyncDestinationsState`'s own doc.
+`SyncDestinationsState`'s own doc.
 -}
-platformConnectView : Shared.Model -> String -> Maybe AccountsPanel.Account -> EventSyncDestinationsState -> Html Msg
+platformConnectView : Shared.Model -> String -> Maybe AccountsPanel.Account -> SyncDestinationsState -> Html Msg
 platformConnectView shared host maybeAccount ed =
     if ed.login /= FacebookLoginNotStarted then
         facebookLoginView ed.login
@@ -3892,7 +3892,7 @@ platformPickerView shared host maybeAccount =
         , platformButton (hasSyncToThreadsPermission maybeAccount && facebookAppReady) ThreadsLoginClicked "Connect Threads"
         , if hasSyncToXTwitterPermission maybeAccount then
             button
-                [ classes [ "event-sync-destination-login" ]
+                [ classes [ "sync-destination-login" ]
                 , disabled True
                 , title "X (Twitter) support is coming soon."
                 ]
@@ -3907,7 +3907,7 @@ platformButton : Bool -> Msg -> String -> Html Msg
 platformButton visible msg buttonText =
     if visible then
         button
-            [ classes [ "event-sync-destination-login", "background-color-primary" ], onClick msg ]
+            [ classes [ "sync-destination-login", "background-color-primary" ], onClick msg ]
             [ text buttonText ]
 
     else
@@ -3924,31 +3924,31 @@ facebookLoginView login =
             text ""
 
         FacebookLoginPopupOpen platform ->
-            div [ class "event-sync-destinations-message" ] [ text ("Waiting for " ++ connectPlatformLabel platform ++ "…") ]
+            div [ class "sync-destinations-message" ] [ text ("Waiting for " ++ connectPlatformLabel platform ++ "…") ]
 
         FacebookLoginFetchingPages _ _ ->
-            div [ class "event-sync-destinations-message" ] [ text "Loading your Facebook Pages…" ]
+            div [ class "sync-destinations-message" ] [ text "Loading your Facebook Pages…" ]
 
         FacebookLoginChoosingPage _ _ pages ->
-            div [ class "event-sync-destination-page-picker" ]
-                (div [ class "event-sync-destinations-message" ] [ text "Choose a Page to link:" ]
+            div [ class "sync-destination-page-picker" ]
+                (div [ class "sync-destinations-message" ] [ text "Choose a Page to link:" ]
                     :: List.map
                         (\page ->
                             button
-                                [ class "event-sync-destination-page-option", onClick (FacebookPageChosen page) ]
+                                [ class "sync-destination-page-option", onClick (FacebookPageChosen page) ]
                                 [ text page.name ]
                         )
                         pages
                 )
 
         FacebookLoginNoPagesFound ->
-            div [ class "event-sync-destinations-message" ] [ text "That Facebook account doesn't manage any Pages." ]
+            div [ class "sync-destinations-message" ] [ text "That Facebook account doesn't manage any Pages." ]
 
         FacebookLoginLinking platform page ->
-            div [ class "event-sync-destinations-message" ] [ text ("Linking " ++ page.name ++ " for " ++ connectPlatformLabel platform ++ "…") ]
+            div [ class "sync-destinations-message" ] [ text ("Linking " ++ page.name ++ " for " ++ connectPlatformLabel platform ++ "…") ]
 
         FacebookLoginFailed err ->
-            div [ class "event-sync-destination-error" ] [ text err ]
+            div [ class "sync-destination-error" ] [ text err ]
 
 
 connectPlatformLabel : FacebookConnectPlatform -> String
@@ -3971,17 +3971,17 @@ mastodonConnectView status =
             text ""
 
         MastodonConnectEditing form ->
-            div [ class "event-sync-destination-connect-form" ]
-                [ div [ class "event-sync-destinations-message" ] [ text "Connect a Mastodon account:" ]
+            div [ class "sync-destination-connect-form" ]
+                [ div [ class "sync-destinations-message" ] [ text "Connect a Mastodon account:" ]
                 , input
-                    [ class "event-sync-destination-connect-input"
+                    [ class "sync-destination-connect-input"
                     , placeholder "Instance host, e.g. mastodon.social"
                     , value form.instanceHost
                     , onInput MastodonInstanceHostChanged
                     ]
                     []
                 , input
-                    [ class "event-sync-destination-connect-input"
+                    [ class "sync-destination-connect-input"
                     , type_ "password"
                     , placeholder "Personal Access Token"
                     , value form.accessToken
@@ -3989,21 +3989,21 @@ mastodonConnectView status =
                     ]
                     []
                 , button
-                    [ classes [ "event-sync-destination-login", "background-color-primary" ]
+                    [ classes [ "sync-destination-login", "background-color-primary" ]
                     , onClick MastodonConnectSubmitted
                     , disabled (String.isEmpty form.instanceHost || String.isEmpty form.accessToken)
                     ]
                     [ text "Connect" ]
-                , button [ class "event-sync-destination-connect-cancel", onClick MastodonConnectCancelled ] [ text "Cancel" ]
+                , button [ class "sync-destination-connect-cancel", onClick MastodonConnectCancelled ] [ text "Cancel" ]
                 ]
 
         MastodonConnectLinking form ->
-            div [ class "event-sync-destinations-message" ] [ text ("Linking " ++ form.instanceHost ++ "…") ]
+            div [ class "sync-destinations-message" ] [ text ("Linking " ++ form.instanceHost ++ "…") ]
 
         MastodonConnectFailed err ->
             div []
-                [ div [ class "event-sync-destination-error" ] [ text err ]
-                , button [ class "event-sync-destination-connect-cancel", onClick MastodonConnectClicked ] [ text "Try Again" ]
+                [ div [ class "sync-destination-error" ] [ text err ]
+                , button [ class "sync-destination-connect-cancel", onClick MastodonConnectClicked ] [ text "Try Again" ]
                 ]
 
 
@@ -4016,17 +4016,17 @@ blueskyConnectView status =
             text ""
 
         BlueskyConnectEditing form ->
-            div [ class "event-sync-destination-connect-form" ]
-                [ div [ class "event-sync-destinations-message" ] [ text "Connect a Bluesky account:" ]
+            div [ class "sync-destination-connect-form" ]
+                [ div [ class "sync-destinations-message" ] [ text "Connect a Bluesky account:" ]
                 , input
-                    [ class "event-sync-destination-connect-input"
+                    [ class "sync-destination-connect-input"
                     , placeholder "Handle, e.g. jon.bsky.social"
                     , value form.handle
                     , onInput BlueskyHandleChanged
                     ]
                     []
                 , input
-                    [ class "event-sync-destination-connect-input"
+                    [ class "sync-destination-connect-input"
                     , type_ "password"
                     , placeholder "App Password"
                     , value form.appPassword
@@ -4034,21 +4034,21 @@ blueskyConnectView status =
                     ]
                     []
                 , button
-                    [ classes [ "event-sync-destination-login", "background-color-primary" ]
+                    [ classes [ "sync-destination-login", "background-color-primary" ]
                     , onClick BlueskyConnectSubmitted
                     , disabled (String.isEmpty form.handle || String.isEmpty form.appPassword)
                     ]
                     [ text "Connect" ]
-                , button [ class "event-sync-destination-connect-cancel", onClick BlueskyConnectCancelled ] [ text "Cancel" ]
+                , button [ class "sync-destination-connect-cancel", onClick BlueskyConnectCancelled ] [ text "Cancel" ]
                 ]
 
         BlueskyConnectLinking form ->
-            div [ class "event-sync-destinations-message" ] [ text ("Linking " ++ form.handle ++ "…") ]
+            div [ class "sync-destinations-message" ] [ text ("Linking " ++ form.handle ++ "…") ]
 
         BlueskyConnectFailed err ->
             div []
-                [ div [ class "event-sync-destination-error" ] [ text err ]
-                , button [ class "event-sync-destination-connect-cancel", onClick BlueskyConnectClicked ] [ text "Try Again" ]
+                [ div [ class "sync-destination-error" ] [ text err ]
+                , button [ class "sync-destination-connect-cancel", onClick BlueskyConnectClicked ] [ text "Try Again" ]
                 ]
 
 
@@ -4062,15 +4062,15 @@ threadsConnectView status =
             text ""
 
         ThreadsConnectPopupOpen ->
-            div [ class "event-sync-destinations-message" ] [ text "Waiting for Threads…" ]
+            div [ class "sync-destinations-message" ] [ text "Waiting for Threads…" ]
 
         ThreadsConnectLinking ->
-            div [ class "event-sync-destinations-message" ] [ text "Linking Threads…" ]
+            div [ class "sync-destinations-message" ] [ text "Linking Threads…" ]
 
         ThreadsConnectFailed err ->
             div []
-                [ div [ class "event-sync-destination-error" ] [ text err ]
-                , button [ class "event-sync-destination-connect-cancel", onClick ThreadsLoginClicked ] [ text "Try Again" ]
+                [ div [ class "sync-destination-error" ] [ text err ]
+                , button [ class "sync-destination-connect-cancel", onClick ThreadsLoginClicked ] [ text "Try Again" ]
                 ]
 
 

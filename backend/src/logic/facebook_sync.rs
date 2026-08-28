@@ -6,7 +6,7 @@
 //! `logic::resolve_timezone` can geocode it, else UTC -- location, description, and a link back
 //! to the event on this Jonline server), not a real Facebook **Event** object -- the Graph API's
 //! `event` node has been creation/update/delete-locked for third-party apps since v3.3 (2018),
-//! restricted to approved Facebook Marketing Partners. See `docs/facebook_federation.md` for the
+//! restricted to approved Facebook Marketing Partners. See `docs/facebook_and_x_twitter_federation.md` for the
 //! full rundown of why and what this does instead. `Post`s are simpler -- just title/content and
 //! a link back to the post -- see `post_post`.
 //!
@@ -187,23 +187,20 @@ pub fn post_event_instance_at(
     destination: &models::SyncDestination,
     message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    // Error string intentionally left as `event_sync_destination_not_configured` (not renamed to
-    // match `SyncDestination`) -- this is an identifier/move-only change for the existing
-    // EventInstance sync path, not a behavior change; `facebook_sync_tests` asserts on this exact
-    // string.
     post_to_facebook_page(
         base_url,
         destination,
         message,
-        "event_sync_destination_not_configured",
+        "sync_destination_not_configured",
     )
 }
 
 /// Posts a `Post`'s details (already formatted into `message.text` -- see
 /// `logic::sync_message::build_post_message`) to `destination`'s connected Facebook Page's feed.
-/// Returns the new post's ID and a link to it. Mirrors `post_event_instance`; the only difference
-/// between the two is which "not configured" error string each returns (kept distinct since
-/// `facebook_sync_tests`/callers already depend on the specific strings).
+/// Returns the new post's ID and a link to it. Functionally identical to `post_event_instance` --
+/// kept as its own named function (rather than having `sync_post.rs` call `post_event_instance`
+/// directly) purely so each call site's name mirrors the RPC it's dispatched from (`SyncPost` vs
+/// `SyncEventInstance`), matching every other platform's naming convention.
 pub fn post_post(
     destination: &models::SyncDestination,
     message: &SyncMessage,
@@ -226,8 +223,8 @@ pub fn post_post_at(
 }
 
 /// Shared implementation of `post_event_instance_at`/`post_post_at` -- now that both take a plain
-/// `&SyncMessage`, the only thing distinguishing an EventInstance push from a Post push is which
-/// "not configured" error string to return (see each function's own doc).
+/// `&SyncMessage`, there's nothing left distinguishing an EventInstance push from a Post push at
+/// all (see each function's own doc for why two names still exist).
 ///
 /// The Page Graph API doesn't support mixing photo attachments and a plain text `/feed` call the
 /// way Instagram/Threads' single-container flow does -- these are structurally different

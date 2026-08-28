@@ -131,7 +131,7 @@
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
-    - [XAuthConfig](#jonline-XAuthConfig)
+    - [XTwitterAuthConfig](#jonline-XTwitterAuthConfig)
   
 - [sync.proto](#sync-proto)
     - [BlueskyAccount](#jonline-BlueskyAccount)
@@ -2910,8 +2910,8 @@ The federation configuration for a Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
-| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
-| x_twitter_auth_config | [XAuthConfig](#jonline-XAuthConfig) | optional | X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations always fail with `x_twitter_app_not_configured` regardless of this field. |
+| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances. |
+| x_twitter_auth_config | [XTwitterAuthConfig](#jonline-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations always fail with `x_twitter_app_not_configured` regardless of this field. |
 
 
 
@@ -2933,9 +2933,9 @@ Version information for the Jonline server.
 
 
 
-<a name="jonline-XAuthConfig"></a>
+<a name="jonline-XTwitterAuthConfig"></a>
 
-### XAuthConfig
+### XTwitterAuthConfig
 X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`.
 
 

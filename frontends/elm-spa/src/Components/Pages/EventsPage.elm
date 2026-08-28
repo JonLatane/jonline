@@ -332,7 +332,7 @@ type Msg
     | HideStartedEventsToggled
       -- Sets `model.showSyncSources`/`model.showSyncDestinations` -- driven
       -- by `Components.Pages.UserProfilePage`'s own "Event Sync Sources"/
-      -- "Event Sync Destinations" section-expanded toggles (see
+      -- "Sync Destinations" section-expanded toggles (see
       -- `Model.showSyncSources`'s own doc), not by anything in this page's
       -- own UI.
     | ShowSyncSourcesChanged Bool

@@ -799,7 +799,7 @@ fn create_x_twitter_account_is_always_rejected_regardless_of_permissions_held() 
         assert_eq!(err.code(), Code::FailedPrecondition);
         assert_eq!(err.message(), "x_twitter_app_not_configured");
 
-        // Even Admin can't create one -- there's no `XAuthConfig`-backed connect flow at all yet.
+        // Even Admin can't create one -- there's no `XTwitterAuthConfig`-backed connect flow at all yet.
         let admin = create_user(conn, "sdt_x_admin");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
         let err = create_sync_destination(x_twitter_account_request(), &admin, conn).unwrap_err();

@@ -2,8 +2,9 @@ module Components.Pages.ServerInformationPage.FederationTab exposing (Model, Msg
 
 {-| The Federation tab of `Components.Pages.ServerInformationPage` -- the server's federated-server
 chip strip (add/remove/reorder-animated via `UI.Flip`, see `FederationEdit`'s own doc), the Facebook
-App ID/Secret an admin connects so users can create Facebook Event Sync Destinations (see
-`logic::facebook_sync` on the backend), and the Web Push VAPID public/private keys an admin sets so
+App ID/Secret an admin connects so users can create Facebook/Instagram Sync Destinations for their
+Posts and EventInstances (see `logic::facebook_sync` on the backend), and the Web Push VAPID
+public/private keys an admin sets so
 `RegisterPushSubscription`'d browsers actually receive notifications (see `backend/src/web_push`).
 All three are backed by fields on the same `ServerConfiguration`
 (`federationInfo`/`federationInfo.facebookAuthConfig`/`webPushConfig`), saved through the same

@@ -117,7 +117,7 @@ fn post_event_instance_fails_when_destination_is_not_configured() {
     let err = post_event_instance_at("http://127.0.0.1:1", &destination, &message("", None))
         .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);
-    assert_eq!(err.message(), "event_sync_destination_not_configured");
+    assert_eq!(err.message(), "sync_destination_not_configured");
 }
 
 #[test]

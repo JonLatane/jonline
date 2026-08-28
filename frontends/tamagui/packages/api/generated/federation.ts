@@ -22,7 +22,7 @@ export interface GetServiceVersionResponse {
 export interface FederationInfo {
   /** A list of servers that this server will federate with. */
   servers: FederatedServer[];
-  /** Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. */
+  /** Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances. */
   facebookAuthConfig?:
     | FacebookAuthConfig
     | undefined;
@@ -31,7 +31,7 @@ export interface FederationInfo {
    * this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations
    * always fail with `x_twitter_app_not_configured` regardless of this field.
    */
-  xTwitterAuthConfig?: XAuthConfig | undefined;
+  xTwitterAuthConfig?: XTwitterAuthConfig | undefined;
 }
 
 /** A server that this server will federate with. */
@@ -73,7 +73,7 @@ export interface FacebookAuthConfig {
 }
 
 /** X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`. */
-export interface XAuthConfig {
+export interface XTwitterAuthConfig {
   /** The X Developer App's Client ID for the server. */
   clientId: string;
   /**
@@ -154,7 +154,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       FacebookAuthConfig.encode(message.facebookAuthConfig, writer.uint32(18).fork()).join();
     }
     if (message.xTwitterAuthConfig !== undefined) {
-      XAuthConfig.encode(message.xTwitterAuthConfig, writer.uint32(26).fork()).join();
+      XTwitterAuthConfig.encode(message.xTwitterAuthConfig, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -187,7 +187,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
             break;
           }
 
-          message.xTwitterAuthConfig = XAuthConfig.decode(reader, reader.uint32());
+          message.xTwitterAuthConfig = XTwitterAuthConfig.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -208,7 +208,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
         ? FacebookAuthConfig.fromJSON(object.facebookAuthConfig)
         : undefined,
       xTwitterAuthConfig: isSet(object.xTwitterAuthConfig)
-        ? XAuthConfig.fromJSON(object.xTwitterAuthConfig)
+        ? XTwitterAuthConfig.fromJSON(object.xTwitterAuthConfig)
         : undefined,
     };
   },
@@ -222,7 +222,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       obj.facebookAuthConfig = FacebookAuthConfig.toJSON(message.facebookAuthConfig);
     }
     if (message.xTwitterAuthConfig !== undefined) {
-      obj.xTwitterAuthConfig = XAuthConfig.toJSON(message.xTwitterAuthConfig);
+      obj.xTwitterAuthConfig = XTwitterAuthConfig.toJSON(message.xTwitterAuthConfig);
     }
     return obj;
   },
@@ -237,7 +237,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       ? FacebookAuthConfig.fromPartial(object.facebookAuthConfig)
       : undefined;
     message.xTwitterAuthConfig = (object.xTwitterAuthConfig !== undefined && object.xTwitterAuthConfig !== null)
-      ? XAuthConfig.fromPartial(object.xTwitterAuthConfig)
+      ? XTwitterAuthConfig.fromPartial(object.xTwitterAuthConfig)
       : undefined;
     return message;
   },
@@ -489,12 +489,12 @@ export const FacebookAuthConfig: MessageFns<FacebookAuthConfig> = {
   },
 };
 
-function createBaseXAuthConfig(): XAuthConfig {
+function createBaseXTwitterAuthConfig(): XTwitterAuthConfig {
   return { clientId: "", clientSecret: "" };
 }
 
-export const XAuthConfig: MessageFns<XAuthConfig> = {
-  encode(message: XAuthConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const XTwitterAuthConfig: MessageFns<XTwitterAuthConfig> = {
+  encode(message: XTwitterAuthConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.clientId !== "") {
       writer.uint32(10).string(message.clientId);
     }
@@ -504,10 +504,10 @@ export const XAuthConfig: MessageFns<XAuthConfig> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): XAuthConfig {
+  decode(input: BinaryReader | Uint8Array, length?: number): XTwitterAuthConfig {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseXAuthConfig();
+    const message = createBaseXTwitterAuthConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -536,14 +536,14 @@ export const XAuthConfig: MessageFns<XAuthConfig> = {
     return message;
   },
 
-  fromJSON(object: any): XAuthConfig {
+  fromJSON(object: any): XTwitterAuthConfig {
     return {
       clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
       clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
     };
   },
 
-  toJSON(message: XAuthConfig): unknown {
+  toJSON(message: XTwitterAuthConfig): unknown {
     const obj: any = {};
     if (message.clientId !== "") {
       obj.clientId = message.clientId;
@@ -554,11 +554,11 @@ export const XAuthConfig: MessageFns<XAuthConfig> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<XAuthConfig>, I>>(base?: I): XAuthConfig {
-    return XAuthConfig.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<XTwitterAuthConfig>, I>>(base?: I): XTwitterAuthConfig {
+    return XTwitterAuthConfig.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<XAuthConfig>, I>>(object: I): XAuthConfig {
-    const message = createBaseXAuthConfig();
+  fromPartial<I extends Exact<DeepPartial<XTwitterAuthConfig>, I>>(object: I): XTwitterAuthConfig {
+    const message = createBaseXTwitterAuthConfig();
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
     return message;
