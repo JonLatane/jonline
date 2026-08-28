@@ -1,0 +1,5 @@
+ALTER TABLE event_sync_destinations RENAME TO sync_destinations;
+ALTER INDEX idx_event_sync_destinations_user_id RENAME TO idx_sync_destinations_user_id;
+
+ALTER TABLE event_instance_sync_destinations RENAME COLUMN event_sync_destination_id TO sync_destination_id;
+ALTER INDEX idx_event_instance_sync_destinations_destination_id RENAME TO idx_event_instance_sync_destinations_sync_destination_id;

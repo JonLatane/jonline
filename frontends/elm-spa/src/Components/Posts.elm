@@ -4,6 +4,7 @@ module Components.Posts exposing
     , commentCountText
     , contentPreviewFadeThreshold
     , deletePost
+    , deletePostSyncDestination
     , fetchAncestors
     , fetchPost
     , fetchPosts
@@ -25,6 +26,7 @@ module Components.Posts exposing
     , showPostVisibility
     , starButton
     , stripLinkScheme
+    , syncPost
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -42,13 +44,14 @@ route's `id` or `id@host` segment.
 import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
+import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, option, select, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, selected, style, target, title, value)
 import Html.Events
-import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest, defaultPost)
+import Proto.Jonline exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -289,6 +292,77 @@ deletePost accountsPanelModel maybeAccountServer postId =
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
+
+
+{-| Pushes (cross-posts) `postId` to `syncDestinationId` (`SyncPost`,
+owner-or-Admin gated server-side, see `backend/src/rpcs/posts/sync_post.rs`) -- mirrors
+`Components.Events.syncEventInstance`'s shape exactly. The returned `Post` carries a freshly
+updated `syncDestinations`, but callers here just reuse their own existing full refetch rather
+than patching it in by hand.
+-}
+syncPost :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Post )
+syncPost accountsPanelModel maybeAccountServer postId syncDestinationId =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.syncPost
+                { postId = postId, syncDestinationId = syncDestinationId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Removes `postId`'s sync (cross-post) to `syncDestinationId` (`DeletePostSyncDestination`,
+owner-or-Admin gated server-side, see
+`backend/src/rpcs/posts/delete_post_sync_destination.rs`) -- the reverse of `syncPost`, same
+shape. Doesn't delete the post already made on the destination (e.g. the Facebook Page post),
+only the local sync record, so the row goes back to its unsynced "Push" state (see
+`Components.SyncDestinations.syncDestinationsView`'s `notYetSyncedRows`). Used by that view's
+Delete button, via `Shared.ConfirmPostSyncDestinationDelete`.
+-}
+deletePostSyncDestination :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
+deletePostSyncDestination accountsPanelModel maybeAccountServer postId syncDestinationId =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deletePostSyncDestination
+                { postId = postId, syncDestinationId = syncDestinationId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+                |> Task.map (always ())
+        )
+
+
+{-| Thin wrapper over `Components.SyncDestinations.syncDestinationsView`, extracting
+`post.syncDestinations` -- see that function's own doc for the full already-synced/
+available-to-sync-to union and rendering rules; only `Components.Pages.UserProfilePage`'s
+embedded posts feed ever passes `Just` for `availableSyncDestinations`, giving every other caller
+a read-only, no-push-controls rendering.
+-}
+postSyncDestinationsView :
+    Maybe (List SyncDestination)
+    -> (String -> Bool)
+    -> (String -> Maybe String)
+    -> (String -> msg)
+    -> (String -> String -> msg)
+    -> Post
+    -> Html msg
+postSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete post =
+    SyncDestinations.syncDestinationsView post.syncDestinations availableSyncDestinations isPushing pushError onPush onDelete
 
 
 {-| The "★ N" star button of a post's meta line -- clickable (unless
@@ -555,22 +629,30 @@ the overlay's paint order itself.
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
+`showSyncDestinations`/`availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete`
+mirror `Components.Events.eventCard`'s own trailing params of the same name/shape exactly (just
+without an `Events`-style `showSyncSource`/`eventSyncSourceView` pair -- Posts have no "synced
+from" concept, only "synced to") -- `showSyncDestinations` gates `postSyncDestinationsView` at the
+bottom of the card, the rest thread straight into that call. `availableSyncDestinations` is
+`Nothing` for every caller except `Components.Pages.UserProfilePage`'s embedded posts feed, so
+push/delete controls render nowhere else. Ignored entirely by the `REPLY` fallback to `replyCard`
+below -- a reply is never synced to anything.
 -}
-postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     if post.context == REPLY then
         replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked 0 True False False Nothing Nothing Nothing post
 
     else
-        postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
+        postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post
 
 
 {-| The plain (non-`REPLY`) rendering `postCard` falls back to -- see its own
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
 -}
-postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     div
         [ classes
             ([ "post-card"
@@ -654,6 +736,11 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
                 , text (commentCountText post)
                 ]
             ]
+        , if showSyncDestinations then
+            postSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete post
+
+          else
+            text ""
         ]
 
 
@@ -837,9 +924,19 @@ moderation-status segment.
 `Html`, since (per `mediaLayoutSelector`'s own doc) it has no separate
 edit-mode/Save/Cancel state for the caller to own; it saves on every change.
 
+`isPushing`/`pushError`/`onPush`/`onDelete` drive an always-shown
+`postSyncDestinationsView` at the bottom of the detail view, mirroring
+`Pages.Event.EventId_`'s own `Events.eventSyncDestinationsView (Just []) ...` call exactly --
+`availableSyncDestinations` is hardcoded `Just []` here (not threaded through as a param) since,
+same as that page, this one only ever shows destinations `post` is *already* synced to (built from
+`post.syncDestinations` alone), never ones it isn't yet (that would need this page's own fetch of
+the account's configured `SyncDestination`s, which only `UserProfilePage` currently has) -- an
+empty `availableDestinations` makes the "not yet synced" rows empty too, so only the synced rows
+(each with a working Push-again/Delete pair) ever render.
+
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView isPushing pushError onPush onDelete post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -895,6 +992,7 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
             Nothing ->
                 text ""
         , div [ class "post-detail-edit-row" ] [ editContentButton maybeAccount onEditClicked post ]
+        , postSyncDestinationsView (Just []) isPushing pushError onPush onDelete post
         ]
 
 

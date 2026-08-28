@@ -11,15 +11,15 @@
 
 import 'dart:core' as $core;
 
-import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'federation.pb.dart' as $1;
-import 'google/protobuf/timestamp.pb.dart' as $10;
+import 'google/protobuf/timestamp.pb.dart' as $11;
 import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $12;
+import 'permissions.pbenum.dart' as $13;
+import 'sync.pb.dart' as $10;
 import 'users.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'visibility_moderation.pbenum.dart' as $12;
 
 export 'users.pbenum.dart';
 
@@ -32,12 +32,12 @@ class User extends $pb.GeneratedMessage {
     $core.String? realName,
     ContactMethod? email,
     ContactMethod? phone,
-    $core.Iterable<$12.Permission>? permissions,
+    $core.Iterable<$13.Permission>? permissions,
     $5.MediaReference? avatar,
     $core.String? bio,
-    $11.Visibility? visibility,
-    $11.Moderation? moderation,
-    $11.Moderation? defaultFollowModeration,
+    $12.Visibility? visibility,
+    $12.Moderation? moderation,
+    $12.Moderation? defaultFollowModeration,
     $core.int? followerCount,
     $core.int? followingCount,
     $core.int? friendCount,
@@ -51,9 +51,9 @@ class User extends $pb.GeneratedMessage {
     Membership? currentGroupMembership,
     $core.bool? hasAdvancedData,
     $core.Iterable<$1.FederatedAccount>? federatedProfiles,
-    $core.Iterable<EventSyncDestination>? eventSyncDestinations,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
+    $core.Iterable<$10.SyncDestination>? syncDestinations,
+    $11.Timestamp? createdAt,
+    $11.Timestamp? updatedAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -128,8 +128,8 @@ class User extends $pb.GeneratedMessage {
     if (federatedProfiles != null) {
       $result.federatedProfiles.addAll(federatedProfiles);
     }
-    if (eventSyncDestinations != null) {
-      $result.eventSyncDestinations.addAll(eventSyncDestinations);
+    if (syncDestinations != null) {
+      $result.syncDestinations.addAll(syncDestinations);
     }
     if (createdAt != null) {
       $result.createdAt = createdAt;
@@ -149,12 +149,12 @@ class User extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'realName')
     ..aOM<ContactMethod>(4, _omitFieldNames ? '' : 'email', subBuilder: ContactMethod.create)
     ..aOM<ContactMethod>(5, _omitFieldNames ? '' : 'phone', subBuilder: ContactMethod.create)
-    ..pc<$12.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
+    ..pc<$13.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
     ..aOM<$5.MediaReference>(7, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(8, _omitFieldNames ? '' : 'bio')
-    ..e<$11.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$12.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$12.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..e<$12.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
     ..a<$core.int>(31, _omitFieldNames ? '' : 'followerCount', $pb.PbFieldType.O3)
     ..a<$core.int>(32, _omitFieldNames ? '' : 'followingCount', $pb.PbFieldType.O3)
     ..a<$core.int>(33, _omitFieldNames ? '' : 'friendCount', $pb.PbFieldType.O3)
@@ -168,9 +168,9 @@ class User extends $pb.GeneratedMessage {
     ..aOM<Membership>(52, _omitFieldNames ? '' : 'currentGroupMembership', subBuilder: Membership.create)
     ..aOB(80, _omitFieldNames ? '' : 'hasAdvancedData')
     ..pc<$1.FederatedAccount>(81, _omitFieldNames ? '' : 'federatedProfiles', $pb.PbFieldType.PM, subBuilder: $1.FederatedAccount.create)
-    ..pc<EventSyncDestination>(82, _omitFieldNames ? '' : 'eventSyncDestinations', $pb.PbFieldType.PM, subBuilder: EventSyncDestination.create)
-    ..aOM<$10.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
+    ..pc<$10.SyncDestination>(82, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestination.create)
+    ..aOM<$11.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -251,7 +251,7 @@ class User extends $pb.GeneratedMessage {
 
   /// The user's permissions. See [`Permission`](#jonline-Permission) for details.
   @$pb.TagNumber(6)
-  $core.List<$12.Permission> get permissions => $_getList(5);
+  $core.List<$13.Permission> get permissions => $_getList(5);
 
   /// The user's avatar. Note that its visibility is managed by the User and thus
   /// it may not be accessible to the current user.
@@ -283,9 +283,9 @@ class User extends $pb.GeneratedMessage {
   /// See server_configuration.proto for details about PRIVATE
   /// users' ability to creep.
   @$pb.TagNumber(20)
-  $11.Visibility get visibility => $_getN(8);
+  $12.Visibility get visibility => $_getN(8);
   @$pb.TagNumber(20)
-  set visibility($11.Visibility v) { setField(20, v); }
+  set visibility($12.Visibility v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasVisibility() => $_has(8);
   @$pb.TagNumber(20)
@@ -293,9 +293,9 @@ class User extends $pb.GeneratedMessage {
 
   /// The user's moderation status. See [`Moderation`](#jonline-Moderation) for details.
   @$pb.TagNumber(21)
-  $11.Moderation get moderation => $_getN(9);
+  $12.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
-  set moderation($11.Moderation v) { setField(21, v); }
+  set moderation($12.Moderation v) { setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(21)
@@ -303,9 +303,9 @@ class User extends $pb.GeneratedMessage {
 
   /// Only PENDING or UNMODERATED are valid.
   @$pb.TagNumber(30)
-  $11.Moderation get defaultFollowModeration => $_getN(10);
+  $12.Moderation get defaultFollowModeration => $_getN(10);
   @$pb.TagNumber(30)
-  set defaultFollowModeration($11.Moderation v) { setField(30, v); }
+  set defaultFollowModeration($12.Moderation v) { setField(30, v); }
   @$pb.TagNumber(30)
   $core.bool hasDefaultFollowModeration() => $_has(10);
   @$pb.TagNumber(30)
@@ -447,575 +447,37 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(81)
   $core.List<$1.FederatedAccount> get federatedProfiles => $_getList(23);
 
-  /// The target user's own linked EventSyncDestinations (e.g. Facebook Pages).
+  /// The target user's own linked SyncDestinations (e.g. Facebook Pages).
   /// Only ever populated by `GetUsers`' single-user lookups (by username or by
   /// user_id) when the viewer is the target user themselves (and holds
-  /// `SYNC_EVENTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including
-  /// via every other `GetUsers` listing type and via `GetCurrentUser`.
+  /// `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
+  /// otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`.
   @$pb.TagNumber(82)
-  $core.List<EventSyncDestination> get eventSyncDestinations => $_getList(24);
+  $core.List<$10.SyncDestination> get syncDestinations => $_getList(24);
 
   /// The time the user was created.
   @$pb.TagNumber(100)
-  $10.Timestamp get createdAt => $_getN(25);
+  $11.Timestamp get createdAt => $_getN(25);
   @$pb.TagNumber(100)
-  set createdAt($10.Timestamp v) { setField(100, v); }
+  set createdAt($11.Timestamp v) { setField(100, v); }
   @$pb.TagNumber(100)
   $core.bool hasCreatedAt() => $_has(25);
   @$pb.TagNumber(100)
   void clearCreatedAt() => clearField(100);
   @$pb.TagNumber(100)
-  $10.Timestamp ensureCreatedAt() => $_ensure(25);
+  $11.Timestamp ensureCreatedAt() => $_ensure(25);
 
   /// The time the user was last updated.
   @$pb.TagNumber(101)
-  $10.Timestamp get updatedAt => $_getN(26);
+  $11.Timestamp get updatedAt => $_getN(26);
   @$pb.TagNumber(101)
-  set updatedAt($10.Timestamp v) { setField(101, v); }
+  set updatedAt($11.Timestamp v) { setField(101, v); }
   @$pb.TagNumber(101)
   $core.bool hasUpdatedAt() => $_has(26);
   @$pb.TagNumber(101)
   void clearUpdatedAt() => clearField(101);
   @$pb.TagNumber(101)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(26);
-}
-
-/// Post/authorship-centric version of User. UI can cross-reference user details
-/// from its own cache (for things like admin/bot icons).
-class Author extends $pb.GeneratedMessage {
-  factory Author({
-    $core.String? userId,
-    $core.String? username,
-    $5.MediaReference? avatar,
-    $core.String? realName,
-    $core.Iterable<$12.Permission>? permissions,
-  }) {
-    final $result = create();
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (avatar != null) {
-      $result.avatar = avatar;
-    }
-    if (realName != null) {
-      $result.realName = realName;
-    }
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    return $result;
-  }
-  Author._() : super();
-  factory Author.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Author.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Author', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'userId')
-    ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
-    ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$12.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  Author clone() => Author()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  Author copyWith(void Function(Author) updates) => super.copyWith((message) => updates(message as Author)) as Author;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static Author create() => Author._();
-  Author createEmptyInstance() => create();
-  static $pb.PbList<Author> createRepeated() => $pb.PbList<Author>();
-  @$core.pragma('dart2js:noInline')
-  static Author getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Author>(create);
-  static Author? _defaultInstance;
-
-  /// Permanent string ID for the user. Will never contain a `@` symbol.
-  @$pb.TagNumber(1)
-  $core.String get userId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasUserId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearUserId() => clearField(1);
-
-  /// Impermanent string username for the user. Will never contain a `@` symbol.
-  @$pb.TagNumber(2)
-  $core.String get username => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set username($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasUsername() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearUsername() => clearField(2);
-
-  /// The user's avatar.
-  @$pb.TagNumber(3)
-  $5.MediaReference get avatar => $_getN(2);
-  @$pb.TagNumber(3)
-  set avatar($5.MediaReference v) { setField(3, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasAvatar() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearAvatar() => clearField(3);
-  @$pb.TagNumber(3)
-  $5.MediaReference ensureAvatar() => $_ensure(2);
-
-  @$pb.TagNumber(4)
-  $core.String get realName => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set realName($core.String v) { $_setString(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasRealName() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearRealName() => clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.List<$12.Permission> get permissions => $_getList(4);
-}
-
-enum EventSyncSource_Configuration {
-  icsSubscriptionUrl, 
-  notSet
-}
-
-/// A user-owned source to sync events from.
-class EventSyncSource extends $pb.GeneratedMessage {
-  factory EventSyncSource({
-    $core.String? id,
-    Author? owner,
-    $fixnum.Int64? syncIntervalSeconds,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
-    $10.Timestamp? lastSyncedAt,
-    $fixnum.Int64? eventCount,
-    $fixnum.Int64? eventInstanceCount,
-    $core.String? icsSubscriptionUrl,
-  }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (owner != null) {
-      $result.owner = owner;
-    }
-    if (syncIntervalSeconds != null) {
-      $result.syncIntervalSeconds = syncIntervalSeconds;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    if (lastSyncedAt != null) {
-      $result.lastSyncedAt = lastSyncedAt;
-    }
-    if (eventCount != null) {
-      $result.eventCount = eventCount;
-    }
-    if (eventInstanceCount != null) {
-      $result.eventInstanceCount = eventInstanceCount;
-    }
-    if (icsSubscriptionUrl != null) {
-      $result.icsSubscriptionUrl = icsSubscriptionUrl;
-    }
-    return $result;
-  }
-  EventSyncSource._() : super();
-  factory EventSyncSource.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventSyncSource.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static const $core.Map<$core.int, EventSyncSource_Configuration> _EventSyncSource_ConfigurationByTag = {
-    9 : EventSyncSource_Configuration.icsSubscriptionUrl,
-    0 : EventSyncSource_Configuration.notSet
-  };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [9])
-    ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: Author.create)
-    ..a<$fixnum.Int64>(3, _omitFieldNames ? '' : 'syncIntervalSeconds', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOM<$10.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(6, _omitFieldNames ? '' : 'lastSyncedAt', subBuilder: $10.Timestamp.create)
-    ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  EventSyncSource clone() => EventSyncSource()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  EventSyncSource copyWith(void Function(EventSyncSource) updates) => super.copyWith((message) => updates(message as EventSyncSource)) as EventSyncSource;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static EventSyncSource create() => EventSyncSource._();
-  EventSyncSource createEmptyInstance() => create();
-  static $pb.PbList<EventSyncSource> createRepeated() => $pb.PbList<EventSyncSource>();
-  @$core.pragma('dart2js:noInline')
-  static EventSyncSource getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventSyncSource>(create);
-  static EventSyncSource? _defaultInstance;
-
-  EventSyncSource_Configuration whichConfiguration() => _EventSyncSource_ConfigurationByTag[$_whichOneof(0)]!;
-  void clearConfiguration() => clearField($_whichOneof(0));
-
-  /// Unique ID for the synchronization.
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  /// The user information for the owner of this event sync.
-  @$pb.TagNumber(2)
-  Author get owner => $_getN(1);
-  @$pb.TagNumber(2)
-  set owner(Author v) { setField(2, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasOwner() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearOwner() => clearField(2);
-  @$pb.TagNumber(2)
-  Author ensureOwner() => $_ensure(1);
-
-  /// How frequently the sync should happen in seconds.
-  @$pb.TagNumber(3)
-  $fixnum.Int64 get syncIntervalSeconds => $_getI64(2);
-  @$pb.TagNumber(3)
-  set syncIntervalSeconds($fixnum.Int64 v) { $_setInt64(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasSyncIntervalSeconds() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearSyncIntervalSeconds() => clearField(3);
-
-  /// The time the EventSyncSource was created.
-  @$pb.TagNumber(4)
-  $10.Timestamp get createdAt => $_getN(3);
-  @$pb.TagNumber(4)
-  set createdAt($10.Timestamp v) { setField(4, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasCreatedAt() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearCreatedAt() => clearField(4);
-  @$pb.TagNumber(4)
-  $10.Timestamp ensureCreatedAt() => $_ensure(3);
-
-  /// The time the EventSyncSource was last updated.
-  @$pb.TagNumber(5)
-  $10.Timestamp get updatedAt => $_getN(4);
-  @$pb.TagNumber(5)
-  set updatedAt($10.Timestamp v) { setField(5, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasUpdatedAt() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearUpdatedAt() => clearField(5);
-  @$pb.TagNumber(5)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(4);
-
-  /// The time the EventSyncSource was last synced.
-  @$pb.TagNumber(6)
-  $10.Timestamp get lastSyncedAt => $_getN(5);
-  @$pb.TagNumber(6)
-  set lastSyncedAt($10.Timestamp v) { setField(6, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasLastSyncedAt() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearLastSyncedAt() => clearField(6);
-  @$pb.TagNumber(6)
-  $10.Timestamp ensureLastSyncedAt() => $_ensure(5);
-
-  /// The number of events total associated with this EventSyncSource. Recomputed
-  /// on each sync.
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get eventCount => $_getI64(6);
-  @$pb.TagNumber(7)
-  set eventCount($fixnum.Int64 v) { $_setInt64(6, v); }
-  @$pb.TagNumber(7)
-  $core.bool hasEventCount() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearEventCount() => clearField(7);
-
-  /// The number of event instances total associated with this EventSyncSource. Recomputed
-  /// on each sync.
-  @$pb.TagNumber(8)
-  $fixnum.Int64 get eventInstanceCount => $_getI64(7);
-  @$pb.TagNumber(8)
-  set eventInstanceCount($fixnum.Int64 v) { $_setInt64(7, v); }
-  @$pb.TagNumber(8)
-  $core.bool hasEventInstanceCount() => $_has(7);
-  @$pb.TagNumber(8)
-  void clearEventInstanceCount() => clearField(8);
-
-  /// The iCal subscription URL for the calendar sync.
-  @$pb.TagNumber(9)
-  $core.String get icsSubscriptionUrl => $_getSZ(8);
-  @$pb.TagNumber(9)
-  set icsSubscriptionUrl($core.String v) { $_setString(8, v); }
-  @$pb.TagNumber(9)
-  $core.bool hasIcsSubscriptionUrl() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearIcsSubscriptionUrl() => clearField(9);
-}
-
-enum EventSyncDestination_Configuration {
-  facebookPage, 
-  notSet
-}
-
-/// A user-owned destination to sync (cross-post) EventInstances to. Mirrors `EventSyncSource`,
-/// but for pushing instances out rather than pulling events in.
-class EventSyncDestination extends $pb.GeneratedMessage {
-  factory EventSyncDestination({
-    $core.String? id,
-    Author? owner,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
-    $fixnum.Int64? syncedEventInstanceCount,
-    FacebookPage? facebookPage,
-  }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (owner != null) {
-      $result.owner = owner;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    if (syncedEventInstanceCount != null) {
-      $result.syncedEventInstanceCount = syncedEventInstanceCount;
-    }
-    if (facebookPage != null) {
-      $result.facebookPage = facebookPage;
-    }
-    return $result;
-  }
-  EventSyncDestination._() : super();
-  factory EventSyncDestination.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventSyncDestination.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static const $core.Map<$core.int, EventSyncDestination_Configuration> _EventSyncDestination_ConfigurationByTag = {
-    9 : EventSyncDestination_Configuration.facebookPage,
-    0 : EventSyncDestination_Configuration.notSet
-  };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [9])
-    ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: Author.create)
-    ..aOM<$10.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
-    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedEventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOM<FacebookPage>(9, _omitFieldNames ? '' : 'facebookPage', subBuilder: FacebookPage.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  EventSyncDestination clone() => EventSyncDestination()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  EventSyncDestination copyWith(void Function(EventSyncDestination) updates) => super.copyWith((message) => updates(message as EventSyncDestination)) as EventSyncDestination;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static EventSyncDestination create() => EventSyncDestination._();
-  EventSyncDestination createEmptyInstance() => create();
-  static $pb.PbList<EventSyncDestination> createRepeated() => $pb.PbList<EventSyncDestination>();
-  @$core.pragma('dart2js:noInline')
-  static EventSyncDestination getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventSyncDestination>(create);
-  static EventSyncDestination? _defaultInstance;
-
-  EventSyncDestination_Configuration whichConfiguration() => _EventSyncDestination_ConfigurationByTag[$_whichOneof(0)]!;
-  void clearConfiguration() => clearField($_whichOneof(0));
-
-  /// Unique ID for the destination.
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  /// The user information for the owner of this destination.
-  @$pb.TagNumber(2)
-  Author get owner => $_getN(1);
-  @$pb.TagNumber(2)
-  set owner(Author v) { setField(2, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasOwner() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearOwner() => clearField(2);
-  @$pb.TagNumber(2)
-  Author ensureOwner() => $_ensure(1);
-
-  /// The time the EventSyncDestination was created.
-  @$pb.TagNumber(4)
-  $10.Timestamp get createdAt => $_getN(2);
-  @$pb.TagNumber(4)
-  set createdAt($10.Timestamp v) { setField(4, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasCreatedAt() => $_has(2);
-  @$pb.TagNumber(4)
-  void clearCreatedAt() => clearField(4);
-  @$pb.TagNumber(4)
-  $10.Timestamp ensureCreatedAt() => $_ensure(2);
-
-  /// The time the EventSyncDestination was last updated.
-  @$pb.TagNumber(5)
-  $10.Timestamp get updatedAt => $_getN(3);
-  @$pb.TagNumber(5)
-  set updatedAt($10.Timestamp v) { setField(5, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasUpdatedAt() => $_has(3);
-  @$pb.TagNumber(5)
-  void clearUpdatedAt() => clearField(5);
-  @$pb.TagNumber(5)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(3);
-
-  /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
-  /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
-  /// in bulk on an interval.
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get syncedEventInstanceCount => $_getI64(4);
-  @$pb.TagNumber(6)
-  set syncedEventInstanceCount($fixnum.Int64 v) { $_setInt64(4, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasSyncedEventInstanceCount() => $_has(4);
-  @$pb.TagNumber(6)
-  void clearSyncedEventInstanceCount() => clearField(6);
-
-  /// A connected Facebook Page to post EventInstances to.
-  @$pb.TagNumber(9)
-  FacebookPage get facebookPage => $_getN(5);
-  @$pb.TagNumber(9)
-  set facebookPage(FacebookPage v) { setField(9, v); }
-  @$pb.TagNumber(9)
-  $core.bool hasFacebookPage() => $_has(5);
-  @$pb.TagNumber(9)
-  void clearFacebookPage() => clearField(9);
-  @$pb.TagNumber(9)
-  FacebookPage ensureFacebookPage() => $_ensure(5);
-}
-
-/// A Facebook Page connected as an `EventSyncDestination`.
-class FacebookPage extends $pb.GeneratedMessage {
-  factory FacebookPage({
-    $core.String? pageId,
-    $core.String? pageName,
-    $core.String? shortLivedUserAccessToken,
-  }) {
-    final $result = create();
-    if (pageId != null) {
-      $result.pageId = pageId;
-    }
-    if (pageName != null) {
-      $result.pageName = pageName;
-    }
-    if (shortLivedUserAccessToken != null) {
-      $result.shortLivedUserAccessToken = shortLivedUserAccessToken;
-    }
-    return $result;
-  }
-  FacebookPage._() : super();
-  factory FacebookPage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FacebookPage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookPage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'pageId')
-    ..aOS(2, _omitFieldNames ? '' : 'pageName')
-    ..aOS(3, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  FacebookPage clone() => FacebookPage()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  FacebookPage copyWith(void Function(FacebookPage) updates) => super.copyWith((message) => updates(message as FacebookPage)) as FacebookPage;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static FacebookPage create() => FacebookPage._();
-  FacebookPage createEmptyInstance() => create();
-  static $pb.PbList<FacebookPage> createRepeated() => $pb.PbList<FacebookPage>();
-  @$core.pragma('dart2js:noInline')
-  static FacebookPage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FacebookPage>(create);
-  static FacebookPage? _defaultInstance;
-
-  /// The Facebook Page's ID.
-  @$pb.TagNumber(1)
-  $core.String get pageId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set pageId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasPageId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearPageId() => clearField(1);
-
-  /// The Facebook Page's name, populated by the server when the connection is made.
-  @$pb.TagNumber(2)
-  $core.String get pageName => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set pageName($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasPageName() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearPageName() => clearField(2);
-
-  /// Only used (and required) on `CreateEventSyncDestination`: a short-lived user access token
-  /// from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
-  /// Never populated in responses.
-  @$pb.TagNumber(3)
-  $core.String get shortLivedUserAccessToken => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set shortLivedUserAccessToken($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasShortLivedUserAccessToken() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearShortLivedUserAccessToken() => clearField(3);
+  $11.Timestamp ensureUpdatedAt() => $_ensure(26);
 }
 
 /// Model for a user's follow of another user.
@@ -1023,9 +485,9 @@ class Follow extends $pb.GeneratedMessage {
   factory Follow({
     $core.String? userId,
     $core.String? targetUserId,
-    $11.Moderation? targetUserModeration,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
+    $12.Moderation? targetUserModeration,
+    $11.Timestamp? createdAt,
+    $11.Timestamp? updatedAt,
   }) {
     final $result = create();
     if (userId != null) {
@@ -1052,9 +514,9 @@ class Follow extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'targetUserId')
-    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$10.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
+    ..e<$12.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -1101,9 +563,9 @@ class Follow extends $pb.GeneratedMessage {
 
   /// Tracks whether the target user needs to approve the follow.
   @$pb.TagNumber(3)
-  $11.Moderation get targetUserModeration => $_getN(2);
+  $12.Moderation get targetUserModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set targetUserModeration($11.Moderation v) { setField(3, v); }
+  set targetUserModeration($12.Moderation v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasTargetUserModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -1111,27 +573,27 @@ class Follow extends $pb.GeneratedMessage {
 
   /// The time the follow was created.
   @$pb.TagNumber(4)
-  $10.Timestamp get createdAt => $_getN(3);
+  $11.Timestamp get createdAt => $_getN(3);
   @$pb.TagNumber(4)
-  set createdAt($10.Timestamp v) { setField(4, v); }
+  set createdAt($11.Timestamp v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasCreatedAt() => $_has(3);
   @$pb.TagNumber(4)
   void clearCreatedAt() => clearField(4);
   @$pb.TagNumber(4)
-  $10.Timestamp ensureCreatedAt() => $_ensure(3);
+  $11.Timestamp ensureCreatedAt() => $_ensure(3);
 
   /// The time the follow was last updated.
   @$pb.TagNumber(5)
-  $10.Timestamp get updatedAt => $_getN(4);
+  $11.Timestamp get updatedAt => $_getN(4);
   @$pb.TagNumber(5)
-  set updatedAt($10.Timestamp v) { setField(5, v); }
+  set updatedAt($11.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasUpdatedAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearUpdatedAt() => clearField(5);
   @$pb.TagNumber(5)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(4);
+  $11.Timestamp ensureUpdatedAt() => $_ensure(4);
 }
 
 /// Model for a user's membership in a group. Memberships are generically
@@ -1141,11 +603,11 @@ class Membership extends $pb.GeneratedMessage {
   factory Membership({
     $core.String? userId,
     $core.String? groupId,
-    $core.Iterable<$12.Permission>? permissions,
-    $11.Moderation? groupModeration,
-    $11.Moderation? userModeration,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
+    $core.Iterable<$13.Permission>? permissions,
+    $12.Moderation? groupModeration,
+    $12.Moderation? userModeration,
+    $11.Timestamp? createdAt,
+    $11.Timestamp? updatedAt,
   }) {
     final $result = create();
     if (userId != null) {
@@ -1178,11 +640,11 @@ class Membership extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'groupId')
-    ..pc<$12.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
-    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$10.Timestamp>(6, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(7, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
+    ..pc<$13.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
+    ..e<$12.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..e<$12.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..aOM<$11.Timestamp>(6, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(7, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -1229,13 +691,13 @@ class Membership extends $pb.GeneratedMessage {
 
   /// Valid Membership Permissions are:  `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`, `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`, `ADMIN`, `RUN_BOTS`, and `MODERATE_USERS`
   @$pb.TagNumber(3)
-  $core.List<$12.Permission> get permissions => $_getList(2);
+  $core.List<$13.Permission> get permissions => $_getList(2);
 
   /// Tracks whether group moderators need to approve the membership.
   @$pb.TagNumber(4)
-  $11.Moderation get groupModeration => $_getN(3);
+  $12.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($11.Moderation v) { setField(4, v); }
+  set groupModeration($12.Moderation v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -1243,9 +705,9 @@ class Membership extends $pb.GeneratedMessage {
 
   /// Tracks whether the user needs to approve the membership.
   @$pb.TagNumber(5)
-  $11.Moderation get userModeration => $_getN(4);
+  $12.Moderation get userModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set userModeration($11.Moderation v) { setField(5, v); }
+  set userModeration($12.Moderation v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasUserModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -1253,27 +715,27 @@ class Membership extends $pb.GeneratedMessage {
 
   /// The time the membership was created.
   @$pb.TagNumber(6)
-  $10.Timestamp get createdAt => $_getN(5);
+  $11.Timestamp get createdAt => $_getN(5);
   @$pb.TagNumber(6)
-  set createdAt($10.Timestamp v) { setField(6, v); }
+  set createdAt($11.Timestamp v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasCreatedAt() => $_has(5);
   @$pb.TagNumber(6)
   void clearCreatedAt() => clearField(6);
   @$pb.TagNumber(6)
-  $10.Timestamp ensureCreatedAt() => $_ensure(5);
+  $11.Timestamp ensureCreatedAt() => $_ensure(5);
 
   /// The time the membership was last updated.
   @$pb.TagNumber(7)
-  $10.Timestamp get updatedAt => $_getN(6);
+  $11.Timestamp get updatedAt => $_getN(6);
   @$pb.TagNumber(7)
-  set updatedAt($10.Timestamp v) { setField(7, v); }
+  set updatedAt($11.Timestamp v) { setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasUpdatedAt() => $_has(6);
   @$pb.TagNumber(7)
   void clearUpdatedAt() => clearField(7);
   @$pb.TagNumber(7)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(6);
+  $11.Timestamp ensureUpdatedAt() => $_ensure(6);
 }
 
 /// A contact method for a user. Models designed to support verification,
@@ -1281,7 +743,7 @@ class Membership extends $pb.GeneratedMessage {
 class ContactMethod extends $pb.GeneratedMessage {
   factory ContactMethod({
     $core.String? value,
-    $11.Visibility? visibility,
+    $12.Visibility? visibility,
     $core.bool? supportedByServer,
     $core.bool? verified,
   }) {
@@ -1306,7 +768,7 @@ class ContactMethod extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
-    ..e<$11.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$12.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
     ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
     ..aOB(4, _omitFieldNames ? '' : 'verified')
     ..hasRequiredFields = false
@@ -1345,9 +807,9 @@ class ContactMethod extends $pb.GeneratedMessage {
 
   /// The visibility of the contact method.
   @$pb.TagNumber(2)
-  $11.Visibility get visibility => $_getN(1);
+  $12.Visibility get visibility => $_getN(1);
   @$pb.TagNumber(2)
-  set visibility($11.Visibility v) { setField(2, v); }
+  set visibility($12.Visibility v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasVisibility() => $_has(1);
   @$pb.TagNumber(2)

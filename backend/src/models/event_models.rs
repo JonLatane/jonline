@@ -2,9 +2,9 @@ use std::time::SystemTime;
 
 use diesel::*;
 
+use super::SyncDestination;
 use crate::schema::{
-    event_attendances, event_instance_sync_destinations, event_instances, event_sync_destinations,
-    event_sync_sources, events,
+    event_attendances, event_instance_sync_destinations, event_instances, event_sync_sources, events,
 };
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -113,32 +113,17 @@ pub struct NewEventSyncSource {
     pub configuration: serde_json::Value,
 }
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
-pub struct EventSyncDestination {
-    pub id: i64,
-    pub user_id: i64,
-    pub configuration: serde_json::Value,
-    pub created_at: SystemTime,
-    pub updated_at: Option<SystemTime>,
-}
-
-#[derive(Debug, Insertable)]
-#[diesel(table_name = event_sync_destinations)]
-pub struct NewEventSyncDestination {
-    pub user_id: i64,
-    pub configuration: serde_json::Value,
-}
-
-/// A single EventInstance's sync status against a single EventSyncDestination. Composite-keyed
-/// (no surrogate `id`), so it's `Identifiable` via both foreign keys rather than one.
+/// A single EventInstance's sync status against a single SyncDestination (see
+/// `models::SyncDestination` in `sync_models.rs`). Composite-keyed (no surrogate `id`), so it's
+/// `Identifiable` via both foreign keys rather than one.
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(table_name = event_instance_sync_destinations)]
-#[diesel(primary_key(event_instance_id, event_sync_destination_id))]
+#[diesel(primary_key(event_instance_id, sync_destination_id))]
 #[diesel(belongs_to(EventInstance))]
-#[diesel(belongs_to(EventSyncDestination))]
+#[diesel(belongs_to(SyncDestination))]
 pub struct EventInstanceSyncDestination {
     pub event_instance_id: i64,
-    pub event_sync_destination_id: i64,
+    pub sync_destination_id: i64,
     pub destination_instance_id: Option<String>,
     pub destination_url: Option<String>,
     pub synced_at: Option<SystemTime>,
@@ -149,7 +134,7 @@ pub struct EventInstanceSyncDestination {
 #[diesel(table_name = event_instance_sync_destinations)]
 pub struct NewEventInstanceSyncDestination {
     pub event_instance_id: i64,
-    pub event_sync_destination_id: i64,
+    pub sync_destination_id: i64,
     pub destination_instance_id: Option<String>,
     pub destination_url: Option<String>,
     pub synced_at: Option<SystemTime>,

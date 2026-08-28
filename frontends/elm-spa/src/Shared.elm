@@ -159,6 +159,11 @@ type Msg
       -- `Components.Pages.UserProfilePage`'s embedded `EventsPage` copy) can
       -- re-scope its refetch to just `host`'s server the same way.
     | GotEventInstanceSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+      -- `ConfirmPostSyncDestinationDelete`'s own result -- mirrors
+      -- `GotEventInstanceSyncDestinationDeleteResult`'s own doc exactly, just
+      -- for `Components.Pages.PostPage`/`Components.Pages.UserProfilePage`'s
+      -- embedded `PostsPage` copy instead of `EventsPage`.
+    | GotPostSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
       -- The trailing `User`/`String` are the deleted user/acting `targetHost`
       -- (mirroring `ConfirmUserDelete`'s own two extra fields) -- unlike
       -- `GotPostDeleteResult`/`GotEventDeleteResult`, this needs them back:
@@ -280,7 +285,7 @@ type DeleteConfirmation
       -- makes a zero-instance Event unretrievable anyway).
     | ConfirmEventInstanceDelete EventInstance Event String
     | ConfirmUserDelete User String
-      -- Un-syncs `instance` from the `EventSyncDestination` (`String`) whose
+      -- Un-syncs `instance` from the `SyncDestination` (`String`) whose
       -- display name is the trailing-but-one `String` (for the confirmation
       -- message only -- see `UI.deleteConfirmationModal`), acting on
       -- `targetHost` (the final `String`, mirroring the other three's own
@@ -292,6 +297,15 @@ type DeleteConfirmation
       -- (`GotEventInstanceSyncDestinationDeleteResult`) is forwarded to
       -- whichever page is active the same as any other `Shared.Msg`.
     | ConfirmEventInstanceSyncDestinationDelete EventInstance String String String
+      -- `ConfirmEventInstanceSyncDestinationDelete`'s counterpart for a
+      -- `Post` -- same shape (destination id, display name, acting host),
+      -- just un-syncing `post` (`Components.Posts.deletePostSyncDestination`)
+      -- instead of an `EventInstance`. Fired from a card's Delete button
+      -- beside its "Push again" button
+      -- (`Components.Posts.postSyncDestinationsView`'s `onDelete`), on both
+      -- `Components.Pages.PostPage`'s detail view and
+      -- `Components.Pages.UserProfilePage`'s embedded `PostsPage` copy.
+    | ConfirmPostSyncDestinationDelete Post String String String
 
 
 {-| Every app-wide "Panel" other than the Accounts Panel (see `Model.accounts`
@@ -1444,6 +1458,16 @@ sharedUpdate req msg model =
                         |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
                     )
 
+                Just (ConfirmPostSyncDestinationDelete post syncDestinationId _ host) ->
+                    ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
+                    , Posts.deletePostSyncDestination
+                        model.accounts
+                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        post.id
+                        syncDestinationId
+                        |> Task.attempt (GotPostSyncDestinationDeleteResult host)
+                    )
+
                 Nothing ->
                     ( model, Cmd.none )
 
@@ -1475,6 +1499,21 @@ sharedUpdate req msg model =
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
         GotEventInstanceSyncDestinationDeleteResult _ (Err _) ->
+            ( model, Cmd.none )
+
+        GotPostSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+            in
+            ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotPostSyncDestinationDeleteResult _ (Err _) ->
             ( model, Cmd.none )
 
         GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->

@@ -1,12 +1,15 @@
 //! Specs for `logic::facebook_sync`'s Graph API interaction correctness (token exchange, Page
 //! lookup, posting), run against `factories::serve_facebook_graph_api` instead of the real
 //! Facebook API. RPC-level permission/ownership handling is covered separately by
-//! `event_sync_destination_rpc_tests`.
+//! `sync_destination_rpc_tests`/`post_sync_rpc_tests`.
 
 use chrono::{TimeZone, Utc};
 use tonic::Code;
 
-use crate::logic::{connect_facebook_page_at, post_event_instance_at, EventInstancePost};
+use crate::logic::{
+    connect_facebook_page_at, post_event_instance_at, post_post_at, EventInstancePost,
+    PostFacebookContent,
+};
 use crate::models;
 use crate::tests::factories::*;
 
@@ -68,7 +71,7 @@ fn connect_fails_when_user_manages_no_pages() {
 #[test]
 fn post_event_instance_returns_the_new_posts_id_and_url() {
     let base_url = serve_facebook_graph_api(None, "123_456");
-    let destination = models::EventSyncDestination {
+    let destination = models::SyncDestination {
         id: 1,
         user_id: 1,
         configuration: serde_json::json!({
@@ -101,7 +104,7 @@ fn post_event_instance_returns_the_new_posts_id_and_url() {
 
 #[test]
 fn post_event_instance_fails_when_destination_is_not_configured() {
-    let destination = models::EventSyncDestination {
+    let destination = models::SyncDestination {
         id: 1,
         user_id: 1,
         configuration: serde_json::json!({}),
@@ -128,4 +131,57 @@ fn post_event_instance_fails_when_destination_is_not_configured() {
     .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);
     assert_eq!(err.message(), "event_sync_destination_not_configured");
+}
+
+#[test]
+fn post_post_at_returns_the_new_posts_id_and_url() {
+    let base_url = serve_facebook_graph_api(None, "789_012");
+    let destination = models::SyncDestination {
+        id: 1,
+        user_id: 1,
+        configuration: serde_json::json!({
+            "facebook_page": { "page_id": "123", "page_name": "Test Page", "access_token": "page-token" }
+        }),
+        created_at: std::time::SystemTime::now(),
+        updated_at: None,
+    };
+
+    let (post_id, post_url) = post_post_at(
+        &base_url,
+        &destination,
+        &PostFacebookContent {
+            title: &Some("Test Post".to_string()),
+            content: &Some("Check this out!".to_string()),
+            link: &None,
+            post_url: &Some("https://example.com/post/abc".to_string()),
+        },
+    )
+    .expect("post should succeed");
+    assert_eq!(post_id, "789_012");
+    assert_eq!(post_url, "https://www.facebook.com/789_012");
+}
+
+#[test]
+fn post_post_at_fails_when_destination_is_not_configured() {
+    let destination = models::SyncDestination {
+        id: 1,
+        user_id: 1,
+        configuration: serde_json::json!({}),
+        created_at: std::time::SystemTime::now(),
+        updated_at: None,
+    };
+
+    let err = post_post_at(
+        "http://127.0.0.1:1",
+        &destination,
+        &PostFacebookContent {
+            title: &None,
+            content: &None,
+            link: &None,
+            post_url: &None,
+        },
+    )
+    .unwrap_err();
+    assert_eq!(err.code(), Code::FailedPrecondition);
+    assert_eq!(err.message(), "sync_destination_not_configured");
 }

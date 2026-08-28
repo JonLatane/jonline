@@ -27,3 +27,9 @@ pub use delete_group_post::delete_group_post;
 
 mod get_group_posts;
 pub use get_group_posts::*;
+
+mod sync_post;
+pub use sync_post::sync_post;
+
+mod delete_post_sync_destination;
+pub use delete_post_sync_destination::delete_post_sync_destination;

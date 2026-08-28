@@ -24,8 +24,8 @@ pub fn sync_event_instance(
         .event_instance_id
         .to_db_id_or_err("event_instance_id")?;
     let destination_id = request
-        .event_sync_destination_id
-        .to_db_id_or_err("event_sync_destination_id")?;
+        .sync_destination_id
+        .to_db_id_or_err("sync_destination_id")?;
 
     let instance = models::get_event_instance(instance_id, &Some(current_user), conn)?;
     let post: models::Post = posts::table
@@ -34,7 +34,7 @@ pub fn sync_event_instance(
         .first(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_post_not_found"))?;
 
-    let destination = models::get_event_sync_destination(destination_id, conn)?;
+    let destination = models::get_sync_destination(destination_id, conn)?;
     if destination.user_id != current_user.id {
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
@@ -77,7 +77,7 @@ pub fn sync_event_instance(
 
     let new_row = models::NewEventInstanceSyncDestination {
         event_instance_id: instance.id,
-        event_sync_destination_id: destination.id,
+        sync_destination_id: destination.id,
         destination_instance_id: Some(destination_instance_id),
         destination_url: Some(destination_url),
         synced_at: Some(SystemTime::now()),
@@ -86,7 +86,7 @@ pub fn sync_event_instance(
         .values(&new_row)
         .on_conflict((
             event_instance_sync_destinations::event_instance_id,
-            event_instance_sync_destinations::event_sync_destination_id,
+            event_instance_sync_destinations::sync_destination_id,
         ))
         .do_update()
         .set(&new_row)

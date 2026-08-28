@@ -14,9 +14,9 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{
-    event_attendances, event_instance_sync_destinations, event_instances, event_sync_destinations,
-    event_sync_sources, events, follows, group_posts, groups, media, memberships, messages, posts,
-    server_configurations, users,
+    event_attendances, event_instance_sync_destinations, event_instances, event_sync_sources,
+    events, follows, group_posts, groups, media, memberships, messages, post_sync_destinations,
+    posts, server_configurations, sync_destinations, users,
 };
 
 lazy_static! {
@@ -624,17 +624,17 @@ pub fn serve_ics(ics_text: &str) -> String {
     format!("http://127.0.0.1:{port}/test.ics")
 }
 
-/// Inserts an `event_sync_destinations` row directly (bypassing `rpcs::create_event_sync_destination`,
-/// so no Facebook OAuth exchange happens) -- for specs that only care about ownership/permission
+/// Inserts a `sync_destinations` row directly (bypassing `rpcs::create_sync_destination`, so no
+/// Facebook OAuth exchange happens) -- for specs that only care about ownership/permission
 /// handling. Specs exercising the actual Facebook Graph API calls should go through
 /// `logic::facebook_sync`'s `_at` functions against `serve_facebook_graph_api` instead.
-pub fn create_event_sync_destination_row(
+pub fn create_sync_destination_row(
     conn: &mut PgPooledConnection,
     user: &models::User,
     page_id: &str,
-) -> models::EventSyncDestination {
-    insert_into(event_sync_destinations::table)
-        .values(&models::NewEventSyncDestination {
+) -> models::SyncDestination {
+    insert_into(sync_destinations::table)
+        .values(&models::NewSyncDestination {
             user_id: user.id,
             configuration: serde_json::json!({
                 "facebook_page": {
@@ -644,22 +644,22 @@ pub fn create_event_sync_destination_row(
                 }
             }),
         })
-        .get_result::<models::EventSyncDestination>(conn)
-        .expect("failed to create test event sync destination")
+        .get_result::<models::SyncDestination>(conn)
+        .expect("failed to create test sync destination")
 }
 
 /// Inserts an `event_instance_sync_destinations` row directly -- simulates a successful
 /// `SyncEventInstance` without going through the RPC (which always hits the real Facebook Graph
-/// API -- see `event_sync_destination_rpc_tests`' own note on that).
+/// API -- see `sync_destination_rpc_tests`' own note on that).
 pub fn create_event_instance_sync_destination_row(
     conn: &mut PgPooledConnection,
     instance: &models::EventInstance,
-    destination: &models::EventSyncDestination,
+    destination: &models::SyncDestination,
 ) {
     insert_into(event_instance_sync_destinations::table)
         .values(&models::NewEventInstanceSyncDestination {
             event_instance_id: instance.id,
-            event_sync_destination_id: destination.id,
+            sync_destination_id: destination.id,
             destination_instance_id: Some("test-post-id".to_string()),
             destination_url: Some("https://www.facebook.com/test-post-id".to_string()),
             synced_at: Some(SystemTime::now()),
@@ -668,9 +668,29 @@ pub fn create_event_instance_sync_destination_row(
         .expect("failed to create test event instance sync destination");
 }
 
+/// Inserts a `post_sync_destinations` row directly -- mirrors
+/// `create_event_instance_sync_destination_row`, simulating a successful `SyncPost` without going
+/// through the RPC (which always hits the real Facebook Graph API).
+pub fn create_post_sync_destination_row(
+    conn: &mut PgPooledConnection,
+    post: &models::Post,
+    destination: &models::SyncDestination,
+) {
+    insert_into(post_sync_destinations::table)
+        .values(&models::NewPostSyncDestination {
+            post_id: post.id,
+            sync_destination_id: destination.id,
+            destination_instance_id: Some("test-post-id".to_string()),
+            destination_url: Some("https://www.facebook.com/test-post-id".to_string()),
+            synced_at: Some(SystemTime::now()),
+        })
+        .execute(conn)
+        .expect("failed to create test post sync destination");
+}
+
 /// Inserts an active `server_configurations` row with `federation_info.facebook_auth_config` set
 /// to `app_id`/`app_secret` -- lets specs exercise `logic::server_facebook_app_credentials` (and
-/// RPCs that call it, like `create_event_sync_destination`) without going through
+/// RPCs that call it, like `create_sync_destination`) without going through
 /// `ConfigureServer`'s own merge logic.
 pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_secret: &str) {
     let mut new_config = models::default_server_configuration();

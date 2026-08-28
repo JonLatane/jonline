@@ -1,0 +1,6 @@
+-- This file should undo anything in `up.sql`
+ALTER INDEX idx_event_instance_sync_destinations_sync_destination_id RENAME TO idx_event_instance_sync_destinations_destination_id;
+ALTER TABLE event_instance_sync_destinations RENAME COLUMN sync_destination_id TO event_sync_destination_id;
+
+ALTER INDEX idx_sync_destinations_user_id RENAME TO idx_event_sync_destinations_user_id;
+ALTER TABLE sync_destinations RENAME TO event_sync_destinations;

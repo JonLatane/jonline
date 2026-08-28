@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
+import '../../generated/authors.pb.dart';
 import '../../generated/posts.pb.dart';
-import '../../generated/users.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
 import 'post_preview.dart';

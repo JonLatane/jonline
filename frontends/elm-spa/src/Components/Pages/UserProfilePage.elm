@@ -29,12 +29,12 @@ but none of this module's profile-editing machinery.
 -}
 
 import Browser.Navigation
-import Components.EventSyncDestinations as EventSyncDestinations
 import Components.EventSyncSources as EventSyncSources
 import Components.Markdown as Markdown
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
 import Components.ServerDependentView as ServerDependentView
+import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Components.Users.ProfileHeading as ProfileHeading
@@ -50,9 +50,9 @@ import Http
 import Json.Decode as Decode
 import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (EventSyncDestination, EventSyncSource, FederatedAccount, User, defaultEventSyncDestination, defaultEventSyncSource, defaultMediaReference)
-import Proto.Jonline.EventSyncDestination.Configuration as DestinationConfiguration
+import Proto.Jonline exposing (EventSyncSource, FederatedAccount, SyncDestination, User, defaultEventSyncSource, defaultMediaReference, defaultSyncDestination)
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -172,8 +172,8 @@ type Msg
     | GotFacebookLoginResult Decode.Value
     | GotFacebookPagesResult (Result Http.Error (List FacebookPageOption))
     | FacebookPageChosen FacebookPageOption
-    | GotFacebookLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncDestination ))
-    | EventSyncDestinationDeleteClicked EventSyncDestination
+    | GotFacebookLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncDestination ))
+    | EventSyncDestinationDeleteClicked SyncDestination
     | GotEventSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | DeleteUserClicked
 
@@ -384,7 +384,7 @@ independently edit/cancel the way `RealNameEdit`/`EventSyncAddForm` have:
     `pages` is shown as a plain clickable list (`FacebookPageChosen`) rather than picking one
     automatically, even when there's only one, so the user always sees what they're linking.
   - `FacebookLoginNoPagesFound`: `/me/accounts` returned zero Pages -- nothing to link.
-  - `FacebookLoginLinking page`: `CreateEventSyncDestination` is in flight for `page`.
+  - `FacebookLoginLinking page`: `CreateSyncDestination` is in flight for `page`.
   - `FacebookLoginFailed message`: the popup, the Graph API call, or the create RPC failed.
 
 -}
@@ -398,7 +398,7 @@ type FacebookLoginStatus
     | FacebookLoginFailed String
 
 
-{-| The "Event Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
+{-| The "Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
 (bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
 only mutable-from-here field, in effect, is "does it exist"), so this is just the `FacebookLoginStatus`
 state machine that creates a new one, plus a per-destination-id `SubmitStatus` for
@@ -406,12 +406,12 @@ state machine that creates a new one, plus a per-destination-id `SubmitStatus` f
 than one delete could be in flight -- e.g. an Admin clicking two rows quickly). The destinations
 themselves are no longer fetched/held here at all -- `Components.Users.Resolver` already resolves
 this profile's own `User` (via `GetUsers`), which (self-or-Admin gated server-side, see
-`protos/users.proto`'s own doc on `User.event_sync_destinations`) already carries them, so
-`eventSyncDestinationsSection` just reads `user.eventSyncDestinations` directly.
+`protos/users.proto`'s own doc on `User.sync_destinations`) already carries them, so
+`eventSyncDestinationsSection` just reads `user.syncDestinations` directly.
 
 Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
 a Facebook Page is a low-stakes, easily-reversible action (nothing else gets deleted --
-`deleteSyncedPosts` is always sent `False`, see `Components.EventSyncDestinations`), so there's no
+`deleteSyncedPosts` is always sent `False`, see `Components.SyncDestinations`), so there's no
 need for the global "are you sure?" overlay here.
 
 -}
@@ -604,9 +604,14 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncFetchedModel.navKey eventSyncFetchedModel.path eventSyncFetchedModel.query True
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) eventSyncFetchedModel.navKey eventSyncFetchedModel.path eventSyncFetchedModel.query True (Just user.syncDestinations)
                                     in
-                                    ( { eventSyncFetchedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
+                                    ( { eventSyncFetchedModel
+                                        | posts =
+                                            Just { postsModel | showSyncDestinations = model.eventSyncDestinationsExpanded }
+                                      }
+                                    , Effect.map PostsMsg postsEffect
+                                    )
 
                         ( eventsInitedModel, eventsInitEffect ) =
                             case postsInitedModel.events of
@@ -616,7 +621,7 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( eventsModel, eventsEffect ) =
-                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.eventSyncDestinations)
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.syncDestinations)
                                     in
                                     ( { postsInitedModel
                                         | events =
@@ -643,10 +648,20 @@ updateInner shared msg model =
                             { eventsInitedModel
                                 | events =
                                     eventsInitedModel.events
-                                        |> Maybe.map (\em -> { em | availableSyncDestinations = Just user.eventSyncDestinations })
+                                        |> Maybe.map (\em -> { em | availableSyncDestinations = Just user.syncDestinations })
+                            }
+
+                        -- Same reasoning as `eventsResyncedModel` above, just for the
+                        -- embedded `PostsPage.Model`'s own `availableSyncDestinations`.
+                        postsResyncedModel : Model
+                        postsResyncedModel =
+                            { eventsResyncedModel
+                                | posts =
+                                    eventsResyncedModel.posts
+                                        |> Maybe.map (\pm -> { pm | availableSyncDestinations = Just user.syncDestinations })
                             }
                     in
-                    ( eventsResyncedModel
+                    ( postsResyncedModel
                     , Effect.batch
                         [ Effect.map ResolverMsg resolverEffect
                         , federatedEffect
@@ -1514,19 +1529,38 @@ updateInner shared msg model =
                 expanded : Bool
                 expanded =
                     not model.eventSyncDestinationsExpanded
-            in
-            case model.events of
-                Just eventsModel ->
-                    let
-                        ( newEventsModel, eventsEffect ) =
-                            EventsPage.update shared (EventsPage.showSyncDestinationsChanged expanded) eventsModel
-                    in
-                    ( { model | eventSyncDestinationsExpanded = expanded, events = Just newEventsModel }
-                    , Effect.map EventsMsg eventsEffect
-                    )
 
-                Nothing ->
-                    ( { model | eventSyncDestinationsExpanded = expanded }, Effect.none )
+                ( eventsUpdatedModel, eventsEffect ) =
+                    case model.events of
+                        Just eventsModel ->
+                            let
+                                ( newEventsModel, effect ) =
+                                    EventsPage.update shared (EventsPage.showSyncDestinationsChanged expanded) eventsModel
+                            in
+                            ( { model | eventSyncDestinationsExpanded = expanded, events = Just newEventsModel }, effect )
+
+                        Nothing ->
+                            ( { model | eventSyncDestinationsExpanded = expanded }, Effect.none )
+
+                -- Same toggle also drives the embedded `PostsPage.Model`'s own
+                -- `showSyncDestinations` -- mirrors the `model.events` handling just
+                -- above exactly, since "Sync Destinations" now covers both Events and
+                -- Posts (see `eventSyncDestinationsSection`'s own doc).
+                ( postsUpdatedModel, postsEffect ) =
+                    case eventsUpdatedModel.posts of
+                        Just postsModel ->
+                            let
+                                ( newPostsModel, effect ) =
+                                    PostsPage.update shared (PostsPage.showSyncDestinationsChanged expanded) postsModel
+                            in
+                            ( { eventsUpdatedModel | posts = Just newPostsModel }, effect )
+
+                        Nothing ->
+                            ( eventsUpdatedModel, Effect.none )
+            in
+            ( postsUpdatedModel
+            , Effect.batch [ Effect.map EventsMsg eventsEffect, Effect.map PostsMsg postsEffect ]
+            )
 
         -- Opens the popup (see `Ports.facebookLoginPopup`'s own doc for why this happens
         -- synchronously here rather than after some other async step) -- the result arrives via
@@ -1581,9 +1615,9 @@ updateInner shared msg model =
             case model.eventSyncDestinations.login of
                 FacebookLoginChoosingPage accessToken _ ->
                     let
-                        newDestination : EventSyncDestination
+                        newDestination : SyncDestination
                         newDestination =
-                            { defaultEventSyncDestination
+                            { defaultSyncDestination
                                 | configuration =
                                     Just
                                         (DestinationConfiguration.FacebookPage
@@ -1595,7 +1629,7 @@ updateInner shared msg model =
                             }
                     in
                     ( setEventSyncDestinationsLogin (FacebookLoginLinking page) model
-                    , performForOwner shared model (\accountServer -> EventSyncDestinations.createEventSyncDestination shared.accounts accountServer newDestination)
+                    , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
                         |> Task.attempt GotFacebookLinkResult
                         |> Effect.fromCmd
                     )
@@ -1630,7 +1664,7 @@ updateInner shared msg model =
                     model.eventSyncDestinations
             in
             ( { model | eventSyncDestinations = { ed | deleteStatuses = Dict.insert destination.id Submitting ed.deleteStatuses } }
-            , performForOwner shared model (\accountServer -> EventSyncDestinations.deleteEventSyncDestination shared.accounts accountServer destination)
+            , performForOwner shared model (\accountServer -> SyncDestinations.deleteSyncDestination shared.accounts accountServer destination)
                 |> Task.attempt (GotEventSyncDestinationDeleteResult destination.id)
                 |> Effect.fromCmd
             )
@@ -1950,7 +1984,7 @@ refetchEvents shared model =
         Resolver.Loaded user ->
             let
                 ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.eventSyncDestinations)
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.syncDestinations)
             in
             ( { model
                 | events =
@@ -2007,9 +2041,10 @@ setEventSyncDestinationsLogin login model =
 
 
 {-| Whether the section (and its "Sign in to Facebook Page" button) should be shown at all --
-requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`) _and_ this server having
-a Facebook App configured (`facebookAppId` resolving to a non-empty id) -- there's no point
-showing a button that would just fail immediately either way.
+requires both the viewer holding `SYNC_EVENTS_TO_FACEBOOK` *or* `SYNC_POSTS_TO_FACEBOOK` (or
+`ADMIN`) -- a generic `SyncDestination` can serve either content type, so either permission alone
+is enough -- _and_ this server having a Facebook App configured (`facebookAppId` resolving to a
+non-empty id) -- there's no point showing a button that would just fail immediately either way.
 -}
 canUseFacebookSync : Shared.Model -> String -> Maybe AccountsPanel.Account -> Bool
 canUseFacebookSync shared host maybeAccount =
@@ -2019,7 +2054,12 @@ canUseFacebookSync shared host maybeAccount =
 hasSyncEventsToFacebookPermission : Maybe AccountsPanel.Account -> Bool
 hasSyncEventsToFacebookPermission maybeAccount =
     maybeAccount
-        |> Maybe.map (\account -> List.member SYNCEVENTSTOFACEBOOK account.permissions || List.member ADMIN account.permissions)
+        |> Maybe.map
+            (\account ->
+                List.member SYNCEVENTSTOFACEBOOK account.permissions
+                    || List.member SYNCPOSTSTOFACEBOOK account.permissions
+                    || List.member ADMIN account.permissions
+            )
         |> Maybe.withDefault False
 
 
@@ -3231,8 +3271,9 @@ eventSyncSourceAddRowView targetHost addForm =
 
 
 {-| Unlike `eventSyncSourcesSection`, this is shown (or not) as a single all-or-nothing check --
-own profile, holding `SYNC_EVENTS_TO_FACEBOOK` (or `ADMIN`), and this server having a Facebook App
-configured (see `canUseFacebookSync`) -- rather than a separate `canManage`/`canAdd` split. There's
+own profile, holding `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or `ADMIN`), and this
+server having a Facebook App configured (see `canUseFacebookSync`) -- rather than a separate
+`canManage`/`canAdd` split. There's
 no "view-only for an Admin visiting someone else's profile" case the way sources have: a linked
 Facebook Page is always the _caller's own_ (`create_event_sync_destination.rs` always creates for
 `current_user`), so there's nothing for anyone else to usefully see here.
@@ -3244,21 +3285,21 @@ eventSyncDestinationsSection shared model maybeAccount user =
 
     else
         expandableProfileSection "event-sync-destinations-section"
-            "Event Sync Destinations"
+            "Sync Destinations"
             model.eventSyncDestinationsExpanded
             EventSyncDestinationsExpandedToggled
-            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.eventSyncDestinations)
+            [ div [ class "event-sync-destinations-list" ] (eventSyncDestinationsContentView model.eventSyncDestinations user.syncDestinations)
             , facebookLoginView model.eventSyncDestinations
             ]
 
 
 {-| Reads `destinations` straight off the profile's already-resolved `User`
-(`user.eventSyncDestinations`, self-or-Admin gated server-side -- see
+(`user.syncDestinations`, self-or-Admin gated server-side -- see
 `protos/users.proto`'s own doc on that field) rather than a separately
 fetched/tracked status -- no "Loading…" state needed, same as nothing
 elsewhere shows a "loading permissions" spinner for other `User` fields.
 -}
-eventSyncDestinationsContentView : EventSyncDestinationsState -> List EventSyncDestination -> List (Html Msg)
+eventSyncDestinationsContentView : EventSyncDestinationsState -> List SyncDestination -> List (Html Msg)
 eventSyncDestinationsContentView ed destinations =
     if List.isEmpty destinations then
         [ div [ class "event-sync-destinations-message" ] [ text "No Facebook Page linked yet." ] ]
@@ -3267,7 +3308,7 @@ eventSyncDestinationsContentView ed destinations =
         List.map (eventSyncDestinationRowView ed) destinations
 
 
-eventSyncDestinationRowView : EventSyncDestinationsState -> EventSyncDestination -> Html Msg
+eventSyncDestinationRowView : EventSyncDestinationsState -> SyncDestination -> Html Msg
 eventSyncDestinationRowView ed destination =
     let
         pageName : String

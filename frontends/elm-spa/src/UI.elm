@@ -2512,6 +2512,14 @@ deleteConfirmationModal shared =
                                 ++ "? This won't delete the post already made there."
                             , "Delete"
                             )
+
+                        Shared.ConfirmPostSyncDestinationDelete _ _ destinationLabel _ ->
+                            ( "Delete Sync?"
+                            , "Stop syncing this post to "
+                                ++ destinationLabel
+                                ++ "? This won't delete the post already made there."
+                            , "Delete"
+                            )
             in
             UI.Modal.view
                 { class = "confirm-delete-modal"

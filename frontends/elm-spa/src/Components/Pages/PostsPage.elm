@@ -4,6 +4,7 @@ module Components.Pages.PostsPage exposing
     , fromShared
     , init
     , searchTextChanged
+    , showSyncDestinationsChanged
     , subscriptions
     , update
     , view
@@ -37,7 +38,7 @@ import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Process
-import Proto.Jonline exposing (Post, User)
+import Proto.Jonline exposing (Post, SyncDestination, User)
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared
@@ -97,7 +98,41 @@ type alias Model =
     -- `Components.Pages.EventsPage.Model.endsAfterInputGeneration` exactly,
     -- just for this page's own date input.
     , publishedBeforeInputGeneration : Int
+
+    -- Whether `postCardView` shows each card's `Posts.postSyncDestinationsView`
+    -- -- defaults to `False` (`init`), set via `ShowSyncDestinationsChanged`.
+    -- `Components.Pages.UserProfilePage`'s embedded copy keeps this in sync
+    -- with its own `eventSyncDestinationsExpanded` section toggle; no other
+    -- caller ever sets it, so it stays `False` (and this line doesn't render)
+    -- everywhere else. Mirrors `Components.Pages.EventsPage.Model.showSyncDestinations`
+    -- exactly -- Posts have no equivalent of `EventsPage`'s own `showSyncSources`,
+    -- since there's no "Post Sync Source" concept.
+    , showSyncDestinations : Bool
+
+    -- Threaded straight into `Posts.postCard`'s own `availableSyncDestinations`
+    -- param (see that function's own doc) -- set once at `init` (unlike
+    -- `showSyncDestinations`, this only ever needs to change when the whole
+    -- page gets re-inited anyway, since it comes from a resolved `User`, not
+    -- a live UI toggle). `Nothing` for every caller except
+    -- `Components.Pages.UserProfilePage`, which passes `Just user.syncDestinations`
+    -- -- see `init`'s own doc. Mirrors `Components.Pages.EventsPage.Model.availableSyncDestinations`.
+    , availableSyncDestinations : Maybe (List SyncDestination)
+
+    -- `Submitting`/`SubmitFailed` push status per `postId ++ "|" ++
+    -- destinationId` (many posts on screen at once) -- drives the
+    -- `isPushing`/`pushError` closures `postCardView` builds for
+    -- `Posts.postCard`. Mirrors `Components.Pages.EventsPage.Model.pushStatuses`
+    -- exactly.
+    , pushStatuses : Dict String SubmitStatus
     }
+
+
+{-| Mirrors `Components.Pages.EventsPage.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
+exactly -- see `Model.pushStatuses`.
+-}
+type SubmitStatus
+    = Submitting
+    | SubmitFailed String
 
 
 type Msg
@@ -131,6 +166,18 @@ type Msg
       -- `Components.Pages.EventsPage.EndsAfterDebounceElapsed`'s own stale-
       -- generation guard.
     | PublishedBeforeDebounceElapsed Int
+      -- Sets `model.showSyncDestinations` -- driven by
+      -- `Components.Pages.UserProfilePage`'s own "Sync Destinations"
+      -- section-expanded toggle (see `Model.showSyncDestinations`'s own doc),
+      -- not by anything in this page's own UI.
+    | ShowSyncDestinationsChanged Bool
+      -- The Push button on a card's `Posts.postCard`-rendered sync
+      -- destination row (see `Model.availableSyncDestinations`'s own doc) --
+      -- host/postId/syncDestinationId, keyed into `Model.pushStatuses` via
+      -- `pushStatusKey`. Mirrors `Components.Pages.EventsPage.PushEventInstanceToDestination`
+      -- exactly.
+    | PushPostToDestination String String String
+    | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
 
 
 type ServerPosts
@@ -206,9 +253,12 @@ reproduces the same search/cutoff.
 `Components.Pages.UserProfilePage`'s own embedded copies -- see
 `Model.embeddedPage`'s own doc.
 
+`availableSyncDestinations` seeds `Model.availableSyncDestinations` directly -- `Nothing` for
+every caller except `Components.Pages.UserProfilePage`, which passes `Just user.syncDestinations`.
+Mirrors `Components.Pages.EventsPage.init`'s own trailing param exactly.
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage availableSyncDestinations =
     let
         ( tab, publishedBefore ) =
             case Dict.get "published_before" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -232,6 +282,9 @@ init shared author navKey path query embeddedPage =
                 , tab = tab
                 , publishedBefore = publishedBefore
                 , publishedBeforeInputGeneration = 0
+                , showSyncDestinations = False
+                , availableSyncDestinations = availableSyncDestinations
+                , pushStatuses = Dict.empty
                 }
     in
     -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
@@ -296,6 +349,17 @@ itself (and thus every other constructor of this otherwise-opaque `Msg`) outside
 searchTextChanged : String -> Msg
 searchTextChanged =
     SearchTextChanged
+
+
+{-| Lets `Components.Pages.UserProfilePage` keep this page's `showSyncDestinations` in sync with
+its own "Sync Destinations" section-expanded toggle, the same way `searchTextChanged` lets
+`Pages.Home_` feed in a search-text change -- without exposing the `ShowSyncDestinationsChanged`
+constructor itself (and thus every other constructor of this otherwise-opaque `Msg`) outside this
+module. Mirrors `Components.Pages.EventsPage.showSyncDestinationsChanged` exactly.
+-}
+showSyncDestinationsChanged : Bool -> Msg
+showSyncDestinationsChanged =
+    ShowSyncDestinationsChanged
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -383,6 +447,21 @@ updateInner shared msg model =
                     case subMsg of
                         Shared.AccountsPanelMsg _ ->
                             fetchNewServers shared model
+
+                        -- The Delete button on a card's sync destination row
+                        -- (`Shared.RequestDelete`/`Shared.ConfirmPostSyncDestinationDelete`, see
+                        -- `postCardView`'s own `onDelete`) resolving -- mirrors
+                        -- `Components.Pages.EventsPage`'s identical
+                        -- `Shared.GotEventInstanceSyncDestinationDeleteResult` handling (re-scoped
+                        -- refetch of just `host`'s server), since a successful un-sync changes
+                        -- `post.syncDestinations` behind this already-fetched copy's back the same way.
+                        Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->
+                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                                Just server ->
+                                    refetchServers shared model [ server ]
+
+                                Nothing ->
+                                    ( model, Effect.none )
 
                         Shared.CreateNewPanelMsg (CreateNewPanel.GotSaveResult (Ok ( _, createdItem ))) ->
                             applyCreatedItem shared createdItem model
@@ -507,6 +586,65 @@ updateInner shared msg model =
                 -- A later edit already bumped `publishedBeforeInputGeneration`
                 -- past this timer's -- it's stale, ignore it.
                 ( model, Effect.none )
+
+        ShowSyncDestinationsChanged showSyncDestinations ->
+            ( { model | showSyncDestinations = showSyncDestinations }, Effect.none )
+
+        PushPostToDestination host postId syncDestinationId ->
+            let
+                key : String
+                key =
+                    pushStatusKey postId syncDestinationId
+
+                maybeAccountServer : ( Maybe String, String )
+                maybeAccountServer =
+                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+            in
+            ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
+            , Posts.syncPost shared.accounts maybeAccountServer postId syncDestinationId
+                |> Task.attempt (GotPushResult host postId syncDestinationId)
+                |> Effect.fromCmd
+            )
+
+        GotPushResult host postId syncDestinationId result ->
+            let
+                key : String
+                key =
+                    pushStatusKey postId syncDestinationId
+
+                clearedModel : Model
+                clearedModel =
+                    { model | pushStatuses = Dict.remove key model.pushStatuses }
+            in
+            case result of
+                Ok ( maybeAccountsPanelMsg, _ ) ->
+                    let
+                        ( refetchedModel, refetchEffect ) =
+                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                                Just server ->
+                                    refetchServers shared clearedModel [ server ]
+
+                                Nothing ->
+                                    ( clearedModel, Effect.none )
+                    in
+                    ( refetchedModel
+                    , Effect.batch
+                        [ refetchEffect
+                        , maybeAccountsPanelMsg
+                            |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                            |> Maybe.withDefault Effect.none
+                        ]
+                    )
+
+                Err err ->
+                    ( { clearedModel | pushStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) clearedModel.pushStatuses }
+                    , Effect.none
+                    )
+
+
+pushStatusKey : String -> String -> String
+pushStatusKey postId syncDestinationId =
+    postId ++ "|" ++ syncDestinationId
 
 
 {-| The servers this page should ever fetch from: every enabled server for an
@@ -1267,7 +1405,7 @@ postsListView shared model =
         else
             Html.Keyed.node "div"
                 [ class "posts-list flip-animated-column" ]
-                (List.map (postAnimationView shared) sortedAnimations)
+                (List.map (postAnimationView shared model.showSyncDestinations model.availableSyncDestinations model.pushStatuses) sortedAnimations)
 
 
 {-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`
@@ -1283,8 +1421,8 @@ border; it also carries `pointer-events: none` while `removing` so a
 fading-out card (e.g. from a just-disabled server) can't be clicked/starred
 while it's on its way out.
 -}
-postAnimationView : Shared.Model -> ( String, PostAnimation ) -> ( String, Html Msg )
-postAnimationView shared ( key, anim ) =
+postAnimationView : Shared.Model -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, PostAnimation ) -> ( String, Html Msg )
+postAnimationView shared showSyncDestinations availableSyncDestinations pushStatuses ( key, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
         pointerEventsAttr =
@@ -1296,12 +1434,12 @@ postAnimationView shared ( key, anim ) =
     in
     ( key
     , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
-        [ div pointerEventsAttr [ postCardView shared ( anim.host, anim.post ) ] ]
+        [ div pointerEventsAttr [ postCardView shared showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.post ) ] ]
     )
 
 
-postCardView : Shared.Model -> ( String, Post ) -> Html Msg
-postCardView shared ( host, post ) =
+postCardView : Shared.Model -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Post ) -> Html Msg
+postCardView shared showSyncDestinations availableSyncDestinations pushStatuses ( host, post ) =
     let
         displayPost : Post
         displayPost =
@@ -1327,5 +1465,44 @@ postCardView shared ( host, post ) =
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =
             SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost.media (Just displayPost) mediaId host))
+
+        isPushing : String -> Bool
+        isPushing destinationId =
+            Dict.get (pushStatusKey displayPost.id destinationId) pushStatuses == Just Submitting
+
+        pushError : String -> Maybe String
+        pushError destinationId =
+            case Dict.get (pushStatusKey displayPost.id destinationId) pushStatuses of
+                Just (SubmitFailed err) ->
+                    Just err
+
+                _ ->
+                    Nothing
+
+        onPush : String -> Msg
+        onPush destinationId =
+            PushPostToDestination host displayPost.id destinationId
+
+        onDelete : String -> String -> Msg
+        onDelete destinationId destinationLabel =
+            SharedMsg (Shared.RequestDelete (Shared.ConfirmPostSyncDestinationDelete displayPost destinationId destinationLabel host))
     in
-    Posts.postCard shared.time shared.basePath shared.accounts.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost
+    Posts.postCard
+        shared.time
+        shared.basePath
+        shared.accounts.mainFrontendHost
+        host
+        maybeServer
+        maybeAccount
+        onMediaClicked
+        False
+        False
+        starred
+        onStarClicked
+        showSyncDestinations
+        availableSyncDestinations
+        isPushing
+        pushError
+        onPush
+        onDelete
+        displayPost

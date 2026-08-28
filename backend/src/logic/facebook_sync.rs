@@ -1,17 +1,18 @@
-//! Connects an `EventSyncDestination` to a Facebook Page (OAuth token exchange) and posts
-//! `EventInstance`s to it via the Graph API.
+//! Connects a `SyncDestination` to a Facebook Page (OAuth token exchange) and posts
+//! `EventInstance`s/`Post`s to it via the Graph API.
 //!
-//! This creates a Page **post** formatted to read like an event announcement (title, date/time
-//! range -- in the event location's local timezone if `logic::resolve_timezone` can geocode it,
-//! else UTC -- location, description, and a link back to the event on this Jonline server), not a
-//! real Facebook **Event** object -- the Graph API's `event` node has been
-//! creation/update/delete-locked for third-party apps since v3.3 (2018), restricted to approved
-//! Facebook Marketing Partners. See `docs/facebook_federation.md` for the full rundown of why and
-//! what this does instead.
+//! For `EventInstance`s, this creates a Page **post** formatted to read like an event
+//! announcement (title, date/time range -- in the event location's local timezone if
+//! `logic::resolve_timezone` can geocode it, else UTC -- location, description, and a link back
+//! to the event on this Jonline server), not a real Facebook **Event** object -- the Graph API's
+//! `event` node has been creation/update/delete-locked for third-party apps since v3.3 (2018),
+//! restricted to approved Facebook Marketing Partners. See `docs/facebook_federation.md` for the
+//! full rundown of why and what this does instead. `Post`s are simpler -- just title/content and
+//! a link back to the post -- see `post_post`.
 //!
 //! Posting to a user's personal timeline isn't possible via the Graph API (Facebook deprecated
-//! `publish_actions` in 2018) -- only to a Page the user administers, hence `EventSyncDestination`
-//! only supports `FacebookPage`, not a personal profile.
+//! `publish_actions` in 2018) -- only to a Page the user administers, hence `SyncDestination` only
+//! supports `FacebookPage`, not a personal profile.
 //!
 //! Needs this app's own Facebook App ID/Secret (an admin-configured
 //! `ServerConfiguration.federation_info.facebook_auth_config`, not an env var -- callers fetch it
@@ -196,7 +197,7 @@ pub struct EventInstancePost<'a> {
 /// no real Facebook "Event" created -- see the module doc). Returns the new post's ID and a link
 /// to it.
 pub fn post_event_instance(
-    destination: &models::EventSyncDestination,
+    destination: &models::SyncDestination,
     post: &EventInstancePost,
 ) -> Result<(String, String), Status> {
     post_event_instance_at(DEFAULT_GRAPH_API_BASE_URL, destination, post)
@@ -206,9 +207,13 @@ pub fn post_event_instance(
 /// `connect_facebook_page_at`.
 pub fn post_event_instance_at(
     base_url: &str,
-    destination: &models::EventSyncDestination,
+    destination: &models::SyncDestination,
     post: &EventInstancePost,
 ) -> Result<(String, String), Status> {
+    // Error string intentionally left as `event_sync_destination_not_configured` (not renamed to
+    // match `SyncDestination`) -- this is an identifier/move-only change for the existing
+    // EventInstance sync path, not a behavior change; `facebook_sync_tests` asserts on this exact
+    // string.
     let not_configured = || {
         Status::new(
             Code::FailedPrecondition,
@@ -255,6 +260,96 @@ pub fn post_event_instance_at(
         })?;
     let post_url = format!("https://www.facebook.com/{}", post_id);
     Ok((post_id, post_url))
+}
+
+/// Content for the Facebook Page post representing a `Post` -- see `post_post`. Simpler than
+/// `EventInstancePost`: a `Post` has no start/end time, timezone, or location, so this is just
+/// title/content and a link back to it.
+pub struct PostFacebookContent<'a> {
+    pub title: &'a Option<String>,
+    pub content: &'a Option<String>,
+    /// Arbitrary external link the author set on the `Post` (e.g. an article/ticketing link).
+    /// Used as the Graph API `link` (and thus the post's link-preview card) only if `post_url`
+    /// isn't set.
+    pub link: &'a Option<String>,
+    /// Link to this `Post` on this Jonline server's own frontend. Only buildable when
+    /// `ServerConfiguration.external_cdn_config.frontend_host` is configured -- see `sync_post`'s
+    /// caller -- so this is `None` on servers without that set up.
+    pub post_url: &'a Option<String>,
+}
+
+/// Posts a `Post`'s details to `destination`'s connected Facebook Page's feed. Returns the new
+/// post's ID and a link to it. Mirrors `post_event_instance`, without the event-specific
+/// start/end time/location formatting.
+pub fn post_post(
+    destination: &models::SyncDestination,
+    post: &PostFacebookContent,
+) -> Result<(String, String), Status> {
+    post_post_at(DEFAULT_GRAPH_API_BASE_URL, destination, post)
+}
+
+/// Same as `post_post`, but against an arbitrary `base_url` -- see `connect_facebook_page_at`.
+pub fn post_post_at(
+    base_url: &str,
+    destination: &models::SyncDestination,
+    post: &PostFacebookContent,
+) -> Result<(String, String), Status> {
+    let not_configured =
+        || Status::new(Code::FailedPrecondition, "sync_destination_not_configured");
+    let facebook_page = destination
+        .configuration
+        .get("facebook_page")
+        .ok_or_else(not_configured)?;
+    let page_id = facebook_page
+        .get("page_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(not_configured)?;
+    let access_token = facebook_page
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(not_configured)?;
+
+    let message = format_post_message(post);
+    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+
+    let mut params = vec![
+        ("message", message.as_str()),
+        ("access_token", access_token),
+    ];
+    let link = post
+        .post_url
+        .as_ref()
+        .filter(|l| !l.trim().is_empty())
+        .or_else(|| post.link.as_ref().filter(|l| !l.trim().is_empty()));
+    if let Some(link) = link {
+        params.push(("link", link.as_str()));
+    }
+
+    let response = graph_post(&url, &params)?;
+    let post_id = response
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!("Facebook post response missing id: {:?}", response);
+            Status::new(Code::Internal, "facebook_post_failed")
+        })?;
+    let post_url = format!("https://www.facebook.com/{}", post_id);
+    Ok((post_id, post_url))
+}
+
+fn format_post_message(post: &PostFacebookContent) -> String {
+    let mut lines = vec![];
+    if let Some(title) = post.title.as_ref().filter(|t| !t.trim().is_empty()) {
+        lines.push(title.clone());
+    }
+    if let Some(content) = post.content.as_ref().filter(|c| !c.trim().is_empty()) {
+        lines.push(content.clone());
+    }
+    if let Some(post_url) = post.post_url.as_ref().filter(|l| !l.trim().is_empty()) {
+        lines.push(format!("View post: {post_url}"));
+    }
+    lines.join("\n\n")
 }
 
 fn format_message(post: &EventInstancePost) -> String {

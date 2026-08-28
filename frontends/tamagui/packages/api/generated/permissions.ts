@@ -108,10 +108,15 @@ export enum Permission {
   /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
   SYNCHRONIZE_EVENTS = 36,
   /**
-   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update `EventSyncDestination`s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
    * connected Facebook Page, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_FACEBOOK = 37,
+  /**
+   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Facebook Page, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_FACEBOOK = 38,
   /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -237,6 +242,9 @@ export function permissionFromJSON(object: any): Permission {
     case 37:
     case "SYNC_EVENTS_TO_FACEBOOK":
       return Permission.SYNC_EVENTS_TO_FACEBOOK;
+    case 38:
+    case "SYNC_POSTS_TO_FACEBOOK":
+      return Permission.SYNC_POSTS_TO_FACEBOOK;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -337,6 +345,8 @@ export function permissionToJSON(object: Permission): string {
       return "SYNCHRONIZE_EVENTS";
     case Permission.SYNC_EVENTS_TO_FACEBOOK:
       return "SYNC_EVENTS_TO_FACEBOOK";
+    case Permission.SYNC_POSTS_TO_FACEBOOK:
+      return "SYNC_POSTS_TO_FACEBOOK";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:

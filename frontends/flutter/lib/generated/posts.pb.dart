@@ -14,11 +14,12 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $10;
+import 'authors.pb.dart' as $14;
+import 'google/protobuf/timestamp.pb.dart' as $11;
 import 'media.pb.dart' as $5;
 import 'posts.pbenum.dart';
-import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'sync.pb.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $12;
 
 export 'posts.pbenum.dart';
 
@@ -49,7 +50,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.int? replyDepth,
     PostContext? context,
     $core.String? searchText,
-    $10.Timestamp? publishedOrCreatedBefore,
+    $11.Timestamp? publishedOrCreatedBefore,
     $core.String? postIds,
     PostListingType? listingType,
     $core.int? page,
@@ -98,7 +99,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..a<$core.int>(4, _omitFieldNames ? '' : 'replyDepth', $pb.PbFieldType.OU3)
     ..e<PostContext>(5, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
     ..aOS(7, _omitFieldNames ? '' : 'searchText')
-    ..aOM<$10.Timestamp>(8, _omitFieldNames ? '' : 'publishedOrCreatedBefore', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(8, _omitFieldNames ? '' : 'publishedOrCreatedBefore', subBuilder: $11.Timestamp.create)
     ..aOS(9, _omitFieldNames ? '' : 'postIds')
     ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.ALL_ACCESSIBLE_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
     ..a<$core.int>(15, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
@@ -189,15 +190,15 @@ class GetPostsRequest extends $pb.GeneratedMessage {
 
   /// Request to only return posts that were published or created before the given timestamp.
   @$pb.TagNumber(8)
-  $10.Timestamp get publishedOrCreatedBefore => $_getN(6);
+  $11.Timestamp get publishedOrCreatedBefore => $_getN(6);
   @$pb.TagNumber(8)
-  set publishedOrCreatedBefore($10.Timestamp v) { setField(8, v); }
+  set publishedOrCreatedBefore($11.Timestamp v) { setField(8, v); }
   @$pb.TagNumber(8)
   $core.bool hasPublishedOrCreatedBefore() => $_has(6);
   @$pb.TagNumber(8)
   void clearPublishedOrCreatedBefore() => clearField(8);
   @$pb.TagNumber(8)
-  $10.Timestamp ensurePublishedOrCreatedBefore() => $_ensure(6);
+  $11.Timestamp ensurePublishedOrCreatedBefore() => $_ensure(6);
 
   /// Returns expanded posts with the given IDs.
   @$pb.TagNumber(9)
@@ -286,7 +287,7 @@ class GetPostsResponse extends $pb.GeneratedMessage {
 class Post extends $pb.GeneratedMessage {
   factory Post({
     $core.String? id,
-    $4.Author? author,
+    $14.Author? author,
     $core.String? replyToPostId,
     $core.String? title,
     $core.String? link,
@@ -299,16 +300,17 @@ class Post extends $pb.GeneratedMessage {
     $core.bool? embedLink,
     $core.bool? shareable,
     PostContext? context,
-    $11.Visibility? visibility,
-    $11.Moderation? moderation,
+    $12.Visibility? visibility,
+    $12.Moderation? moderation,
     PostMediaLayout? postMediaLayout,
     GroupPost? currentGroupPost,
     $core.Iterable<Post>? replies,
-    $10.Timestamp? createdAt,
-    $10.Timestamp? updatedAt,
-    $10.Timestamp? publishedAt,
-    $10.Timestamp? lastActivityAt,
+    $11.Timestamp? createdAt,
+    $11.Timestamp? updatedAt,
+    $11.Timestamp? publishedAt,
+    $11.Timestamp? lastActivityAt,
     $fixnum.Int64? unauthenticatedStarCount,
+    $core.Iterable<$10.SyncDestinationStatus>? syncDestinations,
   }) {
     final $result = create();
     if (id != null) {
@@ -383,6 +385,9 @@ class Post extends $pb.GeneratedMessage {
     if (unauthenticatedStarCount != null) {
       $result.unauthenticatedStarCount = unauthenticatedStarCount;
     }
+    if (syncDestinations != null) {
+      $result.syncDestinations.addAll(syncDestinations);
+    }
     return $result;
   }
   Post._() : super();
@@ -391,7 +396,7 @@ class Post extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Post', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$4.Author>(2, _omitFieldNames ? '' : 'author', subBuilder: $4.Author.create)
+    ..aOM<$14.Author>(2, _omitFieldNames ? '' : 'author', subBuilder: $14.Author.create)
     ..aOS(3, _omitFieldNames ? '' : 'replyToPostId')
     ..aOS(4, _omitFieldNames ? '' : 'title')
     ..aOS(5, _omitFieldNames ? '' : 'link')
@@ -404,16 +409,17 @@ class Post extends $pb.GeneratedMessage {
     ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
     ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..e<$11.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$12.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$12.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
     ..e<PostMediaLayout>(17, _omitFieldNames ? '' : 'postMediaLayout', $pb.PbFieldType.OE, defaultOrMaker: PostMediaLayout.MEDIA_LAYOUT_STANDARD, valueOf: PostMediaLayout.valueOf, enumValues: PostMediaLayout.values)
     ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
     ..pc<Post>(19, _omitFieldNames ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
-    ..aOM<$10.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$10.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt', subBuilder: $11.Timestamp.create)
     ..aInt64(24, _omitFieldNames ? '' : 'unauthenticatedStarCount')
+    ..pc<$10.SyncDestinationStatus>(25, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestinationStatus.create)
     ..hasRequiredFields = false
   ;
 
@@ -450,15 +456,15 @@ class Post extends $pb.GeneratedMessage {
 
   /// The author of the post. This is a smaller version of User.
   @$pb.TagNumber(2)
-  $4.Author get author => $_getN(1);
+  $14.Author get author => $_getN(1);
   @$pb.TagNumber(2)
-  set author($4.Author v) { setField(2, v); }
+  set author($14.Author v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasAuthor() => $_has(1);
   @$pb.TagNumber(2)
   void clearAuthor() => clearField(2);
   @$pb.TagNumber(2)
-  $4.Author ensureAuthor() => $_ensure(1);
+  $14.Author ensureAuthor() => $_ensure(1);
 
   /// If this is a reply, this is the ID of the post it's replying to.
   @$pb.TagNumber(3)
@@ -578,9 +584,9 @@ class Post extends $pb.GeneratedMessage {
 
   /// The visibility of the Post.
   @$pb.TagNumber(15)
-  $11.Visibility get visibility => $_getN(14);
+  $12.Visibility get visibility => $_getN(14);
   @$pb.TagNumber(15)
-  set visibility($11.Visibility v) { setField(15, v); }
+  set visibility($12.Visibility v) { setField(15, v); }
   @$pb.TagNumber(15)
   $core.bool hasVisibility() => $_has(14);
   @$pb.TagNumber(15)
@@ -588,9 +594,9 @@ class Post extends $pb.GeneratedMessage {
 
   /// The moderation of the Post.
   @$pb.TagNumber(16)
-  $11.Moderation get moderation => $_getN(15);
+  $12.Moderation get moderation => $_getN(15);
   @$pb.TagNumber(16)
-  set moderation($11.Moderation v) { setField(16, v); }
+  set moderation($12.Moderation v) { setField(16, v); }
   @$pb.TagNumber(16)
   $core.bool hasModeration() => $_has(15);
   @$pb.TagNumber(16)
@@ -628,51 +634,51 @@ class Post extends $pb.GeneratedMessage {
 
   /// The time the post was created.
   @$pb.TagNumber(20)
-  $10.Timestamp get createdAt => $_getN(19);
+  $11.Timestamp get createdAt => $_getN(19);
   @$pb.TagNumber(20)
-  set createdAt($10.Timestamp v) { setField(20, v); }
+  set createdAt($11.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(19);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $10.Timestamp ensureCreatedAt() => $_ensure(19);
+  $11.Timestamp ensureCreatedAt() => $_ensure(19);
 
   /// The time the post was last updated.
   @$pb.TagNumber(21)
-  $10.Timestamp get updatedAt => $_getN(20);
+  $11.Timestamp get updatedAt => $_getN(20);
   @$pb.TagNumber(21)
-  set updatedAt($10.Timestamp v) { setField(21, v); }
+  set updatedAt($11.Timestamp v) { setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(20);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => clearField(21);
   @$pb.TagNumber(21)
-  $10.Timestamp ensureUpdatedAt() => $_ensure(20);
+  $11.Timestamp ensureUpdatedAt() => $_ensure(20);
 
   /// The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   @$pb.TagNumber(22)
-  $10.Timestamp get publishedAt => $_getN(21);
+  $11.Timestamp get publishedAt => $_getN(21);
   @$pb.TagNumber(22)
-  set publishedAt($10.Timestamp v) { setField(22, v); }
+  set publishedAt($11.Timestamp v) { setField(22, v); }
   @$pb.TagNumber(22)
   $core.bool hasPublishedAt() => $_has(21);
   @$pb.TagNumber(22)
   void clearPublishedAt() => clearField(22);
   @$pb.TagNumber(22)
-  $10.Timestamp ensurePublishedAt() => $_ensure(21);
+  $11.Timestamp ensurePublishedAt() => $_ensure(21);
 
   /// The time the post was last interacted with (replied to, etc.)
   @$pb.TagNumber(23)
-  $10.Timestamp get lastActivityAt => $_getN(22);
+  $11.Timestamp get lastActivityAt => $_getN(22);
   @$pb.TagNumber(23)
-  set lastActivityAt($10.Timestamp v) { setField(23, v); }
+  set lastActivityAt($11.Timestamp v) { setField(23, v); }
   @$pb.TagNumber(23)
   $core.bool hasLastActivityAt() => $_has(22);
   @$pb.TagNumber(23)
   void clearLastActivityAt() => clearField(23);
   @$pb.TagNumber(23)
-  $10.Timestamp ensureLastActivityAt() => $_ensure(22);
+  $11.Timestamp ensureLastActivityAt() => $_ensure(22);
 
   /// The number of unauthenticated stars on the post.
   @$pb.TagNumber(24)
@@ -683,6 +689,145 @@ class Post extends $pb.GeneratedMessage {
   $core.bool hasUnauthenticatedStarCount() => $_has(23);
   @$pb.TagNumber(24)
   void clearUnauthenticatedStarCount() => clearField(24);
+
+  /// SyncDestinations this post has been synced (cross-posted) to, and their status.
+  @$pb.TagNumber(25)
+  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(24);
+}
+
+/// Syncs (cross-posts) a single Post to one SyncDestination.
+class SyncPostRequest extends $pb.GeneratedMessage {
+  factory SyncPostRequest({
+    $core.String? postId,
+    $core.String? syncDestinationId,
+  }) {
+    final $result = create();
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (syncDestinationId != null) {
+      $result.syncDestinationId = syncDestinationId;
+    }
+    return $result;
+  }
+  SyncPostRequest._() : super();
+  factory SyncPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncPostRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'postId')
+    ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SyncPostRequest clone() => SyncPostRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SyncPostRequest copyWith(void Function(SyncPostRequest) updates) => super.copyWith((message) => updates(message as SyncPostRequest)) as SyncPostRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SyncPostRequest create() => SyncPostRequest._();
+  SyncPostRequest createEmptyInstance() => create();
+  static $pb.PbList<SyncPostRequest> createRepeated() => $pb.PbList<SyncPostRequest>();
+  @$core.pragma('dart2js:noInline')
+  static SyncPostRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncPostRequest>(create);
+  static SyncPostRequest? _defaultInstance;
+
+  /// The Post to sync.
+  @$pb.TagNumber(1)
+  $core.String get postId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set postId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasPostId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPostId() => clearField(1);
+
+  /// The SyncDestination to sync it to.
+  @$pb.TagNumber(2)
+  $core.String get syncDestinationId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set syncDestinationId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasSyncDestinationId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSyncDestinationId() => clearField(2);
+}
+
+/// Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+/// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
+class DeletePostSyncDestinationRequest extends $pb.GeneratedMessage {
+  factory DeletePostSyncDestinationRequest({
+    $core.String? postId,
+    $core.String? syncDestinationId,
+  }) {
+    final $result = create();
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (syncDestinationId != null) {
+      $result.syncDestinationId = syncDestinationId;
+    }
+    return $result;
+  }
+  DeletePostSyncDestinationRequest._() : super();
+  factory DeletePostSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeletePostSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeletePostSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'postId')
+    ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DeletePostSyncDestinationRequest clone() => DeletePostSyncDestinationRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DeletePostSyncDestinationRequest copyWith(void Function(DeletePostSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeletePostSyncDestinationRequest)) as DeletePostSyncDestinationRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeletePostSyncDestinationRequest create() => DeletePostSyncDestinationRequest._();
+  DeletePostSyncDestinationRequest createEmptyInstance() => create();
+  static $pb.PbList<DeletePostSyncDestinationRequest> createRepeated() => $pb.PbList<DeletePostSyncDestinationRequest>();
+  @$core.pragma('dart2js:noInline')
+  static DeletePostSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeletePostSyncDestinationRequest>(create);
+  static DeletePostSyncDestinationRequest? _defaultInstance;
+
+  /// The Post to un-sync.
+  @$pb.TagNumber(1)
+  $core.String get postId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set postId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasPostId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPostId() => clearField(1);
+
+  /// The SyncDestination to un-sync it from.
+  @$pb.TagNumber(2)
+  $core.String get syncDestinationId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set syncDestinationId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasSyncDestinationId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSyncDestinationId() => clearField(2);
 }
 
 /// A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
@@ -694,9 +839,9 @@ class GroupPost extends $pb.GeneratedMessage {
     $core.String? postId,
   @$core.Deprecated('This field is deprecated.')
     $core.String? userId,
-    $11.Moderation? groupModeration,
-    $10.Timestamp? createdAt,
-    $4.Author? sharedBy,
+    $12.Moderation? groupModeration,
+    $11.Timestamp? createdAt,
+    $14.Author? sharedBy,
   }) {
     final $result = create();
     if (groupId != null) {
@@ -728,9 +873,9 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..aOS(3, _omitFieldNames ? '' : 'userId')
-    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$10.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
-    ..aOM<$4.Author>(6, _omitFieldNames ? '' : 'sharedBy', subBuilder: $4.Author.create)
+    ..e<$12.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..aOM<$11.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$14.Author>(6, _omitFieldNames ? '' : 'sharedBy', subBuilder: $14.Author.create)
     ..hasRequiredFields = false
   ;
 
@@ -791,9 +936,9 @@ class GroupPost extends $pb.GeneratedMessage {
 
   /// The moderation of the post in the group.
   @$pb.TagNumber(4)
-  $11.Moderation get groupModeration => $_getN(3);
+  $12.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($11.Moderation v) { setField(4, v); }
+  set groupModeration($12.Moderation v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -801,27 +946,27 @@ class GroupPost extends $pb.GeneratedMessage {
 
   /// The time the post was cross-posted.
   @$pb.TagNumber(5)
-  $10.Timestamp get createdAt => $_getN(4);
+  $11.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($10.Timestamp v) { setField(5, v); }
+  set createdAt($11.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearCreatedAt() => clearField(5);
   @$pb.TagNumber(5)
-  $10.Timestamp ensureCreatedAt() => $_ensure(4);
+  $11.Timestamp ensureCreatedAt() => $_ensure(4);
 
   /// Author info for the user who cross-posted the post.
   @$pb.TagNumber(6)
-  $4.Author get sharedBy => $_getN(5);
+  $14.Author get sharedBy => $_getN(5);
   @$pb.TagNumber(6)
-  set sharedBy($4.Author v) { setField(6, v); }
+  set sharedBy($14.Author v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasSharedBy() => $_has(5);
   @$pb.TagNumber(6)
   void clearSharedBy() => clearField(6);
   @$pb.TagNumber(6)
-  $4.Author ensureSharedBy() => $_ensure(5);
+  $14.Author ensureSharedBy() => $_ensure(5);
 }
 
 /// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
@@ -830,7 +975,7 @@ class UserPost extends $pb.GeneratedMessage {
   factory UserPost({
     $core.String? userId,
     $core.String? postId,
-    $10.Timestamp? createdAt,
+    $11.Timestamp? createdAt,
   }) {
     final $result = create();
     if (userId != null) {
@@ -851,7 +996,7 @@ class UserPost extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
-    ..aOM<$10.Timestamp>(3, _omitFieldNames ? '' : 'createdAt', subBuilder: $10.Timestamp.create)
+    ..aOM<$11.Timestamp>(3, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -898,15 +1043,15 @@ class UserPost extends $pb.GeneratedMessage {
 
   /// The time the post was shared.
   @$pb.TagNumber(3)
-  $10.Timestamp get createdAt => $_getN(2);
+  $11.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(3)
-  set createdAt($10.Timestamp v) { setField(3, v); }
+  set createdAt($11.Timestamp v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(3)
   void clearCreatedAt() => clearField(3);
   @$pb.TagNumber(3)
-  $10.Timestamp ensureCreatedAt() => $_ensure(2);
+  $11.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
 /// Used for getting context about `GroupPost`s of an existing `Post`.

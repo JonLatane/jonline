@@ -111,6 +111,9 @@ fieldNumbersPermission n_ =
         SYNCEVENTSTOFACEBOOK ->
             37
 
+        SYNCPOSTSTOFACEBOOK ->
+            38
+
         VIEWMEDIA ->
             40
 
@@ -250,6 +253,9 @@ encodePermission value =
             SYNCEVENTSTOFACEBOOK ->
                 37
 
+            SYNCPOSTSTOFACEBOOK ->
+                38
+
             VIEWMEDIA ->
                 40
 
@@ -383,6 +389,9 @@ decodePermission =
                     37 ->
                         SYNCEVENTSTOFACEBOOK
 
+                    38 ->
+                        SYNCPOSTSTOFACEBOOK
+
                     40 ->
                         VIEWMEDIA
 
@@ -454,6 +463,7 @@ type Permission
     | RSVPTOEVENTS
     | SYNCHRONIZEEVENTS
     | SYNCEVENTSTOFACEBOOK
+    | SYNCPOSTSTOFACEBOOK
     | VIEWMEDIA
     | CREATEMEDIA
     | PUBLISHMEDIALOCALLY

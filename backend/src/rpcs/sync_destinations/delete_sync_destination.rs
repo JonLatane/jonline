@@ -6,10 +6,10 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::{event_instance_sync_destinations, event_sync_destinations};
+use crate::schema::{event_instance_sync_destinations, post_sync_destinations, sync_destinations};
 
-pub fn delete_event_sync_destination(
-    request: DeleteEventSyncDestinationRequest,
+pub fn delete_sync_destination(
+    request: DeleteSyncDestinationRequest,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
@@ -17,7 +17,7 @@ pub fn delete_event_sync_destination(
         .destination
         .ok_or(Status::new(Code::InvalidArgument, "destination_required"))?;
     let destination_id = requested_destination.id.to_db_id_or_err("destination.id")?;
-    let existing = models::get_event_sync_destination(destination_id, conn)?;
+    let existing = models::get_sync_destination(destination_id, conn)?;
 
     if existing.user_id != current_user.id {
         validate_permission(&Some(current_user), Permission::Admin)?;
@@ -31,30 +31,38 @@ pub fn delete_event_sync_destination(
 
     diesel::delete(
         event_instance_sync_destinations::table
-            .filter(event_instance_sync_destinations::event_sync_destination_id.eq(existing.id)),
+            .filter(event_instance_sync_destinations::sync_destination_id.eq(existing.id)),
     )
     .execute(conn)
     .map_err(|e| {
         log::error!(
-            "Failed to delete sync statuses for destination {}: {:?}",
+            "Failed to delete EventInstance sync statuses for destination {}: {:?}",
             existing.id,
             e
         );
-        Status::new(Code::Internal, "failed_to_delete_event_sync_destination")
+        Status::new(Code::Internal, "failed_to_delete_sync_destination")
     })?;
 
     diesel::delete(
-        event_sync_destinations::table.filter(event_sync_destinations::id.eq(existing.id)),
+        post_sync_destinations::table
+            .filter(post_sync_destinations::sync_destination_id.eq(existing.id)),
     )
     .execute(conn)
     .map_err(|e| {
         log::error!(
-            "Failed to delete event sync destination {}: {:?}",
+            "Failed to delete Post sync statuses for destination {}: {:?}",
             existing.id,
             e
         );
-        Status::new(Code::Internal, "failed_to_delete_event_sync_destination")
+        Status::new(Code::Internal, "failed_to_delete_sync_destination")
     })?;
+
+    diesel::delete(sync_destinations::table.filter(sync_destinations::id.eq(existing.id)))
+        .execute(conn)
+        .map_err(|e| {
+            log::error!("Failed to delete sync destination {}: {:?}", existing.id, e);
+            Status::new(Code::Internal, "failed_to_delete_sync_destination")
+        })?;
 
     Ok(())
 }

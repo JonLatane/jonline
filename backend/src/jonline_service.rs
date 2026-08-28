@@ -315,6 +315,16 @@ impl Jonline for JonlineService {
         authenticated_rpc!(self, rpcs::delete_post, request)
     }
 
+    async fn sync_post(&self, request: Request<SyncPostRequest>) -> Result<Response<Post>, Status> {
+        authenticated_rpc!(self, rpcs::sync_post, request)
+    }
+    async fn delete_post_sync_destination(
+        &self,
+        request: Request<DeletePostSyncDestinationRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::delete_post_sync_destination, request)
+    }
+
     async fn star_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         unauthenticated_unlogged_rpc!(self, rpcs::star_post, request)
     }
@@ -418,29 +428,29 @@ impl Jonline for JonlineService {
         authenticated_rpc!(self, rpcs::delete_event_sync_source, request)
     }
 
-    async fn get_event_sync_destinations(
+    async fn get_sync_destinations(
         &self,
         request: Request<User>,
-    ) -> Result<Response<GetEventSyncDestinationsResponse>, Status> {
-        authenticated_rpc!(self, rpcs::get_event_sync_destinations, request)
+    ) -> Result<Response<GetSyncDestinationsResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_sync_destinations, request)
     }
-    async fn create_event_sync_destination(
+    async fn create_sync_destination(
         &self,
-        request: Request<EventSyncDestination>,
-    ) -> Result<Response<EventSyncDestination>, Status> {
-        authenticated_rpc!(self, rpcs::create_event_sync_destination, request)
+        request: Request<SyncDestination>,
+    ) -> Result<Response<SyncDestination>, Status> {
+        authenticated_rpc!(self, rpcs::create_sync_destination, request)
     }
-    async fn update_event_sync_destination(
+    async fn update_sync_destination(
         &self,
-        request: Request<EventSyncDestination>,
-    ) -> Result<Response<EventSyncDestination>, Status> {
-        authenticated_rpc!(self, rpcs::update_event_sync_destination, request)
+        request: Request<SyncDestination>,
+    ) -> Result<Response<SyncDestination>, Status> {
+        authenticated_rpc!(self, rpcs::update_sync_destination, request)
     }
-    async fn delete_event_sync_destination(
+    async fn delete_sync_destination(
         &self,
-        request: Request<DeleteEventSyncDestinationRequest>,
+        request: Request<DeleteSyncDestinationRequest>,
     ) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_event_sync_destination, request)
+        authenticated_rpc!(self, rpcs::delete_sync_destination, request)
     }
     async fn sync_event_instance(
         &self,

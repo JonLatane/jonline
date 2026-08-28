@@ -67,7 +67,7 @@ const User$json = {
     {'1': 'current_group_membership', '3': 52, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 13, '10': 'currentGroupMembership', '17': true},
     {'1': 'has_advanced_data', '3': 80, '4': 1, '5': 8, '10': 'hasAdvancedData'},
     {'1': 'federated_profiles', '3': 81, '4': 3, '5': 11, '6': '.jonline.FederatedAccount', '10': 'federatedProfiles'},
-    {'1': 'event_sync_destinations', '3': 82, '4': 3, '5': 11, '6': '.jonline.EventSyncDestination', '10': 'eventSyncDestinations'},
+    {'1': 'sync_destinations', '3': 82, '4': 3, '5': 11, '6': '.jonline.SyncDestination', '10': 'syncDestinations'},
     {'1': 'created_at', '3': 100, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 101, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 14, '10': 'updatedAt', '17': true},
   ],
@@ -113,124 +113,15 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     'dF9ncm91cF9tZW1iZXJzaGlwGDQgASgLMhMuam9ubGluZS5NZW1iZXJzaGlwSA1SFmN1cnJlbn'
     'RHcm91cE1lbWJlcnNoaXCIAQESKgoRaGFzX2FkdmFuY2VkX2RhdGEYUCABKAhSD2hhc0FkdmFu'
     'Y2VkRGF0YRJIChJmZWRlcmF0ZWRfcHJvZmlsZXMYUSADKAsyGS5qb25saW5lLkZlZGVyYXRlZE'
-    'FjY291bnRSEWZlZGVyYXRlZFByb2ZpbGVzElUKF2V2ZW50X3N5bmNfZGVzdGluYXRpb25zGFIg'
-    'AygLMh0uam9ubGluZS5FdmVudFN5bmNEZXN0aW5hdGlvblIVZXZlbnRTeW5jRGVzdGluYXRpb2'
-    '5zEjkKCmNyZWF0ZWRfYXQYZCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVh'
-    'dGVkQXQSPgoKdXBkYXRlZF9hdBhlIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIDl'
-    'IJdXBkYXRlZEF0iAEBQggKBl9lbWFpbEIICgZfcGhvbmVCCQoHX2F2YXRhckIRCg9fZm9sbG93'
-    'ZXJfY291bnRCEgoQX2ZvbGxvd2luZ19jb3VudEIPCg1fZnJpZW5kX2NvdW50Qg4KDF9ncm91cF'
-    '9jb3VudEINCgtfcG9zdF9jb3VudEIRCg9fcmVzcG9uc2VfY291bnRCDgoMX2V2ZW50X2NvdW50'
-    'QhcKFV9ldmVudF9pbnN0YW5jZV9jb3VudEIWChRfY3VycmVudF91c2VyX2ZvbGxvd0IdChtfdG'
-    'FyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEIN'
-    'CgtfdXBkYXRlZF9hdA==');
-
-@$core.Deprecated('Use authorDescriptor instead')
-const Author$json = {
-  '1': 'Author',
-  '2': [
-    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
-    {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
-    {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
-    {'1': 'real_name', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'realName', '17': true},
-    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
-  ],
-  '8': [
-    {'1': '_username'},
-    {'1': '_avatar'},
-    {'1': '_real_name'},
-  ],
-};
-
-/// Descriptor for `Author`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List authorDescriptor = $convert.base64Decode(
-    'CgZBdXRob3ISFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEh8KCHVzZXJuYW1lGAIgASgJSABSCH'
-    'VzZXJuYW1liAEBEjQKBmF2YXRhchgDIAEoCzIXLmpvbmxpbmUuTWVkaWFSZWZlcmVuY2VIAVIG'
-    'YXZhdGFyiAEBEiAKCXJlYWxfbmFtZRgEIAEoCUgCUghyZWFsTmFtZYgBARI1CgtwZXJtaXNzaW'
-    '9ucxgFIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnNCCwoJX3VzZXJuYW1l'
-    'QgkKB19hdmF0YXJCDAoKX3JlYWxfbmFtZQ==');
-
-@$core.Deprecated('Use eventSyncSourceDescriptor instead')
-const EventSyncSource$json = {
-  '1': 'EventSyncSource',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'owner'},
-    {'1': 'sync_interval_seconds', '3': 3, '4': 1, '5': 4, '10': 'syncIntervalSeconds'},
-    {'1': 'created_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
-    {'1': 'last_synced_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'lastSyncedAt', '17': true},
-    {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
-    {'1': 'event_instance_count', '3': 8, '4': 1, '5': 4, '10': 'eventInstanceCount'},
-    {'1': 'ics_subscription_url', '3': 9, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
-  ],
-  '8': [
-    {'1': 'configuration'},
-    {'1': '_updated_at'},
-    {'1': '_last_synced_at'},
-  ],
-};
-
-/// Descriptor for `EventSyncSource`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List eventSyncSourceDescriptor = $convert.base64Decode(
-    'Cg9FdmVudFN5bmNTb3VyY2USDgoCaWQYASABKAlSAmlkEiUKBW93bmVyGAIgASgLMg8uam9ubG'
-    'luZS5BdXRob3JSBW93bmVyEjIKFXN5bmNfaW50ZXJ2YWxfc2Vjb25kcxgDIAEoBFITc3luY0lu'
-    'dGVydmFsU2Vjb25kcxI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
-    'VzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYu'
-    'VGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJFCg5sYXN0X3N5bmNlZF9hdBgGIAEoCzIaLmdvb2'
-    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEh8KC2V2ZW50X2NvdW50'
-    'GAcgASgEUgpldmVudENvdW50EjAKFGV2ZW50X2luc3RhbmNlX2NvdW50GAggASgEUhJldmVudE'
-    'luc3RhbmNlQ291bnQSMgoUaWNzX3N1YnNjcmlwdGlvbl91cmwYCSABKAlIAFISaWNzU3Vic2Ny'
-    'aXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2'
-    'VkX2F0');
-
-@$core.Deprecated('Use eventSyncDestinationDescriptor instead')
-const EventSyncDestination$json = {
-  '1': 'EventSyncDestination',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'owner'},
-    {'1': 'created_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
-    {'1': 'synced_event_instance_count', '3': 6, '4': 1, '5': 4, '9': 2, '10': 'syncedEventInstanceCount', '17': true},
-    {'1': 'facebook_page', '3': 9, '4': 1, '5': 11, '6': '.jonline.FacebookPage', '9': 0, '10': 'facebookPage'},
-  ],
-  '8': [
-    {'1': 'configuration'},
-    {'1': '_updated_at'},
-    {'1': '_synced_event_instance_count'},
-  ],
-};
-
-/// Descriptor for `EventSyncDestination`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List eventSyncDestinationDescriptor = $convert.base64Decode(
-    'ChRFdmVudFN5bmNEZXN0aW5hdGlvbhIOCgJpZBgBIAEoCVICaWQSJQoFb3duZXIYAiABKAsyDy'
-    '5qb25saW5lLkF1dGhvclIFb3duZXISOQoKY3JlYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90'
-    'b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLn'
-    'Byb3RvYnVmLlRpbWVzdGFtcEgBUgl1cGRhdGVkQXSIAQESQgobc3luY2VkX2V2ZW50X2luc3Rh'
-    'bmNlX2NvdW50GAYgASgESAJSGHN5bmNlZEV2ZW50SW5zdGFuY2VDb3VudIgBARI8Cg1mYWNlYm'
-    '9va19wYWdlGAkgASgLMhUuam9ubGluZS5GYWNlYm9va1BhZ2VIAFIMZmFjZWJvb2tQYWdlQg8K'
-    'DWNvbmZpZ3VyYXRpb25CDQoLX3VwZGF0ZWRfYXRCHgocX3N5bmNlZF9ldmVudF9pbnN0YW5jZV'
-    '9jb3VudA==');
-
-@$core.Deprecated('Use facebookPageDescriptor instead')
-const FacebookPage$json = {
-  '1': 'FacebookPage',
-  '2': [
-    {'1': 'page_id', '3': 1, '4': 1, '5': 9, '10': 'pageId'},
-    {'1': 'page_name', '3': 2, '4': 1, '5': 9, '10': 'pageName'},
-    {'1': 'short_lived_user_access_token', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'shortLivedUserAccessToken', '17': true},
-  ],
-  '8': [
-    {'1': '_short_lived_user_access_token'},
-  ],
-};
-
-/// Descriptor for `FacebookPage`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List facebookPageDescriptor = $convert.base64Decode(
-    'CgxGYWNlYm9va1BhZ2USFwoHcGFnZV9pZBgBIAEoCVIGcGFnZUlkEhsKCXBhZ2VfbmFtZRgCIA'
-    'EoCVIIcGFnZU5hbWUSRQodc2hvcnRfbGl2ZWRfdXNlcl9hY2Nlc3NfdG9rZW4YAyABKAlIAFIZ'
-    'c2hvcnRMaXZlZFVzZXJBY2Nlc3NUb2tlbogBAUIgCh5fc2hvcnRfbGl2ZWRfdXNlcl9hY2Nlc3'
-    'NfdG9rZW4=');
+    'FjY291bnRSEWZlZGVyYXRlZFByb2ZpbGVzEkUKEXN5bmNfZGVzdGluYXRpb25zGFIgAygLMhgu'
+    'am9ubGluZS5TeW5jRGVzdGluYXRpb25SEHN5bmNEZXN0aW5hdGlvbnMSOQoKY3JlYXRlZF9hdB'
+    'hkIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVk'
+    'X2F0GGUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgOUgl1cGRhdGVkQXSIAQFCCA'
+    'oGX2VtYWlsQggKBl9waG9uZUIJCgdfYXZhdGFyQhEKD19mb2xsb3dlcl9jb3VudEISChBfZm9s'
+    'bG93aW5nX2NvdW50Qg8KDV9mcmllbmRfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2'
+    'NvdW50QhEKD19yZXNwb25zZV9jb3VudEIOCgxfZXZlbnRfY291bnRCFwoVX2V2ZW50X2luc3Rh'
+    'bmNlX2NvdW50QhYKFF9jdXJyZW50X3VzZXJfZm9sbG93Qh0KG190YXJnZXRfY3VycmVudF91c2'
+    'VyX2ZvbGxvd0IbChlfY3VycmVudF9ncm91cF9tZW1iZXJzaGlwQg0KC191cGRhdGVkX2F0');
 
 @$core.Deprecated('Use followDescriptor instead')
 const Follow$json = {
