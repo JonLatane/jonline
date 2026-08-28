@@ -43,10 +43,16 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  `XTwitterAccount`'s own doc.
 
 
+### ThreadsAccount
+
+ A connected Threads account to post EventInstances/Posts to.
+
+
 -}
-type Configuration a0 a1 a2 a3 a4
+type Configuration a0 a1 a2 a3 a4 a5
     = FacebookPage a0
     | InstagramAccount a1
     | MastodonAccount a2
     | BlueskyAccount a3
     | XTwitterAccount a4
+    | ThreadsAccount a5

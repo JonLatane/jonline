@@ -55,15 +55,17 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission READ_PERSONAL_MESSAGES = Permission._(50, _omitEnumNames ? '' : 'READ_PERSONAL_MESSAGES');
   static const Permission READ_ALL_SYSTEM_MESSAGES = Permission._(51, _omitEnumNames ? '' : 'READ_ALL_SYSTEM_MESSAGES');
   static const Permission SYNC_EVENTS_TO_FACEBOOK = Permission._(1000, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
-  static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(1010, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
-  static const Permission SYNC_EVENTS_TO_INSTAGRAM = Permission._(1020, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_INSTAGRAM');
-  static const Permission SYNC_POSTS_TO_INSTAGRAM = Permission._(1030, _omitEnumNames ? '' : 'SYNC_POSTS_TO_INSTAGRAM');
-  static const Permission SYNC_EVENTS_TO_MASTODON = Permission._(1040, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_MASTODON');
-  static const Permission SYNC_POSTS_TO_MASTODON = Permission._(1050, _omitEnumNames ? '' : 'SYNC_POSTS_TO_MASTODON');
-  static const Permission SYNC_EVENTS_TO_BLUESKY = Permission._(1060, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_BLUESKY');
-  static const Permission SYNC_POSTS_TO_BLUESKY = Permission._(1070, _omitEnumNames ? '' : 'SYNC_POSTS_TO_BLUESKY');
-  static const Permission SYNC_EVENTS_TO_X_TWITTER = Permission._(1080, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_X_TWITTER');
-  static const Permission SYNC_POSTS_TO_X_TWITTER = Permission._(1090, _omitEnumNames ? '' : 'SYNC_POSTS_TO_X_TWITTER');
+  static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(1001, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
+  static const Permission SYNC_EVENTS_TO_INSTAGRAM = Permission._(1010, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_INSTAGRAM');
+  static const Permission SYNC_POSTS_TO_INSTAGRAM = Permission._(1011, _omitEnumNames ? '' : 'SYNC_POSTS_TO_INSTAGRAM');
+  static const Permission SYNC_EVENTS_TO_MASTODON = Permission._(1020, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_MASTODON');
+  static const Permission SYNC_POSTS_TO_MASTODON = Permission._(1021, _omitEnumNames ? '' : 'SYNC_POSTS_TO_MASTODON');
+  static const Permission SYNC_EVENTS_TO_BLUESKY = Permission._(1030, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_BLUESKY');
+  static const Permission SYNC_POSTS_TO_BLUESKY = Permission._(1031, _omitEnumNames ? '' : 'SYNC_POSTS_TO_BLUESKY');
+  static const Permission SYNC_EVENTS_TO_X_TWITTER = Permission._(1040, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_X_TWITTER');
+  static const Permission SYNC_POSTS_TO_X_TWITTER = Permission._(1041, _omitEnumNames ? '' : 'SYNC_POSTS_TO_X_TWITTER');
+  static const Permission SYNC_EVENTS_TO_THREADS = Permission._(1050, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_THREADS');
+  static const Permission SYNC_POSTS_TO_THREADS = Permission._(1051, _omitEnumNames ? '' : 'SYNC_POSTS_TO_THREADS');
   static const Permission BUSINESS = Permission._(9998, _omitEnumNames ? '' : 'BUSINESS');
   static const Permission RUN_BOTS = Permission._(9999, _omitEnumNames ? '' : 'RUN_BOTS');
   static const Permission ADMIN = Permission._(10000, _omitEnumNames ? '' : 'ADMIN');
@@ -115,6 +117,8 @@ class Permission extends $pb.ProtobufEnum {
     SYNC_POSTS_TO_BLUESKY,
     SYNC_EVENTS_TO_X_TWITTER,
     SYNC_POSTS_TO_X_TWITTER,
+    SYNC_EVENTS_TO_THREADS,
+    SYNC_POSTS_TO_THREADS,
     BUSINESS,
     RUN_BOTS,
     ADMIN,

@@ -70,6 +70,19 @@ fn bluesky_account_request(handle: &str, app_password: &str) -> SyncDestination 
     }
 }
 
+fn threads_account_request(authorization_code: &str) -> SyncDestination {
+    SyncDestination {
+        configuration: Some(sync_destination::Configuration::ThreadsAccount(
+            ThreadsAccount {
+                threads_user_id: String::new(),
+                username: String::new(),
+                authorization_code: Some(authorization_code.to_string()),
+            },
+        )),
+        ..Default::default()
+    }
+}
+
 fn x_twitter_account_request() -> SyncDestination {
     SyncDestination {
         configuration: Some(sync_destination::Configuration::XTwitterAccount(
@@ -640,6 +653,137 @@ fn create_bluesky_account_succeeds_with_only_sync_posts_to_bluesky_permission() 
         )
         .unwrap_err();
         assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_threads_account_requires_sync_events_or_posts_to_threads_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_th_noperm");
+
+        let err = create_sync_destination(threads_account_request("test-code"), &user, conn)
+            .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_TO_THREADS_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_threads_account_requires_authorization_code() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "sdt_th_nocode");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToThreads]);
+
+        let err = create_sync_destination(
+            SyncDestination {
+                configuration: Some(sync_destination::Configuration::ThreadsAccount(
+                    ThreadsAccount {
+                        threads_user_id: String::new(),
+                        username: String::new(),
+                        authorization_code: None,
+                    },
+                )),
+                ..Default::default()
+            },
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(
+            err.message(),
+            "threads_account.authorization_code_required"
+        );
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_threads_account_succeeds_with_only_sync_posts_to_threads_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_facebook_app_and_frontend_host(
+            conn,
+            "test-app-id",
+            "test-app-secret",
+            "example.com",
+        );
+        let user = create_user(conn, "sdt_th_perm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsToThreads]);
+
+        // Once the platform-specific permission passes and the redirect_uri is derivable, this
+        // reaches the real (unreachable in tests) `graph.threads.net` -- proving the permission
+        // gate, not full connect success (see `threads_sync_tests` for coverage of the actual
+        // Threads Graph API interaction against a mock server via `logic::threads_sync`'s `_at`
+        // functions).
+        let err = create_sync_destination(
+            threads_account_request("test-code"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_threads_account_fails_when_redirect_uri_is_not_derivable() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        // Facebook app configured, but no `external_cdn_config.frontend_host` -- can't derive the
+        // OAuth `redirect_uri` (see `logic::threads_sync::threads_redirect_uri`).
+        configure_facebook_app(conn, "test-app-id", "test-app-secret");
+        let user = create_user(conn, "sdt_th_nohost");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToThreads]);
+
+        let err = create_sync_destination(threads_account_request("test-code"), &user, conn)
+            .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "threads_redirect_uri_not_configured");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn returned_threads_destination_never_includes_the_authorization_code_or_access_token() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let owner = create_user(conn, "sdt_th_notoken");
+        diesel::insert_into(sync_destinations::table)
+            .values(&crate::models::NewSyncDestination {
+                user_id: owner.id,
+                configuration: serde_json::json!({
+                    "threads_account": {
+                        "threads_user_id": "threads-user-1",
+                        "username": "jon_on_threads",
+                        "access_token": "super-secret-long-lived-token"
+                    }
+                }),
+            })
+            .get_result::<crate::models::SyncDestination>(conn)
+            .expect("failed to create test threads sync destination");
+
+        let response = get_sync_destinations(User::default(), &owner, conn)
+            .expect("self get should succeed");
+        let destination = &response.destinations[0];
+        match destination.configuration.as_ref().unwrap() {
+            sync_destination::Configuration::ThreadsAccount(account) => {
+                assert_eq!(account.threads_user_id, "threads-user-1");
+                assert_eq!(account.username, "jon_on_threads");
+                assert_eq!(account.authorization_code, None);
+            }
+            _ => panic!("expected ThreadsAccount"),
+        }
 
         Ok(())
     });

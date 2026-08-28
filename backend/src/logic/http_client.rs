@@ -47,6 +47,16 @@ pub fn blocking_json_request(
         Ok((status, value))
     };
 
+    run_blocking(call)
+}
+
+/// Runs a plain blocking closure (not necessarily a `reqwest` call -- see `mastodon_sync::upload_media`/
+/// `bluesky_sync::upload_blob`, which fetch/upload raw media bytes rather than JSON) via
+/// `tokio::task::block_in_place` when there's already a Tokio runtime, or directly otherwise (plain
+/// `#[test]`s and `bin/`s have none, and `block_in_place` panics without one). Factors out the same
+/// split `blocking_json_request`/`facebook_sync::graph_request` each already have their own copy of.
+pub fn run_blocking<T: Send>(call: impl FnOnce() -> T + Send) -> T {
+    crate::init_crypto();
     if tokio::runtime::Handle::try_current().is_ok() {
         tokio::task::block_in_place(call)
     } else {

@@ -269,6 +269,16 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  (`FederationInfo.x_twitter_auth_config`), so every RPC touching an `XTwitterAccount` destination fails with
  `x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
 
+ ###### Threads
+ `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
+ Threads API is a product added to this server's *existing* Facebook App (see `FacebookAuthConfig`) rather than a
+ separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
+ facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a
+ Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
+ short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+ implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
+ text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+
  ##### EventSyncSource
  An [`EventSyncSource`](#jonline-EventSyncSource) mirrors `SyncDestination`, but for pulling `Event`s in rather than
  pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the

@@ -28,6 +28,7 @@ const SyncDestination$json = {
     {'1': 'mastodon_account', '3': 11, '4': 1, '5': 11, '6': '.jonline.MastodonAccount', '9': 0, '10': 'mastodonAccount'},
     {'1': 'bluesky_account', '3': 12, '4': 1, '5': 11, '6': '.jonline.BlueskyAccount', '9': 0, '10': 'blueskyAccount'},
     {'1': 'x_twitter_account', '3': 13, '4': 1, '5': 11, '6': '.jonline.XTwitterAccount', '9': 0, '10': 'xTwitterAccount'},
+    {'1': 'threads_account', '3': 14, '4': 1, '5': 11, '6': '.jonline.ThreadsAccount', '9': 0, '10': 'threadsAccount'},
   ],
   '8': [
     {'1': 'configuration'},
@@ -50,9 +51,10 @@ final $typed_data.Uint8List syncDestinationDescriptor = $convert.base64Decode(
     'b3VudBJFChBtYXN0b2Rvbl9hY2NvdW50GAsgASgLMhguam9ubGluZS5NYXN0b2RvbkFjY291bn'
     'RIAFIPbWFzdG9kb25BY2NvdW50EkIKD2JsdWVza3lfYWNjb3VudBgMIAEoCzIXLmpvbmxpbmUu'
     'Qmx1ZXNreUFjY291bnRIAFIOYmx1ZXNreUFjY291bnQSRgoReF90d2l0dGVyX2FjY291bnQYDS'
-    'ABKAsyGC5qb25saW5lLlhUd2l0dGVyQWNjb3VudEgAUg94VHdpdHRlckFjY291bnRCDwoNY29u'
-    'ZmlndXJhdGlvbkINCgtfdXBkYXRlZF9hdEIeChxfc3luY2VkX2V2ZW50X2luc3RhbmNlX2NvdW'
-    '50QhQKEl9zeW5jZWRfcG9zdF9jb3VudA==');
+    'ABKAsyGC5qb25saW5lLlhUd2l0dGVyQWNjb3VudEgAUg94VHdpdHRlckFjY291bnQSQgoPdGhy'
+    'ZWFkc19hY2NvdW50GA4gASgLMhcuam9ubGluZS5UaHJlYWRzQWNjb3VudEgAUg50aHJlYWRzQW'
+    'Njb3VudEIPCg1jb25maWd1cmF0aW9uQg0KC191cGRhdGVkX2F0Qh4KHF9zeW5jZWRfZXZlbnRf'
+    'aW5zdGFuY2VfY291bnRCFAoSX3N5bmNlZF9wb3N0X2NvdW50');
 
 @$core.Deprecated('Use getSyncDestinationsResponseDescriptor instead')
 const GetSyncDestinationsResponse$json = {
@@ -179,6 +181,25 @@ final $typed_data.Uint8List xTwitterAccountDescriptor = $convert.base64Decode(
     'Cg9YVHdpdHRlckFjY291bnQSGgoIdXNlcm5hbWUYASABKAlSCHVzZXJuYW1lEkUKHXNob3J0X2'
     'xpdmVkX3VzZXJfYWNjZXNzX3Rva2VuGAIgASgJSABSGXNob3J0TGl2ZWRVc2VyQWNjZXNzVG9r'
     'ZW6IAQFCIAoeX3Nob3J0X2xpdmVkX3VzZXJfYWNjZXNzX3Rva2Vu');
+
+@$core.Deprecated('Use threadsAccountDescriptor instead')
+const ThreadsAccount$json = {
+  '1': 'ThreadsAccount',
+  '2': [
+    {'1': 'threads_user_id', '3': 1, '4': 1, '5': 9, '10': 'threadsUserId'},
+    {'1': 'username', '3': 2, '4': 1, '5': 9, '10': 'username'},
+    {'1': 'authorization_code', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'authorizationCode', '17': true},
+  ],
+  '8': [
+    {'1': '_authorization_code'},
+  ],
+};
+
+/// Descriptor for `ThreadsAccount`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List threadsAccountDescriptor = $convert.base64Decode(
+    'Cg5UaHJlYWRzQWNjb3VudBImCg90aHJlYWRzX3VzZXJfaWQYASABKAlSDXRocmVhZHNVc2VySW'
+    'QSGgoIdXNlcm5hbWUYAiABKAlSCHVzZXJuYW1lEjIKEmF1dGhvcml6YXRpb25fY29kZRgDIAEo'
+    'CUgAUhFhdXRob3JpemF0aW9uQ29kZYgBAUIVChNfYXV0aG9yaXphdGlvbl9jb2Rl');
 
 @$core.Deprecated('Use syncDestinationStatusDescriptor instead')
 const SyncDestinationStatus$json = {

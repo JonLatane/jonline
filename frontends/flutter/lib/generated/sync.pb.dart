@@ -23,6 +23,7 @@ enum SyncDestination_Configuration {
   mastodonAccount, 
   blueskyAccount, 
   xTwitterAccount, 
+  threadsAccount, 
   notSet
 }
 
@@ -43,6 +44,7 @@ class SyncDestination extends $pb.GeneratedMessage {
     MastodonAccount? mastodonAccount,
     BlueskyAccount? blueskyAccount,
     XTwitterAccount? xTwitterAccount,
+    ThreadsAccount? threadsAccount,
   }) {
     final $result = create();
     if (id != null) {
@@ -78,6 +80,9 @@ class SyncDestination extends $pb.GeneratedMessage {
     if (xTwitterAccount != null) {
       $result.xTwitterAccount = xTwitterAccount;
     }
+    if (threadsAccount != null) {
+      $result.threadsAccount = threadsAccount;
+    }
     return $result;
   }
   SyncDestination._() : super();
@@ -90,10 +95,11 @@ class SyncDestination extends $pb.GeneratedMessage {
     11 : SyncDestination_Configuration.mastodonAccount,
     12 : SyncDestination_Configuration.blueskyAccount,
     13 : SyncDestination_Configuration.xTwitterAccount,
+    14 : SyncDestination_Configuration.threadsAccount,
     0 : SyncDestination_Configuration.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [9, 10, 11, 12, 13])
+    ..oo(0, [9, 10, 11, 12, 13, 14])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$14.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $14.Author.create)
     ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
@@ -105,6 +111,7 @@ class SyncDestination extends $pb.GeneratedMessage {
     ..aOM<MastodonAccount>(11, _omitFieldNames ? '' : 'mastodonAccount', subBuilder: MastodonAccount.create)
     ..aOM<BlueskyAccount>(12, _omitFieldNames ? '' : 'blueskyAccount', subBuilder: BlueskyAccount.create)
     ..aOM<XTwitterAccount>(13, _omitFieldNames ? '' : 'xTwitterAccount', subBuilder: XTwitterAccount.create)
+    ..aOM<ThreadsAccount>(14, _omitFieldNames ? '' : 'threadsAccount', subBuilder: ThreadsAccount.create)
     ..hasRequiredFields = false
   ;
 
@@ -262,6 +269,18 @@ class SyncDestination extends $pb.GeneratedMessage {
   void clearXTwitterAccount() => clearField(13);
   @$pb.TagNumber(13)
   XTwitterAccount ensureXTwitterAccount() => $_ensure(10);
+
+  /// A connected Threads account to post EventInstances/Posts to.
+  @$pb.TagNumber(14)
+  ThreadsAccount get threadsAccount => $_getN(11);
+  @$pb.TagNumber(14)
+  set threadsAccount(ThreadsAccount v) { setField(14, v); }
+  @$pb.TagNumber(14)
+  $core.bool hasThreadsAccount() => $_has(11);
+  @$pb.TagNumber(14)
+  void clearThreadsAccount() => clearField(14);
+  @$pb.TagNumber(14)
+  ThreadsAccount ensureThreadsAccount() => $_ensure(11);
 }
 
 class GetSyncDestinationsResponse extends $pb.GeneratedMessage {
@@ -806,6 +825,95 @@ class XTwitterAccount extends $pb.GeneratedMessage {
   $core.bool hasShortLivedUserAccessToken() => $_has(1);
   @$pb.TagNumber(2)
   void clearShortLivedUserAccessToken() => clearField(2);
+}
+
+/// A connected Threads account. Threads API is a product added to this server's existing Meta App
+/// (see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
+/// is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+/// OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+/// exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+/// refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+/// will need reconnecting after ~60 days until a refresh job exists).
+class ThreadsAccount extends $pb.GeneratedMessage {
+  factory ThreadsAccount({
+    $core.String? threadsUserId,
+    $core.String? username,
+    $core.String? authorizationCode,
+  }) {
+    final $result = create();
+    if (threadsUserId != null) {
+      $result.threadsUserId = threadsUserId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (authorizationCode != null) {
+      $result.authorizationCode = authorizationCode;
+    }
+    return $result;
+  }
+  ThreadsAccount._() : super();
+  factory ThreadsAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ThreadsAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ThreadsAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'threadsUserId')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOS(3, _omitFieldNames ? '' : 'authorizationCode')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ThreadsAccount clone() => ThreadsAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ThreadsAccount copyWith(void Function(ThreadsAccount) updates) => super.copyWith((message) => updates(message as ThreadsAccount)) as ThreadsAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ThreadsAccount create() => ThreadsAccount._();
+  ThreadsAccount createEmptyInstance() => create();
+  static $pb.PbList<ThreadsAccount> createRepeated() => $pb.PbList<ThreadsAccount>();
+  @$core.pragma('dart2js:noInline')
+  static ThreadsAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ThreadsAccount>(create);
+  static ThreadsAccount? _defaultInstance;
+
+  /// The account's Threads user ID, used for all posting calls.
+  @$pb.TagNumber(1)
+  $core.String get threadsUserId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set threadsUserId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasThreadsUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearThreadsUserId() => clearField(1);
+
+  /// The account's @username, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set username($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUsername() => clearField(2);
+
+  /// Only used (and required) on `CreateSyncDestination`: the OAuth authorization code from the
+  /// Threads login popup. Never populated in responses.
+  @$pb.TagNumber(3)
+  $core.String get authorizationCode => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set authorizationCode($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAuthorizationCode() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAuthorizationCode() => clearField(3);
 }
 
 /// The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to

@@ -4,7 +4,10 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::{build_post_message, post_post, post_record, post_status, post_to_instagram, PostMessageInput};
+use crate::logic::{
+    build_post_message, post_post, post_record, post_status, post_thread, post_to_instagram,
+    MediaAttachment, PostMessageInput,
+};
 use crate::marshaling::*;
 use crate::models;
 use crate::models::POST_COLUMNS;
@@ -52,6 +55,9 @@ pub fn sync_post(
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
             validate_permission(&Some(current_user), Permission::SyncPostsToXTwitter)?
         }
+        Some(sync_destination::Configuration::ThreadsAccount(_)) => {
+            validate_permission(&Some(current_user), Permission::SyncPostsToThreads)?
+        }
         None => {
             return Err(Status::new(
                 Code::FailedPrecondition,
@@ -70,15 +76,23 @@ pub fn sync_post(
         .map(|c| c.frontend_host.clone())
         .filter(|h| !h.trim().is_empty())
         .map(|host| format!("https://{host}/post/{}", post.id.to_proto_id()));
-    let media: Vec<String> = external_cdn_config
+    let media_ids: Vec<i64> = post.media.iter().filter_map(|m| *m).collect();
+    let media_lookup = load_media_lookup(media_ids.clone(), conn);
+    let media: Vec<MediaAttachment> = external_cdn_config
         .as_ref()
         .map(|c| c.backend_host.clone())
         .filter(|h| !h.trim().is_empty())
         .map(|host| {
-            post.media
+            media_ids
                 .iter()
-                .filter_map(|m| *m)
-                .map(|id| format!("https://{host}/media/{}", id.to_proto_id()))
+                .map(|id| MediaAttachment {
+                    url: format!("https://{host}/media/{}", id.to_proto_id()),
+                    content_type: media_lookup
+                        .as_ref()
+                        .find_media(*id)
+                        .map(|m| m.content_type.clone())
+                        .unwrap_or_default(),
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -104,6 +118,9 @@ pub fn sync_post(
         }
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
             return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        }
+        Some(sync_destination::Configuration::ThreadsAccount(_)) => {
+            post_thread(&destination, &message)?
         }
         None => {
             return Err(Status::new(

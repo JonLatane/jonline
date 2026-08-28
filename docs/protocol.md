@@ -412,6 +412,16 @@ account, but **not yet functional** -- this server has no registered X Developer
 (`FederationInfo.x_twitter_auth_config`), so every RPC touching an `XTwitterAccount` destination fails with
 `x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
 
+###### Threads
+`configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
+Threads API is a product added to this server&#39;s *existing* Facebook App (see `FacebookAuthConfig`) rather than a
+separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
+facebook.com) using `response_type=code` rather than Facebook&#39;s implicit `response_type=token`, with no &#34;choose a
+Page&#34; step -- it directly authorizes the user&#39;s own Threads account. The server exchanges the code for a
+short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
+text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+
 ##### EventSyncSource
 An [`EventSyncSource`](#jonline-EventSyncSource) mirrors `SyncDestination`, but for pulling `Event`s in rather than
 pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
@@ -1053,15 +1063,17 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating `SyncDestination`s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_FACEBOOK | 1010 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
-| SYNC_EVENTS_TO_INSTAGRAM | 1020 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_INSTAGRAM | 1030 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_MASTODON | 1040 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_MASTODON | 1050 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_BLUESKY | 1060 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_BLUESKY | 1070 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_X_TWITTER | 1080 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
-| SYNC_POSTS_TO_X_TWITTER | 1090 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
+| SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
+| SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
+| SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see `XTwitterAccount`&#39;s own doc. |
+| SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
 | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |

@@ -68,7 +68,11 @@ export interface SyncDestination {
    * A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
    * `XTwitterAccount`'s own doc.
    */
-  xTwitterAccount?: XTwitterAccount | undefined;
+  xTwitterAccount?:
+    | XTwitterAccount
+    | undefined;
+  /** A connected Threads account to post EventInstances/Posts to. */
+  threadsAccount?: ThreadsAccount | undefined;
 }
 
 export interface GetSyncDestinationsResponse {
@@ -177,6 +181,27 @@ export interface XTwitterAccount {
 }
 
 /**
+ * A connected Threads account. Threads API is a product added to this server's existing Meta App
+ * (see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
+ * is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+ * OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+ * exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+ * refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+ * will need reconnecting after ~60 days until a refresh job exists).
+ */
+export interface ThreadsAccount {
+  /** The account's Threads user ID, used for all posting calls. */
+  threadsUserId: string;
+  /** The account's @username, populated by the server when the connection is made. */
+  username: string;
+  /**
+   * Only used (and required) on `CreateSyncDestination`: the OAuth authorization code from the
+   * Threads login popup. Never populated in responses.
+   */
+  authorizationCode?: string | undefined;
+}
+
+/**
  * The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to
  * one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
  * `Post.sync_destinations` can reuse it.
@@ -259,6 +284,7 @@ function createBaseSyncDestination(): SyncDestination {
     mastodonAccount: undefined,
     blueskyAccount: undefined,
     xTwitterAccount: undefined,
+    threadsAccount: undefined,
   };
 }
 
@@ -296,6 +322,9 @@ export const SyncDestination: MessageFns<SyncDestination> = {
     }
     if (message.xTwitterAccount !== undefined) {
       XTwitterAccount.encode(message.xTwitterAccount, writer.uint32(106).fork()).join();
+    }
+    if (message.threadsAccount !== undefined) {
+      ThreadsAccount.encode(message.threadsAccount, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -395,6 +424,14 @@ export const SyncDestination: MessageFns<SyncDestination> = {
           message.xTwitterAccount = XTwitterAccount.decode(reader, reader.uint32());
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.threadsAccount = ThreadsAccount.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -419,6 +456,7 @@ export const SyncDestination: MessageFns<SyncDestination> = {
       mastodonAccount: isSet(object.mastodonAccount) ? MastodonAccount.fromJSON(object.mastodonAccount) : undefined,
       blueskyAccount: isSet(object.blueskyAccount) ? BlueskyAccount.fromJSON(object.blueskyAccount) : undefined,
       xTwitterAccount: isSet(object.xTwitterAccount) ? XTwitterAccount.fromJSON(object.xTwitterAccount) : undefined,
+      threadsAccount: isSet(object.threadsAccount) ? ThreadsAccount.fromJSON(object.threadsAccount) : undefined,
     };
   },
 
@@ -457,6 +495,9 @@ export const SyncDestination: MessageFns<SyncDestination> = {
     if (message.xTwitterAccount !== undefined) {
       obj.xTwitterAccount = XTwitterAccount.toJSON(message.xTwitterAccount);
     }
+    if (message.threadsAccount !== undefined) {
+      obj.threadsAccount = ThreadsAccount.toJSON(message.threadsAccount);
+    }
     return obj;
   },
 
@@ -487,6 +528,9 @@ export const SyncDestination: MessageFns<SyncDestination> = {
       : undefined;
     message.xTwitterAccount = (object.xTwitterAccount !== undefined && object.xTwitterAccount !== null)
       ? XTwitterAccount.fromPartial(object.xTwitterAccount)
+      : undefined;
+    message.threadsAccount = (object.threadsAccount !== undefined && object.threadsAccount !== null)
+      ? ThreadsAccount.fromPartial(object.threadsAccount)
       : undefined;
     return message;
   },
@@ -1096,6 +1140,98 @@ export const XTwitterAccount: MessageFns<XTwitterAccount> = {
     const message = createBaseXTwitterAccount();
     message.username = object.username ?? "";
     message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseThreadsAccount(): ThreadsAccount {
+  return { threadsUserId: "", username: "", authorizationCode: undefined };
+}
+
+export const ThreadsAccount: MessageFns<ThreadsAccount> = {
+  encode(message: ThreadsAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.threadsUserId !== "") {
+      writer.uint32(10).string(message.threadsUserId);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.authorizationCode !== undefined) {
+      writer.uint32(26).string(message.authorizationCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ThreadsAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseThreadsAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.threadsUserId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.authorizationCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ThreadsAccount {
+    return {
+      threadsUserId: isSet(object.threadsUserId) ? globalThis.String(object.threadsUserId) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      authorizationCode: isSet(object.authorizationCode) ? globalThis.String(object.authorizationCode) : undefined,
+    };
+  },
+
+  toJSON(message: ThreadsAccount): unknown {
+    const obj: any = {};
+    if (message.threadsUserId !== "") {
+      obj.threadsUserId = message.threadsUserId;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.authorizationCode !== undefined) {
+      obj.authorizationCode = message.authorizationCode;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ThreadsAccount>, I>>(base?: I): ThreadsAccount {
+    return ThreadsAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ThreadsAccount>, I>>(object: I): ThreadsAccount {
+    const message = createBaseThreadsAccount();
+    message.threadsUserId = object.threadsUserId ?? "";
+    message.username = object.username ?? "";
+    message.authorizationCode = object.authorizationCode ?? undefined;
     return message;
   },
 };

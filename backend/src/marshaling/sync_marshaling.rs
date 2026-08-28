@@ -139,6 +139,24 @@ pub fn destination_configuration_to_proto(
             },
         ));
     }
+    if let Some(threads_account) = configuration.get("threads_account") {
+        let threads_user_id = threads_account
+            .get("threads_user_id")
+            .and_then(|v| v.as_str())?;
+        let username = threads_account
+            .get("username")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::ThreadsAccount(
+            ThreadsAccount {
+                threads_user_id: threads_user_id.to_string(),
+                username: username.to_string(),
+                // Never echoed back -- the stored `access_token` is server-side only, same
+                // omission pattern as every other platform's secret field.
+                authorization_code: None,
+            },
+        ));
+    }
     None
 }
 

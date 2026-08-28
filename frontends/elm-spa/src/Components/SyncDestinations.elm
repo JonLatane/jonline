@@ -163,6 +163,9 @@ syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushi
 
                                     DestinationConfiguration.XTwitterAccount account ->
                                         "@" ++ account.username
+
+                                    DestinationConfiguration.ThreadsAccount account ->
+                                        "@" ++ account.username
                             )
 
                 -- Instagram's Graph API has no text-only post type -- see `hasMedia`'s own doc.

@@ -5,7 +5,7 @@ use chrono::TimeZone;
 
 use crate::logic::{
     build_event_instance_message, build_post_message, truncate_for_bluesky,
-    EventInstanceMessageInput, PostMessageInput,
+    EventInstanceMessageInput, MediaAttachment, PostMessageInput,
 };
 
 #[test]
@@ -39,7 +39,10 @@ fn build_post_message_includes_title_content_and_link() {
         content: &content,
         link: &link,
         post_url: &post_url,
-        media: vec!["https://example.com/media/1".to_string()],
+        media: vec![MediaAttachment {
+            url: "https://example.com/media/1".to_string(),
+            content_type: "image/jpeg".to_string(),
+        }],
     });
 
     assert_eq!(
@@ -47,7 +50,13 @@ fn build_post_message_includes_title_content_and_link() {
         "Test Post\n\nCheck this out!\n\nView post: https://example.com/post/abc"
     );
     assert_eq!(message.link, Some("https://example.com/post/abc".to_string()));
-    assert_eq!(message.media, vec!["https://example.com/media/1".to_string()]);
+    assert_eq!(
+        message.media,
+        vec![MediaAttachment {
+            url: "https://example.com/media/1".to_string(),
+            content_type: "image/jpeg".to_string(),
+        }]
+    );
 }
 
 #[test]

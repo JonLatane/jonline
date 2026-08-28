@@ -8,12 +8,15 @@
 
 use tonic::{Code, Status};
 
-use crate::logic::http_client::blocking_json_request;
+use crate::logic::http_client::{blocking_json_request, run_blocking};
 use crate::logic::sync_message::truncate_for_bluesky;
-use crate::logic::SyncMessage;
+use crate::logic::{MediaAttachment, SyncMessage};
 use crate::models;
 
 const DEFAULT_BASE_URL: &str = "https://bsky.social";
+
+/// Bluesky's `app.bsky.embed.images` limit -- the max images a single post can embed.
+const MAX_IMAGE_ATTACHMENTS: usize = 4;
 
 /// Authenticates `handle`/`app_password` against Bluesky, returning `(did, access_jwt)`. Used both
 /// to validate a `BlueskyAccount` on connect (`CreateSyncDestination`/`UpdateSyncDestination`, which
@@ -69,7 +72,11 @@ pub fn create_session_at(
 /// `app.bsky.feed.post` record. `message.text` is truncated to Bluesky's ~300-character limit
 /// first (see `truncate_for_bluesky`) -- the one platform truncated proactively client-side rather
 /// than surfacing the API's own rejection, since Bluesky's limit is fixed and known (unlike
-/// Mastodon's, which varies per instance). Returns the record's `at://` URI and a human-clickable
+/// Mastodon's, which varies per instance). Up to `MAX_IMAGE_ATTACHMENTS` **image** attachments are
+/// uploaded and embedded as `app.bsky.embed.images` -- **video attachments are skipped entirely**
+/// this round; Bluesky video embeds need a separate, more complex upload-and-processing flow this
+/// doesn't build yet (flagged here rather than silently under-built, same spirit as the Threads
+/// token-refresh gap). Returns the record's `at://` URI and a human-clickable
 /// `https://bsky.app/...` permalink built from it.
 pub fn post_record(
     destination: &models::SyncDestination,
@@ -101,16 +108,56 @@ pub fn post_record_at(
 
     let (did, access_jwt) = create_session_at(base_url, handle, app_password)?;
 
+    // Skip video entirely (see this function's doc); upload and embed up to
+    // `MAX_IMAGE_ATTACHMENTS` images, tolerating individual failures the same way
+    // `mastodon_sync::post_status_at` does -- only hard-failing the whole post if every attempted
+    // upload failed.
+    let images: Vec<&MediaAttachment> = message
+        .media
+        .iter()
+        .filter(|m| m.is_image())
+        .take(MAX_IMAGE_ATTACHMENTS)
+        .collect();
+    let attempted = images.len();
+    let mut blobs = Vec::with_capacity(attempted);
+    for image in &images {
+        match upload_blob_at(base_url, &access_jwt, image) {
+            Ok(blob) => blobs.push(blob),
+            Err(e) => log::error!(
+                "Failed to upload image {:?} to Bluesky, skipping: {:?}",
+                image.url,
+                e
+            ),
+        }
+    }
+    if attempted > 0 && blobs.is_empty() {
+        return Err(Status::new(
+            Code::FailedPrecondition,
+            "bluesky_media_upload_failed",
+        ));
+    }
+
     let text = truncate_for_bluesky(&message.text);
     let created_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+    let mut record = serde_json::json!({
+        "$type": "app.bsky.feed.post",
+        "text": text,
+        "createdAt": created_at,
+    });
+    if !blobs.is_empty() {
+        let images: Vec<serde_json::Value> = blobs
+            .into_iter()
+            .map(|blob| serde_json::json!({ "image": blob, "alt": "" }))
+            .collect();
+        record["embed"] = serde_json::json!({
+            "$type": "app.bsky.embed.images",
+            "images": images,
+        });
+    }
     let record_body = serde_json::json!({
         "repo": did,
         "collection": "app.bsky.feed.post",
-        "record": {
-            "$type": "app.bsky.feed.post",
-            "text": text,
-            "createdAt": created_at,
-        }
+        "record": record,
     });
     let url = format!("{base_url}/xrpc/com.atproto.repo.createRecord");
     let (status, response) = blocking_json_request(
@@ -135,4 +182,82 @@ pub fn post_record_at(
     let record_key = uri.rsplit('/').next().unwrap_or("");
     let permalink = format!("https://bsky.app/profile/{did}/post/{record_key}");
     Ok((uri, permalink))
+}
+
+/// Fetches `image.url`'s raw bytes from this Jonline server's own public media endpoint, then
+/// uploads them to `base_url`'s `com.atproto.repo.uploadBlob` (which takes the raw bytes directly
+/// as the request body, not JSON, unlike every other Bluesky XRPC call here). Returns the
+/// response's opaque `blob` value as-is, to be embedded directly into the post record -- this
+/// doesn't parse its internals.
+fn upload_blob_at(
+    base_url: &str,
+    access_jwt: &str,
+    image: &MediaAttachment,
+) -> Result<serde_json::Value, Status> {
+    let media_url = image.url.clone();
+    let content_type = image.content_type.clone();
+    let bytes = run_blocking(move || -> Result<Vec<u8>, Status> {
+        let response = reqwest::blocking::Client::new()
+            .get(&media_url)
+            .send()
+            .map_err(|e| {
+                log::error!("Failed to fetch image {:?} for Bluesky upload: {:?}", media_url, e);
+                Status::new(Code::FailedPrecondition, "bluesky_media_fetch_failed")
+            })?;
+        if !response.status().is_success() {
+            log::error!(
+                "Fetching image {:?} for Bluesky upload failed ({})",
+                media_url,
+                response.status()
+            );
+            return Err(Status::new(
+                Code::FailedPrecondition,
+                "bluesky_media_fetch_failed",
+            ));
+        }
+        response.bytes().map(|b| b.to_vec()).map_err(|e| {
+            log::error!("Failed to read image {:?} bytes: {:?}", media_url, e);
+            Status::new(Code::FailedPrecondition, "bluesky_media_fetch_failed")
+        })
+    })?;
+
+    let url = format!("{base_url}/xrpc/com.atproto.repo.uploadBlob");
+    let access_jwt = access_jwt.to_string();
+    let (status, body) = run_blocking(move || -> Result<(reqwest::StatusCode, serde_json::Value), Status> {
+        let response = reqwest::blocking::Client::new()
+            .post(&url)
+            .header(reqwest::header::CONTENT_TYPE, content_type.as_str())
+            .bearer_auth(&access_jwt)
+            .body(bytes)
+            .send()
+            .map_err(|e| {
+                log::error!("Bluesky uploadBlob request failed: {:?}", e);
+                Status::new(Code::FailedPrecondition, "bluesky_request_failed")
+            })?;
+        let status = response.status();
+        let text = response.text().map_err(|e| {
+            log::error!("Failed to read Bluesky uploadBlob response body: {:?}", e);
+            Status::new(Code::FailedPrecondition, "bluesky_request_failed")
+        })?;
+        let value: serde_json::Value = if text.trim().is_empty() {
+            serde_json::Value::Null
+        } else {
+            serde_json::from_str(&text).map_err(|e| {
+                log::error!("Failed to parse Bluesky uploadBlob response as JSON: {:?} ({})", e, text);
+                Status::new(Code::FailedPrecondition, "bluesky_request_failed")
+            })?
+        };
+        Ok((status, value))
+    })?;
+    if !status.is_success() {
+        log::error!("Bluesky uploadBlob failed ({}): {:?}", status, body);
+        return Err(Status::new(
+            Code::FailedPrecondition,
+            "bluesky_media_upload_failed",
+        ));
+    }
+    body.get("blob").cloned().ok_or_else(|| {
+        log::error!("Bluesky uploadBlob response missing blob: {:?}", body);
+        Status::new(Code::Internal, "bluesky_media_upload_failed")
+    })
 }

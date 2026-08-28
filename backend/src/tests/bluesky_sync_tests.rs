@@ -5,7 +5,7 @@
 
 use tonic::Code;
 
-use crate::logic::{create_session_at, post_record_at, SyncMessage};
+use crate::logic::{create_session_at, post_record_at, MediaAttachment, SyncMessage};
 use crate::models;
 use crate::tests::factories::*;
 
@@ -97,6 +97,70 @@ fn post_record_truncates_text_over_300_characters() {
     let long_text = "a".repeat(500);
 
     post_record_at(&base_url, &destination, &message(&long_text)).expect("post should succeed");
+}
+
+#[test]
+fn post_record_uploads_images_and_embeds_them_skipping_video() {
+    let (base_url, captured) = serve_capturing(|request, _prior| {
+        if request.contains("createSession") {
+            (
+                "HTTP/1.1 200 OK",
+                serde_json::json!({ "did": "did:plc:abc123", "accessJwt": "test-jwt" }),
+            )
+        } else if request.starts_with("GET /media/") {
+            ("HTTP/1.1 200 OK", serde_json::json!("fake-image-bytes"))
+        } else if request.contains("uploadBlob") {
+            (
+                "HTTP/1.1 200 OK",
+                serde_json::json!({ "blob": { "$type": "blob", "ref": { "$link": "abc" }, "mimeType": "image/jpeg", "size": 100 } }),
+            )
+        } else {
+            (
+                "HTTP/1.1 200 OK",
+                serde_json::json!({ "uri": "at://did:plc:abc123/app.bsky.feed.post/xyz" }),
+            )
+        }
+    });
+    let destination = models::SyncDestination {
+        id: 1,
+        user_id: 1,
+        configuration: serde_json::json!({
+            "bluesky_account": {
+                "handle": "jon.bsky.social",
+                "did": "did:plc:abc123",
+                "app_password": "app-password"
+            }
+        }),
+        created_at: std::time::SystemTime::now(),
+        updated_at: None,
+    };
+    let sync_message = SyncMessage {
+        text: "Check out this photo!".to_string(),
+        link: None,
+        media: vec![
+            MediaAttachment {
+                url: format!("{base_url}/media/1"),
+                content_type: "image/jpeg".to_string(),
+            },
+            // Video attachments are skipped entirely this round -- should never even be fetched.
+            MediaAttachment {
+                url: format!("{base_url}/media/2-should-not-be-fetched"),
+                content_type: "video/mp4".to_string(),
+            },
+        ],
+    };
+
+    post_record_at(&base_url, &destination, &sync_message).expect("post should succeed");
+
+    let requests = captured.lock().unwrap();
+    assert!(requests.iter().any(|r| r.contains("uploadBlob")));
+    assert!(!requests.iter().any(|r| r.contains("2-should-not-be-fetched")));
+    let create_record_request = requests
+        .iter()
+        .find(|r| r.contains("createRecord"))
+        .expect("expected a createRecord request");
+    assert!(create_record_request.contains("\"embed\""));
+    assert!(create_record_request.contains("app.bsky.embed.images"));
 }
 
 #[test]

@@ -4,8 +4,9 @@ use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
-    connect_facebook_page, create_session, get_linked_instagram_business_account,
-    server_facebook_app_credentials, verify_credentials,
+    connect_facebook_page, create_session, exchange_code_for_token, exchange_long_lived_token,
+    get_linked_instagram_business_account, get_username, server_facebook_app_credentials,
+    threads_redirect_uri, verify_credentials,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -65,6 +66,14 @@ pub fn create_sync_destination(
         // registered X Developer App, so an `XTwitterAccount` can never actually be created,
         // regardless of what the caller holds (see `sync_destination_rpc_tests`).
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {}
+        Some(sync_destination::Configuration::ThreadsAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToThreads,
+                Permission::SyncPostsToThreads,
+                Permission::Admin,
+            ],
+        )?,
     };
 
     let configuration = match request.configuration {
@@ -149,6 +158,28 @@ pub fn create_sync_destination(
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
             return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
         }
+        Some(sync_destination::Configuration::ThreadsAccount(ThreadsAccount {
+            authorization_code: Some(authorization_code),
+            ..
+        })) if !authorization_code.trim().is_empty() => {
+            // Threads API is a product added to this server's existing Meta App -- reuses the same
+            // credentials as Facebook/Instagram (see `server_facebook_app_credentials`), but
+            // otherwise has its own 3-step connect flow (code -> short-lived token -> long-lived
+            // token -> username), unlike Facebook/Instagram's single-Page-token exchange.
+            let (app_id, app_secret) = server_facebook_app_credentials(conn)?;
+            let redirect_uri = threads_redirect_uri(conn)?;
+            let (short_lived_token, threads_user_id) =
+                exchange_code_for_token(&app_id, &app_secret, &authorization_code, &redirect_uri)?;
+            let access_token = exchange_long_lived_token(&app_secret, &short_lived_token)?;
+            let username = get_username(&access_token, &threads_user_id)?;
+            json!({
+                "threads_account": {
+                    "threads_user_id": threads_user_id,
+                    "username": username,
+                    "access_token": access_token,
+                }
+            })
+        }
         Some(sync_destination::Configuration::FacebookPage(_)) => {
             return Err(Status::new(
                 Code::InvalidArgument,
@@ -171,6 +202,12 @@ pub fn create_sync_destination(
             return Err(Status::new(
                 Code::InvalidArgument,
                 "bluesky_account.handle_and_app_password_required",
+            ))
+        }
+        Some(sync_destination::Configuration::ThreadsAccount(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "threads_account.authorization_code_required",
             ))
         }
         None => {

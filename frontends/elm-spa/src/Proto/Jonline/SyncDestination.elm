@@ -45,6 +45,11 @@ import Proto.Jonline.Internals_
  `XTwitterAccount`'s own doc.
 
 
+### ThreadsAccount
+
+ A connected Threads account to post EventInstances/Posts to.
+
+
 -}
 type alias Configuration =
     Proto.Jonline.Internals_.Proto__Jonline__SyncDestination__Configuration__Configuration

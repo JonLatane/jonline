@@ -329,30 +329,50 @@
       }
     });
 
-    // Facebook Login for `Components.EventSyncDestinations` -- deliberately hand-rolled instead
+    // OAuth login popup for `Components.EventSyncDestinations` -- deliberately hand-rolled instead
     // of loading Facebook's JS SDK: opening the popup here happens synchronously inside the
     // click's own event handler (the `Cmd` this port fires is processed synchronously by Elm's
     // runtime), which is what makes browsers -- especially mobile Safari -- reliably allow the
     // popup at all. Loading a third-party SDK first would introduce an async gap between the
     // click and the popup call, and popups opened after that gap get silently blocked on some
     // browsers. `redirectUri` points at our own tiny static `facebook-callback.html` (same
-    // origin, no server round-trip) rather than Facebook's SDK-hosted proxy page.
-    app.ports.facebookLoginPopup.subscribe(function (appId) {
+    // origin, no server round-trip) rather than Facebook's SDK-hosted proxy page -- shared by both
+    // providers below, since it's the same static page either way.
+    //
+    // `payload.provider` picks which OAuth dialog to open -- `"facebook"` (used for both the
+    // Facebook and Instagram flows, see Components.Pages.UserProfilePage's `FacebookConnectPlatform`)
+    // is Facebook's own implicit flow (`response_type=token`); `"threads"` is Threads' own
+    // authorization-code flow (`response_type=code`) at threads.net, a different domain/response
+    // shape entirely even though it rides on the very same Meta App (`payload.appId` is the same
+    // value either way). The popup-opening/sizing/polling/`postMessage`-listening code below is one
+    // shared path for both -- only the dialog URL/scope differ per provider.
+    app.ports.facebookLoginPopup.subscribe(function (payload) {
       var redirectUri = window.location.origin + jonlineBasePath + "/facebook-callback.html";
       var width = 600, height = 700;
       var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
       var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
 
+      var dialogUrl;
+      if (payload.provider === "threads") {
+        dialogUrl = "https://threads.net/oauth/authorize" +
+          "?client_id=" + encodeURIComponent(payload.appId) +
+          "&redirect_uri=" + encodeURIComponent(redirectUri) +
+          "&response_type=code" +
+          "&scope=" + encodeURIComponent("threads_basic,threads_content_publish");
+      } else {
+        dialogUrl = "https://www.facebook.com/v19.0/dialog/oauth" +
+          "?client_id=" + encodeURIComponent(payload.appId) +
+          "&redirect_uri=" + encodeURIComponent(redirectUri) +
+          "&response_type=token" +
+          // Requested unconditionally regardless of whether the user clicked "Sign in to Facebook
+          // Page" or "Sign in to Instagram" -- both flows start with the same "choose a Page" step
+          // (see Components.Pages.UserProfilePage's `FacebookConnectPlatform`), so the popup always
+          // asks for the union of scopes either flow could need.
+          "&scope=" + encodeURIComponent("pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish");
+      }
+
       var popup = window.open(
-        "https://www.facebook.com/v19.0/dialog/oauth" +
-        "?client_id=" + encodeURIComponent(appId) +
-        "&redirect_uri=" + encodeURIComponent(redirectUri) +
-        "&response_type=token" +
-        // Requested unconditionally regardless of whether the user clicked "Sign in to Facebook
-        // Page" or "Sign in to Instagram" -- both flows start with the same "choose a Page" step
-        // (see Components.Pages.UserProfilePage's `FacebookConnectPlatform`), so the popup always
-        // asks for the union of scopes either flow could need.
-        "&scope=" + encodeURIComponent("pages_show_list,pages_manage_posts,instagram_basic,instagram_content_publish"),
+        dialogUrl,
         "jonline-facebook-login",
         "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
       );

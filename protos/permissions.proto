@@ -105,33 +105,39 @@ enum Permission {
   SYNC_EVENTS_TO_FACEBOOK = 1000;
   // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
   // connected Facebook Page, and to sync Posts to them.
-  SYNC_POSTS_TO_FACEBOOK = 1010;
+  SYNC_POSTS_TO_FACEBOOK = 1001;
   // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
   // connected Instagram Business/Creator account, and to sync EventInstances to them.
-  SYNC_EVENTS_TO_INSTAGRAM = 1020;
+  SYNC_EVENTS_TO_INSTAGRAM = 1010;
   // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
   // connected Instagram Business/Creator account, and to sync Posts to them.
-  SYNC_POSTS_TO_INSTAGRAM = 1030;
+  SYNC_POSTS_TO_INSTAGRAM = 1011;
   // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
   // connected Mastodon account, and to sync EventInstances to them.
-  SYNC_EVENTS_TO_MASTODON = 1040;
+  SYNC_EVENTS_TO_MASTODON = 1020;
   // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
   // connected Mastodon account, and to sync Posts to them.
-  SYNC_POSTS_TO_MASTODON = 1050;
+  SYNC_POSTS_TO_MASTODON = 1021;
   // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
   // connected Bluesky account, and to sync EventInstances to them.
-  SYNC_EVENTS_TO_BLUESKY = 1060;
+  SYNC_EVENTS_TO_BLUESKY = 1030;
   // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
   // connected Bluesky account, and to sync Posts to them.
-  SYNC_POSTS_TO_BLUESKY = 1070;
+  SYNC_POSTS_TO_BLUESKY = 1031;
   // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
   // connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
   // see `XTwitterAccount`'s own doc.
-  SYNC_EVENTS_TO_X_TWITTER = 1080;
+  SYNC_EVENTS_TO_X_TWITTER = 1040;
   // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
   // connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
   // `XTwitterAccount`'s own doc.
-  SYNC_POSTS_TO_X_TWITTER = 1090;
+  SYNC_POSTS_TO_X_TWITTER = 1041;
+  // Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+  // connected Threads account, and to sync EventInstances to them.
+  SYNC_EVENTS_TO_THREADS = 1050;
+  // Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+  // connected Threads account, and to sync Posts to them.
+  SYNC_POSTS_TO_THREADS = 1051;
 
   // Indicates the user is a business. Used purely for display purposes.
   BUSINESS = 9998;

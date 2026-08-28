@@ -135,49 +135,59 @@ export enum Permission {
    * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
    * connected Facebook Page, and to sync Posts to them.
    */
-  SYNC_POSTS_TO_FACEBOOK = 1010,
+  SYNC_POSTS_TO_FACEBOOK = 1001,
   /**
    * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
    * connected Instagram Business/Creator account, and to sync EventInstances to them.
    */
-  SYNC_EVENTS_TO_INSTAGRAM = 1020,
+  SYNC_EVENTS_TO_INSTAGRAM = 1010,
   /**
    * SYNC_POSTS_TO_INSTAGRAM - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
    * connected Instagram Business/Creator account, and to sync Posts to them.
    */
-  SYNC_POSTS_TO_INSTAGRAM = 1030,
+  SYNC_POSTS_TO_INSTAGRAM = 1011,
   /**
    * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
    * connected Mastodon account, and to sync EventInstances to them.
    */
-  SYNC_EVENTS_TO_MASTODON = 1040,
+  SYNC_EVENTS_TO_MASTODON = 1020,
   /**
    * SYNC_POSTS_TO_MASTODON - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
    * connected Mastodon account, and to sync Posts to them.
    */
-  SYNC_POSTS_TO_MASTODON = 1050,
+  SYNC_POSTS_TO_MASTODON = 1021,
   /**
    * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
    * connected Bluesky account, and to sync EventInstances to them.
    */
-  SYNC_EVENTS_TO_BLUESKY = 1060,
+  SYNC_EVENTS_TO_BLUESKY = 1030,
   /**
    * SYNC_POSTS_TO_BLUESKY - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
    * connected Bluesky account, and to sync Posts to them.
    */
-  SYNC_POSTS_TO_BLUESKY = 1070,
+  SYNC_POSTS_TO_BLUESKY = 1031,
   /**
    * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
    * connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
    * see `XTwitterAccount`'s own doc.
    */
-  SYNC_EVENTS_TO_X_TWITTER = 1080,
+  SYNC_EVENTS_TO_X_TWITTER = 1040,
   /**
    * SYNC_POSTS_TO_X_TWITTER - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
    * connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
    * `XTwitterAccount`'s own doc.
    */
-  SYNC_POSTS_TO_X_TWITTER = 1090,
+  SYNC_POSTS_TO_X_TWITTER = 1041,
+  /**
+   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
+   * connected Threads account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_THREADS = 1050,
+  /**
+   * SYNC_POSTS_TO_THREADS - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
+   * connected Threads account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_THREADS = 1051,
   /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
   BUSINESS = 9998,
   /**
@@ -309,33 +319,39 @@ export function permissionFromJSON(object: any): Permission {
     case 1000:
     case "SYNC_EVENTS_TO_FACEBOOK":
       return Permission.SYNC_EVENTS_TO_FACEBOOK;
-    case 1010:
+    case 1001:
     case "SYNC_POSTS_TO_FACEBOOK":
       return Permission.SYNC_POSTS_TO_FACEBOOK;
-    case 1020:
+    case 1010:
     case "SYNC_EVENTS_TO_INSTAGRAM":
       return Permission.SYNC_EVENTS_TO_INSTAGRAM;
-    case 1030:
+    case 1011:
     case "SYNC_POSTS_TO_INSTAGRAM":
       return Permission.SYNC_POSTS_TO_INSTAGRAM;
-    case 1040:
+    case 1020:
     case "SYNC_EVENTS_TO_MASTODON":
       return Permission.SYNC_EVENTS_TO_MASTODON;
-    case 1050:
+    case 1021:
     case "SYNC_POSTS_TO_MASTODON":
       return Permission.SYNC_POSTS_TO_MASTODON;
-    case 1060:
+    case 1030:
     case "SYNC_EVENTS_TO_BLUESKY":
       return Permission.SYNC_EVENTS_TO_BLUESKY;
-    case 1070:
+    case 1031:
     case "SYNC_POSTS_TO_BLUESKY":
       return Permission.SYNC_POSTS_TO_BLUESKY;
-    case 1080:
+    case 1040:
     case "SYNC_EVENTS_TO_X_TWITTER":
       return Permission.SYNC_EVENTS_TO_X_TWITTER;
-    case 1090:
+    case 1041:
     case "SYNC_POSTS_TO_X_TWITTER":
       return Permission.SYNC_POSTS_TO_X_TWITTER;
+    case 1050:
+    case "SYNC_EVENTS_TO_THREADS":
+      return Permission.SYNC_EVENTS_TO_THREADS;
+    case 1051:
+    case "SYNC_POSTS_TO_THREADS":
+      return Permission.SYNC_POSTS_TO_THREADS;
     case 9998:
     case "BUSINESS":
       return Permission.BUSINESS;
@@ -447,6 +463,10 @@ export function permissionToJSON(object: Permission): string {
       return "SYNC_EVENTS_TO_X_TWITTER";
     case Permission.SYNC_POSTS_TO_X_TWITTER:
       return "SYNC_POSTS_TO_X_TWITTER";
+    case Permission.SYNC_EVENTS_TO_THREADS:
+      return "SYNC_EVENTS_TO_THREADS";
+    case Permission.SYNC_POSTS_TO_THREADS:
+      return "SYNC_POSTS_TO_THREADS";
     case Permission.BUSINESS:
       return "BUSINESS";
     case Permission.RUN_BOTS:

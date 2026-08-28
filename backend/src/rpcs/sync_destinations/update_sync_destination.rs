@@ -6,8 +6,9 @@ use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
-    connect_facebook_page, create_session, get_linked_instagram_business_account,
-    server_facebook_app_credentials, verify_credentials,
+    connect_facebook_page, create_session, exchange_code_for_token, exchange_long_lived_token,
+    get_linked_instagram_business_account, get_username, server_facebook_app_credentials,
+    threads_redirect_uri, verify_credentials,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -62,6 +63,14 @@ pub fn update_sync_destination(
             ],
         )?,
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {}
+        Some(sync_destination::Configuration::ThreadsAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToThreads,
+                Permission::SyncPostsToThreads,
+                Permission::Admin,
+            ],
+        )?,
     };
 
     let destination_id = request.id.to_db_id_or_err("id")?;
@@ -162,6 +171,24 @@ pub fn update_sync_destination(
         }
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
             return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        }
+        Some(sync_destination::Configuration::ThreadsAccount(ThreadsAccount {
+            authorization_code: Some(authorization_code),
+            ..
+        })) if !authorization_code.trim().is_empty() => {
+            let (app_id, app_secret) = server_facebook_app_credentials(conn)?;
+            let redirect_uri = threads_redirect_uri(conn)?;
+            let (short_lived_token, threads_user_id) =
+                exchange_code_for_token(&app_id, &app_secret, &authorization_code, &redirect_uri)?;
+            let access_token = exchange_long_lived_token(&app_secret, &short_lived_token)?;
+            let username = get_username(&access_token, &threads_user_id)?;
+            existing.configuration = json!({
+                "threads_account": {
+                    "threads_user_id": threads_user_id,
+                    "username": username,
+                    "access_token": access_token,
+                }
+            });
         }
         // No new credential given -- e.g. a no-op update -- leave `existing.configuration` as-is,
         // matching this RPC's original behavior (it only ever reconnected when a

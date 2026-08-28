@@ -22,9 +22,32 @@ pub struct SyncMessage {
     /// have no separate link-preview mechanism and just expect it inline; kept here too since
     /// Facebook's Graph API *does* have a separate `link` param it uses for its preview card.
     pub link: Option<String>,
-    /// Public download URLs of the content's attached media, in the same order as the underlying
-    /// Post/EventInstance's `media` field. Empty for text-only content.
-    pub media: Vec<String>,
+    /// The content's attached media (public download URL + content type), in the same order as
+    /// the underlying Post/EventInstance's `media` field. Empty for text-only content. Carrying
+    /// `content_type` alongside each URL (rather than a bare `Vec<String>`) lets each platform's
+    /// posting code pick the right upload mechanism/param (e.g. Instagram/Threads' `image_url` vs
+    /// `video_url`, Facebook's `/photos` vs `/videos` endpoints) without re-fetching metadata.
+    pub media: Vec<MediaAttachment>,
+}
+
+/// One piece of media attached to a `SyncMessage` -- see `SyncMessage.media`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MediaAttachment {
+    /// This Jonline server's own public download URL for the media (`https://{backend_host}/media/{id}`).
+    pub url: String,
+    /// The media's MIME type (e.g. `"image/jpeg"`, `"video/mp4"`), from `models::MediaReference` --
+    /// lets callers distinguish images from video without a network round-trip.
+    pub content_type: String,
+}
+
+impl MediaAttachment {
+    pub fn is_image(&self) -> bool {
+        self.content_type.starts_with("image/")
+    }
+
+    pub fn is_video(&self) -> bool {
+        self.content_type.starts_with("video/")
+    }
 }
 
 /// Raw fields `build_event_instance_message` folds into a `SyncMessage.text` -- mirrors the old
@@ -45,8 +68,8 @@ pub struct EventInstanceMessageInput<'a> {
     /// Link to this event on this Jonline server's own frontend, if buildable (see
     /// `sync_event_instance`'s caller).
     pub event_url: &'a Option<String>,
-    /// Public download URLs of the underlying Post's attached media.
-    pub media: Vec<String>,
+    /// The underlying Post's attached media.
+    pub media: Vec<MediaAttachment>,
 }
 
 /// Builds an EventInstance's `SyncMessage` -- title, date/time range (in `timezone` if resolved,
@@ -60,10 +83,11 @@ pub fn build_event_instance_message(input: EventInstanceMessageInput) -> SyncMes
     }
     let time_range = match input.timezone {
         Some(tz) => format_time_range(
+            Utc::now().with_timezone(&tz),
             input.starts_at.with_timezone(&tz),
             input.ends_at.with_timezone(&tz),
         ),
-        None => format_time_range(input.starts_at, input.ends_at),
+        None => format_time_range(Utc::now(), input.starts_at, input.ends_at),
     };
     lines.push(time_range);
     if let Some(location) = input.location.as_ref().filter(|l| !l.trim().is_empty()) {
@@ -100,8 +124,8 @@ pub struct PostMessageInput<'a> {
     /// Link to this `Post` on this Jonline server's own frontend, if buildable (see `sync_post`'s
     /// caller).
     pub post_url: &'a Option<String>,
-    /// Public download URLs of the Post's attached media.
-    pub media: Vec<String>,
+    /// The Post's attached media.
+    pub media: Vec<MediaAttachment>,
 }
 
 /// Builds a Post's `SyncMessage` -- title, content, and a link back to it. Mirrors what
@@ -131,24 +155,77 @@ pub fn build_post_message(input: PostMessageInput) -> SyncMessage {
 }
 
 /// Generic over the timezone (`Utc` or a `chrono_tz::Tz` the caller already converted `starts_at`
-/// and `ends_at` into) so this doesn't need to duplicate itself for each. Moved verbatim from
-/// `facebook_sync::format_time_range`.
-fn format_time_range<Tz: chrono::TimeZone>(starts_at: DateTime<Tz>, ends_at: DateTime<Tz>) -> String
+/// and `ends_at` into) so this doesn't need to duplicate itself for each.
+///
+/// Mirrors the "friendliness" rules of the Elm UI's `Shared.Time.formatMoment`/`formatRange` (the
+/// live, viewer-facing renderer for the same start/end pair): no weekday name, the year is dropped
+/// when it matches the current year, and a same-day range with both sides in the same AM/PM period
+/// merges onto one suffix (e.g. "August 1, 6-7PM" rather than "August 1, 6:00 PM - 7:00 PM").
+/// Deliberately does **not** mirror `formatMoment`'s "Today"/"Yesterday"/"Tomorrow" relative-day
+/// prefixes -- those are correct for a live UI that re-renders on every view, but a synced social
+/// post is written once and read forever after, so a relative-day label baked into its text would
+/// go stale (and wrong) the moment "today" isn't today anymore.
+fn format_time_range<Tz: chrono::TimeZone>(
+    now: DateTime<Tz>,
+    starts_at: DateTime<Tz>,
+    ends_at: DateTime<Tz>,
+) -> String
 where
     Tz::Offset: std::fmt::Display,
 {
-    let start_date = starts_at.format("%A, %B %-d, %Y").to_string();
-    let start_time = starts_at.format("%-I:%M %p").to_string();
+    let current_year = now.format("%Y").to_string();
+    let date_label = |at: &DateTime<Tz>| {
+        let month_day = at.format("%B %-d").to_string();
+        if at.format("%Y").to_string() == current_year {
+            month_day
+        } else {
+            format!("{month_day}, {}", at.format("%Y"))
+        }
+    };
+    let time_label = |at: &DateTime<Tz>| {
+        if at.format("%M").to_string() == "00" {
+            at.format("%-I%p").to_string()
+        } else {
+            at.format("%-I:%M%p").to_string()
+        }
+    };
     let zone = starts_at.format("%Z").to_string();
+
     if ends_at <= starts_at {
-        return format!("{start_date} at {start_time} {zone}");
+        return format!("{}, {} {zone}", date_label(&starts_at), time_label(&starts_at));
     }
     if starts_at.date_naive() == ends_at.date_naive() {
-        let end_time = ends_at.format("%-I:%M %p").to_string();
-        format!("{start_date} at {start_time} \u{2013} {end_time} {zone}")
+        let same_period = starts_at.format("%p").to_string() == ends_at.format("%p").to_string();
+        let start_time = if same_period {
+            // Drop the AM/PM suffix on the start side when both sides share one -- "6-7PM", not
+            // "6PM-7PM" -- mirroring `Shared.Time.timeRangeLabel`'s `bareTime12`/`timeWithPeriod`
+            // split.
+            if starts_at.format("%M").to_string() == "00" {
+                starts_at.format("%-I").to_string()
+            } else {
+                starts_at.format("%-I:%M").to_string()
+            }
+        } else {
+            time_label(&starts_at)
+        };
+        format!(
+            "{}, {start_time}-{} {zone}",
+            date_label(&starts_at),
+            time_label(&ends_at)
+        )
     } else {
-        let end = ends_at.format("%A, %B %-d, %Y at %-I:%M %p %Z").to_string();
-        format!("{start_date} at {start_time} {zone} \u{2013} {end}")
+        // Matches `formatRange`'s different-day shape exactly: "StartDate, StartTime -
+        // EndDate, EndTime" (plain hyphen, not the same-day case's en dash-free merge). Elm
+        // doesn't need a timezone abbreviation here (the browser already renders in the
+        // viewer's own zone, so it's implicit) -- appended once at the end here since a
+        // synced post has no such implicit context for its reader.
+        format!(
+            "{}, {} - {}, {} {zone}",
+            date_label(&starts_at),
+            time_label(&starts_at),
+            date_label(&ends_at),
+            time_label(&ends_at)
+        )
     }
 }
 

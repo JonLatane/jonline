@@ -41,6 +41,8 @@ message SyncDestination {
     // A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
     // `XTwitterAccount`'s own doc.
     XTwitterAccount x_twitter_account = 13;
+    // A connected Threads account to post EventInstances/Posts to.
+    ThreadsAccount threads_account = 14;
   }
 }
 
@@ -125,6 +127,23 @@ message XTwitterAccount {
   // Only used (and required) on `CreateSyncDestination`: reserved for a future OAuth flow. Never
   // populated in responses.
   optional string short_lived_user_access_token = 2;
+}
+
+// A connected Threads account. Threads API is a product added to this server's existing Meta App
+// (see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
+// is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+// OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+// exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+// refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+// will need reconnecting after ~60 days until a refresh job exists).
+message ThreadsAccount {
+  // The account's Threads user ID, used for all posting calls.
+  string threads_user_id = 1;
+  // The account's @username, populated by the server when the connection is made.
+  string username = 2;
+  // Only used (and required) on `CreateSyncDestination`: the OAuth authorization code from the
+  // Threads login popup. Never populated in responses.
+  optional string authorization_code = 3;
 }
 
 // The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to

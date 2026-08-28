@@ -26,7 +26,7 @@ use serde_json::Value;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::SyncMessage;
+use crate::logic::{MediaAttachment, SyncMessage};
 use crate::models;
 use crate::protos::FederationInfo;
 
@@ -228,6 +228,20 @@ pub fn post_post_at(
 /// Shared implementation of `post_event_instance_at`/`post_post_at` -- now that both take a plain
 /// `&SyncMessage`, the only thing distinguishing an EventInstance push from a Post push is which
 /// "not configured" error string to return (see each function's own doc).
+///
+/// The Page Graph API doesn't support mixing photo attachments and a plain text `/feed` call the
+/// way Instagram/Threads' single-container flow does -- these are structurally different
+/// mechanisms, so `message.media` is dispatched into one of three shapes:
+/// - No media: today's original behavior -- `/feed` with `message`/`link`.
+/// - One or more images: each is first uploaded *unpublished* via `/photos` (returning a
+///   `photo_id`), then `/feed` is called once with `message` and one indexed
+///   `attached_media[N]={"media_fbid":"<photo_id>"}` field per photo (the documented Graph API
+///   multi-photo-post pattern). `link` is dropped here -- Facebook's UI doesn't show a
+///   link-preview card alongside photo attachments anyway.
+/// - Video (and no images): posted via the dedicated `/videos` endpoint instead of `/feed`
+///   entirely, using `file_url`/`description`.
+/// - Both images and video present: Facebook can't do both in one call, so the video path wins
+///   and the images are silently dropped -- a real platform limitation, not a bug to work around.
 fn post_to_facebook_page(
     base_url: &str,
     destination: &models::SyncDestination,
@@ -248,8 +262,17 @@ fn post_to_facebook_page(
         .and_then(|v| v.as_str())
         .ok_or_else(not_configured)?;
 
-    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+    let images: Vec<&MediaAttachment> = message.media.iter().filter(|m| m.is_image()).collect();
+    let video = message.media.iter().find(|m| m.is_video());
 
+    if let Some(video) = video.filter(|_| images.is_empty()) {
+        return post_video_to_facebook_page(base_url, page_id, access_token, message, video);
+    }
+    if !images.is_empty() {
+        return post_photos_to_facebook_page(base_url, page_id, access_token, message, &images);
+    }
+
+    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
     let mut params = vec![
         ("message", message.text.as_str()),
         ("access_token", access_token),
@@ -257,8 +280,94 @@ fn post_to_facebook_page(
     if let Some(link) = message.link.as_ref().filter(|l| !l.trim().is_empty()) {
         params.push(("link", link.as_str()));
     }
-
     let response = graph_post(&url, &params)?;
+    extract_facebook_post_id_and_url(&response)
+}
+
+fn post_video_to_facebook_page(
+    base_url: &str,
+    page_id: &str,
+    access_token: &str,
+    message: &SyncMessage,
+    video: &MediaAttachment,
+) -> Result<(String, String), Status> {
+    let url = format!("{}/{}/{}/videos", base_url, GRAPH_API_VERSION, page_id);
+    let response = graph_post(
+        &url,
+        &[
+            ("file_url", video.url.as_str()),
+            ("description", message.text.as_str()),
+            ("access_token", access_token),
+        ],
+    )?;
+    let video_id = response
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!("Facebook video post response missing id: {:?}", response);
+            Status::new(Code::Internal, "facebook_post_failed")
+        })?;
+    // Prefer the response's own permalink if the Graph API returns one for this call -- more
+    // reliable than hand-building the URL -- else fall back to the conventional `/videos/<id>`
+    // shape.
+    let video_url = response
+        .get("permalink_url")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("https://www.facebook.com/{}/videos/{}", page_id, video_id));
+    Ok((video_id, video_url))
+}
+
+fn post_photos_to_facebook_page(
+    base_url: &str,
+    page_id: &str,
+    access_token: &str,
+    message: &SyncMessage,
+    images: &[&MediaAttachment],
+) -> Result<(String, String), Status> {
+    let photos_url = format!("{}/{}/{}/photos", base_url, GRAPH_API_VERSION, page_id);
+    let mut photo_ids = Vec::with_capacity(images.len());
+    for image in images {
+        let response = graph_post(
+            &photos_url,
+            &[
+                ("url", image.url.as_str()),
+                ("published", "false"),
+                ("access_token", access_token),
+            ],
+        )?;
+        let photo_id = response
+            .get("id")
+            .and_then(|v| v.as_str())
+            .map(str::to_string)
+            .ok_or_else(|| {
+                log::error!("Facebook photo upload response missing id: {:?}", response);
+                Status::new(Code::Internal, "facebook_post_failed")
+            })?;
+        photo_ids.push(photo_id);
+    }
+
+    let feed_url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+    let mut owned_params: Vec<(String, String)> = vec![
+        ("message".to_string(), message.text.clone()),
+        ("access_token".to_string(), access_token.to_string()),
+    ];
+    for (i, photo_id) in photo_ids.iter().enumerate() {
+        owned_params.push((
+            format!("attached_media[{i}]"),
+            serde_json::json!({ "media_fbid": photo_id }).to_string(),
+        ));
+    }
+    let params: Vec<(&str, &str)> = owned_params
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let response = graph_post(&feed_url, &params)?;
+    extract_facebook_post_id_and_url(&response)
+}
+
+fn extract_facebook_post_id_and_url(response: &Value) -> Result<(String, String), Status> {
     let post_id = response
         .get("id")
         .and_then(|v| v.as_str())
@@ -343,7 +452,7 @@ pub fn post_to_instagram_at(
     destination: &models::SyncDestination,
     message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    let Some(image_url) = message.media.first() else {
+    let Some(media) = message.media.first() else {
         return Err(Status::new(
             Code::FailedPrecondition,
             "instagram_requires_media",
@@ -366,14 +475,21 @@ pub fn post_to_instagram_at(
         .ok_or_else(not_configured)?;
 
     let create_url = format!("{}/{}/{}/media", base_url, GRAPH_API_VERSION, ig_user_id);
-    let create_response = graph_post(
-        &create_url,
-        &[
-            ("image_url", image_url.as_str()),
-            ("caption", message.text.as_str()),
-            ("access_token", access_token),
-        ],
-    )?;
+    let mut create_params: Vec<(&str, &str)> = vec![
+        ("caption", message.text.as_str()),
+        ("access_token", access_token),
+    ];
+    if media.is_video() {
+        // Current Meta guidance routes single-video feed posts through the Reels container type
+        // via the Graph API (there's no separate plain "feed video" media_type) -- if Meta's docs
+        // have since introduced a dedicated non-Reels video post type, prefer that instead.
+        create_params.push(("media_type", "REELS"));
+        create_params.push(("video_url", media.url.as_str()));
+    } else {
+        // No `media_type` needed -- Instagram defaults to IMAGE.
+        create_params.push(("image_url", media.url.as_str()));
+    }
+    let create_response = graph_post(&create_url, &create_params)?;
     let creation_id = create_response
         .get("id")
         .and_then(|v| v.as_str())

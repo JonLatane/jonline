@@ -133,31 +133,37 @@ fieldNumbersPermission n_ =
             1000
 
         SYNCPOSTSTOFACEBOOK ->
-            1010
+            1001
 
         SYNCEVENTSTOINSTAGRAM ->
-            1020
+            1010
 
         SYNCPOSTSTOINSTAGRAM ->
-            1030
+            1011
 
         SYNCEVENTSTOMASTODON ->
-            1040
+            1020
 
         SYNCPOSTSTOMASTODON ->
-            1050
+            1021
 
         SYNCEVENTSTOBLUESKY ->
-            1060
+            1030
 
         SYNCPOSTSTOBLUESKY ->
-            1070
+            1031
 
         SYNCEVENTSTOXTWITTER ->
-            1080
+            1040
 
         SYNCPOSTSTOXTWITTER ->
-            1090
+            1041
+
+        SYNCEVENTSTOTHREADS ->
+            1050
+
+        SYNCPOSTSTOTHREADS ->
+            1051
 
         BUSINESS ->
             9998
@@ -299,31 +305,37 @@ encodePermission value =
                 1000
 
             SYNCPOSTSTOFACEBOOK ->
-                1010
+                1001
 
             SYNCEVENTSTOINSTAGRAM ->
-                1020
+                1010
 
             SYNCPOSTSTOINSTAGRAM ->
-                1030
+                1011
 
             SYNCEVENTSTOMASTODON ->
-                1040
+                1020
 
             SYNCPOSTSTOMASTODON ->
-                1050
+                1021
 
             SYNCEVENTSTOBLUESKY ->
-                1060
+                1030
 
             SYNCPOSTSTOBLUESKY ->
-                1070
+                1031
 
             SYNCEVENTSTOXTWITTER ->
-                1080
+                1040
 
             SYNCPOSTSTOXTWITTER ->
-                1090
+                1041
+
+            SYNCEVENTSTOTHREADS ->
+                1050
+
+            SYNCPOSTSTOTHREADS ->
+                1051
 
             BUSINESS ->
                 9998
@@ -458,32 +470,38 @@ decodePermission =
                     1000 ->
                         SYNCEVENTSTOFACEBOOK
 
-                    1010 ->
+                    1001 ->
                         SYNCPOSTSTOFACEBOOK
 
-                    1020 ->
+                    1010 ->
                         SYNCEVENTSTOINSTAGRAM
 
-                    1030 ->
+                    1011 ->
                         SYNCPOSTSTOINSTAGRAM
 
-                    1040 ->
+                    1020 ->
                         SYNCEVENTSTOMASTODON
 
-                    1050 ->
+                    1021 ->
                         SYNCPOSTSTOMASTODON
 
-                    1060 ->
+                    1030 ->
                         SYNCEVENTSTOBLUESKY
 
-                    1070 ->
+                    1031 ->
                         SYNCPOSTSTOBLUESKY
 
-                    1080 ->
+                    1040 ->
                         SYNCEVENTSTOXTWITTER
 
-                    1090 ->
+                    1041 ->
                         SYNCPOSTSTOXTWITTER
+
+                    1050 ->
+                        SYNCEVENTSTOTHREADS
+
+                    1051 ->
+                        SYNCPOSTSTOTHREADS
 
                     9998 ->
                         BUSINESS
@@ -551,6 +569,8 @@ type Permission
     | SYNCPOSTSTOBLUESKY
     | SYNCEVENTSTOXTWITTER
     | SYNCPOSTSTOXTWITTER
+    | SYNCEVENTSTOTHREADS
+    | SYNCPOSTSTOTHREADS
     | BUSINESS
     | RUNBOTS
     | ADMIN

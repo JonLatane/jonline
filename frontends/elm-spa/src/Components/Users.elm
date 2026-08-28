@@ -870,6 +870,12 @@ permissionText permission =
         SYNCPOSTSTOXTWITTER ->
             "Sync Posts To X (Twitter)"
 
+        SYNCEVENTSTOTHREADS ->
+            "Sync Events To Threads"
+
+        SYNCPOSTSTOTHREADS ->
+            "Sync Posts To Threads"
+
         READPERSONALMESSAGES ->
             "Read Personal Messages"
 
@@ -925,6 +931,8 @@ allPermissions =
     , SYNCPOSTSTOBLUESKY
     , SYNCEVENTSTOXTWITTER
     , SYNCPOSTSTOXTWITTER
+    , SYNCEVENTSTOTHREADS
+    , SYNCPOSTSTOTHREADS
     , VIEWMEDIA
     , CREATEMEDIA
     , PUBLISHMEDIALOCALLY

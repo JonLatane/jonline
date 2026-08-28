@@ -709,6 +709,39 @@ pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_s
         .expect("failed to create test server configuration");
 }
 
+/// Same as `configure_facebook_app`, but also sets `external_cdn_config.frontend_host` -- needed
+/// for specs that exercise `logic::threads_sync::threads_redirect_uri` (and RPCs that call it,
+/// like `create_sync_destination`'s `ThreadsAccount` arm), which derives the OAuth popup's
+/// `redirect_uri` from it and fails fast with `threads_redirect_uri_not_configured` otherwise.
+pub fn configure_facebook_app_and_frontend_host(
+    conn: &mut PgPooledConnection,
+    app_id: &str,
+    app_secret: &str,
+    frontend_host: &str,
+) {
+    let mut new_config = models::default_server_configuration();
+    new_config.federation_info = serde_json::to_value(FederationInfo {
+        servers: vec![],
+        facebook_auth_config: Some(FacebookAuthConfig {
+            app_id: app_id.to_string(),
+            app_secret: app_secret.to_string(),
+        }),
+        x_twitter_auth_config: None,
+    })
+    .unwrap();
+    new_config.external_cdn_config = Some(
+        serde_json::to_value(ExternalCdnConfig {
+            frontend_host: frontend_host.to_string(),
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
 /// Inserts a `media` row directly (bypassing the `/media` upload endpoint, which lives outside
 /// the gRPC/`rpcs` layer entirely). Doesn't touch MinIO -- pair with `TestBucket::put_object` (via
 /// `test_bucket()`) when a spec needs a real object at `minio_path` to verify gets cleaned up.
@@ -979,6 +1012,145 @@ pub fn serve_mastodon_api(
         }
     });
     format!("http://127.0.0.1:{port}")
+}
+
+/// A minimal mock of the Threads Graph API endpoints `logic::threads_sync` hits for
+/// `oauth/access_token` (code exchange), `access_token` (long-lived exchange), `fields=username`
+/// (username lookup), `/threads` (media container creation), `/threads_publish`, and
+/// `fields=permalink` (permalink lookup) -- routes by request line, mirroring
+/// `serve_facebook_graph_api`. `valid` gates the code-exchange step (simulating an invalid/expired
+/// authorization code, `400`); everything past that always succeeds with the given canned values.
+pub fn serve_threads_api(
+    valid: bool,
+    threads_user_id: &str,
+    username: &str,
+    post_id: &str,
+    permalink: &str,
+) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test Threads API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test Threads API server port")
+        .port();
+    let threads_user_id = threads_user_id.to_string();
+    let username = username.to_string();
+    let post_id = post_id.to_string();
+    let permalink = permalink.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let (status_line, body) = if request_line.contains("/oauth/access_token") {
+                if valid {
+                    (
+                        "HTTP/1.1 200 OK",
+                        serde_json::json!({
+                            "access_token": "short-lived-threads-token",
+                            "user_id": threads_user_id,
+                        }),
+                    )
+                } else {
+                    (
+                        "HTTP/1.1 400 Bad Request",
+                        serde_json::json!({ "error": "invalid authorization code" }),
+                    )
+                }
+            } else if request_line.contains("grant_type=th_exchange_token") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "access_token": "long-lived-threads-token" }),
+                )
+            } else if request_line.contains("fields=username") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "username": username }),
+                )
+            } else if request_line.contains("fields=permalink") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "permalink": permalink }),
+                )
+            } else if request_line.contains("/threads_publish") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "id": post_id }),
+                )
+            } else {
+                // `/{threads_user_id}/threads` media container creation.
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "id": format!("{post_id}-creation") }),
+                )
+            };
+            let body = body.to_string();
+            let response = format!(
+                "{}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                status_line,
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}
+
+/// Starts a background thread that captures the raw text (request line + headers + body -- since
+/// the mock only does one `read()` call, this can miss the tail of a request larger than the
+/// buffer, which is fine for the small form/JSON bodies these specs send) of every request it
+/// receives into the returned `Arc<Mutex<Vec<String>>>`, in receipt order, replying to each with
+/// whatever `respond` returns given the *other* requests already captured before it (so a response
+/// can vary by call index, e.g. a photo-upload endpoint hit multiple times). Generalizes the
+/// per-platform mock servers above (`serve_facebook_graph_api`/`serve_mastodon_api`/
+/// `serve_bluesky_api`/`serve_threads_api`) for specs that need to assert on request *shape* --
+/// which endpoint got hit, in what order, with what body -- rather than just canned response
+/// wiring; see `facebook_sync_tests`/`mastodon_sync_tests`/`bluesky_sync_tests`' media-attachment
+/// specs for example usage.
+pub fn serve_capturing(
+    respond: impl Fn(&str, &[String]) -> (&'static str, serde_json::Value) + Send + 'static,
+) -> (String, std::sync::Arc<std::sync::Mutex<Vec<String>>>) {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::sync::{Arc, Mutex};
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test capturing server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test capturing server port")
+        .port();
+    let captured: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let captured_thread = captured.clone();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 16384];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]).to_string();
+
+            let (status_line, body) = {
+                let mut captured = captured_thread.lock().unwrap();
+                let result = respond(&request, &captured);
+                captured.push(request.clone());
+                result
+            };
+            let body = body.to_string();
+            let response = format!(
+                "{}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                status_line,
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    (format!("http://127.0.0.1:{port}"), captured)
 }
 
 /// A minimal mock of the Bluesky (AT Protocol) `createSession`/`createRecord` XRPC endpoints for
