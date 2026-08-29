@@ -273,7 +273,7 @@ class Media extends $pb.GeneratedMessage {
   MediaMetadata ensureMetadata() => $_ensure(12);
 }
 
-/// Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
+/// Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
 /// own columns.
 class MediaMetadata extends $pb.GeneratedMessage {
   factory MediaMetadata({

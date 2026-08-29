@@ -1,5 +1,6 @@
 pub mod factories;
 
+mod bluesky_sync_tests;
 mod configure_server_tests;
 mod create_post_tests;
 mod delete_event_attendance_tests;
@@ -19,11 +20,14 @@ mod get_events_tests;
 mod get_messages_tests;
 mod get_posts_tests;
 mod get_users_tests;
+mod mastodon_sync_tests;
 mod post_sync_rpc_tests;
 mod push_subscription_tests;
 mod sync_destination_count_tests;
 mod sync_destination_rpc_tests;
+mod sync_message_tests;
 mod send_message_tests;
+mod threads_sync_tests;
 mod update_event_tests;
 mod update_post_tests;
 mod user_counts_tests;

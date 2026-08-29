@@ -627,7 +627,7 @@ export interface CustomNavigationTabSet {
   /**
    * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
    * Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-   * `/` is modified via `CustomNavigationTabSet`.home instead.
+   * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
    */
   tabs: CustomNavigationTabWithPath[];
 }
@@ -655,7 +655,7 @@ export interface CustomNavigationTab {
   emojiIcon?:
     | string
     | undefined;
-  /** Media ID (see `Media` APIs) of an image shown as the tab's icon. */
+  /** Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon. */
   iconMediaId?:
     | string
     | undefined;
@@ -666,7 +666,7 @@ export interface CustomNavigationTab {
 /**
  * A custom navigation tab with an associated path.
  * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
- * `/` is modified via `CustomNavigationTabSet`.home instead.
+ * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
  */
 export interface CustomNavigationTabWithPath {
   /** The tab to show at this path. */
@@ -677,7 +677,7 @@ export interface CustomNavigationTabWithPath {
    * e.g. link `/gigs` or `/shows` for a band to the "Events" page.
    * Or, /weddings to a Post about wedding offerings for a custom business site.
    * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-   * `/` is modified via `CustomNavigationTabSet`.home instead.
+   * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
    */
   path: string;
 }

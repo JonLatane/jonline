@@ -108,12 +108,6 @@ fieldNumbersPermission n_ =
         SYNCHRONIZEEVENTS ->
             36
 
-        SYNCEVENTSTOFACEBOOK ->
-            37
-
-        SYNCPOSTSTOFACEBOOK ->
-            38
-
         VIEWMEDIA ->
             40
 
@@ -134,6 +128,42 @@ fieldNumbersPermission n_ =
 
         READALLSYSTEMMESSAGES ->
             51
+
+        SYNCEVENTSTOFACEBOOK ->
+            1000
+
+        SYNCPOSTSTOFACEBOOK ->
+            1001
+
+        SYNCEVENTSTOINSTAGRAM ->
+            1010
+
+        SYNCPOSTSTOINSTAGRAM ->
+            1011
+
+        SYNCEVENTSTOMASTODON ->
+            1020
+
+        SYNCPOSTSTOMASTODON ->
+            1021
+
+        SYNCEVENTSTOBLUESKY ->
+            1030
+
+        SYNCPOSTSTOBLUESKY ->
+            1031
+
+        SYNCEVENTSTOXTWITTER ->
+            1040
+
+        SYNCPOSTSTOXTWITTER ->
+            1041
+
+        SYNCEVENTSTOTHREADS ->
+            1050
+
+        SYNCPOSTSTOTHREADS ->
+            1051
 
         BUSINESS ->
             9998
@@ -250,12 +280,6 @@ encodePermission value =
             SYNCHRONIZEEVENTS ->
                 36
 
-            SYNCEVENTSTOFACEBOOK ->
-                37
-
-            SYNCPOSTSTOFACEBOOK ->
-                38
-
             VIEWMEDIA ->
                 40
 
@@ -276,6 +300,42 @@ encodePermission value =
 
             READALLSYSTEMMESSAGES ->
                 51
+
+            SYNCEVENTSTOFACEBOOK ->
+                1000
+
+            SYNCPOSTSTOFACEBOOK ->
+                1001
+
+            SYNCEVENTSTOINSTAGRAM ->
+                1010
+
+            SYNCPOSTSTOINSTAGRAM ->
+                1011
+
+            SYNCEVENTSTOMASTODON ->
+                1020
+
+            SYNCPOSTSTOMASTODON ->
+                1021
+
+            SYNCEVENTSTOBLUESKY ->
+                1030
+
+            SYNCPOSTSTOBLUESKY ->
+                1031
+
+            SYNCEVENTSTOXTWITTER ->
+                1040
+
+            SYNCPOSTSTOXTWITTER ->
+                1041
+
+            SYNCEVENTSTOTHREADS ->
+                1050
+
+            SYNCPOSTSTOTHREADS ->
+                1051
 
             BUSINESS ->
                 9998
@@ -386,12 +446,6 @@ decodePermission =
                     36 ->
                         SYNCHRONIZEEVENTS
 
-                    37 ->
-                        SYNCEVENTSTOFACEBOOK
-
-                    38 ->
-                        SYNCPOSTSTOFACEBOOK
-
                     40 ->
                         VIEWMEDIA
 
@@ -412,6 +466,42 @@ decodePermission =
 
                     51 ->
                         READALLSYSTEMMESSAGES
+
+                    1000 ->
+                        SYNCEVENTSTOFACEBOOK
+
+                    1001 ->
+                        SYNCPOSTSTOFACEBOOK
+
+                    1010 ->
+                        SYNCEVENTSTOINSTAGRAM
+
+                    1011 ->
+                        SYNCPOSTSTOINSTAGRAM
+
+                    1020 ->
+                        SYNCEVENTSTOMASTODON
+
+                    1021 ->
+                        SYNCPOSTSTOMASTODON
+
+                    1030 ->
+                        SYNCEVENTSTOBLUESKY
+
+                    1031 ->
+                        SYNCPOSTSTOBLUESKY
+
+                    1040 ->
+                        SYNCEVENTSTOXTWITTER
+
+                    1041 ->
+                        SYNCPOSTSTOXTWITTER
+
+                    1050 ->
+                        SYNCEVENTSTOTHREADS
+
+                    1051 ->
+                        SYNCPOSTSTOTHREADS
 
                     9998 ->
                         BUSINESS
@@ -462,8 +552,6 @@ type Permission
     | MODERATEEVENTS
     | RSVPTOEVENTS
     | SYNCHRONIZEEVENTS
-    | SYNCEVENTSTOFACEBOOK
-    | SYNCPOSTSTOFACEBOOK
     | VIEWMEDIA
     | CREATEMEDIA
     | PUBLISHMEDIALOCALLY
@@ -471,6 +559,18 @@ type Permission
     | MODERATEMEDIA
     | READPERSONALMESSAGES
     | READALLSYSTEMMESSAGES
+    | SYNCEVENTSTOFACEBOOK
+    | SYNCPOSTSTOFACEBOOK
+    | SYNCEVENTSTOINSTAGRAM
+    | SYNCPOSTSTOINSTAGRAM
+    | SYNCEVENTSTOMASTODON
+    | SYNCPOSTSTOMASTODON
+    | SYNCEVENTSTOBLUESKY
+    | SYNCPOSTSTOBLUESKY
+    | SYNCEVENTSTOXTWITTER
+    | SYNCPOSTSTOXTWITTER
+    | SYNCEVENTSTOTHREADS
+    | SYNCPOSTSTOTHREADS
     | BUSINESS
     | RUNBOTS
     | ADMIN

@@ -131,6 +131,22 @@
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
+    - [XTwitterAuthConfig](#jonline-XTwitterAuthConfig)
+  
+- [sync.proto](#sync-proto)
+    - [BlueskyAccount](#jonline-BlueskyAccount)
+    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
+    - [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest)
+    - [EventSyncSource](#jonline-EventSyncSource)
+    - [FacebookPage](#jonline-FacebookPage)
+    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
+    - [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse)
+    - [InstagramAccount](#jonline-InstagramAccount)
+    - [MastodonAccount](#jonline-MastodonAccount)
+    - [SyncDestination](#jonline-SyncDestination)
+    - [SyncDestinationStatus](#jonline-SyncDestinationStatus)
+    - [ThreadsAccount](#jonline-ThreadsAccount)
+    - [XTwitterAccount](#jonline-XTwitterAccount)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -175,26 +191,26 @@ Jonline servers interact across several ports:
 
 #### API Design Notes
 ##### Moderation and Visibility
-Jonline APIs are designed to support `Moderation` and `Visibility` controls at the level of individual entities. However, to keep things
-DRY, moderation and visibility controls are only implemented for `User`s, `Media`, `Group`s, and `Post`s.
+Jonline APIs are designed to support [`Moderation`](#jonline-Moderation) and [`Visibility`](#jonline-Visibility) controls at the level of individual entities. However, to keep things
+DRY, moderation and visibility controls are only implemented for [`User`](#jonline-User)s, [`Media`](#jonline-Media), [`Group`](#jonline-Group)s, and [`Post`](#jonline-Post)s.
 
-`Event`s and future `Post`-like types simply use the same implementation as their contained `Post`s. The intent here is to maximize
+[`Event`](#jonline-Event)s and future [`Post`](#jonline-Post)-like types simply use the same implementation as their contained [`Post`](#jonline-Post)s. The intent here is to maximize
 both shared code and implementation robustness.
 
 ##### Composition Over Inheritance
-Jonline&#39;s APIs are designed using composition over inheritance. For instance, an `Event` contains
-a `Post` rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
+Jonline&#39;s APIs are designed using composition over inheritance. For instance, an [`Event`](#jonline-Event) contains
+a [`Post`](#jonline-Post) rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
 through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
 
 ##### Predictable Atomicity
 The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
-For instance, `UpdatePost` is fully atomic.
+For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
 
-`UpdateEvent`, however, is non-atomic. Given that an `Event` has a `Post` and many `EventInstance`s, 
-`UpdateEvent` will first update the `Post` atomically (literally calling the `UpdatePost` RPC),
-then the `Event` atomically, and then finally process updates to its `EventInstance`s in a final atomic operation. 
+[`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#jonline-Event) has a [`Post`](#jonline-Post) and many [`EventInstance`](#jonline-EventInstance)s, 
+[`UpdateEvent`](#grpc-api-UpdateEvent) will first update the [`Post`](#jonline-Post) atomically (literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC),
+then the [`Event`](#jonline-Event) atomically, and then finally process updates to its [`EventInstance`](#jonline-EventInstance)s in a final atomic operation. 
 
-Because moderation/visibility lives at the `Post` level, this means that a developer error in `UpdateEvents` cannot prevent 
+Because moderation/visibility lives at the [`Post`](#jonline-Post) level, this means that a developer error in `UpdateEvents` cannot prevent 
 visibility and moderation changes from being made in Events, even if there are errors elsewhere.
 This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
 moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
@@ -208,10 +224,10 @@ Jonline&#39;s data model centers around a handful of top-level types, most of wh
 ##### ServerConfiguration
 Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
 [`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
-and is more like a document than a row in a database. (That said, every `ServerConfiguration` change *is* a row in a database, meaning
+and is more like a document than a row in a database. (That said, every [`ServerConfiguration`](#jonline-ServerConfiguration) change *is* a row in a database, meaning
 reverting broken configurations is easy.)
 
-Any client using the Jonline protocol is basically expected to follow a flow of &#34;get service version, then `ServerConfiguration`,
+Any client using the Jonline protocol is basically expected to follow a flow of &#34;get service version, then [`ServerConfiguration`](#jonline-ServerConfiguration),
 then worry about auth, then finally about retrieving anything else.&#34;
 
 ##### User
@@ -219,85 +235,85 @@ A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar
 [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
 [Federated Profiles](#federated-profiles) above). A lighter-weight [`Author`](#jonline-Author) (just ID, username,
 avatar, real name, permissions) is embedded on [`Post`](#jonline-Post)s, [`Message`](#jonline-Message)s, and similar
-content types instead of a full `User`, to keep those payloads small.
+content types instead of a full [`User`](#jonline-User), to keep those payloads small.
 
-- **Follows**: A [`Follow`](#jonline-Follow) is one `User` following another, optionally subject to the target&#39;s moderation
+- **Follows**: A [`Follow`](#jonline-Follow) is one [`User`](#jonline-User) following another, optionally subject to the target&#39;s moderation
 (i.e. approval). Mutual follows make two users &#34;friends.&#34; Follows also drive the `FOLLOWING_POSTS`/`FOLLOWING_EVENTS`
 listing types and `LIMITED`-visibility content.
 
-- **Memberships**: A [`Membership`](#jonline-Membership) is a `User`&#39;s membership (or pending join request/invitation)
-in a `Group`, tracking the user&#39;s `Permission`s within the group plus separate group-side and user-side `Moderation`
-(for join-approval flows). Returned as part of `User`/`Group` payloads, and via `Member` when listing a Group&#39;s members.
+- **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
+in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
+(for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
 
 
-- **EventSyncSources**: A `User` can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
-pull `Event`s in from, e.g. an iCal subscription. See the Event section below for how these attach to `Event`s.
+- **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
+pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
 
-- **SyncDestinations**: A `User` can also own many [`SyncDestination`](#jonline-SyncDestination)s -
-external targets to push `EventInstance`s and `Post`s out to, e.g. a connected Facebook Page (configured via
+- **SyncDestinations**: A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
+external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
 [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
 
 ##### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
 content itself is *not* served over gRPC - it&#39;s uploaded/downloaded via plain HTTP (`POST`/`GET /media`) - while
 its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
-(like `User.avatar`, `Group.avatar`, and `Post.media`) reference Media via the lightweight `MediaReference` type.
+(like `User.avatar`, `Group.avatar`, and `Post.media`) reference Media via the lightweight [`MediaReference`](#jonline-MediaReference) type.
 
 ##### Post
 [`Post`](#jonline-Post) is Jonline&#39;s fundamental content/building-block type: it&#39;s what actually carries a
-title/link/content body, visibility, and moderation, and is reused (via `PostContext`) as the backing data for
-replies, [`Event`](#jonline-Event)s, and `EventInstance`s alike. Posts can be replied to (threaded via
-`reply_to_post_id`), cross-posted to `Group`s (`GroupPost`), and shared directly with users (`UserPost`).
+title/link/content body, visibility, and moderation, and is reused (via [`PostContext`](#jonline-PostContext)) as the backing data for
+replies, [`Event`](#jonline-Event)s, and [`EventInstance`](#jonline-EventInstance)s alike. Posts can be replied to (threaded via
+`reply_to_post_id`), cross-posted to [`Group`](#jonline-Group)s ([`GroupPost`](#jonline-GroupPost)), and shared directly with users ([`UserPost`](#jonline-UserPost)).
 
-- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a `Post` into a `Group`, carrying the group-specific
+- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 moderation status and who shared it, separately from the Post&#39;s own (author-set) visibility/moderation.
 
-- **UserPosts**: A [`UserPost`](#jonline-UserPost) is a &#34;direct share&#34; of a `Post` to a `User` (see also `DIRECT`
+- **UserPosts**: A [`UserPost`](#jonline-UserPost) is a &#34;direct share&#34; of a [`Post`](#jonline-Post) to a [`User`](#jonline-User) (see also `DIRECT`
 [`Visibility`](#jonline-Visibility)). Currently unused/unimplemented.
 
-- **SyncDestinations**: A `Post` may also be synced (cross-posted) out to a user-owned
+- **SyncDestinations**: A [`Post`](#jonline-Post) may also be synced (cross-posted) out to a user-owned
 [`SyncDestination`](#jonline-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
-`EventInstance`s use (see below) - each Post may push to several destinations at once, tracked via the
+[`EventInstance`](#jonline-EventInstance)s use (see below) - each Post may push to several destinations at once, tracked via the
 repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)).
 
 ##### Event
-An [`Event`](#jonline-Event) is a wrapper for *at least two* `Post`s. It always has its own top-level `Post`
+An [`Event`](#jonline-Event) is a wrapper for *at least two* [`Post`](#jonline-Post)s. It always has its own top-level [`Post`](#jonline-Post)
 (`PostContext.EVENT`, holding the event&#39;s overall title/description) *and* it must have at least one
-[`EventInstance`](#jonline-EventInstance) (see below), each of which in turn must have its own `Post`
-(`PostContext.EVENT_INSTANCE`, carrying that instance&#39;s start/end time, `Location`, and optional per-instance
+[`EventInstance`](#jonline-EventInstance) (see below), each of which in turn must have its own [`Post`](#jonline-Post)
+(`PostContext.EVENT_INSTANCE`, carrying that instance&#39;s start/end time, [`Location`](#jonline-Location), and optional per-instance
 title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
 instances back one Post per instance beyond that.
 
-- **EventInstances**: An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an `Event` -
-it carries the `starts_at`/`ends_at` timestamps and optional `Location` that the parent `Event` itself does not have.
-An `Event` with zero instances is meaningless (no time or place to attach to), so every `Event` must have at least one.
+- **EventInstances**: An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an [`Event`](#jonline-Event) -
+it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#jonline-Location) that the parent [`Event`](#jonline-Event) itself does not have.
+An [`Event`](#jonline-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#jonline-Event) must have at least one.
 
     - **EventAttendances**: An [`EventAttendance`](#jonline-EventAttendance) (an &#34;RSVP&#34;) tracks one attendee&#39;s status
-    (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific `EventInstance`. Attendees may be logged-in `User`s
-    or anonymous (tracked via `AnonymousAttendee` plus an `auth_token`), and are subject to their own `Moderation`,
+    (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`EventInstance`](#jonline-EventInstance). Attendees may be logged-in [`User`](#jonline-User)s
+    or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
     independent of the Event&#39;s/Instance&#39;s own Post moderation.
 
-    - **EventSyncSource**: It&#39;s actually the parent `Event` (not the `EventInstance`) that can be synced *in* from a
+    - **EventSyncSource**: It&#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
     user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
-    1:(0 or 1): a single source can back many synced `Event`s, but each `Event` has *at most one* source it came from
+    1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
     (`Event.event_sync_source` is a single optional field, not repeated).
 
-    - **SyncDestinations**: Conversely, it&#39;s each `EventInstance` (not the parent `Event`) that syncs *out* to
-    [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism `Post`s use
-    (see above). Unlike `EventSyncSource`, this is the outlier&#39;s counterpart - a many-to-many relationship: each
+    - **SyncDestinations**: Conversely, it&#39;s each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
+    [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
+    (see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
     instance may push to several destinations at once, tracked per-destination via the repeated
     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
 
 ##### Group
-A [`Group`](#jonline-Group) organizes `User`s, `Post`s, and `Event`s together under shared visibility, moderation,
+A [`Group`](#jonline-Group) organizes [`User`](#jonline-User)s, [`Post`](#jonline-Post)s, and [`Event`](#jonline-Event)s together under shared visibility, moderation,
 and permission defaults.
 
-- **Memberships**: A [`Membership`](#jonline-Membership) is a `User`&#39;s membership (or pending join request/invitation)
-in a `Group`, tracking the user&#39;s `Permission`s within the group plus separate group-side and user-side `Moderation`
-(for join-approval flows). Returned as part of `User`/`Group` payloads, and via `Member` when listing a Group&#39;s members.
+- **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
+in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
+(for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
 
-- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a `Post` into a `Group`, carrying the group-specific
+- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 moderation status and who shared it, separately from the Post&#39;s own (author-set) visibility/moderation.
 
 ##### Message
@@ -305,8 +321,8 @@ moderation status and who shared it, separately from the Post&#39;s own (author-
 make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
 open access to all Messages on a server.
 
-- **MessagingGroup**: A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every `Message`
-belongs to one; if a client wasn&#39;t a visible recipient (e.g. they were BCC&#39;ed), the `Message` they receive omits it.
+- **MessagingGroup**: A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
+belongs to one; if a client wasn&#39;t a visible recipient (e.g. they were BCC&#39;ed), the [`Message`](#jonline-Message) they receive omits it.
 
 #### Authentication
 Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
@@ -319,7 +335,7 @@ Check whether you have the `CREATE_ACCOUNT` and/or `LOGIN` [`AuthenticationFeatu
 
 Next, use the [`CreateAccount`](#grpc-api-CreateAccount) or [`Login`](#grpc-api-Login) RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
-then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The `AccessToken` RPC
+then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The [`AccessToken`](#grpc-api-AccessToken) RPC
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
@@ -329,7 +345,7 @@ Jonline only has client-server APIs. While server-to-server communication is pos
 &#34;nice to have&#34; features require it, so it is not used.
 
 ##### Federated Servers
-Jonline servers can recommend other servers to clients with the `federation_info` field (a [`FederationInfo` message](http://localhost/docs/protocol#federationinfo)) in [`ServerConfiguration`](#jonline-ServerConfiguration).
+Jonline servers can recommend other servers to clients with the `federation_info` field (a [`FederationInfo` message](#jonline-FederationInfo)) in [`ServerConfiguration`](#jonline-ServerConfiguration).
 Clients can use this information to discover other servers, or users can add new servers manually.
 Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
 allow CORS to be configured in a &#34;strict&#34; mode, so someone else&#39;s Jonline server cannot be used to access your server&#39;s data
@@ -345,52 +361,99 @@ This mechanism also allows users to link multiple profiles on the same server to
 and [`bullcity.social/openmic`](https://bullcity.social/openmic) are linked together, but [`bullcity.social/openmic`](https://bullcity.social/openmic)
 isn&#39;t linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.social/jon`](https://oakcity.social/jon).
 
-Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](http://localhost/docs/protocol#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
+Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
+
+##### Federated Browsing
+Jonline&#39;s protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers
+in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media
+platforms.
 
 ##### Federated Messaging
 Jonline&#39;s Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
 from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 
-##### External Integrations (Facebook, iCal): Jonline Sync
-Jonline Sync lets us sync `Event`s in from iCal and sync `Event`s (well, `EventInstance`s) and `Post`s out to
-Facebook, presenting a &#34;shape&#34; -- a user-owned source/destination plus a `oneof configuration` for each -- meant
-to allow arbitrary input/output types. Contributions for Instagram, Meetup, anything else would be much obliged.
+#### Synchronization
+While Federation is a first-class feature of Jonline, it also supports synchronization with other
+fediverse platforms as well as other less-open platforms. All API keys for external services are stored
+in [`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `federation_info`.
 
-###### EventSyncSource
-An [`EventSyncSource`](#jonline-EventSyncSource) is a user-owned external calendar to pull `Event`s in from -- currently
-only an iCal subscription URL (`configuration.ics_subscription_url`), though the `oneof` leaves room for other source types.
-It&#39;s the parent `Event` (not the `EventInstance`) that gets synced in and tagged with its source
-(`Event.event_sync_source`); the relationship is 1:(0 or 1), since a single source can back many synced `Event`s but each
-`Event` has at most one source it came from. A background job re-pulls each source on its own
-`sync_interval_seconds` cadence, recomputing `event_count`/`event_instance_count` on every sync.
+##### SyncDestination
+A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
+[`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it&#39;s
+each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not, say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several
+destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/
+`Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the
+destination&#39;s resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
+in bulk on an interval, so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request
+time instead of being recomputed-and-stored.
+
+Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
+and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+`SYNC_POSTS_TO_*` permission pair matching the destination&#39;s own platform (or Admin; see each platform&#39;s own
+section below). Actually syncing (or un-syncing) a given [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) to a destination is a separate
+step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+[`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
+way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
+
+###### Facebook
+`configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
+Connecting one requires a short-lived user access token from client-side Facebook Login
+(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
+`SYNC_POSTS_TO_FACEBOOK`.
+
+###### Instagram
+`configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
+Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+the token for the chosen Page&#39;s access token, then looks up that Page&#39;s linked Instagram Business account
+(`instagram_business_account_id`). Unlike Facebook, Instagram&#39;s Graph API has no text-only post type; syncing a
+[`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
+`SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+
+###### Mastodon
+`configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
+account, on any instance the user names (`instance_host`) -- there&#39;s no single app to register the way
+Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+(`MastodonAccount.access_token`, generated on the user&#39;s own instance under Preferences &gt; Development) rather than
+an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+
+###### Bluesky
+`configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
+Protocol) account. Connecting one is a user-supplied &#34;App Password&#34; (`BlueskyAccount.app_password`, generated at
+Settings &gt; App Passwords -- not the account&#39;s main password) rather than an OAuth popup. Gated on
+`SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+
+###### X (Twitter)
+`configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is reserved for a connected X
+account, but **not yet functional** -- this server has no registered X Developer App
+(`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with
+`x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+
+###### Threads
+`configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
+Threads API is a product added to this server&#39;s *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
+separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
+facebook.com) using `response_type=code` rather than Facebook&#39;s implicit `response_type=token`, with no &#34;choose a
+Page&#34; step -- it directly authorizes the user&#39;s own Threads account. The server exchanges the code for a
+short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
+text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+
+##### EventSyncSource
+An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
+pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
+`oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it&#39;s the
+parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
+(`Event.event_sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
+source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
+recomputing `event_count`/`event_instance_count` on every sync.
 
 Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
 (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
-
-###### SyncDestination
-A [`SyncDestination`](#jonline-SyncDestination) mirrors `EventSyncSource`, but for pushing content out rather than
-pulling `Event`s in -- currently only a connected Facebook Page (`configuration.facebook_page`, a
-[`FacebookPage`](#jonline-FacebookPage)). Unlike `EventSyncSource`, this is a many-to-many relationship: it&#39;s each
-`EventInstance` or `Post` (not, say, the parent `Event`) that syncs out, and each may push to several destinations
-at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
-[`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination&#39;s resulting post ID/URL and
-last-synced time). Unlike sources, destinations are pushed to on demand rather than synced in bulk on an interval,
-so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
-recomputed-and-stored.
-
-Connecting a `FacebookPage` requires a short-lived user access token from client-side Facebook Login
-(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
-short-lived token is write-only and never populated back in responses.
-
-Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
-[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination)
-(each requiring `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`, or Admin), and
-[`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination). Actually syncing (or un-syncing) a given `EventInstance`
-or `Post` to a destination is a separate step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
-[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) (requiring
-`SYNC_EVENTS_TO_FACEBOOK`, or Admin) and [`SyncPost`](#grpc-api-SyncPost)/
-[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination) (requiring `SYNC_POSTS_TO_FACEBOOK`, or Admin).
 
 #### HTTP Endpoints
 ##### Internal HTTP server (27705)
@@ -429,10 +492,10 @@ endpoint returns `404 Not Found`.
 * **Storage**: matched recipients become a [`Message`](#jonline-Message) addressed to a
 [`MessagingGroup`](#jonline-MessagingGroup) keyed on the `To`/`Cc` recipients only -- Bcc&#39;d recipients are excluded
 from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as `Bcc`
-rows on the `Message`. The `Message` has no `from_user_id`, since inbound email never has a local sender; its
+rows on the [`Message`](#jonline-Message). The [`Message`](#jonline-Message) has no `from_user_id`, since inbound email never has a local sender; its
 parsed `from`/`to`/`cc` headers are stored alongside it, and the raw `.eml` is uploaded to the same MinIO store
-used for `Media`. Duplicate deliveries of the same `Message-ID` (Stalwart retries on transient failure) reuse the
-existing `Message` row rather than storing/uploading a duplicate.
+used for [`Media`](#jonline-Media). Duplicate deliveries of the same `Message-ID` (Stalwart retries on transient failure) reuse the
+existing [`Message`](#jonline-Message) row rather than storing/uploading a duplicate.
 * **Response**: `200 OK` with a body of `{&#34;action&#34;: &#34;accept&#34;}` on success -- Stalwart&#39;s MTA Hook protocol parses
 the response *body*, not just the status code, so this has to be the exact shape it expects
 (see &lt;https://stalw.art/docs/mta/filter/mtahooks/&gt;) or Stalwart treats the call as a hook failure regardless of
@@ -468,11 +531,15 @@ allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https:/
 ###### `GET /sitemap.xml`: Sitemap
 Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Lists a
 fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
-`/flutter` -- each qualified with the request&#39;s `Host`. It does not (yet) enumerate individual `Post`/`Event`/`User`
-pages.
+`/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
+the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
+request&#39;s `Host`. It also enumerates individual pages: every [`Post`](#jonline-Post) from an unauthenticated [`GetPosts`](#grpc-api-GetPosts) (the same
+&#34;first page&#34; an anonymous visitor sees) as `/post/{id}`, and every [`Event`](#jonline-Event) instance from an unauthenticated
+[`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+It does not (yet) enumerate individual [`User`](#jonline-User) pages.
 
 ###### `GET /favicon.ico`: ICO Favicon
-Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a `Media`
+Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a [`Media`](#jonline-Media)
 reference) as an `.ico`, publicly cacheable for 12 hours (`must-revalidate`), converting on the fly if the
 stored rendition is a `.png`. If no logo is configured, falls back to the bundled Tamagui frontend&#39;s default
 favicon instead. Whichever converted rendition of the logo is served, it&#39;s picked in size preference order
@@ -483,7 +550,7 @@ so there&#39;s no reason to prefer a bigger one).
 As `GET /favicon.ico` above, but serves (and if necessary converts to) `.png` instead.
 
 ###### `POST /media`: Upload Media
-See the [Media](#jonline-Media) section for the `Media` type itself; this is how its bytes actually get in
+See the [Media](#jonline-Media) section for the [`Media`](#jonline-Media) type itself; this is how its bytes actually get in
 (an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
 `Authorization` header or a `jonline_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
 body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
@@ -496,7 +563,7 @@ no image/video conversion happens synchronously on this request (see the backgro
 ###### `GET /media/{id}?size={original|small|medium|large}`: Download Media
 (An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
 -- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`&#39;s
-implementation), so a `Media` ID is currently a bearer capability. `size` (default `medium`) selects a converted
+implementation), so a [`Media`](#jonline-Media) ID is currently a bearer capability. `size` (default `medium`) selects a converted
 rendition, falling back to the original upload if that conversion doesn&#39;t exist. The first request for a given
 rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
 from that cache. Cacheable for 12 hours (`must-revalidate`).
@@ -542,7 +609,7 @@ The community&#39;s latest activity.
 The Posts listing.
 
 ###### `/post/{postId}[@{host}]`: Post
-An individual [`Post`](#jonline-Post) -- including `Event`/`EventInstance` posts and replies, which are `Post`s
+An individual [`Post`](#jonline-Post) -- including [`Event`](#jonline-Event)/[`EventInstance`](#jonline-EventInstance) posts and replies, which are [`Post`](#jonline-Post)s
 themselves (see [Post](#post) above).
 
 ##### `/events`: Events
@@ -552,7 +619,7 @@ The Events listing.
 An individual [`EventInstance`](#jonline-EventInstance).
 
 ###### `/event_ai`: AI Event Importer
-Tamagui-only, for now -- an AI-assisted bulk `Event` importer. Elm doesn&#39;t have this page yet.
+Tamagui-only, for now -- an AI-assisted bulk [`Event`](#jonline-Event) importer. Elm doesn&#39;t have this page yet.
 
 ##### `/people`: People
 The People listing.
@@ -564,7 +631,7 @@ The current user&#39;s pending [`Follow`](#jonline-Follow) requests.
 A [`User`](#jonline-User) profile looked up by (stable) user ID.
 
 ##### `/{custom_tab_or_username}`: User pages by username, or a custom tab
-The same `User` profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
+The same [`User`](#jonline-User) profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
 looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
 since a username can change. This single path segment is also the server&#39;s last-resort catch-all, resolved in
 order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
@@ -584,7 +651,7 @@ A [`Group`](#jonline-Group)&#39;s pages. Tamagui-only for now -- the Elm fronten
 ###### `/g/{shortname}`: Home
 ###### `/g/{shortname}/posts`: Posts
 ###### `/g/{shortname}/p/{postId}[@{host}]`: Post
-An individual `Post` cross-posted into the group.
+An individual [`Post`](#jonline-Post) cross-posted into the group.
 
 ###### `/g/{shortname}/events`: Events
 ###### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
@@ -614,12 +681,12 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. *Authenticated.* Updating other users requires `ADMIN` permissions. |
 | DeleteUser | [User](#jonline-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
-| SendMessage | [SendMessageRequest](#jonline-SendMessageRequest) | [Message](#jonline-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like `CreatePost`/`CreateEvent`, authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
+| SendMessage | [SendMessageRequest](#jonline-SendMessageRequest) | [Message](#jonline-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like [`CreatePost`](#grpc-api-CreatePost)/[`CreateEvent`](#grpc-api-CreateEvent), authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
 | GetMessages | [GetMessagesRequest](#jonline-GetMessagesRequest) | [GetMessagesResponse](#jonline-GetMessagesResponse) | Gets Messages. *Authenticated.* `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received. `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns every Message on the server. |
-| MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse) | Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it&#39;s been opened. *Authenticated.* Only needs the recipient/sender access `GetMessages` already requires for each Message -- no separate permission. Atomic: if the caller lacks access to *any* of `message_ids`, none of them are marked (matching `MarkMessagesReadRequest.message_ids`&#39; own doc), so a client never has to reconcile a partially-applied batch. |
-| RegisterPushSubscription | [RegisterPushSubscriptionRequest](#jonline-RegisterPushSubscriptionRequest) | [PushSubscription](#jonline-PushSubscription) | Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g. because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no `WebPushConfig` configured -- there&#39;s nothing to push notifications *with*. |
+| MarkMessagesRead | [MarkMessagesReadRequest](#jonline-MarkMessagesReadRequest) | [MarkMessagesReadResponse](#jonline-MarkMessagesReadResponse) | Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it&#39;s been opened. *Authenticated.* Only needs the recipient/sender access [`GetMessages`](#grpc-api-GetMessages) already requires for each Message -- no separate permission. Atomic: if the caller lacks access to *any* of `message_ids`, none of them are marked (matching `MarkMessagesReadRequest.message_ids`&#39; own doc), so a client never has to reconcile a partially-applied batch. |
+| RegisterPushSubscription | [RegisterPushSubscriptionRequest](#jonline-RegisterPushSubscriptionRequest) | [PushSubscription](#jonline-PushSubscription) | Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g. because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no [`WebPushConfig`](#jonline-WebPushConfig) configured -- there&#39;s nothing to push notifications *with*. |
 | UnregisterPushSubscription | [UnregisterPushSubscriptionRequest](#jonline-UnregisterPushSubscriptionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unregisters a browser&#39;s Web Push subscription, e.g. on logout or when `PushManager.subscribe()` reports the subscription as no longer valid. *Authenticated.* Not an error if `endpoint` isn&#39;t currently registered to the calling user. |
-| GetPushSubscriptionStatus | [GetPushSubscriptionStatusRequest](#jonline-GetPushSubscriptionStatusRequest) | [GetPushSubscriptionStatusResponse](#jonline-GetPushSubscriptionStatusResponse) | Checks whether the calling user specifically (not just &#34;some account on this browser&#34;) has a `PushSubscription` registered for `endpoint`. *Authenticated.* Exists because a browser only ever exposes its own subscription&#39;s `endpoint`/keys, never *who* on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see `RegisterPushSubscription`&#39;s own doc comment), so knowing the endpoint alone isn&#39;t enough to know which of them are actually notified by it. |
+| GetPushSubscriptionStatus | [GetPushSubscriptionStatusRequest](#jonline-GetPushSubscriptionStatusRequest) | [GetPushSubscriptionStatusResponse](#jonline-GetPushSubscriptionStatusResponse) | Checks whether the calling user specifically (not just &#34;some account on this browser&#34;) has a [`PushSubscription`](#jonline-PushSubscription) registered for `endpoint`. *Authenticated.* Exists because a browser only ever exposes its own subscription&#39;s `endpoint`/keys, never *who* on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)&#39;s own doc comment), so knowing the endpoint alone isn&#39;t enough to know which of them are actually notified by it. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
@@ -638,7 +705,7 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | StarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Star a Post. *Unauthenticated.* |
 | UnstarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Unstar a Post. *Unauthenticated.* |
 | SyncPost | [SyncPostRequest](#jonline-SyncPostRequest) | [Post](#jonline-Post) | Syncs (cross-posts) a Post to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
-| DeletePostSyncDestination | [DeletePostSyncDestinationRequest](#jonline-DeletePostSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes a Post&#39;s sync (cross-post) to a SyncDestination, the reverse of `SyncPost`. *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
+| DeletePostSyncDestination | [DeletePostSyncDestinationRequest](#jonline-DeletePostSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes a Post&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncPost`](#grpc-api-SyncPost). *Authenticated* (destination owner, or Admin), requires `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
 | UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
@@ -647,7 +714,7 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | UpdateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.* Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails), [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances) are provided as separate RPCs to break down what happens during this request. |
 | DeleteEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
-| UpdateEventDetails | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates only the `Event`&#39;s top-level details and those of its `Post` (not any `EventInstance`s or their `Post`s). *Authenticated.* |
+| UpdateEventDetails | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates only the [`Event`](#jonline-Event)&#39;s top-level details and those of its [`Post`](#jonline-Post) (not any [`EventInstance`](#jonline-EventInstance)s or their [`Post`](#jonline-Post)s). *Authenticated.* |
 | CreateNewEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates EventInstances in an existing Event for every EventInstance in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
 | UpdateEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates EventInstances in an existing Event for every EventInstance in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
 | DeleteRemovedEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Deletes EventInstances in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
@@ -660,7 +727,7 @@ This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 | UpdateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Updates a SyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | DeleteSyncDestination | [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncDestination. *Authenticated* (owner, or Admin). |
 | SyncEventInstance | [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest) | [EventInstance](#jonline-EventInstance) | Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of `SyncEventInstance`. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -736,7 +803,7 @@ Request to create a new account.
 <a name="jonline-CreateThirdPartyRefreshTokenRequest"></a>
 
 ### CreateThirdPartyRefreshTokenRequest
-Request to create a new third-party refresh token. Unlike `LoginRequest` or `CreateAccountRequest`, the user must be logged in to create a third-party refresh token.
+Request to create a new third-party refresh token. Unlike [`LoginRequest`](#jonline-LoginRequest) or [`CreateAccountRequest`](#jonline-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
 
 Generally, this is used to create a refresh token for another Jonline instance,
 e.g., accessing `bullcity.social/jon`&#39;s data from `jonline.io`. On the web side, this is implemented as follows:
@@ -746,8 +813,8 @@ the user to `jonline.io/third_party_auth?to=bullcity.social`.
 2. `jonline.io` will force the user to login if needed on this page.
 3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh &#43; access token for `bullcity.social`.
 4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&amp;token=&lt;Base64RefreshTokenResponse&gt;` with the refresh token POSTed in form data.
-    * (`&lt;Base64RefreshTokenResponse&gt;` is a base64-encoded `RefreshTokenResponse` message.)
-6. `bullcity.social` will ensure it can `GetCurrentUser` on `jonline.io` with its new auth token.
+    * (`&lt;Base64RefreshTokenResponse&gt;` is a base64-encoded [`RefreshTokenResponse`](#jonline-RefreshTokenResponse) message.)
+6. `bullcity.social` will ensure it can [`GetCurrentUser`](#grpc-api-GetCurrentUser) on `jonline.io` with its new auth token.
 5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
 7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).
 
@@ -893,24 +960,24 @@ Nearly everything in Jonline has one or more `Moderation`s on it.
 
 From a high level:
 
-- A `User` has a `moderation` that determines whether they can log in (and their visibility per their `visibility`).
+- A [`User`](#jonline-User) has a `moderation` that determines whether they can log in (and their visibility per their `visibility`).
   (This is poorly enforced currently! Fix it if you want!)
-    - This is managed by `people_settings.default_moderation` in `ServerConfiguration`.
+    - This is managed by `people_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
       A default of `UNMODERATED` means that all users can log in. A default of `PENDING`
       means that all users must be approved by a moderator/admin before they can log in.
-- A `Follow` has a `target_user_moderation` that determines whether the `User` is following the `Group`.
-   - It is managed by `default_follow_moderation` in the targeted `User`.
-- A `Group` has a `moderation` that determines whether the `Group` is visible to users (per its `visibility`).
-    - This is managed by `group_settings.default_moderation` in `ServerConfiguration`.
-- A `Membership` has a `group_moderation` and `user_moderation` that determine whether
-  the `Group` admins and/or the invited user has approved the `Membership`, respectively.
-    - User invites to `Group`s (i.e. the `user_moderation`) always start as `PENDING`.
-      The group side of this is managed by `default_membership_moderation` of the `Group` in question.
-- A `Post` has a `moderation` that determines whether the `Post` is visible to users (per its `visibility`).
-    - This is managed by `post_settings.default_moderation` in `ServerConfiguration`.
-- A `GroupPost` has a `moderation` that determines whether the admins/mods of the `Group` has approved the `Post` (or `Post`-descended thing like `Event`s).
-- `Event`s and further objects contain a `Post` and thus inherit its `moderation` and
-  related `GroupPost` behavior, for &#34;Group Events.&#34;
+- A [`Follow`](#jonline-Follow) has a `target_user_moderation` that determines whether the [`User`](#jonline-User) is following the [`Group`](#jonline-Group).
+   - It is managed by `default_follow_moderation` in the targeted [`User`](#jonline-User).
+- A [`Group`](#jonline-Group) has a `moderation` that determines whether the [`Group`](#jonline-Group) is visible to users (per its `visibility`).
+    - This is managed by `group_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
+- A [`Membership`](#jonline-Membership) has a `group_moderation` and `user_moderation` that determine whether
+  the [`Group`](#jonline-Group) admins and/or the invited user has approved the [`Membership`](#jonline-Membership), respectively.
+    - User invites to [`Group`](#jonline-Group)s (i.e. the `user_moderation`) always start as `PENDING`.
+      The group side of this is managed by `default_membership_moderation` of the [`Group`](#jonline-Group) in question.
+- A [`Post`](#jonline-Post) has a `moderation` that determines whether the [`Post`](#jonline-Post) is visible to users (per its `visibility`).
+    - This is managed by `post_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
+- A [`GroupPost`](#jonline-GroupPost) has a `moderation` that determines whether the admins/mods of the [`Group`](#jonline-Group) has approved the [`Post`](#jonline-Post) (or [`Post`](#jonline-Post)-descended thing like [`Event`](#jonline-Event)s).
+- [`Event`](#jonline-Event)s and further objects contain a [`Post`](#jonline-Post) and thus inherit its `moderation` and
+  related [`GroupPost`](#jonline-GroupPost) behavior, for &#34;Group Events.&#34;
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -926,20 +993,20 @@ From a high level:
 
 ### Visibility
 Visibility in Jonline is a complex topic. There are several different types of visibility, 
-and each type of entity (`User`, `Media`, `Group`, then `Post`/`Event`/etc. with common logic)
+and each type of entity ([`User`](#jonline-User), [`Media`](#jonline-Media), [`Group`](#jonline-Group), then [`Post`](#jonline-Post)/[`Event`](#jonline-Event)/etc. with common logic)
 has different rules for visibility.
 
 From the top down, the rules break down as follows:
 
 - Even a `PRIVATE` entity is always visible to the user who owns it.
-    - For `Group`s, this means all full members of the `Group`.
-    - For `User`s, this is confusing and there is a whole `PrivateUserStrategy` thing
-      in `ServerConfiguration` for this.
+    - For [`Group`](#jonline-Group)s, this means all full members of the [`Group`](#jonline-Group).
+    - For [`User`](#jonline-User)s, this is confusing and there is a whole [`PrivateUserStrategy`](#jonline-PrivateUserStrategy) thing
+      in [`ServerConfiguration`](#jonline-ServerConfiguration) for this.
 - A `LIMITED` entity is visible to to the owner(s) and any explicitly associated
-  `User`s and `Group`s. Generally, this only applies to `Post`/`Event`/etc. entities.
-  Associations exist via `UserPost`s and `GroupPost`s.
-    - This is currently only implemented for `Group`s and `GroupPost`s. There are some
-      choices to be made about how to implement this for `User`s and `UserPost`s, and whether
+  [`User`](#jonline-User)s and [`Group`](#jonline-Group)s. Generally, this only applies to [`Post`](#jonline-Post)/[`Event`](#jonline-Event)/etc. entities.
+  Associations exist via [`UserPost`](#jonline-UserPost)s and [`GroupPost`](#jonline-GroupPost)s.
+    - This is currently only implemented for [`Group`](#jonline-Group)s and [`GroupPost`](#jonline-GroupPost)s. There are some
+      choices to be made about how to implement this for [`User`](#jonline-User)s and [`UserPost`](#jonline-UserPost)s, and whether
       `DIRECT` should be a separate visibility type.
 - A `SERVER_PUBLIC` entity is visible to all authenticated users.
 - A `GLOBAL_PUBLIC` entity is visible to the open internet.
@@ -975,7 +1042,7 @@ From the top down, the rules break down as follows:
 
 ### Permission
 Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
-(A `Membership` is the link between a [`Group`](#jonline-Group) and a `User`.)
+(A [`Membership`](#jonline-Membership) is the link between a [`Group`](#jonline-Group) and a [`User`](#jonline-User).)
 
 Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
 and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
@@ -988,7 +1055,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visibility. This generally only applies to the user&#39;s own profile, except for Admins. |
 | MODERATE_USERS | 4 | Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS` and `CREATE_EVENTS` permissions to users. |
 | FOLLOW_USERS | 5 | Allow the user to follow other users. |
-| GRANT_BASIC_PERMISSIONS | 6 | Allow the user to grant Basic Permissions to other users. &#34;Basic Permissions&#34; are defined by your `ServerConfiguration`&#39;s `basic_user_permissions`. |
+| GRANT_BASIC_PERMISSIONS | 6 | Allow the user to grant Basic Permissions to other users. &#34;Basic Permissions&#34; are defined by your [`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `basic_user_permissions`. |
 | VIEW_GROUPS | 10 | Allow the user to view groups with `SERVER_PUBLIC` visibility. Allow anonymous users to view groups with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
 | CREATE_GROUPS | 11 | Allow the user to create groups. |
 | PUBLISH_GROUPS_LOCALLY | 12 | Allow the user to give groups `SERVER_PUBLIC` visibility. |
@@ -996,22 +1063,20 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_GROUPS | 14 | The Moderate Groups permission makes a user effectively an admin of *any* group. |
 | JOIN_GROUPS | 15 | Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher visibility. |
 | INVITE_GROUP_MEMBERS | 16 | Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level). |
-| VIEW_POSTS | 20 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
-| CREATE_POSTS | 21 | As a user permission, allow the user to create `Post`s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create `GroupPost`s for `POST` and `FEDERATED_POST` `PostContext`s.. |
+| VIEW_POSTS | 20 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Post`](#jonline-Post)s have `LIMITED` or higher visibility. Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
+| CREATE_POSTS | 21 | As a user permission, allow the user to create [`Post`](#jonline-Post)s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `POST` and `FEDERATED_POST` [`PostContext`](#jonline-PostContext)s.. |
 | PUBLISH_POSTS_LOCALLY | 22 | Allow the user to publish posts with `SERVER_PUBLIC` visibility. |
 | PUBLISH_POSTS_GLOBALLY | 23 | Allow the user to publish posts with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_POSTS | 24 | Allow the user to moderate posts. |
 | REPLY_TO_POSTS | 25 | Allow the user to reply to posts. |
 | EDIT_POST_TITLES_AND_LINKS | 26 | Allow the user to edit post titles and/or links. |
-| VIEW_EVENTS | 30 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility. Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
-| CREATE_EVENTS | 31 | As a user permission, allow the user to create `Event`s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create `GroupPost`s for `EVENT` and `FEDERATED_EVENT_INSTANCE` `PostContext`s.. |
+| VIEW_EVENTS | 30 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Event`](#jonline-Event) [`Post`](#jonline-Post)s have `LIMITED` or higher visibility. Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
+| CREATE_EVENTS | 31 | As a user permission, allow the user to create [`Event`](#jonline-Event)s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#jonline-PostContext)s.. |
 | PUBLISH_EVENTS_LOCALLY | 32 | Allow the user to publish events with `SERVER_PUBLIC` visibility. |
 | PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
 | SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
-| SYNC_EVENTS_TO_FACEBOOK | 37 | Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
-| SYNC_POSTS_TO_FACEBOOK | 38 | Allow the user to create/update `SyncDestination`s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1019,9 +1084,23 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
+| SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
+
+Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
+| SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
+| SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see [`XTwitterAccount`](#jonline-XTwitterAccount)&#39;s own doc. |
+| SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see [`XTwitterAccount`](#jonline-XTwitterAccount)&#39;s own doc. |
+| SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
+| SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
 | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
-| ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
+| ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any [`User`](#jonline-User), [`Group`](#jonline-Group), [`Post`](#jonline-Post) or [`Event`](#jonline-Event). In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate [`GroupPost`](#jonline-GroupPost)s and `GroupEvent`s. |
 | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from `ADMIN` to allow for more fine-grained privacy control. |
 
 
@@ -1108,7 +1187,7 @@ Supported parameters depend on `listing_type`.
 <a name="jonline-GetUsersResponse"></a>
 
 ### GetUsersResponse
-Response to a `GetUsersRequest`.
+Response to a [`GetUsersRequest`](#jonline-GetUsersRequest).
 
 
 | Field | Type | Label | Description |
@@ -1169,15 +1248,15 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | friend_count | [int32](#int32) | optional | The number of users this user mutually follows (and is followed by). |
 | group_count | [int32](#int32) | optional | The number of groups this user is a member of. |
 | post_count | [int32](#int32) | optional | The number of posts this user has made. |
-| response_count | [int32](#int32) | optional | The number of responses to `Post`s and `Event`s this user has made. |
+| response_count | [int32](#int32) | optional | The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made. |
 | event_count | [int32](#int32) | optional | The number of events this user has created. |
 | event_instance_count | [int32](#int32) | optional | The number of event instances this user has created (across all of their events). |
 | current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
-| current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
+| current_group_membership | [Membership](#jonline-Membership) | optional | Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc.. |
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
-| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by `GetUsers`&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`. |
+| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -1202,7 +1281,7 @@ Ways of listing users.
 | FOLLOW_REQUESTS | 4 | Get users who have requested to follow the current user. |
 | USERS_TEXT_SEARCH | 5 | Returns users matching the full-text `search_text` query, scoped the same way `EVERYONE` is. Requires `search_text` parameter.
 
-Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by `PostListingType`) because proto3 enum values share a single namespace across the whole `jonline` package (C&#43;&#43; scoping rules) - `PostListingType` already claimed `TEXT_SEARCH`. |
+Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by [`PostListingType`](#jonline-PostListingType)) because proto3 enum values share a single namespace across the whole `jonline` package (C&#43;&#43; scoping rules) - [`PostListingType`](#jonline-PostListingType) already claimed `TEXT_SEARCH`. |
 | FOLLOWERS_TEXT_SEARCH | 6 | Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`. |
 | FOLLOWING_TEXT_SEARCH | 7 | Scopes `TEXT_SEARCH` to users `user_id` follows. Requires `search_text` and `user_id`. |
 | FRIENDS_TEXT_SEARCH | 8 | Scopes `TEXT_SEARCH` to `user_id`&#39;s friends (mutual follows). Requires `search_text` and `user_id`. |
@@ -1314,7 +1393,7 @@ On success, the endpoint will return the media ID in plaintext.
 <a name="jonline-MediaMetadata"></a>
 
 ### MediaMetadata
-Free-form metadata about a `Media` item that isn&#39;t queried/filtered on, so doesn&#39;t need its
+Free-form metadata about a [`Media`](#jonline-Media) item that isn&#39;t queried/filtered on, so doesn&#39;t need its
 own columns.
 
 
@@ -1390,7 +1469,7 @@ Text search requests return messages in order of relevance to the search text.
 <a name="jonline-GetMessagesResponse"></a>
 
 ### GetMessagesResponse
-Response to a `GetMessagesRequest`, containing the requested messages.
+Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages.
 
 
 | Field | Type | Label | Description |
@@ -1406,7 +1485,7 @@ Response to a `GetMessagesRequest`, containing the requested messages.
 
 ### GetPushSubscriptionStatusRequest
 Checks whether the current user has already registered a given Web Push subscription endpoint.
-See `GetPushSubscriptionStatus`&#39;s own RPC doc comment.
+See [`GetPushSubscriptionStatus`](#grpc-api-GetPushSubscriptionStatus)&#39;s own RPC doc comment.
 
 
 | Field | Type | Label | Description |
@@ -1426,7 +1505,7 @@ See `GetPushSubscriptionStatus`&#39;s own RPC doc comment.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| registered | [bool](#bool) |  | Whether the current user has a `PushSubscription` registered for this exact `endpoint`. |
+| registered | [bool](#bool) |  | Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`. |
 
 
 
@@ -1438,13 +1517,13 @@ See `GetPushSubscriptionStatus`&#39;s own RPC doc comment.
 ### MarkMessagesReadRequest
 Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
 thread once it&#39;s been opened. *Authenticated* -- read status is inherently personal, so there&#39;s
-no anonymous variant the way `SendMessage` has one.
+no anonymous variant the way [`SendMessage`](#grpc-api-SendMessage) has one.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | unread | [bool](#bool) |  | If `false` (the default), the request is to mark the messages as read. If `true`, marks them (back) as unread instead -- e.g. an explicit &#34;mark unread&#34; action on an already-read message. |
-| message_ids | [string](#string) | repeated | The Messages to mark read/unread. The caller must have the same access to each of them `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see `MarkMessagesRead`&#39;s own RPC doc comment. A message id the caller doesn&#39;t have access to fails the whole request (see that RPC&#39;s own doc on atomicity) rather than silently skipping it. |
+| message_ids | [string](#string) | repeated | The Messages to mark read/unread. The caller must have the same access to each of them [`GetMessages`](#grpc-api-GetMessages) would require (sender, a `messaging_group` member, a Bcc recipient, or an admin) -- see [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)&#39;s own RPC doc comment. A message id the caller doesn&#39;t have access to fails the whole request (see that RPC&#39;s own doc on atomicity) rather than silently skipping it. |
 
 
 
@@ -1454,7 +1533,7 @@ no anonymous variant the way `SendMessage` has one.
 <a name="jonline-MarkMessagesReadResponse"></a>
 
 ### MarkMessagesReadResponse
-Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
 same order, each reflecting that message&#39;s own read/unread result (see `MarkMessagesReadRequest.unread`).
 
 
@@ -1486,7 +1565,7 @@ A Jonline `Message` represents a single message/email sent to one or more recipi
 | to | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;to&#34; address. |
 | cc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;cc&#34; address. |
 | bcc | [string](#string) | optional | If this message derived from an email, the original email&#39;s &#34;bcc&#34; address. |
-| current_user_read | [MessageRead](#jonline-MessageRead) | optional | Whether/when *this response&#39;s viewer* has read the message -- unset means unread. Always reflects the currently-authenticated caller&#39;s own read status (via `MarkMessagesRead`), even when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it&#39;s a personal &#34;have I seen this&#34; marker, not tied to whichever user this response happens to be showing `messaging_group` for. |
+| current_user_read | [MessageRead](#jonline-MessageRead) | optional | Whether/when *this response&#39;s viewer* has read the message -- unset means unread. Always reflects the currently-authenticated caller&#39;s own read status (via [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)), even when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it&#39;s a personal &#34;have I seen this&#34; marker, not tied to whichever user this response happens to be showing `messaging_group` for. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the message was created. |
 
 
@@ -1507,7 +1586,7 @@ no RPC to see *other* users&#39; read status on a Message.
 | ----- | ---- | ----- | ----------- |
 | message_id | [string](#string) |  |  |
 | user_id | [string](#string) |  |  |
-| read_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead` -- including a `{ unread: true }` call, where it&#39;s simply the time of that unmark request, not a meaningful &#34;last read&#34; timestamp (there&#39;s no longer a row for it to come from at that point). |
+| read_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead) -- including a `{ unread: true }` call, where it&#39;s simply the time of that unmark request, not a meaningful &#34;last read&#34; timestamp (there&#39;s no longer a row for it to come from at that point). |
 
 
 
@@ -1558,7 +1637,7 @@ users&#39; subscriptions.
 ### RegisterPushSubscriptionRequest
 Registers (or re-registers) a browser&#39;s Web Push subscription for the current user, so new
 Messages sent/delivered to them push a notification even while the browser tab is closed.
-See `RegisterPushSubscription`&#39;s own RPC doc comment.
+See [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)&#39;s own RPC doc comment.
 
 
 | Field | Type | Label | Description |
@@ -1595,12 +1674,12 @@ The server will create a new messaging group for the message, and send it to the
 ### UnregisterPushSubscriptionRequest
 Unregisters a browser&#39;s Web Push subscription for the current user, e.g. on logout or when
 `PushManager.subscribe()` reports the subscription as no longer valid. See
-`UnregisterPushSubscription`&#39;s own RPC doc comment.
+[`UnregisterPushSubscription`](#grpc-api-UnregisterPushSubscription)&#39;s own RPC doc comment.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| endpoint | [string](#string) |  | The Web Push subscription endpoint URL to unregister, as previously passed to `RegisterPushSubscription`. |
+| endpoint | [string](#string) |  | The Web Push subscription endpoint URL to unregister, as previously passed to [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription). |
 
 
 
@@ -1716,7 +1795,7 @@ Response to a GetMembersRequest.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The group&#39;s unique ID. |
 | name | [string](#string) |  | Mutable name of the group. Must be unique, such that the derived `shortname` is also unique. |
-| shortname | [string](#string) |  | Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated. |
+| shortname | [string](#string) |  | Immutable shortname of the group. Derived from changes to `name` when the [`Group`](#jonline-Group) is updated. |
 | description | [string](#string) |  | A description of the group. |
 | avatar | [MediaReference](#jonline-MediaReference) | optional | An avatar for the group. |
 | default_membership_permissions | [Permission](#jonline-Permission) | repeated | The default permissions for new members of the group. |
@@ -1740,7 +1819,7 @@ Response to a GetMembersRequest.
 <a name="jonline-Member"></a>
 
 ### Member
-Used when fetching group members using the `GetMembers` RPC.
+Used when fetching group members using the [`GetMembers`](#grpc-api-GetMembers) RPC.
 
 
 | Field | Type | Label | Description |
@@ -1786,7 +1865,7 @@ The type of group listing to get.
 <a name="jonline-DeletePostSyncDestinationRequest"></a>
 
 ### DeletePostSyncDestinationRequest
-Removes a single Post&#39;s sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+Removes a single Post&#39;s sync (cross-post) to one SyncDestination -- the reverse of [`SyncPost`](#grpc-api-SyncPost).
 Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
@@ -1803,13 +1882,13 @@ Does not delete the post already made on the destination (e.g. the Facebook Page
 <a name="jonline-GetGroupPostsRequest"></a>
 
 ### GetGroupPostsRequest
-Used for getting context about `GroupPost`s of an existing `Post`.
+Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| post_id | [string](#string) |  | The ID of the post to get `GroupPost`s for. |
-| group_id | [string](#string) | optional | The ID of the group to get `GroupPost`s for. |
+| post_id | [string](#string) |  | The ID of the post to get [`GroupPost`](#jonline-GroupPost)s for. |
+| group_id | [string](#string) | optional | The ID of the group to get [`GroupPost`](#jonline-GroupPost)s for. |
 
 
 
@@ -1819,12 +1898,12 @@ Used for getting context about `GroupPost`s of an existing `Post`.
 <a name="jonline-GetGroupPostsResponse"></a>
 
 ### GetGroupPostsResponse
-Used for getting context about `GroupPost`s of an existing `Post`.
+Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_posts | [GroupPost](#jonline-GroupPost) | repeated | The `GroupPost`s for the given `Post` or `Group`. |
+| group_posts | [GroupPost](#jonline-GroupPost) | repeated | The [`GroupPost`](#jonline-GroupPost)s for the given [`Post`](#jonline-Post) or [`Group`](#jonline-Group). |
 
 
 
@@ -1844,7 +1923,7 @@ Valid GetPostsRequest formats:
     - Get one post ,including preview data/
 - `{post_id:, reply_depth: 1}`
     - Get replies to a post - only support for replyDepth=1 is done for now though.
-- `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
+- `{listing_type: MyGroupsPosts|[`GroupPost`](#jonline-GroupPost)sPendingModeration, group_id:}`
     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
 - `{author_user_id:, group_id:}`
     - Get posts by a user for a group. (TODO)
@@ -1863,7 +1942,7 @@ Valid GetPostsRequest formats:
 | reply_depth | [uint32](#uint32) | optional | Only supported for depth=2 for now. |
 | context | [PostContext](#jonline-PostContext) | optional | Only POST and REPLY are supported for now. |
 | post_ids | [string](#string) | optional | Returns expanded posts with the given IDs. |
-| listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See `PostListingType` for more info. |
+| listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See [`PostListingType`](#jonline-PostListingType) for more info. |
 | page | [uint32](#uint32) |  | The page of results to return. Defaults to 0. |
 | search_text | [string](#string) | optional | Full-text search query, matched against the author&#39;s username/real name and the post&#39;s title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`. |
 | published_or_created_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request to only return posts that were published or created before the given timestamp. |
@@ -1891,7 +1970,7 @@ Used for getting posts.
 <a name="jonline-GroupPost"></a>
 
 ### GroupPost
-A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+A `GroupPost` is a cross-post of a [`Post`](#jonline-Post) to a [`Group`](#jonline-Group). It contains
 information about the moderation of the post in the group, as well as
 the time it was cross-posted and the user who did the cross-posting.
 
@@ -1914,7 +1993,7 @@ the time it was cross-posted and the user who did the cross-posting.
 
 ### Post
 A `Post` is a message that can be posted to the server. Its `visibility`
-as well as any associated `GroupPost`s and `UserPost`s determine what users
+as well as any associated [`GroupPost`](#jonline-GroupPost)s and [`UserPost`](#jonline-UserPost)s determine what users
 see it and where.
 
 `Post`s are also a fundamental unit of the system. They provide a building block
@@ -1974,7 +2053,7 @@ Syncs (cross-posts) a single Post to one SyncDestination.
 <a name="jonline-UserPost"></a>
 
 ### UserPost
-A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unused/unimplemented.
+A `UserPost` is a &#34;direct share&#34; of a [`Post`](#jonline-Post) to a [`User`](#jonline-User). Currently unused/unimplemented.
 See also: [`DIRECT` `Visibility`](#jonline-Visibility).
 
 
@@ -2053,9 +2132,9 @@ A high-level enumeration of general ways of requesting posts.
 <a name="jonline-AnonymousAttendee"></a>
 
 ### AnonymousAttendee
-An anonymous internet user who has RSVP&#39;d to an `EventInstance`.
+An anonymous internet user who has RSVP&#39;d to an [`EventInstance`](#jonline-EventInstance).
 
-(TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
+(TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#jonline-ContactMethod)s should support the `LIMITED` visibility, which will
 make them visible to the event creator.
 
 
@@ -2063,7 +2142,7 @@ make them visible to the event creator.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | A name for the anonymous user. For instance, &#34;Bob Gomez&#34; or &#34;The guy on your front porch.&#34; |
 | contact_methods | [ContactMethod](#jonline-ContactMethod) | repeated | Contact methods for anonymous attendees. Currently not linked to Contact methods for users. |
-| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new `EventAttendance`. |
+| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#jonline-EventAttendance). |
 
 
 
@@ -2073,7 +2152,7 @@ make them visible to the event creator.
 <a name="jonline-DeleteEventInstanceSyncDestinationRequest"></a>
 
 ### DeleteEventInstanceSyncDestinationRequest
-Removes a single EventInstance&#39;s sync (cross-post) to one SyncDestination -- the reverse of `SyncEventInstance`.
+Removes a single EventInstance&#39;s sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
 Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
@@ -2099,7 +2178,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | Unique ID for the event generated by the Jonline BE. |
-| post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its `PostContext` should be `EVENT`. |
+| post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
 | event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
@@ -2112,24 +2191,24 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 <a name="jonline-EventAttendance"></a>
 
 ### EventAttendance
-Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an `EventInstance`. Such as:
-* A user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
-* Invitation status of a user to an `EventInstance`.
-* `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an [`EventInstance`](#jonline-EventInstance). Such as:
+* A user&#39;s RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+* Invitation status of a user to an [`EventInstance`](#jonline-EventInstance).
+* [`ContactMethod`](#jonline-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#jonline-EventInstance).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | Unique server-generated ID for the attendance. |
-| event_instance_id | [string](#string) |  | ID of the `EventInstance` the attendance is for. |
+| event_instance_id | [string](#string) |  | ID of the [`EventInstance`](#jonline-EventInstance) the attendance is for. |
 | user_attendee | [UserAttendee](#jonline-UserAttendee) |  | If the attendance is non-anonymous, core data about the user. |
 | anonymous_attendee | [AnonymousAttendee](#jonline-AnonymousAttendee) |  | If the attendance is anonymous, core data about the anonymous attendee. |
 | number_of_guests | [uint32](#uint32) |  | Number of guests including the RSVPing user. (Minimum 1). |
-| status | [AttendanceStatus](#jonline-AttendanceStatus) |  | The user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) |
+| status | [AttendanceStatus](#jonline-AttendanceStatus) |  | The user&#39;s RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) |
 | inviting_user_id | [string](#string) | optional | User who invited the attendee. (Not yet used.) |
 | private_note | [string](#string) |  | Public note for everyone who can see the event to see. |
 | public_note | [string](#string) |  | Private note for the event owner. |
-| moderation | [Moderation](#jonline-Moderation) |  | Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable). |
+| moderation | [Moderation](#jonline-Moderation) |  | Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the attendance was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the attendance was last updated. |
 
@@ -2166,7 +2245,7 @@ Stored as JSON in the database.
 | allows_rsvps | [bool](#bool) | optional | Whether to allow RSVPs for the event. |
 | allows_anonymous_rsvps | [bool](#bool) | optional | Whether to allow anonymous RSVPs for the event. |
 | max_attendees | [uint32](#uint32) | optional | Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. |
-| hide_location_until_rsvp_approved | [bool](#bool) | optional | Hide the location until the user RSVPs (and it&#39;s accepted). From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP&#39;d. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner). |
+| hide_location_until_rsvp_approved | [bool](#bool) | optional | Hide the location until the user RSVPs (and it&#39;s accepted). From a system perspective, when this is set, Events will not include the [`Location`](#jonline-Location) until the user has RSVP&#39;d. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner). |
 | default_rsvp_moderation | [Moderation](#jonline-Moderation) | optional | Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`). Anonymous RSVPs are always moderated (default to `PENDING`). |
 
 
@@ -2177,21 +2256,21 @@ Stored as JSON in the database.
 <a name="jonline-EventInstance"></a>
 
 ### EventInstance
-The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
-a `Location`, and an optional `Post` (and discussion thread) specific to this particular
-`EventInstance` in addition to the parent `Event`.
+The time-based component of an [`Event`](#jonline-Event). Has a `starts_at` and `ends_at` time,
+a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and discussion thread) specific to this particular
+`EventInstance` in addition to the parent [`Event`](#jonline-Event).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | Unique ID for the event instance generated by the Jonline BE. |
-| event_id | [string](#string) |  | ID of the parent `Event`. |
-| post | [Post](#jonline-Post) |  | Optional `Post` containing alternate title/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`. |
-| info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  | Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`. |
+| event_id | [string](#string) |  | ID of the parent [`Event`](#jonline-Event). |
+| post | [Post](#jonline-Post) |  | Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`. |
+| info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  | Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event). |
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#jonline-Location) | optional | The location of the event. |
-| event_sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`. |
+| event_sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource). |
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
@@ -2221,7 +2300,7 @@ Stored as JSON in the database.
 <a name="jonline-EventInstanceRsvpInfo"></a>
 
 ### EventInstanceRsvpInfo
-Consolidated type for RSVP info for an `EventInstance`.
+Consolidated type for RSVP info for an [`EventInstance`](#jonline-EventInstance).
 Curently, the `optional` counts below are *never* returned by the API.
 
 
@@ -2261,8 +2340,8 @@ Request to get RSVP data for an event.
 <a name="jonline-GetEventsRequest"></a>
 
 ### GetEventsRequest
-Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
-if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#jonline-Event)s with the same ID
+if that [`Event`](#jonline-Event) has multiple [`EventInstance`](#jonline-EventInstance)s in the time frame the client asked for.
 
 These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 
@@ -2280,16 +2359,16 @@ Valid GetEventsRequest formats:
 | ----- | ---- | ----- | ----------- |
 | event_id | [string](#string) | optional | Returns the single event with the given ID. |
 | author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
-| group_id | [string](#string) | optional | Limits results to those in the given group ID (via `GroupPost` association&#39;s for the Event&#39;s internal `Post`). |
+| group_id | [string](#string) | optional | Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association&#39;s for the Event&#39;s internal [`Post`](#jonline-Post)). |
 | event_instance_id | [string](#string) | optional | Limits results to those with the given event instance ID. |
-| time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned `EventInstance`s by time. |
+| time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned [`EventInstance`](#jonline-EventInstance)s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
-| post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. |
+| post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#jonline-PostContext) of `EVENT` or `EVENT_INSTANCE`. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 | search_text | [string](#string) | optional | Search text for full-text search. |
 | event_instance_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse&#39;s own doc), not the requested EventInstance&#39;s whole parent Event&#39;s full instance list. |
-| anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
+| anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) [`EventAttendance`](#jonline-EventAttendance) and its `EventInstance.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
 
 
 
@@ -2299,7 +2378,7 @@ Valid GetEventsRequest formats:
 <a name="jonline-GetEventsResponse"></a>
 
 ### GetEventsResponse
-A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
 
 Note that `GetEventsResponse` may often include duplicate Events with the same ID.
 I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -2340,7 +2419,7 @@ Syncs (cross-posts) a single EventInstance to one SyncDestination.
 <a name="jonline-TimeFilter"></a>
 
 ### TimeFilter
-Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#jonline-EventInstance).
 API currently only supports `ends_after`.
 
 
@@ -2359,7 +2438,7 @@ API currently only supports `ends_after`.
 <a name="jonline-UserAttendee"></a>
 
 ### UserAttendee
-Wire-identical to [Author](#author), but with a different name to avoid confusion.
+Wire-identical to [Author](#jonline-Author), but with a different name to avoid confusion.
 
 
 | Field | Type | Label | Description |
@@ -2443,7 +2522,7 @@ Either one of the app&#39;s predefined tabs, or a Post
 | post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
 | is_profile | [bool](#bool) |  | Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
 | emoji_icon | [string](#string) |  | Emoji shown as the tab&#39;s icon (e.g. &#34;🎪&#34;). |
-| icon_media_id | [string](#string) |  | Media ID (see `Media` APIs) of an image shown as the tab&#39;s icon. |
+| icon_media_id | [string](#string) |  | Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab&#39;s icon. |
 | title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
 
 
@@ -2460,7 +2539,7 @@ If set, should override the default tab set for the Elm navigation on a Jonline 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`. |
-| tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via `CustomNavigationTabSet`.home instead. |
+| tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
 
 
 
@@ -2472,13 +2551,13 @@ If set, should override the default tab set for the Elm navigation on a Jonline 
 ### CustomNavigationTabWithPath
 A custom navigation tab with an associated path.
 Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-`/` is modified via `CustomNavigationTabSet`.home instead.
+`/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | custom_tab | [CustomNavigationTab](#jonline-CustomNavigationTab) |  | The tab to show at this path. |
-| path | [string](#string) |  | e.g. link `/gigs` or `/shows` for a band to the &#34;Events&#34; page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable. `/` is modified via `CustomNavigationTabSet`.home instead. |
+| path | [string](#string) |  | e.g. link `/gigs` or `/shows` for a band to the &#34;Events&#34; page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
 
 
 
@@ -2836,7 +2915,8 @@ The federation configuration for a Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
-| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations. |
+| facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances. |
+| x_twitter_auth_config | [XTwitterAuthConfig](#jonline-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations always fail with `x_twitter_app_not_configured` regardless of this field. |
 
 
 
@@ -2852,6 +2932,291 @@ Version information for the Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | version | [string](#string) |  | The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server. |
+
+
+
+
+
+
+<a name="jonline-XTwitterAuthConfig"></a>
+
+### XTwitterAuthConfig
+X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| client_id | [string](#string) |  | The X Developer App&#39;s Client ID for the server. |
+| client_secret | [string](#string) |  | The X Developer App&#39;s Client Secret for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="sync-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## sync.proto
+
+
+
+<a name="jonline-BlueskyAccount"></a>
+
+### BlueskyAccount
+A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an &#34;App Password&#34;
+(generated at Settings &gt; App Passwords -- not the account&#39;s main password), rather than an
+OAuth popup.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| handle | [string](#string) |  | The account&#39;s handle, e.g. &#34;jon.bsky.social&#34;. |
+| did | [string](#string) |  | The account&#39;s DID (decentralized identifier), populated by the server when the connection is made. |
+| app_password | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user&#39;s own App Password. Never populated in responses. Sessions are created fresh per post rather than stored/refreshed, since App Passwords don&#39;t expire. |
+
+
+
+
+
+
+<a name="jonline-DeleteEventSyncSourceRequest"></a>
+
+### DeleteEventSyncSourceRequest
+Request to delete an EventSyncSource.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
+| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
+
+
+
+
+
+
+<a name="jonline-DeleteSyncDestinationRequest"></a>
+
+### DeleteSyncDestinationRequest
+Request to delete a SyncDestination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destination | [SyncDestination](#jonline-SyncDestination) |  | The destination to be deleted. |
+| delete_synced_posts | [bool](#bool) |  | Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). |
+
+
+
+
+
+
+<a name="jonline-EventSyncSource"></a>
+
+### EventSyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+
+
+
+
+
+
+<a name="jonline-FacebookPage"></a>
+
+### FacebookPage
+A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_id | [string](#string) |  | The Facebook Page&#39;s ID. |
+| page_name | [string](#string) |  | The Facebook Page&#39;s name, populated by the server when the connection is made. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-GetEventSyncSourcesResponse"></a>
+
+### GetEventSyncSourcesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-GetSyncDestinationsResponse"></a>
+
+### GetSyncDestinationsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destinations | [SyncDestination](#jonline-SyncDestination) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-InstagramAccount"></a>
+
+### InstagramAccount
+An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
+requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
+popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page&#39;s
+access token, then looks up that Page&#39;s linked Instagram Business account.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instagram_business_account_id | [string](#string) |  | The Instagram Business/Creator account&#39;s ID, used for all Graph API posting calls. |
+| username | [string](#string) |  | The Instagram account&#39;s @username, populated by the server when the connection is made. |
+| page_id | [string](#string) |  | The linked Facebook Page&#39;s ID, kept for reference/reconnect. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a long-lived Page access token, which is also used to post to the linked Instagram account. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-MastodonAccount"></a>
+
+### MastodonAccount
+A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
+(generated on the user&#39;s own instance, under Preferences &gt; Development), rather than an OAuth
+popup -- Mastodon instances are user-chosen arbitrary domains, so there&#39;s no single app to
+register ahead of time the way Facebook/Instagram have one.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_host | [string](#string) |  | The Mastodon instance&#39;s hostname, e.g. &#34;mastodon.social&#34;. |
+| username | [string](#string) |  | The account&#39;s username on that instance, populated by the server when the connection is made. |
+| access_token | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user&#39;s own Personal Access Token for `instance_host`. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-SyncDestination"></a>
+
+### SyncDestination
+A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+but for pushing content out rather than pulling events in. Originally Event-specific
+(as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`&#39;s
+[`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`&#39;s [`SyncPostRequest`](#jonline-SyncPostRequest)).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the destination. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncDestination was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncDestination was last updated. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_event_instance_count`, just against Posts instead of EventInstances. |
+| facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances/Posts to. |
+| instagram_account | [InstagramAccount](#jonline-InstagramAccount) |  | A connected Instagram Business/Creator account to post EventInstances/Posts to. |
+| mastodon_account | [MastodonAccount](#jonline-MastodonAccount) |  | A connected Mastodon account to post EventInstances/Posts to. |
+| bluesky_account | [BlueskyAccount](#jonline-BlueskyAccount) |  | A connected Bluesky account to post EventInstances/Posts to. |
+| x_twitter_account | [XTwitterAccount](#jonline-XTwitterAccount) |  | A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see [`XTwitterAccount`](#jonline-XTwitterAccount)&#39;s own doc. |
+| threads_account | [ThreadsAccount](#jonline-ThreadsAccount) |  | A connected Threads account to post EventInstances/Posts to. |
+
+
+
+
+
+
+<a name="jonline-SyncDestinationStatus"></a>
+
+### SyncDestinationStatus
+The status of a single piece of content&#39;s (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
+one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+`Post.sync_destinations` can reuse it.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sync_destination_id | [string](#string) |  | The SyncDestination this status is for. |
+| destination_instance_id | [string](#string) | optional | The ID of the resulting post on the destination (e.g. a Facebook Post ID). |
+| destination_url | [string](#string) | optional | A link to the resulting post on the destination, if available. |
+| synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time this content was last successfully synced to the destination. |
+
+
+
+
+
+
+<a name="jonline-ThreadsAccount"></a>
+
+### ThreadsAccount
+A connected Threads account. Threads API is a product added to this server&#39;s existing Meta App
+(see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
+is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
+OAuth flow at threads.net (not facebook.com) with no &#34;choose a Page&#34; step -- the code is
+exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+will need reconnecting after ~60 days until a refresh job exists).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| threads_user_id | [string](#string) |  | The account&#39;s Threads user ID, used for all posting calls. |
+| username | [string](#string) |  | The account&#39;s @username, populated by the server when the connection is made. |
+| authorization_code | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the OAuth authorization code from the Threads login popup. Never populated in responses. |
+
+
+
+
+
+
+<a name="jonline-XTwitterAccount"></a>
+
+### XTwitterAccount
+An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
+registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
+`x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
+[`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The account&#39;s @username. |
+| short_lived_user_access_token | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): reserved for a future OAuth flow. Never populated in responses. |
 
 
 

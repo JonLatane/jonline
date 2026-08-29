@@ -17,6 +17,1006 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'authors.pb.dart' as $14;
 import 'google/protobuf/timestamp.pb.dart' as $11;
 
+enum SyncDestination_Configuration {
+  facebookPage, 
+  instagramAccount, 
+  mastodonAccount, 
+  blueskyAccount, 
+  xTwitterAccount, 
+  threadsAccount, 
+  notSet
+}
+
+/// A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+/// but for pushing content out rather than pulling events in. Originally Event-specific
+/// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
+/// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
+class SyncDestination extends $pb.GeneratedMessage {
+  factory SyncDestination({
+    $core.String? id,
+    $14.Author? owner,
+    $11.Timestamp? createdAt,
+    $11.Timestamp? updatedAt,
+    $fixnum.Int64? syncedEventInstanceCount,
+    $fixnum.Int64? syncedPostCount,
+    FacebookPage? facebookPage,
+    InstagramAccount? instagramAccount,
+    MastodonAccount? mastodonAccount,
+    BlueskyAccount? blueskyAccount,
+    XTwitterAccount? xTwitterAccount,
+    ThreadsAccount? threadsAccount,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (owner != null) {
+      $result.owner = owner;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    if (syncedEventInstanceCount != null) {
+      $result.syncedEventInstanceCount = syncedEventInstanceCount;
+    }
+    if (syncedPostCount != null) {
+      $result.syncedPostCount = syncedPostCount;
+    }
+    if (facebookPage != null) {
+      $result.facebookPage = facebookPage;
+    }
+    if (instagramAccount != null) {
+      $result.instagramAccount = instagramAccount;
+    }
+    if (mastodonAccount != null) {
+      $result.mastodonAccount = mastodonAccount;
+    }
+    if (blueskyAccount != null) {
+      $result.blueskyAccount = blueskyAccount;
+    }
+    if (xTwitterAccount != null) {
+      $result.xTwitterAccount = xTwitterAccount;
+    }
+    if (threadsAccount != null) {
+      $result.threadsAccount = threadsAccount;
+    }
+    return $result;
+  }
+  SyncDestination._() : super();
+  factory SyncDestination.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncDestination.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static const $core.Map<$core.int, SyncDestination_Configuration> _SyncDestination_ConfigurationByTag = {
+    9 : SyncDestination_Configuration.facebookPage,
+    10 : SyncDestination_Configuration.instagramAccount,
+    11 : SyncDestination_Configuration.mastodonAccount,
+    12 : SyncDestination_Configuration.blueskyAccount,
+    13 : SyncDestination_Configuration.xTwitterAccount,
+    14 : SyncDestination_Configuration.threadsAccount,
+    0 : SyncDestination_Configuration.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..oo(0, [9, 10, 11, 12, 13, 14])
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOM<$14.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $14.Author.create)
+    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$11.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
+    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedEventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'syncedPostCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOM<FacebookPage>(9, _omitFieldNames ? '' : 'facebookPage', subBuilder: FacebookPage.create)
+    ..aOM<InstagramAccount>(10, _omitFieldNames ? '' : 'instagramAccount', subBuilder: InstagramAccount.create)
+    ..aOM<MastodonAccount>(11, _omitFieldNames ? '' : 'mastodonAccount', subBuilder: MastodonAccount.create)
+    ..aOM<BlueskyAccount>(12, _omitFieldNames ? '' : 'blueskyAccount', subBuilder: BlueskyAccount.create)
+    ..aOM<XTwitterAccount>(13, _omitFieldNames ? '' : 'xTwitterAccount', subBuilder: XTwitterAccount.create)
+    ..aOM<ThreadsAccount>(14, _omitFieldNames ? '' : 'threadsAccount', subBuilder: ThreadsAccount.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SyncDestination clone() => SyncDestination()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SyncDestination copyWith(void Function(SyncDestination) updates) => super.copyWith((message) => updates(message as SyncDestination)) as SyncDestination;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SyncDestination create() => SyncDestination._();
+  SyncDestination createEmptyInstance() => create();
+  static $pb.PbList<SyncDestination> createRepeated() => $pb.PbList<SyncDestination>();
+  @$core.pragma('dart2js:noInline')
+  static SyncDestination getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncDestination>(create);
+  static SyncDestination? _defaultInstance;
+
+  SyncDestination_Configuration whichConfiguration() => _SyncDestination_ConfigurationByTag[$_whichOneof(0)]!;
+  void clearConfiguration() => clearField($_whichOneof(0));
+
+  /// Unique ID for the destination.
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => clearField(1);
+
+  /// The user information for the owner of this destination.
+  @$pb.TagNumber(2)
+  $14.Author get owner => $_getN(1);
+  @$pb.TagNumber(2)
+  set owner($14.Author v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasOwner() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOwner() => clearField(2);
+  @$pb.TagNumber(2)
+  $14.Author ensureOwner() => $_ensure(1);
+
+  /// The time the SyncDestination was created.
+  @$pb.TagNumber(4)
+  $11.Timestamp get createdAt => $_getN(2);
+  @$pb.TagNumber(4)
+  set createdAt($11.Timestamp v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasCreatedAt() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearCreatedAt() => clearField(4);
+  @$pb.TagNumber(4)
+  $11.Timestamp ensureCreatedAt() => $_ensure(2);
+
+  /// The time the SyncDestination was last updated.
+  @$pb.TagNumber(5)
+  $11.Timestamp get updatedAt => $_getN(3);
+  @$pb.TagNumber(5)
+  set updatedAt($11.Timestamp v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasUpdatedAt() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUpdatedAt() => clearField(5);
+  @$pb.TagNumber(5)
+  $11.Timestamp ensureUpdatedAt() => $_ensure(3);
+
+  /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
+  /// request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
+  /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
+  /// in bulk on an interval.
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get syncedEventInstanceCount => $_getI64(4);
+  @$pb.TagNumber(6)
+  set syncedEventInstanceCount($fixnum.Int64 v) { $_setInt64(4, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasSyncedEventInstanceCount() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearSyncedEventInstanceCount() => clearField(6);
+
+  /// The number of Posts synced to this destination so far. Computed the same way as
+  /// `synced_event_instance_count`, just against Posts instead of EventInstances.
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get syncedPostCount => $_getI64(5);
+  @$pb.TagNumber(7)
+  set syncedPostCount($fixnum.Int64 v) { $_setInt64(5, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasSyncedPostCount() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearSyncedPostCount() => clearField(7);
+
+  /// A connected Facebook Page to post EventInstances/Posts to.
+  @$pb.TagNumber(9)
+  FacebookPage get facebookPage => $_getN(6);
+  @$pb.TagNumber(9)
+  set facebookPage(FacebookPage v) { setField(9, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasFacebookPage() => $_has(6);
+  @$pb.TagNumber(9)
+  void clearFacebookPage() => clearField(9);
+  @$pb.TagNumber(9)
+  FacebookPage ensureFacebookPage() => $_ensure(6);
+
+  /// A connected Instagram Business/Creator account to post EventInstances/Posts to.
+  @$pb.TagNumber(10)
+  InstagramAccount get instagramAccount => $_getN(7);
+  @$pb.TagNumber(10)
+  set instagramAccount(InstagramAccount v) { setField(10, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasInstagramAccount() => $_has(7);
+  @$pb.TagNumber(10)
+  void clearInstagramAccount() => clearField(10);
+  @$pb.TagNumber(10)
+  InstagramAccount ensureInstagramAccount() => $_ensure(7);
+
+  /// A connected Mastodon account to post EventInstances/Posts to.
+  @$pb.TagNumber(11)
+  MastodonAccount get mastodonAccount => $_getN(8);
+  @$pb.TagNumber(11)
+  set mastodonAccount(MastodonAccount v) { setField(11, v); }
+  @$pb.TagNumber(11)
+  $core.bool hasMastodonAccount() => $_has(8);
+  @$pb.TagNumber(11)
+  void clearMastodonAccount() => clearField(11);
+  @$pb.TagNumber(11)
+  MastodonAccount ensureMastodonAccount() => $_ensure(8);
+
+  /// A connected Bluesky account to post EventInstances/Posts to.
+  @$pb.TagNumber(12)
+  BlueskyAccount get blueskyAccount => $_getN(9);
+  @$pb.TagNumber(12)
+  set blueskyAccount(BlueskyAccount v) { setField(12, v); }
+  @$pb.TagNumber(12)
+  $core.bool hasBlueskyAccount() => $_has(9);
+  @$pb.TagNumber(12)
+  void clearBlueskyAccount() => clearField(12);
+  @$pb.TagNumber(12)
+  BlueskyAccount ensureBlueskyAccount() => $_ensure(9);
+
+  /// A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
+  /// [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+  @$pb.TagNumber(13)
+  XTwitterAccount get xTwitterAccount => $_getN(10);
+  @$pb.TagNumber(13)
+  set xTwitterAccount(XTwitterAccount v) { setField(13, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasXTwitterAccount() => $_has(10);
+  @$pb.TagNumber(13)
+  void clearXTwitterAccount() => clearField(13);
+  @$pb.TagNumber(13)
+  XTwitterAccount ensureXTwitterAccount() => $_ensure(10);
+
+  /// A connected Threads account to post EventInstances/Posts to.
+  @$pb.TagNumber(14)
+  ThreadsAccount get threadsAccount => $_getN(11);
+  @$pb.TagNumber(14)
+  set threadsAccount(ThreadsAccount v) { setField(14, v); }
+  @$pb.TagNumber(14)
+  $core.bool hasThreadsAccount() => $_has(11);
+  @$pb.TagNumber(14)
+  void clearThreadsAccount() => clearField(14);
+  @$pb.TagNumber(14)
+  ThreadsAccount ensureThreadsAccount() => $_ensure(11);
+}
+
+class GetSyncDestinationsResponse extends $pb.GeneratedMessage {
+  factory GetSyncDestinationsResponse({
+    $core.Iterable<SyncDestination>? destinations,
+  }) {
+    final $result = create();
+    if (destinations != null) {
+      $result.destinations.addAll(destinations);
+    }
+    return $result;
+  }
+  GetSyncDestinationsResponse._() : super();
+  factory GetSyncDestinationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetSyncDestinationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncDestinationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<SyncDestination>(1, _omitFieldNames ? '' : 'destinations', $pb.PbFieldType.PM, subBuilder: SyncDestination.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GetSyncDestinationsResponse clone() => GetSyncDestinationsResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GetSyncDestinationsResponse copyWith(void Function(GetSyncDestinationsResponse) updates) => super.copyWith((message) => updates(message as GetSyncDestinationsResponse)) as GetSyncDestinationsResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetSyncDestinationsResponse create() => GetSyncDestinationsResponse._();
+  GetSyncDestinationsResponse createEmptyInstance() => create();
+  static $pb.PbList<GetSyncDestinationsResponse> createRepeated() => $pb.PbList<GetSyncDestinationsResponse>();
+  @$core.pragma('dart2js:noInline')
+  static GetSyncDestinationsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetSyncDestinationsResponse>(create);
+  static GetSyncDestinationsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<SyncDestination> get destinations => $_getList(0);
+}
+
+/// Request to delete a SyncDestination.
+class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
+  factory DeleteSyncDestinationRequest({
+    SyncDestination? destination,
+    $core.bool? deleteSyncedPosts,
+  }) {
+    final $result = create();
+    if (destination != null) {
+      $result.destination = destination;
+    }
+    if (deleteSyncedPosts != null) {
+      $result.deleteSyncedPosts = deleteSyncedPosts;
+    }
+    return $result;
+  }
+  DeleteSyncDestinationRequest._() : super();
+  factory DeleteSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<SyncDestination>(1, _omitFieldNames ? '' : 'destination', subBuilder: SyncDestination.create)
+    ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedPosts')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DeleteSyncDestinationRequest clone() => DeleteSyncDestinationRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DeleteSyncDestinationRequest copyWith(void Function(DeleteSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteSyncDestinationRequest)) as DeleteSyncDestinationRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteSyncDestinationRequest create() => DeleteSyncDestinationRequest._();
+  DeleteSyncDestinationRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteSyncDestinationRequest>();
+  @$core.pragma('dart2js:noInline')
+  static DeleteSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteSyncDestinationRequest>(create);
+  static DeleteSyncDestinationRequest? _defaultInstance;
+
+  /// The destination to be deleted.
+  @$pb.TagNumber(1)
+  SyncDestination get destination => $_getN(0);
+  @$pb.TagNumber(1)
+  set destination(SyncDestination v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasDestination() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDestination() => clearField(1);
+  @$pb.TagNumber(1)
+  SyncDestination ensureDestination() => $_ensure(0);
+
+  /// Whether to also delete posts already made on the destination (e.g. the Facebook Page posts).
+  @$pb.TagNumber(2)
+  $core.bool get deleteSyncedPosts => $_getBF(1);
+  @$pb.TagNumber(2)
+  set deleteSyncedPosts($core.bool v) { $_setBool(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasDeleteSyncedPosts() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDeleteSyncedPosts() => clearField(2);
+}
+
+/// A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination).
+class FacebookPage extends $pb.GeneratedMessage {
+  factory FacebookPage({
+    $core.String? pageId,
+    $core.String? pageName,
+    $core.String? shortLivedUserAccessToken,
+  }) {
+    final $result = create();
+    if (pageId != null) {
+      $result.pageId = pageId;
+    }
+    if (pageName != null) {
+      $result.pageName = pageName;
+    }
+    if (shortLivedUserAccessToken != null) {
+      $result.shortLivedUserAccessToken = shortLivedUserAccessToken;
+    }
+    return $result;
+  }
+  FacebookPage._() : super();
+  factory FacebookPage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FacebookPage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookPage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'pageId')
+    ..aOS(2, _omitFieldNames ? '' : 'pageName')
+    ..aOS(3, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  FacebookPage clone() => FacebookPage()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  FacebookPage copyWith(void Function(FacebookPage) updates) => super.copyWith((message) => updates(message as FacebookPage)) as FacebookPage;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FacebookPage create() => FacebookPage._();
+  FacebookPage createEmptyInstance() => create();
+  static $pb.PbList<FacebookPage> createRepeated() => $pb.PbList<FacebookPage>();
+  @$core.pragma('dart2js:noInline')
+  static FacebookPage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FacebookPage>(create);
+  static FacebookPage? _defaultInstance;
+
+  /// The Facebook Page's ID.
+  @$pb.TagNumber(1)
+  $core.String get pageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set pageId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasPageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPageId() => clearField(1);
+
+  /// The Facebook Page's name, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get pageName => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set pageName($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPageName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPageName() => clearField(2);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
+  /// from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
+  /// Never populated in responses.
+  @$pb.TagNumber(3)
+  $core.String get shortLivedUserAccessToken => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set shortLivedUserAccessToken($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasShortLivedUserAccessToken() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearShortLivedUserAccessToken() => clearField(3);
+}
+
+/// An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
+/// requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
+/// popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's
+/// access token, then looks up that Page's linked Instagram Business account.
+class InstagramAccount extends $pb.GeneratedMessage {
+  factory InstagramAccount({
+    $core.String? instagramBusinessAccountId,
+    $core.String? username,
+    $core.String? pageId,
+    $core.String? shortLivedUserAccessToken,
+  }) {
+    final $result = create();
+    if (instagramBusinessAccountId != null) {
+      $result.instagramBusinessAccountId = instagramBusinessAccountId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (pageId != null) {
+      $result.pageId = pageId;
+    }
+    if (shortLivedUserAccessToken != null) {
+      $result.shortLivedUserAccessToken = shortLivedUserAccessToken;
+    }
+    return $result;
+  }
+  InstagramAccount._() : super();
+  factory InstagramAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory InstagramAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'InstagramAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'instagramBusinessAccountId')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOS(3, _omitFieldNames ? '' : 'pageId')
+    ..aOS(4, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  InstagramAccount clone() => InstagramAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  InstagramAccount copyWith(void Function(InstagramAccount) updates) => super.copyWith((message) => updates(message as InstagramAccount)) as InstagramAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static InstagramAccount create() => InstagramAccount._();
+  InstagramAccount createEmptyInstance() => create();
+  static $pb.PbList<InstagramAccount> createRepeated() => $pb.PbList<InstagramAccount>();
+  @$core.pragma('dart2js:noInline')
+  static InstagramAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<InstagramAccount>(create);
+  static InstagramAccount? _defaultInstance;
+
+  /// The Instagram Business/Creator account's ID, used for all Graph API posting calls.
+  @$pb.TagNumber(1)
+  $core.String get instagramBusinessAccountId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set instagramBusinessAccountId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasInstagramBusinessAccountId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearInstagramBusinessAccountId() => clearField(1);
+
+  /// The Instagram account's @username, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set username($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUsername() => clearField(2);
+
+  /// The linked Facebook Page's ID, kept for reference/reconnect.
+  @$pb.TagNumber(3)
+  $core.String get pageId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set pageId($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasPageId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPageId() => clearField(3);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
+  /// from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a
+  /// long-lived Page access token, which is also used to post to the linked Instagram account.
+  /// Never populated in responses.
+  @$pb.TagNumber(4)
+  $core.String get shortLivedUserAccessToken => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set shortLivedUserAccessToken($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasShortLivedUserAccessToken() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearShortLivedUserAccessToken() => clearField(4);
+}
+
+/// A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
+/// (generated on the user's own instance, under Preferences > Development), rather than an OAuth
+/// popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
+/// register ahead of time the way Facebook/Instagram have one.
+class MastodonAccount extends $pb.GeneratedMessage {
+  factory MastodonAccount({
+    $core.String? instanceHost,
+    $core.String? username,
+    $core.String? accessToken,
+  }) {
+    final $result = create();
+    if (instanceHost != null) {
+      $result.instanceHost = instanceHost;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (accessToken != null) {
+      $result.accessToken = accessToken;
+    }
+    return $result;
+  }
+  MastodonAccount._() : super();
+  factory MastodonAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory MastodonAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'instanceHost')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOS(3, _omitFieldNames ? '' : 'accessToken')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  MastodonAccount clone() => MastodonAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  MastodonAccount copyWith(void Function(MastodonAccount) updates) => super.copyWith((message) => updates(message as MastodonAccount)) as MastodonAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MastodonAccount create() => MastodonAccount._();
+  MastodonAccount createEmptyInstance() => create();
+  static $pb.PbList<MastodonAccount> createRepeated() => $pb.PbList<MastodonAccount>();
+  @$core.pragma('dart2js:noInline')
+  static MastodonAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MastodonAccount>(create);
+  static MastodonAccount? _defaultInstance;
+
+  /// The Mastodon instance's hostname, e.g. "mastodon.social".
+  @$pb.TagNumber(1)
+  $core.String get instanceHost => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set instanceHost($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasInstanceHost() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearInstanceHost() => clearField(1);
+
+  /// The account's username on that instance, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set username($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUsername() => clearField(2);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
+  /// Personal Access Token for `instance_host`. Never populated in responses.
+  @$pb.TagNumber(3)
+  $core.String get accessToken => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set accessToken($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAccessToken() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAccessToken() => clearField(3);
+}
+
+/// A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
+/// (generated at Settings > App Passwords -- not the account's main password), rather than an
+/// OAuth popup.
+class BlueskyAccount extends $pb.GeneratedMessage {
+  factory BlueskyAccount({
+    $core.String? handle,
+    $core.String? did,
+    $core.String? appPassword,
+  }) {
+    final $result = create();
+    if (handle != null) {
+      $result.handle = handle;
+    }
+    if (did != null) {
+      $result.did = did;
+    }
+    if (appPassword != null) {
+      $result.appPassword = appPassword;
+    }
+    return $result;
+  }
+  BlueskyAccount._() : super();
+  factory BlueskyAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BlueskyAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BlueskyAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'handle')
+    ..aOS(2, _omitFieldNames ? '' : 'did')
+    ..aOS(3, _omitFieldNames ? '' : 'appPassword')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BlueskyAccount clone() => BlueskyAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BlueskyAccount copyWith(void Function(BlueskyAccount) updates) => super.copyWith((message) => updates(message as BlueskyAccount)) as BlueskyAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BlueskyAccount create() => BlueskyAccount._();
+  BlueskyAccount createEmptyInstance() => create();
+  static $pb.PbList<BlueskyAccount> createRepeated() => $pb.PbList<BlueskyAccount>();
+  @$core.pragma('dart2js:noInline')
+  static BlueskyAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BlueskyAccount>(create);
+  static BlueskyAccount? _defaultInstance;
+
+  /// The account's handle, e.g. "jon.bsky.social".
+  @$pb.TagNumber(1)
+  $core.String get handle => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set handle($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasHandle() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearHandle() => clearField(1);
+
+  /// The account's DID (decentralized identifier), populated by the server when the connection is
+  /// made.
+  @$pb.TagNumber(2)
+  $core.String get did => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set did($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasDid() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDid() => clearField(2);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
+  /// App Password. Never populated in responses. Sessions are created fresh per post rather than
+  /// stored/refreshed, since App Passwords don't expire.
+  @$pb.TagNumber(3)
+  $core.String get appPassword => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set appPassword($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAppPassword() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAppPassword() => clearField(3);
+}
+
+/// An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
+/// registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
+/// `x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
+/// [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
+class XTwitterAccount extends $pb.GeneratedMessage {
+  factory XTwitterAccount({
+    $core.String? username,
+    $core.String? shortLivedUserAccessToken,
+  }) {
+    final $result = create();
+    if (username != null) {
+      $result.username = username;
+    }
+    if (shortLivedUserAccessToken != null) {
+      $result.shortLivedUserAccessToken = shortLivedUserAccessToken;
+    }
+    return $result;
+  }
+  XTwitterAccount._() : super();
+  factory XTwitterAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory XTwitterAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'username')
+    ..aOS(2, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  XTwitterAccount clone() => XTwitterAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  XTwitterAccount copyWith(void Function(XTwitterAccount) updates) => super.copyWith((message) => updates(message as XTwitterAccount)) as XTwitterAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static XTwitterAccount create() => XTwitterAccount._();
+  XTwitterAccount createEmptyInstance() => create();
+  static $pb.PbList<XTwitterAccount> createRepeated() => $pb.PbList<XTwitterAccount>();
+  @$core.pragma('dart2js:noInline')
+  static XTwitterAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<XTwitterAccount>(create);
+  static XTwitterAccount? _defaultInstance;
+
+  /// The account's @username.
+  @$pb.TagNumber(1)
+  $core.String get username => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set username($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasUsername() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUsername() => clearField(1);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): reserved for a future OAuth flow. Never
+  /// populated in responses.
+  @$pb.TagNumber(2)
+  $core.String get shortLivedUserAccessToken => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set shortLivedUserAccessToken($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasShortLivedUserAccessToken() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearShortLivedUserAccessToken() => clearField(2);
+}
+
+/// A connected Threads account. Threads API is a product added to this server's existing Meta App
+/// (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
+/// is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
+/// OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+/// exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+/// refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+/// will need reconnecting after ~60 days until a refresh job exists).
+class ThreadsAccount extends $pb.GeneratedMessage {
+  factory ThreadsAccount({
+    $core.String? threadsUserId,
+    $core.String? username,
+    $core.String? authorizationCode,
+  }) {
+    final $result = create();
+    if (threadsUserId != null) {
+      $result.threadsUserId = threadsUserId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (authorizationCode != null) {
+      $result.authorizationCode = authorizationCode;
+    }
+    return $result;
+  }
+  ThreadsAccount._() : super();
+  factory ThreadsAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ThreadsAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ThreadsAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'threadsUserId')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOS(3, _omitFieldNames ? '' : 'authorizationCode')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ThreadsAccount clone() => ThreadsAccount()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ThreadsAccount copyWith(void Function(ThreadsAccount) updates) => super.copyWith((message) => updates(message as ThreadsAccount)) as ThreadsAccount;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ThreadsAccount create() => ThreadsAccount._();
+  ThreadsAccount createEmptyInstance() => create();
+  static $pb.PbList<ThreadsAccount> createRepeated() => $pb.PbList<ThreadsAccount>();
+  @$core.pragma('dart2js:noInline')
+  static ThreadsAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ThreadsAccount>(create);
+  static ThreadsAccount? _defaultInstance;
+
+  /// The account's Threads user ID, used for all posting calls.
+  @$pb.TagNumber(1)
+  $core.String get threadsUserId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set threadsUserId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasThreadsUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearThreadsUserId() => clearField(1);
+
+  /// The account's @username, populated by the server when the connection is made.
+  @$pb.TagNumber(2)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set username($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUsername() => clearField(2);
+
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the OAuth authorization code from the
+  /// Threads login popup. Never populated in responses.
+  @$pb.TagNumber(3)
+  $core.String get authorizationCode => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set authorizationCode($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAuthorizationCode() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAuthorizationCode() => clearField(3);
+}
+
+/// The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
+/// one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+/// `Post.sync_destinations` can reuse it.
+class SyncDestinationStatus extends $pb.GeneratedMessage {
+  factory SyncDestinationStatus({
+    $core.String? syncDestinationId,
+    $core.String? destinationInstanceId,
+    $core.String? destinationUrl,
+    $11.Timestamp? syncedAt,
+  }) {
+    final $result = create();
+    if (syncDestinationId != null) {
+      $result.syncDestinationId = syncDestinationId;
+    }
+    if (destinationInstanceId != null) {
+      $result.destinationInstanceId = destinationInstanceId;
+    }
+    if (destinationUrl != null) {
+      $result.destinationUrl = destinationUrl;
+    }
+    if (syncedAt != null) {
+      $result.syncedAt = syncedAt;
+    }
+    return $result;
+  }
+  SyncDestinationStatus._() : super();
+  factory SyncDestinationStatus.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncDestinationStatus.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestinationStatus', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'syncDestinationId')
+    ..aOS(2, _omitFieldNames ? '' : 'destinationInstanceId')
+    ..aOS(3, _omitFieldNames ? '' : 'destinationUrl')
+    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'syncedAt', subBuilder: $11.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SyncDestinationStatus clone() => SyncDestinationStatus()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SyncDestinationStatus copyWith(void Function(SyncDestinationStatus) updates) => super.copyWith((message) => updates(message as SyncDestinationStatus)) as SyncDestinationStatus;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SyncDestinationStatus create() => SyncDestinationStatus._();
+  SyncDestinationStatus createEmptyInstance() => create();
+  static $pb.PbList<SyncDestinationStatus> createRepeated() => $pb.PbList<SyncDestinationStatus>();
+  @$core.pragma('dart2js:noInline')
+  static SyncDestinationStatus getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncDestinationStatus>(create);
+  static SyncDestinationStatus? _defaultInstance;
+
+  /// The SyncDestination this status is for.
+  @$pb.TagNumber(1)
+  $core.String get syncDestinationId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set syncDestinationId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasSyncDestinationId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSyncDestinationId() => clearField(1);
+
+  /// The ID of the resulting post on the destination (e.g. a Facebook Post ID).
+  @$pb.TagNumber(2)
+  $core.String get destinationInstanceId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set destinationInstanceId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasDestinationInstanceId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDestinationInstanceId() => clearField(2);
+
+  /// A link to the resulting post on the destination, if available.
+  @$pb.TagNumber(3)
+  $core.String get destinationUrl => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set destinationUrl($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasDestinationUrl() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDestinationUrl() => clearField(3);
+
+  /// The time this content was last successfully synced to the destination.
+  @$pb.TagNumber(4)
+  $11.Timestamp get syncedAt => $_getN(3);
+  @$pb.TagNumber(4)
+  set syncedAt($11.Timestamp v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasSyncedAt() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSyncedAt() => clearField(4);
+  @$pb.TagNumber(4)
+  $11.Timestamp ensureSyncedAt() => $_ensure(3);
+}
+
 enum EventSyncSource_Configuration {
   icsSubscriptionUrl, 
   notSet
@@ -323,474 +1323,6 @@ class DeleteEventSyncSourceRequest extends $pb.GeneratedMessage {
   $core.bool hasDeleteSyncedEvents() => $_has(1);
   @$pb.TagNumber(2)
   void clearDeleteSyncedEvents() => clearField(2);
-}
-
-enum SyncDestination_Configuration {
-  facebookPage, 
-  notSet
-}
-
-/// A user-owned destination to sync (cross-post) content out to. Mirrors `EventSyncSource`,
-/// but for pushing content out rather than pulling events in. Originally Event-specific
-/// (as `EventSyncDestination`), now shared by both `EventInstance`s (see `events.proto`'s
-/// `SyncEventInstanceRequest`) and `Post`s (see `posts.proto`'s `SyncPostRequest`).
-class SyncDestination extends $pb.GeneratedMessage {
-  factory SyncDestination({
-    $core.String? id,
-    $14.Author? owner,
-    $11.Timestamp? createdAt,
-    $11.Timestamp? updatedAt,
-    $fixnum.Int64? syncedEventInstanceCount,
-    $fixnum.Int64? syncedPostCount,
-    FacebookPage? facebookPage,
-  }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (owner != null) {
-      $result.owner = owner;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    if (syncedEventInstanceCount != null) {
-      $result.syncedEventInstanceCount = syncedEventInstanceCount;
-    }
-    if (syncedPostCount != null) {
-      $result.syncedPostCount = syncedPostCount;
-    }
-    if (facebookPage != null) {
-      $result.facebookPage = facebookPage;
-    }
-    return $result;
-  }
-  SyncDestination._() : super();
-  factory SyncDestination.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory SyncDestination.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static const $core.Map<$core.int, SyncDestination_Configuration> _SyncDestination_ConfigurationByTag = {
-    9 : SyncDestination_Configuration.facebookPage,
-    0 : SyncDestination_Configuration.notSet
-  };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [9])
-    ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$14.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $14.Author.create)
-    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
-    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedEventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'syncedPostCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOM<FacebookPage>(9, _omitFieldNames ? '' : 'facebookPage', subBuilder: FacebookPage.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  SyncDestination clone() => SyncDestination()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  SyncDestination copyWith(void Function(SyncDestination) updates) => super.copyWith((message) => updates(message as SyncDestination)) as SyncDestination;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static SyncDestination create() => SyncDestination._();
-  SyncDestination createEmptyInstance() => create();
-  static $pb.PbList<SyncDestination> createRepeated() => $pb.PbList<SyncDestination>();
-  @$core.pragma('dart2js:noInline')
-  static SyncDestination getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncDestination>(create);
-  static SyncDestination? _defaultInstance;
-
-  SyncDestination_Configuration whichConfiguration() => _SyncDestination_ConfigurationByTag[$_whichOneof(0)]!;
-  void clearConfiguration() => clearField($_whichOneof(0));
-
-  /// Unique ID for the destination.
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  /// The user information for the owner of this destination.
-  @$pb.TagNumber(2)
-  $14.Author get owner => $_getN(1);
-  @$pb.TagNumber(2)
-  set owner($14.Author v) { setField(2, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasOwner() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearOwner() => clearField(2);
-  @$pb.TagNumber(2)
-  $14.Author ensureOwner() => $_ensure(1);
-
-  /// The time the SyncDestination was created.
-  @$pb.TagNumber(4)
-  $11.Timestamp get createdAt => $_getN(2);
-  @$pb.TagNumber(4)
-  set createdAt($11.Timestamp v) { setField(4, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasCreatedAt() => $_has(2);
-  @$pb.TagNumber(4)
-  void clearCreatedAt() => clearField(4);
-  @$pb.TagNumber(4)
-  $11.Timestamp ensureCreatedAt() => $_ensure(2);
-
-  /// The time the SyncDestination was last updated.
-  @$pb.TagNumber(5)
-  $11.Timestamp get updatedAt => $_getN(3);
-  @$pb.TagNumber(5)
-  set updatedAt($11.Timestamp v) { setField(5, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasUpdatedAt() => $_has(3);
-  @$pb.TagNumber(5)
-  void clearUpdatedAt() => clearField(5);
-  @$pb.TagNumber(5)
-  $11.Timestamp ensureUpdatedAt() => $_ensure(3);
-
-  /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
-  /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
-  /// in bulk on an interval.
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get syncedEventInstanceCount => $_getI64(4);
-  @$pb.TagNumber(6)
-  set syncedEventInstanceCount($fixnum.Int64 v) { $_setInt64(4, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasSyncedEventInstanceCount() => $_has(4);
-  @$pb.TagNumber(6)
-  void clearSyncedEventInstanceCount() => clearField(6);
-
-  /// The number of Posts synced to this destination so far. Computed the same way as
-  /// `synced_event_instance_count`, just against Posts instead of EventInstances.
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get syncedPostCount => $_getI64(5);
-  @$pb.TagNumber(7)
-  set syncedPostCount($fixnum.Int64 v) { $_setInt64(5, v); }
-  @$pb.TagNumber(7)
-  $core.bool hasSyncedPostCount() => $_has(5);
-  @$pb.TagNumber(7)
-  void clearSyncedPostCount() => clearField(7);
-
-  /// A connected Facebook Page to post EventInstances/Posts to.
-  @$pb.TagNumber(9)
-  FacebookPage get facebookPage => $_getN(6);
-  @$pb.TagNumber(9)
-  set facebookPage(FacebookPage v) { setField(9, v); }
-  @$pb.TagNumber(9)
-  $core.bool hasFacebookPage() => $_has(6);
-  @$pb.TagNumber(9)
-  void clearFacebookPage() => clearField(9);
-  @$pb.TagNumber(9)
-  FacebookPage ensureFacebookPage() => $_ensure(6);
-}
-
-class GetSyncDestinationsResponse extends $pb.GeneratedMessage {
-  factory GetSyncDestinationsResponse({
-    $core.Iterable<SyncDestination>? destinations,
-  }) {
-    final $result = create();
-    if (destinations != null) {
-      $result.destinations.addAll(destinations);
-    }
-    return $result;
-  }
-  GetSyncDestinationsResponse._() : super();
-  factory GetSyncDestinationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetSyncDestinationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncDestinationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<SyncDestination>(1, _omitFieldNames ? '' : 'destinations', $pb.PbFieldType.PM, subBuilder: SyncDestination.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetSyncDestinationsResponse clone() => GetSyncDestinationsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetSyncDestinationsResponse copyWith(void Function(GetSyncDestinationsResponse) updates) => super.copyWith((message) => updates(message as GetSyncDestinationsResponse)) as GetSyncDestinationsResponse;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static GetSyncDestinationsResponse create() => GetSyncDestinationsResponse._();
-  GetSyncDestinationsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetSyncDestinationsResponse> createRepeated() => $pb.PbList<GetSyncDestinationsResponse>();
-  @$core.pragma('dart2js:noInline')
-  static GetSyncDestinationsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetSyncDestinationsResponse>(create);
-  static GetSyncDestinationsResponse? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.List<SyncDestination> get destinations => $_getList(0);
-}
-
-/// Request to delete a SyncDestination.
-class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
-  factory DeleteSyncDestinationRequest({
-    SyncDestination? destination,
-    $core.bool? deleteSyncedPosts,
-  }) {
-    final $result = create();
-    if (destination != null) {
-      $result.destination = destination;
-    }
-    if (deleteSyncedPosts != null) {
-      $result.deleteSyncedPosts = deleteSyncedPosts;
-    }
-    return $result;
-  }
-  DeleteSyncDestinationRequest._() : super();
-  factory DeleteSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory DeleteSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<SyncDestination>(1, _omitFieldNames ? '' : 'destination', subBuilder: SyncDestination.create)
-    ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedPosts')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  DeleteSyncDestinationRequest clone() => DeleteSyncDestinationRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  DeleteSyncDestinationRequest copyWith(void Function(DeleteSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteSyncDestinationRequest)) as DeleteSyncDestinationRequest;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static DeleteSyncDestinationRequest create() => DeleteSyncDestinationRequest._();
-  DeleteSyncDestinationRequest createEmptyInstance() => create();
-  static $pb.PbList<DeleteSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteSyncDestinationRequest>();
-  @$core.pragma('dart2js:noInline')
-  static DeleteSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteSyncDestinationRequest>(create);
-  static DeleteSyncDestinationRequest? _defaultInstance;
-
-  /// The destination to be deleted.
-  @$pb.TagNumber(1)
-  SyncDestination get destination => $_getN(0);
-  @$pb.TagNumber(1)
-  set destination(SyncDestination v) { setField(1, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasDestination() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearDestination() => clearField(1);
-  @$pb.TagNumber(1)
-  SyncDestination ensureDestination() => $_ensure(0);
-
-  /// Whether to also delete posts already made on the destination (e.g. the Facebook Page posts).
-  @$pb.TagNumber(2)
-  $core.bool get deleteSyncedPosts => $_getBF(1);
-  @$pb.TagNumber(2)
-  set deleteSyncedPosts($core.bool v) { $_setBool(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasDeleteSyncedPosts() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearDeleteSyncedPosts() => clearField(2);
-}
-
-/// A Facebook Page connected as a `SyncDestination`.
-class FacebookPage extends $pb.GeneratedMessage {
-  factory FacebookPage({
-    $core.String? pageId,
-    $core.String? pageName,
-    $core.String? shortLivedUserAccessToken,
-  }) {
-    final $result = create();
-    if (pageId != null) {
-      $result.pageId = pageId;
-    }
-    if (pageName != null) {
-      $result.pageName = pageName;
-    }
-    if (shortLivedUserAccessToken != null) {
-      $result.shortLivedUserAccessToken = shortLivedUserAccessToken;
-    }
-    return $result;
-  }
-  FacebookPage._() : super();
-  factory FacebookPage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FacebookPage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookPage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'pageId')
-    ..aOS(2, _omitFieldNames ? '' : 'pageName')
-    ..aOS(3, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  FacebookPage clone() => FacebookPage()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  FacebookPage copyWith(void Function(FacebookPage) updates) => super.copyWith((message) => updates(message as FacebookPage)) as FacebookPage;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static FacebookPage create() => FacebookPage._();
-  FacebookPage createEmptyInstance() => create();
-  static $pb.PbList<FacebookPage> createRepeated() => $pb.PbList<FacebookPage>();
-  @$core.pragma('dart2js:noInline')
-  static FacebookPage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FacebookPage>(create);
-  static FacebookPage? _defaultInstance;
-
-  /// The Facebook Page's ID.
-  @$pb.TagNumber(1)
-  $core.String get pageId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set pageId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasPageId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearPageId() => clearField(1);
-
-  /// The Facebook Page's name, populated by the server when the connection is made.
-  @$pb.TagNumber(2)
-  $core.String get pageName => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set pageName($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasPageName() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearPageName() => clearField(2);
-
-  /// Only used (and required) on `CreateSyncDestination`: a short-lived user access token
-  /// from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
-  /// Never populated in responses.
-  @$pb.TagNumber(3)
-  $core.String get shortLivedUserAccessToken => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set shortLivedUserAccessToken($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasShortLivedUserAccessToken() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearShortLivedUserAccessToken() => clearField(3);
-}
-
-/// The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to
-/// one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
-/// `Post.sync_destinations` can reuse it.
-class SyncDestinationStatus extends $pb.GeneratedMessage {
-  factory SyncDestinationStatus({
-    $core.String? syncDestinationId,
-    $core.String? destinationInstanceId,
-    $core.String? destinationUrl,
-    $11.Timestamp? syncedAt,
-  }) {
-    final $result = create();
-    if (syncDestinationId != null) {
-      $result.syncDestinationId = syncDestinationId;
-    }
-    if (destinationInstanceId != null) {
-      $result.destinationInstanceId = destinationInstanceId;
-    }
-    if (destinationUrl != null) {
-      $result.destinationUrl = destinationUrl;
-    }
-    if (syncedAt != null) {
-      $result.syncedAt = syncedAt;
-    }
-    return $result;
-  }
-  SyncDestinationStatus._() : super();
-  factory SyncDestinationStatus.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory SyncDestinationStatus.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestinationStatus', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'syncDestinationId')
-    ..aOS(2, _omitFieldNames ? '' : 'destinationInstanceId')
-    ..aOS(3, _omitFieldNames ? '' : 'destinationUrl')
-    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'syncedAt', subBuilder: $11.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  SyncDestinationStatus clone() => SyncDestinationStatus()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  SyncDestinationStatus copyWith(void Function(SyncDestinationStatus) updates) => super.copyWith((message) => updates(message as SyncDestinationStatus)) as SyncDestinationStatus;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static SyncDestinationStatus create() => SyncDestinationStatus._();
-  SyncDestinationStatus createEmptyInstance() => create();
-  static $pb.PbList<SyncDestinationStatus> createRepeated() => $pb.PbList<SyncDestinationStatus>();
-  @$core.pragma('dart2js:noInline')
-  static SyncDestinationStatus getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncDestinationStatus>(create);
-  static SyncDestinationStatus? _defaultInstance;
-
-  /// The SyncDestination this status is for.
-  @$pb.TagNumber(1)
-  $core.String get syncDestinationId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set syncDestinationId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasSyncDestinationId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearSyncDestinationId() => clearField(1);
-
-  /// The ID of the resulting post on the destination (e.g. a Facebook Post ID).
-  @$pb.TagNumber(2)
-  $core.String get destinationInstanceId => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set destinationInstanceId($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasDestinationInstanceId() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearDestinationInstanceId() => clearField(2);
-
-  /// A link to the resulting post on the destination, if available.
-  @$pb.TagNumber(3)
-  $core.String get destinationUrl => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set destinationUrl($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasDestinationUrl() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearDestinationUrl() => clearField(3);
-
-  /// The time this content was last successfully synced to the destination.
-  @$pb.TagNumber(4)
-  $11.Timestamp get syncedAt => $_getN(3);
-  @$pb.TagNumber(4)
-  set syncedAt($11.Timestamp v) { setField(4, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasSyncedAt() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearSyncedAt() => clearField(4);
-  @$pb.TagNumber(4)
-  $11.Timestamp ensureSyncedAt() => $_ensure(3);
 }
 
 

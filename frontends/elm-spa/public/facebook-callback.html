@@ -28,23 +28,34 @@
 
 <body>
   <img src="/favicon.png" alt="">
-  <p id="message">Connecting to Facebook…</p>
+  <p id="message">Connecting…</p>
   <script>
     // This page is only ever loaded inside the popup window `facebookLoginPopup` opens (see
-    // index.html) -- Facebook's OAuth dialog redirects the popup here (`response_type=token`
-    // puts the token in the URL fragment, which never touches any server), we hand it back to
-    // the window that opened us via `postMessage`, then close. If this page is somehow opened
-    // directly (no `window.opener`), there's nothing to hand the token back to, so it just shows
-    // a message instead of erroring.
+    // index.html) -- for the `"facebook"` provider, Facebook's OAuth dialog redirects the popup
+    // here with `response_type=token`, putting the token in the URL *hash* fragment (which never
+    // touches any server); for the `"threads"` provider, Threads' OAuth dialog uses
+    // `response_type=code` instead, putting an authorization code in the URL *query* string. We
+    // hand back whichever is present to the window that opened us via `postMessage` (under the
+    // same `accessToken` message field either way -- see `Ports.facebookLoginResult`'s own doc,
+    // the Elm side treats it as just "the short-lived credential" regardless of flavor), then
+    // close. If this page is somehow opened directly (no `window.opener`), there's nothing to hand
+    // the value back to, so it just shows a message instead of erroring.
     (function () {
-      var params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      var accessToken = params.get("access_token");
-      var error = params.get("error_description") || params.get("error");
+      var hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      var queryParams = new URLSearchParams(window.location.search);
+
+      // Facebook's implicit flow (hash `access_token`) is checked first, since it's the existing/
+      // more common case; Threads' code flow (query `code`) is the fallback when no hash token is
+      // present. Either flow's error redirect uses the same `error`/`error_description` query
+      // param convention, so that's always read from the query string regardless of which flavor
+      // succeeded (a failed exchange has no hash at all).
+      var accessToken = hashParams.get("access_token") || queryParams.get("code");
+      var error = queryParams.get("error_description") || queryParams.get("error");
 
       if (!window.opener) {
         document.getElementById("message").textContent = accessToken
-          ? "You're connected to Facebook. You can close this window."
-          : "Facebook login didn't complete. You can close this window.";
+          ? "You're connected. You can close this window."
+          : "Login didn't complete. You can close this window.";
         return;
       }
 

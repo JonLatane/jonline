@@ -54,23 +54,110 @@ pub fn attach_synced_counts(destinations: &mut [SyncDestination], conn: &mut PgP
     }
 }
 
-/// `configuration` JSONB shape today: `{"facebook_page": {"page_id": ..., "page_name": ...,
-/// "access_token": ...}}` -- `access_token` is intentionally never surfaced here; it's
-/// server-side only (see `logic::facebook_sync`).
+/// `configuration` JSONB shape today, one top-level tagged key per platform (mirroring the proto
+/// `oneof`'s variants): `{"facebook_page": {"page_id", "page_name", "access_token"}}`,
+/// `{"instagram_account": {"instagram_business_account_id", "username", "page_id",
+/// "access_token"}}` (the linked Page's long-lived token, reused for Instagram posting too),
+/// `{"mastodon_account": {"instance_host", "username", "access_token"}}`, `{"bluesky_account":
+/// {"handle", "did", "app_password"}}`, `{"x_twitter_account": {"username"}}` (never actually
+/// stored today -- `CreateSyncDestination` always rejects `XTwitterAccount`s -- but handled here
+/// for symmetry). The secret field in each (`access_token`/`app_password`) is intentionally never
+/// surfaced back here; it's server-side only (see `logic::facebook_sync`/`logic::mastodon_sync`/
+/// `logic::bluesky_sync`).
 pub fn destination_configuration_to_proto(
     configuration: &serde_json::Value,
 ) -> Option<sync_destination::Configuration> {
-    let facebook_page = configuration.get("facebook_page")?;
-    let page_id = facebook_page.get("page_id").and_then(|v| v.as_str())?;
-    let page_name = facebook_page
-        .get("page_name")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    Some(sync_destination::Configuration::FacebookPage(FacebookPage {
-        page_id: page_id.to_string(),
-        page_name: page_name.to_string(),
-        short_lived_user_access_token: None,
-    }))
+    if let Some(facebook_page) = configuration.get("facebook_page") {
+        let page_id = facebook_page.get("page_id").and_then(|v| v.as_str())?;
+        let page_name = facebook_page
+            .get("page_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::FacebookPage(FacebookPage {
+            page_id: page_id.to_string(),
+            page_name: page_name.to_string(),
+            short_lived_user_access_token: None,
+        }));
+    }
+    if let Some(instagram_account) = configuration.get("instagram_account") {
+        let instagram_business_account_id = instagram_account
+            .get("instagram_business_account_id")
+            .and_then(|v| v.as_str())?;
+        let username = instagram_account
+            .get("username")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let page_id = instagram_account
+            .get("page_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::InstagramAccount(
+            InstagramAccount {
+                instagram_business_account_id: instagram_business_account_id.to_string(),
+                username: username.to_string(),
+                page_id: page_id.to_string(),
+                short_lived_user_access_token: None,
+            },
+        ));
+    }
+    if let Some(mastodon_account) = configuration.get("mastodon_account") {
+        let instance_host = mastodon_account
+            .get("instance_host")
+            .and_then(|v| v.as_str())?;
+        let username = mastodon_account
+            .get("username")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::MastodonAccount(
+            MastodonAccount {
+                instance_host: instance_host.to_string(),
+                username: username.to_string(),
+                access_token: None,
+            },
+        ));
+    }
+    if let Some(bluesky_account) = configuration.get("bluesky_account") {
+        let handle = bluesky_account.get("handle").and_then(|v| v.as_str())?;
+        let did = bluesky_account
+            .get("did")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::BlueskyAccount(
+            BlueskyAccount {
+                handle: handle.to_string(),
+                did: did.to_string(),
+                app_password: None,
+            },
+        ));
+    }
+    if let Some(x_twitter_account) = configuration.get("x_twitter_account") {
+        let username = x_twitter_account.get("username").and_then(|v| v.as_str())?;
+        return Some(sync_destination::Configuration::XTwitterAccount(
+            XTwitterAccount {
+                username: username.to_string(),
+                short_lived_user_access_token: None,
+            },
+        ));
+    }
+    if let Some(threads_account) = configuration.get("threads_account") {
+        let threads_user_id = threads_account
+            .get("threads_user_id")
+            .and_then(|v| v.as_str())?;
+        let username = threads_account
+            .get("username")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        return Some(sync_destination::Configuration::ThreadsAccount(
+            ThreadsAccount {
+                threads_user_id: threads_user_id.to_string(),
+                username: username.to_string(),
+                // Never echoed back -- the stored `access_token` is server-side only, same
+                // omission pattern as every other platform's secret field.
+                authorization_code: None,
+            },
+        ));
+    }
+    None
 }
 
 /// Shared field-mapping for a single piece of content's (`EventInstance` or `Post`) sync status

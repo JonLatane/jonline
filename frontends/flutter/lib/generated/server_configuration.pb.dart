@@ -1290,7 +1290,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
 
   /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
   /// Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via `CustomNavigationTabSet`.home instead.
+  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
   @$pb.TagNumber(2)
   $core.List<CustomNavigationTabWithPath> get tabs => $_getList(1);
 }
@@ -1436,7 +1436,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   void clearEmojiIcon() => clearField(10);
 
-  /// Media ID (see `Media` APIs) of an image shown as the tab's icon.
+  /// Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon.
   @$pb.TagNumber(11)
   $core.String get iconMediaId => $_getSZ(4);
   @$pb.TagNumber(11)
@@ -1459,7 +1459,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
 
 /// A custom navigation tab with an associated path.
 /// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-/// `/` is modified via `CustomNavigationTabSet`.home instead.
+/// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
 class CustomNavigationTabWithPath extends $pb.GeneratedMessage {
   factory CustomNavigationTabWithPath({
     CustomNavigationTab? customTab,
@@ -1520,7 +1520,7 @@ class CustomNavigationTabWithPath extends $pb.GeneratedMessage {
   /// e.g. link `/gigs` or `/shows` for a band to the "Events" page.
   /// Or, /weddings to a Post about wedding offerings for a custom business site.
   /// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via `CustomNavigationTabSet`.home instead.
+  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
   @$pb.TagNumber(2)
   $core.String get path => $_getSZ(1);
   @$pb.TagNumber(2)

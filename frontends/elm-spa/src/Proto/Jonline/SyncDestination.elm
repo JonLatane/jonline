@@ -24,6 +24,32 @@ import Proto.Jonline.Internals_
  A connected Facebook Page to post EventInstances/Posts to.
 
 
+### InstagramAccount
+
+ A connected Instagram Business/Creator account to post EventInstances/Posts to.
+
+
+### MastodonAccount
+
+ A connected Mastodon account to post EventInstances/Posts to.
+
+
+### BlueskyAccount
+
+ A connected Bluesky account to post EventInstances/Posts to.
+
+
+### XTwitterAccount
+
+ A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
+ [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+
+
+### ThreadsAccount
+
+ A connected Threads account to post EventInstances/Posts to.
+
+
 -}
 type alias Configuration =
     Proto.Jonline.Internals_.Proto__Jonline__SyncDestination__Configuration__Configuration

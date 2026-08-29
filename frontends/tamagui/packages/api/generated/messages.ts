@@ -109,7 +109,7 @@ export interface Message {
     | undefined;
   /**
    * Whether/when *this response's viewer* has read the message -- unset means unread. Always
-   * reflects the currently-authenticated caller's own read status (via `MarkMessagesRead`), even
+   * reflects the currently-authenticated caller's own read status (via [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)), even
    * when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it's a personal "have I seen
    * this" marker, not tied to whichever user this response happens to be showing `messaging_group`
    * for.
@@ -131,7 +131,7 @@ export interface MessageRead {
   messageId: string;
   userId: string;
   /**
-   * When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead`
+   * When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
    * -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
    * a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
    */
@@ -141,7 +141,7 @@ export interface MessageRead {
 /**
  * Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
  * thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
- * no anonymous variant the way `SendMessage` has one.
+ * no anonymous variant the way [`SendMessage`](#grpc-api-SendMessage) has one.
  */
 export interface MarkMessagesReadRequest {
   /**
@@ -151,15 +151,15 @@ export interface MarkMessagesReadRequest {
   unread: boolean;
   /**
    * The Messages to mark read/unread. The caller must have the same access to each of them
-   * `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
-   * -- see `MarkMessagesRead`'s own RPC doc comment. A message id the caller doesn't have access to
+   * [`GetMessages`](#grpc-api-GetMessages) would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
+   * -- see [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)'s own RPC doc comment. A message id the caller doesn't have access to
    * fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
    */
   messageIds: string[];
 }
 
 /**
- * Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+ * Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
  * same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
  */
 export interface MarkMessagesReadResponse {
@@ -229,7 +229,7 @@ export interface GetMessagesRequest {
   fromEmail?: string | undefined;
 }
 
-/** Response to a `GetMessagesRequest`, containing the requested messages. */
+/** Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages. */
 export interface GetMessagesResponse {
   /**
    * The messages that match the request. May be empty if no messages match.
@@ -257,7 +257,7 @@ export interface PushSubscription {
 /**
  * Registers (or re-registers) a browser's Web Push subscription for the current user, so new
  * Messages sent/delivered to them push a notification even while the browser tab is closed.
- * See `RegisterPushSubscription`'s own RPC doc comment.
+ * See [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)'s own RPC doc comment.
  */
 export interface RegisterPushSubscriptionRequest {
   /** The Web Push subscription endpoint URL, as given by `PushManager.subscribe()`. */
@@ -271,19 +271,19 @@ export interface RegisterPushSubscriptionRequest {
 /**
  * Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
  * `PushManager.subscribe()` reports the subscription as no longer valid. See
- * `UnregisterPushSubscription`'s own RPC doc comment.
+ * [`UnregisterPushSubscription`](#grpc-api-UnregisterPushSubscription)'s own RPC doc comment.
  */
 export interface UnregisterPushSubscriptionRequest {
   /**
    * The Web Push subscription endpoint URL to unregister, as previously passed to
-   * `RegisterPushSubscription`.
+   * [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription).
    */
   endpoint: string;
 }
 
 /**
  * Checks whether the current user has already registered a given Web Push subscription endpoint.
- * See `GetPushSubscriptionStatus`'s own RPC doc comment.
+ * See [`GetPushSubscriptionStatus`](#grpc-api-GetPushSubscriptionStatus)'s own RPC doc comment.
  */
 export interface GetPushSubscriptionStatusRequest {
   /** The Web Push subscription endpoint URL to check, as given by `PushManager.subscribe()`. */
@@ -291,7 +291,7 @@ export interface GetPushSubscriptionStatusRequest {
 }
 
 export interface GetPushSubscriptionStatusResponse {
-  /** Whether the current user has a `PushSubscription` registered for this exact `endpoint`. */
+  /** Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`. */
   registered: boolean;
 }
 

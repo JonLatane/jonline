@@ -163,7 +163,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearName() => clearField(2);
 
-  /// Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated.
+  /// Immutable shortname of the group. Derived from changes to `name` when the [`Group`](#jonline-Group) is updated.
   @$pb.TagNumber(3)
   $core.String get shortname => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -486,7 +486,7 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   void clearHasNextPage() => clearField(2);
 }
 
-/// Used when fetching group members using the `GetMembers` RPC.
+/// Used when fetching group members using the [`GetMembers`](#grpc-api-GetMembers) RPC.
 class Member extends $pb.GeneratedMessage {
   factory Member({
     $4.User? user,

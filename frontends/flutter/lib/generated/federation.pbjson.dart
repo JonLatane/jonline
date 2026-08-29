@@ -31,9 +31,11 @@ const FederationInfo$json = {
   '2': [
     {'1': 'servers', '3': 1, '4': 3, '5': 11, '6': '.jonline.FederatedServer', '10': 'servers'},
     {'1': 'facebook_auth_config', '3': 2, '4': 1, '5': 11, '6': '.jonline.FacebookAuthConfig', '9': 0, '10': 'facebookAuthConfig', '17': true},
+    {'1': 'x_twitter_auth_config', '3': 3, '4': 1, '5': 11, '6': '.jonline.XTwitterAuthConfig', '9': 1, '10': 'xTwitterAuthConfig', '17': true},
   ],
   '8': [
     {'1': '_facebook_auth_config'},
+    {'1': '_x_twitter_auth_config'},
   ],
 };
 
@@ -41,7 +43,9 @@ const FederationInfo$json = {
 final $typed_data.Uint8List federationInfoDescriptor = $convert.base64Decode(
     'Cg5GZWRlcmF0aW9uSW5mbxIyCgdzZXJ2ZXJzGAEgAygLMhguam9ubGluZS5GZWRlcmF0ZWRTZX'
     'J2ZXJSB3NlcnZlcnMSUgoUZmFjZWJvb2tfYXV0aF9jb25maWcYAiABKAsyGy5qb25saW5lLkZh'
-    'Y2Vib29rQXV0aENvbmZpZ0gAUhJmYWNlYm9va0F1dGhDb25maWeIAQFCFwoVX2ZhY2Vib29rX2'
+    'Y2Vib29rQXV0aENvbmZpZ0gAUhJmYWNlYm9va0F1dGhDb25maWeIAQESUwoVeF90d2l0dGVyX2'
+    'F1dGhfY29uZmlnGAMgASgLMhsuam9ubGluZS5YVHdpdHRlckF1dGhDb25maWdIAVISeFR3aXR0'
+    'ZXJBdXRoQ29uZmlniAEBQhcKFV9mYWNlYm9va19hdXRoX2NvbmZpZ0IYChZfeF90d2l0dGVyX2'
     'F1dGhfY29uZmln');
 
 @$core.Deprecated('Use federatedServerDescriptor instead')
@@ -92,4 +96,18 @@ const FacebookAuthConfig$json = {
 final $typed_data.Uint8List facebookAuthConfigDescriptor = $convert.base64Decode(
     'ChJGYWNlYm9va0F1dGhDb25maWcSFQoGYXBwX2lkGAEgASgJUgVhcHBJZBIdCgphcHBfc2Vjcm'
     'V0GAIgASgJUglhcHBTZWNyZXQ=');
+
+@$core.Deprecated('Use xTwitterAuthConfigDescriptor instead')
+const XTwitterAuthConfig$json = {
+  '1': 'XTwitterAuthConfig',
+  '2': [
+    {'1': 'client_id', '3': 1, '4': 1, '5': 9, '10': 'clientId'},
+    {'1': 'client_secret', '3': 2, '4': 1, '5': 9, '10': 'clientSecret'},
+  ],
+};
+
+/// Descriptor for `XTwitterAuthConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List xTwitterAuthConfigDescriptor = $convert.base64Decode(
+    'ChJYVHdpdHRlckF1dGhDb25maWcSGwoJY2xpZW50X2lkGAEgASgJUghjbGllbnRJZBIjCg1jbG'
+    'llbnRfc2VjcmV0GAIgASgJUgxjbGllbnRTZWNyZXQ=');
 

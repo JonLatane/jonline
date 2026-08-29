@@ -38,9 +38,9 @@ export enum UserListingType {
    * USERS_TEXT_SEARCH - Returns users matching the full-text `search_text` query, scoped the same way
    * `EVERYONE` is. Requires `search_text` parameter.
    *
-   * Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by `PostListingType`) because
+   * Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by [`PostListingType`](#jonline-PostListingType)) because
    * proto3 enum values share a single namespace across the whole `jonline` package (C++ scoping
-   * rules) - `PostListingType` already claimed `TEXT_SEARCH`.
+   * rules) - [`PostListingType`](#jonline-PostListingType) already claimed `TEXT_SEARCH`.
    */
   USERS_TEXT_SEARCH = 5,
   /** FOLLOWERS_TEXT_SEARCH - Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`. */
@@ -191,7 +191,7 @@ export interface User {
   postCount?:
     | number
     | undefined;
-  /** The number of responses to `Post`s and `Event`s this user has made. */
+  /** The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made. */
   responseCount?:
     | number
     | undefined;
@@ -218,9 +218,9 @@ export interface User {
     | Follow
     | undefined;
   /**
-   * Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
-   * The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
-   * providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
+   * Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
+   * The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
+   * providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc..
    */
   currentGroupMembership?:
     | Membership
@@ -235,10 +235,10 @@ export interface User {
   federatedProfiles: FederatedAccount[];
   /**
    * The target user's own linked SyncDestinations (e.g. Facebook Pages).
-   * Only ever populated by `GetUsers`' single-user lookups (by username or by
+   * Only ever populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by
    * user_id) when the viewer is the target user themselves (and holds
    * `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
-   * otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`.
+   * otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser).
    */
   syncDestinations: SyncDestination[];
   /** The time the user was created. */
@@ -347,7 +347,7 @@ export interface GetUsersRequest {
   listingType: UserListingType;
 }
 
-/** Response to a `GetUsersRequest`. */
+/** Response to a [`GetUsersRequest`](#jonline-GetUsersRequest). */
 export interface GetUsersResponse {
   /** The users matching the request. */
   users: User[];

@@ -26,7 +26,7 @@ import Proto.Jonline.Internals_
 
 ### IconMediaId
 
- Media ID (see `Media` APIs) of an image shown as the tab's icon.
+ Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon.
 
 
 -}

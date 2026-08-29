@@ -71,6 +71,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo({
     $core.Iterable<FederatedServer>? servers,
     FacebookAuthConfig? facebookAuthConfig,
+    XTwitterAuthConfig? xTwitterAuthConfig,
   }) {
     final $result = create();
     if (servers != null) {
@@ -78,6 +79,9 @@ class FederationInfo extends $pb.GeneratedMessage {
     }
     if (facebookAuthConfig != null) {
       $result.facebookAuthConfig = facebookAuthConfig;
+    }
+    if (xTwitterAuthConfig != null) {
+      $result.xTwitterAuthConfig = xTwitterAuthConfig;
     }
     return $result;
   }
@@ -88,6 +92,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
     ..aOM<FacebookAuthConfig>(2, _omitFieldNames ? '' : 'facebookAuthConfig', subBuilder: FacebookAuthConfig.create)
+    ..aOM<XTwitterAuthConfig>(3, _omitFieldNames ? '' : 'xTwitterAuthConfig', subBuilder: XTwitterAuthConfig.create)
     ..hasRequiredFields = false
   ;
 
@@ -116,7 +121,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.List<FederatedServer> get servers => $_getList(0);
 
-  /// Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.
+  /// Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances.
   @$pb.TagNumber(2)
   FacebookAuthConfig get facebookAuthConfig => $_getN(1);
   @$pb.TagNumber(2)
@@ -127,6 +132,20 @@ class FederationInfo extends $pb.GeneratedMessage {
   void clearFacebookAuthConfig() => clearField(2);
   @$pb.TagNumber(2)
   FacebookAuthConfig ensureFacebookAuthConfig() => $_ensure(1);
+
+  /// X (Twitter) authentication configuration for the server. Not yet used -- reserved for when
+  /// this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations
+  /// always fail with `x_twitter_app_not_configured` regardless of this field.
+  @$pb.TagNumber(3)
+  XTwitterAuthConfig get xTwitterAuthConfig => $_getN(2);
+  @$pb.TagNumber(3)
+  set xTwitterAuthConfig(XTwitterAuthConfig v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasXTwitterAuthConfig() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearXTwitterAuthConfig() => clearField(3);
+  @$pb.TagNumber(3)
+  XTwitterAuthConfig ensureXTwitterAuthConfig() => $_ensure(2);
 }
 
 /// A server that this server will federate with.
@@ -347,6 +366,74 @@ class FacebookAuthConfig extends $pb.GeneratedMessage {
   $core.bool hasAppSecret() => $_has(1);
   @$pb.TagNumber(2)
   void clearAppSecret() => clearField(2);
+}
+
+/// X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`.
+class XTwitterAuthConfig extends $pb.GeneratedMessage {
+  factory XTwitterAuthConfig({
+    $core.String? clientId,
+    $core.String? clientSecret,
+  }) {
+    final $result = create();
+    if (clientId != null) {
+      $result.clientId = clientId;
+    }
+    if (clientSecret != null) {
+      $result.clientSecret = clientSecret;
+    }
+    return $result;
+  }
+  XTwitterAuthConfig._() : super();
+  factory XTwitterAuthConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory XTwitterAuthConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAuthConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'clientId')
+    ..aOS(2, _omitFieldNames ? '' : 'clientSecret')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  XTwitterAuthConfig clone() => XTwitterAuthConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  XTwitterAuthConfig copyWith(void Function(XTwitterAuthConfig) updates) => super.copyWith((message) => updates(message as XTwitterAuthConfig)) as XTwitterAuthConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static XTwitterAuthConfig create() => XTwitterAuthConfig._();
+  XTwitterAuthConfig createEmptyInstance() => create();
+  static $pb.PbList<XTwitterAuthConfig> createRepeated() => $pb.PbList<XTwitterAuthConfig>();
+  @$core.pragma('dart2js:noInline')
+  static XTwitterAuthConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<XTwitterAuthConfig>(create);
+  static XTwitterAuthConfig? _defaultInstance;
+
+  /// The X Developer App's Client ID for the server.
+  @$pb.TagNumber(1)
+  $core.String get clientId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set clientId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasClientId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearClientId() => clearField(1);
+
+  /// The X Developer App's Client Secret for the server. *Never serialized to the client.*
+  /// Admins: Edit this in the database's JSONB column directly.
+  @$pb.TagNumber(2)
+  $core.String get clientSecret => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set clientSecret($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasClientSecret() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClientSecret() => clearField(2);
 }
 
 

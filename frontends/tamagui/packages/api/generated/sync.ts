@@ -11,6 +11,216 @@ import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "jonline";
 
+/**
+ * A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+ * but for pushing content out rather than pulling events in. Originally Event-specific
+ * (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
+ * [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
+ */
+export interface SyncDestination {
+  /** Unique ID for the destination. */
+  id: string;
+  /** The user information for the owner of this destination. */
+  owner:
+    | Author
+    | undefined;
+  /** The time the SyncDestination was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the SyncDestination was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /**
+   * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
+   * request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
+   * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
+   * in bulk on an interval.
+   */
+  syncedEventInstanceCount?:
+    | number
+    | undefined;
+  /**
+   * The number of Posts synced to this destination so far. Computed the same way as
+   * `synced_event_instance_count`, just against Posts instead of EventInstances.
+   */
+  syncedPostCount?:
+    | number
+    | undefined;
+  /** A connected Facebook Page to post EventInstances/Posts to. */
+  facebookPage?:
+    | FacebookPage
+    | undefined;
+  /** A connected Instagram Business/Creator account to post EventInstances/Posts to. */
+  instagramAccount?:
+    | InstagramAccount
+    | undefined;
+  /** A connected Mastodon account to post EventInstances/Posts to. */
+  mastodonAccount?:
+    | MastodonAccount
+    | undefined;
+  /** A connected Bluesky account to post EventInstances/Posts to. */
+  blueskyAccount?:
+    | BlueskyAccount
+    | undefined;
+  /**
+   * A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
+   * [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+   */
+  xTwitterAccount?:
+    | XTwitterAccount
+    | undefined;
+  /** A connected Threads account to post EventInstances/Posts to. */
+  threadsAccount?: ThreadsAccount | undefined;
+}
+
+export interface GetSyncDestinationsResponse {
+  destinations: SyncDestination[];
+}
+
+/** Request to delete a SyncDestination. */
+export interface DeleteSyncDestinationRequest {
+  /** The destination to be deleted. */
+  destination:
+    | SyncDestination
+    | undefined;
+  /** Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). */
+  deleteSyncedPosts: boolean;
+}
+
+/** A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination). */
+export interface FacebookPage {
+  /** The Facebook Page's ID. */
+  pageId: string;
+  /** The Facebook Page's name, populated by the server when the connection is made. */
+  pageName: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
+   * from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
+   * Never populated in responses.
+   */
+  shortLivedUserAccessToken?: string | undefined;
+}
+
+/**
+ * An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
+ * requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
+ * popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's
+ * access token, then looks up that Page's linked Instagram Business account.
+ */
+export interface InstagramAccount {
+  /** The Instagram Business/Creator account's ID, used for all Graph API posting calls. */
+  instagramBusinessAccountId: string;
+  /** The Instagram account's @username, populated by the server when the connection is made. */
+  username: string;
+  /** The linked Facebook Page's ID, kept for reference/reconnect. */
+  pageId: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
+   * from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a
+   * long-lived Page access token, which is also used to post to the linked Instagram account.
+   * Never populated in responses.
+   */
+  shortLivedUserAccessToken?: string | undefined;
+}
+
+/**
+ * A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
+ * (generated on the user's own instance, under Preferences > Development), rather than an OAuth
+ * popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
+ * register ahead of time the way Facebook/Instagram have one.
+ */
+export interface MastodonAccount {
+  /** The Mastodon instance's hostname, e.g. "mastodon.social". */
+  instanceHost: string;
+  /** The account's username on that instance, populated by the server when the connection is made. */
+  username: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
+   * Personal Access Token for `instance_host`. Never populated in responses.
+   */
+  accessToken?: string | undefined;
+}
+
+/**
+ * A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
+ * (generated at Settings > App Passwords -- not the account's main password), rather than an
+ * OAuth popup.
+ */
+export interface BlueskyAccount {
+  /** The account's handle, e.g. "jon.bsky.social". */
+  handle: string;
+  /**
+   * The account's DID (decentralized identifier), populated by the server when the connection is
+   * made.
+   */
+  did: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
+   * App Password. Never populated in responses. Sessions are created fresh per post rather than
+   * stored/refreshed, since App Passwords don't expire.
+   */
+  appPassword?: string | undefined;
+}
+
+/**
+ * An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
+ * registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
+ * `x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
+ * [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
+ */
+export interface XTwitterAccount {
+  /** The account's @username. */
+  username: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): reserved for a future OAuth flow. Never
+   * populated in responses.
+   */
+  shortLivedUserAccessToken?: string | undefined;
+}
+
+/**
+ * A connected Threads account. Threads API is a product added to this server's existing Meta App
+ * (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
+ * is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
+ * OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
+ * exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
+ * refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
+ * will need reconnecting after ~60 days until a refresh job exists).
+ */
+export interface ThreadsAccount {
+  /** The account's Threads user ID, used for all posting calls. */
+  threadsUserId: string;
+  /** The account's @username, populated by the server when the connection is made. */
+  username: string;
+  /**
+   * Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the OAuth authorization code from the
+   * Threads login popup. Never populated in responses.
+   */
+  authorizationCode?: string | undefined;
+}
+
+/**
+ * The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
+ * one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+ * `Post.sync_destinations` can reuse it.
+ */
+export interface SyncDestinationStatus {
+  /** The SyncDestination this status is for. */
+  syncDestinationId: string;
+  /** The ID of the resulting post on the destination (e.g. a Facebook Post ID). */
+  destinationInstanceId?:
+    | string
+    | undefined;
+  /** A link to the resulting post on the destination, if available. */
+  destinationUrl?:
+    | string
+    | undefined;
+  /** The time this content was last successfully synced to the destination. */
+  syncedAt?: string | undefined;
+}
+
 /** A user-owned source to sync events from. */
 export interface EventSyncSource {
   /** Unique ID for the synchronization. */
@@ -61,94 +271,1080 @@ export interface DeleteEventSyncSourceRequest {
   deleteSyncedEvents: boolean;
 }
 
-/**
- * A user-owned destination to sync (cross-post) content out to. Mirrors `EventSyncSource`,
- * but for pushing content out rather than pulling events in. Originally Event-specific
- * (as `EventSyncDestination`), now shared by both `EventInstance`s (see `events.proto`'s
- * `SyncEventInstanceRequest`) and `Post`s (see `posts.proto`'s `SyncPostRequest`).
- */
-export interface SyncDestination {
-  /** Unique ID for the destination. */
-  id: string;
-  /** The user information for the owner of this destination. */
-  owner:
-    | Author
-    | undefined;
-  /** The time the SyncDestination was created. */
-  createdAt:
-    | string
-    | undefined;
-  /** The time the SyncDestination was last updated. */
-  updatedAt?:
-    | string
-    | undefined;
-  /**
-   * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-   * request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
-   * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
-   * in bulk on an interval.
-   */
-  syncedEventInstanceCount?:
-    | number
-    | undefined;
-  /**
-   * The number of Posts synced to this destination so far. Computed the same way as
-   * `synced_event_instance_count`, just against Posts instead of EventInstances.
-   */
-  syncedPostCount?:
-    | number
-    | undefined;
-  /** A connected Facebook Page to post EventInstances/Posts to. */
-  facebookPage?: FacebookPage | undefined;
+function createBaseSyncDestination(): SyncDestination {
+  return {
+    id: "",
+    owner: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+    syncedEventInstanceCount: undefined,
+    syncedPostCount: undefined,
+    facebookPage: undefined,
+    instagramAccount: undefined,
+    mastodonAccount: undefined,
+    blueskyAccount: undefined,
+    xTwitterAccount: undefined,
+    threadsAccount: undefined,
+  };
 }
 
-export interface GetSyncDestinationsResponse {
-  destinations: SyncDestination[];
+export const SyncDestination: MessageFns<SyncDestination> = {
+  encode(message: SyncDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.owner !== undefined) {
+      Author.encode(message.owner, writer.uint32(18).fork()).join();
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.syncedEventInstanceCount !== undefined) {
+      writer.uint32(48).uint64(message.syncedEventInstanceCount);
+    }
+    if (message.syncedPostCount !== undefined) {
+      writer.uint32(56).uint64(message.syncedPostCount);
+    }
+    if (message.facebookPage !== undefined) {
+      FacebookPage.encode(message.facebookPage, writer.uint32(74).fork()).join();
+    }
+    if (message.instagramAccount !== undefined) {
+      InstagramAccount.encode(message.instagramAccount, writer.uint32(82).fork()).join();
+    }
+    if (message.mastodonAccount !== undefined) {
+      MastodonAccount.encode(message.mastodonAccount, writer.uint32(90).fork()).join();
+    }
+    if (message.blueskyAccount !== undefined) {
+      BlueskyAccount.encode(message.blueskyAccount, writer.uint32(98).fork()).join();
+    }
+    if (message.xTwitterAccount !== undefined) {
+      XTwitterAccount.encode(message.xTwitterAccount, writer.uint32(106).fork()).join();
+    }
+    if (message.threadsAccount !== undefined) {
+      ThreadsAccount.encode(message.threadsAccount, writer.uint32(114).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncDestination {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncDestination();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.owner = Author.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.syncedEventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.syncedPostCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.facebookPage = FacebookPage.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.instagramAccount = InstagramAccount.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.mastodonAccount = MastodonAccount.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.blueskyAccount = BlueskyAccount.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.xTwitterAccount = XTwitterAccount.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.threadsAccount = ThreadsAccount.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncDestination {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      syncedEventInstanceCount: isSet(object.syncedEventInstanceCount)
+        ? globalThis.Number(object.syncedEventInstanceCount)
+        : undefined,
+      syncedPostCount: isSet(object.syncedPostCount) ? globalThis.Number(object.syncedPostCount) : undefined,
+      facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
+      instagramAccount: isSet(object.instagramAccount) ? InstagramAccount.fromJSON(object.instagramAccount) : undefined,
+      mastodonAccount: isSet(object.mastodonAccount) ? MastodonAccount.fromJSON(object.mastodonAccount) : undefined,
+      blueskyAccount: isSet(object.blueskyAccount) ? BlueskyAccount.fromJSON(object.blueskyAccount) : undefined,
+      xTwitterAccount: isSet(object.xTwitterAccount) ? XTwitterAccount.fromJSON(object.xTwitterAccount) : undefined,
+      threadsAccount: isSet(object.threadsAccount) ? ThreadsAccount.fromJSON(object.threadsAccount) : undefined,
+    };
+  },
+
+  toJSON(message: SyncDestination): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== undefined) {
+      obj.owner = Author.toJSON(message.owner);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.syncedEventInstanceCount !== undefined) {
+      obj.syncedEventInstanceCount = Math.round(message.syncedEventInstanceCount);
+    }
+    if (message.syncedPostCount !== undefined) {
+      obj.syncedPostCount = Math.round(message.syncedPostCount);
+    }
+    if (message.facebookPage !== undefined) {
+      obj.facebookPage = FacebookPage.toJSON(message.facebookPage);
+    }
+    if (message.instagramAccount !== undefined) {
+      obj.instagramAccount = InstagramAccount.toJSON(message.instagramAccount);
+    }
+    if (message.mastodonAccount !== undefined) {
+      obj.mastodonAccount = MastodonAccount.toJSON(message.mastodonAccount);
+    }
+    if (message.blueskyAccount !== undefined) {
+      obj.blueskyAccount = BlueskyAccount.toJSON(message.blueskyAccount);
+    }
+    if (message.xTwitterAccount !== undefined) {
+      obj.xTwitterAccount = XTwitterAccount.toJSON(message.xTwitterAccount);
+    }
+    if (message.threadsAccount !== undefined) {
+      obj.threadsAccount = ThreadsAccount.toJSON(message.threadsAccount);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SyncDestination>, I>>(base?: I): SyncDestination {
+    return SyncDestination.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SyncDestination>, I>>(object: I): SyncDestination {
+    const message = createBaseSyncDestination();
+    message.id = object.id ?? "";
+    message.owner = (object.owner !== undefined && object.owner !== null)
+      ? Author.fromPartial(object.owner)
+      : undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.syncedEventInstanceCount = object.syncedEventInstanceCount ?? undefined;
+    message.syncedPostCount = object.syncedPostCount ?? undefined;
+    message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
+      ? FacebookPage.fromPartial(object.facebookPage)
+      : undefined;
+    message.instagramAccount = (object.instagramAccount !== undefined && object.instagramAccount !== null)
+      ? InstagramAccount.fromPartial(object.instagramAccount)
+      : undefined;
+    message.mastodonAccount = (object.mastodonAccount !== undefined && object.mastodonAccount !== null)
+      ? MastodonAccount.fromPartial(object.mastodonAccount)
+      : undefined;
+    message.blueskyAccount = (object.blueskyAccount !== undefined && object.blueskyAccount !== null)
+      ? BlueskyAccount.fromPartial(object.blueskyAccount)
+      : undefined;
+    message.xTwitterAccount = (object.xTwitterAccount !== undefined && object.xTwitterAccount !== null)
+      ? XTwitterAccount.fromPartial(object.xTwitterAccount)
+      : undefined;
+    message.threadsAccount = (object.threadsAccount !== undefined && object.threadsAccount !== null)
+      ? ThreadsAccount.fromPartial(object.threadsAccount)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetSyncDestinationsResponse(): GetSyncDestinationsResponse {
+  return { destinations: [] };
 }
 
-/** Request to delete a SyncDestination. */
-export interface DeleteSyncDestinationRequest {
-  /** The destination to be deleted. */
-  destination:
-    | SyncDestination
-    | undefined;
-  /** Whether to also delete posts already made on the destination (e.g. the Facebook Page posts). */
-  deleteSyncedPosts: boolean;
+export const GetSyncDestinationsResponse: MessageFns<GetSyncDestinationsResponse> = {
+  encode(message: GetSyncDestinationsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.destinations) {
+      SyncDestination.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSyncDestinationsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSyncDestinationsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.destinations.push(SyncDestination.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSyncDestinationsResponse {
+    return {
+      destinations: globalThis.Array.isArray(object?.destinations)
+        ? object.destinations.map((e: any) => SyncDestination.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetSyncDestinationsResponse): unknown {
+    const obj: any = {};
+    if (message.destinations?.length) {
+      obj.destinations = message.destinations.map((e) => SyncDestination.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetSyncDestinationsResponse>, I>>(base?: I): GetSyncDestinationsResponse {
+    return GetSyncDestinationsResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetSyncDestinationsResponse>, I>>(object: I): GetSyncDestinationsResponse {
+    const message = createBaseGetSyncDestinationsResponse();
+    message.destinations = object.destinations?.map((e) => SyncDestination.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDeleteSyncDestinationRequest(): DeleteSyncDestinationRequest {
+  return { destination: undefined, deleteSyncedPosts: false };
 }
 
-/** A Facebook Page connected as a `SyncDestination`. */
-export interface FacebookPage {
-  /** The Facebook Page's ID. */
-  pageId: string;
-  /** The Facebook Page's name, populated by the server when the connection is made. */
-  pageName: string;
-  /**
-   * Only used (and required) on `CreateSyncDestination`: a short-lived user access token
-   * from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
-   * Never populated in responses.
-   */
-  shortLivedUserAccessToken?: string | undefined;
+export const DeleteSyncDestinationRequest: MessageFns<DeleteSyncDestinationRequest> = {
+  encode(message: DeleteSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.destination !== undefined) {
+      SyncDestination.encode(message.destination, writer.uint32(10).fork()).join();
+    }
+    if (message.deleteSyncedPosts !== false) {
+      writer.uint32(16).bool(message.deleteSyncedPosts);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteSyncDestinationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteSyncDestinationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.destination = SyncDestination.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.deleteSyncedPosts = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteSyncDestinationRequest {
+    return {
+      destination: isSet(object.destination) ? SyncDestination.fromJSON(object.destination) : undefined,
+      deleteSyncedPosts: isSet(object.deleteSyncedPosts) ? globalThis.Boolean(object.deleteSyncedPosts) : false,
+    };
+  },
+
+  toJSON(message: DeleteSyncDestinationRequest): unknown {
+    const obj: any = {};
+    if (message.destination !== undefined) {
+      obj.destination = SyncDestination.toJSON(message.destination);
+    }
+    if (message.deleteSyncedPosts !== false) {
+      obj.deleteSyncedPosts = message.deleteSyncedPosts;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteSyncDestinationRequest>, I>>(base?: I): DeleteSyncDestinationRequest {
+    return DeleteSyncDestinationRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteSyncDestinationRequest>, I>>(object: I): DeleteSyncDestinationRequest {
+    const message = createBaseDeleteSyncDestinationRequest();
+    message.destination = (object.destination !== undefined && object.destination !== null)
+      ? SyncDestination.fromPartial(object.destination)
+      : undefined;
+    message.deleteSyncedPosts = object.deleteSyncedPosts ?? false;
+    return message;
+  },
+};
+
+function createBaseFacebookPage(): FacebookPage {
+  return { pageId: "", pageName: "", shortLivedUserAccessToken: undefined };
 }
 
-/**
- * The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to
- * one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
- * `Post.sync_destinations` can reuse it.
- */
-export interface SyncDestinationStatus {
-  /** The SyncDestination this status is for. */
-  syncDestinationId: string;
-  /** The ID of the resulting post on the destination (e.g. a Facebook Post ID). */
-  destinationInstanceId?:
-    | string
-    | undefined;
-  /** A link to the resulting post on the destination, if available. */
-  destinationUrl?:
-    | string
-    | undefined;
-  /** The time this content was last successfully synced to the destination. */
-  syncedAt?: string | undefined;
+export const FacebookPage: MessageFns<FacebookPage> = {
+  encode(message: FacebookPage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.pageId !== "") {
+      writer.uint32(10).string(message.pageId);
+    }
+    if (message.pageName !== "") {
+      writer.uint32(18).string(message.pageName);
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      writer.uint32(26).string(message.shortLivedUserAccessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FacebookPage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFacebookPage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pageId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pageName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.shortLivedUserAccessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FacebookPage {
+    return {
+      pageId: isSet(object.pageId) ? globalThis.String(object.pageId) : "",
+      pageName: isSet(object.pageName) ? globalThis.String(object.pageName) : "",
+      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
+        ? globalThis.String(object.shortLivedUserAccessToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: FacebookPage): unknown {
+    const obj: any = {};
+    if (message.pageId !== "") {
+      obj.pageId = message.pageId;
+    }
+    if (message.pageName !== "") {
+      obj.pageName = message.pageName;
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FacebookPage>, I>>(base?: I): FacebookPage {
+    return FacebookPage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FacebookPage>, I>>(object: I): FacebookPage {
+    const message = createBaseFacebookPage();
+    message.pageId = object.pageId ?? "";
+    message.pageName = object.pageName ?? "";
+    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseInstagramAccount(): InstagramAccount {
+  return { instagramBusinessAccountId: "", username: "", pageId: "", shortLivedUserAccessToken: undefined };
 }
+
+export const InstagramAccount: MessageFns<InstagramAccount> = {
+  encode(message: InstagramAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.instagramBusinessAccountId !== "") {
+      writer.uint32(10).string(message.instagramBusinessAccountId);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.pageId !== "") {
+      writer.uint32(26).string(message.pageId);
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      writer.uint32(34).string(message.shortLivedUserAccessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InstagramAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInstagramAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.instagramBusinessAccountId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageId = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.shortLivedUserAccessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InstagramAccount {
+    return {
+      instagramBusinessAccountId: isSet(object.instagramBusinessAccountId)
+        ? globalThis.String(object.instagramBusinessAccountId)
+        : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      pageId: isSet(object.pageId) ? globalThis.String(object.pageId) : "",
+      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
+        ? globalThis.String(object.shortLivedUserAccessToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: InstagramAccount): unknown {
+    const obj: any = {};
+    if (message.instagramBusinessAccountId !== "") {
+      obj.instagramBusinessAccountId = message.instagramBusinessAccountId;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.pageId !== "") {
+      obj.pageId = message.pageId;
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InstagramAccount>, I>>(base?: I): InstagramAccount {
+    return InstagramAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InstagramAccount>, I>>(object: I): InstagramAccount {
+    const message = createBaseInstagramAccount();
+    message.instagramBusinessAccountId = object.instagramBusinessAccountId ?? "";
+    message.username = object.username ?? "";
+    message.pageId = object.pageId ?? "";
+    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseMastodonAccount(): MastodonAccount {
+  return { instanceHost: "", username: "", accessToken: undefined };
+}
+
+export const MastodonAccount: MessageFns<MastodonAccount> = {
+  encode(message: MastodonAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.instanceHost !== "") {
+      writer.uint32(10).string(message.instanceHost);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.accessToken !== undefined) {
+      writer.uint32(26).string(message.accessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MastodonAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMastodonAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.instanceHost = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.accessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MastodonAccount {
+    return {
+      instanceHost: isSet(object.instanceHost) ? globalThis.String(object.instanceHost) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      accessToken: isSet(object.accessToken) ? globalThis.String(object.accessToken) : undefined,
+    };
+  },
+
+  toJSON(message: MastodonAccount): unknown {
+    const obj: any = {};
+    if (message.instanceHost !== "") {
+      obj.instanceHost = message.instanceHost;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.accessToken !== undefined) {
+      obj.accessToken = message.accessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MastodonAccount>, I>>(base?: I): MastodonAccount {
+    return MastodonAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MastodonAccount>, I>>(object: I): MastodonAccount {
+    const message = createBaseMastodonAccount();
+    message.instanceHost = object.instanceHost ?? "";
+    message.username = object.username ?? "";
+    message.accessToken = object.accessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseBlueskyAccount(): BlueskyAccount {
+  return { handle: "", did: "", appPassword: undefined };
+}
+
+export const BlueskyAccount: MessageFns<BlueskyAccount> = {
+  encode(message: BlueskyAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.handle !== "") {
+      writer.uint32(10).string(message.handle);
+    }
+    if (message.did !== "") {
+      writer.uint32(18).string(message.did);
+    }
+    if (message.appPassword !== undefined) {
+      writer.uint32(26).string(message.appPassword);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BlueskyAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBlueskyAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.handle = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.did = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appPassword = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BlueskyAccount {
+    return {
+      handle: isSet(object.handle) ? globalThis.String(object.handle) : "",
+      did: isSet(object.did) ? globalThis.String(object.did) : "",
+      appPassword: isSet(object.appPassword) ? globalThis.String(object.appPassword) : undefined,
+    };
+  },
+
+  toJSON(message: BlueskyAccount): unknown {
+    const obj: any = {};
+    if (message.handle !== "") {
+      obj.handle = message.handle;
+    }
+    if (message.did !== "") {
+      obj.did = message.did;
+    }
+    if (message.appPassword !== undefined) {
+      obj.appPassword = message.appPassword;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BlueskyAccount>, I>>(base?: I): BlueskyAccount {
+    return BlueskyAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BlueskyAccount>, I>>(object: I): BlueskyAccount {
+    const message = createBaseBlueskyAccount();
+    message.handle = object.handle ?? "";
+    message.did = object.did ?? "";
+    message.appPassword = object.appPassword ?? undefined;
+    return message;
+  },
+};
+
+function createBaseXTwitterAccount(): XTwitterAccount {
+  return { username: "", shortLivedUserAccessToken: undefined };
+}
+
+export const XTwitterAccount: MessageFns<XTwitterAccount> = {
+  encode(message: XTwitterAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      writer.uint32(18).string(message.shortLivedUserAccessToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): XTwitterAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseXTwitterAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.shortLivedUserAccessToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): XTwitterAccount {
+    return {
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
+        ? globalThis.String(object.shortLivedUserAccessToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: XTwitterAccount): unknown {
+    const obj: any = {};
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.shortLivedUserAccessToken !== undefined) {
+      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<XTwitterAccount>, I>>(base?: I): XTwitterAccount {
+    return XTwitterAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<XTwitterAccount>, I>>(object: I): XTwitterAccount {
+    const message = createBaseXTwitterAccount();
+    message.username = object.username ?? "";
+    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseThreadsAccount(): ThreadsAccount {
+  return { threadsUserId: "", username: "", authorizationCode: undefined };
+}
+
+export const ThreadsAccount: MessageFns<ThreadsAccount> = {
+  encode(message: ThreadsAccount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.threadsUserId !== "") {
+      writer.uint32(10).string(message.threadsUserId);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.authorizationCode !== undefined) {
+      writer.uint32(26).string(message.authorizationCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ThreadsAccount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseThreadsAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.threadsUserId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.authorizationCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ThreadsAccount {
+    return {
+      threadsUserId: isSet(object.threadsUserId) ? globalThis.String(object.threadsUserId) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      authorizationCode: isSet(object.authorizationCode) ? globalThis.String(object.authorizationCode) : undefined,
+    };
+  },
+
+  toJSON(message: ThreadsAccount): unknown {
+    const obj: any = {};
+    if (message.threadsUserId !== "") {
+      obj.threadsUserId = message.threadsUserId;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.authorizationCode !== undefined) {
+      obj.authorizationCode = message.authorizationCode;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ThreadsAccount>, I>>(base?: I): ThreadsAccount {
+    return ThreadsAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ThreadsAccount>, I>>(object: I): ThreadsAccount {
+    const message = createBaseThreadsAccount();
+    message.threadsUserId = object.threadsUserId ?? "";
+    message.username = object.username ?? "";
+    message.authorizationCode = object.authorizationCode ?? undefined;
+    return message;
+  },
+};
+
+function createBaseSyncDestinationStatus(): SyncDestinationStatus {
+  return { syncDestinationId: "", destinationInstanceId: undefined, destinationUrl: undefined, syncedAt: undefined };
+}
+
+export const SyncDestinationStatus: MessageFns<SyncDestinationStatus> = {
+  encode(message: SyncDestinationStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.syncDestinationId !== "") {
+      writer.uint32(10).string(message.syncDestinationId);
+    }
+    if (message.destinationInstanceId !== undefined) {
+      writer.uint32(18).string(message.destinationInstanceId);
+    }
+    if (message.destinationUrl !== undefined) {
+      writer.uint32(26).string(message.destinationUrl);
+    }
+    if (message.syncedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.syncedAt), writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncDestinationStatus {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSyncDestinationStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.syncDestinationId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.destinationInstanceId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.destinationUrl = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.syncedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SyncDestinationStatus {
+    return {
+      syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
+      destinationInstanceId: isSet(object.destinationInstanceId)
+        ? globalThis.String(object.destinationInstanceId)
+        : undefined,
+      destinationUrl: isSet(object.destinationUrl) ? globalThis.String(object.destinationUrl) : undefined,
+      syncedAt: isSet(object.syncedAt) ? globalThis.String(object.syncedAt) : undefined,
+    };
+  },
+
+  toJSON(message: SyncDestinationStatus): unknown {
+    const obj: any = {};
+    if (message.syncDestinationId !== "") {
+      obj.syncDestinationId = message.syncDestinationId;
+    }
+    if (message.destinationInstanceId !== undefined) {
+      obj.destinationInstanceId = message.destinationInstanceId;
+    }
+    if (message.destinationUrl !== undefined) {
+      obj.destinationUrl = message.destinationUrl;
+    }
+    if (message.syncedAt !== undefined) {
+      obj.syncedAt = message.syncedAt;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SyncDestinationStatus>, I>>(base?: I): SyncDestinationStatus {
+    return SyncDestinationStatus.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SyncDestinationStatus>, I>>(object: I): SyncDestinationStatus {
+    const message = createBaseSyncDestinationStatus();
+    message.syncDestinationId = object.syncDestinationId ?? "";
+    message.destinationInstanceId = object.destinationInstanceId ?? undefined;
+    message.destinationUrl = object.destinationUrl ?? undefined;
+    message.syncedAt = object.syncedAt ?? undefined;
+    return message;
+  },
+};
 
 function createBaseEventSyncSource(): EventSyncSource {
   return {
@@ -486,520 +1682,6 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
       ? EventSyncSource.fromPartial(object.source)
       : undefined;
     message.deleteSyncedEvents = object.deleteSyncedEvents ?? false;
-    return message;
-  },
-};
-
-function createBaseSyncDestination(): SyncDestination {
-  return {
-    id: "",
-    owner: undefined,
-    createdAt: undefined,
-    updatedAt: undefined,
-    syncedEventInstanceCount: undefined,
-    syncedPostCount: undefined,
-    facebookPage: undefined,
-  };
-}
-
-export const SyncDestination: MessageFns<SyncDestination> = {
-  encode(message: SyncDestination, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.owner !== undefined) {
-      Author.encode(message.owner, writer.uint32(18).fork()).join();
-    }
-    if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
-    }
-    if (message.updatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
-    }
-    if (message.syncedEventInstanceCount !== undefined) {
-      writer.uint32(48).uint64(message.syncedEventInstanceCount);
-    }
-    if (message.syncedPostCount !== undefined) {
-      writer.uint32(56).uint64(message.syncedPostCount);
-    }
-    if (message.facebookPage !== undefined) {
-      FacebookPage.encode(message.facebookPage, writer.uint32(74).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SyncDestination {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSyncDestination();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.owner = Author.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.syncedEventInstanceCount = longToNumber(reader.uint64());
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.syncedPostCount = longToNumber(reader.uint64());
-          continue;
-        }
-        case 9: {
-          if (tag !== 74) {
-            break;
-          }
-
-          message.facebookPage = FacebookPage.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SyncDestination {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
-      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
-      syncedEventInstanceCount: isSet(object.syncedEventInstanceCount)
-        ? globalThis.Number(object.syncedEventInstanceCount)
-        : undefined,
-      syncedPostCount: isSet(object.syncedPostCount) ? globalThis.Number(object.syncedPostCount) : undefined,
-      facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
-    };
-  },
-
-  toJSON(message: SyncDestination): unknown {
-    const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.owner !== undefined) {
-      obj.owner = Author.toJSON(message.owner);
-    }
-    if (message.createdAt !== undefined) {
-      obj.createdAt = message.createdAt;
-    }
-    if (message.updatedAt !== undefined) {
-      obj.updatedAt = message.updatedAt;
-    }
-    if (message.syncedEventInstanceCount !== undefined) {
-      obj.syncedEventInstanceCount = Math.round(message.syncedEventInstanceCount);
-    }
-    if (message.syncedPostCount !== undefined) {
-      obj.syncedPostCount = Math.round(message.syncedPostCount);
-    }
-    if (message.facebookPage !== undefined) {
-      obj.facebookPage = FacebookPage.toJSON(message.facebookPage);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<SyncDestination>, I>>(base?: I): SyncDestination {
-    return SyncDestination.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<SyncDestination>, I>>(object: I): SyncDestination {
-    const message = createBaseSyncDestination();
-    message.id = object.id ?? "";
-    message.owner = (object.owner !== undefined && object.owner !== null)
-      ? Author.fromPartial(object.owner)
-      : undefined;
-    message.createdAt = object.createdAt ?? undefined;
-    message.updatedAt = object.updatedAt ?? undefined;
-    message.syncedEventInstanceCount = object.syncedEventInstanceCount ?? undefined;
-    message.syncedPostCount = object.syncedPostCount ?? undefined;
-    message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
-      ? FacebookPage.fromPartial(object.facebookPage)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseGetSyncDestinationsResponse(): GetSyncDestinationsResponse {
-  return { destinations: [] };
-}
-
-export const GetSyncDestinationsResponse: MessageFns<GetSyncDestinationsResponse> = {
-  encode(message: GetSyncDestinationsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.destinations) {
-      SyncDestination.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetSyncDestinationsResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetSyncDestinationsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.destinations.push(SyncDestination.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetSyncDestinationsResponse {
-    return {
-      destinations: globalThis.Array.isArray(object?.destinations)
-        ? object.destinations.map((e: any) => SyncDestination.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: GetSyncDestinationsResponse): unknown {
-    const obj: any = {};
-    if (message.destinations?.length) {
-      obj.destinations = message.destinations.map((e) => SyncDestination.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<GetSyncDestinationsResponse>, I>>(base?: I): GetSyncDestinationsResponse {
-    return GetSyncDestinationsResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<GetSyncDestinationsResponse>, I>>(object: I): GetSyncDestinationsResponse {
-    const message = createBaseGetSyncDestinationsResponse();
-    message.destinations = object.destinations?.map((e) => SyncDestination.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseDeleteSyncDestinationRequest(): DeleteSyncDestinationRequest {
-  return { destination: undefined, deleteSyncedPosts: false };
-}
-
-export const DeleteSyncDestinationRequest: MessageFns<DeleteSyncDestinationRequest> = {
-  encode(message: DeleteSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.destination !== undefined) {
-      SyncDestination.encode(message.destination, writer.uint32(10).fork()).join();
-    }
-    if (message.deleteSyncedPosts !== false) {
-      writer.uint32(16).bool(message.deleteSyncedPosts);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteSyncDestinationRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteSyncDestinationRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.destination = SyncDestination.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.deleteSyncedPosts = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteSyncDestinationRequest {
-    return {
-      destination: isSet(object.destination) ? SyncDestination.fromJSON(object.destination) : undefined,
-      deleteSyncedPosts: isSet(object.deleteSyncedPosts) ? globalThis.Boolean(object.deleteSyncedPosts) : false,
-    };
-  },
-
-  toJSON(message: DeleteSyncDestinationRequest): unknown {
-    const obj: any = {};
-    if (message.destination !== undefined) {
-      obj.destination = SyncDestination.toJSON(message.destination);
-    }
-    if (message.deleteSyncedPosts !== false) {
-      obj.deleteSyncedPosts = message.deleteSyncedPosts;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<DeleteSyncDestinationRequest>, I>>(base?: I): DeleteSyncDestinationRequest {
-    return DeleteSyncDestinationRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<DeleteSyncDestinationRequest>, I>>(object: I): DeleteSyncDestinationRequest {
-    const message = createBaseDeleteSyncDestinationRequest();
-    message.destination = (object.destination !== undefined && object.destination !== null)
-      ? SyncDestination.fromPartial(object.destination)
-      : undefined;
-    message.deleteSyncedPosts = object.deleteSyncedPosts ?? false;
-    return message;
-  },
-};
-
-function createBaseFacebookPage(): FacebookPage {
-  return { pageId: "", pageName: "", shortLivedUserAccessToken: undefined };
-}
-
-export const FacebookPage: MessageFns<FacebookPage> = {
-  encode(message: FacebookPage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.pageId !== "") {
-      writer.uint32(10).string(message.pageId);
-    }
-    if (message.pageName !== "") {
-      writer.uint32(18).string(message.pageName);
-    }
-    if (message.shortLivedUserAccessToken !== undefined) {
-      writer.uint32(26).string(message.shortLivedUserAccessToken);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): FacebookPage {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFacebookPage();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.pageId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.pageName = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.shortLivedUserAccessToken = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FacebookPage {
-    return {
-      pageId: isSet(object.pageId) ? globalThis.String(object.pageId) : "",
-      pageName: isSet(object.pageName) ? globalThis.String(object.pageName) : "",
-      shortLivedUserAccessToken: isSet(object.shortLivedUserAccessToken)
-        ? globalThis.String(object.shortLivedUserAccessToken)
-        : undefined,
-    };
-  },
-
-  toJSON(message: FacebookPage): unknown {
-    const obj: any = {};
-    if (message.pageId !== "") {
-      obj.pageId = message.pageId;
-    }
-    if (message.pageName !== "") {
-      obj.pageName = message.pageName;
-    }
-    if (message.shortLivedUserAccessToken !== undefined) {
-      obj.shortLivedUserAccessToken = message.shortLivedUserAccessToken;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FacebookPage>, I>>(base?: I): FacebookPage {
-    return FacebookPage.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FacebookPage>, I>>(object: I): FacebookPage {
-    const message = createBaseFacebookPage();
-    message.pageId = object.pageId ?? "";
-    message.pageName = object.pageName ?? "";
-    message.shortLivedUserAccessToken = object.shortLivedUserAccessToken ?? undefined;
-    return message;
-  },
-};
-
-function createBaseSyncDestinationStatus(): SyncDestinationStatus {
-  return { syncDestinationId: "", destinationInstanceId: undefined, destinationUrl: undefined, syncedAt: undefined };
-}
-
-export const SyncDestinationStatus: MessageFns<SyncDestinationStatus> = {
-  encode(message: SyncDestinationStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.syncDestinationId !== "") {
-      writer.uint32(10).string(message.syncDestinationId);
-    }
-    if (message.destinationInstanceId !== undefined) {
-      writer.uint32(18).string(message.destinationInstanceId);
-    }
-    if (message.destinationUrl !== undefined) {
-      writer.uint32(26).string(message.destinationUrl);
-    }
-    if (message.syncedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.syncedAt), writer.uint32(34).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SyncDestinationStatus {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSyncDestinationStatus();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.syncDestinationId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.destinationInstanceId = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.destinationUrl = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.syncedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SyncDestinationStatus {
-    return {
-      syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
-      destinationInstanceId: isSet(object.destinationInstanceId)
-        ? globalThis.String(object.destinationInstanceId)
-        : undefined,
-      destinationUrl: isSet(object.destinationUrl) ? globalThis.String(object.destinationUrl) : undefined,
-      syncedAt: isSet(object.syncedAt) ? globalThis.String(object.syncedAt) : undefined,
-    };
-  },
-
-  toJSON(message: SyncDestinationStatus): unknown {
-    const obj: any = {};
-    if (message.syncDestinationId !== "") {
-      obj.syncDestinationId = message.syncDestinationId;
-    }
-    if (message.destinationInstanceId !== undefined) {
-      obj.destinationInstanceId = message.destinationInstanceId;
-    }
-    if (message.destinationUrl !== undefined) {
-      obj.destinationUrl = message.destinationUrl;
-    }
-    if (message.syncedAt !== undefined) {
-      obj.syncedAt = message.syncedAt;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<SyncDestinationStatus>, I>>(base?: I): SyncDestinationStatus {
-    return SyncDestinationStatus.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<SyncDestinationStatus>, I>>(object: I): SyncDestinationStatus {
-    const message = createBaseSyncDestinationStatus();
-    message.syncDestinationId = object.syncDestinationId ?? "";
-    message.destinationInstanceId = object.destinationInstanceId ?? undefined;
-    message.destinationUrl = object.destinationUrl ?? undefined;
-    message.syncedAt = object.syncedAt ?? undefined;
     return message;
   },
 };

@@ -14,8 +14,13 @@ message FederationInfo {
   // A list of servers that this server will federate with.
   repeated FederatedServer servers = 1;
 
-  // Facebook authentication configuration for the server. If set, allows users to use Facebook Event Sync Destinations.
+  // Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances.
   optional FacebookAuthConfig facebook_auth_config = 2;
+
+  // X (Twitter) authentication configuration for the server. Not yet used -- reserved for when
+  // this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations
+  // always fail with `x_twitter_app_not_configured` regardless of this field.
+  optional XTwitterAuthConfig x_twitter_auth_config = 3;
 }
 
 // A server that this server will federate with.
@@ -46,4 +51,13 @@ message FacebookAuthConfig {
   // The Facebook App Secret for the server. *Never serialized to the client.*
   // Admins: Edit this in the database's JSONB column directly.
   string app_secret = 2;
+}
+
+// X (Twitter) authentication configuration for the server. See `FederationInfo.x_twitter_auth_config`.
+message XTwitterAuthConfig {
+  // The X Developer App's Client ID for the server.
+  string client_id = 1;
+  // The X Developer App's Client Secret for the server. *Never serialized to the client.*
+  // Admins: Edit this in the database's JSONB column directly.
+  string client_secret = 2;
 }

@@ -261,9 +261,9 @@ fn get_follow_requests(
 
 // Attaches `row_user`'s own `SyncDestination`s to `proto_user` -- only for the single-user
 // `GetUsers` lookups (`get_by_username`/`get_by_user_id`), never the list-returning ones, and only
-// when `user` (the viewer) is `row_user` themselves (and holds `SyncEventsToFacebook` or
-// `SyncPostsToFacebook`, since a destination can now serve either) or an Admin -- mirrors
-// `get_sync_destinations.rs`'s own self-or-Admin gate exactly.
+// when `user` (the viewer) is `row_user` themselves (and holds *any* of the 10 `SYNC_EVENTS_TO_*`/
+// `SYNC_POSTS_TO_*` permissions, since a destination can now be any of 5 platforms) or an Admin --
+// mirrors `get_sync_destinations.rs`'s own self-or-Admin gate exactly.
 // `validate_permission`/`validate_any_permission` already check with `Admin` included, so the
 // self-view check below also passes for an Admin viewing their own profile, with no extra
 // permission needed.
@@ -279,6 +279,14 @@ fn attach_own_sync_destinations(
             vec![
                 Permission::SyncEventsToFacebook,
                 Permission::SyncPostsToFacebook,
+                Permission::SyncEventsToInstagram,
+                Permission::SyncPostsToInstagram,
+                Permission::SyncEventsToMastodon,
+                Permission::SyncPostsToMastodon,
+                Permission::SyncEventsToBluesky,
+                Permission::SyncPostsToBluesky,
+                Permission::SyncEventsToXTwitter,
+                Permission::SyncPostsToXTwitter,
                 Permission::Admin,
             ],
         )

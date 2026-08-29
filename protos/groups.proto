@@ -14,7 +14,7 @@ message Group {
   string id = 1;
   // Mutable name of the group. Must be unique, such that the derived `shortname` is also unique.
   string name = 2;
-  // Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated.
+  // Immutable shortname of the group. Derived from changes to `name` when the [`Group`](#jonline-Group) is updated.
   string shortname = 3;
   // A description of the group.
   string description = 4;
@@ -87,7 +87,7 @@ message GetGroupsResponse {
   bool has_next_page = 2;
 }
 
-// Used when fetching group members using the `GetMembers` RPC.
+// Used when fetching group members using the [`GetMembers`](#grpc-api-GetMembers) RPC.
 message Member {
   // The user.
   User user = 1;

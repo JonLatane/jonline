@@ -6,7 +6,7 @@
 //! `logic::resolve_timezone` can geocode it, else UTC -- location, description, and a link back
 //! to the event on this Jonline server), not a real Facebook **Event** object -- the Graph API's
 //! `event` node has been creation/update/delete-locked for third-party apps since v3.3 (2018),
-//! restricted to approved Facebook Marketing Partners. See `docs/facebook_federation.md` for the
+//! restricted to approved Facebook Marketing Partners. See `docs/facebook_and_x_twitter_federation.md` for the
 //! full rundown of why and what this does instead. `Post`s are simpler -- just title/content and
 //! a link back to the post -- see `post_post`.
 //!
@@ -22,11 +22,11 @@
 //! lasts until the user revokes access or changes their Facebook password), so it's stored once
 //! and reused indefinitely.
 
-use chrono::{DateTime, Utc};
 use serde_json::Value;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
+use crate::logic::{MediaAttachment, SyncMessage};
 use crate::models;
 use crate::protos::FederationInfo;
 
@@ -169,38 +169,15 @@ fn find_page_access_token(
     })
 }
 
-/// Content for the Facebook Page post representing an `EventInstance` -- see `post_event_instance`.
-/// Grouped into one struct (rather than more positional args) since several fields share the same
-/// `Option<String>` shape and are easy to transpose by accident.
-pub struct EventInstancePost<'a> {
-    pub title: &'a Option<String>,
-    pub content: &'a Option<String>,
-    /// Arbitrary external link the organizer set on the underlying `Post` (e.g. a ticketing site).
-    /// Used as the Graph API `link` (and thus the post's link-preview card) only if `event_url`
-    /// isn't set.
-    pub link: &'a Option<String>,
-    pub starts_at: DateTime<Utc>,
-    pub ends_at: DateTime<Utc>,
-    /// `EventInstance.location`'s `uniformly_formatted_address`, if any.
-    pub location: &'a Option<String>,
-    /// The IANA timezone `location` resolves to, if `logic::resolve_timezone` could geocode it --
-    /// see that function's doc comment. `starts_at`/`ends_at` are shown in this zone if set,
-    /// otherwise in UTC.
-    pub timezone: Option<chrono_tz::Tz>,
-    /// Link to this event on this Jonline server's own frontend. Only buildable when
-    /// `ServerConfiguration.external_cdn_config.frontend_host` is configured -- see
-    /// `sync_event_instance`'s caller -- so this is `None` on servers without that set up.
-    pub event_url: &'a Option<String>,
-}
-
-/// Posts an `EventInstance`'s details to `destination`'s connected Facebook Page's feed (there is
-/// no real Facebook "Event" created -- see the module doc). Returns the new post's ID and a link
-/// to it.
+/// Posts an `EventInstance`'s details (already formatted into `message.text` -- see
+/// `logic::sync_message::build_event_instance_message`) to `destination`'s connected Facebook
+/// Page's feed (there is no real Facebook "Event" created -- see the module doc). Returns the new
+/// post's ID and a link to it.
 pub fn post_event_instance(
     destination: &models::SyncDestination,
-    post: &EventInstancePost,
+    message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    post_event_instance_at(DEFAULT_GRAPH_API_BASE_URL, destination, post)
+    post_event_instance_at(DEFAULT_GRAPH_API_BASE_URL, destination, message)
 }
 
 /// Same as `post_event_instance`, but against an arbitrary `base_url` -- see
@@ -208,94 +185,67 @@ pub fn post_event_instance(
 pub fn post_event_instance_at(
     base_url: &str,
     destination: &models::SyncDestination,
-    post: &EventInstancePost,
+    message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    // Error string intentionally left as `event_sync_destination_not_configured` (not renamed to
-    // match `SyncDestination`) -- this is an identifier/move-only change for the existing
-    // EventInstance sync path, not a behavior change; `facebook_sync_tests` asserts on this exact
-    // string.
-    let not_configured = || {
-        Status::new(
-            Code::FailedPrecondition,
-            "event_sync_destination_not_configured",
-        )
-    };
-    let facebook_page = destination
-        .configuration
-        .get("facebook_page")
-        .ok_or_else(not_configured)?;
-    let page_id = facebook_page
-        .get("page_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(not_configured)?;
-    let access_token = facebook_page
-        .get("access_token")
-        .and_then(|v| v.as_str())
-        .ok_or_else(not_configured)?;
-
-    let message = format_message(post);
-    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
-
-    let mut params = vec![
-        ("message", message.as_str()),
-        ("access_token", access_token),
-    ];
-    let link = post
-        .event_url
-        .as_ref()
-        .filter(|l| !l.trim().is_empty())
-        .or_else(|| post.link.as_ref().filter(|l| !l.trim().is_empty()));
-    if let Some(link) = link {
-        params.push(("link", link.as_str()));
-    }
-
-    let response = graph_post(&url, &params)?;
-    let post_id = response
-        .get("id")
-        .and_then(|v| v.as_str())
-        .map(str::to_string)
-        .ok_or_else(|| {
-            log::error!("Facebook post response missing id: {:?}", response);
-            Status::new(Code::Internal, "facebook_post_failed")
-        })?;
-    let post_url = format!("https://www.facebook.com/{}", post_id);
-    Ok((post_id, post_url))
+    post_to_facebook_page(
+        base_url,
+        destination,
+        message,
+        "sync_destination_not_configured",
+    )
 }
 
-/// Content for the Facebook Page post representing a `Post` -- see `post_post`. Simpler than
-/// `EventInstancePost`: a `Post` has no start/end time, timezone, or location, so this is just
-/// title/content and a link back to it.
-pub struct PostFacebookContent<'a> {
-    pub title: &'a Option<String>,
-    pub content: &'a Option<String>,
-    /// Arbitrary external link the author set on the `Post` (e.g. an article/ticketing link).
-    /// Used as the Graph API `link` (and thus the post's link-preview card) only if `post_url`
-    /// isn't set.
-    pub link: &'a Option<String>,
-    /// Link to this `Post` on this Jonline server's own frontend. Only buildable when
-    /// `ServerConfiguration.external_cdn_config.frontend_host` is configured -- see `sync_post`'s
-    /// caller -- so this is `None` on servers without that set up.
-    pub post_url: &'a Option<String>,
-}
-
-/// Posts a `Post`'s details to `destination`'s connected Facebook Page's feed. Returns the new
-/// post's ID and a link to it. Mirrors `post_event_instance`, without the event-specific
-/// start/end time/location formatting.
+/// Posts a `Post`'s details (already formatted into `message.text` -- see
+/// `logic::sync_message::build_post_message`) to `destination`'s connected Facebook Page's feed.
+/// Returns the new post's ID and a link to it. Functionally identical to `post_event_instance` --
+/// kept as its own named function (rather than having `sync_post.rs` call `post_event_instance`
+/// directly) purely so each call site's name mirrors the RPC it's dispatched from (`SyncPost` vs
+/// `SyncEventInstance`), matching every other platform's naming convention.
 pub fn post_post(
     destination: &models::SyncDestination,
-    post: &PostFacebookContent,
+    message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    post_post_at(DEFAULT_GRAPH_API_BASE_URL, destination, post)
+    post_post_at(DEFAULT_GRAPH_API_BASE_URL, destination, message)
 }
 
 /// Same as `post_post`, but against an arbitrary `base_url` -- see `connect_facebook_page_at`.
 pub fn post_post_at(
     base_url: &str,
     destination: &models::SyncDestination,
-    post: &PostFacebookContent,
+    message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    let not_configured =
-        || Status::new(Code::FailedPrecondition, "sync_destination_not_configured");
+    post_to_facebook_page(
+        base_url,
+        destination,
+        message,
+        "sync_destination_not_configured",
+    )
+}
+
+/// Shared implementation of `post_event_instance_at`/`post_post_at` -- now that both take a plain
+/// `&SyncMessage`, there's nothing left distinguishing an EventInstance push from a Post push at
+/// all (see each function's own doc for why two names still exist).
+///
+/// The Page Graph API doesn't support mixing photo attachments and a plain text `/feed` call the
+/// way Instagram/Threads' single-container flow does -- these are structurally different
+/// mechanisms, so `message.media` is dispatched into one of three shapes:
+/// - No media: today's original behavior -- `/feed` with `message`/`link`.
+/// - One or more images: each is first uploaded *unpublished* via `/photos` (returning a
+///   `photo_id`), then `/feed` is called once with `message` and one indexed
+///   `attached_media[N]={"media_fbid":"<photo_id>"}` field per photo (the documented Graph API
+///   multi-photo-post pattern). `link` is dropped here -- Facebook's UI doesn't show a
+///   link-preview card alongside photo attachments anyway.
+/// - Video (and no images): posted via the dedicated `/videos` endpoint instead of `/feed`
+///   entirely, using `file_url`/`description`.
+/// - Both images and video present: Facebook can't do both in one call, so the video path wins
+///   and the images are silently dropped -- a real platform limitation, not a bug to work around.
+fn post_to_facebook_page(
+    base_url: &str,
+    destination: &models::SyncDestination,
+    message: &SyncMessage,
+    not_configured_error: &'static str,
+) -> Result<(String, String), Status> {
+    let not_configured = || Status::new(Code::FailedPrecondition, not_configured_error);
     let facebook_page = destination
         .configuration
         .get("facebook_page")
@@ -309,23 +259,112 @@ pub fn post_post_at(
         .and_then(|v| v.as_str())
         .ok_or_else(not_configured)?;
 
-    let message = format_post_message(post);
-    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+    let images: Vec<&MediaAttachment> = message.media.iter().filter(|m| m.is_image()).collect();
+    let video = message.media.iter().find(|m| m.is_video());
 
-    let mut params = vec![
-        ("message", message.as_str()),
-        ("access_token", access_token),
-    ];
-    let link = post
-        .post_url
-        .as_ref()
-        .filter(|l| !l.trim().is_empty())
-        .or_else(|| post.link.as_ref().filter(|l| !l.trim().is_empty()));
-    if let Some(link) = link {
-        params.push(("link", link.as_str()));
+    if let Some(video) = video.filter(|_| images.is_empty()) {
+        return post_video_to_facebook_page(base_url, page_id, access_token, message, video);
+    }
+    if !images.is_empty() {
+        return post_photos_to_facebook_page(base_url, page_id, access_token, message, &images);
     }
 
+    let url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+    let mut params = vec![
+        ("message", message.text.as_str()),
+        ("access_token", access_token),
+    ];
+    if let Some(link) = message.link.as_ref().filter(|l| !l.trim().is_empty()) {
+        params.push(("link", link.as_str()));
+    }
     let response = graph_post(&url, &params)?;
+    extract_facebook_post_id_and_url(&response)
+}
+
+fn post_video_to_facebook_page(
+    base_url: &str,
+    page_id: &str,
+    access_token: &str,
+    message: &SyncMessage,
+    video: &MediaAttachment,
+) -> Result<(String, String), Status> {
+    let url = format!("{}/{}/{}/videos", base_url, GRAPH_API_VERSION, page_id);
+    let response = graph_post(
+        &url,
+        &[
+            ("file_url", video.url.as_str()),
+            ("description", message.text.as_str()),
+            ("access_token", access_token),
+        ],
+    )?;
+    let video_id = response
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!("Facebook video post response missing id: {:?}", response);
+            Status::new(Code::Internal, "facebook_post_failed")
+        })?;
+    // Prefer the response's own permalink if the Graph API returns one for this call -- more
+    // reliable than hand-building the URL -- else fall back to the conventional `/videos/<id>`
+    // shape.
+    let video_url = response
+        .get("permalink_url")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("https://www.facebook.com/{}/videos/{}", page_id, video_id));
+    Ok((video_id, video_url))
+}
+
+fn post_photos_to_facebook_page(
+    base_url: &str,
+    page_id: &str,
+    access_token: &str,
+    message: &SyncMessage,
+    images: &[&MediaAttachment],
+) -> Result<(String, String), Status> {
+    let photos_url = format!("{}/{}/{}/photos", base_url, GRAPH_API_VERSION, page_id);
+    let mut photo_ids = Vec::with_capacity(images.len());
+    for image in images {
+        let response = graph_post(
+            &photos_url,
+            &[
+                ("url", image.url.as_str()),
+                ("published", "false"),
+                ("access_token", access_token),
+            ],
+        )?;
+        let photo_id = response
+            .get("id")
+            .and_then(|v| v.as_str())
+            .map(str::to_string)
+            .ok_or_else(|| {
+                log::error!("Facebook photo upload response missing id: {:?}", response);
+                Status::new(Code::Internal, "facebook_post_failed")
+            })?;
+        photo_ids.push(photo_id);
+    }
+
+    let feed_url = format!("{}/{}/{}/feed", base_url, GRAPH_API_VERSION, page_id);
+    let mut owned_params: Vec<(String, String)> = vec![
+        ("message".to_string(), message.text.clone()),
+        ("access_token".to_string(), access_token.to_string()),
+    ];
+    for (i, photo_id) in photo_ids.iter().enumerate() {
+        owned_params.push((
+            format!("attached_media[{i}]"),
+            serde_json::json!({ "media_fbid": photo_id }).to_string(),
+        ));
+    }
+    let params: Vec<(&str, &str)> = owned_params
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let response = graph_post(&feed_url, &params)?;
+    extract_facebook_post_id_and_url(&response)
+}
+
+fn extract_facebook_post_id_and_url(response: &Value) -> Result<(String, String), Status> {
     let post_id = response
         .get("id")
         .and_then(|v| v.as_str())
@@ -338,64 +377,169 @@ pub fn post_post_at(
     Ok((post_id, post_url))
 }
 
-fn format_post_message(post: &PostFacebookContent) -> String {
-    let mut lines = vec![];
-    if let Some(title) = post.title.as_ref().filter(|t| !t.trim().is_empty()) {
-        lines.push(title.clone());
-    }
-    if let Some(content) = post.content.as_ref().filter(|c| !c.trim().is_empty()) {
-        lines.push(content.clone());
-    }
-    if let Some(post_url) = post.post_url.as_ref().filter(|l| !l.trim().is_empty()) {
-        lines.push(format!("View post: {post_url}"));
-    }
-    lines.join("\n\n")
+/// Looks up the Instagram Business/Creator account linked to `page_id` (via `page_access_token`,
+/// the same long-lived Page token `connect_facebook_page` returns) -- required before posting to
+/// Instagram, since posting piggybacks on the linked Page's token rather than a separate Instagram
+/// login. Returns `(instagram_business_account_id, username)`.
+pub fn get_linked_instagram_business_account(
+    page_access_token: &str,
+    page_id: &str,
+) -> Result<(String, String), Status> {
+    get_linked_instagram_business_account_at(DEFAULT_GRAPH_API_BASE_URL, page_access_token, page_id)
 }
 
-fn format_message(post: &EventInstancePost) -> String {
-    let mut lines = vec![];
-    if let Some(title) = post.title.as_ref().filter(|t| !t.trim().is_empty()) {
-        lines.push(title.clone());
-    }
-    let time_range = match post.timezone {
-        Some(tz) => format_time_range(
-            post.starts_at.with_timezone(&tz),
-            post.ends_at.with_timezone(&tz),
-        ),
-        None => format_time_range(post.starts_at, post.ends_at),
+/// Same as `get_linked_instagram_business_account`, but against an arbitrary `base_url` -- see
+/// `connect_facebook_page_at`.
+pub fn get_linked_instagram_business_account_at(
+    base_url: &str,
+    page_access_token: &str,
+    page_id: &str,
+) -> Result<(String, String), Status> {
+    let url = format!("{}/{}/{}", base_url, GRAPH_API_VERSION, page_id);
+    let response = graph_get(
+        &url,
+        &[
+            ("fields", "instagram_business_account{id,username}"),
+            ("access_token", page_access_token),
+        ],
+    )?;
+    let account = response
+        .get("instagram_business_account")
+        .ok_or_else(|| {
+            Status::new(
+                Code::FailedPrecondition,
+                "instagram_no_linked_business_account",
+            )
+        })?;
+    let id = account
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            Status::new(
+                Code::FailedPrecondition,
+                "instagram_no_linked_business_account",
+            )
+        })?;
+    let username = account
+        .get("username")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    Ok((id, username))
+}
+
+/// Posts an already-built `SyncMessage` to `destination`'s linked Instagram Business account.
+/// Instagram's Graph API has **no text-only post type**, so this fails fast with
+/// `instagram_requires_media` if `message.media` is empty rather than attempting the call. A
+/// 2-step flow otherwise: create a media container (`/media`) from the first media URL + caption,
+/// then publish it (`/media_publish`), then fetch the published media's real `permalink` (the
+/// publish step only returns an opaque ID, not a link). Returns `(media_id, permalink)`.
+pub fn post_to_instagram(
+    destination: &models::SyncDestination,
+    message: &SyncMessage,
+) -> Result<(String, String), Status> {
+    post_to_instagram_at(DEFAULT_GRAPH_API_BASE_URL, destination, message)
+}
+
+/// Same as `post_to_instagram`, but against an arbitrary `base_url` -- see
+/// `connect_facebook_page_at`.
+pub fn post_to_instagram_at(
+    base_url: &str,
+    destination: &models::SyncDestination,
+    message: &SyncMessage,
+) -> Result<(String, String), Status> {
+    let Some(media) = message.media.first() else {
+        return Err(Status::new(
+            Code::FailedPrecondition,
+            "instagram_requires_media",
+        ));
     };
-    lines.push(time_range);
-    if let Some(location) = post.location.as_ref().filter(|l| !l.trim().is_empty()) {
-        lines.push(format!("Location: {location}"));
-    }
-    if let Some(content) = post.content.as_ref().filter(|c| !c.trim().is_empty()) {
-        lines.push(content.clone());
-    }
-    if let Some(event_url) = post.event_url.as_ref().filter(|l| !l.trim().is_empty()) {
-        lines.push(format!("Details & RSVP: {event_url}"));
-    }
-    lines.join("\n\n")
-}
 
-/// Generic over the timezone (`Utc` or a `chrono_tz::Tz` the caller already converted `starts_at`
-/// and `ends_at` into) so this doesn't need to duplicate itself for each.
-fn format_time_range<Tz: chrono::TimeZone>(starts_at: DateTime<Tz>, ends_at: DateTime<Tz>) -> String
-where
-    Tz::Offset: std::fmt::Display,
-{
-    let start_date = starts_at.format("%A, %B %-d, %Y").to_string();
-    let start_time = starts_at.format("%-I:%M %p").to_string();
-    let zone = starts_at.format("%Z").to_string();
-    if ends_at <= starts_at {
-        return format!("{start_date} at {start_time} {zone}");
-    }
-    if starts_at.date_naive() == ends_at.date_naive() {
-        let end_time = ends_at.format("%-I:%M %p").to_string();
-        format!("{start_date} at {start_time} \u{2013} {end_time} {zone}")
+    let not_configured =
+        || Status::new(Code::FailedPrecondition, "sync_destination_not_configured");
+    let instagram_account = destination
+        .configuration
+        .get("instagram_account")
+        .ok_or_else(not_configured)?;
+    let ig_user_id = instagram_account
+        .get("instagram_business_account_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(not_configured)?;
+    let access_token = instagram_account
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(not_configured)?;
+
+    let create_url = format!("{}/{}/{}/media", base_url, GRAPH_API_VERSION, ig_user_id);
+    let mut create_params: Vec<(&str, &str)> = vec![
+        ("caption", message.text.as_str()),
+        ("access_token", access_token),
+    ];
+    if media.is_video() {
+        // Current Meta guidance routes single-video feed posts through the Reels container type
+        // via the Graph API (there's no separate plain "feed video" media_type) -- if Meta's docs
+        // have since introduced a dedicated non-Reels video post type, prefer that instead.
+        create_params.push(("media_type", "REELS"));
+        create_params.push(("video_url", media.url.as_str()));
     } else {
-        let end = ends_at.format("%A, %B %-d, %Y at %-I:%M %p %Z").to_string();
-        format!("{start_date} at {start_time} {zone} \u{2013} {end}")
+        // No `media_type` needed -- Instagram defaults to IMAGE.
+        create_params.push(("image_url", media.url.as_str()));
     }
+    let create_response = graph_post(&create_url, &create_params)?;
+    let creation_id = create_response
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!(
+                "Instagram media creation response missing id: {:?}",
+                create_response
+            );
+            Status::new(Code::Internal, "instagram_post_failed")
+        })?;
+
+    let publish_url = format!(
+        "{}/{}/{}/media_publish",
+        base_url, GRAPH_API_VERSION, ig_user_id
+    );
+    let publish_response = graph_post(
+        &publish_url,
+        &[
+            ("creation_id", creation_id.as_str()),
+            ("access_token", access_token),
+        ],
+    )?;
+    let media_id = publish_response
+        .get("id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!(
+                "Instagram media_publish response missing id: {:?}",
+                publish_response
+            );
+            Status::new(Code::Internal, "instagram_post_failed")
+        })?;
+
+    let permalink_url = format!("{}/{}/{}", base_url, GRAPH_API_VERSION, media_id);
+    let permalink_response = graph_get(
+        &permalink_url,
+        &[("fields", "permalink"), ("access_token", access_token)],
+    )?;
+    let permalink = permalink_response
+        .get("permalink")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            log::error!(
+                "Instagram media permalink lookup response missing permalink: {:?}",
+                permalink_response
+            );
+            Status::new(Code::Internal, "instagram_post_failed")
+        })?;
+
+    Ok((media_id, permalink))
 }
 
 fn graph_get(url: &str, params: &[(&str, &str)]) -> Result<Value, Status> {

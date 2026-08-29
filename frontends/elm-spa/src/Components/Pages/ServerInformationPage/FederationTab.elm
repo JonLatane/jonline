@@ -2,8 +2,9 @@ module Components.Pages.ServerInformationPage.FederationTab exposing (Model, Msg
 
 {-| The Federation tab of `Components.Pages.ServerInformationPage` -- the server's federated-server
 chip strip (add/remove/reorder-animated via `UI.Flip`, see `FederationEdit`'s own doc), the Facebook
-App ID/Secret an admin connects so users can create Facebook Event Sync Destinations (see
-`logic::facebook_sync` on the backend), and the Web Push VAPID public/private keys an admin sets so
+App ID/Secret an admin connects so users can create Facebook/Instagram Sync Destinations for their
+Posts and EventInstances (see `logic::facebook_sync` on the backend), and the Web Push VAPID
+public/private keys an admin sets so
 `RegisterPushSubscription`'d browsers actually receive notifications (see `backend/src/web_push`).
 All three are backed by fields on the same `ServerConfiguration`
 (`federationInfo`/`federationInfo.facebookAuthConfig`/`webPushConfig`), saved through the same
@@ -553,7 +554,7 @@ update shared targetHost isSecure maybeServer msg model =
 {-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
 every other editor's transform is -- overlays `servers` (the edit's `pending` list, in its edit's
 own order) onto a freshly re-fetched `ServerConfiguration`'s `federationInfo`, leaving
-`facebookAuthConfig` (and every other field) untouched.
+`facebookAuthConfig`/`xTwitterAuthConfig` (and every other field) untouched.
 -}
 applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
 applyFederatedServers servers config =
@@ -562,6 +563,7 @@ applyFederatedServers servers config =
             Just
                 { servers = servers
                 , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
+                , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
                 }
     }
 
@@ -578,7 +580,7 @@ applyFacebookAppId appId config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
     in
     { config
         | federationInfo =
@@ -595,7 +597,7 @@ applyFacebookAppSecret appSecret config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
 
         existingAppId : String
         existingAppId =

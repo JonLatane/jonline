@@ -10,7 +10,7 @@ export const protobufPackage = "jonline";
 
 /**
  * Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
- * (A `Membership` is the link between a [`Group`](#jonline-Group) and a `User`.)
+ * (A [`Membership`](#jonline-Membership) is the link between a [`Group`](#jonline-Group) and a [`User`](#jonline-User).)
  *
  * Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
  * and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
@@ -42,7 +42,7 @@ export enum Permission {
   FOLLOW_USERS = 5,
   /**
    * GRANT_BASIC_PERMISSIONS - Allow the user to grant Basic Permissions to other users. "Basic Permissions"
-   * are defined by your `ServerConfiguration`'s `basic_user_permissions`.
+   * are defined by your [`ServerConfiguration`](#jonline-ServerConfiguration)'s `basic_user_permissions`.
    */
   GRANT_BASIC_PERMISSIONS = 6,
   /**
@@ -67,13 +67,13 @@ export enum Permission {
   INVITE_GROUP_MEMBERS = 16,
   /**
    * VIEW_POSTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
-   * As a group permission, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility.
+   * As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Post`](#jonline-Post)s have `LIMITED` or higher visibility.
    * Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
    */
   VIEW_POSTS = 20,
   /**
-   * CREATE_POSTS - As a user permission, allow the user to create `Post`s of `PRIVATE` and `LIMITED` visibility.
-   * As a group permission, allow the user to create `GroupPost`s for `POST` and `FEDERATED_POST` `PostContext`s..
+   * CREATE_POSTS - As a user permission, allow the user to create [`Post`](#jonline-Post)s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `POST` and `FEDERATED_POST` [`PostContext`](#jonline-PostContext)s..
    */
   CREATE_POSTS = 21,
   /** PUBLISH_POSTS_LOCALLY - Allow the user to publish posts with `SERVER_PUBLIC` visibility. */
@@ -88,13 +88,13 @@ export enum Permission {
   EDIT_POST_TITLES_AND_LINKS = 26,
   /**
    * VIEW_EVENTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
-   * As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility.
+   * As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Event`](#jonline-Event) [`Post`](#jonline-Post)s have `LIMITED` or higher visibility.
    * Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
    */
   VIEW_EVENTS = 30,
   /**
-   * CREATE_EVENTS - As a user permission, allow the user to create `Event`s of `PRIVATE` and `LIMITED` visibility.
-   * As a group permission, allow the user to create `GroupPost`s for `EVENT` and `FEDERATED_EVENT_INSTANCE` `PostContext`s..
+   * CREATE_EVENTS - As a user permission, allow the user to create [`Event`](#jonline-Event)s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#jonline-PostContext)s..
    */
   CREATE_EVENTS = 31,
   /** PUBLISH_EVENTS_LOCALLY - Allow the user to publish events with `SERVER_PUBLIC` visibility. */
@@ -107,16 +107,6 @@ export enum Permission {
   RSVP_TO_EVENTS = 35,
   /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
   SYNCHRONIZE_EVENTS = 36,
-  /**
-   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post EventInstances to a
-   * connected Facebook Page, and to sync EventInstances to them.
-   */
-  SYNC_EVENTS_TO_FACEBOOK = 37,
-  /**
-   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update `SyncDestination`s that cross-post Posts to a
-   * connected Facebook Page, and to sync Posts to them.
-   */
-  SYNC_POSTS_TO_FACEBOOK = 38,
   /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -132,6 +122,72 @@ export enum Permission {
   MODERATE_MEDIA = 44,
   READ_PERSONAL_MESSAGES = 50,
   READ_ALL_SYSTEM_MESSAGES = 51,
+  /**
+   * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and
+   * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
+   * since this is the most likely area to keep growing as new platforms are added.
+   *
+   * Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected Facebook Page, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_FACEBOOK = 1000,
+  /**
+   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected Facebook Page, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_FACEBOOK = 1001,
+  /**
+   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected Instagram Business/Creator account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_INSTAGRAM = 1010,
+  /**
+   * SYNC_POSTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected Instagram Business/Creator account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_INSTAGRAM = 1011,
+  /**
+   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected Mastodon account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_MASTODON = 1020,
+  /**
+   * SYNC_POSTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected Mastodon account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_MASTODON = 1021,
+  /**
+   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected Bluesky account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_BLUESKY = 1030,
+  /**
+   * SYNC_POSTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected Bluesky account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_BLUESKY = 1031,
+  /**
+   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
+   * see [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+   */
+  SYNC_EVENTS_TO_X_TWITTER = 1040,
+  /**
+   * SYNC_POSTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
+   * [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+   */
+  SYNC_POSTS_TO_X_TWITTER = 1041,
+  /**
+   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * connected Threads account, and to sync EventInstances to them.
+   */
+  SYNC_EVENTS_TO_THREADS = 1050,
+  /**
+   * SYNC_POSTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * connected Threads account, and to sync Posts to them.
+   */
+  SYNC_POSTS_TO_THREADS = 1051,
   /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
   BUSINESS = 9998,
   /**
@@ -141,8 +197,8 @@ export enum Permission {
   RUN_BOTS = 9999,
   /**
    * ADMIN - Marks the user as an admin. In the context of user permissions, allows the user to configure the server,
-   * moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group,
-   * modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s.
+   * moderate/update visibility/permissions to any [`User`](#jonline-User), [`Group`](#jonline-Group), [`Post`](#jonline-Post) or [`Event`](#jonline-Event). In the context of group permissions, allows the user to configure the group,
+   * modify members and member permissions, and moderate [`GroupPost`](#jonline-GroupPost)s and `GroupEvent`s.
    */
   ADMIN = 10000,
   /**
@@ -239,12 +295,6 @@ export function permissionFromJSON(object: any): Permission {
     case 36:
     case "SYNCHRONIZE_EVENTS":
       return Permission.SYNCHRONIZE_EVENTS;
-    case 37:
-    case "SYNC_EVENTS_TO_FACEBOOK":
-      return Permission.SYNC_EVENTS_TO_FACEBOOK;
-    case 38:
-    case "SYNC_POSTS_TO_FACEBOOK":
-      return Permission.SYNC_POSTS_TO_FACEBOOK;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -266,6 +316,42 @@ export function permissionFromJSON(object: any): Permission {
     case 51:
     case "READ_ALL_SYSTEM_MESSAGES":
       return Permission.READ_ALL_SYSTEM_MESSAGES;
+    case 1000:
+    case "SYNC_EVENTS_TO_FACEBOOK":
+      return Permission.SYNC_EVENTS_TO_FACEBOOK;
+    case 1001:
+    case "SYNC_POSTS_TO_FACEBOOK":
+      return Permission.SYNC_POSTS_TO_FACEBOOK;
+    case 1010:
+    case "SYNC_EVENTS_TO_INSTAGRAM":
+      return Permission.SYNC_EVENTS_TO_INSTAGRAM;
+    case 1011:
+    case "SYNC_POSTS_TO_INSTAGRAM":
+      return Permission.SYNC_POSTS_TO_INSTAGRAM;
+    case 1020:
+    case "SYNC_EVENTS_TO_MASTODON":
+      return Permission.SYNC_EVENTS_TO_MASTODON;
+    case 1021:
+    case "SYNC_POSTS_TO_MASTODON":
+      return Permission.SYNC_POSTS_TO_MASTODON;
+    case 1030:
+    case "SYNC_EVENTS_TO_BLUESKY":
+      return Permission.SYNC_EVENTS_TO_BLUESKY;
+    case 1031:
+    case "SYNC_POSTS_TO_BLUESKY":
+      return Permission.SYNC_POSTS_TO_BLUESKY;
+    case 1040:
+    case "SYNC_EVENTS_TO_X_TWITTER":
+      return Permission.SYNC_EVENTS_TO_X_TWITTER;
+    case 1041:
+    case "SYNC_POSTS_TO_X_TWITTER":
+      return Permission.SYNC_POSTS_TO_X_TWITTER;
+    case 1050:
+    case "SYNC_EVENTS_TO_THREADS":
+      return Permission.SYNC_EVENTS_TO_THREADS;
+    case 1051:
+    case "SYNC_POSTS_TO_THREADS":
+      return Permission.SYNC_POSTS_TO_THREADS;
     case 9998:
     case "BUSINESS":
       return Permission.BUSINESS;
@@ -343,10 +429,6 @@ export function permissionToJSON(object: Permission): string {
       return "RSVP_TO_EVENTS";
     case Permission.SYNCHRONIZE_EVENTS:
       return "SYNCHRONIZE_EVENTS";
-    case Permission.SYNC_EVENTS_TO_FACEBOOK:
-      return "SYNC_EVENTS_TO_FACEBOOK";
-    case Permission.SYNC_POSTS_TO_FACEBOOK:
-      return "SYNC_POSTS_TO_FACEBOOK";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:
@@ -361,6 +443,30 @@ export function permissionToJSON(object: Permission): string {
       return "READ_PERSONAL_MESSAGES";
     case Permission.READ_ALL_SYSTEM_MESSAGES:
       return "READ_ALL_SYSTEM_MESSAGES";
+    case Permission.SYNC_EVENTS_TO_FACEBOOK:
+      return "SYNC_EVENTS_TO_FACEBOOK";
+    case Permission.SYNC_POSTS_TO_FACEBOOK:
+      return "SYNC_POSTS_TO_FACEBOOK";
+    case Permission.SYNC_EVENTS_TO_INSTAGRAM:
+      return "SYNC_EVENTS_TO_INSTAGRAM";
+    case Permission.SYNC_POSTS_TO_INSTAGRAM:
+      return "SYNC_POSTS_TO_INSTAGRAM";
+    case Permission.SYNC_EVENTS_TO_MASTODON:
+      return "SYNC_EVENTS_TO_MASTODON";
+    case Permission.SYNC_POSTS_TO_MASTODON:
+      return "SYNC_POSTS_TO_MASTODON";
+    case Permission.SYNC_EVENTS_TO_BLUESKY:
+      return "SYNC_EVENTS_TO_BLUESKY";
+    case Permission.SYNC_POSTS_TO_BLUESKY:
+      return "SYNC_POSTS_TO_BLUESKY";
+    case Permission.SYNC_EVENTS_TO_X_TWITTER:
+      return "SYNC_EVENTS_TO_X_TWITTER";
+    case Permission.SYNC_POSTS_TO_X_TWITTER:
+      return "SYNC_POSTS_TO_X_TWITTER";
+    case Permission.SYNC_EVENTS_TO_THREADS:
+      return "SYNC_EVENTS_TO_THREADS";
+    case Permission.SYNC_POSTS_TO_THREADS:
+      return "SYNC_POSTS_TO_THREADS";
     case Permission.BUSINESS:
       return "BUSINESS";
     case Permission.RUN_BOTS:

@@ -229,7 +229,7 @@ export function postMediaLayoutToJSON(object: PostMediaLayout): string {
  *     - Get one post ,including preview data/
  * - `{post_id:, reply_depth: 1}`
  *     - Get replies to a post - only support for replyDepth=1 is done for now though.
- * - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
+ * - `{listing_type: MyGroupsPosts|[`GroupPost`](#jonline-GroupPost)sPendingModeration, group_id:}`
  *     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
  * - `{author_user_id:, group_id:}`
  *     - Get posts by a user for a group. (TODO)
@@ -264,7 +264,7 @@ export interface GetPostsRequest {
   postIds?:
     | string
     | undefined;
-  /** The listing type of the request. See `PostListingType` for more info. */
+  /** The listing type of the request. See [`PostListingType`](#jonline-PostListingType) for more info. */
   listingType: PostListingType;
   /** The page of results to return. Defaults to 0. */
   page: number;
@@ -287,7 +287,7 @@ export interface GetPostsResponse {
 
 /**
  * A `Post` is a message that can be posted to the server. Its `visibility`
- * as well as any associated `GroupPost`s and `UserPost`s determine what users
+ * as well as any associated [`GroupPost`](#jonline-GroupPost)s and [`UserPost`](#jonline-UserPost)s determine what users
  * see it and where.
  *
  * `Post`s are also a fundamental unit of the system. They provide a building block
@@ -390,7 +390,7 @@ export interface SyncPostRequest {
 }
 
 /**
- * Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+ * Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of [`SyncPost`](#grpc-api-SyncPost).
  * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
  */
 export interface DeletePostSyncDestinationRequest {
@@ -401,7 +401,7 @@ export interface DeletePostSyncDestinationRequest {
 }
 
 /**
- * A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+ * A `GroupPost` is a cross-post of a [`Post`](#jonline-Post) to a [`Group`](#jonline-Group). It contains
  * information about the moderation of the post in the group, as well as
  * the time it was cross-posted and the user who did the cross-posting.
  */
@@ -427,7 +427,7 @@ export interface GroupPost {
 }
 
 /**
- * A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
+ * A `UserPost` is a "direct share" of a [`Post`](#jonline-Post) to a [`User`](#jonline-User). Currently unused/unimplemented.
  * See also: [`DIRECT` `Visibility`](#jonline-Visibility).
  */
 export interface UserPost {
@@ -439,17 +439,17 @@ export interface UserPost {
   createdAt: string | undefined;
 }
 
-/** Used for getting context about `GroupPost`s of an existing `Post`. */
+/** Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post). */
 export interface GetGroupPostsRequest {
-  /** The ID of the post to get `GroupPost`s for. */
+  /** The ID of the post to get [`GroupPost`](#jonline-GroupPost)s for. */
   postId: string;
-  /** The ID of the group to get `GroupPost`s for. */
+  /** The ID of the group to get [`GroupPost`](#jonline-GroupPost)s for. */
   groupId?: string | undefined;
 }
 
-/** Used for getting context about `GroupPost`s of an existing `Post`. */
+/** Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post). */
 export interface GetGroupPostsResponse {
-  /** The `GroupPost`s for the given `Post` or `Group`. */
+  /** The [`GroupPost`](#jonline-GroupPost)s for the given [`Post`](#jonline-Post) or [`Group`](#jonline-Group). */
   groupPosts: GroupPost[];
 }
 

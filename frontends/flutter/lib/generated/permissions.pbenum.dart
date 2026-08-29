@@ -14,7 +14,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 ///  Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
-///  (A `Membership` is the link between a [`Group`](#jonline-Group) and a `User`.)
+///  (A [`Membership`](#jonline-Membership) is the link between a [`Group`](#jonline-Group) and a [`User`](#jonline-User).)
 ///
 ///  Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
 ///  and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
@@ -47,8 +47,6 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission MODERATE_EVENTS = Permission._(34, _omitEnumNames ? '' : 'MODERATE_EVENTS');
   static const Permission RSVP_TO_EVENTS = Permission._(35, _omitEnumNames ? '' : 'RSVP_TO_EVENTS');
   static const Permission SYNCHRONIZE_EVENTS = Permission._(36, _omitEnumNames ? '' : 'SYNCHRONIZE_EVENTS');
-  static const Permission SYNC_EVENTS_TO_FACEBOOK = Permission._(37, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
-  static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(38, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
   static const Permission VIEW_MEDIA = Permission._(40, _omitEnumNames ? '' : 'VIEW_MEDIA');
   static const Permission CREATE_MEDIA = Permission._(41, _omitEnumNames ? '' : 'CREATE_MEDIA');
   static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, _omitEnumNames ? '' : 'PUBLISH_MEDIA_LOCALLY');
@@ -56,6 +54,18 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission MODERATE_MEDIA = Permission._(44, _omitEnumNames ? '' : 'MODERATE_MEDIA');
   static const Permission READ_PERSONAL_MESSAGES = Permission._(50, _omitEnumNames ? '' : 'READ_PERSONAL_MESSAGES');
   static const Permission READ_ALL_SYSTEM_MESSAGES = Permission._(51, _omitEnumNames ? '' : 'READ_ALL_SYSTEM_MESSAGES');
+  static const Permission SYNC_EVENTS_TO_FACEBOOK = Permission._(1000, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
+  static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(1001, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
+  static const Permission SYNC_EVENTS_TO_INSTAGRAM = Permission._(1010, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_INSTAGRAM');
+  static const Permission SYNC_POSTS_TO_INSTAGRAM = Permission._(1011, _omitEnumNames ? '' : 'SYNC_POSTS_TO_INSTAGRAM');
+  static const Permission SYNC_EVENTS_TO_MASTODON = Permission._(1020, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_MASTODON');
+  static const Permission SYNC_POSTS_TO_MASTODON = Permission._(1021, _omitEnumNames ? '' : 'SYNC_POSTS_TO_MASTODON');
+  static const Permission SYNC_EVENTS_TO_BLUESKY = Permission._(1030, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_BLUESKY');
+  static const Permission SYNC_POSTS_TO_BLUESKY = Permission._(1031, _omitEnumNames ? '' : 'SYNC_POSTS_TO_BLUESKY');
+  static const Permission SYNC_EVENTS_TO_X_TWITTER = Permission._(1040, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_X_TWITTER');
+  static const Permission SYNC_POSTS_TO_X_TWITTER = Permission._(1041, _omitEnumNames ? '' : 'SYNC_POSTS_TO_X_TWITTER');
+  static const Permission SYNC_EVENTS_TO_THREADS = Permission._(1050, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_THREADS');
+  static const Permission SYNC_POSTS_TO_THREADS = Permission._(1051, _omitEnumNames ? '' : 'SYNC_POSTS_TO_THREADS');
   static const Permission BUSINESS = Permission._(9998, _omitEnumNames ? '' : 'BUSINESS');
   static const Permission RUN_BOTS = Permission._(9999, _omitEnumNames ? '' : 'RUN_BOTS');
   static const Permission ADMIN = Permission._(10000, _omitEnumNames ? '' : 'ADMIN');
@@ -90,8 +100,6 @@ class Permission extends $pb.ProtobufEnum {
     MODERATE_EVENTS,
     RSVP_TO_EVENTS,
     SYNCHRONIZE_EVENTS,
-    SYNC_EVENTS_TO_FACEBOOK,
-    SYNC_POSTS_TO_FACEBOOK,
     VIEW_MEDIA,
     CREATE_MEDIA,
     PUBLISH_MEDIA_LOCALLY,
@@ -99,6 +107,18 @@ class Permission extends $pb.ProtobufEnum {
     MODERATE_MEDIA,
     READ_PERSONAL_MESSAGES,
     READ_ALL_SYSTEM_MESSAGES,
+    SYNC_EVENTS_TO_FACEBOOK,
+    SYNC_POSTS_TO_FACEBOOK,
+    SYNC_EVENTS_TO_INSTAGRAM,
+    SYNC_POSTS_TO_INSTAGRAM,
+    SYNC_EVENTS_TO_MASTODON,
+    SYNC_POSTS_TO_MASTODON,
+    SYNC_EVENTS_TO_BLUESKY,
+    SYNC_POSTS_TO_BLUESKY,
+    SYNC_EVENTS_TO_X_TWITTER,
+    SYNC_POSTS_TO_X_TWITTER,
+    SYNC_EVENTS_TO_THREADS,
+    SYNC_POSTS_TO_THREADS,
     BUSINESS,
     RUN_BOTS,
     ADMIN,

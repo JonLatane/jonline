@@ -5,7 +5,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::validate_permission;
+use crate::rpcs::{validate_any_permission, validate_permission};
 use crate::schema::event_instance_sync_destinations;
 
 pub fn delete_event_instance_sync_destination(
@@ -13,7 +13,20 @@ pub fn delete_event_instance_sync_destination(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    validate_permission(&Some(current_user), Permission::SyncEventsToFacebook)?;
+    // Widened from a Facebook-only check to any `SYNC_EVENTS_TO_*` -- unsyncing is platform-agnostic
+    // (it's just a join-row delete, no platform API call), so a Mastodon/Bluesky/Instagram/X-only
+    // holder needs to be able to remove their own destinations' sync status too.
+    validate_any_permission(
+        &Some(current_user),
+        vec![
+            Permission::SyncEventsToFacebook,
+            Permission::SyncEventsToInstagram,
+            Permission::SyncEventsToMastodon,
+            Permission::SyncEventsToBluesky,
+            Permission::SyncEventsToXTwitter,
+            Permission::Admin,
+        ],
+    )?;
 
     let instance_id = request
         .event_instance_id

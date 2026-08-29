@@ -198,14 +198,14 @@
 
 /* Links out to wherever an `EventInstance` was synced to (e.g. the
    resulting Facebook post) -- see `Components.Events.eventSyncDestinationsView`.
-   One `.event-synced-to-line` per destination with a URL, same "clipped,
+   One `.synced-to-line` per destination with a URL, same "clipped,
    not wrapped, muted" treatment (and `position: relative` overlay trick,
    see `.event-synced-from` above) as `.event-synced-from`. */
-.event-synced-to {
+.synced-to {
   margin-top: 0.4rem;
 }
 
-.event-synced-to-line {
+.synced-to-line {
   position: relative;
   font-size: 0.75rem;
   color: var(--muted);
@@ -215,16 +215,16 @@
 }
 
 /* The `Just availableSyncDestinations` (push-enabled) branch of
-   `Components.Events.eventSyncDestinationsView` -- one row per destination
-   relevant to an `EventInstance`, each with a Push/Push again button, plus a
-   Delete button for already-synced rows. Currently only ever rendered inside
-   `Components.Pages.UserProfilePage`'s embedded events feed (see that
-   function's own doc). Named
-   `.event-card-sync-destination-*` (not `.event-sync-destination-*`) to
-   avoid colliding with `profiles.css`'s own identically-shaped classes for
-   the unrelated Event Sync Destinations *management* rows on
-   `UserProfilePage` itself. */
-.event-card-sync-destinations {
+   `Components.SyncDestinations.syncDestinationsView` -- one row per destination relevant to the
+   content being shown, each with a Push/Push again button, plus a Delete button for
+   already-synced rows. Shared by both `Components.Events.eventSyncDestinationsView` (rendered
+   inside `Components.Pages.UserProfilePage`'s embedded events feed) and
+   `Components.Posts.postSyncDestinationsView` (its embedded posts feed) -- kept on this one set
+   of `.card-*`-prefixed classes rather than duplicating them per content type, since the row
+   layout itself has nothing event- or post-specific about it. Named `.card-sync-destination-*`
+   (not `.sync-destination-*`) to avoid colliding with `profiles.css`'s own identically-shaped
+   classes for the unrelated Sync Destinations *management* rows on `UserProfilePage` itself. */
+.card-sync-destinations {
   margin-top: 0.4rem;
   display: flex;
   flex-direction: column;
@@ -234,7 +234,7 @@
 /* `position: relative` mirrors `.event-synced-from`/`.event-card-link`'s own
    paint-order trick so the row's link/button stay independently clickable
    above `.event-card-link-overlay`. */
-.event-card-sync-destination-row {
+.card-sync-destination-row {
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -243,12 +243,12 @@
   font-size: 0.75rem;
 }
 
-.event-card-sync-destination-name {
+.card-sync-destination-name {
   color: var(--muted);
   font-weight: 600;
 }
 
-.event-card-sync-destination-link {
+.card-sync-destination-link {
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -256,7 +256,7 @@
   max-width: 60%;
 }
 
-.event-card-sync-destination-push {
+.card-sync-destination-push {
   margin-left: auto;
   padding: 0.1rem 0.5rem;
   border: 1px solid var(--border);
@@ -266,7 +266,7 @@
   font-size: 0.75rem;
 }
 
-.event-card-sync-destination-delete {
+.card-sync-destination-delete {
   padding: 0.1rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -275,13 +275,13 @@
   font-size: 0.75rem;
 }
 
-.event-card-sync-destination-push-error {
+.card-sync-destination-push-error {
   flex-basis: 100%;
   color: var(--danger);
   font-size: 0.7rem;
 }
 
-.event-synced-to-link {
+.synced-to-link {
   color: inherit;
 }
 
