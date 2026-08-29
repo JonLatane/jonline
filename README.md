@@ -217,15 +217,15 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
     - [Potential future features](#potential-future-features)
     - [Delightful Federation](#delightful-federation)
     - [Protocol Documentation](#protocol-documentation)
-    - [Project Components](#project-components)
-      - [Documentation](#documentation)
-      - [gRPC APIs](#grpc-apis)
-      - [Architecture/Deployment Management](#architecturedeployment-management)
-      - [Rust Backend](#rust-backend)
-      - [Frontends](#frontends)
-        - [Elm Frontend](#elm-frontend)
-        - [Tamagui/React/Next.js Frontend](#tamaguireactnextjs-frontend)
-        - [Flutter Frontend (Deprecated/Frozen for Reference)](#flutter-frontend-deprecatedfrozen-for-reference)
+  - [Project Components](#project-components)
+    - [Documentation](#documentation)
+    - [gRPC APIs](#grpc-apis)
+    - [Architecture/Deployment Management](#architecturedeployment-management)
+    - [Rust Backend](#rust-backend)
+    - [Frontends](#frontends)
+      - [Elm Frontend](#elm-frontend)
+      - [Tamagui/React/Next.js Frontend](#tamaguireactnextjs-frontend)
+      - [Flutter Frontend (Deprecated/Frozen for Reference)](#flutter-frontend-deprecatedfrozen-for-reference)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and cross-namespace load balancing with Traefik](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-cross-namespace-load-balancing-with-traefik)
   - [Motivations](#motivations)
@@ -461,11 +461,11 @@ This approach does not seek to be particularly innovative or groundbreaking tech
 
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their own protocol documentation (i.e., [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol), [https://bullcity.social/docs/protocol](https://bullcity.social/docs/protocol), and [https://oakcity.social/docs/protocol](https://oakcity.social/docs/protocol)).
 
-### Project Components
+## Project Components
 
 The following components are *literally* just a "nice to read" breakdown of the overall directory structure of this repository. Nonetheless, this should be a useful first pass for anyone hoping to contribute to Jonline.
 
-#### Documentation
+### Documentation
 
 Yes, even Jonline's documentation is documented! 😅
 
@@ -486,11 +486,11 @@ Additionally, the following components are *themselves* documented in `README.md
     - [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md): TLS Certificate Generation
   - [`.github/workflows/README.md`](https://github.com/JonLatane/jonline/blob/main/.github/workflows/README.md): CI/CD (Continuous Integration and Delivery)
 
-#### gRPC APIs
+### gRPC APIs
 
 The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
 
-#### Architecture/Deployment Management
+### Architecture/Deployment Management
 
 [Jonline architecture docs live in `docs/architecture`](https://github.com/JonLatane/jonline/tree/main/docs/architecture).
 
@@ -514,25 +514,25 @@ Generally, Jonline is designed to be straightforward to deploy to Kubernetes clu
 
 [CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), it should be straightforward to integrate your own CI into 
 
-#### Rust Backend
+### Rust Backend
 
 The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
 
-#### Frontends
+### Frontends
 
 [Jonline Frontends are grouped together in `frontends/`.](https://github.com/JonLatane/jonline/tree/main/frontends) Specific iOS, Android, and/or desktop frontends would be welcome contributions!
 
-##### Elm Frontend
+#### Elm Frontend
 
 The [Elm frontend, in `frontends/elm-spa`](https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa), is the new "public Web face" of any Jonline instance. It's built with [Elm](https://elm-lang.org/) and [Elm-Spa](https://www.elm-spa.dev).
 
-##### Tamagui/React/Next.js Frontend
+#### Tamagui/React/Next.js Frontend
 
 The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonline/tree/main/frontends/tamagui), was, until recently, the "public Web face" of any Jonline instance. It's the most "complete" UI, and some features can still only be edited in this UI. It's built with [Tamagui](https://tamagui.dev) (a somewhat Flutter-like UI toolkit and build system built atop [yarn](https://yarnpkg.com/), [React](https://react.dev), [React Native](https://reactnative.dev), and [Next.JS](https://nextjs.org)), along with [Redux](https://redux.js.org) among others.
 
 Notably, in the future, with Tamagui, it should be possible to build iOS/Android apps from the existing Jonline source (after some effort to port less-native-friendly third-party components).
 
-##### Flutter Frontend (Deprecated/Frozen for Reference)
+#### Flutter Frontend (Deprecated/Frozen for Reference)
 
 The Flutter frontend is deprecated, unless someone would like to maintain it. It's just not feasible to maintain a Flutter app long-term, IMO. I love the UI framework but its ecosystem changes rapidly underneath you as a developer. It's removed from CI/CD, including the server. At some point it will be deleted from the repo entirely.
 
