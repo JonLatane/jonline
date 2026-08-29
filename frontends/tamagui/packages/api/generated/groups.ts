@@ -77,7 +77,7 @@ export interface Group {
   id: string;
   /** Mutable name of the group. Must be unique, such that the derived `shortname` is also unique. */
   name: string;
-  /** Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated. */
+  /** Immutable shortname of the group. Derived from changes to `name` when the [`Group`](#jonline-Group) is updated. */
   shortname: string;
   /** A description of the group. */
   description: string;
@@ -152,7 +152,7 @@ export interface GetGroupsResponse {
   hasNextPage: boolean;
 }
 
-/** Used when fetching group members using the `GetMembers` RPC. */
+/** Used when fetching group members using the [`GetMembers`](#grpc-api-GetMembers) RPC. */
 export interface Member {
   /** The user. */
   user:

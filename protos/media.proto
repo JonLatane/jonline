@@ -55,7 +55,7 @@ message Media {
   MediaMetadata metadata = 17;
 }
 
-// Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
+// Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
 // own columns.
 message MediaMetadata {
   // For video media, how far into the video (in milliseconds) its preview/poster frame should be

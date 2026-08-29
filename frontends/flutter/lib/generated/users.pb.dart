@@ -361,7 +361,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(35)
   void clearPostCount() => clearField(35);
 
-  /// The number of responses to `Post`s and `Event`s this user has made.
+  /// The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made.
   @$pb.TagNumber(36)
   $core.int get responseCount => $_getIZ(16);
   @$pb.TagNumber(36)
@@ -417,9 +417,9 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(51)
   Follow ensureTargetCurrentUserFollow() => $_ensure(20);
 
-  /// Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
-  /// The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
-  /// providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
+  /// Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
+  /// The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
+  /// providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc..
   @$pb.TagNumber(52)
   Membership get currentGroupMembership => $_getN(21);
   @$pb.TagNumber(52)
@@ -448,10 +448,10 @@ class User extends $pb.GeneratedMessage {
   $core.List<$1.FederatedAccount> get federatedProfiles => $_getList(23);
 
   /// The target user's own linked SyncDestinations (e.g. Facebook Pages).
-  /// Only ever populated by `GetUsers`' single-user lookups (by username or by
+  /// Only ever populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by
   /// user_id) when the viewer is the target user themselves (and holds
   /// `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
-  /// otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`.
+  /// otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser).
   @$pb.TagNumber(82)
   $core.List<$10.SyncDestination> get syncDestinations => $_getList(24);
 
@@ -959,7 +959,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   void clearListingType() => clearField(100);
 }
 
-/// Response to a `GetUsersRequest`.
+/// Response to a [`GetUsersRequest`](#jonline-GetUsersRequest).
 class GetUsersResponse extends $pb.GeneratedMessage {
   factory GetUsersResponse({
     $core.Iterable<User>? users,

@@ -27,10 +27,10 @@ enum SyncDestination_Configuration {
   notSet
 }
 
-/// A user-owned destination to sync (cross-post) content out to. Mirrors `EventSyncSource`,
+/// A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
 /// but for pushing content out rather than pulling events in. Originally Event-specific
-/// (as `EventSyncDestination`), now shared by both `EventInstance`s (see `events.proto`'s
-/// `SyncEventInstanceRequest`) and `Post`s (see `posts.proto`'s `SyncPostRequest`).
+/// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
+/// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
 class SyncDestination extends $pb.GeneratedMessage {
   factory SyncDestination({
     $core.String? id,
@@ -186,7 +186,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   $11.Timestamp ensureUpdatedAt() => $_ensure(3);
 
   /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike `EventSyncSource`'s `event_count`/`event_instance_count`, which are
+  /// request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
   /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   /// in bulk on an interval.
   @$pb.TagNumber(6)
@@ -258,7 +258,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   BlueskyAccount ensureBlueskyAccount() => $_ensure(9);
 
   /// A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
-  /// `XTwitterAccount`'s own doc.
+  /// [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
   @$pb.TagNumber(13)
   XTwitterAccount get xTwitterAccount => $_getN(10);
   @$pb.TagNumber(13)
@@ -396,7 +396,7 @@ class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
   void clearDeleteSyncedPosts() => clearField(2);
 }
 
-/// A Facebook Page connected as a `SyncDestination`.
+/// A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination).
 class FacebookPage extends $pb.GeneratedMessage {
   factory FacebookPage({
     $core.String? pageId,
@@ -467,7 +467,7 @@ class FacebookPage extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPageName() => clearField(2);
 
-  /// Only used (and required) on `CreateSyncDestination`: a short-lived user access token
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
   /// from client-side Facebook Login, exchanged server-side for a long-lived Page access token.
   /// Never populated in responses.
   @$pb.TagNumber(3)
@@ -480,9 +480,9 @@ class FacebookPage extends $pb.GeneratedMessage {
   void clearShortLivedUserAccessToken() => clearField(3);
 }
 
-/// An Instagram Business/Creator account connected as a `SyncDestination`. Posting to Instagram
+/// An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
 /// requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
-/// popup and app credentials as `FacebookPage` -- the server exchanges the token for the Page's
+/// popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's
 /// access token, then looks up that Page's linked Instagram Business account.
 class InstagramAccount extends $pb.GeneratedMessage {
   factory InstagramAccount({
@@ -569,8 +569,8 @@ class InstagramAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearPageId() => clearField(3);
 
-  /// Only used (and required) on `CreateSyncDestination`: a short-lived user access token
-  /// from client-side Facebook Login (same flow as `FacebookPage`), exchanged server-side for a
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
+  /// from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a
   /// long-lived Page access token, which is also used to post to the linked Instagram account.
   /// Never populated in responses.
   @$pb.TagNumber(4)
@@ -583,7 +583,7 @@ class InstagramAccount extends $pb.GeneratedMessage {
   void clearShortLivedUserAccessToken() => clearField(4);
 }
 
-/// A Mastodon account connected as a `SyncDestination` via a user-supplied Personal Access Token
+/// A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
 /// (generated on the user's own instance, under Preferences > Development), rather than an OAuth
 /// popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
 /// register ahead of time the way Facebook/Instagram have one.
@@ -657,7 +657,7 @@ class MastodonAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUsername() => clearField(2);
 
-  /// Only used (and required) on `CreateSyncDestination`/`UpdateSyncDestination`: the user's own
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
   /// Personal Access Token for `instance_host`. Never populated in responses.
   @$pb.TagNumber(3)
   $core.String get accessToken => $_getSZ(2);
@@ -669,7 +669,7 @@ class MastodonAccount extends $pb.GeneratedMessage {
   void clearAccessToken() => clearField(3);
 }
 
-/// A Bluesky (AT Protocol) account connected as a `SyncDestination` via an "App Password"
+/// A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
 /// (generated at Settings > App Passwords -- not the account's main password), rather than an
 /// OAuth popup.
 class BlueskyAccount extends $pb.GeneratedMessage {
@@ -743,7 +743,7 @@ class BlueskyAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearDid() => clearField(2);
 
-  /// Only used (and required) on `CreateSyncDestination`/`UpdateSyncDestination`: the user's own
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination): the user's own
   /// App Password. Never populated in responses. Sessions are created fresh per post rather than
   /// stored/refreshed, since App Passwords don't expire.
   @$pb.TagNumber(3)
@@ -756,10 +756,10 @@ class BlueskyAccount extends $pb.GeneratedMessage {
   void clearAppPassword() => clearField(3);
 }
 
-/// An X (Twitter) account connected as a `SyncDestination`. Not yet postable -- this server has no
+/// An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
 /// registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
 /// `x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
-/// `FacebookAuthConfig`/`facebook_app_not_configured`.
+/// [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
 class XTwitterAccount extends $pb.GeneratedMessage {
   factory XTwitterAccount({
     $core.String? username,
@@ -815,7 +815,7 @@ class XTwitterAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUsername() => clearField(1);
 
-  /// Only used (and required) on `CreateSyncDestination`: reserved for a future OAuth flow. Never
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): reserved for a future OAuth flow. Never
   /// populated in responses.
   @$pb.TagNumber(2)
   $core.String get shortLivedUserAccessToken => $_getSZ(1);
@@ -828,8 +828,8 @@ class XTwitterAccount extends $pb.GeneratedMessage {
 }
 
 /// A connected Threads account. Threads API is a product added to this server's existing Meta App
-/// (see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
-/// is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+/// (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
+/// is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
 /// OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
 /// exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
 /// refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
@@ -904,7 +904,7 @@ class ThreadsAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUsername() => clearField(2);
 
-  /// Only used (and required) on `CreateSyncDestination`: the OAuth authorization code from the
+  /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the OAuth authorization code from the
   /// Threads login popup. Never populated in responses.
   @$pb.TagNumber(3)
   $core.String get authorizationCode => $_getSZ(2);
@@ -916,8 +916,8 @@ class ThreadsAccount extends $pb.GeneratedMessage {
   void clearAuthorizationCode() => clearField(3);
 }
 
-/// The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to
-/// one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
+/// The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
+/// one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
 /// `Post.sync_destinations` can reuse it.
 class SyncDestinationStatus extends $pb.GeneratedMessage {
   factory SyncDestinationStatus({

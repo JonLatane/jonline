@@ -191,7 +191,21 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
     - [Why *not* Jonline?](#why-not-jonline)
-  - [Features Overview](#features-overview)
+  - [Federation \& Synchronization Features](#federation--synchronization-features)
+    - [Inter-Server Federation](#inter-server-federation)
+      - [Federated Servers](#federated-servers)
+      - [Federated Profiles](#federated-profiles)
+      - [Federated Browsing](#federated-browsing)
+      - [Federated Messaging](#federated-messaging)
+    - [Synchronization with Outside Servers](#synchronization-with-outside-servers)
+      - [Facebook](#facebook)
+      - [Instagram](#instagram)
+      - [Mastodon](#mastodon)
+      - [Bluesky](#bluesky)
+      - [X (Twitter)](#x-twitter)
+      - [Threads](#threads)
+      - [Event Sync Sources](#event-sync-sources)
+  - [Single-Instance Features](#single-instance-features)
     - [Jonline Identifiers: Usernames, Group Names, and IDs](#jonline-identifiers-usernames-group-names-and-ids)
     - [People, Followers and Friends](#people-followers-and-friends)
     - [Groups and Memberships](#groups-and-memberships)
@@ -199,6 +213,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
     - [Posts](#posts)
       - [GroupPost](#grouppost)
     - [Events](#events)
+    - [Messages](#messages)
     - [Potential future features](#potential-future-features)
     - [Delightful Federation](#delightful-federation)
     - [Protocol Documentation](#protocol-documentation)
@@ -210,7 +225,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [Frontends](#frontends)
         - [Elm Frontend](#elm-frontend)
         - [Tamagui/React/Next.js Frontend](#tamaguireactnextjs-frontend)
-        - [Flutter Frontend (Deprecated/To Be Deleted Unless A Contributor Fixes It)](#flutter-frontend-deprecatedto-be-deleted-unless-a-contributor-fixes-it)
+        - [Flutter Frontend (Deprecated/Frozen for Reference)](#flutter-frontend-deprecatedfrozen-for-reference)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and cross-namespace load balancing with Traefik](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-cross-namespace-load-balancing-with-traefik)
   - [Motivations](#motivations)
@@ -281,7 +296,68 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 - It's just my own (Jon) thing I'm doing in my spare time.
 - There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
 
-## Features Overview
+## Federation & Synchronization Features
+### Inter-Server Federation
+
+Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs, Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some "nice to have" features require it, so it is not used.
+
+#### Federated Servers
+
+Jonline servers can recommend other servers to clients via the `federation_info` field (a [`FederationInfo` message](https://jonline.io/docs/protocol#jonline-FederationInfo)) in [`ServerConfiguration`](https://jonline.io/docs/protocol#jonline-ServerConfiguration). Clients can use this information to discover other servers, or users can add new servers manually. Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data unless you explicitly allow it.
+
+#### Federated Profiles
+
+Jonline users can federate with users on any other Jonline server. This works by two-way verification: for example, Jon has the user [`jonline.io/jon`](https://jonline.io/jon), [`oakcity.social/jon`](https://oakcity.social/jon), and [`bullcity.social/jon`](https://bullcity.social/jon) associated with one another. The UI will only show federated profiles if *both* user profiles have federated with one another.
+
+This mechanism also allows users to link multiple profiles on the same server together. For instance, [`bullcity.social/jon`](https://bullcity.social/jon) and `bullcity.social/openmic` are linked together, but `bullcity.social/openmic` isn't linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.social/jon`](https://oakcity.social/jon).
+
+Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](https://jonline.io/docs/protocol#jonline-FederatedAccount)) on the [`User`](https://jonline.io/docs/protocol#jonline-User) message.
+
+#### Federated Browsing
+
+Jonline's protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media platforms.
+
+#### Federated Messaging
+
+Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
+
+### Synchronization with Outside Servers
+
+While Federation is a first-class feature of Jonline, it also supports synchronization with other fediverse platforms as well as other less-open platforms. All API keys for external services are stored in [`ServerConfiguration`](https://jonline.io/docs/protocol#jonline-ServerConfiguration)'s `federation_info`.
+
+A [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)s and [`Post`](https://jonline.io/docs/protocol#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's each [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) (not, say, the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event)) that syncs out, and each may push to several destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a [`SyncDestinationStatus`](https://jonline.io/docs/protocol#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval.
+
+Destinations are managed via the [`GetSyncDestinations`](https://jonline.io/docs/protocol#grpc-api-GetSyncDestinations), [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination), and [`DeleteSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncDestination) RPCs -- each gated on the `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform below). Actually syncing (or un-syncing) a given [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) to a destination is a separate step, via [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`DeleteEventInstanceSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteEventInstanceSyncDestination) and [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost)/[`DeletePostSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeletePostSyncDestination).
+
+#### Facebook
+
+`configuration.facebook_page` (a [`FacebookPage`](https://jonline.io/docs/protocol#jonline-FacebookPage)) is a connected Facebook Page. Connecting one requires a short-lived user access token from client-side Facebook Login, which the server exchanges for a long-lived Page access token. Gated on `SYNC_EVENTS_TO_FACEBOOK`/`SYNC_POSTS_TO_FACEBOOK`.
+
+#### Instagram
+
+`configuration.instagram_account` (an [`InstagramAccount`](https://jonline.io/docs/protocol#jonline-InstagramAccount)) is a connected Instagram Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account. Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a [`Post`](https://jonline.io/docs/protocol#jonline-Post)/[`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) with no attached media fails. Gated on `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+
+#### Mastodon
+
+`configuration.mastodon_account` (a [`MastodonAccount`](https://jonline.io/docs/protocol#jonline-MastodonAccount)) is a connected Mastodon account, on any instance the user names -- there's no single app to register the way Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token (generated on the user's own instance under Preferences > Development) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+
+#### Bluesky
+
+`configuration.bluesky_account` (a [`BlueskyAccount`](https://jonline.io/docs/protocol#jonline-BlueskyAccount)) is a connected Bluesky (AT Protocol) account. Connecting one is a user-supplied "App Password" (generated at Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+
+#### X (Twitter)
+
+`configuration.x_twitter_account` (an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount)) is reserved for a connected X account, but **not yet functional** -- this requires a registered X Developer App (`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount) destination currently fails. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+
+#### Threads
+
+`configuration.threads_account` (a [`ThreadsAccount`](https://jonline.io/docs/protocol#jonline-ThreadsAccount)) is a connected Threads account. The Threads API is a product added to a server's *existing* Facebook App rather than a separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a Page" step -- it directly authorizes the user's own Threads account. Unlike Instagram, Threads supports text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+
+#### Event Sync Sources
+
+An [`EventSyncSource`](https://jonline.io/docs/protocol#jonline-EventSyncSource) mirrors [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), but for pulling [`Event`](https://jonline.io/docs/protocol#jonline-Event)s in rather than pushing content out -- currently only an iCal subscription URL, though the `oneof` leaves room for other source types. Unlike [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event) (not the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)) that gets synced in and tagged with its source, since a single source can back many synced [`Event`](https://jonline.io/docs/protocol#jonline-Event)s but each [`Event`](https://jonline.io/docs/protocol#jonline-Event) has at most one source it came from. A background job re-pulls each source on its own configurable interval. Sources are managed via [`GetEventSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateEventSyncSource) (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateEventSyncSource), and [`DeleteEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteEventSyncSource).
+
+## Single-Instance Features 
 
 All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
 
@@ -327,26 +403,34 @@ Jonline supports Groups, which are much like Usenet groups, Facebook groups, or 
 
 ### Media
 
-Jonline `Media` is something like ActiveStorage, but with Rust and Diesel. It's straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
+Jonline [`Media`](https://jonline.io/docs/protocol#jonline-Media) is something like ActiveStorage, but with Rust and Diesel. It's straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike [`Post`](https://jonline.io/docs/protocol#jonline-Post)s and [`Event`](https://jonline.io/docs/protocol#jonline-Event)s, [`Media`](https://jonline.io/docs/protocol#jonline-Media) is generally not shared directly. It is instead associated with [`Post`](https://jonline.io/docs/protocol#jonline-Post)s and [`Event`](https://jonline.io/docs/protocol#jonline-Event)s (for media listings) as well as Users and Groups (for their avatars).
 
 Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the ["Media" section](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#media) of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md).
 
-All Media also carries `Visibility` and `Moderation` values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
+All Media also carries [`Visibility`](https://jonline.io/docs/protocol#jonline-Visibility) and [`Moderation`](https://jonline.io/docs/protocol#jonline-Moderation) values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
 
 ### Posts
 
-`Post`s follow a Twitter- or Reddit- like model. They have a [`PostContext`](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-PostContext) as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a `Visibility` and `Moderation` value that is enforced by the APIs.
+[`Post`](https://jonline.io/docs/protocol#jonline-Post)s follow a Twitter- or Reddit- like model. They have a [`PostContext`](https://jonline.io/docs/protocol#jonline-PostContext) as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a [`Visibility`](https://jonline.io/docs/protocol#jonline-Visibility) and [`Moderation`](https://jonline.io/docs/protocol#jonline-Moderation) value that is enforced by the APIs.
 
 Posts are also reused for Events, and will be similarly reused for future features. For developers: this is something like ActiveRecord Polymorphism, but using composition rather than inheritance at the ORM level. For users: Replies, Events, and other Jonline types track their title, description, visibility, moderation, etc. via a Post internally.
 
 #### GroupPost
 
-A key differentiator between `Post` and `Media` is that `Post`s and types that use them are "group-aware." That is to say: `GroupPost` exists, 
-linking any unique `Group` to any unique `Post`, along with the `User` who created that link.
+A key differentiator between [`Post`](https://jonline.io/docs/protocol#jonline-Post) and [`Media`](https://jonline.io/docs/protocol#jonline-Media) is that [`Post`](https://jonline.io/docs/protocol#jonline-Post)s and types that use them are "group-aware." That is to say: [`GroupPost`](https://jonline.io/docs/protocol#jonline-GroupPost) exists, 
+linking any unique [`Group`](https://jonline.io/docs/protocol#jonline-Group) to any unique [`Post`](https://jonline.io/docs/protocol#jonline-Post), along with the [`User`](https://jonline.io/docs/protocol#jonline-User) who created that link.
 
 ### Events
 
-`Event`s are a thin layer atop `Post`s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the `GroupPost` mechanism.
+[`Event`](https://jonline.io/docs/protocol#jonline-Event)s are a thin layer atop [`Post`](https://jonline.io/docs/protocol#jonline-Post)s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the [`GroupPost`](https://jonline.io/docs/protocol#jonline-GroupPost) mechanism.
+
+### Messages
+
+[`Message`](https://jonline.io/docs/protocol#jonline-Message) is Jonline's "low trust" messaging/email system, meant to let strangers on a server make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have open access to all Messages on a server.
+
+A [`MessagingGroup`](https://jonline.io/docs/protocol#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](https://jonline.io/docs/protocol#jonline-Message) belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the [`Message`](https://jonline.io/docs/protocol#jonline-Message) they receive omits it.
+
+Messages can also be delivered by email, via a [Stalwart](https://stalw.art) mail server integration (see [`deploys/email`](https://github.com/JonLatane/jonline/tree/main/deploys/email)) on the internal-only HTTP server, port 27705. Once Stalwart accepts an inbound message addressed to one of the instance's onboarded domains, it calls `POST /email` to hand it off, and Jonline turns it into a [`Message`](https://jonline.io/docs/protocol#jonline-Message): each envelope recipient's local part (before the `@`) is looked up as a username on the server, `To`/`Cc` recipients become the [`Message`](https://jonline.io/docs/protocol#jonline-Message)'s [`MessagingGroup`](https://jonline.io/docs/protocol#jonline-MessagingGroup), and `Bcc`'d recipients are recorded individually so they stay invisible to everyone else on the thread. The [`Message`](https://jonline.io/docs/protocol#jonline-Message) has no `from_user_id`, since inbound email never has a local sender; its parsed `from`/`to`/`cc` headers are stored alongside it, and the raw `.eml` is uploaded to the same MinIO store used for [`Media`](https://jonline.io/docs/protocol#jonline-Media).
 
 ### Potential future features
 
@@ -448,7 +532,7 @@ The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonl
 
 Notably, in the future, with Tamagui, it should be possible to build iOS/Android apps from the existing Jonline source (after some effort to port less-native-friendly third-party components).
 
-##### Flutter Frontend (Deprecated/To Be Deleted Unless A Contributor Fixes It)
+##### Flutter Frontend (Deprecated/Frozen for Reference)
 
 The Flutter frontend is deprecated, unless someone would like to maintain it. It's just not feasible to maintain a Flutter app long-term, IMO. I love the UI framework but its ecosystem changes rapidly underneath you as a developer. It's removed from CI/CD, including the server. At some point it will be deleted from the repo entirely.
 

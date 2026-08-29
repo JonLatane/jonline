@@ -28,7 +28,7 @@ export interface FederationInfo {
     | undefined;
   /**
    * X (Twitter) authentication configuration for the server. Not yet used -- reserved for when
-   * this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations
+   * this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations
    * always fail with `x_twitter_app_not_configured` regardless of this field.
    */
   xTwitterAuthConfig?: XTwitterAuthConfig | undefined;

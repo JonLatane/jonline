@@ -25,8 +25,8 @@ import 'visibility_moderation.pbenum.dart' as $12;
 
 export 'events.pbenum.dart';
 
-///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
-///  if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#jonline-Event)s with the same ID
+///  if that [`Event`](#jonline-Event) has multiple [`EventInstance`](#jonline-EventInstance)s in the time frame the client asked for.
 ///
 ///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 ///
@@ -153,7 +153,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAuthorUserId() => clearField(2);
 
-  /// Limits results to those in the given group ID (via `GroupPost` association's for the Event's internal `Post`).
+  /// Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association's for the Event's internal [`Post`](#jonline-Post)).
   @$pb.TagNumber(3)
   $core.String get groupId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -173,7 +173,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearEventInstanceId() => clearField(4);
 
-  /// Filters returned `EventInstance`s by time.
+  /// Filters returned [`EventInstance`](#jonline-EventInstance)s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(4);
   @$pb.TagNumber(5)
@@ -201,7 +201,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
-  /// Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
+  /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#jonline-PostContext) of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
   $core.String get postId => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -239,7 +239,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
 
   /// Auth token proving ownership of an anonymous RSVP, mirroring
   /// `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
-  /// (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when
+  /// (possibly still-`PENDING`) [`EventAttendance`](#jonline-EventAttendance) and its `EventInstance.location` (when
   /// `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
   /// `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
   /// does automatically.
@@ -253,7 +253,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearAnonymousAttendeeAuthToken() => clearField(13);
 }
 
-/// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+/// Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#jonline-EventInstance).
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
@@ -359,7 +359,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   $11.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
-///  A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+///  A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
 ///
 ///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
 ///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -488,7 +488,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its `PostContext` should be `EVENT`.
+  /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`.
   @$pb.TagNumber(2)
   $8.Post get post => $_getN(1);
   @$pb.TagNumber(2)
@@ -597,7 +597,7 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   void clearSyncDestinationId() => clearField(2);
 }
 
-/// Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of `SyncEventInstance`.
+/// Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
 /// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeleteEventInstanceSyncDestinationRequest({
@@ -758,7 +758,7 @@ class EventInfo extends $pb.GeneratedMessage {
   void clearMaxAttendees() => clearField(3);
 
   /// Hide the location until the user RSVPs (and it's accepted).
-  /// From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
+  /// From a system perspective, when this is set, Events will not include the [`Location`](#jonline-Location) until the user has RSVP'd.
   /// Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
   /// user whose attendance is approved (or the event owner).
   @$pb.TagNumber(4)
@@ -782,9 +782,9 @@ class EventInfo extends $pb.GeneratedMessage {
   void clearDefaultRsvpModeration() => clearField(5);
 }
 
-/// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
-/// a `Location`, and an optional `Post` (and discussion thread) specific to this particular
-/// `EventInstance` in addition to the parent `Event`.
+/// The time-based component of an [`Event`](#jonline-Event). Has a `starts_at` and `ends_at` time,
+/// a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and discussion thread) specific to this particular
+/// `EventInstance` in addition to the parent [`Event`](#jonline-Event).
 class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
     $core.String? id,
@@ -890,7 +890,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// ID of the parent `Event`.
+  /// ID of the parent [`Event`](#jonline-Event).
   @$pb.TagNumber(2)
   $core.String get eventId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -900,7 +900,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
-  /// Optional `Post` containing alternate title/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
+  /// Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`.
   @$pb.TagNumber(3)
   $8.Post get post => $_getN(2);
   @$pb.TagNumber(3)
@@ -912,7 +912,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $8.Post ensurePost() => $_ensure(2);
 
-  /// Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
+  /// Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event).
   @$pb.TagNumber(4)
   EventInstanceInfo get info => $_getN(3);
   @$pb.TagNumber(4)
@@ -960,7 +960,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $15.Location ensureLocation() => $_ensure(6);
 
-  /// The "iCal ID" (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`.
+  /// The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource).
   @$pb.TagNumber(8)
   $core.String get eventSyncSourceInstanceId => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -1067,7 +1067,7 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
 
-/// Consolidated type for RSVP info for an `EventInstance`.
+/// Consolidated type for RSVP info for an [`EventInstance`](#jonline-EventInstance).
 /// Curently, the `optional` counts below are *never* returned by the API.
 class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   factory EventInstanceRsvpInfo({
@@ -1378,10 +1378,10 @@ enum EventAttendance_Attendee {
   notSet
 }
 
-/// Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
-/// * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
-/// * Invitation status of a user to an `EventInstance`.
-/// * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+/// Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#jonline-EventInstance). Such as:
+/// * A user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+/// * Invitation status of a user to an [`EventInstance`](#jonline-EventInstance).
+/// * [`ContactMethod`](#jonline-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#jonline-EventInstance).
 class EventAttendance extends $pb.GeneratedMessage {
   factory EventAttendance({
     $core.String? id,
@@ -1496,7 +1496,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// ID of the `EventInstance` the attendance is for.
+  /// ID of the [`EventInstance`](#jonline-EventInstance) the attendance is for.
   @$pb.TagNumber(2)
   $core.String get eventInstanceId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -1540,7 +1540,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearNumberOfGuests() => clearField(5);
 
-  /// The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
+  /// The user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
@@ -1580,7 +1580,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearPublicNote() => clearField(9);
 
-  /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
+  /// Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable).
   @$pb.TagNumber(10)
   $12.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
@@ -1615,9 +1615,9 @@ class EventAttendance extends $pb.GeneratedMessage {
   $11.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
-///  An anonymous internet user who has RSVP'd to an `EventInstance`.
+///  An anonymous internet user who has RSVP'd to an [`EventInstance`](#jonline-EventInstance).
 ///
-///  (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
+///  (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#jonline-ContactMethod)s should support the `LIMITED` visibility, which will
 ///  make them visible to the event creator.
 class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee({
@@ -1686,7 +1686,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
   /// upserts, with the same event_instance_id and anonymous_attendee.auth_token,
-  /// will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new `EventAttendance`.
+  /// will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#jonline-EventAttendance).
   @$pb.TagNumber(3)
   $core.String get authToken => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -1697,7 +1697,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   void clearAuthToken() => clearField(3);
 }
 
-/// Wire-identical to [Author](#author), but with a different name to avoid confusion.
+/// Wire-identical to [Author](#jonline-Author), but with a different name to avoid confusion.
 class UserAttendee extends $pb.GeneratedMessage {
   factory UserAttendee({
     $core.String? userId,

@@ -134,7 +134,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   FacebookAuthConfig ensureFacebookAuthConfig() => $_ensure(1);
 
   /// X (Twitter) authentication configuration for the server. Not yet used -- reserved for when
-  /// this server registers an X Developer App; until then, `XTwitterAccount` SyncDestinations
+  /// this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations
   /// always fail with `x_twitter_app_not_configured` regardless of this field.
   @$pb.TagNumber(3)
   XTwitterAuthConfig get xTwitterAuthConfig => $_getN(2);

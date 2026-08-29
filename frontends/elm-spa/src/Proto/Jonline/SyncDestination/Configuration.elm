@@ -40,7 +40,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 ### XTwitterAccount
 
  A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
- `XTwitterAccount`'s own doc.
+ [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
 
 
 ### ThreadsAccount

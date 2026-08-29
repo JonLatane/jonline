@@ -354,7 +354,7 @@ encodeCustomNavigationTabWithPath =
 
 {-|  A custom navigation tab with an associated path.
  Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
- `/` is modified via `CustomNavigationTabSet`.home instead.
+ `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
 
 
 ## Fields
@@ -369,7 +369,7 @@ encodeCustomNavigationTabWithPath =
  e.g. link `/gigs` or `/shows` for a band to the "Events" page.
  Or, /weddings to a Post about wedding offerings for a custom business site.
  Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
- `/` is modified via `CustomNavigationTabSet`.home instead.
+ `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
 
 
 -}
@@ -462,7 +462,7 @@ encodeCustomNavigationTabSet =
 
  Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
  Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
- `/` is modified via `CustomNavigationTabSet`.home instead.
+ `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
 
 
 -}
@@ -1094,7 +1094,7 @@ encodeGetPushSubscriptionStatusResponse =
 
 ### registered
 
- Whether the current user has a `PushSubscription` registered for this exact `endpoint`.
+ Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`.
 
 
 -}
@@ -1135,7 +1135,7 @@ encodeGetPushSubscriptionStatusRequest =
 
 
 {-|  Checks whether the current user has already registered a given Web Push subscription endpoint.
- See `GetPushSubscriptionStatus`'s own RPC doc comment.
+ See [`GetPushSubscriptionStatus`](#grpc-api-GetPushSubscriptionStatus)'s own RPC doc comment.
 
 
 ## Fields
@@ -1184,7 +1184,7 @@ encodeUnregisterPushSubscriptionRequest =
 
 {-|  Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
  `PushManager.subscribe()` reports the subscription as no longer valid. See
- `UnregisterPushSubscription`'s own RPC doc comment.
+ [`UnregisterPushSubscription`](#grpc-api-UnregisterPushSubscription)'s own RPC doc comment.
 
 
 ## Fields
@@ -1192,7 +1192,7 @@ encodeUnregisterPushSubscriptionRequest =
 ### endpoint
 
  The Web Push subscription endpoint URL to unregister, as previously passed to
- `RegisterPushSubscription`.
+ [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription).
 
 
 -}
@@ -1234,7 +1234,7 @@ encodeRegisterPushSubscriptionRequest =
 
 {-|  Registers (or re-registers) a browser's Web Push subscription for the current user, so new
  Messages sent/delivered to them push a notification even while the browser tab is closed.
- See `RegisterPushSubscription`'s own RPC doc comment.
+ See [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)'s own RPC doc comment.
 
 
 ## Fields
@@ -1351,7 +1351,7 @@ encodeGetMessagesResponse =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetMessagesResponse
 
 
-{-|  Response to a `GetMessagesRequest`, containing the requested messages.
+{-|  Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages.
 
 
 ## Fields
@@ -1550,7 +1550,7 @@ encodeMarkMessagesReadResponse =
     Proto.Jonline.Internals_.encodeProto__Jonline__MarkMessagesReadResponse
 
 
-{-|  Response to a `MarkMessagesReadRequest` -- one `MessageRead` per `message_ids` entry, in the
+{-|  Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
  same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
 
 
@@ -1593,7 +1593,7 @@ encodeMarkMessagesReadRequest =
 
 {-|  Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
  thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
- no anonymous variant the way `SendMessage` has one.
+ no anonymous variant the way [`SendMessage`](#grpc-api-SendMessage) has one.
 
 
 ## Fields
@@ -1607,8 +1607,8 @@ encodeMarkMessagesReadRequest =
 ### messageIds
 
  The Messages to mark read/unread. The caller must have the same access to each of them
- `GetMessages` would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
- -- see `MarkMessagesRead`'s own RPC doc comment. A message id the caller doesn't have access to
+ [`GetMessages`](#grpc-api-GetMessages) would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
+ -- see [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)'s own RPC doc comment. A message id the caller doesn't have access to
  fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
 
 
@@ -1659,7 +1659,7 @@ encodeMessageRead =
 
 ### readAt
 
- When the message was marked read. Always set on a `MessageRead` returned from `MarkMessagesRead`
+ When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
  -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
  a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
 
@@ -1884,7 +1884,7 @@ encodeMember =
     Proto.Jonline.Internals_.encodeProto__Jonline__Member
 
 
-{-|  Used when fetching group members using the `GetMembers` RPC.
+{-|  Used when fetching group members using the [`GetMembers`](#grpc-api-GetMembers) RPC.
 
 
 ## Fields
@@ -2070,7 +2070,7 @@ encodeGroup =
 
 ### shortname
 
- Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated.
+ Immutable shortname of the group. Derived from changes to `name` when the [`Group`](#jonline-Group) is updated.
 
 
 ### description
@@ -2167,7 +2167,7 @@ encodeUserAttendee =
     Proto.Jonline.Internals_.encodeProto__Jonline__UserAttendee
 
 
-{-|  Wire-identical to [Author](#author), but with a different name to avoid confusion.
+{-|  Wire-identical to [Author](#jonline-Author), but with a different name to avoid confusion.
 
 
 ## Fields
@@ -2214,9 +2214,9 @@ encodeAnonymousAttendee =
     Proto.Jonline.Internals_.encodeProto__Jonline__AnonymousAttendee
 
 
-{-|  An anonymous internet user who has RSVP'd to an `EventInstance`.
+{-|  An anonymous internet user who has RSVP'd to an [`EventInstance`](#jonline-EventInstance).
 
- (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
+ (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#jonline-ContactMethod)s should support the `LIMITED` visibility, which will
  make them visible to the event creator.
 
 
@@ -2281,10 +2281,10 @@ encodeEventAttendance =
     Proto.Jonline.Internals_.encodeProto__Jonline__EventAttendance
 
 
-{-|  Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
- * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
- * Invitation status of a user to an `EventInstance`.
- * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+{-|  Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#jonline-EventInstance). Such as:
+ * A user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+ * Invitation status of a user to an [`EventInstance`](#jonline-EventInstance).
+ * [`ContactMethod`](#jonline-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#jonline-EventInstance).
 
 
 ## Fields
@@ -2296,7 +2296,7 @@ encodeEventAttendance =
 
 ### eventInstanceId
 
- ID of the `EventInstance` the attendance is for.
+ ID of the [`EventInstance`](#jonline-EventInstance) the attendance is for.
 
 
 ### numberOfGuests
@@ -2306,7 +2306,7 @@ encodeEventAttendance =
 
 ### status
 
- The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
+ The user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
 
 
 ### privateNote
@@ -2321,7 +2321,7 @@ encodeEventAttendance =
 
 ### moderation
 
- Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
+ Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable).
 
 
 ### createdAt
@@ -2470,7 +2470,7 @@ encodeEventInstanceRsvpInfo =
     Proto.Jonline.Internals_.encodeProto__Jonline__EventInstanceRsvpInfo
 
 
-{-|  Consolidated type for RSVP info for an `EventInstance`.
+{-|  Consolidated type for RSVP info for an [`EventInstance`](#jonline-EventInstance).
  Curently, the `optional` counts below are *never* returned by the API.
 
 
@@ -2565,9 +2565,9 @@ encodeEventInstance =
     Proto.Jonline.Internals_.encodeProto__Jonline__EventInstance
 
 
-{-|  The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
- a `Location`, and an optional `Post` (and discussion thread) specific to this particular
- `EventInstance` in addition to the parent `Event`.
+{-|  The time-based component of an [`Event`](#jonline-Event). Has a `starts_at` and `ends_at` time,
+ a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and discussion thread) specific to this particular
+ `EventInstance` in addition to the parent [`Event`](#jonline-Event).
 
 
 ## Fields
@@ -2579,17 +2579,17 @@ encodeEventInstance =
 
 ### eventId
 
- ID of the parent `Event`.
+ ID of the parent [`Event`](#jonline-Event).
 
 
 ### post
 
- Optional `Post` containing alternate title/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
+ Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`.
 
 
 ### info
 
- Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
+ Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event).
 
 
 ### startsAt
@@ -2691,7 +2691,7 @@ encodeDeleteEventInstanceSyncDestinationRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__DeleteEventInstanceSyncDestinationRequest
 
 
-{-|  Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of `SyncEventInstance`.
+{-|  Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
  Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
@@ -2811,7 +2811,7 @@ encodeEvent =
 
 ### post
 
- The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its `PostContext` should be `EVENT`.
+ The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`.
 
 
 ### info
@@ -2861,7 +2861,7 @@ encodeGetEventsResponse =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetEventsResponse
 
 
-{-|  A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+{-|  A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
 
  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -2911,7 +2911,7 @@ encodeTimeFilter =
     Proto.Jonline.Internals_.encodeProto__Jonline__TimeFilter
 
 
-{-|  Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+{-|  Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#jonline-EventInstance).
  API currently only supports `ends_after`.
 
 
@@ -2965,8 +2965,8 @@ encodeGetEventsRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetEventsRequest
 
 
-{-|  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
- if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+{-|  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#jonline-Event)s with the same ID
+ if that [`Event`](#jonline-Event) has multiple [`EventInstance`](#jonline-EventInstance)s in the time frame the client asked for.
 
  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 
@@ -3096,14 +3096,14 @@ encodeGetGroupPostsResponse =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetGroupPostsResponse
 
 
-{-|  Used for getting context about `GroupPost`s of an existing `Post`.
+{-|  Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post).
 
 
 ## Fields
 
 ### groupPosts
 
- The `GroupPost`s for the given `Post` or `Group`.
+ The [`GroupPost`](#jonline-GroupPost)s for the given [`Post`](#jonline-Post) or [`Group`](#jonline-Group).
 
 
 -}
@@ -3143,14 +3143,14 @@ encodeGetGroupPostsRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetGroupPostsRequest
 
 
-{-|  Used for getting context about `GroupPost`s of an existing `Post`.
+{-|  Used for getting context about [`GroupPost`](#jonline-GroupPost)s of an existing [`Post`](#jonline-Post).
 
 
 ## Fields
 
 ### postId
 
- The ID of the post to get `GroupPost`s for.
+ The ID of the post to get [`GroupPost`](#jonline-GroupPost)s for.
 
 
 -}
@@ -3190,7 +3190,7 @@ encodeUserPost =
     Proto.Jonline.Internals_.encodeProto__Jonline__UserPost
 
 
-{-|  A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
+{-|  A `UserPost` is a "direct share" of a [`Post`](#jonline-Post) to a [`User`](#jonline-User). Currently unused/unimplemented.
  See also: [`DIRECT` `Visibility`](#jonline-Visibility).
 
 
@@ -3249,7 +3249,7 @@ encodeGroupPost =
     Proto.Jonline.Internals_.encodeProto__Jonline__GroupPost
 
 
-{-|  A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+{-|  A `GroupPost` is a cross-post of a [`Post`](#jonline-Post) to a [`Group`](#jonline-Group). It contains
  information about the moderation of the post in the group, as well as
  the time it was cross-posted and the user who did the cross-posting.
 
@@ -3323,7 +3323,7 @@ encodeDeletePostSyncDestinationRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__DeletePostSyncDestinationRequest
 
 
-{-|  Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of `SyncPost`.
+{-|  Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of [`SyncPost`](#grpc-api-SyncPost).
  Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
@@ -3480,7 +3480,7 @@ encodePost =
 
 
 {-|  A `Post` is a message that can be posted to the server. Its `visibility`
- as well as any associated `GroupPost`s and `UserPost`s determine what users
+ as well as any associated [`GroupPost`](#jonline-GroupPost)s and [`UserPost`](#jonline-UserPost)s determine what users
  see it and where.
 
  `Post`s are also a fundamental unit of the system. They provide a building block
@@ -3685,7 +3685,7 @@ encodeGetPostsRequest =
      - Get one post ,including preview data/
  - `{post_id:, reply_depth: 1}`
      - Get replies to a post - only support for replyDepth=1 is done for now though.
- - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
+ - `{listing_type: MyGroupsPosts|[`GroupPost`](#jonline-GroupPost)sPendingModeration, group_id:}`
      - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
  - `{author_user_id:, group_id:}`
      - Get posts by a user for a group. (TODO)
@@ -3700,7 +3700,7 @@ encodeGetPostsRequest =
 
 ### listingType
 
- The listing type of the request. See `PostListingType` for more info.
+ The listing type of the request. See [`PostListingType`](#jonline-PostListingType) for more info.
 
 
 ### page
@@ -4092,7 +4092,7 @@ encodeCreateThirdPartyRefreshTokenRequest =
     Proto.Jonline.Internals_.encodeProto__Jonline__CreateThirdPartyRefreshTokenRequest
 
 
-{-|  Request to create a new third-party refresh token. Unlike `LoginRequest` or `CreateAccountRequest`, the user must be logged in to create a third-party refresh token.
+{-|  Request to create a new third-party refresh token. Unlike [`LoginRequest`](#jonline-LoginRequest) or [`CreateAccountRequest`](#jonline-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
 
  Generally, this is used to create a refresh token for another Jonline instance,
  e.g., accessing `bullcity.social/jon`'s data from `jonline.io`. On the web side, this is implemented as follows:
@@ -4102,8 +4102,8 @@ encodeCreateThirdPartyRefreshTokenRequest =
  2. `jonline.io` will force the user to login if needed on this page.
  3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh + access token for `bullcity.social`.
  4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&token=<Base64RefreshTokenResponse>` with the refresh token POSTed in form data.
-     * (`<Base64RefreshTokenResponse>` is a base64-encoded `RefreshTokenResponse` message.)
- 6. `bullcity.social` will ensure it can `GetCurrentUser` on `jonline.io` with its new auth token.
+     * (`<Base64RefreshTokenResponse>` is a base64-encoded [`RefreshTokenResponse`](#jonline-RefreshTokenResponse) message.)
+ 6. `bullcity.social` will ensure it can [`GetCurrentUser`](#grpc-api-GetCurrentUser) on `jonline.io` with its new auth token.
  5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
  7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).
 
@@ -4264,7 +4264,7 @@ encodeGetUsersResponse =
     Proto.Jonline.Internals_.encodeProto__Jonline__GetUsersResponse
 
 
-{-|  Response to a `GetUsersRequest`.
+{-|  Response to a [`GetUsersRequest`](#jonline-GetUsersRequest).
 
 
 ## Fields
@@ -4669,10 +4669,10 @@ encodeUser =
 ### syncDestinations
 
  The target user's own linked SyncDestinations (e.g. Facebook Pages).
- Only ever populated by `GetUsers`' single-user lookups (by username or by
+ Only ever populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by
  user_id) when the viewer is the target user themselves (and holds
  `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
- otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`.
+ otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser).
 
 
 ### createdAt
@@ -4893,8 +4893,8 @@ encodeSyncDestinationStatus =
     Proto.Jonline.Internals_.encodeProto__Jonline__SyncDestinationStatus
 
 
-{-|  The status of a single piece of content's (an `EventInstance` or `Post`) sync (cross-post) to
- one `SyncDestination`. Shared/generic so both `EventInstance.sync_destinations` and
+{-|  The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
+ one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
  `Post.sync_destinations` can reuse it.
 
 
@@ -4943,8 +4943,8 @@ encodeThreadsAccount =
 
 
 {-|  A connected Threads account. Threads API is a product added to this server's existing Meta App
- (see `FacebookAuthConfig`) rather than a separately-registered app, so no separate auth config
- is needed. Unlike `FacebookPage`/`InstagramAccount`, connecting one is a `response_type=code`
+ (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
+ is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
  OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
  exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
  refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
@@ -5000,10 +5000,10 @@ encodeXTwitterAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__XTwitterAccount
 
 
-{-|  An X (Twitter) account connected as a `SyncDestination`. Not yet postable -- this server has no
+{-|  An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
  registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
  `x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
- `FacebookAuthConfig`/`facebook_app_not_configured`.
+ [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
 
 
 ## Fields
@@ -5050,7 +5050,7 @@ encodeBlueskyAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__BlueskyAccount
 
 
-{-|  A Bluesky (AT Protocol) account connected as a `SyncDestination` via an "App Password"
+{-|  A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
  (generated at Settings > App Passwords -- not the account's main password), rather than an
  OAuth popup.
 
@@ -5105,7 +5105,7 @@ encodeMastodonAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__MastodonAccount
 
 
-{-|  A Mastodon account connected as a `SyncDestination` via a user-supplied Personal Access Token
+{-|  A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
  (generated on the user's own instance, under Preferences > Development), rather than an OAuth
  popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
  register ahead of time the way Facebook/Instagram have one.
@@ -5161,9 +5161,9 @@ encodeInstagramAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__InstagramAccount
 
 
-{-|  An Instagram Business/Creator account connected as a `SyncDestination`. Posting to Instagram
+{-|  An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
  requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
- popup and app credentials as `FacebookPage` -- the server exchanges the token for the Page's
+ popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's
  access token, then looks up that Page's linked Instagram Business account.
 
 
@@ -5221,7 +5221,7 @@ encodeFacebookPage =
     Proto.Jonline.Internals_.encodeProto__Jonline__FacebookPage
 
 
-{-|  A Facebook Page connected as a `SyncDestination`.
+{-|  A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination).
 
 
 ## Fields
@@ -5372,10 +5372,10 @@ encodeSyncDestination =
     Proto.Jonline.Internals_.encodeProto__Jonline__SyncDestination
 
 
-{-|  A user-owned destination to sync (cross-post) content out to. Mirrors `EventSyncSource`,
+{-|  A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
  but for pushing content out rather than pulling events in. Originally Event-specific
- (as `EventSyncDestination`), now shared by both `EventInstance`s (see `events.proto`'s
- `SyncEventInstanceRequest`) and `Post`s (see `posts.proto`'s `SyncPostRequest`).
+ (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
+ [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
 
 
 ## Fields
@@ -5931,7 +5931,7 @@ encodeMediaMetadata =
     Proto.Jonline.Internals_.encodeProto__Jonline__MediaMetadata
 
 
-{-|  Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
+{-|  Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
  own columns.
 
 

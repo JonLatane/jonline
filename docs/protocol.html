@@ -476,31 +476,31 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h4 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h4>
     <h5 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h5>
     <p>
-      Jonline APIs are designed to support <code>Moderation</code> and <code>Visibility</code> controls at the level of individual entities. However, to keep things
-      DRY, moderation and visibility controls are only implemented for <code>User</code>s, <code>Media</code>, <code>Group</code>s, and <code>Post</code>s.
+      Jonline APIs are designed to support <a href="#jonline-Moderation"><code>Moderation</code></a> and <a href="#jonline-Visibility"><code>Visibility</code></a> controls at the level of individual entities. However, to keep things
+      DRY, moderation and visibility controls are only implemented for <a href="#jonline-User"><code>User</code></a>s, <a href="#jonline-Media"><code>Media</code></a>, <a href="#jonline-Group"><code>Group</code></a>s, and <a href="#jonline-Post"><code>Post</code></a>s.
     </p>
     <p>
-      <code>Event</code>s and future <code>Post</code>-like types simply use the same implementation as their contained <code>Post</code>s. The intent here is to maximize
+      <a href="#jonline-Event"><code>Event</code></a>s and future <a href="#jonline-Post"><code>Post</code></a>-like types simply use the same implementation as their contained <a href="#jonline-Post"><code>Post</code></a>s. The intent here is to maximize
       both shared code and implementation robustness.
     </p>
     <h5 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h5>
     <p>
-      Jonline's APIs are designed using composition over inheritance. For instance, an <code>Event</code> contains
-      a <code>Post</code> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
+      Jonline's APIs are designed using composition over inheritance. For instance, an <a href="#jonline-Event"><code>Event</code></a> contains
+      a <a href="#jonline-Post"><code>Post</code></a> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
       through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
     </p>
     <h5 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h5>
     <p>
       The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
-      For instance, <code>UpdatePost</code> is fully atomic.
+      For instance, <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> is fully atomic.
     </p>
     <p>
-      <code>UpdateEvent</code>, however, is non-atomic. Given that an <code>Event</code> has a <code>Post</code> and many <code>EventInstance</code>s,
-      <code>UpdateEvent</code> will first update the <code>Post</code> atomically (literally calling the <code>UpdatePost</code> RPC),
-      then the <code>Event</code> atomically, and then finally process updates to its <code>EventInstance</code>s in a final atomic operation.
+      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a>, however, is non-atomic. Given that an <a href="#jonline-Event"><code>Event</code></a> has a <a href="#jonline-Post"><code>Post</code></a> and many <a href="#jonline-EventInstance"><code>EventInstance</code></a>s,
+      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a> will first update the <a href="#jonline-Post"><code>Post</code></a> atomically (literally calling the <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> RPC),
+      then the <a href="#jonline-Event"><code>Event</code></a> atomically, and then finally process updates to its <a href="#jonline-EventInstance"><code>EventInstance</code></a>s in a final atomic operation.
     </p>
     <p>
-      Because moderation/visibility lives at the <code>Post</code> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
+      Because moderation/visibility lives at the <a href="#jonline-Post"><code>Post</code></a> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
       visibility and moderation changes from being made in Events, even if there are errors elsewhere.
       This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
       moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
@@ -516,11 +516,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its <em>most</em> primitive type.
       <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a> is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
-      and is more like a document than a row in a database. (That said, every <code>ServerConfiguration</code> change <em>is</em> a row in a database, meaning
+      and is more like a document than a row in a database. (That said, every <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a> change <em>is</em> a row in a database, meaning
       reverting broken configurations is easy.)
     </p>
     <p>
-      Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then <code>ServerConfiguration</code>,
+      Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>,
       then worry about auth, then finally about retrieving anything else."
     </p>
     <h5 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h5>
@@ -529,33 +529,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-Permission"><code>Permission</code></a>s, plus counts (followers, posts, events, etc.) and federation info (see
       <a href="#federated-profiles">Federated Profiles</a> above). A lighter-weight <a href="#jonline-Author"><code>Author</code></a> (just ID, username,
       avatar, real name, permissions) is embedded on <a href="#jonline-Post"><code>Post</code></a>s, <a href="#jonline-Message"><code>Message</code></a>s, and similar
-      content types instead of a full <code>User</code>, to keep those payloads small.
+      content types instead of a full <a href="#jonline-User"><code>User</code></a>, to keep those payloads small.
     </p>
     <ul>
       <li>
         <p>
-          <strong>Follows</strong>: A <a href="#jonline-Follow"><code>Follow</code></a> is one <code>User</code> following another, optionally subject to the target's moderation
+          <strong>Follows</strong>: A <a href="#jonline-Follow"><code>Follow</code></a> is one <a href="#jonline-User"><code>User</code></a> following another, optionally subject to the target's moderation
           (i.e. approval). Mutual follows make two users "friends." Follows also drive the <code>FOLLOWING_POSTS</code>/<code>FOLLOWING_EVENTS</code>
           listing types and <code>LIMITED</code>-visibility content.
         </p>
       </li>
       <li>
         <p>
-          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <code>User</code>'s membership (or pending join request/invitation)
-          in a <code>Group</code>, tracking the user's <code>Permission</code>s within the group plus separate group-side and user-side <code>Moderation</code>
-          (for join-approval flows). Returned as part of <code>User</code>/<code>Group</code> payloads, and via <code>Member</code> when listing a Group's members.
+          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
+          in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
+          (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
         </p>
       </li>
       <li>
         <p>
-          <strong>EventSyncSources</strong>: A <code>User</code> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
-          pull <code>Event</code>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <code>Event</code>s.
+          <strong>EventSyncSources</strong>: A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
+          pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
         </p>
       </li>
       <li>
         <p>
-          <strong>SyncDestinations</strong>: A <code>User</code> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
-          external targets to push <code>EventInstance</code>s and <code>Post</code>s out to, e.g. a connected Facebook Page (configured via
+          <strong>SyncDestinations</strong>: A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
+          external targets to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and <a href="#jonline-Post"><code>Post</code></a>s out to, e.g. a connected Facebook Page (configured via
           <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event and Post sections below for how these attach.
         </p>
       </li>
@@ -565,75 +565,75 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-Media"><code>Media</code></a> represents an uploaded (or server-generated) photo or video. Unlike other types, Media
       content itself is <em>not</em> served over gRPC - it's uploaded/downloaded via plain HTTP (<code>POST</code>/<code>GET /media</code>) - while
       its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
-      (like <code>User.avatar</code>, <code>Group.avatar</code>, and <code>Post.media</code>) reference Media via the lightweight <code>MediaReference</code> type.
+      (like <code>User.avatar</code>, <code>Group.avatar</code>, and <code>Post.media</code>) reference Media via the lightweight <a href="#jonline-MediaReference"><code>MediaReference</code></a> type.
     </p>
     <h5 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h5>
     <p>
       <a href="#jonline-Post"><code>Post</code></a> is Jonline's fundamental content/building-block type: it's what actually carries a
-      title/link/content body, visibility, and moderation, and is reused (via <code>PostContext</code>) as the backing data for
-      replies, <a href="#jonline-Event"><code>Event</code></a>s, and <code>EventInstance</code>s alike. Posts can be replied to (threaded via
-      <code>reply_to_post_id</code>), cross-posted to <code>Group</code>s (<code>GroupPost</code>), and shared directly with users (<code>UserPost</code>).
+      title/link/content body, visibility, and moderation, and is reused (via <a href="#jonline-PostContext"><code>PostContext</code></a>) as the backing data for
+      replies, <a href="#jonline-Event"><code>Event</code></a>s, and <a href="#jonline-EventInstance"><code>EventInstance</code></a>s alike. Posts can be replied to (threaded via
+      <code>reply_to_post_id</code>), cross-posted to <a href="#jonline-Group"><code>Group</code></a>s (<a href="#jonline-GroupPost"><code>GroupPost</code></a>), and shared directly with users (<a href="#jonline-UserPost"><code>UserPost</code></a>).
     </p>
     <ul>
       <li>
         <p>
-          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <code>Post</code> into a <code>Group</code>, carrying the group-specific
+          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
           moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
         </p>
       </li>
       <li>
         <p>
-          <strong>UserPosts</strong>: A <a href="#jonline-UserPost"><code>UserPost</code></a> is a "direct share" of a <code>Post</code> to a <code>User</code> (see also <code>DIRECT</code>
+          <strong>UserPosts</strong>: A <a href="#jonline-UserPost"><code>UserPost</code></a> is a "direct share" of a <a href="#jonline-Post"><code>Post</code></a> to a <a href="#jonline-User"><code>User</code></a> (see also <code>DIRECT</code>
           <a href="#jonline-Visibility"><code>Visibility</code></a>). Currently unused/unimplemented.
         </p>
       </li>
       <li>
         <p>
-          <strong>SyncDestinations</strong>: A <code>Post</code> may also be synced (cross-posted) out to a user-owned
+          <strong>SyncDestinations</strong>: A <a href="#jonline-Post"><code>Post</code></a> may also be synced (cross-posted) out to a user-owned
           <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> (e.g. a connected Facebook Page), the same mechanism
-          <code>EventInstance</code>s use (see below) - each Post may push to several destinations at once, tracked via the
+          <a href="#jonline-EventInstance"><code>EventInstance</code></a>s use (see below) - each Post may push to several destinations at once, tracked via the
           repeated <code>Post.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>).
         </p>
       </li>
     </ul>
     <h5 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h5>
     <p>
-      An <a href="#jonline-Event"><code>Event</code></a> is a wrapper for <em>at least two</em> <code>Post</code>s. It always has its own top-level <code>Post</code>
+      An <a href="#jonline-Event"><code>Event</code></a> is a wrapper for <em>at least two</em> <a href="#jonline-Post"><code>Post</code></a>s. It always has its own top-level <a href="#jonline-Post"><code>Post</code></a>
       (<code>PostContext.EVENT</code>, holding the event's overall title/description) <em>and</em> it must have at least one
-      <a href="#jonline-EventInstance"><code>EventInstance</code></a> (see below), each of which in turn must have its own <code>Post</code>
-      (<code>PostContext.EVENT_INSTANCE</code>, carrying that instance's start/end time, <code>Location</code>, and optional per-instance
+      <a href="#jonline-EventInstance"><code>EventInstance</code></a> (see below), each of which in turn must have its own <a href="#jonline-Post"><code>Post</code></a>
+      (<code>PostContext.EVENT_INSTANCE</code>, carrying that instance's start/end time, <a href="#jonline-Location"><code>Location</code></a>, and optional per-instance
       title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
       instances back one Post per instance beyond that.
     </p>
     <ul>
       <li>
         <p>
-          <strong>EventInstances</strong>: An <a href="#jonline-EventInstance"><code>EventInstance</code></a> is the actual time-boxed occurrence of an <code>Event</code> -
-          it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <code>Location</code> that the parent <code>Event</code> itself does not have.
-          An <code>Event</code> with zero instances is meaningless (no time or place to attach to), so every <code>Event</code> must have at least one.
+          <strong>EventInstances</strong>: An <a href="#jonline-EventInstance"><code>EventInstance</code></a> is the actual time-boxed occurrence of an <a href="#jonline-Event"><code>Event</code></a> -
+          it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <a href="#jonline-Location"><code>Location</code></a> that the parent <a href="#jonline-Event"><code>Event</code></a> itself does not have.
+          An <a href="#jonline-Event"><code>Event</code></a> with zero instances is meaningless (no time or place to attach to), so every <a href="#jonline-Event"><code>Event</code></a> must have at least one.
         </p>
         <ul>
           <li>
             <p>
               <strong>EventAttendances</strong>: An <a href="#jonline-EventAttendance"><code>EventAttendance</code></a> (an "RSVP") tracks one attendee's status
-              (<code>INTERESTED</code>, <code>REQUESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>) for a specific <code>EventInstance</code>. Attendees may be logged-in <code>User</code>s
-              or anonymous (tracked via <code>AnonymousAttendee</code> plus an <code>auth_token</code>), and are subject to their own <code>Moderation</code>,
+              (<code>INTERESTED</code>, <code>REQUESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>) for a specific <a href="#jonline-EventInstance"><code>EventInstance</code></a>. Attendees may be logged-in <a href="#jonline-User"><code>User</code></a>s
+              or anonymous (tracked via <a href="#jonline-AnonymousAttendee"><code>AnonymousAttendee</code></a> plus an <code>auth_token</code>), and are subject to their own <a href="#jonline-Moderation"><code>Moderation</code></a>,
               independent of the Event's/Instance's own Post moderation.
             </p>
           </li>
           <li>
             <p>
-              <strong>EventSyncSource</strong>: It's actually the parent <code>Event</code> (not the <code>EventInstance</code>) that can be synced <em>in</em> from a
+              <strong>EventSyncSource</strong>: It's actually the parent <a href="#jonline-Event"><code>Event</code></a> (not the <a href="#jonline-EventInstance"><code>EventInstance</code></a>) that can be synced <em>in</em> from a
               user-owned <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> (e.g. an iCal subscription). The relationship is
-              1:(0 or 1): a single source can back many synced <code>Event</code>s, but each <code>Event</code> has <em>at most one</em> source it came from
+              1:(0 or 1): a single source can back many synced <a href="#jonline-Event"><code>Event</code></a>s, but each <a href="#jonline-Event"><code>Event</code></a> has <em>at most one</em> source it came from
               (<code>Event.event_sync_source</code> is a single optional field, not repeated).
             </p>
           </li>
           <li>
             <p>
-              <strong>SyncDestinations</strong>: Conversely, it's each <code>EventInstance</code> (not the parent <code>Event</code>) that syncs <em>out</em> to
-              <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s (e.g. connected Facebook Pages) - the same mechanism <code>Post</code>s use
-              (see above). Unlike <code>EventSyncSource</code>, this is the outlier's counterpart - a many-to-many relationship: each
+              <strong>SyncDestinations</strong>: Conversely, it's each <a href="#jonline-EventInstance"><code>EventInstance</code></a> (not the parent <a href="#jonline-Event"><code>Event</code></a>) that syncs <em>out</em> to
+              <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s (e.g. connected Facebook Pages) - the same mechanism <a href="#jonline-Post"><code>Post</code></a>s use
+              (see above). Unlike <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>, this is the outlier's counterpart - a many-to-many relationship: each
               instance may push to several destinations at once, tracked per-destination via the repeated
               <code>EventInstance.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>), carrying
               the destination's resulting post ID/URL and last-synced time.
@@ -644,20 +644,20 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </ul>
     <h5 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h5>
     <p>
-      A <a href="#jonline-Group"><code>Group</code></a> organizes <code>User</code>s, <code>Post</code>s, and <code>Event</code>s together under shared visibility, moderation,
+      A <a href="#jonline-Group"><code>Group</code></a> organizes <a href="#jonline-User"><code>User</code></a>s, <a href="#jonline-Post"><code>Post</code></a>s, and <a href="#jonline-Event"><code>Event</code></a>s together under shared visibility, moderation,
       and permission defaults.
     </p>
     <ul>
       <li>
         <p>
-          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <code>User</code>'s membership (or pending join request/invitation)
-          in a <code>Group</code>, tracking the user's <code>Permission</code>s within the group plus separate group-side and user-side <code>Moderation</code>
-          (for join-approval flows). Returned as part of <code>User</code>/<code>Group</code> payloads, and via <code>Member</code> when listing a Group's members.
+          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
+          in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
+          (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
         </p>
       </li>
       <li>
         <p>
-          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <code>Post</code> into a <code>Group</code>, carrying the group-specific
+          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
           moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
         </p>
       </li>
@@ -670,8 +670,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <ul>
       <li>
-        <strong>MessagingGroup</strong>: A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <code>Message</code>
-        belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the <code>Message</code> they receive omits it.
+        <strong>MessagingGroup</strong>: A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <a href="#jonline-Message"><code>Message</code></a>
+        belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the <a href="#jonline-Message"><code>Message</code></a> they receive omits it.
       </li>
     </ul>
     <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
@@ -688,7 +688,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       Next, use the <a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a> or <a href="#grpc-api-Login"><code>Login</code></a> RPCs to fetch (and store) an initial
       <code>refresh_token</code> and <code>access_token</code>. Clients should use the <code>access_token</code> until it expires,
-      then use the <code>refresh_token</code> to call the <a href="#grpc-api-AccessToken"><code>AccessToken</code></a> RPC for a new one. (The <code>AccessToken</code> RPC
+      then use the <code>refresh_token</code> to call the <a href="#grpc-api-AccessToken"><code>AccessToken</code></a> RPC for a new one. (The <a href="#grpc-api-AccessToken"><code>AccessToken</code></a> RPC
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
@@ -700,7 +700,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <h5 id="federated-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-servers"><span class="octicon octicon-link"></span></a>Federated Servers</h5>
     <p>
-      Jonline servers can recommend other servers to clients with the <code>federation_info</code> field (a <a href="http://localhost/docs/protocol#federationinfo"><code>FederationInfo</code> message</a>) in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
+      Jonline servers can recommend other servers to clients with the <code>federation_info</code> field (a <a href="#jonline-FederationInfo"><code>FederationInfo</code> message</a>) in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
       Clients can use this information to discover other servers, or users can add new servers manually.
       Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
       allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
@@ -718,7 +718,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       and <a href="https://bullcity.social/openmic"><code>bullcity.social/openmic</code></a> are linked together, but <a href="https://bullcity.social/openmic"><code>bullcity.social/openmic</code></a>
       isn't linked to <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a> or <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>.
     </p>
-    <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="http://localhost/docs/protocol#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
+    <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
+    <h5 id="federated-browsing"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-browsing"><span class="octicon octicon-link"></span></a>Federated Browsing</h5>
+    <p>
+      Jonline's protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers
+      in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media
+      platforms.
+    </p>
     <h5 id="federated-messaging"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-messaging"><span class="octicon octicon-link"></span></a>Federated Messaging</h5>
     <p>
       Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
@@ -728,13 +734,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       While Federation is a first-class feature of Jonline, it also supports synchronization with other
       fediverse platforms as well as other less-open platforms. All API keys for external services are stored
-      in <code>ServerConfiguration</code>'s <code>federation_info</code>.
+      in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>'s <code>federation_info</code>.
     </p>
     <h5 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h5>
     <p>
-      A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> is a user-owned external target to push <code>EventInstance</code>s and
-      <code>Post</code>s out to, via a <code>oneof configuration</code> naming which platform it is. This is a many-to-many relationship: it's
-      each <code>EventInstance</code> or <code>Post</code> (not, say, the parent <code>Event</code>) that syncs out, and each may push to several
+      A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> is a user-owned external target to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and
+      <a href="#jonline-Post"><code>Post</code></a>s out to, via a <code>oneof configuration</code> naming which platform it is. This is a many-to-many relationship: it's
+      each <a href="#jonline-EventInstance"><code>EventInstance</code></a> or <a href="#jonline-Post"><code>Post</code></a> (not, say, the parent <a href="#jonline-Event"><code>Event</code></a>) that syncs out, and each may push to several
       destinations at once, tracked per-destination via the repeated <code>EventInstance.sync_destinations</code>/
       <code>Post.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>, carrying the
       destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
@@ -746,7 +752,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>, <a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>,
       and <a href="#grpc-api-DeleteSyncDestination"><code>DeleteSyncDestination</code></a> -- each gated on the <code>SYNC_EVENTS_TO_*</code>/
       <code>SYNC_POSTS_TO_*</code> permission pair matching the destination's own platform (or Admin; see each platform's own
-      section below). Actually syncing (or un-syncing) a given <code>EventInstance</code> or <code>Post</code> to a destination is a separate
+      section below). Actually syncing (or un-syncing) a given <a href="#jonline-EventInstance"><code>EventInstance</code></a> or <a href="#jonline-Post"><code>Post</code></a> to a destination is a separate
       step, via <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>/
       <a href="#grpc-api-DeleteEventInstanceSyncDestination"><code>DeleteEventInstanceSyncDestination</code></a> and
       <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>/<a href="#grpc-api-DeletePostSyncDestination"><code>DeletePostSyncDestination</code></a>, gated the same
@@ -767,7 +773,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
       the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
       (<code>instagram_business_account_id</code>). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
-      <code>Post</code>/<code>EventInstance</code> with no attached media fails with <code>instagram_requires_media</code>. Gated on
+      <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-EventInstance"><code>EventInstance</code></a> with no attached media fails with <code>instagram_requires_media</code>. Gated on
       <code>SYNC_EVENTS_TO_INSTAGRAM</code>/<code>SYNC_POSTS_TO_INSTAGRAM</code>.
     </p>
     <h6 id="mastodon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodon"><span class="octicon octicon-link"></span></a>Mastodon</h6>
@@ -789,13 +795,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       <code>configuration.x_twitter_account</code> (an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>) is reserved for a connected X
       account, but <strong>not yet functional</strong> -- this server has no registered X Developer App
-      (<code>FederationInfo.x_twitter_auth_config</code>), so every RPC touching an <code>XTwitterAccount</code> destination fails with
+      (<code>FederationInfo.x_twitter_auth_config</code>), so every RPC touching an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> destination fails with
       <code>x_twitter_app_not_configured</code>. Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code> once functional.
     </p>
     <h6 id="threads"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threads"><span class="octicon octicon-link"></span></a>Threads</h6>
     <p>
       <code>configuration.threads_account</code> (a <a href="#jonline-ThreadsAccount"><code>ThreadsAccount</code></a>) is a connected Threads account.
-      Threads API is a product added to this server's <em>existing</em> Facebook App (see <code>FacebookAuthConfig</code>) rather than a
+      Threads API is a product added to this server's <em>existing</em> Facebook App (see <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>) rather than a
       separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
       facebook.com) using <code>response_type=code</code> rather than Facebook's implicit <code>response_type=token</code>, with no "choose a
       Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
@@ -805,11 +811,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <h5 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h5>
     <p>
-      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> mirrors <code>SyncDestination</code>, but for pulling <code>Event</code>s in rather than
+      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> mirrors <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, but for pulling <a href="#jonline-Event"><code>Event</code></a>s in rather than
       pushing content out -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the
-      <code>oneof</code> leaves room for other source types. Unlike <code>SyncDestination</code>, this is a 1:(0 or 1) relationship: it's the
-      parent <code>Event</code> (not the <code>EventInstance</code>) that gets synced in and tagged with its source
-      (<code>Event.event_sync_source</code>), since a single source can back many synced <code>Event</code>s but each <code>Event</code> has at most one
+      <code>oneof</code> leaves room for other source types. Unlike <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, this is a 1:(0 or 1) relationship: it's the
+      parent <a href="#jonline-Event"><code>Event</code></a> (not the <a href="#jonline-EventInstance"><code>EventInstance</code></a>) that gets synced in and tagged with its source
+      (<code>Event.event_sync_source</code>), since a single source can back many synced <a href="#jonline-Event"><code>Event</code></a>s but each <a href="#jonline-Event"><code>Event</code></a> has at most one
       source it came from. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence,
       recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
     </p>
@@ -872,10 +878,10 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <strong>Storage</strong>: matched recipients become a <a href="#jonline-Message"><code>Message</code></a> addressed to a
         <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> keyed on the <code>To</code>/<code>Cc</code> recipients only -- Bcc'd recipients are excluded
         from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as <code>Bcc</code>
-        rows on the <code>Message</code>. The <code>Message</code> has no <code>from_user_id</code>, since inbound email never has a local sender; its
+        rows on the <a href="#jonline-Message"><code>Message</code></a>. The <a href="#jonline-Message"><code>Message</code></a> has no <code>from_user_id</code>, since inbound email never has a local sender; its
         parsed <code>from</code>/<code>to</code>/<code>cc</code> headers are stored alongside it, and the raw <code>.eml</code> is uploaded to the same MinIO store
-        used for <code>Media</code>. Duplicate deliveries of the same <code>Message-ID</code> (Stalwart retries on transient failure) reuse the
-        existing <code>Message</code> row rather than storing/uploading a duplicate.
+        used for <a href="#jonline-Media"><code>Media</code></a>. Duplicate deliveries of the same <code>Message-ID</code> (Stalwart retries on transient failure) reuse the
+        existing <a href="#jonline-Message"><code>Message</code></a> row rather than storing/uploading a duplicate.
       </li>
       <li>
         <strong>Response</strong>: <code>200 OK</code> with a body of <code>{&#x26;#34;action&#x26;#34;: &#x26;#34;accept&#x26;#34;}</code> on success -- Stalwart's MTA Hook protocol parses
@@ -922,14 +928,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_jonline</code>,
       <code>/flutter</code>, <code>/tamagui</code>, <code>/elm</code> -- plus any <code>CustomNavigationTabSet.tabs</code> paths configured on the server (excluding
       the reserved <code>posts</code>/<code>events</code>/<code>people</code>/<code>about</code> paths, which are always included above), each qualified with the
-      request's <code>Host</code>. It also enumerates individual pages: every <code>Post</code> from an unauthenticated <code>GetPosts</code> (the same
-      "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <code>Event</code> instance from an unauthenticated
-      <code>GetEvents</code> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{instance_id}</code>.
-      It does not (yet) enumerate individual <code>User</code> pages.
+      request's <code>Host</code>. It also enumerates individual pages: every <a href="#jonline-Post"><code>Post</code></a> from an unauthenticated <a href="#grpc-api-GetPosts"><code>GetPosts</code></a> (the same
+      "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <a href="#jonline-Event"><code>Event</code></a> instance from an unauthenticated
+      <a href="#grpc-api-GetEvents"><code>GetEvents</code></a> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{instance_id}</code>.
+      It does not (yet) enumerate individual <a href="#jonline-User"><code>User</code></a> pages.
     </p>
     <h6 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h6>
     <p>
-      Serves the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <code>Media</code>
+      Serves the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <a href="#jonline-Media"><code>Media</code></a>
       reference) as an <code>.ico</code>, publicly cacheable for 12 hours (<code>must-revalidate</code>), converting on the fly if the
       stored rendition is a <code>.png</code>. If no logo is configured, falls back to the bundled Tamagui frontend's default
       favicon instead. Whichever converted rendition of the logo is served, it's picked in size preference order
@@ -940,7 +946,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>As <code>GET /favicon.ico</code> above, but serves (and if necessary converts to) <code>.png</code> instead.</p>
     <h6 id="post-media-upload-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-media-upload-media"><span class="octicon octicon-link"></span></a><code>POST /media</code>: Upload Media</h6>
     <p>
-      See the <a href="#jonline-Media">Media</a> section for the <code>Media</code> type itself; this is how its bytes actually get in
+      See the <a href="#jonline-Media">Media</a> section for the <a href="#jonline-Media"><code>Media</code></a> type itself; this is how its bytes actually get in
       (an <code>OPTIONS /media</code> variant also exists, solely to satisfy CORS preflight requests). <em>Authenticated</em> (via
       <code>Authorization</code> header or a <code>jonline_access_token</code> cookie). Requires <code>Content-Type</code> and <code>Filename</code> headers; the
       body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
@@ -954,7 +960,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       (An <code>OPTIONS /media/{id}</code> variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
       -- <strong>moderation/visibility/permission checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s
-      implementation), so a <code>Media</code> ID is currently a bearer capability. <code>size</code> (default <code>medium</code>) selects a converted
+      implementation), so a <a href="#jonline-Media"><code>Media</code></a> ID is currently a bearer capability. <code>size</code> (default <code>medium</code>) selects a converted
       rendition, falling back to the original upload if that conversion doesn't exist. The first request for a given
       rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
       from that cache. Cacheable for 12 hours (<code>must-revalidate</code>).
@@ -1003,7 +1009,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>The Posts listing.</p>
     <h6 id="postpostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postpostidhost-post"><span class="octicon octicon-link"></span></a><code>/post/{postId}[@{host}]</code>: Post</h6>
     <p>
-      An individual <a href="#jonline-Post"><code>Post</code></a> -- including <code>Event</code>/<code>EventInstance</code> posts and replies, which are <code>Post</code>s
+      An individual <a href="#jonline-Post"><code>Post</code></a> -- including <a href="#jonline-Event"><code>Event</code></a>/<a href="#jonline-EventInstance"><code>EventInstance</code></a> posts and replies, which are <a href="#jonline-Post"><code>Post</code></a>s
       themselves (see <a href="#post">Post</a> above).
     </p>
     <h5 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h5>
@@ -1011,7 +1017,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h6 id="eventeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{eventInstanceId}[@{host}]</code>: Event</h6>
     <p>An individual <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</p>
     <h6 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h6>
-    <p>Tamagui-only, for now -- an AI-assisted bulk <code>Event</code> importer. Elm doesn't have this page yet.</p>
+    <p>Tamagui-only, for now -- an AI-assisted bulk <a href="#jonline-Event"><code>Event</code></a> importer. Elm doesn't have this page yet.</p>
     <h5 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h5>
     <p>The People listing.</p>
     <h6 id="peoplefollow_requests-follow-requests"><a class="anchor" aria-hidden="true" tabindex="-1" href="#peoplefollow_requests-follow-requests"><span class="octicon octicon-link"></span></a><code>/people/follow_requests</code>: Follow Requests</h6>
@@ -1020,7 +1026,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>A <a href="#jonline-User"><code>User</code></a> profile looked up by (stable) user ID.</p>
     <h5 id="custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><span class="octicon octicon-link"></span></a><code>/{custom_tab_or_username}</code>: User pages by username, or a custom tab</h5>
     <p>
-      The same <code>User</code> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
+      The same <a href="#jonline-User"><code>User</code></a> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
       looked up by the current <code>username</code> instead -- lighter-weight to link to, but less stable than <code>/user/{userId}</code>
       since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
       order: first any actual matching build asset or other explicit route above (e.g. <code>/posts</code>, <code>/user/{userId}</code>)
@@ -1038,7 +1044,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h6 id="gshortname-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-home"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Home</h6>
     <h6 id="gshortnameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameposts-posts"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/posts</code>: Posts</h6>
     <h6 id="gshortnameppostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameppostidhost-post"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/p/{postId}[@{host}]</code>: Post</h6>
-    <p>An individual <code>Post</code> cross-posted into the group.</p>
+    <p>An individual <a href="#jonline-Post"><code>Post</code></a> cross-posted into the group.</p>
     <h6 id="gshortnameevents-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameevents-events"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/events</code>: Events</h6>
     <h6 id="gshortnameeeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameeeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/e/{eventInstanceId}[@{host}]</code>: Event</h6>
     <h6 id="gshortnamemembers-members"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemembers-members"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/members</code>: Members</h6>
@@ -1135,7 +1141,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>SendMessage</td>
           <td><a href="#jonline-SendMessageRequest">SendMessageRequest</a></td>
           <td><a href="#jonline-Message">Message</a></td>
-          <td>Sends a Message to one or more recipients (creating/reusing their MessagingGroup). <em>Publicly accessible <strong>or</strong> Authenticated.</em> Like <code>CreatePost</code>/<code>CreateEvent</code>, authentication (if any) is via a standard <code>access_token</code>; unauthenticated calls are simply sent with no <code>sender</code>.</td>
+          <td>Sends a Message to one or more recipients (creating/reusing their MessagingGroup). <em>Publicly accessible <strong>or</strong> Authenticated.</em> Like <a href="#grpc-api-CreatePost"><code>CreatePost</code></a>/<a href="#grpc-api-CreateEvent"><code>CreateEvent</code></a>, authentication (if any) is via a standard <code>access_token</code>; unauthenticated calls are simply sent with no <code>sender</code>.</td>
         </tr>
         <tr>
           <td>GetMessages</td>
@@ -1147,13 +1153,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>MarkMessagesRead</td>
           <td><a href="#jonline-MarkMessagesReadRequest">MarkMessagesReadRequest</a></td>
           <td><a href="#jonline-MarkMessagesReadResponse">MarkMessagesReadResponse</a></td>
-          <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <code>GetMessages</code> already requires for each Message -- no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
+          <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> already requires for each Message -- no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
         </tr>
         <tr>
           <td>RegisterPushSubscription</td>
           <td><a href="#jonline-RegisterPushSubscriptionRequest">RegisterPushSubscriptionRequest</a></td>
           <td><a href="#jonline-PushSubscription">PushSubscription</a></td>
-          <td>Registers (or re-registers) a browser's Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. <em>Authenticated.</em> Re-registering an already-registered <code>endpoint</code> (e.g. because <code>PushManager.subscribe()</code> refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no <code>WebPushConfig</code> configured -- there's nothing to push notifications <em>with</em>.</td>
+          <td>Registers (or re-registers) a browser's Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. <em>Authenticated.</em> Re-registering an already-registered <code>endpoint</code> (e.g. because <code>PushManager.subscribe()</code> refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no <a href="#jonline-WebPushConfig"><code>WebPushConfig</code></a> configured -- there's nothing to push notifications <em>with</em>.</td>
         </tr>
         <tr>
           <td>UnregisterPushSubscription</td>
@@ -1165,7 +1171,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>GetPushSubscriptionStatus</td>
           <td><a href="#jonline-GetPushSubscriptionStatusRequest">GetPushSubscriptionStatusRequest</a></td>
           <td><a href="#jonline-GetPushSubscriptionStatusResponse">GetPushSubscriptionStatusResponse</a></td>
-          <td>Checks whether the calling user specifically (not just "some account on this browser") has a <code>PushSubscription</code> registered for <code>endpoint</code>. <em>Authenticated.</em> Exists because a browser only ever exposes its own subscription's <code>endpoint</code>/keys, never <em>who</em> on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see <code>RegisterPushSubscription</code>'s own doc comment), so knowing the endpoint alone isn't enough to know which of them are actually notified by it.</td>
+          <td>Checks whether the calling user specifically (not just "some account on this browser") has a <a href="#jonline-PushSubscription"><code>PushSubscription</code></a> registered for <code>endpoint</code>. <em>Authenticated.</em> Exists because a browser only ever exposes its own subscription's <code>endpoint</code>/keys, never <em>who</em> on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see <a href="#grpc-api-RegisterPushSubscription"><code>RegisterPushSubscription</code></a>'s own doc comment), so knowing the endpoint alone isn't enough to know which of them are actually notified by it.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -1279,7 +1285,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>DeletePostSyncDestination</td>
           <td><a href="#jonline-DeletePostSyncDestinationRequest">DeletePostSyncDestinationRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td>Removes a Post's sync (cross-post) to a SyncDestination, the reverse of <code>SyncPost</code>. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_POSTS_TO_FACEBOOK</code> (or Admin).</td>
+          <td>Removes a Post's sync (cross-post) to a SyncDestination, the reverse of <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_POSTS_TO_FACEBOOK</code> (or Admin).</td>
         </tr>
         <tr>
           <td>GetGroupPosts</td>
@@ -1333,7 +1339,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>UpdateEventDetails</td>
           <td><a href="#jonline-Event">Event</a></td>
           <td><a href="#jonline-Event">Event</a></td>
-          <td>Updates only the <code>Event</code>'s top-level details and those of its <code>Post</code> (not any <code>EventInstance</code>s or their <code>Post</code>s). <em>Authenticated.</em></td>
+          <td>Updates only the <a href="#jonline-Event"><code>Event</code></a>'s top-level details and those of its <a href="#jonline-Post"><code>Post</code></a> (not any <a href="#jonline-EventInstance"><code>EventInstance</code></a>s or their <a href="#jonline-Post"><code>Post</code></a>s). <em>Authenticated.</em></td>
         </tr>
         <tr>
           <td>CreateNewEventInstances</td>
@@ -1411,7 +1417,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>DeleteEventInstanceSyncDestination</td>
           <td><a href="#jonline-DeleteEventInstanceSyncDestinationRequest">DeleteEventInstanceSyncDestinationRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td>Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of <code>SyncEventInstance</code>. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
+          <td>Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -1573,7 +1579,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-CreateThirdPartyRefreshTokenRequest"></a></p>
     <h3 id="createthirdpartyrefreshtokenrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#createthirdpartyrefreshtokenrequest"><span class="octicon octicon-link"></span></a>CreateThirdPartyRefreshTokenRequest</h3>
-    <p>Request to create a new third-party refresh token. Unlike <code>LoginRequest</code> or <code>CreateAccountRequest</code>, the user must be logged in to create a third-party refresh token.</p>
+    <p>Request to create a new third-party refresh token. Unlike <a href="#jonline-LoginRequest"><code>LoginRequest</code></a> or <a href="#jonline-CreateAccountRequest"><code>CreateAccountRequest</code></a>, the user must be logged in to create a third-party refresh token.</p>
     <p>
       Generally, this is used to create a refresh token for another Jonline instance,
       e.g., accessing <code>bullcity.social/jon</code>'s data from <code>jonline.io</code>. On the web side, this is implemented as follows:
@@ -1587,10 +1593,10 @@ directory</a> is (<code>{name}</code> denotes a
       <li><code>jonline.io</code> will prompt/warn the user, and then call this RPC to create a refresh + access token for <code>bullcity.social</code>.</li>
       <li><code>jonline.io</code> will redirect the user back to <code>bullcity.social/third_party_auth?from=jonline.io&#x26;amp;token=&#x26;lt;Base64RefreshTokenResponse&#x26;gt;</code> with the refresh token POSTed in form data.
         <ul>
-          <li>(<code>&#x26;lt;Base64RefreshTokenResponse&#x26;gt;</code> is a base64-encoded <code>RefreshTokenResponse</code> message.)</li>
+          <li>(<code>&#x26;lt;Base64RefreshTokenResponse&#x26;gt;</code> is a base64-encoded <a href="#jonline-RefreshTokenResponse"><code>RefreshTokenResponse</code></a> message.)</li>
         </ul>
       </li>
-      <li><code>bullcity.social</code> will ensure it can <code>GetCurrentUser</code> on <code>jonline.io</code> with its new auth token.</li>
+      <li><code>bullcity.social</code> will ensure it can <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> on <code>jonline.io</code> with its new auth token.</li>
       <li><code>bullcity.social</code> will replace the current location with <code>bullcity.social/third_party_auth?from=jonline.io</code>.</li>
       <li><code>bullcity.social</code> will use the access token to make requests to <code>jonline.io</code> (the same as with <code>bullcity.social</code>).</li>
     </ol>
@@ -1835,45 +1841,45 @@ directory</a> is (<code>{name}</code> denotes a
     <p>From a high level:</p>
     <ul>
       <li>
-        A <code>User</code> has a <code>moderation</code> that determines whether they can log in (and their visibility per their <code>visibility</code>).
+        A <a href="#jonline-User"><code>User</code></a> has a <code>moderation</code> that determines whether they can log in (and their visibility per their <code>visibility</code>).
         (This is poorly enforced currently! Fix it if you want!)
         <ul>
           <li>
-            This is managed by <code>people_settings.default_moderation</code> in <code>ServerConfiguration</code>.
+            This is managed by <code>people_settings.default_moderation</code> in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
             A default of <code>UNMODERATED</code> means that all users can log in. A default of <code>PENDING</code>
             means that all users must be approved by a moderator/admin before they can log in.
           </li>
         </ul>
       </li>
-      <li>A <code>Follow</code> has a <code>target_user_moderation</code> that determines whether the <code>User</code> is following the <code>Group</code>.
+      <li>A <a href="#jonline-Follow"><code>Follow</code></a> has a <code>target_user_moderation</code> that determines whether the <a href="#jonline-User"><code>User</code></a> is following the <a href="#jonline-Group"><code>Group</code></a>.
         <ul>
-          <li>It is managed by <code>default_follow_moderation</code> in the targeted <code>User</code>.</li>
+          <li>It is managed by <code>default_follow_moderation</code> in the targeted <a href="#jonline-User"><code>User</code></a>.</li>
         </ul>
       </li>
-      <li>A <code>Group</code> has a <code>moderation</code> that determines whether the <code>Group</code> is visible to users (per its <code>visibility</code>).
+      <li>A <a href="#jonline-Group"><code>Group</code></a> has a <code>moderation</code> that determines whether the <a href="#jonline-Group"><code>Group</code></a> is visible to users (per its <code>visibility</code>).
         <ul>
-          <li>This is managed by <code>group_settings.default_moderation</code> in <code>ServerConfiguration</code>.</li>
+          <li>This is managed by <code>group_settings.default_moderation</code> in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.</li>
         </ul>
       </li>
       <li>
-        A <code>Membership</code> has a <code>group_moderation</code> and <code>user_moderation</code> that determine whether
-        the <code>Group</code> admins and/or the invited user has approved the <code>Membership</code>, respectively.
+        A <a href="#jonline-Membership"><code>Membership</code></a> has a <code>group_moderation</code> and <code>user_moderation</code> that determine whether
+        the <a href="#jonline-Group"><code>Group</code></a> admins and/or the invited user has approved the <a href="#jonline-Membership"><code>Membership</code></a>, respectively.
         <ul>
           <li>
-            User invites to <code>Group</code>s (i.e. the <code>user_moderation</code>) always start as <code>PENDING</code>.
-            The group side of this is managed by <code>default_membership_moderation</code> of the <code>Group</code> in question.
+            User invites to <a href="#jonline-Group"><code>Group</code></a>s (i.e. the <code>user_moderation</code>) always start as <code>PENDING</code>.
+            The group side of this is managed by <code>default_membership_moderation</code> of the <a href="#jonline-Group"><code>Group</code></a> in question.
           </li>
         </ul>
       </li>
-      <li>A <code>Post</code> has a <code>moderation</code> that determines whether the <code>Post</code> is visible to users (per its <code>visibility</code>).
+      <li>A <a href="#jonline-Post"><code>Post</code></a> has a <code>moderation</code> that determines whether the <a href="#jonline-Post"><code>Post</code></a> is visible to users (per its <code>visibility</code>).
         <ul>
-          <li>This is managed by <code>post_settings.default_moderation</code> in <code>ServerConfiguration</code>.</li>
+          <li>This is managed by <code>post_settings.default_moderation</code> in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.</li>
         </ul>
       </li>
-      <li>A <code>GroupPost</code> has a <code>moderation</code> that determines whether the admins/mods of the <code>Group</code> has approved the <code>Post</code> (or <code>Post</code>-descended thing like <code>Event</code>s).</li>
+      <li>A <a href="#jonline-GroupPost"><code>GroupPost</code></a> has a <code>moderation</code> that determines whether the admins/mods of the <a href="#jonline-Group"><code>Group</code></a> has approved the <a href="#jonline-Post"><code>Post</code></a> (or <a href="#jonline-Post"><code>Post</code></a>-descended thing like <a href="#jonline-Event"><code>Event</code></a>s).</li>
       <li>
-        <code>Event</code>s and further objects contain a <code>Post</code> and thus inherit its <code>moderation</code> and
-        related <code>GroupPost</code> behavior, for "Group Events."
+        <a href="#jonline-Event"><code>Event</code></a>s and further objects contain a <a href="#jonline-Post"><code>Post</code></a> and thus inherit its <code>moderation</code> and
+        related <a href="#jonline-GroupPost"><code>GroupPost</code></a> behavior, for "Group Events."
       </li>
     </ul>
     <table>
@@ -1916,28 +1922,28 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#visibility"><span class="octicon octicon-link"></span></a>Visibility</h3>
     <p>
       Visibility in Jonline is a complex topic. There are several different types of visibility,
-      and each type of entity (<code>User</code>, <code>Media</code>, <code>Group</code>, then <code>Post</code>/<code>Event</code>/etc. with common logic)
+      and each type of entity (<a href="#jonline-User"><code>User</code></a>, <a href="#jonline-Media"><code>Media</code></a>, <a href="#jonline-Group"><code>Group</code></a>, then <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-Event"><code>Event</code></a>/etc. with common logic)
       has different rules for visibility.
     </p>
     <p>From the top down, the rules break down as follows:</p>
     <ul>
       <li>Even a <code>PRIVATE</code> entity is always visible to the user who owns it.
         <ul>
-          <li>For <code>Group</code>s, this means all full members of the <code>Group</code>.</li>
+          <li>For <a href="#jonline-Group"><code>Group</code></a>s, this means all full members of the <a href="#jonline-Group"><code>Group</code></a>.</li>
           <li>
-            For <code>User</code>s, this is confusing and there is a whole <code>PrivateUserStrategy</code> thing
-            in <code>ServerConfiguration</code> for this.
+            For <a href="#jonline-User"><code>User</code></a>s, this is confusing and there is a whole <a href="#jonline-PrivateUserStrategy"><code>PrivateUserStrategy</code></a> thing
+            in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a> for this.
           </li>
         </ul>
       </li>
       <li>
         A <code>LIMITED</code> entity is visible to to the owner(s) and any explicitly associated
-        <code>User</code>s and <code>Group</code>s. Generally, this only applies to <code>Post</code>/<code>Event</code>/etc. entities.
-        Associations exist via <code>UserPost</code>s and <code>GroupPost</code>s.
+        <a href="#jonline-User"><code>User</code></a>s and <a href="#jonline-Group"><code>Group</code></a>s. Generally, this only applies to <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-Event"><code>Event</code></a>/etc. entities.
+        Associations exist via <a href="#jonline-UserPost"><code>UserPost</code></a>s and <a href="#jonline-GroupPost"><code>GroupPost</code></a>s.
         <ul>
           <li>
-            This is currently only implemented for <code>Group</code>s and <code>GroupPost</code>s. There are some
-            choices to be made about how to implement this for <code>User</code>s and <code>UserPost</code>s, and whether
+            This is currently only implemented for <a href="#jonline-Group"><code>Group</code></a>s and <a href="#jonline-GroupPost"><code>GroupPost</code></a>s. There are some
+            choices to be made about how to implement this for <a href="#jonline-User"><code>User</code></a>s and <a href="#jonline-UserPost"><code>UserPost</code></a>s, and whether
             <code>DIRECT</code> should be a separate visibility type.
           </li>
         </ul>
@@ -1993,7 +1999,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="permission"><a class="anchor" aria-hidden="true" tabindex="-1" href="#permission"><span class="octicon octicon-link"></span></a>Permission</h3>
     <p>
       Jonline Permissions are a set of permissions that can be granted directly to <a href="#jonline-User"><code>User</code></a>s and <a href="#jonline-Membership"><code>Membership</code></a>s.
-      (A <code>Membership</code> is the link between a <a href="#jonline-Group"><code>Group</code></a> and a <code>User</code>.)
+      (A <a href="#jonline-Membership"><code>Membership</code></a> is the link between a <a href="#jonline-Group"><code>Group</code></a> and a <a href="#jonline-User"><code>User</code></a>.)
     </p>
     <p>
       Subsets of these permissions are also applicable to anonymous users via <a href="#jonline-ServerConfiguration"><code>anonymous_user_permissions</code> in <code>ServerConfiguration</code></a>,
@@ -2041,7 +2047,7 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>GRANT_BASIC_PERMISSIONS</td>
           <td>6</td>
-          <td>Allow the user to grant Basic Permissions to other users. "Basic Permissions" are defined by your <code>ServerConfiguration</code>'s <code>basic_user_permissions</code>.</td>
+          <td>Allow the user to grant Basic Permissions to other users. "Basic Permissions" are defined by your <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>'s <code>basic_user_permissions</code>.</td>
         </tr>
         <tr>
           <td>VIEW_GROUPS</td>
@@ -2081,12 +2087,12 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>VIEW_POSTS</td>
           <td>20</td>
-          <td>As a user permission, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. As a group permission, allow the user to view <code>GroupPost</code>s whose <code>Post</code>s have <code>LIMITED</code> or higher visibility. Allow anonymous users to view posts with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission).</td>
+          <td>As a user permission, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. As a group permission, allow the user to view <a href="#jonline-GroupPost"><code>GroupPost</code></a>s whose <a href="#jonline-Post"><code>Post</code></a>s have <code>LIMITED</code> or higher visibility. Allow anonymous users to view posts with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission).</td>
         </tr>
         <tr>
           <td>CREATE_POSTS</td>
           <td>21</td>
-          <td>As a user permission, allow the user to create <code>Post</code>s of <code>PRIVATE</code> and <code>LIMITED</code> visibility. As a group permission, allow the user to create <code>GroupPost</code>s for <code>POST</code> and <code>FEDERATED_POST</code> <code>PostContext</code>s..</td>
+          <td>As a user permission, allow the user to create <a href="#jonline-Post"><code>Post</code></a>s of <code>PRIVATE</code> and <code>LIMITED</code> visibility. As a group permission, allow the user to create <a href="#jonline-GroupPost"><code>GroupPost</code></a>s for <code>POST</code> and <code>FEDERATED_POST</code> <a href="#jonline-PostContext"><code>PostContext</code></a>s..</td>
         </tr>
         <tr>
           <td>PUBLISH_POSTS_LOCALLY</td>
@@ -2116,12 +2122,12 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>VIEW_EVENTS</td>
           <td>30</td>
-          <td>As a user permission, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. As a group permission, allow the user to view <code>GroupPost</code>s whose <code>Event</code> <code>Post</code>s have <code>LIMITED</code> or higher visibility. Allow anonymous users to view events with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission).</td>
+          <td>As a user permission, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. As a group permission, allow the user to view <a href="#jonline-GroupPost"><code>GroupPost</code></a>s whose <a href="#jonline-Event"><code>Event</code></a> <a href="#jonline-Post"><code>Post</code></a>s have <code>LIMITED</code> or higher visibility. Allow anonymous users to view events with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission).</td>
         </tr>
         <tr>
           <td>CREATE_EVENTS</td>
           <td>31</td>
-          <td>As a user permission, allow the user to create <code>Event</code>s of <code>PRIVATE</code> and <code>LIMITED</code> visibility. As a group permission, allow the user to create <code>GroupPost</code>s for <code>EVENT</code> and <code>FEDERATED_EVENT_INSTANCE</code> <code>PostContext</code>s..</td>
+          <td>As a user permission, allow the user to create <a href="#jonline-Event"><code>Event</code></a>s of <code>PRIVATE</code> and <code>LIMITED</code> visibility. As a group permission, allow the user to create <a href="#jonline-GroupPost"><code>GroupPost</code></a>s for <code>EVENT</code> and <code>FEDERATED_EVENT_INSTANCE</code> <a href="#jonline-PostContext"><code>PostContext</code></a>s..</td>
         </tr>
         <tr>
           <td>PUBLISH_EVENTS_LOCALLY</td>
@@ -2186,26 +2192,26 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>SYNC_EVENTS_TO_FACEBOOK</td>
           <td>1000</td>
-          <td>Sync permissions -- each gates creating/updating <code>SyncDestination</code>s of that platform, and syncing that content type to them (see <code>sync.proto</code>). A generous reserved block (<code>1000</code>+) since this is the most likely area to keep growing as new platforms are added.</td>
+          <td>Sync permissions -- each gates creating/updating <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s of that platform, and syncing that content type to them (see <code>sync.proto</code>). A generous reserved block (<code>1000</code>+) since this is the most likely area to keep growing as new platforms are added.</td>
         </tr>
       </tbody>
     </table>
     <p>
-      Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see <code>XTwitterAccount</code>'s own doc. |
-      | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see <code>XTwitterAccount</code>'s own doc. |
-      | SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update <code>SyncDestination</code>s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update <code>SyncDestination</code>s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
+      Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
+      | SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc. |
+      | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc. |
+      | SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
       | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
       | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
-      | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <code>User</code>, <code>Group</code>, <code>Post</code> or <code>Event</code>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <code>GroupPost</code>s and <code>GroupEvent</code>s. |
+      | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <a href="#jonline-User"><code>User</code></a>, <a href="#jonline-Group"><code>Group</code></a>, <a href="#jonline-Post"><code>Post</code></a> or <a href="#jonline-Event"><code>Event</code></a>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <a href="#jonline-GroupPost"><code>GroupPost</code></a>s and <code>GroupEvent</code>s. |
       | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control. |
     </p>
     <p><a name="users-proto"></a></p>
@@ -2365,7 +2371,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-GetUsersResponse"></a></p>
     <h3 id="getusersresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getusersresponse"><span class="octicon octicon-link"></span></a>GetUsersResponse</h3>
-    <p>Response to a <code>GetUsersRequest</code>.</p>
+    <p>Response to a <a href="#jonline-GetUsersRequest"><code>GetUsersRequest</code></a>.</p>
     <table>
       <thead>
         <tr>
@@ -2567,7 +2573,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>response_count</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
-          <td>The number of responses to <code>Post</code>s and <code>Event</code>s this user has made.</td>
+          <td>The number of responses to <a href="#jonline-Post"><code>Post</code></a>s and <a href="#jonline-Event"><code>Event</code></a>s this user has made.</td>
         </tr>
         <tr>
           <td>event_count</td>
@@ -2597,7 +2603,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>current_group_membership</td>
           <td><a href="#jonline-Membership">Membership</a></td>
           <td>optional</td>
-          <td>Returned by <code>GetMembers</code> calls, for use when managing <a href="#jonline-Group"><code>Group</code></a> <a href="#jonline-Membership"><code>Membership</code></a>s. The <code>Membership</code> should match the <code>Group</code> from the originating <a href="#jonline-GetMembersRequest"><code>GetMembersRequest</code></a>, providing whether the user is a member of that <code>Group</code>, has been invited, requested to join, etc..</td>
+          <td>Returned by <a href="#grpc-api-GetMembers"><code>GetMembers</code></a> calls, for use when managing <a href="#jonline-Group"><code>Group</code></a> <a href="#jonline-Membership"><code>Membership</code></a>s. The <a href="#jonline-Membership"><code>Membership</code></a> should match the <a href="#jonline-Group"><code>Group</code></a> from the originating <a href="#jonline-GetMembersRequest"><code>GetMembersRequest</code></a>, providing whether the user is a member of that <a href="#jonline-Group"><code>Group</code></a>, has been invited, requested to join, etc..</td>
         </tr>
         <tr>
           <td>has_advanced_data</td>
@@ -2615,7 +2621,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>sync_destinations</td>
           <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
           <td>repeated</td>
-          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by <code>GetUsers</code>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin -- always empty otherwise, including via every other <code>GetUsers</code> listing type and via <code>GetCurrentUser</code>.</td>
+          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin -- always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type and via <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -2676,7 +2682,7 @@ directory</a> is (<code>{name}</code> denotes a
       </tbody>
     </table>
     <p>
-      Named <code>USERS_TEXT_SEARCH</code> (not the bare <code>TEXT_SEARCH</code> used by <code>PostListingType</code>) because proto3 enum values share a single namespace across the whole <code>jonline</code> package (C++ scoping rules) - <code>PostListingType</code> already claimed <code>TEXT_SEARCH</code>. |
+      Named <code>USERS_TEXT_SEARCH</code> (not the bare <code>TEXT_SEARCH</code> used by <a href="#jonline-PostListingType"><code>PostListingType</code></a>) because proto3 enum values share a single namespace across the whole <code>jonline</code> package (C++ scoping rules) - <a href="#jonline-PostListingType"><code>PostListingType</code></a> already claimed <code>TEXT_SEARCH</code>. |
       | FOLLOWERS_TEXT_SEARCH | 6 | Scopes <code>TEXT_SEARCH</code> to users following <code>user_id</code>. Requires <code>search_text</code> and <code>user_id</code>. |
       | FOLLOWING_TEXT_SEARCH | 7 | Scopes <code>TEXT_SEARCH</code> to users <code>user_id</code> follows. Requires <code>search_text</code> and <code>user_id</code>. |
       | FRIENDS_TEXT_SEARCH | 8 | Scopes <code>TEXT_SEARCH</code> to <code>user_id</code>'s friends (mutual follows). Requires <code>search_text</code> and <code>user_id</code>. |
@@ -2883,7 +2889,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-MediaMetadata"></a></p>
     <h3 id="mediametadata"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediametadata"><span class="octicon octicon-link"></span></a>MediaMetadata</h3>
     <p>
-      Free-form metadata about a <code>Media</code> item that isn't queried/filtered on, so doesn't need its
+      Free-form metadata about a <a href="#jonline-Media"><code>Media</code></a> item that isn't queried/filtered on, so doesn't need its
       own columns.
     </p>
     <table>
@@ -3019,7 +3025,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-GetMessagesResponse"></a></p>
     <h3 id="getmessagesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmessagesresponse"><span class="octicon octicon-link"></span></a>GetMessagesResponse</h3>
-    <p>Response to a <code>GetMessagesRequest</code>, containing the requested messages.</p>
+    <p>Response to a <a href="#jonline-GetMessagesRequest"><code>GetMessagesRequest</code></a>, containing the requested messages.</p>
     <table>
       <thead>
         <tr>
@@ -3042,7 +3048,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="getpushsubscriptionstatusrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpushsubscriptionstatusrequest"><span class="octicon octicon-link"></span></a>GetPushSubscriptionStatusRequest</h3>
     <p>
       Checks whether the current user has already registered a given Web Push subscription endpoint.
-      See <code>GetPushSubscriptionStatus</code>'s own RPC doc comment.
+      See <a href="#grpc-api-GetPushSubscriptionStatus"><code>GetPushSubscriptionStatus</code></a>'s own RPC doc comment.
     </p>
     <table>
       <thead>
@@ -3078,7 +3084,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>registered</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Whether the current user has a <code>PushSubscription</code> registered for this exact <code>endpoint</code>.</td>
+          <td>Whether the current user has a <a href="#jonline-PushSubscription"><code>PushSubscription</code></a> registered for this exact <code>endpoint</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -3087,7 +3093,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
       thread once it's been opened. <em>Authenticated</em> -- read status is inherently personal, so there's
-      no anonymous variant the way <code>SendMessage</code> has one.
+      no anonymous variant the way <a href="#grpc-api-SendMessage"><code>SendMessage</code></a> has one.
     </p>
     <table>
       <thead>
@@ -3109,14 +3115,14 @@ directory</a> is (<code>{name}</code> denotes a
           <td>message_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>The Messages to mark read/unread. The caller must have the same access to each of them <code>GetMessages</code> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <code>MarkMessagesRead</code>'s own RPC doc comment. A message id the caller doesn't have access to fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.</td>
+          <td>The Messages to mark read/unread. The caller must have the same access to each of them <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>'s own RPC doc comment. A message id the caller doesn't have access to fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-MarkMessagesReadResponse"></a></p>
     <h3 id="markmessagesreadresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadresponse"><span class="octicon octicon-link"></span></a>MarkMessagesReadResponse</h3>
     <p>
-      Response to a <code>MarkMessagesReadRequest</code> -- one <code>MessageRead</code> per <code>message_ids</code> entry, in the
+      Response to a <a href="#jonline-MarkMessagesReadRequest"><code>MarkMessagesReadRequest</code></a> -- one <a href="#jonline-MessageRead"><code>MessageRead</code></a> per <code>message_ids</code> entry, in the
       same order, each reflecting that message's own read/unread result (see <code>MarkMessagesReadRequest.unread</code>).
     </p>
     <table>
@@ -3217,7 +3223,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>current_user_read</td>
           <td><a href="#jonline-MessageRead">MessageRead</a></td>
           <td>optional</td>
-          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <code>MarkMessagesRead</code>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
+          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -3261,7 +3267,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>read_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td>When the message was marked read. Always set on a <code>MessageRead</code> returned from <code>MarkMessagesRead</code> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
+          <td>When the message was marked read. Always set on a <a href="#jonline-MessageRead"><code>MessageRead</code></a> returned from <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
         </tr>
       </tbody>
     </table>
@@ -3345,7 +3351,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       Registers (or re-registers) a browser's Web Push subscription for the current user, so new
       Messages sent/delivered to them push a notification even while the browser tab is closed.
-      See <code>RegisterPushSubscription</code>'s own RPC doc comment.
+      See <a href="#grpc-api-RegisterPushSubscription"><code>RegisterPushSubscription</code></a>'s own RPC doc comment.
     </p>
     <table>
       <thead>
@@ -3418,7 +3424,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       Unregisters a browser's Web Push subscription for the current user, e.g. on logout or when
       <code>PushManager.subscribe()</code> reports the subscription as no longer valid. See
-      <code>UnregisterPushSubscription</code>'s own RPC doc comment.
+      <a href="#grpc-api-UnregisterPushSubscription"><code>UnregisterPushSubscription</code></a>'s own RPC doc comment.
     </p>
     <table>
       <thead>
@@ -3434,7 +3440,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>endpoint</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The Web Push subscription endpoint URL to unregister, as previously passed to <code>RegisterPushSubscription</code>.</td>
+          <td>The Web Push subscription endpoint URL to unregister, as previously passed to <a href="#grpc-api-RegisterPushSubscription"><code>RegisterPushSubscription</code></a>.</td>
         </tr>
       </tbody>
     </table>
@@ -3641,7 +3647,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>shortname</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>Immutable shortname of the group. Derived from changes to <code>name</code> when the <code>Group</code> is updated.</td>
+          <td>Immutable shortname of the group. Derived from changes to <code>name</code> when the <a href="#jonline-Group"><code>Group</code></a> is updated.</td>
         </tr>
         <tr>
           <td>description</td>
@@ -3731,7 +3737,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-Member"></a></p>
     <h3 id="member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#member"><span class="octicon octicon-link"></span></a>Member</h3>
-    <p>Used when fetching group members using the <code>GetMembers</code> RPC.</p>
+    <p>Used when fetching group members using the <a href="#grpc-api-GetMembers"><code>GetMembers</code></a> RPC.</p>
     <table>
       <thead>
         <tr>
@@ -3796,7 +3802,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-DeletePostSyncDestinationRequest"></a></p>
     <h3 id="deletepostsyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deletepostsyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeletePostSyncDestinationRequest</h3>
     <p>
-      Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of <code>SyncPost</code>.
+      Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>.
       Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
     </p>
     <table>
@@ -3825,7 +3831,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-GetGroupPostsRequest"></a></p>
     <h3 id="getgrouppostsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsrequest"><span class="octicon octicon-link"></span></a>GetGroupPostsRequest</h3>
-    <p>Used for getting context about <code>GroupPost</code>s of an existing <code>Post</code>.</p>
+    <p>Used for getting context about <a href="#jonline-GroupPost"><code>GroupPost</code></a>s of an existing <a href="#jonline-Post"><code>Post</code></a>.</p>
     <table>
       <thead>
         <tr>
@@ -3840,19 +3846,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The ID of the post to get <code>GroupPost</code>s for.</td>
+          <td>The ID of the post to get <a href="#jonline-GroupPost"><code>GroupPost</code></a>s for.</td>
         </tr>
         <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>The ID of the group to get <code>GroupPost</code>s for.</td>
+          <td>The ID of the group to get <a href="#jonline-GroupPost"><code>GroupPost</code></a>s for.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetGroupPostsResponse"></a></p>
     <h3 id="getgrouppostsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsresponse"><span class="octicon octicon-link"></span></a>GetGroupPostsResponse</h3>
-    <p>Used for getting context about <code>GroupPost</code>s of an existing <code>Post</code>.</p>
+    <p>Used for getting context about <a href="#jonline-GroupPost"><code>GroupPost</code></a>s of an existing <a href="#jonline-Post"><code>Post</code></a>.</p>
     <table>
       <thead>
         <tr>
@@ -3867,7 +3873,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>group_posts</td>
           <td><a href="#jonline-GroupPost">GroupPost</a></td>
           <td>repeated</td>
-          <td>The <code>GroupPost</code>s for the given <code>Post</code> or <code>Group</code>.</td>
+          <td>The <a href="#jonline-GroupPost"><code>GroupPost</code></a>s for the given <a href="#jonline-Post"><code>Post</code></a> or <a href="#jonline-Group"><code>Group</code></a>.</td>
         </tr>
       </tbody>
     </table>
@@ -3895,7 +3901,7 @@ directory</a> is (<code>{name}</code> denotes a
           <li>Get replies to a post - only support for replyDepth=1 is done for now though.</li>
         </ul>
       </li>
-      <li><code>{listing_type: MyGroupsPosts|</code>GroupPost<code>sPendingModeration, group_id:}</code>
+      <li><code>{listing_type: MyGroupsPosts|[</code>GroupPost<code>](#jonline-GroupPost)sPendingModeration, group_id:}</code>
         <ul>
           <li>Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.</li>
         </ul>
@@ -3967,7 +3973,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>listing_type</td>
           <td><a href="#jonline-PostListingType">PostListingType</a></td>
           <td></td>
-          <td>The listing type of the request. See <code>PostListingType</code> for more info.</td>
+          <td>The listing type of the request. See <a href="#jonline-PostListingType"><code>PostListingType</code></a> for more info.</td>
         </tr>
         <tr>
           <td>page</td>
@@ -4013,7 +4019,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-GroupPost"></a></p>
     <h3 id="grouppost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grouppost"><span class="octicon octicon-link"></span></a>GroupPost</h3>
     <p>
-      A <code>GroupPost</code> is a cross-post of a <code>Post</code> to a <code>Group</code>. It contains
+      A <code>GroupPost</code> is a cross-post of a <a href="#jonline-Post"><code>Post</code></a> to a <a href="#jonline-Group"><code>Group</code></a>. It contains
       information about the moderation of the post in the group, as well as
       the time it was cross-posted and the user who did the cross-posting.
     </p>
@@ -4069,7 +4075,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="post-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-1"><span class="octicon octicon-link"></span></a>Post</h3>
     <p>
       A <code>Post</code> is a message that can be posted to the server. Its <code>visibility</code>
-      as well as any associated <code>GroupPost</code>s and <code>UserPost</code>s determine what users
+      as well as any associated <a href="#jonline-GroupPost"><code>GroupPost</code></a>s and <a href="#jonline-UserPost"><code>UserPost</code></a>s determine what users
       see it and where.
     </p>
     <p>
@@ -4269,7 +4275,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-UserPost"></a></p>
     <h3 id="userpost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userpost"><span class="octicon octicon-link"></span></a>UserPost</h3>
     <p>
-      A <code>UserPost</code> is a "direct share" of a <code>Post</code> to a <code>User</code>. Currently unused/unimplemented.
+      A <code>UserPost</code> is a "direct share" of a <a href="#jonline-Post"><code>Post</code></a> to a <a href="#jonline-User"><code>User</code></a>. Currently unused/unimplemented.
       See also: <a href="#jonline-Visibility"><code>DIRECT</code> <code>Visibility</code></a>.
     </p>
     <table>
@@ -4423,9 +4429,9 @@ directory</a> is (<code>{name}</code> denotes a
     <h2 id="eventsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsproto"><span class="octicon octicon-link"></span></a>events.proto</h2>
     <p><a name="jonline-AnonymousAttendee"></a></p>
     <h3 id="anonymousattendee"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymousattendee"><span class="octicon octicon-link"></span></a>AnonymousAttendee</h3>
-    <p>An anonymous internet user who has RSVP'd to an <code>EventInstance</code>.</p>
+    <p>An anonymous internet user who has RSVP'd to an <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</p>
     <p>
-      (TODO:) The visibility on <code>AnonymousAttendee</code> <code>ContactMethod</code>s should support the <code>LIMITED</code> visibility, which will
+      (TODO:) The visibility on <code>AnonymousAttendee</code> <a href="#jonline-ContactMethod"><code>ContactMethod</code></a>s should support the <code>LIMITED</code> visibility, which will
       make them visible to the event creator.
     </p>
     <table>
@@ -4454,14 +4460,14 @@ directory</a> is (<code>{name}</code> denotes a
           <td>auth_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new <code>EventAttendance</code>.</td>
+          <td>Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new <a href="#jonline-EventAttendance"><code>EventAttendance</code></a>.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-DeleteEventInstanceSyncDestinationRequest"></a></p>
     <h3 id="deleteeventinstancesyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventinstancesyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeleteEventInstanceSyncDestinationRequest</h3>
     <p>
-      Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of <code>SyncEventInstance</code>.
+      Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>.
       Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
     </p>
     <table>
@@ -4515,7 +4521,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td></td>
-          <td>The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its <code>PostContext</code> should be <code>EVENT</code>.</td>
+          <td>The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its <a href="#jonline-PostContext"><code>PostContext</code></a> should be <code>EVENT</code>.</td>
         </tr>
         <tr>
           <td>info</td>
@@ -4539,11 +4545,11 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-EventAttendance"></a></p>
     <h3 id="eventattendance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventattendance"><span class="octicon octicon-link"></span></a>EventAttendance</h3>
-    <p>Could be called an "RSVP." Describes the attendance of a user at an <code>EventInstance</code>. Such as:</p>
+    <p>Could be called an "RSVP." Describes the attendance of a user at an <a href="#jonline-EventInstance"><code>EventInstance</code></a>. Such as:</p>
     <ul>
-      <li>A user's RSVP to an <code>EventInstance</code> (one of <code>INTERESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>, or , <code>REQUESTED</code> (i.e. invited)).</li>
-      <li>Invitation status of a user to an <code>EventInstance</code>.</li>
-      <li><code>ContactMethod</code>-driven management for anonymous RSVPs to an <code>EventInstance</code>.</li>
+      <li>A user's RSVP to an <a href="#jonline-EventInstance"><code>EventInstance</code></a> (one of <code>INTERESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>, or , <code>REQUESTED</code> (i.e. invited)).</li>
+      <li>Invitation status of a user to an <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</li>
+      <li><a href="#jonline-ContactMethod"><code>ContactMethod</code></a>-driven management for anonymous RSVPs to an <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</li>
     </ul>
     <table>
       <thead>
@@ -4565,7 +4571,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>event_instance_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>ID of the <code>EventInstance</code> the attendance is for.</td>
+          <td>ID of the <a href="#jonline-EventInstance"><code>EventInstance</code></a> the attendance is for.</td>
         </tr>
         <tr>
           <td>user_attendee</td>
@@ -4589,7 +4595,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>status</td>
           <td><a href="#jonline-AttendanceStatus">AttendanceStatus</a></td>
           <td></td>
-          <td>The user's RSVP to an <code>EventInstance</code> (one of <code>INTERESTED</code>, <code>REQUESTED</code> (i.e. invited), <code>GOING</code>, <code>NOT_GOING</code>)</td>
+          <td>The user's RSVP to an <a href="#jonline-EventInstance"><code>EventInstance</code></a> (one of <code>INTERESTED</code>, <code>REQUESTED</code> (i.e. invited), <code>GOING</code>, <code>NOT_GOING</code>)</td>
         </tr>
         <tr>
           <td>inviting_user_id</td>
@@ -4613,7 +4619,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td>Moderation status for the attendance. Moderated by the <code>Event</code> owner (or <code>EventInstance</code> owner if applicable).</td>
+          <td>Moderation status for the attendance. Moderated by the <a href="#jonline-Event"><code>Event</code></a> owner (or <a href="#jonline-EventInstance"><code>EventInstance</code></a> owner if applicable).</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -4694,7 +4700,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>hide_location_until_rsvp_approved</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Hide the location until the user RSVPs (and it's accepted). From a system perspective, when this is set, Events will not include the <code>Location</code> until the user has RSVP'd. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner).</td>
+          <td>Hide the location until the user RSVPs (and it's accepted). From a system perspective, when this is set, Events will not include the <a href="#jonline-Location"><code>Location</code></a> until the user has RSVP'd. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner).</td>
         </tr>
         <tr>
           <td>default_rsvp_moderation</td>
@@ -4707,9 +4713,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-EventInstance"></a></p>
     <h3 id="eventinstance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstance"><span class="octicon octicon-link"></span></a>EventInstance</h3>
     <p>
-      The time-based component of an <code>Event</code>. Has a <code>starts_at</code> and <code>ends_at</code> time,
-      a <code>Location</code>, and an optional <code>Post</code> (and discussion thread) specific to this particular
-      <code>EventInstance</code> in addition to the parent <code>Event</code>.
+      The time-based component of an <a href="#jonline-Event"><code>Event</code></a>. Has a <code>starts_at</code> and <code>ends_at</code> time,
+      a <a href="#jonline-Location"><code>Location</code></a>, and an optional <a href="#jonline-Post"><code>Post</code></a> (and discussion thread) specific to this particular
+      <code>EventInstance</code> in addition to the parent <a href="#jonline-Event"><code>Event</code></a>.
     </p>
     <table>
       <thead>
@@ -4731,19 +4737,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>event_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>ID of the parent <code>Event</code>.</td>
+          <td>ID of the parent <a href="#jonline-Event"><code>Event</code></a>.</td>
         </tr>
         <tr>
           <td>post</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td></td>
-          <td>Optional <code>Post</code> containing alternate title/link/description for this particular instance. Its <code>PostContext</code> should be <code>EVENT_INSTANCE</code>.</td>
+          <td>Optional <a href="#jonline-Post"><code>Post</code></a> containing alternate title/link/description for this particular instance. Its <a href="#jonline-PostContext"><code>PostContext</code></a> should be <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>info</td>
           <td><a href="#jonline-EventInstanceInfo">EventInstanceInfo</a></td>
           <td></td>
-          <td>Additional configuration for this instance of this <code>EventInstance</code> beyond the <code>EventInfo</code> in its parent <code>Event</code>.</td>
+          <td>Additional configuration for this instance of this <a href="#jonline-EventInstance"><code>EventInstance</code></a> beyond the <a href="#jonline-EventInfo"><code>EventInfo</code></a> in its parent <a href="#jonline-Event"><code>Event</code></a>.</td>
         </tr>
         <tr>
           <td>starts_at</td>
@@ -4767,7 +4773,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>event_sync_source_instance_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>The "iCal ID" (or external ID) of this instance, if its <code>Event</code> was synced from an <code>EventSyncSource</code>.</td>
+          <td>The "iCal ID" (or external ID) of this instance, if its <a href="#jonline-Event"><code>Event</code></a> was synced from an <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>.</td>
         </tr>
         <tr>
           <td>sync_missing_since</td>
@@ -4822,7 +4828,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-EventInstanceRsvpInfo"></a></p>
     <h3 id="eventinstancersvpinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstancersvpinfo"><span class="octicon octicon-link"></span></a>EventInstanceRsvpInfo</h3>
     <p>
-      Consolidated type for RSVP info for an <code>EventInstance</code>.
+      Consolidated type for RSVP info for an <a href="#jonline-EventInstance"><code>EventInstance</code></a>.
       Curently, the <code>optional</code> counts below are <em>never</em> returned by the API.
     </p>
     <table>
@@ -4921,8 +4927,8 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-GetEventsRequest"></a></p>
     <h3 id="geteventsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsrequest"><span class="octicon octicon-link"></span></a>GetEventsRequest</h3>
     <p>
-      Request to get Events in a formatted <em>per-EventInstance</em> structure. i.e. the response will carry duplicate <code>Event</code>s with the same ID
-      if that <code>Event</code> has multiple <code>EventInstance</code>s in the time frame the client asked for.
+      Request to get Events in a formatted <em>per-EventInstance</em> structure. i.e. the response will carry duplicate <a href="#jonline-Event"><code>Event</code></a>s with the same ID
+      if that <a href="#jonline-Event"><code>Event</code></a> has multiple <a href="#jonline-EventInstance"><code>EventInstance</code></a>s in the time frame the client asked for.
     </p>
     <p>These structured EventInstances are ordered by start time unless otherwise specified (specifically, <code>EventListingType.NEWLY_ADDED_EVENTS</code>).</p>
     <p>Valid GetEventsRequest formats:</p>
@@ -4963,7 +4969,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Limits results to those in the given group ID (via <code>GroupPost</code> association's for the Event's internal <code>Post</code>).</td>
+          <td>Limits results to those in the given group ID (via <a href="#jonline-GroupPost"><code>GroupPost</code></a> association's for the Event's internal <a href="#jonline-Post"><code>Post</code></a>).</td>
         </tr>
         <tr>
           <td>event_instance_id</td>
@@ -4975,7 +4981,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>time_filter</td>
           <td><a href="#jonline-TimeFilter">TimeFilter</a></td>
           <td>optional</td>
-          <td>Filters returned <code>EventInstance</code>s by time.</td>
+          <td>Filters returned <a href="#jonline-EventInstance"><code>EventInstance</code></a>s by time.</td>
         </tr>
         <tr>
           <td>attendee_id</td>
@@ -4993,7 +4999,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Finds Events for the Post with the given ID. The Post should have a <code>PostContext</code> of <code>EVENT</code> or <code>EVENT_INSTANCE</code>.</td>
+          <td>Finds Events for the Post with the given ID. The Post should have a <a href="#jonline-PostContext"><code>PostContext</code></a> of <code>EVENT</code> or <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>listing_type</td>
@@ -5017,13 +5023,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>anonymous_attendee_auth_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Auth token proving ownership of an anonymous RSVP, mirroring <code>GetEventAttendancesRequest.anonymous_attendee_auth_token</code>. Lets an anonymous attendee's own (possibly still-<code>PENDING</code>) <code>EventAttendance</code> and its <code>EventInstance.location</code> (when <code>EventInfo.hide_location_until_rsvp_approved</code> is set) surface via each returned <code>EventInstance.attendances</code>/<code>current_user_attendance</code>, same as a logged-in user's own RSVP does automatically.</td>
+          <td>Auth token proving ownership of an anonymous RSVP, mirroring <code>GetEventAttendancesRequest.anonymous_attendee_auth_token</code>. Lets an anonymous attendee's own (possibly still-<code>PENDING</code>) <a href="#jonline-EventAttendance"><code>EventAttendance</code></a> and its <code>EventInstance.location</code> (when <code>EventInfo.hide_location_until_rsvp_approved</code> is set) surface via each returned <code>EventInstance.attendances</code>/<code>current_user_attendance</code>, same as a logged-in user's own RSVP does automatically.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetEventsResponse"></a></p>
     <h3 id="geteventsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsresponse"><span class="octicon octicon-link"></span></a>GetEventsResponse</h3>
-    <p>A list of <code>Event</code>s with a maybe-incomplete (see <a href="#geteventsrequest"><code>GetEventsRequest</code></a>) set of their <code>EventInstance</code>s.</p>
+    <p>A list of <a href="#jonline-Event"><code>Event</code></a>s with a maybe-incomplete (see <a href="#jonline-GetEventsRequest"><code>GetEventsRequest</code></a>) set of their <a href="#jonline-EventInstance"><code>EventInstance</code></a>s.</p>
     <p>
       Note that <code>GetEventsResponse</code> may often include duplicate Events with the same ID.
       I.E. something like: <code>{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}</code> is a valid response.
@@ -5084,7 +5090,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-TimeFilter"></a></p>
     <h3 id="timefilter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#timefilter"><span class="octicon octicon-link"></span></a>TimeFilter</h3>
     <p>
-      Time filter that works on the <code>starts_at</code> and <code>ends_at</code> fields of <code>EventInstance</code>.
+      Time filter that works on the <code>starts_at</code> and <code>ends_at</code> fields of <a href="#jonline-EventInstance"><code>EventInstance</code></a>.
       API currently only supports <code>ends_after</code>.
     </p>
     <table>
@@ -5125,7 +5131,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-UserAttendee"></a></p>
     <h3 id="userattendee"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userattendee"><span class="octicon octicon-link"></span></a>UserAttendee</h3>
-    <p>Wire-identical to <a href="#author">Author</a>, but with a different name to avoid confusion.</p>
+    <p>Wire-identical to <a href="#jonline-Author">Author</a>, but with a different name to avoid confusion.</p>
     <table>
       <thead>
         <tr>
@@ -5317,7 +5323,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>icon_media_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>Media ID (see <code>Media</code> APIs) of an image shown as the tab's icon.</td>
+          <td>Media ID (see <a href="#jonline-Media"><code>Media</code></a> APIs) of an image shown as the tab's icon.</td>
         </tr>
         <tr>
           <td>title</td>
@@ -5350,7 +5356,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>tabs</td>
           <td><a href="#jonline-CustomNavigationTabWithPath">CustomNavigationTabWithPath</a></td>
           <td>repeated</td>
-          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts/</code>, <code>/people</code>, and <code>/about</code> paths are not modifiable. <code>/</code> is modified via <code>CustomNavigationTabSet</code>.home instead.</td>
+          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts/</code>, <code>/people</code>, and <code>/about</code> paths are not modifiable. <code>/</code> is modified via <a href="#jonline-CustomNavigationTabSet"><code>CustomNavigationTabSet</code></a>.home instead.</td>
         </tr>
       </tbody>
     </table>
@@ -5358,7 +5364,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="customnavigationtabwithpath"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtabwithpath"><span class="octicon octicon-link"></span></a>CustomNavigationTabWithPath</h3>
     <p>
       A custom navigation tab with an associated path.
-      Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code>is modified via</code>CustomNavigationTabSet`.home instead.
+      Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code> is modified via [</code>CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
     </p>
     <table>
       <thead>
@@ -5380,7 +5386,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>path</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>e.g. link <code>/gigs</code> or <code>/shows</code> for a band to the "Events" page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code>is modified via</code>CustomNavigationTabSet`.home instead.</td>
+          <td>e.g. link <code>/gigs</code> or <code>/shows</code> for a band to the "Events" page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code> is modified via [</code>CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.</td>
         </tr>
       </tbody>
     </table>
@@ -6205,7 +6211,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>x_twitter_auth_config</td>
           <td><a href="#jonline-XTwitterAuthConfig">XTwitterAuthConfig</a></td>
           <td>optional</td>
-          <td>X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, <code>XTwitterAccount</code> SyncDestinations always fail with <code>x_twitter_app_not_configured</code> regardless of this field.</td>
+          <td>X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code> regardless of this field.</td>
         </tr>
       </tbody>
     </table>
@@ -6263,7 +6269,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-BlueskyAccount"></a></p>
     <h3 id="blueskyaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyaccount"><span class="octicon octicon-link"></span></a>BlueskyAccount</h3>
     <p>
-      A Bluesky (AT Protocol) account connected as a <code>SyncDestination</code> via an "App Password"
+      A Bluesky (AT Protocol) account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> via an "App Password"
       (generated at Settings > App Passwords -- not the account's main password), rather than an
       OAuth popup.
     </p>
@@ -6293,7 +6299,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>app_password</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>/<code>UpdateSyncDestination</code>: the user's own App Password. Never populated in responses. Sessions are created fresh per post rather than stored/refreshed, since App Passwords don't expire.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>/<a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>: the user's own App Password. Never populated in responses. Sessions are created fresh per post rather than stored/refreshed, since App Passwords don't expire.</td>
         </tr>
       </tbody>
     </table>
@@ -6422,7 +6428,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-FacebookPage"></a></p>
     <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
-    <p>A Facebook Page connected as a <code>SyncDestination</code>.</p>
+    <p>A Facebook Page connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>.</p>
     <table>
       <thead>
         <tr>
@@ -6449,7 +6455,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>short_lived_user_access_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: a short-lived user access token from client-side Facebook Login, exchanged server-side for a long-lived Page access token. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>
@@ -6496,9 +6502,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-InstagramAccount"></a></p>
     <h3 id="instagramaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagramaccount"><span class="octicon octicon-link"></span></a>InstagramAccount</h3>
     <p>
-      An Instagram Business/Creator account connected as a <code>SyncDestination</code>. Posting to Instagram
+      An Instagram Business/Creator account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>. Posting to Instagram
       requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
-      popup and app credentials as <code>FacebookPage</code> -- the server exchanges the token for the Page's
+      popup and app credentials as <a href="#jonline-FacebookPage"><code>FacebookPage</code></a> -- the server exchanges the token for the Page's
       access token, then looks up that Page's linked Instagram Business account.
     </p>
     <table>
@@ -6533,14 +6539,14 @@ directory</a> is (<code>{name}</code> denotes a
           <td>short_lived_user_access_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>: a short-lived user access token from client-side Facebook Login (same flow as <code>FacebookPage</code>), exchanged server-side for a long-lived Page access token, which is also used to post to the linked Instagram account. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: a short-lived user access token from client-side Facebook Login (same flow as <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>), exchanged server-side for a long-lived Page access token, which is also used to post to the linked Instagram account. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-MastodonAccount"></a></p>
     <h3 id="mastodonaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonaccount"><span class="octicon octicon-link"></span></a>MastodonAccount</h3>
     <p>
-      A Mastodon account connected as a <code>SyncDestination</code> via a user-supplied Personal Access Token
+      A Mastodon account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> via a user-supplied Personal Access Token
       (generated on the user's own instance, under Preferences > Development), rather than an OAuth
       popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
       register ahead of time the way Facebook/Instagram have one.
@@ -6571,17 +6577,17 @@ directory</a> is (<code>{name}</code> denotes a
           <td>access_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>/<code>UpdateSyncDestination</code>: the user's own Personal Access Token for <code>instance_host</code>. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>/<a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>: the user's own Personal Access Token for <code>instance_host</code>. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-SyncDestination"></a></p>
     <h3 id="syncdestination-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination-1"><span class="octicon octicon-link"></span></a>SyncDestination</h3>
     <p>
-      A user-owned destination to sync (cross-post) content out to. Mirrors <code>EventSyncSource</code>,
+      A user-owned destination to sync (cross-post) content out to. Mirrors <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>,
       but for pushing content out rather than pulling events in. Originally Event-specific
-      (as <code>EventSyncDestination</code>), now shared by both <code>EventInstance</code>s (see <code>events.proto</code>'s
-      <code>SyncEventInstanceRequest</code>) and <code>Post</code>s (see <code>posts.proto</code>'s <code>SyncPostRequest</code>).
+      (as <code>EventSyncDestination</code>), now shared by both <a href="#jonline-EventInstance"><code>EventInstance</code></a>s (see <code>events.proto</code>'s
+      <a href="#jonline-SyncEventInstanceRequest"><code>SyncEventInstanceRequest</code></a>) and <a href="#jonline-Post"><code>Post</code></a>s (see <code>posts.proto</code>'s <a href="#jonline-SyncPostRequest"><code>SyncPostRequest</code></a>).
     </p>
     <table>
       <thead>
@@ -6621,7 +6627,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>synced_event_instance_count</td>
           <td><a href="#uint64">uint64</a></td>
           <td>optional</td>
-          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <code>EventSyncSource</code>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
+          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
         </tr>
         <tr>
           <td>synced_post_count</td>
@@ -6657,7 +6663,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>x_twitter_account</td>
           <td><a href="#jonline-XTwitterAccount">XTwitterAccount</a></td>
           <td></td>
-          <td>A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see <code>XTwitterAccount</code>'s own doc.</td>
+          <td>A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc.</td>
         </tr>
         <tr>
           <td>threads_account</td>
@@ -6670,8 +6676,8 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-SyncDestinationStatus"></a></p>
     <h3 id="syncdestinationstatus"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinationstatus"><span class="octicon octicon-link"></span></a>SyncDestinationStatus</h3>
     <p>
-      The status of a single piece of content's (an <code>EventInstance</code> or <code>Post</code>) sync (cross-post) to
-      one <code>SyncDestination</code>. Shared/generic so both <code>EventInstance.sync_destinations</code> and
+      The status of a single piece of content's (an <a href="#jonline-EventInstance"><code>EventInstance</code></a> or <a href="#jonline-Post"><code>Post</code></a>) sync (cross-post) to
+      one <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>. Shared/generic so both <code>EventInstance.sync_destinations</code> and
       <code>Post.sync_destinations</code> can reuse it.
     </p>
     <table>
@@ -6714,8 +6720,8 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="threadsaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threadsaccount"><span class="octicon octicon-link"></span></a>ThreadsAccount</h3>
     <p>
       A connected Threads account. Threads API is a product added to this server's existing Meta App
-      (see <code>FacebookAuthConfig</code>) rather than a separately-registered app, so no separate auth config
-      is needed. Unlike <code>FacebookPage</code>/<code>InstagramAccount</code>, connecting one is a <code>response_type=code</code>
+      (see <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>) rather than a separately-registered app, so no separate auth config
+      is needed. Unlike <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>/<a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>, connecting one is a <code>response_type=code</code>
       OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
       exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
       refreshable via <code>grant_type=th_refresh_token</code> -- not yet implemented; a connected destination
@@ -6747,17 +6753,17 @@ directory</a> is (<code>{name}</code> denotes a
           <td>authorization_code</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>: the OAuth authorization code from the Threads login popup. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: the OAuth authorization code from the Threads login popup. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-XTwitterAccount"></a></p>
     <h3 id="xtwitteraccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#xtwitteraccount"><span class="octicon octicon-link"></span></a>XTwitterAccount</h3>
     <p>
-      An X (Twitter) account connected as a <code>SyncDestination</code>. Not yet postable -- this server has no
+      An X (Twitter) account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>. Not yet postable -- this server has no
       registered X Developer App. Every RPC touching an <code>XTwitterAccount</code> destination fails with
       <code>x_twitter_app_not_configured</code> until one is (see <code>FederationInfo.x_twitter_auth_config</code>), mirroring
-      <code>FacebookAuthConfig</code>/<code>facebook_app_not_configured</code>.
+      <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>/<code>facebook_app_not_configured</code>.
     </p>
     <table>
       <thead>
@@ -6779,7 +6785,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>short_lived_user_access_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <code>CreateSyncDestination</code>: reserved for a future OAuth flow. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: reserved for a future OAuth flow. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>

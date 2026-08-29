@@ -80,7 +80,7 @@ export interface Media {
 }
 
 /**
- * Free-form metadata about a `Media` item that isn't queried/filtered on, so doesn't need its
+ * Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
  * own columns.
  */
 export interface MediaMetadata {

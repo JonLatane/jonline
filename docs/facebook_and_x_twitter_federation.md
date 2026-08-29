@@ -1,7 +1,7 @@
 # Facebook and X (Twitter) Sync
 
 Jonline's "Sync Destinations" feature lets a user connect one of their Facebook Pages as a
-`SyncDestination`, so calling `SyncEventInstance` or `SyncPost` posts the `EventInstance`/`Post` to
+[`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), so calling [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance) or [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) posts the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)/[`Post`](https://jonline.io/docs/protocol#jonline-Post) to
 that Page. Implementation: [`backend/src/logic/facebook_sync.rs`](../backend/src/logic/facebook_sync.rs),
 invoked from [`SyncEventInstance`](../backend/src/rpcs/events/sync_event_instance.rs) and
 [`SyncPost`](../backend/src/rpcs/posts/sync_post.rs) alike (both dispatch through the same
@@ -16,7 +16,7 @@ section for the rest.)
 
 ## It posts to the Page's feed, not a real Facebook Event
 
-Posting an `EventInstance` creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
+Posting an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
 read like an event announcement, or attaches its media (see "What's in the post" below) -- it does
 **not** create an actual Facebook **Event** object (the kind users can RSVP to natively on
 Facebook), because the Graph API no longer allows that for ordinary third-party apps:
@@ -37,14 +37,14 @@ Facebook), because the Graph API no longer allows that for ordinary third-party 
   404s, with stale "pausing onboarding due to COVID-19" copy still up. Not a viable path.
 
 So the Page-post approach here is the best available server-side option, not an oversight. (This
-limitation is specific to *Events* -- a `Post` has no such native-object alternative to begin with,
+limitation is specific to *Events* -- a [`Post`](https://jonline.io/docs/protocol#jonline-Post) has no such native-object alternative to begin with,
 so its Page post is simply the whole feature for Posts.)
 
 ## What's in the post
 
 `logic::sync_message::build_event_instance_message`/`build_post_message` build one
-platform-agnostic `SyncMessage` per sync (shared by every `SyncDestination` platform, not just
-Facebook) from the content's own `Post` (`title`/`content`/`link`) and, for an `EventInstance`,
+platform-agnostic `SyncMessage` per sync (shared by every [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) platform, not just
+Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#jonline-Post) (`title`/`content`/`link`) and, for an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance),
 also its `starts_at`/`ends_at`/`location`:
 
 1. Title
@@ -62,7 +62,7 @@ by a `/feed` post referencing them (`attached_media[N]`) if there are images, or
 `/videos` post if there's a video (video wins if both are present -- the Graph API can't mix photo
 attachments and a video in one Page post). The `link` param (which drives a text-only post's
 link-preview card) prefers the Jonline URL; if that isn't available it falls back to the arbitrary
-external `link` the author/organizer set on the `Post` itself (e.g. an article or ticketing site).
+external `link` the author/organizer set on the [`Post`](https://jonline.io/docs/protocol#jonline-Post) itself (e.g. an article or ticketing site).
 
 ## Local-timezone times via free-text address geocoding
 
@@ -76,7 +76,7 @@ below):
    the same service the Tamagui frontend's location picker already calls client-side
    (`packages/app/hooks/use_nominatim.ts`), just used server-side here too. Its response already
    includes `lat`/`lon`, which the Tamagui picker currently fetches and discards -- only
-   `display_name` gets saved into the `Location`.
+   `display_name` gets saved into the [`Location`](https://jonline.io/docs/protocol#jonline-Location).
 2. **lat/lng -> IANA timezone**: the [`tzf-rs`](https://github.com/ringsaturn/tzf-rs) crate, an
    offline polygon-based dataset bundled into the binary -- no second network call, no rate limit,
    actively maintained.
@@ -90,7 +90,7 @@ geocoding match) makes `resolve_timezone` return `None`, and the post just falls
 never a reason to fail the sync itself.
 
 **Possible future work**: since Tamagui's Nominatim call already has `lat`/`lon` in hand at
-location-pick time, persisting those on `Location` (proto + DB + both frontends) would let syncs
+location-pick time, persisting those on [`Location`](https://jonline.io/docs/protocol#jonline-Location) (proto + DB + both frontends) would let syncs
 skip the live geocoding call entirely and use `tzf-rs` directly -- faster, no dependency on
 Nominatim's uptime/policy, and it would also cover Elm-created locations if Elm ever gains its own
 address picker (today Elm's location field is plain free text with no geocoding at all).
@@ -100,8 +100,8 @@ address picker (today Elm's location field is plain free text with no geocoding 
 The `event_url`/`post_url` (`https://{frontend_host}/event/{instance_id}` or
 `https://{frontend_host}/post/{post_id}`) is only built when this server has
 `ServerConfiguration.external_cdn_config.frontend_host` configured. Unlike Rocket web routes
-(`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the `SyncEventInstance`/
-`SyncPost` RPCs have no HTTP `Host` header to fall back on, so on servers without `frontend_host`
+(`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/
+[`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) RPCs have no HTTP `Host` header to fall back on, so on servers without `frontend_host`
 set, the post simply omits the Jonline link (falling back to the author's own `Post.link`, if any)
 rather than guessing a domain. This is an accepted current limitation, not a bug -- set
 `frontend_host` if you want synced posts to link back to their Jonline page.
@@ -109,8 +109,8 @@ rather than guessing a domain. This is an accepted current limitation, not a bug
 ## Connecting a Page (OAuth/token flow)
 
 1. The client does Facebook Login and gets a short-lived **user** access token, passed to
-   `CreateSyncDestination` (or `UpdateSyncDestination` to reconnect).
-2. The server loads its own Facebook App ID/Secret (admin-configured via `ConfigureServer` ->
+   [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination) (or [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination) to reconnect).
+2. The server loads its own Facebook App ID/Secret (admin-configured via [`ConfigureServer`](https://jonline.io/docs/protocol#grpc-api-ConfigureServer) ->
    `ServerConfiguration.federation_info.facebook_auth_config`) and exchanges the short-lived user
    token for a long-lived one (`connect_facebook_page` -> `exchange_long_lived_user_token`).
 3. It then looks up the specific Page's own access token via `/me/accounts`
@@ -127,12 +127,12 @@ timeline isn't possible via the Graph API at all (Facebook deprecated `publish_a
 
 ## X (Twitter)
 
-X sync exists as a `SyncDestination` platform in shape only -- the proto messages
-(`XTwitterAccount`), permissions (`SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`), and RPC
+X sync exists as a [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) platform in shape only -- the proto messages
+([`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount)), permissions (`SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`), and RPC
 dispatch arms all exist, but there's no working connect or post flow behind them yet:
 
-- `CreateSyncDestination`/`UpdateSyncDestination` against an `XTwitterAccount` configuration, and
-  `SyncEventInstance`/`SyncPost` against an already-"connected" one, all unconditionally fail with
+- [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination) against an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount) configuration, and
+  [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) against an already-"connected" one, all unconditionally fail with
   `x_twitter_app_not_configured` -- regardless of what permissions the caller holds, including
   Admin. There's no code path that can ever succeed today.
 - Why: unlike Facebook (whose app credentials also cover Instagram and Threads, since all three
@@ -145,7 +145,7 @@ dispatch arms all exist, but there's no working connect or post flow behind them
 
 **To actually implement this** (not yet started): register an X Developer App, wire
 `x_twitter_auth_config` the same way `facebook_auth_config` is wired (admin-configured via
-`ConfigureServer`), and add a `logic::x_twitter_sync` module mirroring `threads_sync.rs`'s shape
+[`ConfigureServer`](https://jonline.io/docs/protocol#grpc-api-ConfigureServer)), and add a `logic::x_twitter_sync` module mirroring `threads_sync.rs`'s shape
 most closely among the existing platforms -- X's OAuth 2.0 (with PKCE) is a `response_type=code`
 authorize-then-exchange flow similar to Threads', and (depending on the API tier ultimately used)
 posting is a single `POST /2/tweets` call, simpler than Facebook/Instagram's photo-upload or

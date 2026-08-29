@@ -52,7 +52,7 @@ message User {
   optional int32 group_count = 34;
   // The number of posts this user has made.
   optional int32 post_count = 35;
-  // The number of responses to `Post`s and `Event`s this user has made.
+  // The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made.
   optional int32 response_count = 36;
   // The number of events this user has created.
   optional int32 event_count = 37;
@@ -65,9 +65,9 @@ message User {
   // Presence indicates this user is following or has
   // a pending follow request for the current user.
   optional Follow target_current_user_follow = 51;
-  // Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. 
-  // The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
-  // providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
+  // Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. 
+  // The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
+  // providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc..
   optional Membership current_group_membership = 52;
 
   // Indicates that `federated_profiles` has been loaded.
@@ -79,10 +79,10 @@ message User {
   repeated FederatedAccount federated_profiles = 81;
 
   // The target user's own linked SyncDestinations (e.g. Facebook Pages).
-  // Only ever populated by `GetUsers`' single-user lookups (by username or by
+  // Only ever populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by
   // user_id) when the viewer is the target user themselves (and holds
   // `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
-  // otherwise, including via every other `GetUsers` listing type and via `GetCurrentUser`.
+  // otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser).
   repeated SyncDestination sync_destinations = 82;
 
   // The time the user was created.
@@ -179,9 +179,9 @@ enum UserListingType {
   // Returns users matching the full-text `search_text` query, scoped the same way
   // `EVERYONE` is. Requires `search_text` parameter.
   //
-  // Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by `PostListingType`) because
+  // Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by [`PostListingType`](#jonline-PostListingType)) because
   // proto3 enum values share a single namespace across the whole `jonline` package (C++ scoping
-  // rules) - `PostListingType` already claimed `TEXT_SEARCH`.
+  // rules) - [`PostListingType`](#jonline-PostListingType) already claimed `TEXT_SEARCH`.
   USERS_TEXT_SEARCH = 5;
   // Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`.
   FOLLOWERS_TEXT_SEARCH = 6;
@@ -196,7 +196,7 @@ enum UserListingType {
   ADMINS = 10;
 }
 
-// Response to a `GetUsersRequest`.
+// Response to a [`GetUsersRequest`](#jonline-GetUsersRequest).
 message GetUsersResponse {
   // The users matching the request.
   repeated User users = 1;

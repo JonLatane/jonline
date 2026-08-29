@@ -24,7 +24,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### IconMediaId
 
- Media ID (see `Media` APIs) of an image shown as the tab's icon.
+ Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon.
 
 
 -}
