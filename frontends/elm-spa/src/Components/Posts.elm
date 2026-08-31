@@ -925,19 +925,16 @@ moderation-status segment.
 `Html`, since (per `mediaLayoutSelector`'s own doc) it has no separate
 edit-mode/Save/Cancel state for the caller to own; it saves on every change.
 
-`isPushing`/`pushError`/`onPush`/`onDelete` drive an always-shown
+`availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete` drive an always-shown
 `postSyncDestinationsView` at the bottom of the detail view, mirroring
-`Pages.Event.EventId_`'s own `Events.eventSyncDestinationsView (Just []) ...` call exactly --
-`availableSyncDestinations` is hardcoded `Just []` here (not threaded through as a param) since,
-same as that page, this one only ever shows destinations `post` is *already* synced to (built from
-`post.syncDestinations` alone), never ones it isn't yet (that would need this page's own fetch of
-the account's configured `SyncDestination`s, which only `UserProfilePage` currently has) -- an
-empty `availableDestinations` makes the "not yet synced" rows empty too, so only the synced rows
-(each with a working Push-again/Delete pair) ever render.
+`Pages.Event.EventId_`'s own `Events.eventSyncDestinationsView` call exactly -- `Nothing` until the
+caller's own fetch of the viewer's `SyncDestination`s (gated on being `post`'s author or Admin)
+resolves, same `Nothing`-falls-back-to-read-only-links behavior as that page (see
+`Components.Pages.PostPage.Model.availableSyncDestinations`'s own doc for the fetch itself).
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView isPushing pushError onPush onDelete post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -993,7 +990,7 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
             Nothing ->
                 text ""
         , div [ class "post-detail-edit-row" ] [ editContentButton maybeAccount onEditClicked post ]
-        , postSyncDestinationsView (Just []) isPushing pushError onPush onDelete post
+        , postSyncDestinationsView availableSyncDestinations isPushing pushError onPush onDelete post
         ]
 
 

@@ -27,6 +27,7 @@ import Browser.Navigation
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
+import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -35,7 +36,7 @@ import Grpc
 import Html exposing (Html, button, div, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (Post)
+import Proto.Jonline exposing (GetSyncDestinationsResponse, Post, SyncDestination)
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -96,6 +97,12 @@ type alias Model =
     -- `Pages.Event.EventId_.Model.syncDestinationPushStatuses` exactly, since
     -- this page too only ever shows one Post's own sync status at a time.
     , syncDestinationPushStatuses : Dict String SubmitStatus
+
+    -- The viewer's own `SyncDestination`s, fetched once `GotPost` confirms they're this Post's
+    -- author (or Admin) -- mirrors `Pages.Event.EventId_.Model.availableSyncDestinations` exactly,
+    -- including the `Nothing`-until-fetched/non-author fallback to a read-only view. See that
+    -- field's own doc.
+    , availableSyncDestinations : Maybe (List SyncDestination)
     }
 
 
@@ -150,6 +157,10 @@ type Msg
       -- split exactly.
     | PushSyncDestinationClicked String
     | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- `Model.availableSyncDestinations`'s own fetch (see `GotPost`'s Ok branch) resolving --
+      -- mirrors `Pages.Event.EventId_.GotSyncDestinationsResult` exactly, including the
+      -- no-error-banner-on-failure behavior.
+    | GotSyncDestinationsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -217,6 +228,7 @@ init shared pageIsSecure rawPostId navKey =
                 , pageIsSecure = pageIsSecure
                 , navKey = navKey
                 , syncDestinationPushStatuses = Dict.empty
+                , availableSyncDestinations = Nothing
                 }
     in
     ( fetchedModel
@@ -304,13 +316,40 @@ update shared msg model =
 
                         Nothing ->
                             ( { model | postStatus = PostFailed }, Effect.none )
+
+                -- Only the Post's author (or an Admin) can ever push it to a `SyncDestination` --
+                -- mirrors `Pages.Event.EventId_.GotEvent`'s identical
+                -- `syncDestinationsFetchEffect`/`isOwner` gate exactly, including the
+                -- guard-on-`Nothing` so a post-edit refetch doesn't re-issue this.
+                syncDestinationsFetchEffect : Effect Msg
+                syncDestinationsFetchEffect =
+                    case ( List.head response.posts, model.availableSyncDestinations, serverAndAccount shared model ) of
+                        ( Just post, Nothing, Just ( server, account ) ) ->
+                            if Posts.isAuthor account post || List.member ADMIN account.permissions then
+                                SyncDestinations.getSyncDestinations shared.accounts ( Just account.userId, server.frontendHost ) ""
+                                    |> Task.attempt GotSyncDestinationsResult
+                                    |> Effect.fromCmd
+
+                            else
+                                Effect.none
+
+                        _ ->
+                            Effect.none
             in
             ( { postUpdatedModel | repliesModel = repliesModel }
-            , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect, postUpdatedEffect ]
+            , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect, postUpdatedEffect, syncDestinationsFetchEffect ]
             )
 
         GotPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
+
+        GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
+            ( { model | availableSyncDestinations = Just response.destinations }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotSyncDestinationsResult (Err _) ->
+            ( model, Effect.none )
 
         GotBreadcrumbAncestors post (Ok ( maybeAccountsPanelMsg, ancestors )) ->
             let
@@ -805,6 +844,7 @@ postDetailView shared model post =
         (EditClicked post)
         (visibilityView maybeAccount model.visibilityEdit displayPost)
         (moderationView maybeAccount model.moderationEdit displayPost)
+        model.availableSyncDestinations
         (\destinationId -> Dict.get destinationId model.syncDestinationPushStatuses == Just Submitting)
         (\destinationId ->
             case Dict.get destinationId model.syncDestinationPushStatuses of

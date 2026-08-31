@@ -24,6 +24,7 @@ import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
+import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -37,7 +38,7 @@ import Json.Encode as Encode
 import Page
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, Location, Post, defaultEvent, defaultEventInstance, defaultLocation)
+import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEvent, defaultEventInstance, defaultLocation)
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.Visibility exposing (Visibility)
@@ -128,6 +129,13 @@ type alias Model =
     -- destination id alone rather than `instanceId ++ "|" ++ destinationId`,
     -- since this page only ever shows one `EventInstance` at a time.
     , syncDestinationPushStatuses : Dict String SubmitStatus
+
+    -- The viewer's own `SyncDestination`s, fetched once `GotEvent` confirms they're this Event's
+    -- author (or Admin) -- `Nothing` until that fetch resolves (or if the viewer isn't the
+    -- author/Admin, in which case it's never fetched at all, same as `Just []`'s effect on
+    -- `eventSyncDestinationsView`: no "Push" button, only already-synced rows, if any). See
+    -- `Events.eventSyncDestinationsView`'s own doc for how `Just`/`Nothing` here changes rendering.
+    , availableSyncDestinations : Maybe (List SyncDestination)
     }
 
 
@@ -251,6 +259,12 @@ type Msg
       -- does, picked up in `SharedMsg` below.
     | PushSyncDestinationClicked String
     | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
+      -- `Model.availableSyncDestinations`'s own fetch (see `GotEvent`'s Ok branch) resolving --
+      -- populates the "Push" button's list of destinations not yet synced. A failure just leaves
+      -- `availableSyncDestinations` at `Nothing` (same as never having fetched at all -- only
+      -- already-synced rows still render, no error banner for this one, mirroring how the rest of
+      -- this page treats its own non-critical fetches).
+    | GotSyncDestinationsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse ))
     | SharedMsg Shared.Msg
 
 
@@ -424,6 +438,7 @@ init shared params =
                 , instanceLocationEdit = Nothing
                 , addMoreMenu = Nothing
                 , syncDestinationPushStatuses = Dict.empty
+                , availableSyncDestinations = Nothing
                 }
     in
     ( fetchedModel
@@ -491,6 +506,34 @@ update shared req msg model =
                         _ ->
                             Effect.none
 
+                -- Only the Event's author (or an Admin) can ever push it to a `SyncDestination`
+                -- (the backend RPC only checks the destination's own ownership, not the content's
+                -- -- but showing a "push someone else's Event to my own Page" button here would be
+                -- surprising and isn't offered anywhere else in the app, so this page stays
+                -- consistent with that). Guarded on `availableSyncDestinations == Nothing` so a
+                -- post-edit `refetch` doesn't re-issue this every time.
+                syncDestinationsFetchEffect : Effect Msg
+                syncDestinationsFetchEffect =
+                    case ( newStatus, model.availableSyncDestinations, serverAndAccount shared model ) of
+                        ( EventLoaded event _, Nothing, Just ( server, account ) ) ->
+                            let
+                                isOwner : Bool
+                                isOwner =
+                                    event.post
+                                        |> Maybe.map (Posts.isAuthor account)
+                                        |> Maybe.withDefault False
+                            in
+                            if isOwner || List.member ADMIN account.permissions then
+                                SyncDestinations.getSyncDestinations shared.accounts ( Just account.userId, server.frontendHost ) ""
+                                    |> Task.attempt GotSyncDestinationsResult
+                                    |> Effect.fromCmd
+
+                            else
+                                Effect.none
+
+                        _ ->
+                            Effect.none
+
                 modelWithNewStatus : Model
                 modelWithNewStatus =
                     { model | eventStatus = newStatus }
@@ -505,11 +548,19 @@ update shared req msg model =
                             modelWithNewStatus
             in
             ( clampedModel |> syncInstanceAnimations shared.time.now
-            , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect ]
+            , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect, syncDestinationsFetchEffect ]
             )
 
         GotEvent (Err _) ->
             ( { model | eventStatus = EventFailed }, Effect.none )
+
+        GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
+            ( { model | availableSyncDestinations = Just response.destinations }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotSyncDestinationsResult (Err _) ->
+            ( model, Effect.none )
 
         MediaClicked post mediaId ->
             ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post.media (Just post) mediaId model.targetHost)) )
@@ -1800,20 +1851,16 @@ eventDetailView shared model event instance =
         , instanceMetaView shared model instance
         , Events.eventSyncSourceView event
 
-        -- `availableSyncDestinations` is `Just []`, not `Nothing` -- this
-        -- page only ever shows destinations `instance` is *already* synced
-        -- to (`eventSyncDestinationsView`'s `syncedRows`, built from
-        -- `instance.syncDestinations` alone), never ones it isn't yet (that
-        -- would need this page's own fetch of the account's configured
-        -- `SyncDestination`s, which only `UserProfilePage` currently
-        -- has) -- an empty `availableDestinations` makes `notYetSyncedRows`
-        -- empty too, so only the synced rows (each with a working
-        -- Push-again/Delete pair) ever render. `destinationName` is always
-        -- `Nothing` for the same reason (no `SyncDestination` to read a
-        -- Facebook Page name off of), which just falls back to the row's
-        -- generic "Facebook Page" label.
+        -- `model.availableSyncDestinations` is `Nothing` until `GotEvent` confirms the viewer is
+        -- this Event's author (or Admin) and its own fetch resolves (see that Msg's own doc) --
+        -- until/unless that happens (including for every non-author, non-Admin viewer, who never
+        -- triggers the fetch at all), this falls back to `eventSyncDestinationsView`'s `Nothing`
+        -- behavior: plain read-only "synced to <url>" links, no Push/Delete buttons at all -- a
+        -- deliberate improvement over this view's pre-`availableSyncDestinations` behavior, which
+        -- showed every viewer a Delete button that only ever worked for the destination's actual
+        -- owner.
         , Events.eventSyncDestinationsView
-            (Just [])
+            model.availableSyncDestinations
             (\destinationId -> Dict.get destinationId model.syncDestinationPushStatuses == Just Submitting)
             (\destinationId ->
                 case Dict.get destinationId model.syncDestinationPushStatuses of

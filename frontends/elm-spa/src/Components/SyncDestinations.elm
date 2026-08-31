@@ -1,15 +1,23 @@
 module Components.SyncDestinations exposing
     ( createSyncDestination
     , deleteSyncDestination
+    , getSyncDestinations
     , syncDestinationsView
     )
 
 {-| RPC wrappers for `SyncDestination` (`protos/sync.proto`) -- mirrors
 `Components.EventSyncSources` in shape (each takes the calling account/server as an
 `AccountsPanel.MaybeAccountServer` and returns a `Task` resolving to `( Maybe AccountsPanel.Msg,
-response )`), but only the three RPCs `Components.Pages.UserProfilePage`'s "Sync Destinations"
-section actually needs: get/create/delete. There's no `updateSyncDestination` wrapper here --
-reconnecting an existing destination isn't exposed in the UI yet, only link/unlink.
+response )`). There's no `updateSyncDestination` wrapper here -- reconnecting an existing
+destination isn't exposed in the UI yet, only link/unlink.
+
+`Components.Pages.UserProfilePage`'s own "Sync Destinations" section never calls `getSyncDestinations`
+-- it already has the account's full `User` (via `Components.Users.Resolver`), which embeds
+`syncDestinations` directly (self-or-Admin gated server-side, see `protos/users.proto`'s doc on
+`User.sync_destinations`). `getSyncDestinations` exists for pages that only need *just* that list
+without fetching a whole `User` -- e.g. `Pages.Event.EventId_`/`Components.Pages.PostPage`, which
+need the viewer's own destinations to offer a real Push button on a single Post/EventInstance's
+detail view, but have no other reason to fetch their own full profile.
 
 Also home to `syncDestinationsView`, the generic already-synced/available-to-sync-to row-rendering
 logic shared by `Components.Events.eventSyncDestinationsView` (wrapping
@@ -21,11 +29,33 @@ import Grpc
 import Html exposing (Html, a, button, div, span, text)
 import Html.Attributes exposing (class, disabled, href, rel, target, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (SyncDestination, SyncDestinationStatus)
+import Proto.Jonline exposing (GetSyncDestinationsResponse, SyncDestination, SyncDestinationStatus, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
+
+
+{-| `targetUserId = ""` asks the backend for the caller's own destinations (see
+`backend/src/rpcs/sync_destinations/get_sync_destinations.rs`); any other id asks for that user's
+destinations instead, which only succeeds for an Admin caller. Mirrors
+`Components.EventSyncSources.getEventSyncSources`'s own doc/shape exactly.
+-}
+getSyncDestinations :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse )
+getSyncDestinations accountsPanelModel maybeAccountServer targetUserId =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.getSyncDestinations { defaultUser | id = targetUserId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
 
 
 {-| Always creates a destination owned by the calling account (mirrors
