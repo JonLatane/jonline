@@ -29,11 +29,17 @@ pub fn sync_event_instance(
         .to_db_id_or_err("sync_destination_id")?;
 
     let instance = models::get_event_instance(instance_id, &Some(current_user), conn)?;
-    let post: models::Post = posts::table
+    let instance_post: models::Post = posts::table
         .select(POST_COLUMNS)
         .filter(posts::id.eq(instance.post_id))
         .first(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_post_not_found"))?;
+    let event = models::get_event(instance.event_id, &Some(current_user), conn)?;
+    let event_post: models::Post = posts::table
+        .select(POST_COLUMNS)
+        .filter(posts::id.eq(event.post_id))
+        .first(conn)
+        .map_err(|_| Status::new(Code::NotFound, "event_post_not_found"))?;
 
     let destination = models::get_sync_destination(destination_id, conn)?;
     if destination.user_id != current_user.id {
@@ -91,7 +97,7 @@ pub fn sync_event_instance(
         .map(|c| c.frontend_host.clone())
         .filter(|h| !h.trim().is_empty())
         .map(|host| format!("https://{host}/event/{}", instance.id.to_proto_id()));
-    let media_ids: Vec<i64> = post.media.iter().filter_map(|m| *m).collect();
+    let media_ids: Vec<i64> = instance_post.media.iter().filter_map(|m| *m).collect();
     let media_lookup = load_media_lookup(media_ids.clone(), conn);
     let media: Vec<MediaAttachment> = external_cdn_config
         .as_ref()
@@ -112,10 +118,18 @@ pub fn sync_event_instance(
         })
         .unwrap_or_default();
 
+    // The instance's own Post carries only a per-instance *override* of the parent Event's own
+    // title/content (often unset, e.g. a plain weekly recurrence with nothing instance-specific to
+    // say) -- so the synced message always leads with the Event's own title/content, appending the
+    // instance's as a distinguishing suffix only when it actually set one. See
+    // `combine_title`/`combine_content`'s own docs for the exact formats.
+    let title = combine_title(&event_post.title, &instance_post.title);
+    let content = combine_content(&event_post.content, &instance_post.content);
+
     let message = build_event_instance_message(EventInstanceMessageInput {
-        title: &post.title,
-        content: &post.content,
-        link: &post.link,
+        title: &title,
+        content: &content,
+        link: &instance_post.link,
         starts_at,
         ends_at,
         location: &location,
@@ -190,4 +204,29 @@ pub fn sync_event_instance(
                 .find(|i| i.id == instance.id.to_proto_id())
         })
         .ok_or_else(|| Status::new(Code::Internal, "failed_to_reload_synced_event_instance"))
+}
+
+/// `"{event_title}: {instance_title}"` when `instance_title` is set (non-empty), else just
+/// `event_title` alone -- e.g. "Run Club" or "Run Club: Special Holiday Edition". Falls back to
+/// `instance_title` alone in the (unusual) case `event_title` itself is unset.
+fn combine_title(event_title: &Option<String>, instance_title: &Option<String>) -> Option<String> {
+    combine(event_title, instance_title, ": ")
+}
+
+/// `"{event_content}\n\n---\n\n{instance_content}"` when `instance_content` is set (non-empty),
+/// else just `event_content` alone. Falls back to `instance_content` alone in the (unusual) case
+/// `event_content` itself is unset.
+fn combine_content(event_content: &Option<String>, instance_content: &Option<String>) -> Option<String> {
+    combine(event_content, instance_content, "\n\n---\n\n")
+}
+
+fn combine(primary: &Option<String>, secondary: &Option<String>, separator: &str) -> Option<String> {
+    let primary = primary.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let secondary = secondary.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    match (primary, secondary) {
+        (Some(p), Some(s)) => Some(format!("{p}{separator}{s}")),
+        (Some(p), None) => Some(p.to_string()),
+        (None, Some(s)) => Some(s.to_string()),
+        (None, None) => None,
+    }
 }

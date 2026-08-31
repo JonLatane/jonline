@@ -91,7 +91,7 @@ pub fn build_event_instance_message(input: EventInstanceMessageInput) -> SyncMes
     };
     lines.push(time_range);
     if let Some(location) = input.location.as_ref().filter(|l| !l.trim().is_empty()) {
-        lines.push(format!("Location: {location}"));
+        lines.push(format!("📍 {location}"));
     }
     if let Some(content) = input.content.as_ref().filter(|c| !c.trim().is_empty()) {
         lines.push(content.clone());
@@ -103,7 +103,8 @@ pub fn build_event_instance_message(input: EventInstanceMessageInput) -> SyncMes
         .or_else(|| input.link.as_ref().filter(|l| !l.trim().is_empty()))
         .cloned();
     if let Some(link) = &link {
-        lines.push(format!("Details & RSVP: {link}"));
+        // lines.push(format!("Details & RSVP: {link}"));
+        lines.push(link.to_string());
     }
     SyncMessage {
         text: lines.join("\n\n"),
