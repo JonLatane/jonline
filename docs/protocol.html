@@ -452,7 +452,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="https://hub.docker.com/r/jonlatane/jonline/tags">images</a> on <a href="https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags">DockerHub</a> and deployment to your K8s clusters available via
       a simple but powerful <code>Makefile</code>-based design language.
     </p>
-    <h4 id="ports"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports"><span class="octicon octicon-link"></span></a>Ports</h4>
+    <h4 id="ports--protocols"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports--protocols"><span class="octicon octicon-link"></span></a>Ports &#x26; Protocols</h4>
     <p>Jonline servers interact across several ports:</p>
     <ul>
       <li><a href="#grpc-api">gRPC (27707)</a> - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
@@ -467,7 +467,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li>Port 8000 <em>always</em> serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.</li>
           <li>Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
             <ul>
-              <li>Currently this just has an <code>/email</code> endpoint. It is designed for <a href="https://github.com/JonLatane/jonline/tree/main/deploys/email">email support via an integration with Stalwart</a>.</li>
+              <li>Currently this just has an <code>/email</code> endpoint. It is designed for <a href="https://github.com/JonLatane/jonline/tree/main/deploys/email">email/SMTP support via an integration with Stalwart</a>.</li>
             </ul>
           </li>
         </ul>
@@ -496,12 +496,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <p>
       <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a>, however, is non-atomic. Given that an <a href="#jonline-Event"><code>Event</code></a> has a <a href="#jonline-Post"><code>Post</code></a> and many <a href="#jonline-EventInstance"><code>EventInstance</code></a>s,
-      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a> will first update the <a href="#jonline-Post"><code>Post</code></a> atomically (literally calling the <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> RPC),
-      then the <a href="#jonline-Event"><code>Event</code></a> atomically, and then finally process updates to its <a href="#jonline-EventInstance"><code>EventInstance</code></a>s in a final atomic operation.
+      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a> is implemented as a composition of four other RPCs -- each independently callable and individually atomic --
+      run in a fixed order: <a href="#grpc-api-UpdateEventDetails"><code>UpdateEventDetails</code></a> (which itself first updates the <a href="#jonline-Event"><code>Event</code></a>'s own <a href="#jonline-Post"><code>Post</code></a>
+      atomically, literally calling the <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> RPC), then <a href="#grpc-api-CreateNewEventInstances"><code>CreateNewEventInstances</code></a>,
+      <a href="#grpc-api-UpdateEventInstances"><code>UpdateEventInstances</code></a>, and finally <a href="#grpc-api-DeleteRemovedEventInstances"><code>DeleteRemovedEventInstances</code></a>.
+      Create must run before Delete so that a request which both drops an old <a href="#jonline-EventInstance"><code>EventInstance</code></a> and adds a new one never transiently
+      leaves the <a href="#jonline-Event"><code>Event</code></a> with zero instances.
     </p>
     <p>
-      Because moderation/visibility lives at the <a href="#jonline-Post"><code>Post</code></a> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
-      visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+      Because moderation/visibility lives at the <a href="#jonline-Post"><code>Post</code></a> level, and <a href="#grpc-api-UpdateEventDetails"><code>UpdateEventDetails</code></a> runs first, this means that a developer error in the
+      later <a href="#jonline-EventInstance"><code>EventInstance</code></a>-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
       This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
       moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
       approach to predictable atomicity.
@@ -692,6 +696,54 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
+    <h5 id="federated-authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-authentication"><span class="octicon octicon-link"></span></a>Federated Authentication</h5>
+    <p>
+      tl;dr: Lets you sign in to the <code>jon@bullcity.social</code> user on <code>jonline.io</code>, without ever entering your <code>bullcity.social</code>
+      credentials on <code>jonline.io</code>.
+    </p>
+    <p>
+      Elm-only feature (<code>frontends/elm-spa</code>) letting a user sign in to one Jonline server using an account they already
+      have (or are willing to create) on a <em>different</em> Jonline server, without either backend ever seeing a plaintext
+      token that isn't its own. It's pure browser-to-browser: two Elm SPA page routes
+      (<a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to/...</code></a> and
+      <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from/...</code></a>) exchange
+      an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
+      the <a href="#grpc-api-Login"><code>Login</code></a> RPC itself.
+    </p>
+    <ol>
+      <li>
+        Say a user is on <code>jonline.io</code>, adding a new account, and enters <code>bullcity.social</code> as the server. Since that
+        isn't the current host, the Accounts panel offers a "Sign in via bullcity.social" button instead of (or alongside)
+        a normal username/password form.
+      </li>
+      <li>
+        Clicking it does a full-page navigation to <code>bullcity.social</code>, carrying <code>jonline.io</code>'s ECDH public key (freshly
+        generated in-browser and persisted for this purpose) and its own hostname in the URL: <code>/auth/to/{public_key}@jonline.io</code>.
+      </li>
+      <li>
+        <code>bullcity.social</code> shows its own sign-in form (or, if already signed in there, a badge to reuse that session),
+        plus a "Sign back in here" checkbox, checked by default.
+      </li>
+      <li>
+        The user authenticates via the <a href="#grpc-api-Login"><code>Login</code></a> RPC. This always issues a <em>fresh</em> <code>refresh_token</code>/
+        <code>access_token</code> pair, reserved purely for transfer back to <code>jonline.io</code> -- it's never used to sign the browser into
+        <code>bullcity.social</code> itself. If "Sign back in here" is checked, a <strong>second</strong>, independent <a href="#grpc-api-Login"><code>Login</code></a>
+        call also runs, so <code>bullcity.social</code> gets its own local session too, and the two servers never end up sharing a
+        token pair. (Hence "1-2 refresh tokens.")
+      </li>
+      <li>
+        The transfer account (server, user ID, username, both tokens, avatar, permissions, etc.) is JSON-encoded and
+        encrypted to <code>jonline.io</code>'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below), then the
+        browser is redirected back to <code>jonline.io</code> at <code>/auth/from/{ciphertext}</code>.
+      </li>
+      <li>
+        <code>jonline.io</code> decrypts the payload with the private key it generated in step 2, then either silently accepts it
+        (if it knows where to send the user back to) or shows a confirmation screen (avatar/name/server, Confirm/Cancel)
+        before adding the account to its Accounts panel. Either way, the one-time keypair generated in step 2 is discarded
+        and a fresh one generated in its place, so it can't be reused for a second transfer.
+      </li>
+    </ol>
+    <p>See the two HTTP-level routes below for the exact URL/crypto shape.</p>
     <h4 id="federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation"><span class="octicon octicon-link"></span></a>Federation</h4>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -911,6 +963,66 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       be <code>jonline.io</code>. The client can trust <code>jonline.io/backend_host</code> to always point to the correct backend host for
       <code>jonline.io</code>.
     </p>
+    <h6 id="get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><span class="octicon octicon-link"></span></a><code>GET /auth/to/{public_key}@{requesting_host}</code>: Federated Sign-In (sending side)</h6>
+    <p>
+      Half <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web UI path</a>, half
+      endpoint: it's an Elm SPA page (<code>Pages.Auth.To.Key_</code>, served like any other SPA route -- under the <code>/elm</code> base
+      path when the Elm frontend isn't the one mounted at <code>/</code>) rather than a backend/gRPC handler, but it consumes
+      structured input straight from the URL and "responds" with a redirect carrying an encrypted payload, so it's
+      documented here as an endpoint too. Handled entirely in-browser; reached only via the cross-origin redirect from
+      step 2 above (built by the <em>requesting</em> origin's Accounts panel), never linked to directly.
+    </p>
+    <ul>
+      <li>
+        <strong>Path params</strong>: <code>{public_key}</code> is the requesting origin's ECDH (P-256) public key, raw-exported and
+        base64url-encoded; <code>{requesting_host}</code> is that origin's own hostname. The two are joined with a literal <code>@</code>
+        (chosen because <code>@</code> never appears in the base64url/dot-joined ciphertext the
+        <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from</code></a> route below expects, so the
+        split is unambiguous).
+      </li>
+      <li>
+        <strong>Query params</strong>: <code>start_path</code> -- the app-relative path the user was on when they clicked "Sign in via ...", so
+        they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
+        <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from</code></a> redirect.
+      </li>
+      <li>
+        <strong>Behavior</strong>: shows a sign-in form for <em>this</em> server (or a "currently signed in as ..." badge, if already
+        authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
+        calls the <a href="#grpc-api-Login"><code>Login</code></a> RPC (always a fresh login, never reusing stored tokens) to mint a transfer
+        account; if the checkbox is checked, a second independent <a href="#grpc-api-Login"><code>Login</code></a> call also signs the browser
+        into this server locally. The transfer account is then AES-GCM-encrypted to <code>{public_key}</code> (fresh ephemeral ECDH
+        keypair per encryption, shared secret via ECDH + HKDF-SHA256, output <code>ephemeral_public_key.iv.ciphertext</code>, each
+        part base64url) and the browser is redirected to
+        <code>https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}</code>.
+      </li>
+    </ul>
+    <h6 id="get-authfromencrypted_account-federated-sign-in-receiving-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><span class="octicon octicon-link"></span></a><code>GET /auth/from/{encrypted_account}</code>: Federated Sign-In (receiving side)</h6>
+    <p>
+      Likewise a <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web
+UI</a>/endpoint hybrid: the Elm
+      SPA page (<code>Pages.Auth.From.EncodedAccount_</code>) that closes the loop from
+      <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a> above, taking its ciphertext
+      as input and "responding" by adding the decrypted account. Reached only via that redirect.
+    </p>
+    <ul>
+      <li>
+        <strong>Path params</strong>: <code>{encrypted_account}</code> is the <code>ephemeral_public_key.iv.ciphertext</code> blob produced by
+        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a>.
+      </li>
+      <li>
+        <strong>Query params</strong>: <code>start_path</code>, passed through unchanged from
+        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a>.
+      </li>
+      <li>
+        <strong>Behavior</strong>: decrypts <code>{encrypted_account}</code> using the private key this origin generated when it built the
+        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a> link (same ECDH +
+        HKDF-SHA256 + AES-GCM derivation, in reverse), yielding the transfer account (including its
+        <code>refresh_token</code>/<code>access_token</code>). If <code>start_path</code> is present, the account is added straight to the local Accounts
+        panel and the browser navigates to it; otherwise a confirmation screen (avatar, name, server, Confirm/Cancel) is
+        shown first. Either way, once the flow completes (confirmed or cancelled), the one-time private key is discarded
+        and a fresh keypair generated, so it's single-use per completed/cancelled transfer.
+      </li>
+    </ul>
     <p>
       This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about?section=cdn">https://jonline.io/about?section=cdn</a> for
       more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116">React/Tamagui</a>
@@ -1054,6 +1166,15 @@ directory</a> is (<code>{name}</code> denotes a
     <p>Information about a (possibly federated) Jonline server.</p>
     <h5 id="about-about_jonline-about"><a class="anchor" aria-hidden="true" tabindex="-1" href="#about-about_jonline-about"><span class="octicon octicon-link"></span></a><code>/about</code>, <code>/about_jonline</code>: About</h5>
     <p>This server's own About page, and a general "what is Jonline" page.</p>
+    <h5 id="authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code> and <code>/auth/from/{encrypted_account}</code>: Federated Sign-In</h5>
+    <p>
+      <strong>Elm-only</strong> -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
+      purely to drive the <a href="#federated-authentication">Federated Authentication</a> flow. Since they're consumed like
+      ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
+      alongside the rest of the <a href="#external-http-servers-80-8000-443">HTTP Endpoints</a> above -- see
+      <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>GET /auth/to/{public_key}@{requesting_host}</code></a>
+      and <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>GET /auth/from/{encrypted_account}</code></a>.
+    </p>
     <h3 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h3>
     <table>
       <thead>

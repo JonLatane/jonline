@@ -12,7 +12,7 @@ run_elm:
 run_tamagui:
 	$(MAKE) -C frontends/tamagui run
 
-test: test_backend test_elm test_tamagui
+test: test_backend test_elm test_tamagui test_flutter
 
 test_backend:
 	$(MAKE) -C backend test
@@ -20,6 +20,8 @@ test_elm:
 	$(MAKE) -C frontends/elm-spa test
 test_tamagui:
 	$(MAKE) -C frontends/tamagui test
+test_flutter:
+	$(MAKE) -C frontends/flutter test
 
 
 ############################################################################

@@ -20,7 +20,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  [images](https://hub.docker.com/r/jonlatane/jonline/tags) on [DockerHub](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags) and deployment to your K8s clusters available via
  a simple but powerful `Makefile`-based design language.
 
- #### Ports
+ #### Ports & Protocols
  Jonline servers interact across several ports:
  * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
       * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
@@ -29,7 +29,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
       * Port 80 will serve up either an unsecured set of Jonline's HTTP endpoints, or a redirect to the HTTPS/443 server if that one launched successfully.
       * Port 8000 *always* serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.
       * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
-          * Currently this just has an `/email` endpoint. It is designed for [email support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
+          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 
  #### API Design Notes
  ##### Moderation and Visibility
@@ -48,12 +48,16 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
  For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
 
- [`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#jonline-Event) has a [`Post`](#jonline-Post) and many [`EventInstance`](#jonline-EventInstance)s, 
- [`UpdateEvent`](#grpc-api-UpdateEvent) will first update the [`Post`](#jonline-Post) atomically (literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC),
- then the [`Event`](#jonline-Event) atomically, and then finally process updates to its [`EventInstance`](#jonline-EventInstance)s in a final atomic operation. 
+ [`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#jonline-Event) has a [`Post`](#jonline-Post) and many [`EventInstance`](#jonline-EventInstance)s,
+ [`UpdateEvent`](#grpc-api-UpdateEvent) is implemented as a composition of four other RPCs -- each independently callable and individually atomic --
+ run in a fixed order: [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) (which itself first updates the [`Event`](#jonline-Event)'s own [`Post`](#jonline-Post)
+ atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances),
+ [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and finally [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances).
+ Create must run before Delete so that a request which both drops an old [`EventInstance`](#jonline-EventInstance) and adds a new one never transiently
+ leaves the [`Event`](#jonline-Event) with zero instances.
 
- Because moderation/visibility lives at the [`Post`](#jonline-Post) level, this means that a developer error in `UpdateEvents` cannot prevent 
- visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+ Because moderation/visibility lives at the [`Post`](#jonline-Post) level, and [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) runs first, this means that a developer error in the
+ later [`EventInstance`](#jonline-EventInstance)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
  This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
  moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
  approach to predictable atomicity.
@@ -180,6 +184,40 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) RPC for a new one. (The [`AccessToken`](#grpc-api-AccessToken) RPC
  may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
  one in client storage.)
+
+ ##### Federated Authentication
+ tl;dr: Lets you sign in to the `jon@bullcity.social` user on `jonline.io`, without ever entering your `bullcity.social`
+ credentials on `jonline.io`.
+
+ Elm-only feature (`frontends/elm-spa`) letting a user sign in to one Jonline server using an account they already
+ have (or are willing to create) on a *different* Jonline server, without either backend ever seeing a plaintext
+ token that isn't its own. It's pure browser-to-browser: two Elm SPA page routes
+ ([`/auth/to/...`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) and
+ [`/auth/from/...`](#get-authfromencrypted_account-federated-sign-in-receiving-side)) exchange
+ an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
+ the [`Login`](#grpc-api-Login) RPC itself.
+
+ 1. Say a user is on `jonline.io`, adding a new account, and enters `bullcity.social` as the server. Since that
+ isn't the current host, the Accounts panel offers a "Sign in via bullcity.social" button instead of (or alongside)
+ a normal username/password form.
+ 2. Clicking it does a full-page navigation to `bullcity.social`, carrying `jonline.io`'s ECDH public key (freshly
+ generated in-browser and persisted for this purpose) and its own hostname in the URL: `/auth/to/{public_key}@jonline.io`.
+ 3. `bullcity.social` shows its own sign-in form (or, if already signed in there, a badge to reuse that session),
+ plus a "Sign back in here" checkbox, checked by default.
+ 4. The user authenticates via the [`Login`](#grpc-api-Login) RPC. This always issues a *fresh* `refresh_token`/
+ `access_token` pair, reserved purely for transfer back to `jonline.io` -- it's never used to sign the browser into
+ `bullcity.social` itself. If "Sign back in here" is checked, a **second**, independent [`Login`](#grpc-api-Login)
+ call also runs, so `bullcity.social` gets its own local session too, and the two servers never end up sharing a
+ token pair. (Hence "1-2 refresh tokens.")
+ 5. The transfer account (server, user ID, username, both tokens, avatar, permissions, etc.) is JSON-encoded and
+ encrypted to `jonline.io`'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below), then the
+ browser is redirected back to `jonline.io` at `/auth/from/{ciphertext}`.
+ 6. `jonline.io` decrypts the payload with the private key it generated in step 2, then either silently accepts it
+ (if it knows where to send the user back to) or shows a confirmation screen (avatar/name/server, Confirm/Cancel)
+ before adding the account to its Accounts panel. Either way, the one-time keypair generated in step 2 is discarded
+ and a fresh one generated in its place, so it can't be reused for a second transfer.
+
+ See the two HTTP-level routes below for the exact URL/crypto shape.
 
  #### Federation
  Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -361,6 +399,48 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
  `jonline.io`.
 
+ ###### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
+ Half [web UI path](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in), half
+ endpoint: it's an Elm SPA page (`Pages.Auth.To.Key_`, served like any other SPA route -- under the `/elm` base
+ path when the Elm frontend isn't the one mounted at `/`) rather than a backend/gRPC handler, but it consumes
+ structured input straight from the URL and "responds" with a redirect carrying an encrypted payload, so it's
+ documented here as an endpoint too. Handled entirely in-browser; reached only via the cross-origin redirect from
+ step 2 above (built by the *requesting* origin's Accounts panel), never linked to directly.
+ * **Path params**: `{public_key}` is the requesting origin's ECDH (P-256) public key, raw-exported and
+ base64url-encoded; `{requesting_host}` is that origin's own hostname. The two are joined with a literal `@`
+ (chosen because `@` never appears in the base64url/dot-joined ciphertext the
+ [`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) route below expects, so the
+ split is unambiguous).
+ * **Query params**: `start_path` -- the app-relative path the user was on when they clicked "Sign in via ...", so
+ they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
+ [`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) redirect.
+ * **Behavior**: shows a sign-in form for *this* server (or a "currently signed in as ..." badge, if already
+ authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
+ calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint a transfer
+ account; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
+ into this server locally. The transfer account is then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH
+ keypair per encryption, shared secret via ECDH + HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each
+ part base64url) and the browser is redirected to
+ `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
+
+ ###### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
+ Likewise a [web
+ UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in)/endpoint hybrid: the Elm
+ SPA page (`Pages.Auth.From.EncodedAccount_`) that closes the loop from
+ [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) above, taking its ciphertext
+ as input and "responding" by adding the decrypted account. Reached only via that redirect.
+ * **Path params**: `{encrypted_account}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
+ [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
+ * **Query params**: `start_path`, passed through unchanged from
+ [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
+ * **Behavior**: decrypts `{encrypted_account}` using the private key this origin generated when it built the
+ [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) link (same ECDH +
+ HKDF-SHA256 + AES-GCM derivation, in reverse), yielding the transfer account (including its
+ `refresh_token`/`access_token`). If `start_path` is present, the account is added straight to the local Accounts
+ panel and the browser navigates to it; otherwise a confirmation screen (avatar, name, server, Confirm/Cancel) is
+ shown first. Either way, once the flow completes (confirmed or cancelled), the one-time private key is discarded
+ and a fresh keypair generated, so it's single-use per completed/cancelled transfer.
+
  This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
  more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116) 
  and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
@@ -506,6 +586,14 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
  ##### `/about`, `/about_jonline`: About
  This server's own About page, and a general "what is Jonline" page.
+
+ ##### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
+ **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
+ purely to drive the [Federated Authentication](#federated-authentication) flow. Since they're consumed like
+ ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
+ alongside the rest of the [HTTP Endpoints](#external-http-servers-80-8000-443) above -- see
+ [`GET /auth/to/{public_key}@{requesting_host}`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side)
+ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federated-sign-in-receiving-side).
 
  ### gRPC API
 

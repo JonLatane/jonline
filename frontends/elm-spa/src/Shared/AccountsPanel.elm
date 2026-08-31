@@ -4116,11 +4116,21 @@ grpcErrorToString err =
             "Couldn't reach the server. Check the address and your connection."
 
         Grpc.BadStatus { errMessage } ->
-            if String.isEmpty errMessage then
-                "The server rejected the request."
+            case errMessage of
+                "" ->
+                    "The server rejected the request."
 
-            else
-                errMessage
+                -- Facebook's "confirm your identity" checkpoint (`facebook_sync::graph_request`'s
+                -- own doc) -- there's nothing Jonline can do server-side, only the Page admin,
+                -- via the Facebook app/website.
+                "facebook_identity_verification_required" ->
+                    "Facebook needs you to verify your identity before this can be posted. Open the Facebook app or facebook.com, confirm the prompt, then try again."
+
+                "facebook_token_expired" ->
+                    "This destination's Facebook connection has expired. Reconnect it from your Sync Destinations settings, then try again."
+
+                _ ->
+                    errMessage
 
         Grpc.BadBody _ ->
             "Received an unreadable response from the server."

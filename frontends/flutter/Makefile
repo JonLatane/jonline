@@ -1,5 +1,6 @@
 .NOTPARALLEL:
 
+.PHONY: test
 
 build_web:
 	fvm flutter build web --web-renderer canvaskit --release --base-href /flutter/

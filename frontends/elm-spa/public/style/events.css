@@ -248,6 +248,10 @@
   font-weight: 600;
 }
 
+.card-sync-destination-platform {
+  font-weight: 400;
+}
+
 .card-sync-destination-link {
   color: var(--muted);
   overflow: hidden;

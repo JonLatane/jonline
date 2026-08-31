@@ -26,7 +26,7 @@ logic shared by `Components.Events.eventSyncDestinationsView` (wrapping
 -}
 
 import Grpc
-import Html exposing (Html, a, button, div, span, text)
+import Html exposing (Html, a, b, button, div, span, text)
 import Html.Attributes exposing (class, disabled, href, rel, target, title)
 import Html.Events exposing (onClick)
 import Proto.Jonline exposing (GetSyncDestinationsResponse, SyncDestination, SyncDestinationStatus, defaultUser)
@@ -198,6 +198,34 @@ syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushi
                                         "@" ++ account.username
                             )
 
+                -- Shown in parentheses after `destinationName` (e.g. "My Profile (Facebook)") so
+                -- a destination's platform is legible without decoding its handle/page name.
+                platformLabel : String -> Maybe String
+                platformLabel id =
+                    lookupDestination id
+                        |> Maybe.andThen .configuration
+                        |> Maybe.map
+                            (\config ->
+                                case config of
+                                    DestinationConfiguration.FacebookPage _ ->
+                                        "Facebook"
+
+                                    DestinationConfiguration.InstagramAccount _ ->
+                                        "Instagram"
+
+                                    DestinationConfiguration.MastodonAccount _ ->
+                                        "Mastodon"
+
+                                    DestinationConfiguration.BlueskyAccount _ ->
+                                        "Bluesky"
+
+                                    DestinationConfiguration.XTwitterAccount _ ->
+                                        "X (Twitter)"
+
+                                    DestinationConfiguration.ThreadsAccount _ ->
+                                        "Threads"
+                            )
+
                 -- Instagram's Graph API has no text-only post type -- see `hasMedia`'s own doc.
                 isInstagramDestination : String -> Bool
                 isInstagramDestination id =
@@ -232,11 +260,12 @@ syncDestinationsView syncDestinations availableSyncDestinations hasMedia isPushi
 
             else
                 div [ class "card-sync-destinations" ]
-                    (rows |> List.map (syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing pushError onPush onDelete))
+                    (rows |> List.map (syncDestinationRowView destinationName platformLabel isInstagramDestination hasMedia isPushing pushError onPush onDelete))
 
 
 syncDestinationRowView :
     (String -> Maybe String)
+    -> (String -> Maybe String)
     -> (String -> Bool)
     -> Bool
     -> (String -> Bool)
@@ -245,7 +274,7 @@ syncDestinationRowView :
     -> (String -> String -> msg)
     -> { id : String, url : Maybe String, synced : Bool }
     -> Html msg
-syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing pushError onPush onDelete row =
+syncDestinationRowView destinationName platformLabel isInstagramDestination hasMedia isPushing pushError onPush onDelete row =
     let
         pushing : Bool
         pushing =
@@ -278,7 +307,14 @@ syncDestinationRowView destinationName isInstagramDestination hasMedia isPushing
     in
     div [ class "card-sync-destination-row" ]
         [ span [ class "card-sync-destination-name" ]
-            [ text name ]
+            [ b [] [ text name ]
+            , case platformLabel row.id of
+                Just platform ->
+                    span [ class "card-sync-destination-platform" ] [ text (" (" ++ platform ++ ")") ]
+
+                Nothing ->
+                    text ""
+            ]
         , case row.url of
             Just url ->
                 a

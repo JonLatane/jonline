@@ -580,10 +580,18 @@ fn graph_request(
         })?;
         if let Some(error) = value.get("error") {
             log::error!("Facebook Graph API returned an error: {:?}", error);
-            return Err(Status::new(
-                Code::FailedPrecondition,
-                "facebook_graph_api_error",
-            ));
+            // Facebook's top-level `error.code` is a documented, stable field (unlike
+            // `error_subcode`, which isn't) -- 190 is always an invalid/expired OAuth token, 368
+            // is Facebook's "confirm your identity" checkpoint (surfaced to the Page admin via
+            // the Facebook app/website, not something Jonline can resolve on the caller's
+            // behalf). Both get their own message so the frontend can tell the user what to
+            // actually do instead of a generic "something went wrong".
+            let message = match error.get("code").and_then(|c| c.as_i64()) {
+                Some(368) => "facebook_identity_verification_required",
+                Some(190) => "facebook_token_expired",
+                _ => "facebook_graph_api_error",
+            };
+            return Err(Status::new(Code::FailedPrecondition, message));
         }
         Ok(value)
     };
