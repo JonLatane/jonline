@@ -82,11 +82,11 @@ fn build_event_instance_message_includes_time_range_and_location() {
     });
 
     assert!(message.text.starts_with("Test Event\n\n"));
-    assert!(message.text.contains("Location: 123 Main St"));
+    assert!(message.text.contains("📍 123 Main St"));
     assert!(message.text.contains("Come join us!"));
     assert!(message
         .text
-        .ends_with("Details & RSVP: https://example.com/event/abc"));
+        .ends_with("https://example.com/event/abc"));
     assert_eq!(
         message.link,
         Some("https://example.com/event/abc".to_string())

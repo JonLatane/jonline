@@ -18,7 +18,8 @@ pub struct SyncMessage {
     pub text: String,
     /// Link back to this content (preferring this Jonline server's own frontend URL for it, falling
     /// back to the author's own external `link` -- see the builders below). Also already folded
-    /// into `text` (as "Details & RSVP:"/"View post:"), since most platforms (Mastodon, Bluesky)
+    /// into `text` (as a bare link for an EventInstance, "View post:" for a Post), since most
+    /// platforms (Mastodon, Bluesky)
     /// have no separate link-preview mechanism and just expect it inline; kept here too since
     /// Facebook's Graph API *does* have a separate `link` param it uses for its preview card.
     pub link: Option<String>,
@@ -103,7 +104,6 @@ pub fn build_event_instance_message(input: EventInstanceMessageInput) -> SyncMes
         .or_else(|| input.link.as_ref().filter(|l| !l.trim().is_empty()))
         .cloned();
     if let Some(link) = &link {
-        // lines.push(format!("Details & RSVP: {link}"));
         lines.push(link.to_string());
     }
     SyncMessage {

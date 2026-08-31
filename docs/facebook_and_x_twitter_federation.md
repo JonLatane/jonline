@@ -47,14 +47,19 @@ platform-agnostic `SyncMessage` per sync (shared by every [`SyncDestination`](ht
 Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#jonline-Post) (`title`/`content`/`link`) and, for an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance),
 also its `starts_at`/`ends_at`/`location`:
 
-1. Title
+1. Title -- for an EventInstance, `rpcs::events::sync_event_instance` combines the parent Event's
+   own title with the instance's own (only if the instance actually overrides it) as
+   `"{event_title}: {instance_title}"`, e.g. "Run Club" or "Run Club: Special Holiday Edition" (see
+   `combine_title`/`combine_content` in that file)
 2. *(EventInstance only)* Date/time range (single timestamp if `ends_at` isn't after `starts_at`,
    otherwise a friendly `start-end` range mirroring the Elm UI's own `Shared.Time.formatRange`;
    shown in the event location's local timezone if it could be resolved, else UTC -- see below)
-3. *(EventInstance only)* Location (`EventInstance.location.uniformly_formatted_address`), if set
-4. Content/description
-5. `Details & RSVP: {event_url}` (EventInstance) or `View post: {post_url}` (Post), if a Jonline
-   link could be built (see below)
+3. *(EventInstance only)* Location (`EventInstance.location.uniformly_formatted_address`), if set,
+   prefixed with 📍
+4. Content/description -- for an EventInstance, the same combine-with-a-`---`-separator treatment
+   as the title (`"{event_content}\n\n---\n\n{instance_content}"`)
+5. The Jonline link (`event_url`/`post_url`), bare (EventInstance) or prefixed `View post:` (Post),
+   if one could be built (see below)
 
 `post_to_facebook_page` (in `facebook_sync.rs`) then decides how to send that `SyncMessage` to the
 Page: text+link only if there's no attached media, one or more unpublished-photo uploads followed
