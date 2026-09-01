@@ -189,6 +189,9 @@ type Msg
     | ThreadsLoginClicked
     | GotThreadsLoginResult Decode.Value
     | GotThreadsLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncDestination ))
+    | XTwitterLoginClicked
+    | GotXTwitterLoginResult Decode.Value
+    | GotXTwitterLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncDestination ))
     | SyncDestinationDeleteClicked SyncDestination
     | GotSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | DeleteUserClicked
@@ -473,6 +476,26 @@ type ThreadsConnectStatus
     | ThreadsConnectFailed String
 
 
+{-| The X (Twitter) "Connect" flow's own state machine -- same popup-based shape as
+`ThreadsConnectStatus` (see its own doc), with one addition: X mandates PKCE, so the popup also has
+to hand back the `code_verifier` it generated alongside the authorization code (see
+`Ports.facebookLoginPopup`'s own doc on the `"x_twitter"` provider and why it uses the weaker
+`plain` PKCE method rather than `S256`) -- carried through `XTwitterConnectPopupOpen`'s payload so
+`GotXTwitterLoginResult` can thread it into the `CreateSyncDestination` request alongside the code.
+
+  - `XTwitterConnectNotStarted`: no button clicked, nothing in flight.
+  - `XTwitterConnectPopupOpen`: waiting on `Ports.facebookLoginResult` (see `GotXTwitterLoginResult`).
+  - `XTwitterConnectLinking`: got a code + verifier back, `CreateSyncDestination` in flight.
+  - `XTwitterConnectFailed message`: the popup or the create RPC failed.
+
+-}
+type XTwitterConnectStatus
+    = XTwitterConnectNotStarted
+    | XTwitterConnectPopupOpen
+    | XTwitterConnectLinking
+    | XTwitterConnectFailed String
+
+
 {-| The "Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
 (bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
 only mutable-from-here field, in effect, is "does it exist"), so this is just the four connect
@@ -499,6 +522,7 @@ type alias SyncDestinationsState =
     , mastodon : MastodonConnectStatus
     , bluesky : BlueskyConnectStatus
     , threads : ThreadsConnectStatus
+    , xTwitter : XTwitterConnectStatus
     , deleteStatuses : Dict String SubmitStatus
     }
 
@@ -509,6 +533,7 @@ initSyncDestinations =
     , mastodon = MastodonConnectNotStarted
     , bluesky = BlueskyConnectNotStarted
     , threads = ThreadsConnectNotStarted
+    , xTwitter = XTwitterConnectNotStarted
     , deleteStatuses = Dict.empty
     }
 
@@ -575,6 +600,7 @@ subscriptions model =
         , model.events |> Maybe.map (EventsPage.subscriptions >> Sub.map EventsMsg) |> Maybe.withDefault Sub.none
         , Ports.facebookLoginResult GotFacebookLoginResult
         , Ports.facebookLoginResult GotThreadsLoginResult
+        , Ports.facebookLoginResult GotXTwitterLoginResult
         ]
 
 
@@ -1952,6 +1978,83 @@ updateInner shared msg model =
         GotThreadsLinkResult (Err err) ->
             ( setSyncDestinationsThreads (ThreadsConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
 
+        -- Opens the X (Twitter) popup (see `Ports.facebookLoginPopup`'s own doc on the
+        -- `"x_twitter"` provider) -- `xTwitterAppId` reads the admin-configured X Developer App's
+        -- Client ID from `federationInfo.xTwitterAuthConfig`, a separate app from Facebook's (see
+        -- `XTwitterConnectStatus`'s own doc on why the popup also has to hand back a PKCE
+        -- `code_verifier`).
+        XTwitterLoginClicked ->
+            case xTwitterAppId shared model.resolver.targetHost of
+                Just clientId ->
+                    ( setSyncDestinationsXTwitter XTwitterConnectPopupOpen model
+                    , Ports.facebookLoginPopup { provider = "x_twitter", appId = clientId } |> Effect.fromCmd
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        -- Guarded on `xTwitter` actually being `XTwitterConnectPopupOpen` -- see
+        -- `GotFacebookLoginResult`'s own doc on why this shared port needs a guard on both sides.
+        GotXTwitterLoginResult value ->
+            case model.syncDestinations.xTwitter of
+                XTwitterConnectPopupOpen ->
+                    case xTwitterLoginResultDecoder value of
+                        Ok ( code, codeVerifier ) ->
+                            let
+                                newDestination : SyncDestination
+                                newDestination =
+                                    { defaultSyncDestination
+                                        | configuration =
+                                            Just
+                                                -- The empty-string fields are fine -- the server
+                                                -- populates them; this local value is only used to
+                                                -- build the outgoing request, not rendered directly
+                                                -- (mirrors how Threads' create request is built).
+                                                (DestinationConfiguration.XTwitterAccount
+                                                    { username = ""
+                                                    , xUserId = ""
+                                                    , authorizationCode = Just code
+                                                    , codeVerifier = Just codeVerifier
+                                                    }
+                                                )
+                                    }
+                            in
+                            ( setSyncDestinationsXTwitter XTwitterConnectLinking model
+                            , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
+                                |> Task.attempt GotXTwitterLinkResult
+                                |> Effect.fromCmd
+                            )
+
+                        -- The user just closed the popup -- quietly go back to not-connected
+                        -- rather than showing an "error" for a deliberate cancel (see
+                        -- `Ports.facebookLoginResult`'s own doc).
+                        Err "cancelled" ->
+                            ( setSyncDestinationsXTwitter XTwitterConnectNotStarted model, Effect.none )
+
+                        Err message ->
+                            ( setSyncDestinationsXTwitter (XTwitterConnectFailed message) model, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotXTwitterLinkResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ed : SyncDestinationsState
+                ed =
+                    model.syncDestinations
+
+                xTwitterResetModel : Model
+                xTwitterResetModel =
+                    { model | syncDestinations = { ed | xTwitter = XTwitterConnectNotStarted } }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared xTwitterResetModel
+            in
+            ( refetchedModel, Effect.batch [ refetchEffect, accountsPanelEffect maybeAccountsPanelMsg ] )
+
+        GotXTwitterLinkResult (Err err) ->
+            ( setSyncDestinationsXTwitter (XTwitterConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
+
         -- Unlike `EventSyncSourceDeleteClicked`, this deletes immediately rather than opening
         -- the shared confirmation dialog -- see `SyncDestinationsState`'s own doc for why.
         SyncDestinationDeleteClicked destination ->
@@ -2394,6 +2497,16 @@ setSyncDestinationsThreads threads model =
     { model | syncDestinations = { ed | threads = threads } }
 
 
+setSyncDestinationsXTwitter : XTwitterConnectStatus -> Model -> Model
+setSyncDestinationsXTwitter xTwitter model =
+    let
+        ed : SyncDestinationsState
+        ed =
+            model.syncDestinations
+    in
+    { model | syncDestinations = { ed | xTwitter = xTwitter } }
+
+
 {-| Opens the Facebook/Instagram popup for `platform` (see `FacebookLoginClicked`'s own doc for
 why this happens synchronously rather than after some other async step) -- shared by
 `FacebookLoginClicked`/`InstagramLoginClicked`, which differ only in which platform they pass.
@@ -2526,6 +2639,38 @@ facebookAppId shared host =
             )
 
 
+{-| Whether `host` has an X Developer App configured -- mirrors `facebookAppConfigured` exactly,
+gating the X (Twitter) button, against `federationInfo.xTwitterAuthConfig` instead (a separate app
+from Facebook's -- X requires its own registered app, see `protos/federation.proto`'s doc on
+`XTwitterAuthConfig`).
+-}
+xTwitterAppConfigured : Shared.Model -> String -> Bool
+xTwitterAppConfigured shared host =
+    xTwitterAppId shared host /= Nothing
+
+
+{-| `host`'s configured X Developer App Client ID (`Just id`, non-empty), or `Nothing` if that
+server hasn't set one up (`ConfigureServer`'s `federationInfo.xTwitterAuthConfig`, see
+`Components.Pages.ServerInformationPage`'s Federation tab, where an admin sets this). Mirrors
+`facebookAppId` exactly.
+-}
+xTwitterAppId : Shared.Model -> String -> Maybe String
+xTwitterAppId shared host =
+    AccountsPanel.serverForHost shared.accounts.servers host
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.andThen .xTwitterAuthConfig
+        |> Maybe.map .clientId
+        |> Maybe.andThen
+            (\id ->
+                if String.isEmpty id then
+                    Nothing
+
+                else
+                    Just id
+            )
+
+
 {-| Decodes a `facebookLoginResult` payload (`{ ok : Bool, value : String }`, see that port's own
 doc) the same way `Shared.FederatedAuth.resultDecoder` does for its own `{ok, value}` ports --
 `Ok accessToken` on success, `Err "cancelled"` or `Err message` otherwise.
@@ -2541,6 +2686,36 @@ facebookLoginResultDecoder value =
             Ok token
 
         Ok ( False, err ) ->
+            Err err
+
+        Err err ->
+            Err (Decode.errorToString err)
+
+
+{-| Decodes an X (Twitter) `facebookLoginResult` payload (`{ ok : Bool, value : String, codeVerifier
+: String }` on success -- see `Ports.facebookLoginPopup`'s own doc on the `"x_twitter"` provider --
+or plain `{ ok : False, value : String }` on failure/cancel, same as `facebookLoginResultDecoder`).
+`Ok ( code, codeVerifier )` on success; `codeVerifier` missing despite `ok: True` is treated as a
+decode failure (shouldn't happen -- the popup always attaches it alongside a successful `code`).
+-}
+xTwitterLoginResultDecoder : Decode.Value -> Result String ( String, String )
+xTwitterLoginResultDecoder value =
+    case
+        Decode.decodeValue
+            (Decode.map3 (\ok v codeVerifier -> ( ok, v, codeVerifier ))
+                (Decode.field "ok" Decode.bool)
+                (Decode.field "value" Decode.string)
+                (Decode.maybe (Decode.field "codeVerifier" Decode.string))
+            )
+            value
+    of
+        Ok ( True, code, Just codeVerifier ) ->
+            Ok ( code, codeVerifier )
+
+        Ok ( True, _, Nothing ) ->
+            Err "X login popup didn't return a PKCE code verifier."
+
+        Ok ( False, err, _ ) ->
             Err err
 
         Err err ->
@@ -3865,6 +4040,9 @@ platformConnectView shared host maybeAccount ed =
     else if ed.threads /= ThreadsConnectNotStarted then
         threadsConnectView ed.threads
 
+    else if ed.xTwitter /= XTwitterConnectNotStarted then
+        xTwitterConnectView ed.xTwitter
+
     else
         platformPickerView shared host maybeAccount
 
@@ -3873,9 +4051,7 @@ platformConnectView shared host maybeAccount ed =
 platform's own `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair, mirroring
 `hasSyncToFacebookPermission` and friends; Facebook/Instagram/Threads additionally require the
 server having a Facebook App configured, see `facebookAppConfigured` -- Threads rides on that same
-Meta App), plus a permanently-disabled X button -- there's no working `XTwitterAccount` create flow
-at all client-side, since the server always rejects it (see `protos/sync.proto`'s own doc on
-`XTwitterAccount`), so this doesn't build a form that can only ever fail.
+Meta App; X (Twitter) requires its own separate app, see `xTwitterAppConfigured`).
 -}
 platformPickerView : Shared.Model -> String -> Maybe AccountsPanel.Account -> Html Msg
 platformPickerView shared host maybeAccount =
@@ -3883,6 +4059,10 @@ platformPickerView shared host maybeAccount =
         facebookAppReady : Bool
         facebookAppReady =
             facebookAppConfigured shared host
+
+        xTwitterAppReady : Bool
+        xTwitterAppReady =
+            xTwitterAppConfigured shared host
     in
     div [ class "sync-destination-platform-picker" ]
         [ platformButton (hasSyncToFacebookPermission maybeAccount && facebookAppReady) FacebookLoginClicked "Sign in to Facebook Page"
@@ -3890,16 +4070,7 @@ platformPickerView shared host maybeAccount =
         , platformButton (hasSyncToMastodonPermission maybeAccount) MastodonConnectClicked "Connect Mastodon"
         , platformButton (hasSyncToBlueskyPermission maybeAccount) BlueskyConnectClicked "Connect Bluesky"
         , platformButton (hasSyncToThreadsPermission maybeAccount && facebookAppReady) ThreadsLoginClicked "Connect Threads"
-        , if hasSyncToXTwitterPermission maybeAccount then
-            button
-                [ classes [ "sync-destination-login" ]
-                , disabled True
-                , title "X (Twitter) support is coming soon."
-                ]
-                [ text "X (Twitter) — Coming soon" ]
-
-          else
-            text ""
+        , platformButton (hasSyncToXTwitterPermission maybeAccount && xTwitterAppReady) XTwitterLoginClicked "Connect X (Twitter)"
         ]
 
 
@@ -4071,6 +4242,28 @@ threadsConnectView status =
             div []
                 [ div [ class "sync-destination-error" ] [ text err ]
                 , button [ class "sync-destination-connect-cancel", onClick ThreadsLoginClicked ] [ text "Try Again" ]
+                ]
+
+
+{-| Every step of `XTwitterConnectStatus` (see its own doc) -- mirrors `threadsConnectView`
+exactly.
+-}
+xTwitterConnectView : XTwitterConnectStatus -> Html Msg
+xTwitterConnectView status =
+    case status of
+        XTwitterConnectNotStarted ->
+            text ""
+
+        XTwitterConnectPopupOpen ->
+            div [ class "sync-destinations-message" ] [ text "Waiting for X (Twitter)…" ]
+
+        XTwitterConnectLinking ->
+            div [ class "sync-destinations-message" ] [ text "Linking X (Twitter)…" ]
+
+        XTwitterConnectFailed err ->
+            div []
+                [ div [ class "sync-destination-error" ] [ text err ]
+                , button [ class "sync-destination-connect-cancel", onClick XTwitterLoginClicked ] [ text "Try Again" ]
                 ]
 
 

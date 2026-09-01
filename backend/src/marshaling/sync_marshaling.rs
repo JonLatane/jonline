@@ -59,11 +59,11 @@ pub fn attach_synced_counts(destinations: &mut [SyncDestination], conn: &mut PgP
 /// `{"instagram_account": {"instagram_business_account_id", "username", "page_id",
 /// "access_token"}}` (the linked Page's long-lived token, reused for Instagram posting too),
 /// `{"mastodon_account": {"instance_host", "username", "access_token"}}`, `{"bluesky_account":
-/// {"handle", "did", "app_password"}}`, `{"x_twitter_account": {"username"}}` (never actually
-/// stored today -- `CreateSyncDestination` always rejects `XTwitterAccount`s -- but handled here
-/// for symmetry). The secret field in each (`access_token`/`app_password`) is intentionally never
+/// {"handle", "did", "app_password"}}`, `{"x_twitter_account": {"x_user_id", "username",
+/// "access_token", "refresh_token", "expires_at"}}`. The secret field in each (`access_token`/
+/// `app_password`/`refresh_token`) is intentionally never
 /// surfaced back here; it's server-side only (see `logic::facebook_sync`/`logic::mastodon_sync`/
-/// `logic::bluesky_sync`).
+/// `logic::bluesky_sync`/`logic::x_twitter_sync`).
 pub fn destination_configuration_to_proto(
     configuration: &serde_json::Value,
 ) -> Option<sync_destination::Configuration> {
@@ -131,11 +131,19 @@ pub fn destination_configuration_to_proto(
         ));
     }
     if let Some(x_twitter_account) = configuration.get("x_twitter_account") {
-        let username = x_twitter_account.get("username").and_then(|v| v.as_str())?;
+        let x_user_id = x_twitter_account.get("x_user_id").and_then(|v| v.as_str())?;
+        let username = x_twitter_account
+            .get("username")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         return Some(sync_destination::Configuration::XTwitterAccount(
             XTwitterAccount {
                 username: username.to_string(),
-                short_lived_user_access_token: None,
+                x_user_id: x_user_id.to_string(),
+                // Never echoed back -- the stored `access_token`/`refresh_token` are server-side
+                // only, same omission pattern as every other platform's secret field.
+                authorization_code: None,
+                code_verifier: None,
             },
         ));
     }

@@ -362,10 +362,14 @@ export const protobufPackage = "jonline";
  * `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
  *
  * ###### X (Twitter)
- * `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is reserved for a connected X
- * account, but **not yet functional** -- this server has no registered X Developer App
- * (`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with
- * `x_twitter_app_not_configured`. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+ * `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
+ * server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
+ * sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
+ * configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (`response_type=code`, like
+ * Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn't) -- the server exchanges
+ * the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
+ * each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`'s own doc).
+ * Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
  *
  * ###### Threads
  * `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.

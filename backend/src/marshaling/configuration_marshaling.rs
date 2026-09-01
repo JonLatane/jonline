@@ -57,6 +57,15 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
                     app_secret: String::new(),
                     ..c
                 });
+        // `XTwitterAuthConfig.client_secret` is write-only, same reasoning (and same
+        // `configure_server` merge-on-blank counterpart) as `FacebookAuthConfig.app_secret` above.
+        federation_info.x_twitter_auth_config =
+            federation_info
+                .x_twitter_auth_config
+                .map(|c| XTwitterAuthConfig {
+                    client_secret: String::new(),
+                    ..c
+                });
         let group_settings: FeatureSettings =
             serde_json::from_value(self.group_settings.to_owned()).unwrap();
         let people_settings: FeatureSettings =

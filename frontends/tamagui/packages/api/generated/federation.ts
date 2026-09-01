@@ -27,9 +27,11 @@ export interface FederationInfo {
     | FacebookAuthConfig
     | undefined;
   /**
-   * X (Twitter) authentication configuration for the server. Not yet used -- reserved for when
-   * this server registers an X Developer App; until then, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations
-   * always fail with `x_twitter_app_not_configured` regardless of this field.
+   * X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations
+   * for their Posts and EventInstances -- an admin registers one X Developer App here, and every
+   * user on the server connects their own X account through it via OAuth, the same relationship
+   * `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#jonline-XTwitterAccount)
+   * SyncDestinations always fail with `x_twitter_app_not_configured`.
    */
   xTwitterAuthConfig?: XTwitterAuthConfig | undefined;
 }

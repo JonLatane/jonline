@@ -226,31 +226,43 @@ port systemPrefersDarkChanged : (Bool -> msg) -> Sub msg
 
 {-| Opens an OAuth login popup for `Components.SyncDestinations` (via
 `Components.Pages.UserProfilePage`'s "Sign in to Facebook Page"/"Sign in to Instagram"/"Connect
-Threads" buttons), for the given `provider` (`"facebook"` or `"threads"`) and Facebook App ID --
-Threads rides on the very same Meta App as Facebook/Instagram (a product added to it, not a
-separately-registered app), so `appId` is the same value for all three, just interpreted against a
-different OAuth dialog per `provider`. Deliberately hand-rolled (a plain `window.open` at the
-provider's own OAuth dialog URL, with our own tiny static `facebook-callback.html` as the
-`redirect_uri`) rather than loading Facebook's JS SDK -- see `public/index.html`'s subscription
-for why: the popup has to open synchronously inside the click that requested it to reliably avoid
-being blocked (especially on mobile Safari), and loading a third-party SDK first would introduce
-an async gap that breaks that. The result arrives via `facebookLoginResult`.
+Threads"/"Connect X (Twitter)" buttons), for the given `provider` (`"facebook"`, `"threads"`, or
+`"x_twitter"`) and that provider's own OAuth Client/App ID -- Threads rides on the very same Meta
+App as Facebook/Instagram (a product added to it, not a separately-registered app), so `appId` is
+the same value for all three, but X requires its own separately-registered app, so `appId` there is
+`XTwitterAuthConfig.clientId` instead (see `Components.Pages.UserProfilePage`'s
+`facebookAppId`/`xTwitterAppId`) -- either way it's just interpreted against a different OAuth
+dialog per `provider`. Deliberately hand-rolled (a plain `window.open` at the provider's own OAuth
+dialog URL, with our own tiny static `facebook-callback.html` as the `redirect_uri`) rather than
+loading Facebook's JS SDK -- see `public/index.html`'s subscription for why: the popup has to open
+synchronously inside the click that requested it to reliably avoid being blocked (especially on
+mobile Safari), and loading a third-party SDK first would introduce an async gap that breaks that.
+For the same reason, X's popup uses PKCE's `plain` challenge method (challenge == a synchronously
+`crypto.getRandomValues`-generated verifier) rather than the stronger `S256` -- computing a SHA-256
+challenge needs `crypto.subtle`, which is only ever available asynchronously. The result arrives
+via `facebookLoginResult`.
 -}
 port facebookLoginPopup : { provider : String, appId : String } -> Cmd msg
 
 
-{-| `{ ok : Bool, value : String }` -- on success, `value` is a short-lived credential to send
-straight through on `CreateSyncDestination`: a Facebook user access token
-(`FacebookPage.shortLivedUserAccessToken`) for the `"facebook"`/`"instagram"` popup flow, or a
-Threads OAuth authorization code (`ThreadsAccount.authorizationCode`) for the `"threads"` flow --
-the backend exchanges either server-side and never stores/returns it as given. Same payload shape
-either way; from Elm's perspective it's just "the short-lived credential," so which flow a given
-result belongs to has to be tracked by the caller (see `Components.Pages.UserProfilePage`'s
-`GotFacebookLoginResult`/`GotThreadsLoginResult`, which both subscribe to this one port and each
-no-op unless their own flow is the one currently waiting on a popup). On failure, `value` is either
-`"cancelled"` (the user closed the popup without finishing) or a human-readable error message --
-callers should treat `"cancelled"` as "silently go back to not-logged-in," not as an error to
-display.
+{-| `{ ok : Bool, value : String, codeVerifier : String }` (the `codeVerifier` field is present
+only for the `"x_twitter"` provider's successful result -- see below) -- on success, `value` is a
+short-lived credential to send straight through on `CreateSyncDestination`: a Facebook user access
+token (`FacebookPage.shortLivedUserAccessToken`) for the `"facebook"`/`"instagram"` popup flow, or
+an OAuth authorization code (`ThreadsAccount.authorizationCode`/`XTwitterAccount.authorizationCode`)
+for the `"threads"`/`"x_twitter"` flow -- the backend exchanges either server-side and never
+stores/returns it as given. For `"x_twitter"` specifically, `codeVerifier` is the PKCE verifier the
+popup generated before sending its paired `code_challenge` to X's authorize endpoint (see
+`facebookLoginPopup`'s own doc) -- the server needs this alongside the code to complete X's token
+exchange (`XTwitterAccount.codeVerifier`), so it has to travel back through this port too; no other
+provider sets this field. Otherwise the same payload shape for every provider; from Elm's
+perspective it's just "the short-lived credential(s)," so which flow a given result belongs to has
+to be tracked by the caller (see `Components.Pages.UserProfilePage`'s
+`GotFacebookLoginResult`/`GotThreadsLoginResult`/`GotXTwitterLoginResult`, which all subscribe to
+this one port and each no-op unless their own flow is the one currently waiting on a popup). On
+failure, `value` is either `"cancelled"` (the user closed the popup without finishing) or a
+human-readable error message -- callers should treat `"cancelled"` as "silently go back to
+not-logged-in," not as an error to display.
 -}
 port facebookLoginResult : (Encode.Value -> msg) -> Sub msg
 

@@ -169,18 +169,27 @@ const XTwitterAccount$json = {
   '1': 'XTwitterAccount',
   '2': [
     {'1': 'username', '3': 1, '4': 1, '5': 9, '10': 'username'},
-    {'1': 'short_lived_user_access_token', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'shortLivedUserAccessToken', '17': true},
+    {'1': 'x_user_id', '3': 3, '4': 1, '5': 9, '10': 'xUserId'},
+    {'1': 'authorization_code', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'authorizationCode', '17': true},
+    {'1': 'code_verifier', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'codeVerifier', '17': true},
   ],
   '8': [
-    {'1': '_short_lived_user_access_token'},
+    {'1': '_authorization_code'},
+    {'1': '_code_verifier'},
   ],
+  '9': [
+    {'1': 2, '2': 3},
+  ],
+  '10': ['short_lived_user_access_token'],
 };
 
 /// Descriptor for `XTwitterAccount`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List xTwitterAccountDescriptor = $convert.base64Decode(
-    'Cg9YVHdpdHRlckFjY291bnQSGgoIdXNlcm5hbWUYASABKAlSCHVzZXJuYW1lEkUKHXNob3J0X2'
-    'xpdmVkX3VzZXJfYWNjZXNzX3Rva2VuGAIgASgJSABSGXNob3J0TGl2ZWRVc2VyQWNjZXNzVG9r'
-    'ZW6IAQFCIAoeX3Nob3J0X2xpdmVkX3VzZXJfYWNjZXNzX3Rva2Vu');
+    'Cg9YVHdpdHRlckFjY291bnQSGgoIdXNlcm5hbWUYASABKAlSCHVzZXJuYW1lEhoKCXhfdXNlcl'
+    '9pZBgDIAEoCVIHeFVzZXJJZBIyChJhdXRob3JpemF0aW9uX2NvZGUYBCABKAlIAFIRYXV0aG9y'
+    'aXphdGlvbkNvZGWIAQESKAoNY29kZV92ZXJpZmllchgFIAEoCUgBUgxjb2RlVmVyaWZpZXKIAQ'
+    'FCFQoTX2F1dGhvcml6YXRpb25fY29kZUIQCg5fY29kZV92ZXJpZmllckoECAIQA1Idc2hvcnRf'
+    'bGl2ZWRfdXNlcl9hY2Nlc3NfdG9rZW4=');
 
 @$core.Deprecated('Use threadsAccountDescriptor instead')
 const ThreadsAccount$json = {

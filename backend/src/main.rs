@@ -58,10 +58,12 @@ use tokio::task::JoinHandle;
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().any(|arg| arg == "--version") {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|arg| arg == "--version") {
         println!("{}", rpcs::get_service_version()?.version);
         return Ok(());
     }
+    let no_internal_server = args.iter().any(|arg| arg == "--no-internal-server");
 
     init_crypto();
     init_service_logging();
@@ -113,6 +115,12 @@ Supported environment variables (and examples):
     MINIO_SECRET_KEY=CHANGEME123
 
     TLS_CERT_PATH=/path/to/cert.pem
+
+Supported flags:
+
+    --version               Print the server version and exit
+    --no-internal-server    Don't start the internal-only mail delivery server (27705) used by
+                             a Stalwart mail server (deploys/email) -- irrelevant to most deploys
 "
     );
 
@@ -223,8 +231,14 @@ Supported environment variables (and examples):
         false,
     ));
     // Internal-only: accepts mail delivery from the Stalwart mail server (deploys/email). Never
-    // put this behind the public ingress -- see start_rocket_internal's docs.
-    rocket_handles.push(start_rocket_internal(27705, pool, bucket, tempdir));
+    // put this behind the public ingress -- see start_rocket_internal's docs. Skippable via
+    // --no-internal-server for deploys (e.g. Homebrew/Linux end-user installs) that have no
+    // Stalwart mail server to serve.
+    if no_internal_server {
+        log::info!("--no-internal-server set: skipping internal-only mail delivery server (27705).");
+    } else {
+        rocket_handles.push(start_rocket_internal(27705, pool, bucket, tempdir));
+    }
 
     join_all::<_>(rocket_handles).await;
 

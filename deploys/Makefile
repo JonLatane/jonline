@@ -2,7 +2,12 @@
 .DEFAULT_GOAL := release_be_local
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
-NAMESPACE ?= jonline
+# NAMESPACE is intentionally NOT given a default (mirroring the NAMESPACE/DOMAIN-not-defaulted
+# convention in ingress/Makefile and email/Makefile) -- nearly every target here acts on a specific
+# namespace, and silently defaulting to "jonline" risks operating on the wrong cluster/namespace.
+ifndef NAMESPACE
+$(error NAMESPACE is required, e.g. NAMESPACE=jonline make create_external_backend)
+endif
 
 # Selects which provider-specific k8s/*-$(K8S_PROVIDER).yaml manifests to use for the
 # DB/Minio/StorageClass targets below (e.g. "digitalocean"; "eks" or others as they're added).
@@ -246,3 +251,114 @@ get_backend_generated_ca_certs:
 # admin) or directly into that server's `server_configurations.web_push_config` JSONB column.
 generate_vapid_push_key_pair:
 	npx web-push generate-vapid-keys
+
+############################################################################
+# INGRESS-RELATED TARGETS: passthroughs to deploys/ingress/Makefile (mirrors the root
+# Makefile's own passthroughs to this Makefile), so `jonline deploy <target>` -- which only ever
+# runs `make -C deploys` -- can also reach ingress/email/cert targets without a separate `-C`.
+############################################################################
+create_ingress:
+	$(MAKE) -C ingress create_ingress
+remove_ingress:
+	$(MAKE) -C ingress remove_ingress
+deploy_ingress_ensure_namespace:
+	$(MAKE) -C ingress deploy_ingress_ensure_namespace
+deploy_ingress_crds:
+	$(MAKE) -C ingress deploy_ingress_crds
+deploy_ingress_controller_create:
+	$(MAKE) -C ingress deploy_ingress_controller_create
+deploy_ingress_controller_update:
+	$(MAKE) -C ingress deploy_ingress_controller_update
+deploy_ingress_controller_delete:
+	$(MAKE) -C ingress deploy_ingress_controller_delete
+deploy_ingress_monitor_rollout:
+	$(MAKE) -C ingress deploy_ingress_monitor_rollout
+deploy_ingress_restart:
+	$(MAKE) -C ingress deploy_ingress_restart
+get_ingress_external_ip:
+	$(MAKE) -C ingress get_ingress_external_ip
+add_ingress_domain:
+	$(MAKE) -C ingress add_ingress_domain
+remove_ingress_domain:
+	$(MAKE) -C ingress remove_ingress_domain
+list_ingress_domains:
+	$(MAKE) -C ingress list_ingress_domains
+
+############################################################################
+# EMAIL-RELATED TARGETS: passthroughs to deploys/email/Makefile. See that Makefile's own
+# comments for the create_email_admin_secret -> create_email -> add_email_domain ordering.
+############################################################################
+create_email:
+	$(MAKE) -C email create_email
+update_email:
+	$(MAKE) -C email update_email
+restart_email:
+	$(MAKE) -C email restart_email
+remove_email:
+	$(MAKE) -C email remove_email
+create_email_admin_secret:
+	$(MAKE) -C email create_email_admin_secret
+deploy_email_get_ip:
+	$(MAKE) -C email deploy_email_get_ip
+deploy_email_restart:
+	$(MAKE) -C email deploy_email_restart
+deploy_email_monitor_rollout:
+	$(MAKE) -C email deploy_email_monitor_rollout
+deploy_email_admin_port_forward:
+	$(MAKE) -C email deploy_email_admin_port_forward
+deploy_email_admin_stop_port_forwarding:
+	$(MAKE) -C email deploy_email_admin_stop_port_forwarding
+add_email_domain:
+	$(MAKE) -C email add_email_domain
+remove_email_domain:
+	$(MAKE) -C email remove_email_domain
+list_email_domains:
+	$(MAKE) -C email list_email_domains
+
+############################################################################
+# TLS CERTIFICATE-RELATED TARGETS: passthroughs to deploys/generated_certs/Makefile.
+# get_backend_generated_certs, get_backend_generated_ca_certs and deploy_ensure_namespace are
+# deliberately NOT re-passed-through here -- generated_certs/Makefile duplicates those three
+# verbatim (for standalone use from within that directory), and this Makefile already defines
+# them itself above.
+############################################################################
+deploy_certmanager:
+	$(MAKE) -C generated_certs deploy_certmanager
+deploy_certmanager_credential:
+	$(MAKE) -C generated_certs deploy_certmanager_credential
+deploy_certmanager_credential_apply:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_apply
+deploy_certmanager_credential_clean:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_clean
+deploy_certmanager_credential_digitalocean_clean:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_digitalocean_clean
+deploy_certmanager_credential_digitalocean_store_apitoken:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_digitalocean_store_apitoken
+deploy_certmanager_credential_digitalocean_prepare:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_digitalocean_prepare
+deploy_certmanager_credential_digitalocean_apply:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_digitalocean_apply
+deploy_certmanager_credential_digitalocean_delete:
+	$(MAKE) -C generated_certs deploy_certmanager_credential_digitalocean_delete
+certs_generate:
+	$(MAKE) -C generated_certs certs_generate
+certs_ca_generate:
+	$(MAKE) -C generated_certs certs_ca_generate
+certs_server_generate:
+	$(MAKE) -C generated_certs certs_server_generate
+certs_store_in_k8s:
+	$(MAKE) -C generated_certs certs_store_in_k8s
+certs_delete_from_k8s:
+	$(MAKE) -C generated_certs certs_delete_from_k8s
+certs_server_store_in_k8s:
+	$(MAKE) -C generated_certs certs_server_store_in_k8s
+certs_server_delete_from_k8s:
+	$(MAKE) -C generated_certs certs_server_delete_from_k8s
+certs_ca_store_in_k8s:
+	$(MAKE) -C generated_certs certs_ca_store_in_k8s
+certs_ca_delete_from_k8s:
+	$(MAKE) -C generated_certs certs_ca_delete_from_k8s
+certs_gen_test:
+	$(MAKE) -C generated_certs certs_gen_test
+certs_gen_test_pass_openssl_verify:
+	$(MAKE) -C generated_certs certs_gen_test_pass_openssl_verify

@@ -36,6 +36,7 @@ At a high level, Jonline's CI/CD ([example run](https://github.com/JonLatane/jon
       * Homebrew/Linux rename the Rust `jonline` server binary to `jonline-server` (macOS) and `jonline-server-[arm64|amd64]` (Linux).
       * The launcher runs everything from an "install directory" which also contains the frontends (`/#{etc}/jonline/` for Homebrew, your extracted test directory or `~/.jonline-linux/` for the Linux package).
       * The Linux/macOS launchers store environment variables in `~/.jonline` and load them before starting the server or other services.
+      * The install directory also bundles a full copy of [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), so `jonline deploy <targets...>` (requires `make`) can drive your own Kubernetes cluster without cloning the repo -- see [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster).
 
 ### macOS: Install and Run via Homebrew
 
@@ -52,6 +53,7 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 * Docker/MinIO autoconfiguration: `docker`
 * `convert_media_sizes` background job (images): ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
 * `convert_media_sizes` background job (video): `ffmpeg` (`brew install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
+* `jonline deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional -- only needed if you use `jonline deploy`.
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -78,6 +80,12 @@ open http://localhost/
 jonline set_permission my_admin_username admin on
 
 brew upgrade jonlatane/jonline/jonline # Upgrade to the latest release.
+
+# (DigitalOcean only for now) Create Postgres with 1GB storage, MinIO with 5GB storage, and a web-facing Jonline server (with a load balancer) in your DOKS (DigitalOcean Kubernetes) cluster with `make` and `kubectl`.
+jonline deploy create_backend_data create_external_backend NAMESPACE=my-jonline-instance-namespace
+
+# To tear that cluster deployment down again (kubectl deletes the whole namespace, and everything in it, at once):
+kubectl delete namespace my-jonline-instance-namespace
 ```
 
 ### Linux: Self-updateable `.tar.bz2` with `arm64` and `amd64` binaries and launcher
@@ -97,6 +105,7 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 * Docker/MinIO autoconfiguration: `docker`
 * `convert_media_sizes` background job (images): ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
 * `convert_media_sizes` background job (video): `ffmpeg` (`apt install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
+* `jonline deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional -- only needed if you use `jonline deploy`.
 
 ```bash
 # Get the package with curl/jq, and extract it. This is actually also what updater script does.
@@ -143,6 +152,12 @@ xdg-open http://localhost/
 # In your browser, create a user account and remember your username.
 # To give them admin permissions:
 jonline set_permission my_admin_username admin on
+
+# (DigitalOcean only for now) Create Postgres with 1GB storage, MinIO with 5GB storage, and a web-facing Jonline server (with a load balancer) in your DOKS (DigitalOcean Kubernetes) cluster with `make` and `kubectl`.
+jonline deploy create_backend_data create_external_backend NAMESPACE=my-jonline-instance-namespace
+
+# To tear that cluster deployment down again (kubectl deletes the whole namespace, and everything in it, at once):
+kubectl delete namespace my-jonline-instance-namespace
 ```
 
 #### Install/self-update on Linux
@@ -558,6 +573,8 @@ git clone https://github.com/JonLatane/jonline.git
 cd jonline
 ```
 
+(If you installed Jonline via [Homebrew](#macos-install-and-run-via-homebrew) or the [Linux package](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher) instead, you already have a bundled copy of `deploys/` -- skip the clone and run `jonline deploy <targets...>` in place of `make <targets...>` below, e.g. `jonline deploy create_backend_data create_external_backend NAMESPACE=jonline`.)
+
 Next, from the repo root, to create Postgres, Minio and two load-balanced Jonline servers in the namespace `jonline` (plus a few recurring jobs), run:
 
 ```bash
@@ -565,10 +582,11 @@ Next, from the repo root, to create Postgres, Minio and two load-balanced Jonlin
 # The create_external_backend Make target, specifically, will create the Joline service as a K8s LoadBalancer.
 # Of course, it costs nothing to use Minikube.
 # To deploy for use with a different ingress (say, a shared nginx, or Jonline's pending internal LB), use create_internal_backend or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
-make create_backend_data create_external_backend
+# NAMESPACE is required (no default) -- pick whichever namespace you want this deployed to.
+NAMESPACE=jonline make create_backend_data create_external_backend
 ```
 
-That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make delete_backend_data create_backend_data restart_backend` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `NAMESPACE=jonline make delete_backend_data create_backend_data restart_backend` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
 Simply `kubectl delete namespace jonline` to delete your deployment (or see below for more detailed management instructions).
 

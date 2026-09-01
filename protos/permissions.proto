@@ -125,12 +125,10 @@ enum Permission {
   // connected Bluesky account, and to sync Posts to them.
   SYNC_POSTS_TO_BLUESKY = 1031;
   // Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
-  // connected X (Twitter) account, and to sync EventInstances to them. Not yet functional --
-  // see [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+  // connected X (Twitter) account, and to sync EventInstances to them.
   SYNC_EVENTS_TO_X_TWITTER = 1040;
   // Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
-  // connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see
-  // [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+  // connected X (Twitter) account, and to sync Posts to them.
   SYNC_POSTS_TO_X_TWITTER = 1041;
   // Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
   // connected Threads account, and to sync EventInstances to them.

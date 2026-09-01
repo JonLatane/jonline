@@ -63,6 +63,7 @@ JONLINE_COMMANDS=(
   delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts convert_media_sizes generate_preview_images
   set_permission delete_preview_images disable_cdn_grpc
   to_db_id to_proto_id grpcurl
+  deploy
   completion
 )
 
@@ -89,8 +90,12 @@ Commands:
   Core/Lifecycle:
 
     server_and_jobs          Run the Jonline server and background jobs together
-                             (forks server + jobs, see below)
+                             (forks server + jobs, see below); accepts server's flags
     server                   Run the Jonline server (jonline-server)
+                             --no-internal-server   Don't start the internal-only mail
+                                                     delivery server (27705) used by a
+                                                     Stalwart mail server -- irrelevant to
+                                                     most deploys
     jobs                     Run background jobs on a loop (@@JONLINE_ETC@@/jonline/background_jobs.sh) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
                              sync_event_sync_sources every 1m, update_user_counts every 1h,
@@ -149,6 +154,15 @@ Commands:
     to_proto_id              Convert a database (internal) ID to a proto (external, string) ID
     grpcurl                  Run the bundled grpcurl. "Like curl, but for gRPC."
                              (https://github.com/fullstorydev/grpcurl)
+
+  Deployment (requires `make` -- manage your own Kubernetes cluster):
+
+    deploy <targets...>      Run `make` targets from the bundled deploys/Makefile, e.g.:
+                               jonline deploy create_external_backend NAMESPACE=my_namespace
+                               jonline deploy create_backend_data create_internal_backend NAMESPACE=my_namespace
+                             NAMESPACE=... is required by nearly every target -- there's no
+                             default. See @@JONLINE_ETC@@/jonline/opt/deploys/README.md (bundled
+                             alongside this package) for the full target reference.
 
   Shell completion:
 
@@ -224,11 +238,12 @@ jobs() {
 }
 
 # Forks `server` and `jobs`, killing both if either the script exits or one
-# of them dies.
+# of them dies. Any args (e.g. --no-internal-server) are forwarded to
+# `server` only -- `jobs`/background_jobs.sh takes none.
 server_and_jobs() {
   jobs &
   local jobs_pid=$!
-  server &
+  server "$@" &
   local server_pid=$!
   trap 'kill "$jobs_pid" "$server_pid" 2>/dev/null || true' EXIT TERM INT
   wait
@@ -299,6 +314,26 @@ grpcurl() {
   _jonline_exec_bin grpcurl "$@"
 }
 
+# Bundled alongside deploys/Makefile (see the "Assemble .../etc/jonline package layout" step of
+# .github/workflows/server_ci_cd.yml's create_homebrew_release job) -- see deploys/distributables.sh
+# for the shared `deploy`/target-listing implementation both this and docs/linux_jonline.sh use.
+_jonline_deploys_dir="@@JONLINE_ETC@@/jonline/opt/deploys"
+
+# Runs `make` targets from the bundled deploys/Makefile against your own K8s cluster -- args are
+# forwarded as-is, so both targets and VAR=value overrides (e.g. NAMESPACE=my_namespace, required
+# by nearly every target -- see deploys/README.md) just work, same as running `make` by hand.
+deploy() {
+  . "$_jonline_deploys_dir/distributables.sh"
+  _jonline_deploys_run "$_jonline_deploys_dir" "$@"
+}
+
+# Used by `completion`'s deploy-target completion below.
+_jonline_deploy_targets() {
+  [ -f "$_jonline_deploys_dir/distributables.sh" ] || return 0
+  . "$_jonline_deploys_dir/distributables.sh"
+  _jonline_deploys_list_targets "$_jonline_deploys_dir"
+}
+
 environment() {
   cat "$JONLINE_ENV"
 }
@@ -308,10 +343,12 @@ edit_environment() {
   ${EDITOR:-vi} "$JONLINE_ENV"
 }
 
-# Prints a tab-completion script for the given shell. Both scripts shell out
-# to `jonline --list-commands` (backed by JONLINE_COMMANDS above) rather than
-# embedding a static list, so completions stay in sync as commands are added
-# without needing to regenerate/re-source anything.
+# Prints a tab-completion script for the given shell. Both scripts shell out to
+# `jonline --list-commands` (backed by JONLINE_COMMANDS above) for top-level command completion,
+# and -- once `deploy` is the first word -- to `jonline --list-deploy-targets` (backed by
+# _jonline_deploy_targets, which delegates to `make`'s own Makefile parser) for target completion,
+# so both stay in sync as commands/targets are added without needing to regenerate/re-source
+# anything.
 completion() {
   case "${1:-}" in
     bash)
@@ -321,6 +358,8 @@ _jonline_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [ "$COMP_CWORD" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "$(jonline --list-commands)" -- "$cur") )
+  elif [ "${COMP_WORDS[1]}" = "deploy" ]; then
+    COMPREPLY=( $(compgen -W "$(jonline --list-deploy-targets)" -- "$cur") )
   fi
 }
 complete -F _jonline_complete jonline
@@ -330,6 +369,12 @@ JONLINE_BASH_COMPLETION_EOF
       cat <<'JONLINE_ZSH_COMPLETION_EOF'
 #compdef jonline
 _jonline() {
+  if (( CURRENT >= 3 )) && [[ ${words[2]} == deploy ]]; then
+    local -a targets
+    targets=(${(f)"$(jonline --list-deploy-targets)"})
+    _describe 'deploy target' targets
+    return
+  fi
   local -a commands
   commands=(${(f)"$(jonline --list-commands)"})
   _describe 'command' commands
@@ -367,6 +412,8 @@ esac
 
 if [ "$cmd" = "--list-commands" ]; then
   printf '%s\n' "${JONLINE_COMMANDS[@]}"
+elif [ "$cmd" = "--list-deploy-targets" ]; then
+  _jonline_deploy_targets
 elif _jonline_is_command "$cmd"; then
   "$cmd" "$@"
 else

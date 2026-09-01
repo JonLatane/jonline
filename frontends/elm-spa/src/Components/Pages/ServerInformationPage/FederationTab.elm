@@ -39,6 +39,8 @@ type alias Model =
     { federationEdit : Maybe FederationEdit
     , facebookAppIdEdit : Maybe TextFieldEdit
     , facebookAppSecretEdit : Maybe TextFieldEdit
+    , xTwitterClientIdEdit : Maybe TextFieldEdit
+    , xTwitterClientSecretEdit : Maybe TextFieldEdit
     , webPushPublicKeyEdit : Maybe TextFieldEdit
     , webPushPrivateKeyEdit : Maybe TextFieldEdit
     }
@@ -72,6 +74,16 @@ type Msg
     | FacebookAppSecretCancelClicked
     | FacebookAppSecretSaveClicked
     | GotFacebookAppSecretSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | XTwitterClientIdEditClicked
+    | XTwitterClientIdChanged String
+    | XTwitterClientIdCancelClicked
+    | XTwitterClientIdSaveClicked
+    | GotXTwitterClientIdSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | XTwitterClientSecretEditClicked
+    | XTwitterClientSecretChanged String
+    | XTwitterClientSecretCancelClicked
+    | XTwitterClientSecretSaveClicked
+    | GotXTwitterClientSecretSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | WebPushPublicKeyEditClicked
     | WebPushPublicKeyChanged String
     | WebPushPublicKeyCancelClicked
@@ -127,6 +139,8 @@ init =
     { federationEdit = Nothing
     , facebookAppIdEdit = Nothing
     , facebookAppSecretEdit = Nothing
+    , xTwitterClientIdEdit = Nothing
+    , xTwitterClientSecretEdit = Nothing
     , webPushPublicKeyEdit = Nothing
     , webPushPrivateKeyEdit = Nothing
     }
@@ -470,6 +484,87 @@ update shared targetHost isSecure maybeServer msg model =
             , Effect.none
             )
 
+        XTwitterClientIdEditClicked ->
+            case maybeServer of
+                Just server ->
+                    let
+                        currentClientId : String
+                        currentClientId =
+                            (AccountsPanel.configurationOf server).federationInfo
+                                |> Maybe.andThen .xTwitterAuthConfig
+                                |> Maybe.map .clientId
+                                |> Maybe.withDefault ""
+                    in
+                    ( { model | xTwitterClientIdEdit = Just { pending = currentClientId, status = AccountsPanel.Idle } }, Effect.none )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        XTwitterClientIdChanged text ->
+            ( { model | xTwitterClientIdEdit = model.xTwitterClientIdEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        XTwitterClientIdCancelClicked ->
+            ( { model | xTwitterClientIdEdit = Nothing }, Effect.none )
+
+        XTwitterClientIdSaveClicked ->
+            case ( model.xTwitterClientIdEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | xTwitterClientIdEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyXTwitterClientId edit.pending)
+                        |> Task.attempt GotXTwitterClientIdSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotXTwitterClientIdSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | xTwitterClientIdEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotXTwitterClientIdSaveResult (Err err) ->
+            ( { model | xTwitterClientIdEdit = model.xTwitterClientIdEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        XTwitterClientSecretEditClicked ->
+            ( { model | xTwitterClientSecretEdit = Just { pending = "", status = AccountsPanel.Idle } }, Effect.none )
+
+        XTwitterClientSecretChanged text ->
+            ( { model | xTwitterClientSecretEdit = model.xTwitterClientSecretEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
+
+        XTwitterClientSecretCancelClicked ->
+            ( { model | xTwitterClientSecretEdit = Nothing }, Effect.none )
+
+        XTwitterClientSecretSaveClicked ->
+            case ( model.xTwitterClientSecretEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | xTwitterClientSecretEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyXTwitterClientSecret edit.pending)
+                        |> Task.attempt GotXTwitterClientSecretSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotXTwitterClientSecretSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | xTwitterClientSecretEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotXTwitterClientSecretSaveResult (Err err) ->
+            ( { model | xTwitterClientSecretEdit = model.xTwitterClientSecretEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
         WebPushPublicKeyEditClicked ->
             case maybeServer of
                 Just server ->
@@ -609,6 +704,43 @@ applyFacebookAppSecret appSecret config =
     }
 
 
+{-| `XTwitterClientIdSaveClicked`'s transform -- mirrors `applyFacebookAppId` exactly, just against
+`federationInfo.xTwitterAuthConfig` instead. `clientSecret` is always sent blank here for the same
+"leave whatever's already stored alone" reason.
+-}
+applyXTwitterClientId : String -> ServerConfiguration -> ServerConfiguration
+applyXTwitterClientId clientId config =
+    let
+        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo =
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+    in
+    { config
+        | federationInfo =
+            Just { federationInfo | xTwitterAuthConfig = Just { clientId = clientId, clientSecret = "" } }
+    }
+
+
+{-| `XTwitterClientSecretSaveClicked`'s transform -- mirrors `applyFacebookAppSecret` exactly, just
+against `federationInfo.xTwitterAuthConfig` instead.
+-}
+applyXTwitterClientSecret : String -> ServerConfiguration -> ServerConfiguration
+applyXTwitterClientSecret clientSecret config =
+    let
+        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo =
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+
+        existingClientId : String
+        existingClientId =
+            federationInfo.xTwitterAuthConfig |> Maybe.map .clientId |> Maybe.withDefault ""
+    in
+    { config
+        | federationInfo =
+            Just { federationInfo | xTwitterAuthConfig = Just { clientId = existingClientId, clientSecret = clientSecret } }
+    }
+
+
 {-| `WebPushPublicKeySaveClicked`'s transform -- overlays a new `publicVapidKey` onto a freshly
 re-fetched `ServerConfiguration`'s `webPushConfig`. `privateVapidKey` is always sent blank here:
 same "blank means leave it alone" merge `applyFacebookAppId`'s own `appSecret` relies on, this time
@@ -707,6 +839,7 @@ view shared server maybeAdminAccount model =
             _ ->
                 text ""
         , facebookAuthConfigSection server model maybeAdminAccount
+        , xTwitterAuthConfigSection server model maybeAdminAccount
         , webPushConfigSection server model maybeAdminAccount
         ]
 
@@ -806,6 +939,109 @@ facebookAppSecretRow maybeEdit maybeAdminAccount =
                 , case maybeAdminAccount of
                     Just _ ->
                         button [ class "server-details-rename-button", onClick FacebookAppSecretEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+{-| Mirrors `facebookAuthConfigSection` exactly, against `federationInfo.xTwitterAuthConfig`
+instead -- one admin-registered X Developer App (Client ID + Client Secret), shared by every user's
+own connected `XTwitterAccount` (see `protos/sync.proto`'s doc on that message, and
+`logic::x_twitter_sync` on the backend).
+-}
+xTwitterAuthConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterAuthConfigSection server model maybeAdminAccount =
+    let
+        currentClientId : String
+        currentClientId =
+            (AccountsPanel.configurationOf server).federationInfo
+                |> Maybe.andThen .xTwitterAuthConfig
+                |> Maybe.map .clientId
+                |> Maybe.withDefault ""
+    in
+    div [ class "server-details-facebook-auth" ]
+        (h3 [ class "section-title" ] [ text "X (Twitter) Authentication Configuration" ]
+            :: xTwitterClientIdRow currentClientId model.xTwitterClientIdEdit maybeAdminAccount
+            :: (case maybeAdminAccount of
+                    Just _ ->
+                        [ xTwitterClientSecretRow model.xTwitterClientSecretEdit maybeAdminAccount ]
+
+                    Nothing ->
+                        []
+               )
+        )
+
+
+xTwitterClientIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterClientIdRow currentClientId maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "Client ID" ]
+                , input
+                    [ class "server-details-rename-input"
+                    , value edit.pending
+                    , onInput XTwitterClientIdChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , Common.editSaveButton XTwitterClientIdSaveClicked edit.status
+                , Common.editCancelButton XTwitterClientIdCancelClicked edit.status
+                , Common.editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "Client ID" ]
+                , span [ class "server-details-color-hex" ]
+                    [ text
+                        (if String.isEmpty currentClientId then
+                            "Not set."
+
+                         else
+                            currentClientId
+                        )
+                    ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick XTwitterClientIdEditClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+{-| Unlike `xTwitterClientIdRow`, there's no "current value" to show when not editing -- mirrors
+`facebookAppSecretRow`'s own doc exactly.
+-}
+xTwitterClientSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterClientSecretRow maybeEdit maybeAdminAccount =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-color-row server-details-color-row-edit" ]
+                [ span [ class "server-details-color-label" ] [ text "Client Secret" ]
+                , input
+                    [ Html.Attributes.type_ "password"
+                    , class "server-details-rename-input"
+                    , placeholder "New Client Secret"
+                    , value edit.pending
+                    , onInput XTwitterClientSecretChanged
+                    , disabled (edit.status == AccountsPanel.Submitting)
+                    ]
+                    []
+                , Common.editSaveButton XTwitterClientSecretSaveClicked edit.status
+                , Common.editCancelButton XTwitterClientSecretCancelClicked edit.status
+                , Common.editErrorView edit.status
+                ]
+
+        Nothing ->
+            div [ class "server-details-color-row" ]
+                [ span [ class "server-details-color-label" ] [ text "Client Secret" ]
+                , span [ class "server-details-color-hex" ] [ text "Never shown" ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick XTwitterClientSecretEditClicked ] [ text "Edit" ]
 
                     Nothing ->
                         text ""

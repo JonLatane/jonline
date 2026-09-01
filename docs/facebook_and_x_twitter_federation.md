@@ -132,29 +132,43 @@ timeline isn't possible via the Graph API at all (Facebook deprecated `publish_a
 
 ## X (Twitter)
 
-X sync exists as a [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) platform in shape only -- the proto messages
-([`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount)), permissions (`SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`), and RPC
-dispatch arms all exist, but there's no working connect or post flow behind them yet:
+Implementation: [`backend/src/logic/x_twitter_sync.rs`](../backend/src/logic/x_twitter_sync.rs) -- architecturally closest to
+`threads_sync.rs` among the existing platforms (a `response_type=code` authorize-then-exchange
+flow, no "choose a Page" step), with two real differences of its own:
 
-- [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination)/[`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination) against an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount) configuration, and
-  [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) against an already-"connected" one, all unconditionally fail with
-  `x_twitter_app_not_configured` -- regardless of what permissions the caller holds, including
-  Admin. There's no code path that can ever succeed today.
-- Why: unlike Facebook (whose app credentials also cover Instagram and Threads, since all three
-  are Meta products), X requires its **own** registered X Developer App -- a separate client
-  ID/secret, its own OAuth app review, and (as of the API's current pricing tiers) a paid plan for
-  any meaningful write access. None of that exists for Jonline yet.
-- `ServerConfiguration.federation_info.x_twitter_auth_config` (an `XTwitterAuthConfig { client_id,
-  client_secret }`, mirroring `facebook_auth_config`'s shape) is reserved for when this changes,
-  but is currently unused by any logic -- setting it does nothing yet.
+- **PKCE is mandatory.** The connect popup generates a `code_verifier` and sends its paired
+  `code_challenge` to X's authorize endpoint, then the server exchanges `authorization_code` +
+  `code_verifier` for a token. The popup uses `code_challenge_method=plain` (challenge ==
+  verifier) rather than the stronger `S256` -- computing a SHA-256 challenge needs `crypto.subtle`,
+  which is only ever available asynchronously in a browser, and the popup has to open
+  *synchronously* in direct response to the click to survive mobile Safari's async-popup blocking
+  (the same constraint `public/index.html`'s `facebookLoginPopup` port handler already works
+  around for Facebook/Threads). `plain` is a real, spec-sanctioned PKCE mode, just a weaker one --
+  an honest, documented tradeoff, not an oversight.
+- **Access tokens expire in 2 hours**, unlike Threads' ~60-day token -- too short to punt on
+  refreshing the way `threads_sync`'s module doc explicitly does for Threads. `post_tweet`
+  refreshes proactively via the stored `refresh_token` (no user interaction needed) before every
+  post when the stored token is expired or close to it, persisting the new token pair back to the
+  `sync_destinations` row -- the one platform-specific `post_*` function in this codebase that
+  needs a DB connection for that reason.
 
-**To actually implement this** (not yet started): register an X Developer App, wire
-`x_twitter_auth_config` the same way `facebook_auth_config` is wired (admin-configured via
-[`ConfigureServer`](https://jonline.io/docs/protocol#grpc-api-ConfigureServer)), and add a `logic::x_twitter_sync` module mirroring `threads_sync.rs`'s shape
-most closely among the existing platforms -- X's OAuth 2.0 (with PKCE) is a `response_type=code`
-authorize-then-exchange flow similar to Threads', and (depending on the API tier ultimately used)
-posting is a single `POST /2/tweets` call, simpler than Facebook/Instagram's photo-upload or
-container-based flows.
+Like Facebook (whose app credentials also cover Instagram and Threads, since all three are Meta
+products), X requires its **own** registered X Developer App -- one admin sets
+`ServerConfiguration.federation_info.x_twitter_auth_config` (an `XTwitterAuthConfig { client_id,
+client_secret }`, mirroring `facebook_auth_config`'s shape and its own admin UI, "X (Twitter)
+Authentication Configuration" on the Server Information page's Federation tab) once, and every
+user on the server connects their own X account through it via OAuth -- no per-user API keys
+needed. Until an admin sets it, every RPC touching an `XTwitterAccount` destination fails with
+`x_twitter_app_not_configured`. Note X's current API pricing tiers gate meaningful write access
+behind a paid plan -- that's between the server admin and X, not something Jonline's code can work
+around.
+
+**Known limitation**: only *images* are uploaded (up to 4, downloaded from this server's own media
+URL and re-uploaded as raw bytes to `/2/media/upload`, mirroring `mastodon_sync`'s fetch-then-
+reupload shape since X's media endpoint also takes bytes, not a remote URL like Facebook/
+Instagram/Threads'). Video/GIF is not yet supported -- X's video upload requires a chunked
+INIT/APPEND/FINALIZE-plus-processing-status-poll flow (mirrors `bluesky_sync`'s own documented
+video gap) not yet built; a video attachment on a synced Post/EventInstance is silently skipped.
 
 ## Testing
 
@@ -163,3 +177,8 @@ container-based flows.
 (`factories::serve_facebook_graph_api`) instead of the real Graph API. There is currently no real
 Facebook App wired up for local dev, so the full connect/create flow against the real API can only
 be exercised in production -- see the mock-based specs for what's covered locally.
+
+`x_twitter_sync.rs`'s functions follow the exact same `base_url` pattern (see
+`backend/src/tests/x_twitter_sync_tests.rs` and `factories::serve_x_twitter_api`) -- same caveat,
+no real X Developer App wired up for local dev, so the real API is only exercised once an admin
+configures one on an actual deployment.

@@ -25,6 +25,9 @@ pub use bluesky_sync::*;
 mod threads_sync;
 pub use threads_sync::*;
 
+mod x_twitter_sync;
+pub use x_twitter_sync::*;
+
 mod sync_message;
 pub use sync_message::*;
 

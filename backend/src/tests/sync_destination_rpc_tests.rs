@@ -83,12 +83,14 @@ fn threads_account_request(authorization_code: &str) -> SyncDestination {
     }
 }
 
-fn x_twitter_account_request() -> SyncDestination {
+fn x_twitter_account_request(authorization_code: &str, code_verifier: &str) -> SyncDestination {
     SyncDestination {
         configuration: Some(sync_destination::Configuration::XTwitterAccount(
             XTwitterAccount {
-                username: "test".to_string(),
-                short_lived_user_access_token: Some("test-token".to_string()),
+                username: String::new(),
+                x_user_id: String::new(),
+                authorization_code: Some(authorization_code.to_string()),
+                code_verifier: Some(code_verifier.to_string()),
             },
         )),
         ..Default::default()
@@ -790,21 +792,139 @@ fn returned_threads_destination_never_includes_the_authorization_code_or_access_
 }
 
 #[test]
-fn create_x_twitter_account_is_always_rejected_regardless_of_permissions_held() {
+fn create_x_twitter_account_fails_when_app_not_configured_even_for_admin() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let user = create_user(conn, "sdt_x_noperm");
-
-        let err = create_sync_destination(x_twitter_account_request(), &user, conn).unwrap_err();
-        assert_eq!(err.code(), Code::FailedPrecondition);
-        assert_eq!(err.message(), "x_twitter_app_not_configured");
-
-        // Even Admin can't create one -- there's no `XTwitterAuthConfig`-backed connect flow at all yet.
+        // No `configure_x_twitter_app` call -- no `XTwitterAuthConfig` stored at all.
         let admin = create_user(conn, "sdt_x_admin");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
-        let err = create_sync_destination(x_twitter_account_request(), &admin, conn).unwrap_err();
+        let err = create_sync_destination(x_twitter_account_request("code", "verifier"), &admin, conn)
+            .unwrap_err();
         assert_eq!(err.code(), Code::FailedPrecondition);
         assert_eq!(err.message(), "x_twitter_app_not_configured");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_x_twitter_account_requires_sync_events_or_posts_to_x_twitter_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_x_twitter_app_and_frontend_host(conn, "test-client-id", "test-client-secret", "example.com");
+        let user = create_user(conn, "sdt_x_noperm");
+
+        let err = create_sync_destination(x_twitter_account_request("code", "verifier"), &user, conn)
+            .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_TO_X_TWITTER_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_x_twitter_account_succeeds_with_only_sync_posts_to_x_twitter_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_x_twitter_app_and_frontend_host(conn, "test-client-id", "test-client-secret", "example.com");
+        let user = create_user(conn, "sdt_x_perm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsToXTwitter]);
+
+        // Once the platform-specific permission passes and the redirect_uri is derivable, this
+        // reaches the real (unreachable in tests) `api.x.com`, proving the permission gate, not
+        // full connect success (see `x_twitter_sync_tests` for coverage of the actual X API
+        // interaction against a mock server via `logic::x_twitter_sync`'s `_at` functions).
+        let err = create_sync_destination(x_twitter_account_request("code", "verifier"), &user, conn)
+            .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_x_twitter_account_fails_when_redirect_uri_is_not_derivable() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        // X app configured, but no `external_cdn_config.frontend_host` -- can't derive the OAuth
+        // `redirect_uri` (see `logic::x_twitter_sync::x_twitter_redirect_uri`).
+        configure_x_twitter_app(conn, "test-client-id", "test-client-secret");
+        let user = create_user(conn, "sdt_x_nohost");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToXTwitter]);
+
+        let err = create_sync_destination(x_twitter_account_request("code", "verifier"), &user, conn)
+            .unwrap_err();
+        assert_eq!(err.code(), Code::FailedPrecondition);
+        assert_eq!(err.message(), "x_twitter_redirect_uri_not_configured");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_x_twitter_account_fails_when_authorization_code_or_code_verifier_missing() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        configure_x_twitter_app_and_frontend_host(conn, "test-client-id", "test-client-secret", "example.com");
+        let user = create_user(conn, "sdt_x_nocode");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsToXTwitter]);
+
+        let request = SyncDestination {
+            configuration: Some(sync_destination::Configuration::XTwitterAccount(
+                XTwitterAccount {
+                    username: String::new(),
+                    x_user_id: String::new(),
+                    authorization_code: None,
+                    code_verifier: None,
+                },
+            )),
+            ..Default::default()
+        };
+        let err = create_sync_destination(request, &user, conn).unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(
+            err.message(),
+            "x_twitter_account.authorization_code_and_code_verifier_required"
+        );
+
+        Ok(())
+    });
+}
+
+#[test]
+fn returned_x_twitter_destination_never_includes_the_authorization_code_or_tokens() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let owner = create_user(conn, "sdt_x_notoken");
+        diesel::insert_into(sync_destinations::table)
+            .values(&crate::models::NewSyncDestination {
+                user_id: owner.id,
+                configuration: serde_json::json!({
+                    "x_twitter_account": {
+                        "x_user_id": "x-user-1",
+                        "username": "jon_on_x",
+                        "access_token": "super-secret-access-token",
+                        "refresh_token": "super-secret-refresh-token",
+                        "expires_at": 9999999999i64,
+                    }
+                }),
+            })
+            .get_result::<crate::models::SyncDestination>(conn)
+            .expect("failed to create test x_twitter sync destination");
+
+        let response = get_sync_destinations(User::default(), &owner, conn)
+            .expect("self get should succeed");
+        let destination = &response.destinations[0];
+        match destination.configuration.as_ref().unwrap() {
+            sync_destination::Configuration::XTwitterAccount(account) => {
+                assert_eq!(account.x_user_id, "x-user-1");
+                assert_eq!(account.username, "jon_on_x");
+                assert_eq!(account.authorization_code, None);
+                assert_eq!(account.code_verifier, None);
+            }
+            _ => panic!("expected XTwitterAccount"),
+        }
 
         Ok(())
     });

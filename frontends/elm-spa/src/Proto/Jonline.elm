@@ -4942,13 +4942,21 @@ encodeThreadsAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__ThreadsAccount
 
 
-{-|  A connected Threads account. Threads API is a product added to this server's existing Meta App
- (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a separately-registered app, so no separate auth config
- is needed. Unlike [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code`
- OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
- exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
- refreshable via `grant_type=th_refresh_token` -- not yet implemented; a connected destination
- will need reconnecting after ~60 days until a refresh job exists).
+{-|  A connected Threads account -- **a genuinely personal account works fine here**, unlike
+ [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount): the Threads API (a separate product from Instagram's,
+ launched 2024) has no Page-linkage or Business/Creator-account requirement at all -- Threads
+ OAuth directly authorizes whatever single Threads account the user logs in with, personal or
+ not. It's still a product added to this server's existing Meta App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig))
+ rather than a separately-registered app, so no separate auth config is needed. Unlike
+ [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code` OAuth flow at
+ threads.net (not facebook.com) with no "choose a Page" step -- the code is exchanged server-side
+ for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
+ `grant_type=th_refresh_token` -- not yet implemented; a connected destination will need
+ reconnecting after ~60 days until a refresh job exists).
+
+ Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+ posted -- no carousel/multi-image support yet. Unlike [`InstagramAccount`](#jonline-InstagramAccount), a text-only post
+ (no media at all) is valid.
 
 
 ## Fields
@@ -4971,7 +4979,7 @@ type alias ThreadsAccount =
 {-| The field numbers for the fields of `XTwitterAccount`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersXTwitterAccount : { username : Int, shortLivedUserAccessToken : Int }
+fieldNumbersXTwitterAccount : { username : Int, xUserId : Int, authorizationCode : Int, codeVerifier : Int }
 fieldNumbersXTwitterAccount =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__XTwitterAccount
 
@@ -5000,17 +5008,30 @@ encodeXTwitterAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__XTwitterAccount
 
 
-{-|  An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination). Not yet postable -- this server has no
- registered X Developer App. Every RPC touching an `XTwitterAccount` destination fails with
- `x_twitter_app_not_configured` until one is (see `FederationInfo.x_twitter_auth_config`), mirroring
- [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`.
+{-|  An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination), via an OAuth 2.0 Authorization Code +
+ PKCE flow at x.com. Requires this server to have a registered X Developer App configured (see
+ `FederationInfo.x_twitter_auth_config`) -- every RPC touching an `XTwitterAccount` destination
+ fails with `x_twitter_app_not_configured` until an admin sets one, mirroring
+ [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`. Unlike Facebook/Instagram/Threads (which reuse one
+ Meta App), an admin registers this app once and every user on the server connects their own X
+ account through it -- no per-user API keys needed.
+
+ Media limitation: up to 4 attached *images* on a synced Post/EventInstance are downloaded and
+ re-uploaded via X's media upload endpoint. Video is not yet supported -- X's video upload
+ requires a chunked upload-and-processing flow (mirroring Bluesky's own documented video gap)
+ not yet built; a video attachment is silently skipped.
 
 
 ## Fields
 
 ### username
 
- The account's @username.
+ The account's @username, populated by the server when the connection is made.
+
+
+### xUserId
+
+ The account's numeric X user ID, populated by the server when the connection is made.
 
 
 -}
@@ -5053,6 +5074,10 @@ encodeBlueskyAccount =
 {-|  A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
  (generated at Settings > App Passwords -- not the account's main password), rather than an
  OAuth popup.
+
+ Media limitation: only attached *images* on a synced Post/EventInstance are posted (up to 4,
+ downloaded and re-uploaded as Bluesky blobs) -- video is silently dropped entirely. Bluesky
+ video embeds need a separate, more complex upload-and-processing flow not yet built.
 
 
 ## Fields
@@ -5110,6 +5135,10 @@ encodeMastodonAccount =
  popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
  register ahead of time the way Facebook/Instagram have one.
 
+ Media: up to 4 attached images/videos on a synced Post/EventInstance are downloaded and
+ re-uploaded as real Mastodon media attachments (any mix of image/video types); a failed
+ individual upload is skipped rather than failing the whole post.
+
 
 ## Fields
 
@@ -5161,10 +5190,19 @@ encodeInstagramAccount =
     Proto.Jonline.Internals_.encodeProto__Jonline__InstagramAccount
 
 
-{-|  An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination). Posting to Instagram
- requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
- popup and app credentials as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's
- access token, then looks up that Page's linked Instagram Business account.
+{-|  An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal
+ Instagram account**. Unlike [`FacebookPage`](#jonline-FacebookPage)'s restriction (a *deprecated* permission that used to let
+ apps post to a personal timeline), this one was never possible in the first place: Instagram's
+ Content Publishing API was built from the start only for professional (Business/Creator)
+ accounts, so a personal Instagram account simply has no API surface to post to at all,
+ regardless of what this server does. Posting to Instagram also requires the professional account
+ to be linked to a Facebook Page, so this reuses the same Facebook Login popup and app credentials
+ as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's access token, then looks up
+ that Page's linked Instagram Business account.
+
+ Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+ posted -- no carousel/multi-image support yet. A post with no media at all is rejected
+ (`instagram_requires_media`) -- Instagram's Graph API has no text-only post type.
 
 
 ## Fields
@@ -5221,7 +5259,19 @@ encodeFacebookPage =
     Proto.Jonline.Internals_.encodeProto__Jonline__FacebookPage
 
 
-{-|  A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination).
+{-|  A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal profile**. Facebook
+ deprecated the `publish_actions` permission in 2018, which was the only way any third-party app
+ could ever post to a personal timeline; there's no Graph API call today, for any app, that can
+ post anything (feed post, photo, or otherwise) to a personal profile on a user's behalf. A Page
+ is the only kind of Facebook entity a self-hosted server like this can post to at all -- this
+ isn't a Jonline design choice to work around, it's a hard platform restriction. (Unrelated to
+ this: Facebook *Events* specifically are also unreachable, even for Pages -- see
+ `docs/facebook_and_x_twitter_federation.md`'s "It posts to the Page's feed, not a real Facebook
+ Event" for that separate, independent 2018-era lockdown.)
+
+ Media limitation: a synced Post/EventInstance's attached video and images are mutually
+ exclusive on Facebook -- if both are present, the video is posted and any images are silently
+ dropped (Facebook Pages can't attach both to a single feed post).
 
 
 ## Fields

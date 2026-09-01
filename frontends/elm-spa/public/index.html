@@ -341,11 +341,30 @@
     //
     // `payload.provider` picks which OAuth dialog to open -- `"facebook"` (used for both the
     // Facebook and Instagram flows, see Components.Pages.UserProfilePage's `FacebookConnectPlatform`)
-    // is Facebook's own implicit flow (`response_type=token`); `"threads"` is Threads' own
-    // authorization-code flow (`response_type=code`) at threads.net, a different domain/response
-    // shape entirely even though it rides on the very same Meta App (`payload.appId` is the same
-    // value either way). The popup-opening/sizing/polling/`postMessage`-listening code below is one
-    // shared path for both -- only the dialog URL/scope differ per provider.
+    // is Facebook's own implicit flow (`response_type=token`); `"threads"` and `"x_twitter"` are
+    // authorization-code flows (`response_type=code`) at threads.net/x.com respectively -- a
+    // different domain/response shape from Facebook's, even though Threads rides on the very same
+    // Meta App (`payload.appId` is the same value as Facebook/Instagram's there; X's is a wholly
+    // separate app's Client ID). The popup-opening/sizing/polling/`postMessage`-listening code below
+    // is one shared path for all three -- only the dialog URL/scope (and, for X, the PKCE
+    // `code_verifier`/`code_challenge`) differ per provider.
+    //
+    // X mandates PKCE; this generates the `code_verifier` synchronously (`crypto.getRandomValues`)
+    // and sends it as its own `code_challenge` unhashed (`code_challenge_method=plain`) rather than
+    // the stronger `S256` -- computing a SHA-256 challenge needs `crypto.subtle.digest`, which only
+    // ever returns a Promise, and awaiting it here would introduce the same kind of async gap this
+    // whole synchronous-`window.open` approach exists to avoid (see the comment above). `plain` is a
+    // real, spec-sanctioned PKCE mode, just a weaker one -- an honest, documented tradeoff instead.
+    function generateXTwitterCodeVerifier() {
+      var bytes = new Uint8Array(48);
+      window.crypto.getRandomValues(bytes);
+      var binary = "";
+      for (var i = 0; i < bytes.length; i++) { binary += String.fromCharCode(bytes[i]); }
+      // Base64url, no padding -- PKCE's `code_verifier` charset is [A-Za-z0-9-._~], and base64url's
+      // (after the +//= substitutions below) is a subset of that.
+      return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
     app.ports.facebookLoginPopup.subscribe(function (payload) {
       var redirectUri = window.location.origin + jonlineBasePath + "/facebook-callback.html";
       var width = 600, height = 700;
@@ -353,12 +372,23 @@
       var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
 
       var dialogUrl;
+      var xTwitterCodeVerifier = null;
       if (payload.provider === "threads") {
         dialogUrl = "https://threads.net/oauth/authorize" +
           "?client_id=" + encodeURIComponent(payload.appId) +
           "&redirect_uri=" + encodeURIComponent(redirectUri) +
           "&response_type=code" +
           "&scope=" + encodeURIComponent("threads_basic,threads_content_publish");
+      } else if (payload.provider === "x_twitter") {
+        xTwitterCodeVerifier = generateXTwitterCodeVerifier();
+        dialogUrl = "https://x.com/i/oauth2/authorize" +
+          "?client_id=" + encodeURIComponent(payload.appId) +
+          "&redirect_uri=" + encodeURIComponent(redirectUri) +
+          "&response_type=code" +
+          "&scope=" + encodeURIComponent("tweet.read tweet.write users.read offline.access") +
+          "&state=jonline" +
+          "&code_challenge=" + encodeURIComponent(xTwitterCodeVerifier) +
+          "&code_challenge_method=plain";
       } else {
         dialogUrl = "https://www.facebook.com/v19.0/dialog/oauth" +
           "?client_id=" + encodeURIComponent(payload.appId) +
@@ -401,7 +431,9 @@
         window.removeEventListener("message", onMessage);
         clearInterval(poll);
         if (e.data.accessToken) {
-          app.ports.facebookLoginResult.send({ ok: true, value: e.data.accessToken });
+          var result = { ok: true, value: e.data.accessToken };
+          if (xTwitterCodeVerifier) { result.codeVerifier = xTwitterCodeVerifier; }
+          app.ports.facebookLoginResult.send(result);
         } else {
           app.ports.facebookLoginResult.send({ ok: false, value: e.data.error || "Facebook login failed." });
         }

@@ -7,7 +7,7 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
     build_event_instance_message, post_event_instance, post_record, post_status, post_thread,
-    post_to_instagram, EventInstanceMessageInput, MediaAttachment,
+    post_to_instagram, post_tweet, EventInstanceMessageInput, MediaAttachment,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -97,7 +97,7 @@ pub fn sync_event_instance(
         .map(|c| c.frontend_host.clone())
         .filter(|h| !h.trim().is_empty())
         .map(|host| format!("https://{host}/event/{}", instance.id.to_proto_id()));
-    let media_ids: Vec<i64> = instance_post.media.iter().filter_map(|m| *m).collect();
+    let media_ids: Vec<i64> = combine_media(&event_post.media, &instance_post.media);
     let media_lookup = load_media_lookup(media_ids.clone(), conn);
     let media: Vec<MediaAttachment> = external_cdn_config
         .as_ref()
@@ -152,7 +152,7 @@ pub fn sync_event_instance(
             post_record(&destination, &message)?
         }
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
-            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+            post_tweet(&destination, &message, conn)?
         }
         Some(sync_destination::Configuration::ThreadsAccount(_)) => {
             post_thread(&destination, &message)?
@@ -218,6 +218,23 @@ fn combine_title(event_title: &Option<String>, instance_title: &Option<String>) 
 /// `event_content` itself is unset.
 fn combine_content(event_content: &Option<String>, instance_content: &Option<String>) -> Option<String> {
     combine(event_content, instance_content, "\n\n---\n\n")
+}
+
+/// Unions the Event's own Post's media with the EventInstance's own Post's media, Event-first --
+/// an instance-level Post rarely carries its own media override (e.g. a plain weekly recurrence
+/// with nothing instance-specific to show), so without this an Event's actual photos/video
+/// (attached to the *Event's* Post, not any particular instance) would never get synced at all.
+/// Mirrors `combine_title`/`combine_content`'s Event+instance merge, just as a set union instead
+/// of a text join since there's no natural primary/secondary ordering for media the way there is
+/// for title/content.
+fn combine_media(event_media: &[Option<i64>], instance_media: &[Option<i64>]) -> Vec<i64> {
+    let mut ids: Vec<i64> = event_media.iter().filter_map(|m| *m).collect();
+    for id in instance_media.iter().filter_map(|m| *m) {
+        if !ids.contains(&id) {
+            ids.push(id);
+        }
+    }
+    ids
 }
 
 fn combine(primary: &Option<String>, secondary: &Option<String>, separator: &str) -> Option<String> {

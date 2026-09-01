@@ -7,8 +7,9 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
     connect_facebook_page, create_session, exchange_code_for_token, exchange_long_lived_token,
-    get_linked_instagram_business_account, get_username, server_facebook_app_credentials,
-    threads_redirect_uri, verify_credentials,
+    exchange_x_twitter_code_for_token, get_linked_instagram_business_account, get_me,
+    get_username, server_facebook_app_credentials, server_x_twitter_app_credentials,
+    threads_redirect_uri, verify_credentials, x_twitter_redirect_uri,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -62,7 +63,14 @@ pub fn update_sync_destination(
                 Permission::Admin,
             ],
         )?,
-        Some(sync_destination::Configuration::XTwitterAccount(_)) => {}
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToXTwitter,
+                Permission::SyncPostsToXTwitter,
+                Permission::Admin,
+            ],
+        )?,
         Some(sync_destination::Configuration::ThreadsAccount(_)) => validate_any_permission(
             &Some(current_user),
             vec![
@@ -169,8 +177,31 @@ pub fn update_sync_destination(
                 }
             });
         }
-        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
-            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        Some(sync_destination::Configuration::XTwitterAccount(XTwitterAccount {
+            authorization_code: Some(authorization_code),
+            code_verifier: Some(code_verifier),
+            ..
+        })) if !authorization_code.trim().is_empty() && !code_verifier.trim().is_empty() => {
+            let (client_id, client_secret) = server_x_twitter_app_credentials(conn)?;
+            let redirect_uri = x_twitter_redirect_uri(conn)?;
+            let (access_token, refresh_token, expires_in) = exchange_x_twitter_code_for_token(
+                &client_id,
+                &client_secret,
+                &authorization_code,
+                &code_verifier,
+                &redirect_uri,
+            )?;
+            let (x_user_id, username) = get_me(&access_token)?;
+            let expires_at = chrono::Utc::now().timestamp() + expires_in;
+            existing.configuration = json!({
+                "x_twitter_account": {
+                    "x_user_id": x_user_id,
+                    "username": username,
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "expires_at": expires_at,
+                }
+            });
         }
         Some(sync_destination::Configuration::ThreadsAccount(ThreadsAccount {
             authorization_code: Some(authorization_code),

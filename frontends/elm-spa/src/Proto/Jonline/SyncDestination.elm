@@ -41,8 +41,7 @@ import Proto.Jonline.Internals_
 
 ### XTwitterAccount
 
- A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see
- [`XTwitterAccount`](#jonline-XTwitterAccount)'s own doc.
+ A connected X (Twitter) account to post EventInstances/Posts to.
 
 
 ### ThreadsAccount

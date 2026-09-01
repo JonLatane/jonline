@@ -1014,13 +1014,19 @@ jobs:
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
-          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web"
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web" "$PKG/opt/deploys"
           cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/opt/docs/protocol.html"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
           cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
           cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
+
+          # Bundled so `jonline deploy <targets...>` (docs/homebrew_jonline.sh) can run these
+          # Makefile targets against your own K8s cluster -- see deploys/distributables.sh.
+          # Checkout is fresh here, so this can't pick up gitignored local state (generated_certs'
+          # private keys, deploys/backups' Postgres dumps, etc.) -- only what's actually tracked.
+          cp -R deploys/. "$PKG/opt/deploys/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # osx_arm64 build, matching the version pinned there.
@@ -1199,13 +1205,19 @@ jobs:
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
-          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web"
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web" "$PKG/opt/flutter_web" "$PKG/opt/deploys"
           cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/opt/docs/protocol.html"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
           cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
           cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
+
+          # Bundled so `jonline deploy <targets...>` (docs/linux_jonline.sh) can run these
+          # Makefile targets against your own K8s cluster -- see deploys/distributables.sh.
+          # Checkout is fresh here, so this can't pick up gitignored local state (generated_certs'
+          # private keys, deploys/backups' Postgres dumps, etc.) -- only what's actually tracked.
+          cp -R deploys/. "$PKG/opt/deploys/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # one per architecture, matching the version pinned there.

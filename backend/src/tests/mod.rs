@@ -28,6 +28,7 @@ mod sync_destination_rpc_tests;
 mod sync_message_tests;
 mod send_message_tests;
 mod threads_sync_tests;
+mod x_twitter_sync_tests;
 mod update_event_tests;
 mod update_post_tests;
 mod user_counts_tests;

@@ -8,7 +8,7 @@ fn main() {
     tonic_prost_build::configure()
         .build_server(true)
         .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
-        // Used for updating servers from 0.5.551 -> 0.5.552+. Can be removed
+        // Used for updating servers from 0.5.551 -> 0.5.553+. Can be removed
         // in the distant future.
         // Lets `event_settings` JSON stored before this field existed deserialize
         // instead of erroring, defaulting to CALENDAR_DISPLAY_WEEK (proto enum value 0).

@@ -6586,9 +6586,10 @@ type alias Proto__Jonline__ThreadsAccount =
 {-| The field numbers for the fields of `Proto__Jonline__XTwitterAccount`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Jonline__XTwitterAccount : { username : Int, shortLivedUserAccessToken : Int }
+fieldNumbersProto__Jonline__XTwitterAccount :
+    { username : Int, xUserId : Int, authorizationCode : Int, codeVerifier : Int }
 fieldNumbersProto__Jonline__XTwitterAccount =
-    { username = 1, shortLivedUserAccessToken = 2 }
+    { username = 1, xUserId = 3, authorizationCode = 4, codeVerifier = 5 }
 
 
 {-| Default for Proto__Jonline__XTwitterAccount. Should only be used for 'required' decoders as an initial value.
@@ -6596,7 +6597,7 @@ fieldNumbersProto__Jonline__XTwitterAccount =
 -}
 defaultProto__Jonline__XTwitterAccount : Proto__Jonline__XTwitterAccount
 defaultProto__Jonline__XTwitterAccount =
-    { username = "", shortLivedUserAccessToken = Nothing }
+    { username = "", xUserId = "", authorizationCode = Nothing, codeVerifier = Nothing }
 
 
 {-| Declares how to decode a `Proto__Jonline__XTwitterAccount` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -6607,10 +6608,15 @@ decodeProto__Jonline__XTwitterAccount =
     Protobuf.Decode.message
         defaultProto__Jonline__XTwitterAccount
         [ Protobuf.Decode.optional 1 Protobuf.Decode.string (\a r -> { r | username = a })
+        , Protobuf.Decode.optional 3 Protobuf.Decode.string (\a r -> { r | xUserId = a })
         , Protobuf.Decode.optional
-            2
+            4
             (Protobuf.Decode.map Just Protobuf.Decode.string)
-            (\a r -> { r | shortLivedUserAccessToken = a })
+            (\a r -> { r | authorizationCode = a })
+        , Protobuf.Decode.optional
+            5
+            (Protobuf.Decode.map Just Protobuf.Decode.string)
+            (\a r -> { r | codeVerifier = a })
         ]
 
 
@@ -6621,9 +6627,9 @@ encodeProto__Jonline__XTwitterAccount : Proto__Jonline__XTwitterAccount -> Proto
 encodeProto__Jonline__XTwitterAccount value =
     Protobuf.Encode.message
         [ ( 1, Protobuf.Encode.string value.username )
-        , ( 2
-          , (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.shortLivedUserAccessToken
-          )
+        , ( 3, Protobuf.Encode.string value.xUserId )
+        , ( 4, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.authorizationCode )
+        , ( 5, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.codeVerifier )
         ]
 
 
@@ -6631,7 +6637,7 @@ encodeProto__Jonline__XTwitterAccount value =
 
 -}
 type alias Proto__Jonline__XTwitterAccount =
-    { username : String, shortLivedUserAccessToken : Maybe String }
+    { username : String, xUserId : String, authorizationCode : Maybe String, codeVerifier : Maybe String }
 
 
 {-| The field numbers for the fields of `Proto__Jonline__BlueskyAccount`. This is mostly useful for internals, like documentation generation.

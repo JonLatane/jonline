@@ -5,8 +5,9 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
     connect_facebook_page, create_session, exchange_code_for_token, exchange_long_lived_token,
-    get_linked_instagram_business_account, get_username, server_facebook_app_credentials,
-    threads_redirect_uri, verify_credentials,
+    exchange_x_twitter_code_for_token, get_linked_instagram_business_account, get_me,
+    get_username, server_facebook_app_credentials, server_x_twitter_app_credentials,
+    threads_redirect_uri, verify_credentials, x_twitter_redirect_uri,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -62,10 +63,14 @@ pub fn create_sync_destination(
                 Permission::Admin,
             ],
         )?,
-        // No permission needed to reach the unconditional rejection below -- this server has no
-        // registered X Developer App, so an `XTwitterAccount` can never actually be created,
-        // regardless of what the caller holds (see `sync_destination_rpc_tests`).
-        Some(sync_destination::Configuration::XTwitterAccount(_)) => {}
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => validate_any_permission(
+            &Some(current_user),
+            vec![
+                Permission::SyncEventsToXTwitter,
+                Permission::SyncPostsToXTwitter,
+                Permission::Admin,
+            ],
+        )?,
         Some(sync_destination::Configuration::ThreadsAccount(_)) => validate_any_permission(
             &Some(current_user),
             vec![
@@ -153,10 +158,36 @@ pub fn create_sync_destination(
                 }
             })
         }
-        // This server has no registered X Developer App -- see `XTwitterAccount`'s own proto doc
-        // and `FederationInfo.x_twitter_auth_config`.
-        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
-            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+        Some(sync_destination::Configuration::XTwitterAccount(XTwitterAccount {
+            authorization_code: Some(authorization_code),
+            code_verifier: Some(code_verifier),
+            ..
+        })) if !authorization_code.trim().is_empty() && !code_verifier.trim().is_empty() => {
+            // One admin-registered X Developer App (`server_x_twitter_app_credentials`) shared by
+            // every user's own connected account -- see `XTwitterAccount`'s own proto doc. X
+            // mandates PKCE, unlike Threads' plain code exchange, hence `code_verifier` alongside
+            // `authorization_code` (see `logic::x_twitter_sync`'s module doc for why the popup
+            // uses the weaker `plain` PKCE method rather than `S256`).
+            let (client_id, client_secret) = server_x_twitter_app_credentials(conn)?;
+            let redirect_uri = x_twitter_redirect_uri(conn)?;
+            let (access_token, refresh_token, expires_in) = exchange_x_twitter_code_for_token(
+                &client_id,
+                &client_secret,
+                &authorization_code,
+                &code_verifier,
+                &redirect_uri,
+            )?;
+            let (x_user_id, username) = get_me(&access_token)?;
+            let expires_at = chrono::Utc::now().timestamp() + expires_in;
+            json!({
+                "x_twitter_account": {
+                    "x_user_id": x_user_id,
+                    "username": username,
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "expires_at": expires_at,
+                }
+            })
         }
         Some(sync_destination::Configuration::ThreadsAccount(ThreadsAccount {
             authorization_code: Some(authorization_code),
@@ -208,6 +239,12 @@ pub fn create_sync_destination(
             return Err(Status::new(
                 Code::InvalidArgument,
                 "threads_account.authorization_code_required",
+            ))
+        }
+        Some(sync_destination::Configuration::XTwitterAccount(_)) => {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "x_twitter_account.authorization_code_and_code_verifier_required",
             ))
         }
         None => {

@@ -845,10 +845,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <h6 id="x-twitter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter"><span class="octicon octicon-link"></span></a>X (Twitter)</h6>
     <p>
-      <code>configuration.x_twitter_account</code> (an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>) is reserved for a connected X
-      account, but <strong>not yet functional</strong> -- this server has no registered X Developer App
-      (<code>FederationInfo.x_twitter_auth_config</code>), so every RPC touching an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> destination fails with
-      <code>x_twitter_app_not_configured</code>. Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code> once functional.
+      <code>configuration.x_twitter_account</code> (an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>) is a connected X account. Requires this
+      server to have a registered X Developer App configured (<code>FederationInfo.x_twitter_auth_config</code>) -- until an admin
+      sets one, every RPC touching an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> destination fails with <code>x_twitter_app_not_configured</code>. Once
+      configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (<code>response_type=code</code>, like
+      Threads, but with a <code>code_challenge</code>/<code>code_verifier</code> pair X requires and Threads doesn't) -- the server exchanges
+      the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
+      each post. Only image media is uploaded today; video is not yet supported (see <code>XTwitterAccount</code>'s own doc).
+      Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code>.
     </p>
     <h6 id="threads"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threads"><span class="octicon octicon-link"></span></a>Threads</h6>
     <p>
@@ -2326,8 +2330,8 @@ directory</a> is (<code>{name}</code> denotes a
       | SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
       | SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
       | SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. Not yet functional -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc. |
-      | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. Not yet functional -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc. |
+      | SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. |
+      | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. |
       | SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
       | SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
       | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
@@ -6332,7 +6336,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>x_twitter_auth_config</td>
           <td><a href="#jonline-XTwitterAuthConfig">XTwitterAuthConfig</a></td>
           <td>optional</td>
-          <td>X (Twitter) authentication configuration for the server. Not yet used -- reserved for when this server registers an X Developer App; until then, <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code> regardless of this field.</td>
+          <td>X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances -- an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship <code>facebook_auth_config</code> has to individual Facebook Pages. Until set, <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -6393,6 +6397,11 @@ directory</a> is (<code>{name}</code> denotes a
       A Bluesky (AT Protocol) account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> via an "App Password"
       (generated at Settings > App Passwords -- not the account's main password), rather than an
       OAuth popup.
+    </p>
+    <p>
+      Media limitation: only attached <em>images</em> on a synced Post/EventInstance are posted (up to 4,
+      downloaded and re-uploaded as Bluesky blobs) -- video is silently dropped entirely. Bluesky
+      video embeds need a separate, more complex upload-and-processing flow not yet built.
     </p>
     <table>
       <thead>
@@ -6549,7 +6558,22 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-FacebookPage"></a></p>
     <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
-    <p>A Facebook Page connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>.</p>
+    <p>
+      A Facebook Page connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> -- <strong>never a personal profile</strong>. Facebook
+      deprecated the <code>publish_actions</code> permission in 2018, which was the only way any third-party app
+      could ever post to a personal timeline; there's no Graph API call today, for any app, that can
+      post anything (feed post, photo, or otherwise) to a personal profile on a user's behalf. A Page
+      is the only kind of Facebook entity a self-hosted server like this can post to at all -- this
+      isn't a Jonline design choice to work around, it's a hard platform restriction. (Unrelated to
+      this: Facebook <em>Events</em> specifically are also unreachable, even for Pages -- see
+      <code>docs/facebook_and_x_twitter_federation.md</code>'s "It posts to the Page's feed, not a real Facebook
+      Event" for that separate, independent 2018-era lockdown.)
+    </p>
+    <p>
+      Media limitation: a synced Post/EventInstance's attached video and images are mutually
+      exclusive on Facebook -- if both are present, the video is posted and any images are silently
+      dropped (Facebook Pages can't attach both to a single feed post).
+    </p>
     <table>
       <thead>
         <tr>
@@ -6623,10 +6647,20 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-InstagramAccount"></a></p>
     <h3 id="instagramaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagramaccount"><span class="octicon octicon-link"></span></a>InstagramAccount</h3>
     <p>
-      An Instagram Business/Creator account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>. Posting to Instagram
-      requires the account to be linked to a Facebook Page, so this reuses the same Facebook Login
-      popup and app credentials as <a href="#jonline-FacebookPage"><code>FacebookPage</code></a> -- the server exchanges the token for the Page's
-      access token, then looks up that Page's linked Instagram Business account.
+      An Instagram Business/Creator account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> -- <strong>never a personal
+Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>'s restriction (a <em>deprecated</em> permission that used to let
+      apps post to a personal timeline), this one was never possible in the first place: Instagram's
+      Content Publishing API was built from the start only for professional (Business/Creator)
+      accounts, so a personal Instagram account simply has no API surface to post to at all,
+      regardless of what this server does. Posting to Instagram also requires the professional account
+      to be linked to a Facebook Page, so this reuses the same Facebook Login popup and app credentials
+      as <a href="#jonline-FacebookPage"><code>FacebookPage</code></a> -- the server exchanges the token for the Page's access token, then looks up
+      that Page's linked Instagram Business account.
+    </p>
+    <p>
+      Media limitation: only the <em>first</em> attached image/video on a synced Post/EventInstance is
+      posted -- no carousel/multi-image support yet. A post with no media at all is rejected
+      (<code>instagram_requires_media</code>) -- Instagram's Graph API has no text-only post type.
     </p>
     <table>
       <thead>
@@ -6671,6 +6705,11 @@ directory</a> is (<code>{name}</code> denotes a
       (generated on the user's own instance, under Preferences > Development), rather than an OAuth
       popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
       register ahead of time the way Facebook/Instagram have one.
+    </p>
+    <p>
+      Media: up to 4 attached images/videos on a synced Post/EventInstance are downloaded and
+      re-uploaded as real Mastodon media attachments (any mix of image/video types); a failed
+      individual upload is skipped rather than failing the whole post.
     </p>
     <table>
       <thead>
@@ -6784,7 +6823,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>x_twitter_account</td>
           <td><a href="#jonline-XTwitterAccount">XTwitterAccount</a></td>
           <td></td>
-          <td>A connected X (Twitter) account to post EventInstances/Posts to. Not yet postable -- see <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>'s own doc.</td>
+          <td>A connected X (Twitter) account to post EventInstances/Posts to.</td>
         </tr>
         <tr>
           <td>threads_account</td>
@@ -6840,13 +6879,22 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-ThreadsAccount"></a></p>
     <h3 id="threadsaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threadsaccount"><span class="octicon octicon-link"></span></a>ThreadsAccount</h3>
     <p>
-      A connected Threads account. Threads API is a product added to this server's existing Meta App
-      (see <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>) rather than a separately-registered app, so no separate auth config
-      is needed. Unlike <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>/<a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>, connecting one is a <code>response_type=code</code>
-      OAuth flow at threads.net (not facebook.com) with no "choose a Page" step -- the code is
-      exchanged server-side for a short-lived token, then a long-lived one (~60 day expiry,
-      refreshable via <code>grant_type=th_refresh_token</code> -- not yet implemented; a connected destination
-      will need reconnecting after ~60 days until a refresh job exists).
+      A connected Threads account -- <strong>a genuinely personal account works fine here</strong>, unlike
+      <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>/<a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>: the Threads API (a separate product from Instagram's,
+      launched 2024) has no Page-linkage or Business/Creator-account requirement at all -- Threads
+      OAuth directly authorizes whatever single Threads account the user logs in with, personal or
+      not. It's still a product added to this server's existing Meta App (see <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>)
+      rather than a separately-registered app, so no separate auth config is needed. Unlike
+      <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>/<a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>, connecting one is a <code>response_type=code</code> OAuth flow at
+      threads.net (not facebook.com) with no "choose a Page" step -- the code is exchanged server-side
+      for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
+      <code>grant_type=th_refresh_token</code> -- not yet implemented; a connected destination will need
+      reconnecting after ~60 days until a refresh job exists).
+    </p>
+    <p>
+      Media limitation: only the <em>first</em> attached image/video on a synced Post/EventInstance is
+      posted -- no carousel/multi-image support yet. Unlike <a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>, a text-only post
+      (no media at all) is valid.
     </p>
     <table>
       <thead>
@@ -6881,10 +6929,19 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="jonline-XTwitterAccount"></a></p>
     <h3 id="xtwitteraccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#xtwitteraccount"><span class="octicon octicon-link"></span></a>XTwitterAccount</h3>
     <p>
-      An X (Twitter) account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>. Not yet postable -- this server has no
-      registered X Developer App. Every RPC touching an <code>XTwitterAccount</code> destination fails with
-      <code>x_twitter_app_not_configured</code> until one is (see <code>FederationInfo.x_twitter_auth_config</code>), mirroring
-      <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>/<code>facebook_app_not_configured</code>.
+      An X (Twitter) account connected as a <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, via an OAuth 2.0 Authorization Code +
+      PKCE flow at x.com. Requires this server to have a registered X Developer App configured (see
+      <code>FederationInfo.x_twitter_auth_config</code>) -- every RPC touching an <code>XTwitterAccount</code> destination
+      fails with <code>x_twitter_app_not_configured</code> until an admin sets one, mirroring
+      <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>/<code>facebook_app_not_configured</code>. Unlike Facebook/Instagram/Threads (which reuse one
+      Meta App), an admin registers this app once and every user on the server connects their own X
+      account through it -- no per-user API keys needed.
+    </p>
+    <p>
+      Media limitation: up to 4 attached <em>images</em> on a synced Post/EventInstance are downloaded and
+      re-uploaded via X's media upload endpoint. Video is not yet supported -- X's video upload
+      requires a chunked upload-and-processing flow (mirroring Bluesky's own documented video gap)
+      not yet built; a video attachment is silently skipped.
     </p>
     <table>
       <thead>
@@ -6900,13 +6957,25 @@ directory</a> is (<code>{name}</code> denotes a
           <td>username</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The account's @username.</td>
+          <td>The account's @username, populated by the server when the connection is made.</td>
         </tr>
         <tr>
-          <td>short_lived_user_access_token</td>
+          <td>x_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The account's numeric X user ID, populated by the server when the connection is made.</td>
+        </tr>
+        <tr>
+          <td>authorization_code</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: reserved for a future OAuth flow. Never populated in responses.</td>
+          <td>Only used (and required) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: the OAuth authorization code from the X login popup. Never populated in responses.</td>
+        </tr>
+        <tr>
+          <td>code_verifier</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Only used (and required, alongside <code>authorization_code</code>) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: the PKCE code verifier the popup generated before sending its paired <code>code_challenge</code> to X's authorize endpoint. X mandates PKCE (unlike Threads/Facebook's plain code exchange), so the server needs this to complete the token exchange. Never populated in responses.</td>
         </tr>
       </tbody>
     </table>

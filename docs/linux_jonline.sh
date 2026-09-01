@@ -60,18 +60,20 @@ JONLINE_COMMANDS=(
   delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts convert_media_sizes generate_preview_images
   set_permission delete_preview_images disable_cdn_grpc
   to_db_id to_proto_id grpcurl
+  deploy
   completion
   install show_latest update cleanup_updates uninstall
 )
 
 jonline_help() {
-  # jobs' real path varies with wherever the tarball was extracted (see
+  # jobs'/deploys' real paths vary with wherever the tarball was extracted (see
   # _jonline_package_dir) -- unlike @@JONLINE_PACKAGE_BASE_DIR@@ below, which
-  # is only true post-`install`, so it's spliced in here instead of baked
+  # is only true post-`install`, so they're spliced in here instead of baked
   # into the heredoc.
-  local jobs_script_path
+  local jobs_script_path deploys_dir_path
   jobs_script_path="$(_jonline_package_dir)/background_jobs.sh"
-  cat <<'JONLINE_HELP_EOF' | sed "s|@@JOBS_SCRIPT_PATH@@|$jobs_script_path|"
+  deploys_dir_path="$(_jonline_package_dir)/opt/deploys"
+  cat <<'JONLINE_HELP_EOF' | sed -e "s|@@JOBS_SCRIPT_PATH@@|$jobs_script_path|" -e "s|@@DEPLOYS_DIR_PATH@@|$deploys_dir_path|"
 jonline - launcher for the Jonline server and its local dev dependencies
 
 Usage: jonline <command> [args...]
@@ -95,8 +97,12 @@ Commands:
   Core/Lifecycle:
 
     server_and_jobs          Run the Jonline server and background jobs together
-                             (forks server + jobs, see below)
+                             (forks server + jobs, see below); accepts server's flags
     server                   Run the Jonline server (jonline-server)
+                             --no-internal-server   Don't start the internal-only mail
+                                                     delivery server (27705) used by a
+                                                     Stalwart mail server -- irrelevant to
+                                                     most deploys
     jobs                     Run background jobs on a loop (@@JOBS_SCRIPT_PATH@@) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
                              sync_event_sync_sources every 1m, update_user_counts every 1h,
@@ -155,6 +161,15 @@ Commands:
     to_proto_id              Convert a database (internal) ID to a proto (external, string) ID
     grpcurl                  Run the bundled grpcurl. "Like curl, but for gRPC."
                              (https://github.com/fullstorydev/grpcurl)
+
+  Deployment (requires `make` -- manage your own Kubernetes cluster):
+
+    deploy <targets...>      Run `make` targets from the bundled deploys/Makefile, e.g.:
+                               jonline deploy create_external_backend NAMESPACE=my_namespace
+                               jonline deploy create_backend_data create_internal_backend NAMESPACE=my_namespace
+                             NAMESPACE=... is required by nearly every target -- there's no
+                             default. See @@DEPLOYS_DIR_PATH@@/README.md (bundled alongside
+                             this package) for the full target reference.
 
   Shell completion:
 
@@ -289,11 +304,12 @@ jobs() {
 }
 
 # Forks `server` and `jobs`, killing both if either the script exits or one
-# of them dies.
+# of them dies. Any args (e.g. --no-internal-server) are forwarded to
+# `server` only -- `jobs`/background_jobs.sh takes none.
 server_and_jobs() {
   jobs &
   local jobs_pid=$!
-  server &
+  server "$@" &
   local server_pid=$!
   trap 'kill "$jobs_pid" "$server_pid" 2>/dev/null || true' EXIT TERM INT
   wait
@@ -361,6 +377,34 @@ to_proto_id() {
 
 grpcurl() {
   _jonline_exec_bin grpcurl "$@"
+}
+
+# Bundled alongside deploys/Makefile (see the "Assemble Linux release package layout" step of
+# .github/workflows/server_ci_cd.yml's create_linux_release job) -- see deploys/distributables.sh
+# for the shared `deploy`/target-listing implementation both this and docs/homebrew_jonline.sh use.
+# Resolved dynamically (like _jonline_exec_bin's binaries) since, unlike @@JONLINE_PACKAGE_BASE_DIR@@,
+# this works from wherever the tarball happens to be extracted.
+_jonline_deploys_dir() {
+  echo "$(_jonline_package_dir)/opt/deploys"
+}
+
+# Runs `make` targets from the bundled deploys/Makefile against your own K8s cluster -- args are
+# forwarded as-is, so both targets and VAR=value overrides (e.g. NAMESPACE=my_namespace, required
+# by nearly every target -- see deploys/README.md) just work, same as running `make` by hand.
+deploy() {
+  local deploys_dir
+  deploys_dir="$(_jonline_deploys_dir)"
+  . "$deploys_dir/distributables.sh"
+  _jonline_deploys_run "$deploys_dir" "$@"
+}
+
+# Used by `completion`'s deploy-target completion below.
+_jonline_deploy_targets() {
+  local deploys_dir
+  deploys_dir="$(_jonline_deploys_dir)"
+  [ -f "$deploys_dir/distributables.sh" ] || return 0
+  . "$deploys_dir/distributables.sh"
+  _jonline_deploys_list_targets "$deploys_dir"
 }
 
 environment() {
@@ -525,10 +569,12 @@ uninstall() {
   echo "Removed $base."
 }
 
-# Prints a tab-completion script for the given shell. Both scripts shell out
-# to `jonline --list-commands` (backed by JONLINE_COMMANDS above) rather than
-# embedding a static list, so completions stay in sync as commands are added
-# without needing to regenerate/re-source anything.
+# Prints a tab-completion script for the given shell. Both scripts shell out to
+# `jonline --list-commands` (backed by JONLINE_COMMANDS above) for top-level command completion,
+# and -- once `deploy` is the first word -- to `jonline --list-deploy-targets` (backed by
+# _jonline_deploy_targets, which delegates to `make`'s own Makefile parser) for target completion,
+# so both stay in sync as commands/targets are added without needing to regenerate/re-source
+# anything.
 completion() {
   case "${1:-}" in
     bash)
@@ -538,6 +584,8 @@ _jonline_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [ "$COMP_CWORD" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "$(jonline --list-commands)" -- "$cur") )
+  elif [ "${COMP_WORDS[1]}" = "deploy" ]; then
+    COMPREPLY=( $(compgen -W "$(jonline --list-deploy-targets)" -- "$cur") )
   fi
 }
 complete -F _jonline_complete jonline
@@ -547,6 +595,12 @@ JONLINE_BASH_COMPLETION_EOF
       cat <<'JONLINE_ZSH_COMPLETION_EOF'
 #compdef jonline
 _jonline() {
+  if (( CURRENT >= 3 )) && [[ ${words[2]} == deploy ]]; then
+    local -a targets
+    targets=(${(f)"$(jonline --list-deploy-targets)"})
+    _describe 'deploy target' targets
+    return
+  fi
   local -a commands
   commands=(${(f)"$(jonline --list-commands)"})
   _describe 'command' commands
@@ -584,6 +638,8 @@ esac
 
 if [ "$cmd" = "--list-commands" ]; then
   printf '%s\n' "${JONLINE_COMMANDS[@]}"
+elif [ "$cmd" = "--list-deploy-targets" ]; then
+  _jonline_deploy_targets
 elif _jonline_is_command "$cmd"; then
   "$cmd" "$@"
 else

@@ -6,7 +6,7 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
     build_post_message, post_post, post_record, post_status, post_thread, post_to_instagram,
-    MediaAttachment, PostMessageInput,
+    post_tweet, MediaAttachment, PostMessageInput,
 };
 use crate::marshaling::*;
 use crate::models;
@@ -117,7 +117,7 @@ pub fn sync_post(
             post_record(&destination, &message)?
         }
         Some(sync_destination::Configuration::XTwitterAccount(_)) => {
-            return Err(Status::new(Code::FailedPrecondition, "x_twitter_app_not_configured"))
+            post_tweet(&destination, &message, conn)?
         }
         Some(sync_destination::Configuration::ThreadsAccount(_)) => {
             post_thread(&destination, &message)?

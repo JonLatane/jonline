@@ -742,6 +742,147 @@ pub fn configure_facebook_app_and_frontend_host(
         .expect("failed to create test server configuration");
 }
 
+/// Mirrors `configure_facebook_app`, but sets `x_twitter_auth_config` instead -- needed for specs
+/// that exercise `logic::x_twitter_sync::server_x_twitter_app_credentials` (and RPCs that call it,
+/// like `create_sync_destination`'s `XTwitterAccount` arm).
+pub fn configure_x_twitter_app(conn: &mut PgPooledConnection, client_id: &str, client_secret: &str) {
+    let mut new_config = models::default_server_configuration();
+    new_config.federation_info = serde_json::to_value(FederationInfo {
+        servers: vec![],
+        facebook_auth_config: None,
+        x_twitter_auth_config: Some(XTwitterAuthConfig {
+            client_id: client_id.to_string(),
+            client_secret: client_secret.to_string(),
+        }),
+    })
+    .unwrap();
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// Same as `configure_x_twitter_app`, but also sets `external_cdn_config.frontend_host` -- needed
+/// for specs that exercise `logic::x_twitter_sync::x_twitter_redirect_uri` (and RPCs that call it,
+/// like `create_sync_destination`'s `XTwitterAccount` arm), which derives the OAuth popup's
+/// `redirect_uri` from it and fails fast with `x_twitter_redirect_uri_not_configured` otherwise.
+pub fn configure_x_twitter_app_and_frontend_host(
+    conn: &mut PgPooledConnection,
+    client_id: &str,
+    client_secret: &str,
+    frontend_host: &str,
+) {
+    let mut new_config = models::default_server_configuration();
+    new_config.federation_info = serde_json::to_value(FederationInfo {
+        servers: vec![],
+        facebook_auth_config: None,
+        x_twitter_auth_config: Some(XTwitterAuthConfig {
+            client_id: client_id.to_string(),
+            client_secret: client_secret.to_string(),
+        }),
+    })
+    .unwrap();
+    new_config.external_cdn_config = Some(
+        serde_json::to_value(ExternalCdnConfig {
+            frontend_host: frontend_host.to_string(),
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// A minimal mock of the X (Twitter) API v2 OAuth token endpoint (`/2/oauth2/token`, both the
+/// initial `authorization_code` exchange and subsequent `refresh_token` exchanges -- distinguished
+/// by inspecting the request *body*, not just the request line, since both share one path/method),
+/// `/2/users/me`, `/2/media/upload`, and `/2/tweets`, for `logic::x_twitter_sync` specs. Mirrors
+/// `serve_threads_api`'s shape. `valid_code: false` simulates a rejected authorization code (`400`
+/// on the initial exchange only -- a refresh always succeeds here, since specs cover refresh
+/// failure separately via `serve_capturing` where finer control is needed).
+pub fn serve_x_twitter_api(valid_code: bool, x_user_id: &str, username: &str, tweet_id: &str) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test X API server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test X API server port")
+        .port();
+    let x_user_id = x_user_id.to_string();
+    let username = username.to_string();
+    let tweet_id = tweet_id.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 16384];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]).to_string();
+            let request_line = request.lines().next().unwrap_or("").to_string();
+
+            let (status_line, body) = if request_line.contains("/2/oauth2/token") {
+                if request.contains("grant_type=refresh_token") {
+                    (
+                        "HTTP/1.1 200 OK",
+                        serde_json::json!({
+                            "access_token": "refreshed-x-access-token",
+                            "refresh_token": "refreshed-x-refresh-token",
+                            "expires_in": 7200,
+                            "token_type": "bearer",
+                        }),
+                    )
+                } else if valid_code {
+                    (
+                        "HTTP/1.1 200 OK",
+                        serde_json::json!({
+                            "access_token": "x-access-token",
+                            "refresh_token": "x-refresh-token",
+                            "expires_in": 7200,
+                            "token_type": "bearer",
+                        }),
+                    )
+                } else {
+                    (
+                        "HTTP/1.1 400 Bad Request",
+                        serde_json::json!({ "error": "invalid_request" }),
+                    )
+                }
+            } else if request_line.contains("/2/users/me") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "data": { "id": x_user_id, "username": username } }),
+                )
+            } else if request_line.contains("/2/media/upload") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "data": { "id": "x-media-1" } }),
+                )
+            } else if request_line.contains("/2/tweets") {
+                (
+                    "HTTP/1.1 200 OK",
+                    serde_json::json!({ "data": { "id": tweet_id, "text": "unused" } }),
+                )
+            } else {
+                (
+                    "HTTP/1.1 404 Not Found",
+                    serde_json::json!({ "error": "not_found" }),
+                )
+            };
+            let body = body.to_string();
+            let response = format!(
+                "{}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                status_line,
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}")
+}
+
 /// Inserts a `media` row directly (bypassing the `/media` upload endpoint, which lives outside
 /// the gRPC/`rpcs` layer entirely). Doesn't touch MinIO -- pair with `TestBucket::put_object` (via
 /// `test_bucket()`) when a spec needs a real object at `minio_path` to verify gets cleaned up.

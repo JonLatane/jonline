@@ -235,10 +235,20 @@ where
 /// grapheme-segmentation crate) -- see `bluesky_sync::post_record`, the one platform that truncates
 /// proactively rather than surfacing the API's own rejection.
 pub fn truncate_for_bluesky(text: &str) -> String {
+    truncate_to(text, 300)
+}
+
+/// Same as `truncate_for_bluesky`, but for X/Twitter's 280-character limit -- see
+/// `x_twitter_sync::post_tweet`.
+pub fn truncate_for_x_twitter(text: &str) -> String {
+    truncate_to(text, 280)
+}
+
+fn truncate_to(text: &str, max_chars: usize) -> String {
     let char_count = text.chars().count();
-    if char_count <= 300 {
+    if char_count <= max_chars {
         return text.to_string();
     }
-    let truncated: String = text.chars().take(296).collect();
+    let truncated: String = text.chars().take(max_chars - 4).collect();
     format!("{truncated}\u{2026}")
 }

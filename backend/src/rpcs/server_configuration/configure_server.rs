@@ -43,6 +43,29 @@ pub fn configure_server(
         new_config.federation_info = serde_json::to_value(merged_federation_info).unwrap();
     }
 
+    // `XTwitterAuthConfig.client_secret` is write-only, same reasoning (and same merge-on-blank
+    // treatment) as `FacebookAuthConfig.app_secret` above.
+    if let Some(incoming_x_twitter_auth_config) = request
+        .federation_info
+        .as_ref()
+        .and_then(|f| f.x_twitter_auth_config.as_ref())
+        .filter(|c| c.client_secret.is_empty())
+    {
+        let existing_secret = get_server_configuration_model(conn)
+            .ok()
+            .and_then(|c| serde_json::from_value::<protos::FederationInfo>(c.federation_info).ok())
+            .and_then(|f| f.x_twitter_auth_config)
+            .map(|c| c.client_secret)
+            .unwrap_or_default();
+        let mut merged_federation_info: protos::FederationInfo =
+            serde_json::from_value(new_config.federation_info.clone()).unwrap();
+        merged_federation_info.x_twitter_auth_config = Some(protos::XTwitterAuthConfig {
+            client_id: incoming_x_twitter_auth_config.client_id.clone(),
+            client_secret: existing_secret,
+        });
+        new_config.federation_info = serde_json::to_value(merged_federation_info).unwrap();
+    }
+
     // `WebPushConfig.private_vapid_key` is write-only -- `to_proto` always blanks it before it
     // reaches a client (see `ToProtoServerConfiguration`), so an empty incoming value means
     // "leave whatever's already stored alone," not "clear it." Setting `web_push_config` to
