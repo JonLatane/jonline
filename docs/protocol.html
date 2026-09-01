@@ -548,12 +548,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
           in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
           (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>EventSyncSources</strong>: A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
-          pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
+          //
         </p>
       </li>
       <li>
@@ -561,6 +556,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <strong>SyncDestinations</strong>: A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
           external targets to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and <a href="#jonline-Post"><code>Post</code></a>s out to, e.g. a connected Facebook Page (configured via
           <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event and Post sections below for how these attach.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>EventSyncSources</strong>: A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
+          pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
         </p>
       </li>
     </ul>
@@ -672,6 +673,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
       open access to all Messages on a server.
     </p>
+    <p>
+      Email support in Messages comes from the <a href="#post-email-stalwart-email-integration">Stalwart integration</a> and requires
+      a Stalwart server to be running and configured to forward emails to the Jonline server. Jonline provides tooling
+      to do this automatically, but it is completely optional.
+    </p>
     <ul>
       <li>
         <strong>MessagingGroup</strong>: A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <a href="#jonline-Message"><code>Message</code></a>
@@ -680,12 +686,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </ul>
     <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
     <p>
-      Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s.
+      Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s (both <a href="#jonline-ExpirableToken"><code>ExpirableToken</code>s</a>).
       Authenticated calls require an <code>access_token</code> in request metadata to be included / directly as the value of the
       <code>authorization</code> header (no <code>Bearer </code>prefix).
+      The <code>ExpirableToken</code> type allows clients to know ahead of time when their <code>access_token</code> and <code>refresh_token</code> are about to expire.
     </p>
     <p>
-      First, before any authentication is done, you should <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host">resolve your backend host</a>,
+      First, before <em>any</em> authentication is done, you should <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host">resolve your backend host</a>,
       and check its <a href="#grpc-api-GetServiceVersion"><code>GetServiceVersion</code></a> and <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> RPCs.
       Check whether you have the <code>CREATE_ACCOUNT</code> and/or <code>LOGIN</code> <a href="#jonline-AuthenticationFeature"><code>AuthenticationFeature</code></a>s in your <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
     </p>

@@ -180,6 +180,12 @@ Jonline has an intuitive (helm-less) mechanism and conventions for templating Jo
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
+#### Deploying DockerHub images to Kubernetes from Homebrew/Linux (`jonline deploy`)
+
+If you installed Jonline via [Homebrew](#macos-install-and-run-via-homebrew) or the [Linux package](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher), both bundle a full copy of the `deploys/` directory -- so `jonline deploy <targets...>` runs the exact same `kubectl`-powered `make` targets described in [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster) and [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md), without cloning this repo. For example: `jonline deploy create_backend_data create_external_backend NAMESPACE=my-jonline-instance-namespace`.
+
+Tab-completion is available for both `jonline`'s own subcommands and `jonline deploy`'s targets. Homebrew wires this up automatically when you `brew install`; on Linux there's no package manager to hook into, so you'll want to add it yourself -- see the "Optional: tab-completion" step of [3 minute startup on Linux](#3-minute-startup-on-linux).
+
 #### Live (DigitalOcean Kubernetes/DOKS) deployments
 
 Jonline's CI is set up to deploy the above Docker images as part of its build system. (In fact, it won't cut its GitHub/Homebrew/Linux releases until it deploys a canary build to [jonline.io](https://jonline.io).)
@@ -201,6 +207,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [3 minute startup on Linux](#3-minute-startup-on-linux)
       - [Install/self-update on Linux](#installself-update-on-linux)
     - [DockerHub: Server and Preview Generator images](#dockerhub-server-and-preview-generator-images)
+      - [Deploying DockerHub images to Kubernetes from Homebrew/Linux (`jonline deploy`)](#deploying-dockerhub-images-to-kubernetes-from-homebrewlinux-jonline-deploy)
       - [Live (DigitalOcean Kubernetes/DOKS) deployments](#live-digitalocean-kubernetesdoks-deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
@@ -555,6 +562,8 @@ The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonl
 
 ## Quick deploy to your own cluster
 
+This section is the fastest path to a running cluster; see [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md) for the full reference on everything else `make`/`jonline deploy` can do here -- multi-namespace setups, pointing domains at your deployment, TLS certs, Postgres upgrades, and more. (Already on Homebrew or the Linux package? See [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-jonline-deploy) -- you can skip straight to `jonline deploy` without cloning this repo.)
+
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:
 
 ```bash
@@ -573,7 +582,7 @@ git clone https://github.com/JonLatane/jonline.git
 cd jonline
 ```
 
-(If you installed Jonline via [Homebrew](#macos-install-and-run-via-homebrew) or the [Linux package](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher) instead, you already have a bundled copy of `deploys/` -- skip the clone and run `jonline deploy <targets...>` in place of `make <targets...>` below, e.g. `jonline deploy create_backend_data create_external_backend NAMESPACE=jonline`.)
+(On Homebrew or the Linux package instead? Skip the clone -- see [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-jonline-deploy).)
 
 Next, from the repo root, to create Postgres, Minio and two load-balanced Jonline servers in the namespace `jonline` (plus a few recurring jobs), run:
 

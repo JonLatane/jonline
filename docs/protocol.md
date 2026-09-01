@@ -248,14 +248,13 @@ listing types and `LIMITED`-visibility content.
 - **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
 in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
-
-
-- **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
-pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
-
+//
 - **SyncDestinations**: A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
 external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
 [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
+
+- **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
+pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
 
 ##### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -325,15 +324,20 @@ moderation status and who shared it, separately from the Post&#39;s own (author-
 make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
 open access to all Messages on a server.
 
+Email support in Messages comes from the [Stalwart integration](#post-email-stalwart-email-integration) and requires 
+a Stalwart server to be running and configured to forward emails to the Jonline server. Jonline provides tooling
+to do this automatically, but it is completely optional.
+
 - **MessagingGroup**: A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
 belongs to one; if a client wasn&#39;t a visible recipient (e.g. they were BCC&#39;ed), the [`Message`](#jonline-Message) they receive omits it.
 
 #### Authentication
-Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
+Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s (both [`ExpirableToken`s](#jonline-ExpirableToken)).
 Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 `authorization` header (no `Bearer ` prefix).
+The `ExpirableToken` type allows clients to know ahead of time when their `access_token` and `refresh_token` are about to expire.
 
-First, before any authentication is done, you should [resolve your backend host](#http-based-client-host-negotiation-for-external-cdns-get-backend_host),
+First, before *any* authentication is done, you should [resolve your backend host](#http-based-client-host-negotiation-for-external-cdns-get-backend_host),
 and check its [`GetServiceVersion`](#grpc-api-GetServiceVersion) and [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) RPCs.
 Check whether you have the `CREATE_ACCOUNT` and/or `LOGIN` [`AuthenticationFeature`](#jonline-AuthenticationFeature)s in your [`ServerConfiguration`](#jonline-ServerConfiguration).
 
