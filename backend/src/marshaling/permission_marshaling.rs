@@ -4,7 +4,7 @@ use crate::itertools::Itertools;
 use crate::protos::Permission::*;
 use crate::protos::*;
 
-pub const ALL_PERMISSIONS: [Permission; 50] = [
+pub const ALL_PERMISSIONS: [Permission; 51] = [
     Unknown,
     ViewUsers,
     PublishUsersLocally,
@@ -51,6 +51,7 @@ pub const ALL_PERMISSIONS: [Permission; 50] = [
     ModerateMedia,
     ReadPersonalMessages,
     ReadAllSystemMessages,
+    CreateAiModelProviders,
     Business,
     RunBots,
     Admin,

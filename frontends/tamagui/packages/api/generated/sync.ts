@@ -72,7 +72,9 @@ export interface SyncDestination {
   threadsAccount?: ThreadsAccount | undefined;
 }
 
+/** Response to a request for the current user's [`SyncDestination`](#jonline-SyncDestination)s. */
 export interface GetSyncDestinationsResponse {
+  /** The current user's SyncDestinations. */
   destinations: SyncDestination[];
 }
 

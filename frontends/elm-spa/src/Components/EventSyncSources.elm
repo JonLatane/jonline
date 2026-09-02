@@ -13,6 +13,13 @@ the calling account/server as an `AccountsPanel.MaybeAccountServer` and
 returns a `Task` resolving to `( Maybe AccountsPanel.Msg, response )`, so a
 token refresh mid-request can still be forwarded on by the caller (see
 `Shared.AccountsPanel.performWithAccountServer`).
+
+`UserProfilePage` no longer fetches `EventSyncSource`s on its own initial load (it reads
+`User.event_sync_sources`, already carried by the resolved `User`), and every mutation now triggers
+a full `refetch` of that `User`. `getEventSyncSources` is still used, though -- by that section's
+manual "Refresh" button (`EventSyncSourcesRefreshClicked`), which overlays just the fresh `sources`
+onto the resolved `User` without a whole-profile refetch -- see `Components.AIModelProviders`' own
+matching doc comment on `getAIModelProviders`.
 -}
 
 import Grpc

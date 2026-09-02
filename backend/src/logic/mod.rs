@@ -1,6 +1,9 @@
 mod user_logic;
 pub use user_logic::*;
 
+mod ai_model_catalog;
+pub use ai_model_catalog::*;
+
 mod text_search_logic;
 pub use text_search_logic::*;
 

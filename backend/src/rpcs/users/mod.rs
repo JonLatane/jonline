@@ -5,7 +5,9 @@ mod delete_user;
 pub use delete_user::delete_user;
 
 mod get_users;
-pub use get_users::get_users;
+pub use get_users::{
+    attach_advanced_admin_data, attach_own_advanced_data, attach_own_sync_destinations, get_users,
+};
 
 mod create_follow;
 pub use create_follow::create_follow;

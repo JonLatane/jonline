@@ -73,10 +73,12 @@ pub fn create_account(
         Ok(user) => {
             let tokens =
                 auth::generate_refresh_and_access_token(user.id, conn, &request.expires_at);
+            let mut proto_user = user.to_proto(&None, &None, None, Some(conn));
+            crate::rpcs::attach_own_advanced_data(&mut proto_user, &user, conn);
             Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
                 access_token: tokens.access_token,
-                user: Some(user.to_proto(&None, &None, None, None)),
+                user: Some(proto_user),
             })
         }
     };

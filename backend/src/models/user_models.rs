@@ -21,6 +21,20 @@ pub fn get_author(user_id: i64, conn: &mut PgPooledConnection) -> Result<Author,
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
 }
 
+/// Batched variant of `get_author` -- every `Author` for `user_ids`, in one query. Used wherever a
+/// batch-attach step (e.g. `marshaling::build_available_ai_models_for_users`) needs several users'
+/// `Author`s at once instead of one `get_author` call per row.
+pub fn get_authors(user_ids: &[i64], conn: &mut PgPooledConnection) -> Vec<Author> {
+    if user_ids.is_empty() {
+        return vec![];
+    }
+    users::table
+        .select(AUTHOR_COLUMNS)
+        .filter(users::id.eq_any(user_ids))
+        .load::<Author>(conn)
+        .unwrap_or_default()
+}
+
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 // Diesel's `AsChangeset` otherwise skips `Option<T>` fields entirely (no `SET`
 // clause at all) when they're `None`, rather than setting the column to

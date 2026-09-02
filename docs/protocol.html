@@ -432,6 +432,21 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
       <li>
+        <p><a href="#ai_model_providers-proto">ai_model_providers.proto</a></p>
+        <ul>
+          <li><a href="#jonline-AIModelProvider">AIModelProvider</a></li>
+          <li><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></li>
+          <li><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></li>
+          <li><a href="#jonline-AvailableAIModel">AvailableAIModel</a></li>
+          <li><a href="#jonline-DeleteAIModelProviderRequest">DeleteAIModelProviderRequest</a></li>
+          <li><a href="#jonline-GeminiCredentials">GeminiCredentials</a></li>
+          <li><a href="#jonline-GetAIModelProvidersResponse">GetAIModelProvidersResponse</a></li>
+          <li><a href="#jonline-GrantAIModelProviderRequest">GrantAIModelProviderRequest</a></li>
+          <li><a href="#jonline-OpenAICredentials">OpenAICredentials</a></li>
+          <li><a href="#jonline-RevokeAIModelProviderRequest">RevokeAIModelProviderRequest</a></li>
+        </ul>
+      </li>
+      <li>
         <p><a href="#scalar-value-types">Scalar Value Types</a></p>
       </li>
     </ul>
@@ -562,6 +577,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p>
           <strong>EventSyncSources</strong>: A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
           pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>AIModelProviders</strong>: A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s -
+          connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+          them via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s. See <code>ai_model_providers.proto</code> and the
+          AIModelProvider section below.
         </p>
       </li>
     </ul>
@@ -887,6 +910,35 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       (requires <code>SYNCHRONIZE_EVENTS</code>, or Admin), <a href="#grpc-api-UpdateEventSyncSource"><code>UpdateEventSyncSource</code></a>, and
       <a href="#grpc-api-DeleteEventSyncSource"><code>DeleteEventSyncSource</code></a>.
     </p>
+    <h5 id="aimodelprovider"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider"><span class="octicon octicon-link"></span></a>AIModelProvider</h5>
+    <p>
+      An <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> is a user-owned connection to an external AI model API (e.g. a
+      Gemini API key), via a <code>oneof provider</code> naming which service it is -- structurally similar to
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>, but rather than pushing/pulling
+      content, it's metered <em>access</em> an owner can share out to other users of this server. Only the <code>gemini_credentials</code>
+      variant (a <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>) is currently creatable; <code>openai_credentials</code>/
+      <code>anthropic_credentials</code> are defined for forward compatibility only. As with <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>'s
+      platform credentials, the actual API key is write-only -- accepted on
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> but
+      never populated back in a response.
+    </p>
+    <p>
+      Providers are managed via <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>,
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (requires <code>CREATE_AI_MODEL_PROVIDERS</code>, or Admin),
+      <a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>, and <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a>
+      -- each gated self-or-Admin, the same shape as <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>'s RPCs.
+    </p>
+    <ul>
+      <li>
+        <strong>AIModelProviderGrants</strong>: A provider's owner may share metered access to it with other users via
+        <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s, each carrying a <code>tokens_remaining</code> budget for that grantee.
+        Granted/reset via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> (upserted on the unique
+        <code>(ai_model_provider_id, grantee)</code> pair -- granting again <em>resets</em>, rather than adds to, <code>tokens_remaining</code>) and
+        removed via <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Unlike every other RPC pair in this section,
+        these two are <strong>owner-only, with no Admin override</strong> -- an Admin may manage the provider record itself, but only
+        its owner may hand out access to it.
+      </li>
+    </ul>
     <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
     <h5 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h5>
     <h6 id="post-email-stalwart-email-integration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-email-stalwart-email-integration"><span class="octicon octicon-link"></span></a><code>POST /email</code>: Stalwart Email Integration</h6>
@@ -1550,6 +1602,42 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-DeleteEventInstanceSyncDestinationRequest">DeleteEventInstanceSyncDestinationRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>. <em>Authenticated</em> (destination owner, or Admin), requires <code>SYNC_EVENTS_TO_FACEBOOK</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>GetAIModelProviders</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td><a href="#jonline-GetAIModelProvidersResponse">GetAIModelProvidersResponse</a></td>
+          <td>Gets a user's AIModelProviders. <em>Authenticated</em> (self, or Admin for any user).</td>
+        </tr>
+        <tr>
+          <td>CreateAIModelProvider</td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td>Creates an AIModelProvider for the current user. <em>Authenticated</em>, requires <code>CREATE_AI_MODEL_PROVIDERS</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>UpdateAIModelProvider</td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td>Updates an AIModelProvider's name, provider, or credentials. <em>Authenticated</em> (owner, or Admin for any user's).</td>
+        </tr>
+        <tr>
+          <td>DeleteAIModelProvider</td>
+          <td><a href="#jonline-DeleteAIModelProviderRequest">DeleteAIModelProviderRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes an AIModelProvider (and its AIModelProviderGrants). <em>Authenticated</em> (owner, or Admin).</td>
+        </tr>
+        <tr>
+          <td>GrantAIModelProvider</td>
+          <td><a href="#jonline-GrantAIModelProviderRequest">GrantAIModelProviderRequest</a></td>
+          <td><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></td>
+          <td>Grants (or resets) another user's metered access to one of the current user's AIModelProviders. <em>Authenticated</em>, owner-only (no Admin override).</td>
+        </tr>
+        <tr>
+          <td>RevokeAIModelProvider</td>
+          <td><a href="#jonline-RevokeAIModelProviderRequest">RevokeAIModelProviderRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Revokes another user's access to one of the current user's AIModelProviders. <em>Authenticated</em>, owner-only (no Admin override).</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -2322,6 +2410,11 @@ directory</a> is (<code>{name}</code> denotes a
           <td></td>
         </tr>
         <tr>
+          <td>CREATE_AI_MODEL_PROVIDERS</td>
+          <td>60</td>
+          <td>Allow the user to create/update their own <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s (see <code>ai_model_providers.proto</code>) and grant/revoke other users' access to them.</td>
+        </tr>
+        <tr>
           <td>SYNC_EVENTS_TO_FACEBOOK</td>
           <td>1000</td>
           <td>Sync permissions -- each gates creating/updating <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s of that platform, and syncing that content type to them (see <code>sync.proto</code>). A generous reserved block (<code>1000</code>+) since this is the most likely area to keep growing as new platforms are added.</td>
@@ -2753,7 +2846,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>sync_destinations</td>
           <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
           <td>repeated</td>
-          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin -- always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type and via <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>.</td>
+          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin, and by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view) -- always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type.</td>
+        </tr>
+        <tr>
+          <td>event_sync_sources</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>repeated</td>
+          <td>The target user's own <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s. Unlike <code>sync_destinations</code>, also populated for the target user themselves <em>or an Admin</em> across every <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type (not just single-user lookups) -- e.g. an Admin's <code>EVERYONE</code> listing gets every returned user's sources filled in, batch-loaded in one query rather than per-user. Also populated by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view). Always empty for any other viewer.</td>
+        </tr>
+        <tr>
+          <td>available_ai_models</td>
+          <td><a href="#jonline-AvailableAIModel">AvailableAIModel</a></td>
+          <td>repeated</td>
+          <td>Every <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> model the target user may currently call -- their own providers' models, plus any models granted to them on other users' providers (see <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a>). Gated and populated the same way as <code>event_sync_sources</code> (target user themselves, or an Admin, across any <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type, plus <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>).</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -6633,6 +6738,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="jonline-GetSyncDestinationsResponse"></a></p>
     <h3 id="getsyncdestinationsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getsyncdestinationsresponse"><span class="octicon octicon-link"></span></a>GetSyncDestinationsResponse</h3>
+    <p>Response to a request for the current user's <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s.</p>
     <table>
       <thead>
         <tr>
@@ -6647,7 +6753,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>destinations</td>
           <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The current user's SyncDestinations.</td>
         </tr>
       </tbody>
     </table>
@@ -6983,6 +7089,391 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>Only used (and required, alongside <code>authorization_code</code>) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: the PKCE code verifier the popup generated before sending its paired <code>code_challenge</code> to X's authorize endpoint. X mandates PKCE (unlike Threads/Facebook's plain code exchange), so the server needs this to complete the token exchange. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="ai_model_providers-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="ai_model_providersproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ai_model_providersproto"><span class="octicon octicon-link"></span></a>ai_model_providers.proto</h2>
+    <p><a name="jonline-AIModelProvider"></a></p>
+    <h3 id="aimodelprovider-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider-1"><span class="octicon octicon-link"></span></a>AIModelProvider</h3>
+    <p>
+      An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+      key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> (also user-owned integrations
+      with an <a href="#jonline-Author"><code>Author</code></a> <code>owner</code> and a <code>oneof</code> naming which external system is configured), but where
+      those push/pull content, an AIModelProvider is metered <em>access</em> to a third-party LLM API -- shared out to
+      other users via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s rather than posted-to/subscribed-from.
+    </p>
+    <p>
+      Providers are managed via <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>,
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (requires <code>CREATE_AI_MODEL_PROVIDERS</code>, or Admin),
+      <a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> (owner, or Admin for any user's), and
+      <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a> (owner, or Admin) -- the same self-or-Admin shape as
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>'s RPCs. Access to a provider is granted/revoked to other users via
+      <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>/<a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a> which,
+      unlike every other RPC pair here, are <strong>owner-only with no Admin override</strong>: an Admin can manage the provider
+      record itself (rename it, rotate its key, delete it), but handing out access to <em>someone else's</em> API budget is a
+      call only its owner should be able to make.
+    </p>
+    <p>
+      Currently only the <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a> variant has a working connection flow;
+      <a href="#jonline-OpenAICredentials"><code>OpenAICredentials</code></a>/<a href="#jonline-AnthropicCredentials"><code>AnthropicCredentials</code></a> are defined for
+      forward compatibility but are not yet accepted by <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the AIModelProvider.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the <em>only</em> user (not even Admins) who may grant/revoke other users' access to it.</td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely cosmetic -- has no effect on behavior.</td>
+        </tr>
+        <tr>
+          <td>gemini_credentials</td>
+          <td><a href="#jonline-GeminiCredentials">GeminiCredentials</a></td>
+          <td></td>
+          <td>A Google Gemini API connection (see <code>ai.google.dev/gemini-api</code> -- planned use is its image generation endpoint, for generating Event posters). The only variant currently creatable.</td>
+        </tr>
+        <tr>
+          <td>openai_credentials</td>
+          <td><a href="#jonline-OpenAICredentials">OpenAICredentials</a></td>
+          <td></td>
+          <td>An OpenAI API connection. <em>Not yet creatable.</em></td>
+        </tr>
+        <tr>
+          <td>anthropic_credentials</td>
+          <td><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></td>
+          <td></td>
+          <td>An Anthropic API connection. <em>Not yet creatable.</em></td>
+        </tr>
+        <tr>
+          <td>grants</td>
+          <td><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></td>
+          <td>repeated</td>
+          <td>Other users this provider's owner has granted metered access to, via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>. Only ever populated for the owner (or an Admin) -- see <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the provider was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the provider was last updated (renamed, or had its provider/credentials changed).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AIModelProviderGrant"></a></p>
+    <h3 id="aimodelprovidergrant"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovidergrant"><span class="octicon octicon-link"></span></a>AIModelProviderGrant</h3>
+    <p>
+      A grant of metered access to someone else's <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>, created/reset via
+      <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> and removed via
+      <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Upserted on the unique
+      <code>(ai_model_provider_id, ai_model_grantee)</code> pair -- calling <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>
+      again for a user who already has a grant <em>resets</em> <code>tokens_remaining</code> to the newly-requested amount, it does not
+      add to it.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ai_model_provider_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The ID of the <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> this grant is for.</td>
+        </tr>
+        <tr>
+          <td>ai_model_grantee</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user this access was granted to.</td>
+        </tr>
+        <tr>
+          <td>model_names</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>The model name (that will be used to call the provider) that the grantee is allowed to use by this grant. If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here. Allows granters to set per-model (or per-model-group) token budgets, e.g. "gpt-4" vs "gpt-3.5-turbo".</td>
+        </tr>
+        <tr>
+          <td>tokens_remaining</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the grant was first created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the grant was last updated (i.e. last reset by another <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> call).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AnthropicCredentials"></a></p>
+    <h3 id="anthropiccredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anthropiccredentials"><span class="octicon octicon-link"></span></a>AnthropicCredentials</h3>
+    <p>Credentials for an Anthropic API connection. <em>Not yet creatable</em> -- defined for forward compatibility only.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>anthropic_api_key</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The Anthropic API key. Never populated in responses (see <a href="#jonline-GeminiCredentials"><code>GeminiCredentials.gemini_api_key</code></a>).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AvailableAIModel"></a></p>
+    <h3 id="availableaimodel"><a class="anchor" aria-hidden="true" tabindex="-1" href="#availableaimodel"><span class="octicon octicon-link"></span></a>AvailableAIModel</h3>
+    <p>
+      One specific model a user may call right now, and how -- via an <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>
+      they own outright (<code>grant</code> unset), or via an <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a> someone else
+      granted them (<code>grant</code> set). Only ever defined relative to a user -- see
+      <a href="#jonline-User"><code>User.available_ai_models</code></a>/<a href="#jonline-GetAIModelProvidersResponse"><code>GetAIModelProvidersResponse.available_ai_models</code></a>.
+      One <code>AvailableAIModel</code> exists per (provider, model) pair: an owner gets one row per model their
+      provider supports (see the server's own model catalog per provider type); a grantee gets one row
+      per model their grant actually covers -- expanded from <code>AIModelProviderGrant.model_names</code>, or
+      every model the provider supports if that list is empty.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>model_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The exact model name to use when calling the provider (e.g. <code>&#x26;#34;gemini-3.1-flash-image&#x26;#34;</code>).</td>
+        </tr>
+        <tr>
+          <td>grant</td>
+          <td><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></td>
+          <td>optional</td>
+          <td>The grant that allows this access, when the current user isn't <code>provider.owner</code> themselves. Unset when the current user owns <code>provider</code> outright (full, ungated access -- no grant needed).</td>
+        </tr>
+        <tr>
+          <td>provider</td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td></td>
+          <td>The provider this model belongs to. Its own <code>grants</code> list is only populated when the current user is <code>provider.owner</code> (or an Admin) -- see <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>'s own doc; a mere grantee never sees who else has been granted access to a provider they don't own.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-DeleteAIModelProviderRequest"></a></p>
+    <h3 id="deleteaimodelproviderrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteaimodelproviderrequest"><span class="octicon octicon-link"></span></a>DeleteAIModelProviderRequest</h3>
+    <p>Request to delete an AIModelProvider. Also deletes any of its <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>provider</td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td></td>
+          <td>The provider to be deleted.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GeminiCredentials"></a></p>
+    <h3 id="geminicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geminicredentials"><span class="octicon octicon-link"></span></a>GeminiCredentials</h3>
+    <p>
+      Credentials for a Google Gemini API connection (<code>ai.google.dev/gemini-api</code>) -- the only
+      <a href="#jonline-AIModelProvider"><code>AIModelProvider.provider</code></a> variant currently accepted by
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
+      Planned use is the Gemini image generation/editing endpoint (<code>ai.google.dev/gemini-api/docs/image-generation</code>),
+      to generate/edit Event posters from an Event's own content.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>gemini_api_key</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The Gemini API key. Required (and only used) on <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> -- <strong>never populated in responses</strong>, the same write-only convention as e.g. <a href="#jonline-MastodonAccount"><code>MastodonAccount.access_token</code></a> in <code>sync.proto</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetAIModelProvidersResponse"></a></p>
+    <h3 id="getaimodelprovidersresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getaimodelprovidersresponse"><span class="octicon octicon-link"></span></a>GetAIModelProvidersResponse</h3>
+    <p>Response to a request for a user's <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>providers</td>
+          <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
+          <td>repeated</td>
+          <td>The requested user's own AIModelProviders (those they own) -- exactly the distinct <code>provider</code>s in <code>available_ai_models</code> whose <code>owner</code> is the requested user, each with its own <code>grants</code> populated (who else can use it). A convenience duplicate of data already in <code>available_ai_models</code>, so callers managing a user's own providers (rename/rekey/delete/grant/ revoke) don't have to de-duplicate that list themselves.</td>
+        </tr>
+        <tr>
+          <td>available_ai_models</td>
+          <td><a href="#jonline-AvailableAIModel">AvailableAIModel</a></td>
+          <td>repeated</td>
+          <td>Every model the requested user may currently call -- their own providers' models, plus any models granted to them on other users' providers. See <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a>'s own doc.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GrantAIModelProviderRequest"></a></p>
+    <h3 id="grantaimodelproviderrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grantaimodelproviderrequest"><span class="octicon octicon-link"></span></a>GrantAIModelProviderRequest</h3>
+    <p>
+      Request to grant (or reset) another user's metered access to one of the current user's
+      <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s. <em>Authenticated, owner-only -- no Admin override.</em>
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The user to grant access to.</td>
+        </tr>
+        <tr>
+          <td>ai_model_provider_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The AIModelProvider to grant access to. Must be owned by the caller.</td>
+        </tr>
+        <tr>
+          <td>tokens</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of tokens the grantee may spend. Calling this RPC again for the same (<code>ai_model_provider_id</code>, <code>user_id</code>) pair <em>replaces</em>, rather than adds to, this value.</td>
+        </tr>
+        <tr>
+          <td>model_names</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>The models the grantee is allowed to use, mirroring <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant.model_names</code></a> -- if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as <code>tokens</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-OpenAICredentials"></a></p>
+    <h3 id="openaicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#openaicredentials"><span class="octicon octicon-link"></span></a>OpenAICredentials</h3>
+    <p>Credentials for an OpenAI API connection. <em>Not yet creatable</em> -- defined for forward compatibility only.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>openai_api_key</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The OpenAI API key. Never populated in responses (see <a href="#jonline-GeminiCredentials"><code>GeminiCredentials.gemini_api_key</code></a>).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-RevokeAIModelProviderRequest"></a></p>
+    <h3 id="revokeaimodelproviderrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#revokeaimodelproviderrequest"><span class="octicon octicon-link"></span></a>RevokeAIModelProviderRequest</h3>
+    <p>
+      Request to revoke another user's access to one of the current user's
+      <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s, the reverse of
+      <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>. <em>Authenticated, owner-only -- no Admin override.</em>
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The user whose access should be revoked.</td>
+        </tr>
+        <tr>
+          <td>ai_model_provider_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The AIModelProvider to revoke access to. Must be owned by the caller.</td>
         </tr>
       </tbody>
     </table>

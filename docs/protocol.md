@@ -148,6 +148,18 @@
     - [ThreadsAccount](#jonline-ThreadsAccount)
     - [XTwitterAccount](#jonline-XTwitterAccount)
   
+- [ai_model_providers.proto](#ai_model_providers-proto)
+    - [AIModelProvider](#jonline-AIModelProvider)
+    - [AIModelProviderGrant](#jonline-AIModelProviderGrant)
+    - [AnthropicCredentials](#jonline-AnthropicCredentials)
+    - [AvailableAIModel](#jonline-AvailableAIModel)
+    - [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest)
+    - [GeminiCredentials](#jonline-GeminiCredentials)
+    - [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse)
+    - [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest)
+    - [OpenAICredentials](#jonline-OpenAICredentials)
+    - [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -255,6 +267,11 @@ external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`]
 
 - **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
 pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+
+- **AIModelProviders**: A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
+connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
+AIModelProvider section below.
 
 ##### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -500,6 +517,30 @@ recomputing `event_count`/`event_instance_count` on every sync.
 Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
 (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
+
+##### AIModelProvider
+An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
+content, it&#39;s metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
+variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
+`anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)&#39;s
+platform credentials, the actual API key is write-only -- accepted on
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) but
+never populated back in a response.
+
+Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+-- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs.
+
+- **AIModelProviderGrants**: A provider&#39;s owner may share metered access to it with other users via
+[`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
+`(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+its owner may hand out access to it.
 
 #### HTTP Endpoints
 ##### Internal HTTP server (27705)
@@ -824,6 +865,12 @@ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federa
 | DeleteSyncDestination | [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncDestination. *Authenticated* (owner, or Admin). |
 | SyncEventInstance | [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest) | [EventInstance](#jonline-EventInstance) | Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
 | DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| GetAIModelProviders | [User](#jonline-User) | [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse) | Gets a user&#39;s AIModelProviders. *Authenticated* (self, or Admin for any user). |
+| CreateAIModelProvider | [AIModelProvider](#jonline-AIModelProvider) | [AIModelProvider](#jonline-AIModelProvider) | Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). |
+| UpdateAIModelProvider | [AIModelProvider](#jonline-AIModelProvider) | [AIModelProvider](#jonline-AIModelProvider) | Updates an AIModelProvider&#39;s name, provider, or credentials. *Authenticated* (owner, or Admin for any user&#39;s). |
+| DeleteAIModelProvider | [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). |
+| GrantAIModelProvider | [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest) | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
+| RevokeAIModelProvider | [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -1180,6 +1227,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
+| CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
@@ -1352,7 +1400,9 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc.. |
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
-| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser). |
+| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type. |
+| event_sync_sources | [EventSyncSource](#jonline-EventSyncSource) | repeated | The target user&#39;s own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -3191,12 +3241,12 @@ dropped (Facebook Pages can&#39;t attach both to a single feed post).
 <a name="jonline-GetSyncDestinationsResponse"></a>
 
 ### GetSyncDestinationsResponse
-
+Response to a request for the current user&#39;s [`SyncDestination`](#jonline-SyncDestination)s.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| destinations | [SyncDestination](#jonline-SyncDestination) | repeated |  |
+| destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The current user&#39;s SyncDestinations. |
 
 
 
@@ -3360,6 +3410,230 @@ not yet built; a video attachment is silently skipped.
 | x_user_id | [string](#string) |  | The account&#39;s numeric X user ID, populated by the server when the connection is made. |
 | authorization_code | [string](#string) | optional | Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the OAuth authorization code from the X login popup. Never populated in responses. |
 | code_verifier | [string](#string) | optional | Only used (and required, alongside `authorization_code`) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): the PKCE code verifier the popup generated before sending its paired `code_challenge` to X&#39;s authorize endpoint. X mandates PKCE (unlike Threads/Facebook&#39;s plain code exchange), so the server needs this to complete the token exchange. Never populated in responses. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="ai_model_providers-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## ai_model_providers.proto
+
+
+
+<a name="jonline-AIModelProvider"></a>
+
+### AIModelProvider
+An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
+[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
+those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
+other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+
+Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user&#39;s), and
+[`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
+[`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs. Access to a provider is granted/revoked to other users via
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
+unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
+record itself (rename it, rotate its key, delete it), but handing out access to *someone else&#39;s* API budget is a
+call only its owner should be able to make.
+
+Currently only the [`GeminiCredentials`](#jonline-GeminiCredentials) variant has a working connection flow;
+[`OpenAICredentials`](#jonline-OpenAICredentials)/[`AnthropicCredentials`](#jonline-AnthropicCredentials) are defined for
+forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the AIModelProvider. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
+| name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic -- has no effect on behavior. |
+| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation endpoint, for generating Event posters). The only variant currently creatable. |
+| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection. *Not yet creatable.* |
+| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable.* |
+| grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
+
+
+
+
+
+
+<a name="jonline-AIModelProviderGrant"></a>
+
+### AIModelProviderGrant
+A grant of metered access to someone else&#39;s [`AIModelProvider`](#jonline-AIModelProvider), created/reset via
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
+[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
+`(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
+add to it.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ai_model_provider_id | [string](#string) |  | The ID of the [`AIModelProvider`](#jonline-AIModelProvider) this grant is for. |
+| ai_model_grantee | [Author](#jonline-Author) |  | The user this access was granted to. |
+| model_names | [string](#string) | repeated | The model name (that will be used to call the provider) that the grantee is allowed to use by this grant. If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here. Allows granters to set per-model (or per-model-group) token budgets, e.g. &#34;gpt-4&#34; vs &#34;gpt-3.5-turbo&#34;. |
+| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the grant was first created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the grant was last updated (i.e. last reset by another [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call). |
+
+
+
+
+
+
+<a name="jonline-AnthropicCredentials"></a>
+
+### AnthropicCredentials
+Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| anthropic_api_key | [string](#string) | optional | The Anthropic API key. Never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+
+
+
+
+
+
+<a name="jonline-AvailableAIModel"></a>
+
+### AvailableAIModel
+One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
+they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
+granted them (`grant` set). Only ever defined relative to a user -- see
+[`User.available_ai_models`](#jonline-User)/[`GetAIModelProvidersResponse.available_ai_models`](#jonline-GetAIModelProvidersResponse).
+One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
+provider supports (see the server&#39;s own model catalog per provider type); a grantee gets one row
+per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
+every model the provider supports if that list is empty.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
+| grant | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access -- no grant needed). |
+| provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
+
+
+
+
+
+
+<a name="jonline-DeleteAIModelProviderRequest"></a>
+
+### DeleteAIModelProviderRequest
+Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider to be deleted. |
+
+
+
+
+
+
+<a name="jonline-GeminiCredentials"></a>
+
+### GeminiCredentials
+Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+[`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Planned use is the Gemini image generation/editing endpoint (`ai.google.dev/gemini-api/docs/image-generation`),
+to generate/edit Event posters from an Event&#39;s own content.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| gemini_api_key | [string](#string) | optional | The Gemini API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- **never populated in responses**, the same write-only convention as e.g. [`MastodonAccount.access_token`](#jonline-MastodonAccount) in `sync.proto`. |
+
+
+
+
+
+
+<a name="jonline-GetAIModelProvidersResponse"></a>
+
+### GetAIModelProvidersResponse
+Response to a request for a user&#39;s [`AIModelProvider`](#jonline-AIModelProvider)s.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| providers | [AIModelProvider](#jonline-AIModelProvider) | repeated | The requested user&#39;s own AIModelProviders (those they own) -- exactly the distinct `provider`s in `available_ai_models` whose `owner` is the requested user, each with its own `grants` populated (who else can use it). A convenience duplicate of data already in `available_ai_models`, so callers managing a user&#39;s own providers (rename/rekey/delete/grant/ revoke) don&#39;t have to de-duplicate that list themselves. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every model the requested user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers. See [`AvailableAIModel`](#jonline-AvailableAIModel)&#39;s own doc. |
+
+
+
+
+
+
+<a name="jonline-GrantAIModelProviderRequest"></a>
+
+### GrantAIModelProviderRequest
+Request to grant (or reset) another user&#39;s metered access to one of the current user&#39;s
+[`AIModelProvider`](#jonline-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  | The user to grant access to. |
+| ai_model_provider_id | [string](#string) |  | The AIModelProvider to grant access to. Must be owned by the caller. |
+| tokens | [uint64](#uint64) |  | The number of tokens the grantee may spend. Calling this RPC again for the same (`ai_model_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value. |
+| model_names | [string](#string) | repeated | The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#jonline-AIModelProviderGrant) -- if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as `tokens`. |
+
+
+
+
+
+
+<a name="jonline-OpenAICredentials"></a>
+
+### OpenAICredentials
+Credentials for an OpenAI API connection. *Not yet creatable* -- defined for forward compatibility only.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| openai_api_key | [string](#string) | optional | The OpenAI API key. Never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+
+
+
+
+
+
+<a name="jonline-RevokeAIModelProviderRequest"></a>
+
+### RevokeAIModelProviderRequest
+Request to revoke another user&#39;s access to one of the current user&#39;s
+[`AIModelProvider`](#jonline-AIModelProvider)s, the reverse of
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  | The user whose access should be revoked. |
+| ai_model_provider_id | [string](#string) |  | The AIModelProvider to revoke access to. Must be owned by the caller. |
 
 
 

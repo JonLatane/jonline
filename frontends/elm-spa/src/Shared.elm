@@ -141,7 +141,7 @@ type Msg
       -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
       -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
       -- own list/navigate away on success.
-    | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | GotEventSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
@@ -1406,7 +1406,7 @@ sharedUpdate req msg model =
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         source
                         deleteSyncedEvents
-                        |> Task.attempt (GotEventSyncSourceDeleteResult source.id)
+                        |> Task.attempt GotEventSyncSourceDeleteResult
                     )
 
                 Just (ConfirmPostDelete post host) ->
@@ -1471,7 +1471,7 @@ sharedUpdate req msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        GotEventSyncSourceDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotEventSyncSourceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1483,7 +1483,7 @@ sharedUpdate req msg model =
             in
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
-        GotEventSyncSourceDeleteResult _ (Err _) ->
+        GotEventSyncSourceDeleteResult (Err _) ->
             ( model, Cmd.none )
 
         GotEventInstanceSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->

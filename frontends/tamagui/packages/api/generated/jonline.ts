@@ -7,6 +7,14 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import {
+  AIModelProvider,
+  AIModelProviderGrant,
+  DeleteAIModelProviderRequest,
+  GetAIModelProvidersResponse,
+  GrantAIModelProviderRequest,
+  RevokeAIModelProviderRequest,
+} from "./ai_model_providers";
+import {
   AccessTokenRequest,
   AccessTokenResponse,
   CreateAccountRequest,
@@ -153,6 +161,11 @@ export const protobufPackage = "jonline";
  *
  * - **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
  * pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+ *
+ * - **AIModelProviders**: A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
+ * connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+ * them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
+ * AIModelProvider section below.
  *
  * ##### Media
  * [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -398,6 +411,30 @@ export const protobufPackage = "jonline";
  * Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
  * (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
  * [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
+ *
+ * ##### AIModelProvider
+ * An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+ * Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+ * [`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
+ * content, it's metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
+ * variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
+ * `anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)'s
+ * platform credentials, the actual API key is write-only -- accepted on
+ * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) but
+ * never populated back in a response.
+ *
+ * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+ * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+ * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+ * -- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)'s RPCs.
+ *
+ * - **AIModelProviderGrants**: A provider's owner may share metered access to it with other users via
+ * [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+ * Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
+ * `(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+ * removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+ * these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+ * its owner may hand out access to it.
  *
  * #### HTTP Endpoints
  * ##### Internal HTTP server (27705)
@@ -1280,6 +1317,60 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
+    getAIModelProviders: {
+      name: "GetAIModelProviders",
+      requestType: User,
+      requestStream: false,
+      responseType: GetAIModelProvidersResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
+    createAIModelProvider: {
+      name: "CreateAIModelProvider",
+      requestType: AIModelProvider,
+      requestStream: false,
+      responseType: AIModelProvider,
+      responseStream: false,
+      options: {},
+    },
+    /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+    updateAIModelProvider: {
+      name: "UpdateAIModelProvider",
+      requestType: AIModelProvider,
+      requestStream: false,
+      responseType: AIModelProvider,
+      responseStream: false,
+      options: {},
+    },
+    /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
+    deleteAIModelProvider: {
+      name: "DeleteAIModelProvider",
+      requestType: DeleteAIModelProviderRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
+    /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+    grantAIModelProvider: {
+      name: "GrantAIModelProvider",
+      requestType: GrantAIModelProviderRequest,
+      requestStream: false,
+      responseType: AIModelProviderGrant,
+      responseStream: false,
+      options: {},
+    },
+    /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+    revokeAIModelProvider: {
+      name: "RevokeAIModelProvider",
+      requestType: RevokeAIModelProviderRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
@@ -1636,6 +1727,36 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: DeleteEventInstanceSyncDestinationRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
+  /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
+  getAIModelProviders(
+    request: User,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetAIModelProvidersResponse>>;
+  /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
+  createAIModelProvider(
+    request: AIModelProvider,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<AIModelProvider>>;
+  /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+  updateAIModelProvider(
+    request: AIModelProvider,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<AIModelProvider>>;
+  /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
+  deleteAIModelProvider(
+    request: DeleteAIModelProviderRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
+  /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+  grantAIModelProvider(
+    request: GrantAIModelProviderRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<AIModelProviderGrant>>;
+  /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+  revokeAIModelProvider(
+    request: RevokeAIModelProviderRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
@@ -1945,6 +2066,36 @@ export interface JonlineClient<CallOptionsExt = {}> {
   /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
   deleteEventInstanceSyncDestination(
     request: DeepPartial<DeleteEventInstanceSyncDestinationRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
+  getAIModelProviders(
+    request: DeepPartial<User>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetAIModelProvidersResponse>;
+  /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
+  createAIModelProvider(
+    request: DeepPartial<AIModelProvider>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<AIModelProvider>;
+  /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+  updateAIModelProvider(
+    request: DeepPartial<AIModelProvider>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<AIModelProvider>;
+  /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
+  deleteAIModelProvider(
+    request: DeepPartial<DeleteAIModelProviderRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
+  /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+  grantAIModelProvider(
+    request: DeepPartial<GrantAIModelProviderRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<AIModelProviderGrant>;
+  /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
+  revokeAIModelProvider(
+    request: DeepPartial<RevokeAIModelProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */

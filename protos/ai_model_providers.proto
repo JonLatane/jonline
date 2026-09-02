@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/timestamp.proto";
+import "authors.proto";
+
+// One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
+// they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
+// granted them (`grant` set). Only ever defined relative to a user -- see
+// [`User.available_ai_models`](#jonline-User)/[`GetAIModelProvidersResponse.available_ai_models`](#jonline-GetAIModelProvidersResponse).
+// One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
+// provider supports (see the server's own model catalog per provider type); a grantee gets one row
+// per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
+// every model the provider supports if that list is empty.
+message AvailableAIModel {
+  // The exact model name to use when calling the provider (e.g. `"gemini-3.1-flash-image"`).
+  string model_name = 1;
+  // The grant that allows this access, when the current user isn't `provider.owner` themselves.
+  // Unset when the current user owns `provider` outright (full, ungated access -- no grant needed).
+  optional AIModelProviderGrant grant = 2;
+  // The provider this model belongs to. Its own `grants` list is only populated when the current
+  // user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
+  // mere grantee never sees who else has been granted access to a provider they don't own.
+  AIModelProvider provider = 3;
+}
+
+// An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+// key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
+// [`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+// with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
+// those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
+// other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+//
+// Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+// [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user's), and
+// [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
+// [`SyncDestination`](#jonline-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
+// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
+// unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
+// record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
+// call only its owner should be able to make.
+//
+// Currently only the [`GeminiCredentials`](#jonline-GeminiCredentials) variant has a working connection flow;
+// [`OpenAICredentials`](#jonline-OpenAICredentials)/[`AnthropicCredentials`](#jonline-AnthropicCredentials) are defined for
+// forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider).
+message AIModelProvider {
+  // Unique ID for the AIModelProvider.
+  string id = 1;
+  // The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may
+  // rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other
+  // users' access to it.
+  Author owner = 2;
+
+  // A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely
+  // cosmetic -- has no effect on behavior.
+  string name = 3;
+
+  // Identifies which external AI service this provider connects to, and carries that service's credentials. Only
+  // one variant may be set at a time. Only the `gemini_credentials` variant is currently accepted by
+  // [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+  // see each credentials message below for why the actual key/secret is never sent back in a response.
+  oneof provider {
+    // A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation
+    // endpoint, for generating Event posters). The only variant currently creatable.
+    GeminiCredentials gemini_credentials = 4;
+    // An OpenAI API connection. *Not yet creatable.*
+    OpenAICredentials openai_credentials = 5;
+    // An Anthropic API connection. *Not yet creatable.*
+    AnthropicCredentials anthropic_credentials = 6;
+  }
+
+  // Other users this provider's owner has granted metered access to, via
+  // [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) --
+  // see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders).
+  repeated AIModelProviderGrant grants = 14;
+
+  // The time the provider was created.
+  google.protobuf.Timestamp created_at = 15;
+  // The time the provider was last updated (renamed, or had its provider/credentials changed).
+  optional google.protobuf.Timestamp updated_at = 16;
+}
+
+// A grant of metered access to someone else's [`AIModelProvider`](#jonline-AIModelProvider), created/reset via
+// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
+// [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
+// `(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+// again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
+// add to it.
+message AIModelProviderGrant {
+  // The ID of the [`AIModelProvider`](#jonline-AIModelProvider) this grant is for.
+  string ai_model_provider_id = 1;
+  // The user this access was granted to.
+  Author ai_model_grantee = 2;
+
+  // The model name (that will be used to call the provider) that the grantee is allowed to use by this grant.
+  // If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here.
+  // Allows granters to set per-model (or per-model-group) token budgets, e.g. "gpt-4" vs "gpt-3.5-turbo".
+  repeated string model_names = 3;
+
+  // The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via
+  // [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider).
+  uint64 tokens_remaining = 4;
+
+  // The time the grant was first created.
+  google.protobuf.Timestamp created_at = 15;
+  // The time the grant was last updated (i.e. last reset by another
+  // [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call).
+  optional google.protobuf.Timestamp updated_at = 16;
+}
+
+// Response to a request for a user's [`AIModelProvider`](#jonline-AIModelProvider)s.
+message GetAIModelProvidersResponse {
+  // The requested user's own AIModelProviders (those they own) -- exactly the distinct `provider`s
+  // in `available_ai_models` whose `owner` is the requested user, each with its own `grants`
+  // populated (who else can use it). A convenience duplicate of data already in
+  // `available_ai_models`, so callers managing a user's own providers (rename/rekey/delete/grant/
+  // revoke) don't have to de-duplicate that list themselves.
+  repeated AIModelProvider providers = 1;
+  // Every model the requested user may currently call -- their own providers' models, plus any
+  // models granted to them on other users' providers. See [`AvailableAIModel`](#jonline-AvailableAIModel)'s own doc.
+  repeated AvailableAIModel available_ai_models = 2;
+}
+
+// Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s.
+message DeleteAIModelProviderRequest {
+  // The provider to be deleted.
+  AIModelProvider provider = 1;
+}
+
+// Request to grant (or reset) another user's metered access to one of the current user's
+// [`AIModelProvider`](#jonline-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+message GrantAIModelProviderRequest {
+  // The user to grant access to.
+  string user_id = 1;
+  // The AIModelProvider to grant access to. Must be owned by the caller.
+  string ai_model_provider_id = 2;
+  // The number of tokens the grantee may spend. Calling this RPC again for the same
+  // (`ai_model_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value.
+  uint64 tokens = 3;
+  // The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#jonline-AIModelProviderGrant)
+  // -- if empty, allows access to any model the provider supports. Also replaced (not merged)
+  // on a repeat call, same as `tokens`.
+  repeated string model_names = 4;
+}
+
+// Request to revoke another user's access to one of the current user's
+// [`AIModelProvider`](#jonline-AIModelProvider)s, the reverse of
+// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
+message RevokeAIModelProviderRequest {
+  // The user whose access should be revoked.
+  string user_id = 1;
+  // The AIModelProvider to revoke access to. Must be owned by the caller.
+  string ai_model_provider_id = 2;
+}
+
+// Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+// [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
+// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+// Planned use is the Gemini image generation/editing endpoint (`ai.google.dev/gemini-api/docs/image-generation`),
+// to generate/edit Event posters from an Event's own content.
+message GeminiCredentials {
+  // The Gemini API key. Required (and only used) on
+  // [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+  // **never populated in responses**, the same write-only convention as e.g.
+  // [`MastodonAccount.access_token`](#jonline-MastodonAccount) in `sync.proto`.
+  optional string gemini_api_key = 1;
+}
+
+// Credentials for an OpenAI API connection. *Not yet creatable* -- defined for forward compatibility only.
+message OpenAICredentials {
+  // The OpenAI API key. Never populated in responses (see
+  // [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  optional string openai_api_key = 1;
+}
+
+// Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+message AnthropicCredentials {
+  // The Anthropic API key. Never populated in responses (see
+  // [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  optional string anthropic_api_key = 1;
+}

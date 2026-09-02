@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::*;
 // use diesel::internal::operators_macro::FieldAliasMapper;
 use diesel_full_text_search::{
@@ -26,7 +28,7 @@ pub fn get_users(
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     log::info!("GetUsers::request: {:?}", request);
-    let response = match (
+    let mut response = match (
         &user,
         request.to_owned().listing_type.to_proto_user_listing_type(),
         request.to_owned().username,
@@ -74,6 +76,7 @@ pub fn get_users(
         (_, _, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
         _ => Ok(get_all_users(request.to_owned(), user, None, conn)),
     }?;
+    attach_advanced_admin_data(&mut response.users, user, conn);
     // let response = match request.to_owned().username {
     //     Some(_) => get_by_username(request.to_owned(), user, conn),
     //     None => match request.to_owned().user_id {
@@ -267,7 +270,7 @@ fn get_follow_requests(
 // `validate_permission`/`validate_any_permission` already check with `Admin` included, so the
 // self-view check below also passes for an Admin viewing their own profile, with no extra
 // permission needed.
-fn attach_own_sync_destinations(
+pub fn attach_own_sync_destinations(
     proto_user: &mut User,
     row_user: &models::User,
     user: &Option<&models::User>,
@@ -304,6 +307,72 @@ fn attach_own_sync_destinations(
             proto_user.sync_destinations = destinations;
         }
     }
+}
+
+/// Batch-attaches `event_sync_sources`/`available_ai_models` to every user in `users` the viewer is
+/// allowed to see them for (themselves, or an Admin) -- across *every* `GetUsers` listing type, not
+/// just the two single-user lookups `attach_own_sync_destinations` is restricted to (that
+/// restriction is `sync_destinations`' own, unchanged, and doesn't apply here -- see
+/// `protos/users.proto`'s doc on `User.event_sync_sources`/`User.available_ai_models` for why these
+/// two are broader). A handful of queries total, batched via `eq_any`/
+/// `build_available_ai_models_for_users`, regardless of how many users are in `users`.
+pub fn attach_advanced_admin_data(
+    users: &mut [User],
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) {
+    let is_admin = validate_permission(user, Permission::Admin).is_ok();
+    let viewer_id = user.map(|u| u.id);
+    let allowed_ids: Vec<i64> = users
+        .iter()
+        .filter_map(|u| u.id.to_db_id().ok())
+        .filter(|id| is_admin || Some(*id) == viewer_id)
+        .collect();
+    if allowed_ids.is_empty() {
+        return;
+    }
+
+    if let Ok(sources) = models::get_event_sync_sources_for_users(&allowed_ids, conn) {
+        let mut sources_by_user_id: HashMap<i64, Vec<EventSyncSource>> = HashMap::new();
+        for (source, owner) in sources {
+            sources_by_user_id
+                .entry(source.user_id)
+                .or_default()
+                .push(MarshalableEventSyncSource(source, owner).to_proto());
+        }
+        for proto_user in users.iter_mut() {
+            if let Ok(id) = proto_user.id.to_db_id() {
+                if let Some(sources) = sources_by_user_id.remove(&id) {
+                    proto_user.event_sync_sources = sources;
+                }
+            }
+        }
+    }
+
+    if let Ok(mut available) = build_available_ai_models_for_users(&allowed_ids, conn) {
+        for proto_user in users.iter_mut() {
+            if let Ok(id) = proto_user.id.to_db_id() {
+                if let Some((_, available_ai_models)) = available.remove(&id) {
+                    proto_user.available_ai_models = available_ai_models;
+                }
+            }
+        }
+    }
+}
+
+/// Convenience wrapper combining `attach_own_sync_destinations` + `attach_advanced_admin_data` for
+/// a single freshly-authenticated user viewing their own profile -- used by `login.rs`/
+/// `create_account.rs`, where it's always a self-view (there's no separate `viewer` to thread
+/// through: the user who just logged in/signed up *is* `row_user`). Without this, a client would
+/// have to fire a follow-up `GetUsers` lookup just to learn its own `sync_destinations`/
+/// `event_sync_sources`/`available_ai_models` right after authenticating.
+pub fn attach_own_advanced_data(
+    proto_user: &mut User,
+    row_user: &models::User,
+    conn: &mut PgPooledConnection,
+) {
+    attach_own_sync_destinations(proto_user, row_user, &Some(row_user), conn);
+    attach_advanced_admin_data(std::slice::from_mut(proto_user), &Some(row_user), conn);
 }
 
 fn get_by_username(

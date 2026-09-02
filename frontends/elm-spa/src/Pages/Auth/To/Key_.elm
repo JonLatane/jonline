@@ -550,6 +550,9 @@ accountFromLogin server resp =
                 , permissions = user.permissions
                 , realName = user.realName
                 , needsPassword = False
+                , syncDestinations = user.syncDestinations
+                , eventSyncSources = user.eventSyncSources
+                , availableAiModels = user.availableAiModels
                 }
 
         _ ->
