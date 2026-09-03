@@ -187,7 +187,10 @@ type alias Model =
     -- before that (this page used to seed a placeholder `Time.millisToPosix
     -- 0`, i.e. the UNIX epoch, so its very first request asked for events
     -- "ending after 1970") was the actual cause of very old events
-    -- occasionally flashing up on first load.
+    -- occasionally flashing up on first load. Switching to `EventsAfterDate`
+    -- for the first time this session (`TabChanged`) instead seeds this from
+    -- `Shared.UserPreferences.eventsAfter`, if set, rather than wherever
+    -- `UpcomingEvents`' live clock last left it -- see that field's own doc.
     , endsAfter : Maybe Time.Posix
 
     -- Debounces `EndsAfterInputChanged` (500ms) -- mirrors
@@ -302,7 +305,11 @@ type Msg
       -- `DisplayModeChanged` in spirit but needs none of its FLIP
       -- machinery: there's no shared layout to slide between, just a
       -- different fetch cutoff, so this just updates `model.tab`/refetches/
-      -- persists the URL directly. See `tabsView`.
+      -- persists the URL directly. See `tabsView`. Switching into
+      -- `EventsAfterDate` for the first time this session also seeds
+      -- `model.endsAfter` from `Shared.UserPreferences.eventsAfter`, if set
+      -- -- see that field's own doc -- rather than leaving it wherever
+      -- `UpcomingEvents`' live clock last left it.
     | TabChanged EventsTab
       -- The `EventsAfterDate` tab's `<input type="datetime-local">` firing
       -- -- parsed via `Shared.Time.posixFromDateTimeLocalInput`;
@@ -311,7 +318,9 @@ type Msg
       -- else in this module. A valid one switches to that tab too (even if
       -- `UpcomingEvents` was active), per `tabsView`'s own doc. Updates
       -- `model.endsAfter` (so the input/tab reflect it immediately) but
-      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`.
+      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`,
+      -- which also persists it as `Shared.UserPreferences.eventsAfter` once
+      -- the debounce settles.
     | EndsAfterInputChanged String
       -- `EndsAfterInputChanged`'s debounce timer elapsing -- mirrors
       -- `PostsPage.SearchDebounceElapsed` exactly: a no-op if a later edit
@@ -978,15 +987,30 @@ updateInner shared msg model =
                 ( model, Effect.none )
 
             else
-                -- `endsAfter` itself isn't changing (this just starts the
-                -- picker off wherever `UpcomingEvents`' live clock last left
-                -- it) so there's nothing to refetch, just the tab/URL.
-                let
-                    newModel : Model
-                    newModel =
-                        { model | tab = EventsAfterDate }
-                in
-                ( newModel, pushUrl newModel )
+                case shared.userPreferences.eventsAfter of
+                    Just preferredEndsAfter ->
+                        -- The user has a remembered cutoff from a previous
+                        -- session (see `Shared.UserPreferences.eventsAfter`'s
+                        -- own doc) -- start the picker there instead of
+                        -- wherever `UpcomingEvents`' live clock last left
+                        -- `endsAfter`, and (since the cutoff is actually
+                        -- changing this time) refetch with it.
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared { model | tab = EventsAfterDate, endsAfter = Just preferredEndsAfter } (relevantServers shared model)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    Nothing ->
+                        -- `endsAfter` itself isn't changing (this just starts the
+                        -- picker off wherever `UpcomingEvents`' live clock last left
+                        -- it) so there's nothing to refetch, just the tab/URL.
+                        let
+                            newModel : Model
+                            newModel =
+                                { model | tab = EventsAfterDate }
+                        in
+                        ( newModel, pushUrl newModel )
 
         EndsAfterInputChanged raw ->
             case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
@@ -1011,7 +1035,13 @@ updateInner shared msg model =
                     ( refetchedModel, refetchEffect ) =
                         refetchServers shared model (relevantServers shared model)
                 in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+                ( refetchedModel
+                , Effect.batch
+                    [ refetchEffect
+                    , pushUrl refetchedModel
+                    , Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetEventsAfter model.endsAfter))
+                    ]
+                )
 
             else
                 -- A later edit already bumped `endsAfterInputGeneration`

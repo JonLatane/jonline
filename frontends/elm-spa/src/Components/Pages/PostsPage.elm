@@ -49,6 +49,7 @@ import Shared.CreateNewPanel as CreateNewPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -87,11 +88,15 @@ type alias Model =
     -- The cutoff actually sent as `Components.Posts.fetchPosts`' own
     -- `publishedOrCreatedBefore` whenever `tab == PostsBeforeDate` (ignored
     -- entirely on `RecentPosts` -- see `refetchServers`'s own `fetchEffect`).
-    -- `Nothing` until either a `?published_before=` query param resolves it
-    -- on load, or `PostsBeforeDate` is selected for the first time (see
-    -- `GotNow`) -- mirrors `Components.Pages.EventsPage.Model.endsAfter`'s
-    -- own "don't fetch before a real cutoff exists" doc, just seeded once
-    -- rather than kept live.
+    -- Seeded at `init` from (in priority order) a `?published_before=` query
+    -- param, then `Shared.UserPreferences.postsBefore` (the last cutoff the
+    -- user actually typed in, persisted by `PublishedBeforeDebounceElapsed`
+    -- -- a query param never writes it back, see that field's own doc), and
+    -- only falls back to `Nothing` (resolved to "now" once `GotNow` fires,
+    -- see its own doc) when neither is available -- mirrors
+    -- `Components.Pages.EventsPage.Model.endsAfter`'s own "don't fetch
+    -- before a real cutoff exists" doc, just seeded once rather than kept
+    -- live.
     , publishedBefore : Maybe Time.Posix
 
     -- Debounces `PublishedBeforeInputChanged` (500ms) -- mirrors
@@ -164,7 +169,8 @@ type Msg
     | PublishedBeforeInputChanged String
       -- `PublishedBeforeInputChanged`'s debounce timer elapsing -- mirrors
       -- `Components.Pages.EventsPage.EndsAfterDebounceElapsed`'s own stale-
-      -- generation guard.
+      -- generation guard, and (once settled) also persists
+      -- `model.publishedBefore` as `Shared.UserPreferences.postsBefore`.
     | PublishedBeforeDebounceElapsed Int
       -- Sets `model.showSyncDestinations` -- driven by
       -- `Components.Pages.UserProfilePage`'s own "Sync Destinations"
@@ -266,7 +272,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                     ( PostsBeforeDate, Just cutoff )
 
                 Nothing ->
-                    ( RecentPosts, Nothing )
+                    ( RecentPosts, shared.userPreferences.postsBefore )
 
         ( fetchedModel, fetchEffect ) =
             fetchNewServers shared
@@ -297,15 +303,15 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
     --
     -- Also unconditionally kicks off `Task.perform GotNow Time.now` (even
     -- while `tab == RecentPosts`, and even when a `?published_before=` query
-    -- param already resolved one) so `model.publishedBefore` is seeded with
-    -- the page's own load time before the user ever switches to
-    -- `PostsBeforeDate` -- otherwise `recentPostsTabsView`'s date input
-    -- would flash its `Time.millisToPosix 0` fallback (the Unix epoch, so
-    -- 1969/1970 depending on the viewer's own time zone) for the brief
-    -- window between that switch and `GotNow` resolving. `GotNow`'s own
-    -- `model.publishedBefore == Nothing` guard is what makes this a no-op
-    -- once a query-param cutoff (or a still-in-flight earlier `GotNow`) has
-    -- already claimed it.
+    -- param or `Shared.UserPreferences.postsBefore` already resolved one) so
+    -- `model.publishedBefore` is seeded with the page's own load time before
+    -- the user ever switches to `PostsBeforeDate` -- otherwise
+    -- `recentPostsTabsView`'s date input would flash its `Time.millisToPosix
+    -- 0` fallback (the Unix epoch, so 1969/1970 depending on the viewer's
+    -- own time zone) for the brief window between that switch and `GotNow`
+    -- resolving. `GotNow`'s own `model.publishedBefore == Nothing` guard is
+    -- what makes this a no-op once a query-param/preference cutoff (or a
+    -- still-in-flight earlier `GotNow`) has already claimed it.
     ( fetchedModel
     , Effect.batch
         [ fetchEffect
@@ -580,7 +586,13 @@ updateInner shared msg model =
                     ( refetchedModel, refetchEffect ) =
                         refetchServers shared model (relevantServers shared model)
                 in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+                ( refetchedModel
+                , Effect.batch
+                    [ refetchEffect
+                    , pushUrl refetchedModel
+                    , Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPostsBefore model.publishedBefore))
+                    ]
+                )
 
             else
                 -- A later edit already bumped `publishedBeforeInputGeneration`

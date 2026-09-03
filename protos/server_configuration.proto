@@ -293,6 +293,14 @@ enum WebUserInterface {
 
 // If set, should override the default tab set for the Elm navigation on a Jonline instance.
 message CustomNavigationTabSet {
+  // TODO: Have Claude make `home` a `CustomHomePage` instead of a `CustomNavigationTab`.
+  //       Then, make `CustomNavigationTab` have a `path`, obviating the need for `CustomNavigationTabWithPath` and simplifying the API.
+  //       i.e., replace `CustomNavigationTab`/`CustomNavigationTabWithPath` with `CustomHomePage`/`CustomNavigationTab` where `CustomNavigationTab` has a `path` field. 
+  //       **This will be a breaking change, so it should be done carefully.**
+  //       THIS WILL REQUIRE A DATA MIGRATION/TRANSFORMATION OR WILL BREAK EXISTING SERVERS.
+  //       A ROBUST SOLUTION WOULD BE REAL NICE! Thank you!
+  //       Somewhere in the EventsPage UI, I think "Search posts and events" will become "Search events" for the cases when the home page is a fixed post, and we have the events strip.
+
   // Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
   // Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
   optional CustomNavigationTab home = 1;
@@ -314,6 +322,29 @@ enum NavigationTab {
   PEOPLE_TAB = 12;
   // The About tab.
   ABOUT_TAB = 15;
+}
+
+message CustomHomePage {
+  oneof target {
+    // Only HOME_TAB, EVENTS_TAB or POSTS_TAB are valid here. (Or a custom post_id.)
+    NavigationTab tab = 1;
+    // Links to a specific Post (e.g. for a custom business site's page).
+    string post_id = 2;
+  }
+
+  // Posts to pin to the top of the home tab. These should load like StarredPanel 
+  // (i.e., conditionally load Event data with Posts).
+  repeated string pinned_post_ids = 3;
+
+  // Rendering the events strip above the POSTS_TAB is... actually, fundamentally just having home
+  // be HOME_TAB. (Has no effect if tab = HOME_TAB.)
+  bool show_events_strip = 4;
+
+  // If not set, defaults the event strip to the calendar UI.
+  bool default_events_strip_to_row = 5;
+  
+  CalendarDisplayMode default_events_strip_calendar_display_mode = 6;
+
 }
 
 // Either one of the app's predefined tabs, or a Post
