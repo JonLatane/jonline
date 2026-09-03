@@ -2,9 +2,15 @@ module UI.CustomNav exposing
     ( CustomTab
     , CustomTabIcon(..)
     , CustomTabTarget(..)
+    , HomePageConfig
     , TargetKind(..)
+    , allCalendarDisplayModes
+    , calendarDisplayModeFromText
+    , calendarDisplayModeText
+    , defaultHomePageConfig
     , defaultPathFor
     , effectiveTabs
+    , homeConfig
     , homeTarget
     , homeTargetKindFromText
     , iconView
@@ -15,7 +21,7 @@ module UI.CustomNav exposing
     , targetKind
     , targetKindFromText
     , targetKindText
-    , toProtoHome
+    , toProtoHomeConfig
     , toProtoTab
     )
 
@@ -37,7 +43,9 @@ hand-edited/future-versioned config).
 import Gen.Route as Route exposing (Route)
 import Html exposing (Html, a, img, span, text)
 import Html.Attributes exposing (alt, attribute, href, src, title)
-import Proto.Jonline exposing (CustomNavigationTab, CustomNavigationTabSet, defaultCustomNavigationTab)
+import Proto.Jonline exposing (CustomHomePage, CustomNavigationTab, CustomNavigationTabSet)
+import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Proto.Jonline.CustomHomePage.Target as ProtoHomeTarget
 import Proto.Jonline.CustomNavigationTab.Icon as ProtoIcon
 import Proto.Jonline.CustomNavigationTab.Target as ProtoTarget
 import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
@@ -50,8 +58,8 @@ import UI.Classes exposing (classes, hostnameToCSSClass)
 tabs (`NavigationTab`), a specific Post (e.g. a custom business site's page), or a user profile
 (`TargetProfile`, from the proto's `is_profile` branch) -- unlike the other two, that branch carries
 no payload of its own on the wire (just `bool`), so which profile is entirely determined by the
-enclosing `CustomNavigationTabWithPath.path` (see `CustomTab.path`'s own doc) -- the tab's url *is*
-that username's own `/:username` route, just also featured as a styled nav tab.
+enclosing `CustomNavigationTab.path` (see `CustomTab.path`'s own doc) -- the tab's url *is* that
+username's own `/:username` route, just also featured as a styled nav tab.
 -}
 type CustomTabTarget
     = TargetTab NavigationTab
@@ -67,13 +75,12 @@ type CustomTabIcon
     | MediaIcon String
 
 
-{-| Elm-land mirror of `CustomNavigationTab` itself, plus its enclosing `CustomNavigationTabWithPath`'s
-own `path` -- `target`/`icon` are always present (unlike the proto's own `Maybe`-wrapped `oneof`s),
-since `fromProtoTab` already filters out anything missing either. `title` stays `Maybe String`, same
-meaning as the proto's own field ("defaults to the predefined tab's/Post's title if unset" -- see
-`resolvedTitle`). `path` is admin-editable (see `SettingsTab.customTabEditChip`'s own Path
-`<input>`) but not yet wired into actual routing (see `routeFor`'s own doc) -- it's carried here
-purely so the editor can show/edit the real saved value instead of re-deriving a stand-in every time.
+{-| Elm-land mirror of `CustomNavigationTab` -- `target`/`icon` are always present (unlike the
+proto's own `Maybe`-wrapped `oneof`s), since `fromProtoTab` already filters out anything missing
+either. `title` stays `Maybe String`, same meaning as the proto's own field ("defaults to the
+predefined tab's/Post's title if unset" -- see `resolvedTitle`). `path` is admin-editable (see
+`CustomTabsConfiguration.customTabEditChip`'s own Path `<input>`) and is what `Pages.UsernameOrCustomTab_`
+actually matches a request's url segment against (`customTabFor`) -- see `navLinkView`'s own doc.
 -}
 type alias CustomTab =
     { target : CustomTabTarget
@@ -132,10 +139,10 @@ toProtoIcon icon =
             ProtoIcon.IconMediaId mediaId
 
 
-fromProtoTab : String -> CustomNavigationTab -> Maybe CustomTab
-fromProtoTab path proto =
+fromProtoTab : CustomNavigationTab -> Maybe CustomTab
+fromProtoTab proto =
     Maybe.map2
-        (\target icon -> { target = fromProtoTarget target, icon = fromProtoIcon icon, title = proto.title, path = path })
+        (\target icon -> { target = fromProtoTarget target, icon = fromProtoIcon icon, title = proto.title, path = proto.path })
         proto.target
         proto.icon
 
@@ -145,48 +152,164 @@ toProtoTab tab =
     { target = Just (toProtoTarget tab.target)
     , icon = Just (toProtoIcon tab.icon)
     , title = tab.title
+    , path = tab.path
     }
 
 
-{-| `CustomNavigationTabSet.home`'s own `target`, resolved down to a `CustomTabTarget` -- `TargetTab
-HOMETAB` for either an unset `customTabs`/`home`, or a `home` explicitly saved back to the default
-`HOME_TAB` target (the two are indistinguishable, and don't need to be -- both mean "render the
-ordinary Home feed"). Unlike a regular `CustomTab`, `home`'s own proto doc restricts `target` to
-`HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB` or a `post_id` (never `IsProfile`, and its `icon`/`title` are
-never set/read either -- see `SettingsTab`'s own `homeEditChip`, the only place that ever constructs
-one), so a `TargetProfile` here (a malformed/hand-edited config -- see `fromProtoTarget`'s own doc)
-falls back to `TargetTab HOMETAB` the same as unset. Used by `Pages.Home_` (to render the matching
-top-level Events/Posts page or Post instead of the normal combined feed) and
-`Components.Pages.PostsPage.customNavPostIds` (to exclude a `TargetPost` override's Post from the
-generic listing, the same way a regular `TargetPost` tab's own Post already is).
+{-| Elm-land mirror of `CustomHomePage` -- `target` resolves down to a `CustomTabTarget` the same
+way a regular `CustomTab.target` does (`homeConfig`'s own doc covers the `TargetProfile`-can't-
+happen distinction), and the four `*EventsStrip*`-ish fields carry straight across unchanged.
+Always a concrete record (never `Maybe`), same reasoning as `CustomTab` itself: `homeConfig` already
+resolves an unset `customTabs`/`home` down to `defaultHomePageConfig`.
 -}
-homeTarget : Maybe CustomNavigationTabSet -> CustomTabTarget
-homeTarget maybeSet =
-    case maybeSet |> Maybe.andThen .home |> Maybe.andThen .target |> Maybe.map fromProtoTarget of
-        Just TargetProfile ->
-            TargetTab HOMETAB
-
-        Just target ->
-            target
-
-        Nothing ->
-            TargetTab HOMETAB
+type alias HomePageConfig =
+    { target : CustomTabTarget
+    , pinnedPostIds : List String
+    , showEventsStrip : Bool
+    , defaultEventsStripToRow : Bool
+    , defaultEventsStripCalendarDisplayMode : CalendarDisplayMode
+    }
 
 
-{-| `homeTarget`'s inverse -- `Nothing` (the default, unset `home`) for `TargetTab HOMETAB`,
-otherwise a `CustomNavigationTab` with only `target` set (`icon`/`title` stay unset, per
-`homeTarget`'s own doc). `SettingsTab.applyCustomTabs` is the only caller; `TargetProfile` is never
-actually passed in practice (`SettingsTab.homeTargetSelect` only ever offers
-`selectableHomeTargetKinds`), but round-trips through same as any other target if it somehow were.
+{-| The all-default `HomePageConfig` -- `TargetTab HOMETAB` (the ordinary combined Events+Posts
+feed), no pinned posts, no events strip override. `homeConfig`'s own fallback for an unset
+`customTabs`/`home`, and `toProtoHomeConfig`'s own "nothing to save" check.
 -}
-toProtoHome : CustomTabTarget -> Maybe CustomNavigationTab
-toProtoHome target =
+defaultHomePageConfig : HomePageConfig
+defaultHomePageConfig =
+    { target = TargetTab HOMETAB
+    , pinnedPostIds = []
+    , showEventsStrip = False
+    , defaultEventsStripToRow = False
+    , defaultEventsStripCalendarDisplayMode = CALENDARDISPLAYWEEK
+    }
+
+
+{-| Every `CalendarDisplayMode` `CustomTabsConfiguration.homeEditChip`'s own "Default Events Strip
+Calendar Display Mode" `<select>` offers -- mirrors `SettingsTab.allCalendarDisplayModes`'
+identical list (kept here too, rather than exposed from `SettingsTab`, so this module doesn't need
+to reach into a sibling editor just for an enum's own UI labels).
+-}
+allCalendarDisplayModes : List CalendarDisplayMode
+allCalendarDisplayModes =
+    [ CALENDARDISPLAYWEEK, CALENDARDISPLAYMONTH, CALENDARDISPLAYDAY ]
+
+
+{-| Short UI labels for `CalendarDisplayMode` -- mirrors `SettingsTab.calendarDisplayModeText`
+exactly (see that function's own doc for why "Week"/"Month"/"Day" rather than the enum's own verbose
+protobuf names).
+-}
+calendarDisplayModeText : CalendarDisplayMode -> String
+calendarDisplayModeText mode =
+    case mode of
+        CALENDARDISPLAYWEEK ->
+            "Week"
+
+        CALENDARDISPLAYMONTH ->
+            "Month"
+
+        CALENDARDISPLAYDAY ->
+            "Day"
+
+        CalendarDisplayModeUnrecognized_ _ ->
+            "Week"
+
+
+calendarDisplayModeFromText : String -> Maybe CalendarDisplayMode
+calendarDisplayModeFromText text =
+    allCalendarDisplayModes |> List.filter (\mode -> calendarDisplayModeText mode == text) |> List.head
+
+
+fromProtoHomeTarget : ProtoHomeTarget.Target NavigationTab String -> CustomTabTarget
+fromProtoHomeTarget target =
+    case target of
+        ProtoHomeTarget.Tab navTab ->
+            TargetTab navTab
+
+        ProtoHomeTarget.PostId postId ->
+            TargetPost postId
+
+
+{-| `fromProtoHomeTarget`'s inverse -- `Nothing` for `TargetTab HOMETAB` (the default, matching
+`CustomHomePage.target`'s own unset-means-Home convention) and, since `CustomHomePage.target`'s
+`oneof` has no `IsProfile`-equivalent branch to construct at all, also for `TargetProfile` (a
+malformed/hand-edited config, or `homeConfig`'s own decode fallback landing back here on
+`toProtoHomeConfig` -- either way, "no representable override" collapses to the same "no override"
+`Home_.elm` already treats an unset `target` as, same as `TargetTab HOMETAB` itself). Never actually
+reached for `TargetProfile` in practice -- `CustomTabsConfiguration.homeTargetSelect` only ever
+offers `selectableHomeTargetKinds`, which excludes it.
+-}
+toProtoHomeTarget : CustomTabTarget -> Maybe (ProtoHomeTarget.Target NavigationTab String)
+toProtoHomeTarget target =
     case target of
         TargetTab HOMETAB ->
             Nothing
 
-        _ ->
-            Just { defaultCustomNavigationTab | target = Just (toProtoTarget target) }
+        TargetTab navTab ->
+            Just (ProtoHomeTarget.Tab navTab)
+
+        TargetPost postId ->
+            Just (ProtoHomeTarget.PostId postId)
+
+        TargetProfile ->
+            Nothing
+
+
+{-| `CustomNavigationTabSet.home`, resolved down to a concrete `HomePageConfig` -- `defaultHomePageConfig`
+for either an unset `customTabs`/`home`, or a `home` explicitly saved back to every default value
+(the two are indistinguishable, and don't need to be). `home.target`'s own proto doc restricts it to
+`HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB` or a `post_id` -- unlike the old `CustomNavigationTab`-typed
+`home` this replaces, `CustomHomePage.target`'s `oneof` has no `IsProfile` branch to even construct,
+so there's no malformed-`TargetProfile` case left to guard against here (see `toProtoHomeTarget`'s
+own doc for the analogous encode-side non-issue). Used by `Pages.Home_` (to render the matching
+top-level Events/Posts page or Post instead of the normal combined feed, and to apply the events-strip
+overrides above it) and `Components.Pages.PostsPage.customNavPostIds` (to exclude a `TargetPost`
+override's own Post, and every `pinnedPostIds` entry, from the generic listing, the same way a
+regular `TargetPost` tab's own Post already is).
+-}
+homeConfig : Maybe CustomNavigationTabSet -> HomePageConfig
+homeConfig maybeSet =
+    case maybeSet |> Maybe.andThen .home of
+        Nothing ->
+            defaultHomePageConfig
+
+        Just home ->
+            { target = home.target |> Maybe.map fromProtoHomeTarget |> Maybe.withDefault (TargetTab HOMETAB)
+            , pinnedPostIds = home.pinnedPostIds
+            , showEventsStrip = home.showEventsStrip
+            , defaultEventsStripToRow = home.defaultEventsStripToRow
+            , defaultEventsStripCalendarDisplayMode = home.defaultEventsStripCalendarDisplayMode
+            }
+
+
+{-| `homeConfig`'s inverse -- `Nothing` (the default, unset `home`) when every field is still
+`defaultHomePageConfig`'s own value, otherwise a `CustomHomePage` carrying all four fields straight
+across (not just `target`, unlike the old `toProtoHome` this replaces -- e.g. `pinnedPostIds` set
+while `target` is still the default `TargetTab HOMETAB` must still round-trip, not get silently
+dropped). `CustomTabsConfiguration.applyCustomTabs` is the only caller.
+-}
+toProtoHomeConfig : HomePageConfig -> Maybe CustomHomePage
+toProtoHomeConfig config =
+    if config == defaultHomePageConfig then
+        Nothing
+
+    else
+        Just
+            { target = toProtoHomeTarget config.target
+            , pinnedPostIds = config.pinnedPostIds
+            , showEventsStrip = config.showEventsStrip
+            , defaultEventsStripToRow = config.defaultEventsStripToRow
+            , defaultEventsStripCalendarDisplayMode = config.defaultEventsStripCalendarDisplayMode
+            }
+
+
+{-| `(homeConfig maybeSet).target` -- for the many callers that only ever cared about `home`'s
+`target` and predate `HomePageConfig`'s other fields (`Components.Pages.PostsPage.customNavPostIds`;
+`Pages.Home_` itself now reads the full `homeConfig` instead, see its own doc).
+-}
+homeTarget : Maybe CustomNavigationTabSet -> CustomTabTarget
+homeTarget maybeSet =
+    (homeConfig maybeSet).target
 
 
 {-| The four tabs Jonline shows today (`Events`/`Posts`/`People`/`About`, see `UI.eventsLink`/etc.)
@@ -215,7 +338,7 @@ effectiveTabs maybeSet =
             defaultTabs
 
         Just set ->
-            set.tabs |> List.filterMap (\entry -> entry.customTab |> Maybe.andThen (fromProtoTab entry.path))
+            set.tabs |> List.filterMap fromProtoTab
 
 
 navigationTabLabel : NavigationTab -> String

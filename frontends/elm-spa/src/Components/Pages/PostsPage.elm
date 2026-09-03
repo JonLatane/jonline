@@ -684,13 +684,13 @@ relevantServers shared model =
 
 
 {-| Every Post id `frontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost` tab
-at, plus its `home` override's own Post id if it's using one (`UI.CustomNav.homeTarget`) -- what
-`GotServerPosts` excludes from `frontendHost`'s own feed (see its own doc), so a Post already
-featured via its own custom nav tab/url (or as the custom Home page) doesn't also clutter the
-generic listing. Applies to every known server, not just `mainFrontendHost` -- each federated
-server's custom nav tabs only ever point at that same server's own posts (see
-`UI.CustomNav.CustomTabTarget`'s own doc), so this is looked up per-`frontendHost` rather than once
-for `mainFrontendHost`.
+at, plus its `home` override's own Post id if it's using one, and every one of its `pinnedPostIds`
+(`UI.CustomNav.homeConfig`) -- what `GotServerPosts` excludes from `frontendHost`'s own feed (see
+its own doc), so a Post already featured via its own custom nav tab/url (or as the custom Home page,
+or pinned to its top) doesn't also clutter the generic listing. Applies to every known server, not
+just `mainFrontendHost` -- each federated server's custom nav tabs only ever point at that same
+server's own posts (see `UI.CustomNav.CustomTabTarget`'s own doc), so this is looked up
+per-`frontendHost` rather than once for `mainFrontendHost`.
 -}
 customNavPostIds : Shared.Model -> String -> Set String
 customNavPostIds shared frontendHost =
@@ -715,14 +715,18 @@ customNavPostIds shared frontendHost =
                                 Nothing
                     )
 
+        home : CustomNav.HomePageConfig
+        home =
+            CustomNav.homeConfig maybeCustomTabs
+
         homePostIds : List String
         homePostIds =
-            case CustomNav.homeTarget maybeCustomTabs of
+            case home.target of
                 CustomNav.TargetPost postId ->
-                    [ postId ]
+                    postId :: home.pinnedPostIds
 
                 _ ->
-                    []
+                    home.pinnedPostIds
     in
     homePostIds ++ tabPostIds |> Set.fromList
 

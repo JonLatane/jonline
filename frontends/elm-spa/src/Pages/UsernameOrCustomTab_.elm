@@ -5,7 +5,7 @@ module Pages.UsernameOrCustomTab_ exposing (Model, Msg, fromShared, page)
 against `mainFrontendHost`'s own `ServerConfiguration.customTabs.tabs` (see `UI.CustomNav`) for a
 tab whose own `path` matches this segment -- letting an admin mount `Events`/`Posts`/`People`/`About`/
 a specific `Post` at a custom URL (e.g. a band's `/weddings` pointing at a Post about their wedding
-offerings), per `CustomNavigationTabWithPath`'s own doc. That check runs first (`customTabFor`),
+offerings), per `CustomNavigationTab.path`'s own doc. That check runs first (`customTabFor`),
 before the username fallback below, so a configured custom path always wins over a same-named user.
 
 The top-level catch-all this implies means any username (or un-embeddable custom path) colliding
@@ -148,7 +148,7 @@ initEmbedded : Shared.Model -> Request.With Params -> CustomNav.CustomTab -> ( M
 initEmbedded shared req tab =
     case tab.target of
         CustomNav.TargetTab EVENTSTAB ->
-            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing
+            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing
                 |> Tuple.mapFirst EmbeddedEvents
                 |> Tuple.mapSecond (Effect.map EventsMsg)
 

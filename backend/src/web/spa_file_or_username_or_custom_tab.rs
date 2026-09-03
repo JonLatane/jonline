@@ -23,7 +23,7 @@ use super::{
 };
 
 /// Fallback for arbitrary Tamagui build assets and username/custom-tab shortcut links (e.g.
-/// "/someuser", or "/weddings" once a `CustomNavigationTabWithPath` in the server's own
+/// "/someuser", or "/weddings" once a `CustomNavigationTab` in the server's own
 /// `ServerConfiguration.custom_tabs` claims that path -- see `Pages.UsernameOrCustomTab_` on the
 /// Elm side, which this route's social-preview rendering mirrors). Reading the asset itself is
 /// always done from the Tamagui build directories (that's the only place these static exports
@@ -104,7 +104,7 @@ pub async fn spa_file_or_username_or_custom_tab(
 
                         let path_segment = path.split('/').last().unwrap().to_string();
 
-                        // A `CustomNavigationTabWithPath` claiming this exact segment (see
+                        // A `CustomNavigationTab` claiming this exact segment (see
                         // `UI.CustomNav.customTabFor` on the Elm side, which this mirrors) wins
                         // over the plain username lookup below, regardless of what it targets --
                         // `Pages.UsernameOrCustomTab_.customTabFor` always runs before its own
@@ -113,8 +113,7 @@ pub async fn spa_file_or_username_or_custom_tab(
                         let matched_tab = configuration
                             .custom_tabs
                             .as_ref()
-                            .and_then(|set| set.tabs.iter().find(|t| t.path == path_segment))
-                            .and_then(|t| t.custom_tab.as_ref());
+                            .and_then(|set| set.tabs.iter().find(|t| t.path == path_segment));
 
                         let (page_title, description, avatar) = match matched_tab
                             .and_then(|ct| ct.target.as_ref())

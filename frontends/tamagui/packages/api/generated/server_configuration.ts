@@ -615,24 +615,67 @@ export interface ServerLogo {
   wideMediaIdDark?: string | undefined;
 }
 
-/** If set, should override the default tab set for the Elm navigation on a Jonline instance. */
+/** If set, overrides the default tab set for the Elm navigation on a Jonline instance. */
 export interface CustomNavigationTabSet {
-  /**
-   * Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-   * Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
-   */
+  /** Overrides the default `/` page. If unset, the default combined Events+Posts feed is used. */
   home?:
-    | CustomNavigationTab
+    | CustomHomePage
     | undefined;
   /**
    * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
-   * Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-   * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
+   * Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
+   * matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+   * `/` itself is overridden via `home` above instead.
    */
-  tabs: CustomNavigationTabWithPath[];
+  tabs: CustomNavigationTab[];
 }
 
-/** Either one of the app's predefined tabs, or a Post */
+/**
+ * Overrides the app's default `/` page (the combined Events+Posts feed). Unlike a regular
+ * `CustomNavigationTab`, this has no `path` (it's always `/`) and no `icon`/`title` (the server's
+ * own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+ */
+export interface CustomHomePage {
+  /**
+   * What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
+   * or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+   */
+  tab?:
+    | NavigationTab
+    | undefined;
+  /** Renders a specific Post at `/` instead (e.g. for a custom business site's landing page). */
+  postId?:
+    | string
+    | undefined;
+  /**
+   * Posts pinned to the top of the home page, above its normal content. Loaded the same way
+   * `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post's
+   * backing Event alongside it, for posts that are actually about an Event).
+   */
+  pinnedPostIds: string[];
+  /**
+   * Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always
+   * shows above its Posts feed) above `target`'s own content. Only meaningful when `target` is
+   * `post_id` (pins an Events strip above that single Post); has no effect when `target` is
+   * unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving
+   * `target` unset).
+   */
+  showEventsStrip: boolean;
+  /**
+   * Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
+   * `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+   * row/list layout instead of a calendar. Unset defaults to the calendar layout.
+   */
+  defaultEventsStripToRow: boolean;
+  /**
+   * Whenever an Events strip is shown above other content (see `default_events_strip_to_row`'s own
+   * doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which
+   * granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`.
+   */
+  defaultEventsStripCalendarDisplayMode: CalendarDisplayMode;
+}
+
+/** Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`. */
 export interface CustomNavigationTab {
   /** Links to one of the app's predefined tabs/pages. */
   tab?:
@@ -643,10 +686,8 @@ export interface CustomNavigationTab {
     | string
     | undefined;
   /**
-   * Only relevant for a CustomNavigationTabWithPath.
-   * Indicates the custom tab is for an actual user profile.
-   * Ultimately this isn't very "custom" in terms of the URL scheme, just
-   * it being a navigation tab.
+   * Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+   * Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
    */
   isProfile?:
     | boolean
@@ -660,24 +701,16 @@ export interface CustomNavigationTab {
     | string
     | undefined;
   /** Title shown for the tab. Defaults to the predefined tab's/Post's title if unset. */
-  title?: string | undefined;
-}
-
-/**
- * A custom navigation tab with an associated path.
- * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
- * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
- */
-export interface CustomNavigationTabWithPath {
-  /** The tab to show at this path. */
-  customTab:
-    | CustomNavigationTab
+  title?:
+    | string
     | undefined;
   /**
-   * e.g. link `/gigs` or `/shows` for a band to the "Events" page.
-   * Or, /weddings to a Post about wedding offerings for a custom business site.
-   * Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-   * `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
+   * The path this tab is reachable at, e.g. `gigs` for a band's `/gigs` link to the Events page,
+   * or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
+   * `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
+   * each may only be used to (redundantly) point back at its own matching predefined tab, never
+   * remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+   * overridden via `CustomNavigationTabSet.home` instead.
    */
   path: string;
 }
@@ -2115,10 +2148,10 @@ function createBaseCustomNavigationTabSet(): CustomNavigationTabSet {
 export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
   encode(message: CustomNavigationTabSet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.home !== undefined) {
-      CustomNavigationTab.encode(message.home, writer.uint32(10).fork()).join();
+      CustomHomePage.encode(message.home, writer.uint32(10).fork()).join();
     }
     for (const v of message.tabs) {
-      CustomNavigationTabWithPath.encode(v!, writer.uint32(18).fork()).join();
+      CustomNavigationTab.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -2135,7 +2168,7 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
             break;
           }
 
-          message.home = CustomNavigationTab.decode(reader, reader.uint32());
+          message.home = CustomHomePage.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -2143,7 +2176,7 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
             break;
           }
 
-          message.tabs.push(CustomNavigationTabWithPath.decode(reader, reader.uint32()));
+          message.tabs.push(CustomNavigationTab.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -2157,20 +2190,18 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
 
   fromJSON(object: any): CustomNavigationTabSet {
     return {
-      home: isSet(object.home) ? CustomNavigationTab.fromJSON(object.home) : undefined,
-      tabs: globalThis.Array.isArray(object?.tabs)
-        ? object.tabs.map((e: any) => CustomNavigationTabWithPath.fromJSON(e))
-        : [],
+      home: isSet(object.home) ? CustomHomePage.fromJSON(object.home) : undefined,
+      tabs: globalThis.Array.isArray(object?.tabs) ? object.tabs.map((e: any) => CustomNavigationTab.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: CustomNavigationTabSet): unknown {
     const obj: any = {};
     if (message.home !== undefined) {
-      obj.home = CustomNavigationTab.toJSON(message.home);
+      obj.home = CustomHomePage.toJSON(message.home);
     }
     if (message.tabs?.length) {
-      obj.tabs = message.tabs.map((e) => CustomNavigationTabWithPath.toJSON(e));
+      obj.tabs = message.tabs.map((e) => CustomNavigationTab.toJSON(e));
     }
     return obj;
   },
@@ -2181,9 +2212,164 @@ export const CustomNavigationTabSet: MessageFns<CustomNavigationTabSet> = {
   fromPartial<I extends Exact<DeepPartial<CustomNavigationTabSet>, I>>(object: I): CustomNavigationTabSet {
     const message = createBaseCustomNavigationTabSet();
     message.home = (object.home !== undefined && object.home !== null)
-      ? CustomNavigationTab.fromPartial(object.home)
+      ? CustomHomePage.fromPartial(object.home)
       : undefined;
-    message.tabs = object.tabs?.map((e) => CustomNavigationTabWithPath.fromPartial(e)) || [];
+    message.tabs = object.tabs?.map((e) => CustomNavigationTab.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCustomHomePage(): CustomHomePage {
+  return {
+    tab: undefined,
+    postId: undefined,
+    pinnedPostIds: [],
+    showEventsStrip: false,
+    defaultEventsStripToRow: false,
+    defaultEventsStripCalendarDisplayMode: 0,
+  };
+}
+
+export const CustomHomePage: MessageFns<CustomHomePage> = {
+  encode(message: CustomHomePage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tab !== undefined) {
+      writer.uint32(8).int32(message.tab);
+    }
+    if (message.postId !== undefined) {
+      writer.uint32(18).string(message.postId);
+    }
+    for (const v of message.pinnedPostIds) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.showEventsStrip !== false) {
+      writer.uint32(32).bool(message.showEventsStrip);
+    }
+    if (message.defaultEventsStripToRow !== false) {
+      writer.uint32(40).bool(message.defaultEventsStripToRow);
+    }
+    if (message.defaultEventsStripCalendarDisplayMode !== 0) {
+      writer.uint32(48).int32(message.defaultEventsStripCalendarDisplayMode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CustomHomePage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCustomHomePage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.tab = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.postId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pinnedPostIds.push(reader.string());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.showEventsStrip = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.defaultEventsStripToRow = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.defaultEventsStripCalendarDisplayMode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CustomHomePage {
+    return {
+      tab: isSet(object.tab) ? navigationTabFromJSON(object.tab) : undefined,
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      pinnedPostIds: globalThis.Array.isArray(object?.pinnedPostIds)
+        ? object.pinnedPostIds.map((e: any) => globalThis.String(e))
+        : [],
+      showEventsStrip: isSet(object.showEventsStrip) ? globalThis.Boolean(object.showEventsStrip) : false,
+      defaultEventsStripToRow: isSet(object.defaultEventsStripToRow)
+        ? globalThis.Boolean(object.defaultEventsStripToRow)
+        : false,
+      defaultEventsStripCalendarDisplayMode: isSet(object.defaultEventsStripCalendarDisplayMode)
+        ? calendarDisplayModeFromJSON(object.defaultEventsStripCalendarDisplayMode)
+        : 0,
+    };
+  },
+
+  toJSON(message: CustomHomePage): unknown {
+    const obj: any = {};
+    if (message.tab !== undefined) {
+      obj.tab = navigationTabToJSON(message.tab);
+    }
+    if (message.postId !== undefined) {
+      obj.postId = message.postId;
+    }
+    if (message.pinnedPostIds?.length) {
+      obj.pinnedPostIds = message.pinnedPostIds;
+    }
+    if (message.showEventsStrip !== false) {
+      obj.showEventsStrip = message.showEventsStrip;
+    }
+    if (message.defaultEventsStripToRow !== false) {
+      obj.defaultEventsStripToRow = message.defaultEventsStripToRow;
+    }
+    if (message.defaultEventsStripCalendarDisplayMode !== 0) {
+      obj.defaultEventsStripCalendarDisplayMode = calendarDisplayModeToJSON(
+        message.defaultEventsStripCalendarDisplayMode,
+      );
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CustomHomePage>, I>>(base?: I): CustomHomePage {
+    return CustomHomePage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CustomHomePage>, I>>(object: I): CustomHomePage {
+    const message = createBaseCustomHomePage();
+    message.tab = object.tab ?? undefined;
+    message.postId = object.postId ?? undefined;
+    message.pinnedPostIds = object.pinnedPostIds?.map((e) => e) || [];
+    message.showEventsStrip = object.showEventsStrip ?? false;
+    message.defaultEventsStripToRow = object.defaultEventsStripToRow ?? false;
+    message.defaultEventsStripCalendarDisplayMode = object.defaultEventsStripCalendarDisplayMode ?? 0;
     return message;
   },
 };
@@ -2196,6 +2382,7 @@ function createBaseCustomNavigationTab(): CustomNavigationTab {
     emojiIcon: undefined,
     iconMediaId: undefined,
     title: undefined,
+    path: "",
   };
 }
 
@@ -2218,6 +2405,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     }
     if (message.title !== undefined) {
       writer.uint32(98).string(message.title);
+    }
+    if (message.path !== "") {
+      writer.uint32(106).string(message.path);
     }
     return writer;
   },
@@ -2277,6 +2467,14 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
           message.title = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2294,6 +2492,7 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
       emojiIcon: isSet(object.emojiIcon) ? globalThis.String(object.emojiIcon) : undefined,
       iconMediaId: isSet(object.iconMediaId) ? globalThis.String(object.iconMediaId) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : undefined,
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
     };
   },
 
@@ -2317,6 +2516,9 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     if (message.title !== undefined) {
       obj.title = message.title;
     }
+    if (message.path !== "") {
+      obj.path = message.path;
+    }
     return obj;
   },
 
@@ -2331,83 +2533,6 @@ export const CustomNavigationTab: MessageFns<CustomNavigationTab> = {
     message.emojiIcon = object.emojiIcon ?? undefined;
     message.iconMediaId = object.iconMediaId ?? undefined;
     message.title = object.title ?? undefined;
-    return message;
-  },
-};
-
-function createBaseCustomNavigationTabWithPath(): CustomNavigationTabWithPath {
-  return { customTab: undefined, path: "" };
-}
-
-export const CustomNavigationTabWithPath: MessageFns<CustomNavigationTabWithPath> = {
-  encode(message: CustomNavigationTabWithPath, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.customTab !== undefined) {
-      CustomNavigationTab.encode(message.customTab, writer.uint32(10).fork()).join();
-    }
-    if (message.path !== "") {
-      writer.uint32(18).string(message.path);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): CustomNavigationTabWithPath {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCustomNavigationTabWithPath();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.customTab = CustomNavigationTab.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.path = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CustomNavigationTabWithPath {
-    return {
-      customTab: isSet(object.customTab) ? CustomNavigationTab.fromJSON(object.customTab) : undefined,
-      path: isSet(object.path) ? globalThis.String(object.path) : "",
-    };
-  },
-
-  toJSON(message: CustomNavigationTabWithPath): unknown {
-    const obj: any = {};
-    if (message.customTab !== undefined) {
-      obj.customTab = CustomNavigationTab.toJSON(message.customTab);
-    }
-    if (message.path !== "") {
-      obj.path = message.path;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CustomNavigationTabWithPath>, I>>(base?: I): CustomNavigationTabWithPath {
-    return CustomNavigationTabWithPath.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<CustomNavigationTabWithPath>, I>>(object: I): CustomNavigationTabWithPath {
-    const message = createBaseCustomNavigationTabWithPath();
-    message.customTab = (object.customTab !== undefined && object.customTab !== null)
-      ? CustomNavigationTab.fromPartial(object.customTab)
-      : undefined;
     message.path = object.path ?? "";
     return message;
   },

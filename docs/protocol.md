@@ -105,9 +105,9 @@
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [CustomHomePage](#jonline-CustomHomePage)
     - [CustomNavigationTab](#jonline-CustomNavigationTab)
     - [CustomNavigationTabSet](#jonline-CustomNavigationTabSet)
-    - [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath)
     - [EventSettings](#jonline-EventSettings)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
@@ -260,13 +260,15 @@ SPA/Flutter Web alternatives).
 
 ##### Custom Tabs
 [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet) (`custom_tabs`) lets a server admin override the Elm
-UI&#39;s default navigation. `home` replaces just the `HOME_TAB` entry (linking to a predefined tab or a specific
-Post); `tabs` (repeated [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) replaces the
-`EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to a custom URL `path`. Each
-[`CustomNavigationTab`](#jonline-CustomNavigationTab) targets either a predefined
-[`NavigationTab`](#jonline-NavigationTab), a Post ID, or (path-only) a user profile, with its own emoji- or
-Media-backed icon and optional title override. This is currently UI-only -- the built-in `/events`, `/posts/`,
-`/people`, and `/about` paths themselves can&#39;t be remapped.
+UI&#39;s default navigation. `home` (a [`CustomHomePage`](#jonline-CustomHomePage)) replaces `/` itself -- a
+predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
+above it; `tabs` (repeated [`CustomNavigationTab`](#jonline-CustomNavigationTab)) replaces the
+`EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to its own custom URL (`path`). Each
+`CustomNavigationTab` targets either a predefined [`NavigationTab`](#jonline-NavigationTab), a Post ID, or
+(path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. `path` is
+fully live -- the Elm SPA actually routes it (`Pages.UsernameOrCustomTab_`), not just previews it -- except for
+the built-in `/events`, `/posts`, `/people`, and `/about` paths themselves, which stay reserved for their own
+matching predefined tab and can&#39;t be remapped elsewhere.
 
 ##### Anonymous, Default, and Basic User Permission Sets
 Three [`Permission`](#jonline-Permission) lists set the server&#39;s baseline access, each enforced independently of
@@ -846,7 +848,7 @@ looked up by the current `username` instead -- lighter-weight to link to, but le
 since a username can change. This single path segment is also the server&#39;s last-resort catch-all, resolved in
 order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
 wins outright; then, if none matched, an admin-configured custom tab path (see
-[`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- e.g. a band mounting their Events
+[`CustomNavigationTab`](#jonline-CustomNavigationTab).path) -- e.g. a band mounting their Events
 listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
 set of reserved names can never be reached this way, only via `/user/{userId}`.
 
@@ -2738,20 +2740,43 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="jonline-CustomHomePage"></a>
+
+### CustomHomePage
+Overrides the app&#39;s default `/` page (the combined Events&#43;Posts feed). Unlike a regular
+`CustomNavigationTab`, this has no `path` (it&#39;s always `/`) and no `icon`/`title` (the server&#39;s
+own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tab | [NavigationTab](#jonline-NavigationTab) |  | What `/` renders. Only `HOME_TAB` (the default, combined Events&#43;Posts feed), `EVENTS_TAB`, or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`. |
+| post_id | [string](#string) |  | Renders a specific Post at `/` instead (e.g. for a custom business site&#39;s landing page). |
+| pinned_post_ids | [string](#string) | repeated | Posts pinned to the top of the home page, above its normal content. Loaded the same way `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post&#39;s backing Event alongside it, for posts that are actually about an Event). |
+| show_events_strip | [bool](#bool) |  | Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always shows above its Posts feed) above `target`&#39;s own content. Only meaningful when `target` is `post_id` (pins an Events strip above that single Post); has no effect when `target` is unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving `target` unset). |
+| default_events_strip_to_row | [bool](#bool) |  | Whenever an Events strip is shown above other content -- `show_events_strip` is set, or `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its row/list layout instead of a calendar. Unset defaults to the calendar layout. |
+| default_events_strip_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | Whenever an Events strip is shown above other content (see `default_events_strip_to_row`&#39;s own doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`. |
+
+
+
+
+
+
 <a name="jonline-CustomNavigationTab"></a>
 
 ### CustomNavigationTab
-Either one of the app&#39;s predefined tabs, or a Post
+Either one of the app&#39;s predefined tabs, a Post, or a user profile -- reachable at `path`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | tab | [NavigationTab](#jonline-NavigationTab) |  | Links to one of the app&#39;s predefined tabs/pages. |
 | post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
-| is_profile | [bool](#bool) |  | Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
+| is_profile | [bool](#bool) |  | Indicates the custom tab is for an actual user profile -- `path` is that user&#39;s username. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
 | emoji_icon | [string](#string) |  | Emoji shown as the tab&#39;s icon (e.g. &#34;🎪&#34;). |
 | icon_media_id | [string](#string) |  | Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab&#39;s icon. |
 | title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
+| path | [string](#string) |  | The path this tab is reachable at, e.g. `gigs` for a band&#39;s `/gigs` link to the Events page, or `weddings` for a Post about wedding offerings. Must be distinct across every entry in `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved -- each may only be used to (redundantly) point back at its own matching predefined tab, never remapped to a different tab or a Post. `/` itself is never reachable this way -- it&#39;s overridden via `CustomNavigationTabSet.home` instead. |
 
 
 
@@ -2761,31 +2786,13 @@ Either one of the app&#39;s predefined tabs, or a Post
 <a name="jonline-CustomNavigationTabSet"></a>
 
 ### CustomNavigationTabSet
-If set, should override the default tab set for the Elm navigation on a Jonline instance.
+If set, overrides the default tab set for the Elm navigation on a Jonline instance.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`. |
-| tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
-
-
-
-
-
-
-<a name="jonline-CustomNavigationTabWithPath"></a>
-
-### CustomNavigationTabWithPath
-A custom navigation tab with an associated path.
-Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-`/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| custom_tab | [CustomNavigationTab](#jonline-CustomNavigationTab) |  | The tab to show at this path. |
-| path | [string](#string) |  | e.g. link `/gigs` or `/shows` for a band to the &#34;Events&#34; page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
+| home | [CustomHomePage](#jonline-CustomHomePage) | optional | Overrides the default `/` page. If unset, the default combined Events&#43;Posts feed is used. |
+| tabs | [CustomNavigationTab](#jonline-CustomNavigationTab) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path&#39;s own doc. `/` itself is overridden via `home` above instead. |
 
 
 

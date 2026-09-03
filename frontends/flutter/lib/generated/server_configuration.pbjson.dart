@@ -354,8 +354,8 @@ final $typed_data.Uint8List serverLogoDescriptor = $convert.base64Decode(
 const CustomNavigationTabSet$json = {
   '1': 'CustomNavigationTabSet',
   '2': [
-    {'1': 'home', '3': 1, '4': 1, '5': 11, '6': '.jonline.CustomNavigationTab', '9': 0, '10': 'home', '17': true},
-    {'1': 'tabs', '3': 2, '4': 3, '5': 11, '6': '.jonline.CustomNavigationTabWithPath', '10': 'tabs'},
+    {'1': 'home', '3': 1, '4': 1, '5': 11, '6': '.jonline.CustomHomePage', '9': 0, '10': 'home', '17': true},
+    {'1': 'tabs', '3': 2, '4': 3, '5': 11, '6': '.jonline.CustomNavigationTab', '10': 'tabs'},
   ],
   '8': [
     {'1': '_home'},
@@ -364,9 +364,35 @@ const CustomNavigationTabSet$json = {
 
 /// Descriptor for `CustomNavigationTabSet`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customNavigationTabSetDescriptor = $convert.base64Decode(
-    'ChZDdXN0b21OYXZpZ2F0aW9uVGFiU2V0EjUKBGhvbWUYASABKAsyHC5qb25saW5lLkN1c3RvbU'
-    '5hdmlnYXRpb25UYWJIAFIEaG9tZYgBARI4CgR0YWJzGAIgAygLMiQuam9ubGluZS5DdXN0b21O'
-    'YXZpZ2F0aW9uVGFiV2l0aFBhdGhSBHRhYnNCBwoFX2hvbWU=');
+    'ChZDdXN0b21OYXZpZ2F0aW9uVGFiU2V0EjAKBGhvbWUYASABKAsyFy5qb25saW5lLkN1c3RvbU'
+    'hvbWVQYWdlSABSBGhvbWWIAQESMAoEdGFicxgCIAMoCzIcLmpvbmxpbmUuQ3VzdG9tTmF2aWdh'
+    'dGlvblRhYlIEdGFic0IHCgVfaG9tZQ==');
+
+@$core.Deprecated('Use customHomePageDescriptor instead')
+const CustomHomePage$json = {
+  '1': 'CustomHomePage',
+  '2': [
+    {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.jonline.NavigationTab', '9': 0, '10': 'tab'},
+    {'1': 'post_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'postId'},
+    {'1': 'pinned_post_ids', '3': 3, '4': 3, '5': 9, '10': 'pinnedPostIds'},
+    {'1': 'show_events_strip', '3': 4, '4': 1, '5': 8, '10': 'showEventsStrip'},
+    {'1': 'default_events_strip_to_row', '3': 5, '4': 1, '5': 8, '10': 'defaultEventsStripToRow'},
+    {'1': 'default_events_strip_calendar_display_mode', '3': 6, '4': 1, '5': 14, '6': '.jonline.CalendarDisplayMode', '10': 'defaultEventsStripCalendarDisplayMode'},
+  ],
+  '8': [
+    {'1': 'target'},
+  ],
+};
+
+/// Descriptor for `CustomHomePage`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List customHomePageDescriptor = $convert.base64Decode(
+    'Cg5DdXN0b21Ib21lUGFnZRIqCgN0YWIYASABKA4yFi5qb25saW5lLk5hdmlnYXRpb25UYWJIAF'
+    'IDdGFiEhkKB3Bvc3RfaWQYAiABKAlIAFIGcG9zdElkEiYKD3Bpbm5lZF9wb3N0X2lkcxgDIAMo'
+    'CVINcGlubmVkUG9zdElkcxIqChFzaG93X2V2ZW50c19zdHJpcBgEIAEoCFIPc2hvd0V2ZW50c1'
+    'N0cmlwEjwKG2RlZmF1bHRfZXZlbnRzX3N0cmlwX3RvX3JvdxgFIAEoCFIXZGVmYXVsdEV2ZW50'
+    'c1N0cmlwVG9Sb3cSdwoqZGVmYXVsdF9ldmVudHNfc3RyaXBfY2FsZW5kYXJfZGlzcGxheV9tb2'
+    'RlGAYgASgOMhwuam9ubGluZS5DYWxlbmRhckRpc3BsYXlNb2RlUiVkZWZhdWx0RXZlbnRzU3Ry'
+    'aXBDYWxlbmRhckRpc3BsYXlNb2RlQggKBnRhcmdldA==');
 
 @$core.Deprecated('Use customNavigationTabDescriptor instead')
 const CustomNavigationTab$json = {
@@ -378,6 +404,7 @@ const CustomNavigationTab$json = {
     {'1': 'emoji_icon', '3': 10, '4': 1, '5': 9, '9': 1, '10': 'emojiIcon'},
     {'1': 'icon_media_id', '3': 11, '4': 1, '5': 9, '9': 1, '10': 'iconMediaId'},
     {'1': 'title', '3': 12, '4': 1, '5': 9, '9': 2, '10': 'title', '17': true},
+    {'1': 'path', '3': 13, '4': 1, '5': 9, '10': 'path'},
   ],
   '8': [
     {'1': 'target'},
@@ -392,21 +419,7 @@ final $typed_data.Uint8List customNavigationTabDescriptor = $convert.base64Decod
     'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKaXNfcHJvZmlsZRgDIAEo'
     'CEgAUglpc1Byb2ZpbGUSHwoKZW1vamlfaWNvbhgKIAEoCUgBUgllbW9qaUljb24SJAoNaWNvbl'
     '9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCgV0aXRsZRgMIAEoCUgCUgV0aXRsZYgB'
-    'AUIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
-
-@$core.Deprecated('Use customNavigationTabWithPathDescriptor instead')
-const CustomNavigationTabWithPath$json = {
-  '1': 'CustomNavigationTabWithPath',
-  '2': [
-    {'1': 'custom_tab', '3': 1, '4': 1, '5': 11, '6': '.jonline.CustomNavigationTab', '10': 'customTab'},
-    {'1': 'path', '3': 2, '4': 1, '5': 9, '10': 'path'},
-  ],
-};
-
-/// Descriptor for `CustomNavigationTabWithPath`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List customNavigationTabWithPathDescriptor = $convert.base64Decode(
-    'ChtDdXN0b21OYXZpZ2F0aW9uVGFiV2l0aFBhdGgSOwoKY3VzdG9tX3RhYhgBIAEoCzIcLmpvbm'
-    'xpbmUuQ3VzdG9tTmF2aWdhdGlvblRhYlIJY3VzdG9tVGFiEhIKBHBhdGgYAiABKAlSBHBhdGg=');
+    'ARISCgRwYXRoGA0gASgJUgRwYXRoQggKBnRhcmdldEIGCgRpY29uQggKBl90aXRsZQ==');
 
 @$core.Deprecated('Use serverColorsDescriptor instead')
 const ServerColors$json = {

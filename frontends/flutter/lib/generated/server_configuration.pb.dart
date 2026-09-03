@@ -1229,11 +1229,11 @@ class ServerLogo extends $pb.GeneratedMessage {
   void clearWideMediaIdDark() => clearField(4);
 }
 
-/// If set, should override the default tab set for the Elm navigation on a Jonline instance.
+/// If set, overrides the default tab set for the Elm navigation on a Jonline instance.
 class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet({
-    CustomNavigationTab? home,
-    $core.Iterable<CustomNavigationTabWithPath>? tabs,
+    CustomHomePage? home,
+    $core.Iterable<CustomNavigationTab>? tabs,
   }) {
     final $result = create();
     if (home != null) {
@@ -1249,8 +1249,8 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabSet', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'home', subBuilder: CustomNavigationTab.create)
-    ..pc<CustomNavigationTabWithPath>(2, _omitFieldNames ? '' : 'tabs', $pb.PbFieldType.PM, subBuilder: CustomNavigationTabWithPath.create)
+    ..aOM<CustomHomePage>(1, _omitFieldNames ? '' : 'home', subBuilder: CustomHomePage.create)
+    ..pc<CustomNavigationTab>(2, _omitFieldNames ? '' : 'tabs', $pb.PbFieldType.PM, subBuilder: CustomNavigationTab.create)
     ..hasRequiredFields = false
   ;
 
@@ -1275,24 +1275,173 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   static CustomNavigationTabSet getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabSet>(create);
   static CustomNavigationTabSet? _defaultInstance;
 
-  /// Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-  /// Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
+  /// Overrides the default `/` page. If unset, the default combined Events+Posts feed is used.
   @$pb.TagNumber(1)
-  CustomNavigationTab get home => $_getN(0);
+  CustomHomePage get home => $_getN(0);
   @$pb.TagNumber(1)
-  set home(CustomNavigationTab v) { setField(1, v); }
+  set home(CustomHomePage v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasHome() => $_has(0);
   @$pb.TagNumber(1)
   void clearHome() => clearField(1);
   @$pb.TagNumber(1)
-  CustomNavigationTab ensureHome() => $_ensure(0);
+  CustomHomePage ensureHome() => $_ensure(0);
 
   /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
-  /// Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
+  /// Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
+  /// matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+  /// `/` itself is overridden via `home` above instead.
   @$pb.TagNumber(2)
-  $core.List<CustomNavigationTabWithPath> get tabs => $_getList(1);
+  $core.List<CustomNavigationTab> get tabs => $_getList(1);
+}
+
+enum CustomHomePage_Target {
+  tab, 
+  postId, 
+  notSet
+}
+
+/// Overrides the app's default `/` page (the combined Events+Posts feed). Unlike a regular
+/// `CustomNavigationTab`, this has no `path` (it's always `/`) and no `icon`/`title` (the server's
+/// own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+class CustomHomePage extends $pb.GeneratedMessage {
+  factory CustomHomePage({
+    NavigationTab? tab,
+    $core.String? postId,
+    $core.Iterable<$core.String>? pinnedPostIds,
+    $core.bool? showEventsStrip,
+    $core.bool? defaultEventsStripToRow,
+    CalendarDisplayMode? defaultEventsStripCalendarDisplayMode,
+  }) {
+    final $result = create();
+    if (tab != null) {
+      $result.tab = tab;
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (pinnedPostIds != null) {
+      $result.pinnedPostIds.addAll(pinnedPostIds);
+    }
+    if (showEventsStrip != null) {
+      $result.showEventsStrip = showEventsStrip;
+    }
+    if (defaultEventsStripToRow != null) {
+      $result.defaultEventsStripToRow = defaultEventsStripToRow;
+    }
+    if (defaultEventsStripCalendarDisplayMode != null) {
+      $result.defaultEventsStripCalendarDisplayMode = defaultEventsStripCalendarDisplayMode;
+    }
+    return $result;
+  }
+  CustomHomePage._() : super();
+  factory CustomHomePage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CustomHomePage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static const $core.Map<$core.int, CustomHomePage_Target> _CustomHomePage_TargetByTag = {
+    1 : CustomHomePage_Target.tab,
+    2 : CustomHomePage_Target.postId,
+    0 : CustomHomePage_Target.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomHomePage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..e<NavigationTab>(1, _omitFieldNames ? '' : 'tab', $pb.PbFieldType.OE, defaultOrMaker: NavigationTab.HOME_TAB, valueOf: NavigationTab.valueOf, enumValues: NavigationTab.values)
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
+    ..pPS(3, _omitFieldNames ? '' : 'pinnedPostIds')
+    ..aOB(4, _omitFieldNames ? '' : 'showEventsStrip')
+    ..aOB(5, _omitFieldNames ? '' : 'defaultEventsStripToRow')
+    ..e<CalendarDisplayMode>(6, _omitFieldNames ? '' : 'defaultEventsStripCalendarDisplayMode', $pb.PbFieldType.OE, defaultOrMaker: CalendarDisplayMode.CALENDAR_DISPLAY_WEEK, valueOf: CalendarDisplayMode.valueOf, enumValues: CalendarDisplayMode.values)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CustomHomePage clone() => CustomHomePage()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CustomHomePage copyWith(void Function(CustomHomePage) updates) => super.copyWith((message) => updates(message as CustomHomePage)) as CustomHomePage;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CustomHomePage create() => CustomHomePage._();
+  CustomHomePage createEmptyInstance() => create();
+  static $pb.PbList<CustomHomePage> createRepeated() => $pb.PbList<CustomHomePage>();
+  @$core.pragma('dart2js:noInline')
+  static CustomHomePage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomHomePage>(create);
+  static CustomHomePage? _defaultInstance;
+
+  CustomHomePage_Target whichTarget() => _CustomHomePage_TargetByTag[$_whichOneof(0)]!;
+  void clearTarget() => clearField($_whichOneof(0));
+
+  /// What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
+  /// or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+  @$pb.TagNumber(1)
+  NavigationTab get tab => $_getN(0);
+  @$pb.TagNumber(1)
+  set tab(NavigationTab v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTab() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTab() => clearField(1);
+
+  /// Renders a specific Post at `/` instead (e.g. for a custom business site's landing page).
+  @$pb.TagNumber(2)
+  $core.String get postId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set postId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPostId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPostId() => clearField(2);
+
+  /// Posts pinned to the top of the home page, above its normal content. Loaded the same way
+  /// `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post's
+  /// backing Event alongside it, for posts that are actually about an Event).
+  @$pb.TagNumber(3)
+  $core.List<$core.String> get pinnedPostIds => $_getList(2);
+
+  /// Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always
+  /// shows above its Posts feed) above `target`'s own content. Only meaningful when `target` is
+  /// `post_id` (pins an Events strip above that single Post); has no effect when `target` is
+  /// unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving
+  /// `target` unset).
+  @$pb.TagNumber(4)
+  $core.bool get showEventsStrip => $_getBF(3);
+  @$pb.TagNumber(4)
+  set showEventsStrip($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasShowEventsStrip() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearShowEventsStrip() => clearField(4);
+
+  /// Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
+  /// `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+  /// row/list layout instead of a calendar. Unset defaults to the calendar layout.
+  @$pb.TagNumber(5)
+  $core.bool get defaultEventsStripToRow => $_getBF(4);
+  @$pb.TagNumber(5)
+  set defaultEventsStripToRow($core.bool v) { $_setBool(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasDefaultEventsStripToRow() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDefaultEventsStripToRow() => clearField(5);
+
+  /// Whenever an Events strip is shown above other content (see `default_events_strip_to_row`'s own
+  /// doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which
+  /// granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`.
+  @$pb.TagNumber(6)
+  CalendarDisplayMode get defaultEventsStripCalendarDisplayMode => $_getN(5);
+  @$pb.TagNumber(6)
+  set defaultEventsStripCalendarDisplayMode(CalendarDisplayMode v) { setField(6, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasDefaultEventsStripCalendarDisplayMode() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearDefaultEventsStripCalendarDisplayMode() => clearField(6);
 }
 
 enum CustomNavigationTab_Target {
@@ -1308,7 +1457,7 @@ enum CustomNavigationTab_Icon {
   notSet
 }
 
-/// Either one of the app's predefined tabs, or a Post
+/// Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`.
 class CustomNavigationTab extends $pb.GeneratedMessage {
   factory CustomNavigationTab({
     NavigationTab? tab,
@@ -1317,6 +1466,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     $core.String? emojiIcon,
     $core.String? iconMediaId,
     $core.String? title,
+    $core.String? path,
   }) {
     final $result = create();
     if (tab != null) {
@@ -1336,6 +1486,9 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     }
     if (title != null) {
       $result.title = title;
+    }
+    if (path != null) {
+      $result.path = path;
     }
     return $result;
   }
@@ -1363,6 +1516,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     ..aOS(10, _omitFieldNames ? '' : 'emojiIcon')
     ..aOS(11, _omitFieldNames ? '' : 'iconMediaId')
     ..aOS(12, _omitFieldNames ? '' : 'title')
+    ..aOS(13, _omitFieldNames ? '' : 'path')
     ..hasRequiredFields = false
   ;
 
@@ -1413,10 +1567,8 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
-  /// Only relevant for a CustomNavigationTabWithPath.
-  /// Indicates the custom tab is for an actual user profile.
-  /// Ultimately this isn't very "custom" in terms of the URL scheme, just
-  /// it being a navigation tab.
+  /// Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+  /// Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
   @$pb.TagNumber(3)
   $core.bool get isProfile => $_getBF(2);
   @$pb.TagNumber(3)
@@ -1455,80 +1607,21 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   $core.bool hasTitle() => $_has(5);
   @$pb.TagNumber(12)
   void clearTitle() => clearField(12);
-}
 
-/// A custom navigation tab with an associated path.
-/// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-/// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-class CustomNavigationTabWithPath extends $pb.GeneratedMessage {
-  factory CustomNavigationTabWithPath({
-    CustomNavigationTab? customTab,
-    $core.String? path,
-  }) {
-    final $result = create();
-    if (customTab != null) {
-      $result.customTab = customTab;
-    }
-    if (path != null) {
-      $result.path = path;
-    }
-    return $result;
-  }
-  CustomNavigationTabWithPath._() : super();
-  factory CustomNavigationTabWithPath.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CustomNavigationTabWithPath.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabWithPath', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'customTab', subBuilder: CustomNavigationTab.create)
-    ..aOS(2, _omitFieldNames ? '' : 'path')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CustomNavigationTabWithPath clone() => CustomNavigationTabWithPath()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CustomNavigationTabWithPath copyWith(void Function(CustomNavigationTabWithPath) updates) => super.copyWith((message) => updates(message as CustomNavigationTabWithPath)) as CustomNavigationTabWithPath;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static CustomNavigationTabWithPath create() => CustomNavigationTabWithPath._();
-  CustomNavigationTabWithPath createEmptyInstance() => create();
-  static $pb.PbList<CustomNavigationTabWithPath> createRepeated() => $pb.PbList<CustomNavigationTabWithPath>();
-  @$core.pragma('dart2js:noInline')
-  static CustomNavigationTabWithPath getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabWithPath>(create);
-  static CustomNavigationTabWithPath? _defaultInstance;
-
-  /// The tab to show at this path.
-  @$pb.TagNumber(1)
-  CustomNavigationTab get customTab => $_getN(0);
-  @$pb.TagNumber(1)
-  set customTab(CustomNavigationTab v) { setField(1, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasCustomTab() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearCustomTab() => clearField(1);
-  @$pb.TagNumber(1)
-  CustomNavigationTab ensureCustomTab() => $_ensure(0);
-
-  /// e.g. link `/gigs` or `/shows` for a band to the "Events" page.
-  /// Or, /weddings to a Post about wedding offerings for a custom business site.
-  /// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-  @$pb.TagNumber(2)
-  $core.String get path => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set path($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasPath() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearPath() => clearField(2);
+  /// The path this tab is reachable at, e.g. `gigs` for a band's `/gigs` link to the Events page,
+  /// or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
+  /// `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
+  /// each may only be used to (redundantly) point back at its own matching predefined tab, never
+  /// remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+  /// overridden via `CustomNavigationTabSet.home` instead.
+  @$pb.TagNumber(13)
+  $core.String get path => $_getSZ(6);
+  @$pb.TagNumber(13)
+  set path($core.String v) { $_setString(6, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasPath() => $_has(6);
+  @$pb.TagNumber(13)
+  void clearPath() => clearField(13);
 }
 
 /// Color in ARGB hex format (i.e `0xAARRGGBB`).

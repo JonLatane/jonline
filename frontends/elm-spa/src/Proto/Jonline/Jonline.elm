@@ -86,13 +86,15 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
  ##### Custom Tabs
  [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet) (`custom_tabs`) lets a server admin override the Elm
- UI's default navigation. `home` replaces just the `HOME_TAB` entry (linking to a predefined tab or a specific
- Post); `tabs` (repeated [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) replaces the
- `EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to a custom URL `path`. Each
- [`CustomNavigationTab`](#jonline-CustomNavigationTab) targets either a predefined
- [`NavigationTab`](#jonline-NavigationTab), a Post ID, or (path-only) a user profile, with its own emoji- or
- Media-backed icon and optional title override. This is currently UI-only -- the built-in `/events`, `/posts/`,
- `/people`, and `/about` paths themselves can't be remapped.
+ UI's default navigation. `home` (a [`CustomHomePage`](#jonline-CustomHomePage)) replaces `/` itself -- a
+ predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
+ above it; `tabs` (repeated [`CustomNavigationTab`](#jonline-CustomNavigationTab)) replaces the
+ `EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to its own custom URL (`path`). Each
+ `CustomNavigationTab` targets either a predefined [`NavigationTab`](#jonline-NavigationTab), a Post ID, or
+ (path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. `path` is
+ fully live -- the Elm SPA actually routes it (`Pages.UsernameOrCustomTab_`), not just previews it -- except for
+ the built-in `/events`, `/posts`, `/people`, and `/about` paths themselves, which stay reserved for their own
+ matching predefined tab and can't be remapped elsewhere.
 
  ##### Anonymous, Default, and Basic User Permission Sets
  Three [`Permission`](#jonline-Permission) lists set the server's baseline access, each enforced independently of
@@ -672,7 +674,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
  order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
  wins outright; then, if none matched, an admin-configured custom tab path (see
- [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- e.g. a band mounting their Events
+ [`CustomNavigationTab`](#jonline-CustomNavigationTab).path) -- e.g. a band mounting their Events
  listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
  set of reserved names can never be reached this way, only via `/user/{userId}`.
 

@@ -347,13 +347,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#server_configuration-proto">server_configuration.proto</a></p>
         <ul>
           <li>
+            <p><a href="#jonline-CustomHomePage">CustomHomePage</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></p>
           </li>
           <li>
             <p><a href="#jonline-CustomNavigationTabSet">CustomNavigationTabSet</a></p>
-          </li>
-          <li>
-            <p><a href="#jonline-CustomNavigationTabWithPath">CustomNavigationTabWithPath</a></p>
           </li>
           <li>
             <p><a href="#jonline-EventSettings">EventSettings</a></p>
@@ -583,13 +583,15 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h5 id="custom-tabs"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom-tabs"><span class="octicon octicon-link"></span></a>Custom Tabs</h5>
     <p>
       <a href="#jonline-CustomNavigationTabSet"><code>CustomNavigationTabSet</code></a> (<code>custom_tabs</code>) lets a server admin override the Elm
-      UI's default navigation. <code>home</code> replaces just the <code>HOME_TAB</code> entry (linking to a predefined tab or a specific
-      Post); <code>tabs</code> (repeated <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) replaces the
-      <code>EVENTS_TAB</code>/<code>POSTS_TAB</code>/<code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code> set entirely, each pinned to a custom URL <code>path</code>. Each
-      <a href="#jonline-CustomNavigationTab"><code>CustomNavigationTab</code></a> targets either a predefined
-      <a href="#jonline-NavigationTab"><code>NavigationTab</code></a>, a Post ID, or (path-only) a user profile, with its own emoji- or
-      Media-backed icon and optional title override. This is currently UI-only -- the built-in <code>/events</code>, <code>/posts/</code>,
-      <code>/people</code>, and <code>/about</code> paths themselves can't be remapped.
+      UI's default navigation. <code>home</code> (a <a href="#jonline-CustomHomePage"><code>CustomHomePage</code></a>) replaces <code>/</code> itself -- a
+      predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
+      above it; <code>tabs</code> (repeated <a href="#jonline-CustomNavigationTab"><code>CustomNavigationTab</code></a>) replaces the
+      <code>EVENTS_TAB</code>/<code>POSTS_TAB</code>/<code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code> set entirely, each pinned to its own custom URL (<code>path</code>). Each
+      <code>CustomNavigationTab</code> targets either a predefined <a href="#jonline-NavigationTab"><code>NavigationTab</code></a>, a Post ID, or
+      (path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. <code>path</code> is
+      fully live -- the Elm SPA actually routes it (<code>Pages.UsernameOrCustomTab_</code>), not just previews it -- except for
+      the built-in <code>/events</code>, <code>/posts</code>, <code>/people</code>, and <code>/about</code> paths themselves, which stay reserved for their own
+      matching predefined tab and can't be remapped elsewhere.
     </p>
     <h5 id="anonymous-default-and-basic-user-permission-sets"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymous-default-and-basic-user-permission-sets"><span class="octicon octicon-link"></span></a>Anonymous, Default, and Basic User Permission Sets</h5>
     <p>
@@ -1290,7 +1292,7 @@ directory</a> is (<code>{name}</code> denotes a
       since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
       order: first any actual matching build asset or other explicit route above (e.g. <code>/posts</code>, <code>/user/{userId}</code>)
       wins outright; then, if none matched, an admin-configured custom tab path (see
-      <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) -- e.g. a band mounting their Events
+      <a href="#jonline-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path) -- e.g. a band mounting their Events
       listing at <code>/gigs</code> -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
       set of reserved names can never be reached this way, only via <code>/user/{userId}</code>.
     </p>
@@ -5609,9 +5611,64 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="server_configuration-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="jonline-CustomHomePage"></a></p>
+    <h3 id="customhomepage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customhomepage"><span class="octicon octicon-link"></span></a>CustomHomePage</h3>
+    <p>
+      Overrides the app's default <code>/</code> page (the combined Events+Posts feed). Unlike a regular
+      <code>CustomNavigationTab</code>, this has no <code>path</code> (it's always <code>/</code>) and no <code>icon</code>/<code>title</code> (the server's
+      own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>tab</td>
+          <td><a href="#jonline-NavigationTab">NavigationTab</a></td>
+          <td></td>
+          <td>What <code>/</code> renders. Only <code>HOME_TAB</code> (the default, combined Events+Posts feed), <code>EVENTS_TAB</code>, or <code>POSTS_TAB</code> are valid here -- never <code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code>.</td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Renders a specific Post at <code>/</code> instead (e.g. for a custom business site's landing page).</td>
+        </tr>
+        <tr>
+          <td>pinned_post_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Posts pinned to the top of the home page, above its normal content. Loaded the same way <code>StarredPanel</code> loads its own starred posts (i.e., conditionally fetching each pinned post's backing Event alongside it, for posts that are actually about an Event).</td>
+        </tr>
+        <tr>
+          <td>show_events_strip</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Shows the Events strip (the same horizontal upcoming-events row the default <code>HOME_TAB</code> always shows above its Posts feed) above <code>target</code>'s own content. Only meaningful when <code>target</code> is <code>post_id</code> (pins an Events strip above that single Post); has no effect when <code>target</code> is unset/<code>HOME_TAB</code> (the strip is already shown) or <code>POSTS_TAB</code> (equivalent to just leaving <code>target</code> unset).</td>
+        </tr>
+        <tr>
+          <td>default_events_strip_to_row</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whenever an Events strip is shown above other content -- <code>show_events_strip</code> is set, or <code>target</code> is unset/<code>HOME_TAB</code> (whose strip is always shown) -- whether it defaults to its row/list layout instead of a calendar. Unset defaults to the calendar layout.</td>
+        </tr>
+        <tr>
+          <td>default_events_strip_calendar_display_mode</td>
+          <td><a href="#jonline-CalendarDisplayMode">CalendarDisplayMode</a></td>
+          <td></td>
+          <td>Whenever an Events strip is shown above other content (see <code>default_events_strip_to_row</code>'s own doc) and defaults to the calendar layout (<code>default_events_strip_to_row</code> is unset), which granularity it opens to. Defaults to <code>CALENDAR_DISPLAY_WEEK</code>.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-CustomNavigationTab"></a></p>
     <h3 id="customnavigationtab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtab"><span class="octicon octicon-link"></span></a>CustomNavigationTab</h3>
-    <p>Either one of the app's predefined tabs, or a Post</p>
+    <p>Either one of the app's predefined tabs, a Post, or a user profile -- reachable at <code>path</code>.</p>
     <table>
       <thead>
         <tr>
@@ -5638,7 +5695,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>is_profile</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.</td>
+          <td>Indicates the custom tab is for an actual user profile -- <code>path</code> is that user's username. Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.</td>
         </tr>
         <tr>
           <td>emoji_icon</td>
@@ -5658,11 +5715,17 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.</td>
         </tr>
+        <tr>
+          <td>path</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The path this tab is reachable at, e.g. <code>gigs</code> for a band's <code>/gigs</code> link to the Events page, or <code>weddings</code> for a Post about wedding offerings. Must be distinct across every entry in <code>CustomNavigationTabSet.tabs</code>. Note: <code>events</code>, <code>posts</code>, <code>people</code>, and <code>about</code> are reserved -- each may only be used to (redundantly) point back at its own matching predefined tab, never remapped to a different tab or a Post. <code>/</code> itself is never reachable this way -- it's overridden via <code>CustomNavigationTabSet.home</code> instead.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-CustomNavigationTabSet"></a></p>
     <h3 id="customnavigationtabset"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtabset"><span class="octicon octicon-link"></span></a>CustomNavigationTabSet</h3>
-    <p>If set, should override the default tab set for the Elm navigation on a Jonline instance.</p>
+    <p>If set, overrides the default tab set for the Elm navigation on a Jonline instance.</p>
     <table>
       <thead>
         <tr>
@@ -5675,45 +5738,15 @@ directory</a> is (<code>{name}</code> denotes a
       <tbody>
         <tr>
           <td>home</td>
-          <td><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></td>
+          <td><a href="#jonline-CustomHomePage">CustomHomePage</a></td>
           <td>optional</td>
-          <td>Overrides the default <code>HOME_TAB</code> entry. If unset, the default Home tab is used. Its <code>target</code> is limited to the <code>HOME_TAB</code>, <code>EVENTS_TAB</code>, or <code>POSTS_TAB</code> tab, or a custom <code>post_id</code>.</td>
+          <td>Overrides the default <code>/</code> page. If unset, the default combined Events+Posts feed is used.</td>
         </tr>
         <tr>
           <td>tabs</td>
-          <td><a href="#jonline-CustomNavigationTabWithPath">CustomNavigationTabWithPath</a></td>
-          <td>repeated</td>
-          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts/</code>, <code>/people</code>, and <code>/about</code> paths are not modifiable. <code>/</code> is modified via <a href="#jonline-CustomNavigationTabSet"><code>CustomNavigationTabSet</code></a>.home instead.</td>
-        </tr>
-      </tbody>
-    </table>
-    <p><a name="jonline-CustomNavigationTabWithPath"></a></p>
-    <h3 id="customnavigationtabwithpath"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtabwithpath"><span class="octicon octicon-link"></span></a>CustomNavigationTabWithPath</h3>
-    <p>
-      A custom navigation tab with an associated path.
-      Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code> is modified via [</code>CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>custom_tab</td>
           <td><a href="#jonline-CustomNavigationTab">CustomNavigationTab</a></td>
-          <td></td>
-          <td>The tab to show at this path.</td>
-        </tr>
-        <tr>
-          <td>path</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>e.g. link <code>/gigs</code> or <code>/shows</code> for a band to the "Events" page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing <code>/events</code>, <code>/posts/``, </code>/people<code>, and </code>/about<code>paths are not modifiable.</code>/<code> is modified via [</code>CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.</td>
+          <td>repeated</td>
+          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts</code>, <code>/people</code>, and <code>/about</code> paths are reserved for their matching predefined tab -- see <a href="#jonline-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path's own doc. <code>/</code> itself is overridden via <code>home</code> above instead.</td>
         </tr>
       </tbody>
     </table>

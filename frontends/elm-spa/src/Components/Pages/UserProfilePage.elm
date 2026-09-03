@@ -918,7 +918,7 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( eventsModel, eventsEffect ) =
-                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.syncDestinations)
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.syncDestinations) Nothing
                                     in
                                     ( { postsInitedModel
                                         | events =
@@ -3040,7 +3040,7 @@ refetchEvents shared model =
         Resolver.Loaded user ->
             let
                 ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.syncDestinations)
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.syncDestinations) Nothing
             in
             ( { model
                 | events =

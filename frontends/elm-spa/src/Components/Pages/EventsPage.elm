@@ -253,6 +253,15 @@ type alias Model =
     -- `Just user.eventSyncDestinations` -- see `init`'s own doc.
     , availableSyncDestinations : Maybe (List SyncDestination)
 
+    -- Overrides `calendarDisplayMode shared`'s own server-wide `EventSettings.default_calendar_display_mode`
+    -- for this copy's `Calendar` mode alone -- `Nothing` everywhere except `Pages.Home_`'s own
+    -- embedded strip(s), which pass `Just customTabs.home.default_events_strip_calendar_display_mode`
+    -- once an admin's actually configured `home` (see `Pages.Home_.eventsStripCalendarDisplayModeOverride`),
+    -- so the home page's own strip can open to a different granularity (e.g. "Week") than the
+    -- standalone Events page's own server-wide default (e.g. "Month") without changing that global
+    -- setting. Read only by `calendarRenderEffect`.
+    , calendarDisplayModeOverride : Maybe CalendarDisplayMode
+
     -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
     -- destinationId` (many instances on screen at once, unlike
     -- `Pages.Event.EventId_`'s own single-instance `pushStatuses`, which
@@ -574,8 +583,8 @@ is far lower value than the standalone `/events`-like pages this actually
 matters for).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> ( Model, Effect Msg )
+init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -629,6 +638,7 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , showSyncSources = False
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
+                , calendarDisplayModeOverride = calendarDisplayModeOverride
                 , pushStatuses = Dict.empty
                 }
                 |> Tuple.mapFirst syncCalendarAnimations
@@ -2248,7 +2258,12 @@ calendarRenderEffect shared oldModel newModel =
             (Encode.object
                 [ ( "id", Encode.string calendarContainerId )
                 , ( "events", Encode.list calendarEventEncoder (calendarEvents newModel) )
-                , ( "initialView", Encode.string (fullCalendarInitialView (calendarDisplayMode shared)) )
+                , ( "initialView"
+                  , Encode.string
+                        (fullCalendarInitialView
+                            (newModel.calendarDisplayModeOverride |> Maybe.withDefault (calendarDisplayMode shared))
+                        )
+                  )
                 ]
             )
             |> Effect.fromCmd
