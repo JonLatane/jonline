@@ -26,7 +26,7 @@ import "server_configuration.proto";
 // [images](https://hub.docker.com/r/jonlatane/jonline/tags) on [DockerHub](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags) and deployment to your K8s clusters available via
 // a simple but powerful `Makefile`-based design language.
 //
-// #### Ports & Protocols
+// ### Ports & Protocols
 // Jonline servers interact across several ports:
 // * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
 //      * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
@@ -37,20 +37,20 @@ import "server_configuration.proto";
 //      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
 //          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 //
-// #### API Design Notes
-// ##### Moderation and Visibility
+// ### API Design Notes
+// #### Moderation and Visibility
 // Jonline APIs are designed to support [`Moderation`](#jonline-Moderation) and [`Visibility`](#jonline-Visibility) controls at the level of individual entities. However, to keep things
 // DRY, moderation and visibility controls are only implemented for [`User`](#jonline-User)s, [`Media`](#jonline-Media), [`Group`](#jonline-Group)s, and [`Post`](#jonline-Post)s.
 //
 // [`Event`](#jonline-Event)s and future [`Post`](#jonline-Post)-like types simply use the same implementation as their contained [`Post`](#jonline-Post)s. The intent here is to maximize
 // both shared code and implementation robustness.
 //
-// ##### Composition Over Inheritance
+// #### Composition Over Inheritance
 // Jonline's APIs are designed using composition over inheritance. For instance, an [`Event`](#jonline-Event) contains
 // a [`Post`](#jonline-Post) rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
 // through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
 //
-// ##### Predictable Atomicity
+// #### Predictable Atomicity
 // The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
 // For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
 //
@@ -68,12 +68,12 @@ import "server_configuration.proto";
 // moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
 // approach to predictable atomicity.
 //
-// #### Core Types
+// ### Core Types
 // Jonline's data model centers around a handful of top-level types, most of which carry their own
 // [`Visibility`](#jonline-Visibility) and [`Moderation`](#jonline-Moderation) state and can be organized into
 // [`Group`](#jonline-Group)s.
 //
-// ##### ServerConfiguration
+// #### ServerConfiguration
 // Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
 // [`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
 // and is more like a document than a row in a database. (That said, every [`ServerConfiguration`](#jonline-ServerConfiguration) change *is* a row in a database, meaning
@@ -82,57 +82,125 @@ import "server_configuration.proto";
 // Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then [`ServerConfiguration`](#jonline-ServerConfiguration),
 // then worry about auth, then finally about retrieving anything else."
 //
-// ##### User
+// ##### Server Info and Theme
+// [`ServerInfo`](#jonline-ServerInfo) (`server_info`) carries the server's public-facing identity: `name`,
+// `short_name`, `description`, `privacy_policy` and `media_policy` text shown during account creation and on the
+// `/about` page, a multi-size [`ServerLogo`](#jonline-ServerLogo) (separate light/dark, square/wide media IDs), a
+// [`ServerColors`](#jonline-ServerColors) scheme (primary/navigation accents plus author/admin/moderator name
+// colors), and `web_user_interface` choosing which UI a browser is served (React/Tamagui by default, or the Elm
+// SPA/Flutter Web alternatives).
+//
+// ##### Custom Tabs
+// [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet) (`custom_tabs`) lets a server admin override the Elm
+// UI's default navigation. `home` replaces just the `HOME_TAB` entry (linking to a predefined tab or a specific
+// Post); `tabs` (repeated [`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) replaces the
+// `EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to a custom URL `path`. Each
+// [`CustomNavigationTab`](#jonline-CustomNavigationTab) targets either a predefined
+// [`NavigationTab`](#jonline-NavigationTab), a Post ID, or (path-only) a user profile, with its own emoji- or
+// Media-backed icon and optional title override. This is currently UI-only -- the built-in `/events`, `/posts/`,
+// `/people`, and `/about` paths themselves can't be remapped.
+//
+// ##### Anonymous, Default, and Basic User Permission Sets
+// Three [`Permission`](#jonline-Permission) lists set the server's baseline access, each enforced independently of
+// any per-User/per-Group grants: `anonymous_user_permissions` (what a logged-out visitor may do -- only the
+// `VIEW_*` permissions are valid here), `default_user_permissions` (what every new account starts with), and
+// `basic_user_permissions` (the superset a user holding `GRANT_BASIC_PERMISSIONS` may hand out to others). Granting
+// `GLOBAL_PUBLIC` as a feature's `default_visibility` (see `people_settings`/`group_settings`/`post_settings`/
+// `event_settings` below) requires the matching `PUBLISH_*_GLOBALLY` permission to actually be present in
+// `default_user_permissions`.
+//
+// ##### Federation Settings
+// [`FederationInfo`](#jonline-FederationInfo) (`federation_info`) is where all federation and social-sync
+// credentials live.
+//
+// ###### Other Jonline servers
+// `servers` (repeated [`FederatedServer`](#jonline-FederatedServer)) recommends other Jonline hosts to clients,
+// each optionally `configured_by_default` (client should enable/configure it automatically) and/or
+// `pinned_by_default` (client should pin its Events/Posts alongside the "main" server's).
+//
+// ###### Facebook and X (Twitter) API keys
+// `facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
+// this server's Facebook App, enabling users to connect Facebook Page and Instagram Business
+// [`SyncDestination`](#jonline-SyncDestination)s (see [Synchronization](#synchronization) below);
+// `x_twitter_auth_config` (an [`XTwitterAuthConfig`](#jonline-XTwitterAuthConfig), `client_id`/`client_secret`)
+// does the same for X (Twitter) -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. Both
+// `*_secret` fields are write-only/never serialized back to clients; admins rotate them directly in the database's
+// JSONB column.
+//
+// ##### Web Push Configuration
+// [`WebPushConfig`](#jonline-WebPushConfig) (`web_push_config`) holds the server's VAPID keypair for Web Push
+// notifications: `public_vapid_key` is served to clients so they can subscribe, while `private_vapid_key` signs
+// outgoing pushes and is *never* serialized to clients -- like the federation secrets above, admins set/rotate it
+// directly in the database.
+//
+// ##### CDN Configuration
+// [`ExternalCDNConfig`](#jonline-ExternalCDNConfig) (`external_cdn_config`) enables running Jonline behind a CDN
+// (e.g. Cloudflare's "CNAME HTTPS Proxy"): when set, the unsecured HTTP server (port 80) stops redirecting to
+// HTTPS and instead serves the Tamagui Web client directly, with `frontend_host`/`backend_host` telling the web
+// client which domains to use instead of `window.location.hostname` (Tamagui web only, for now). `secure_media`
+// plus its `media_ipv4_allowlist`/`media_ipv6_allowlist` are a (TODO, not yet enforced) way to restrict media
+// downloads on the unsecured server to the CDN's own IP ranges; `cdn_grpc` is a further (TODO) mode that would move
+// the gRPC server itself onto port 443 to ride along Cloudflare's gRPC support.
+//
+// #### User
 // A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar, contact methods, and
 // [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
 // [Federated Profiles](#federated-profiles) above). A lighter-weight [`Author`](#jonline-Author) (just ID, username,
 // avatar, real name, permissions) is embedded on [`Post`](#jonline-Post)s, [`Message`](#jonline-Message)s, and similar
 // content types instead of a full [`User`](#jonline-User), to keep those payloads small.
 //
-// - **Follows**: A [`Follow`](#jonline-Follow) is one [`User`](#jonline-User) following another, optionally subject to the target's moderation
+// ##### Follows
+// A [`Follow`](#jonline-Follow) is one [`User`](#jonline-User) following another, optionally subject to the target's moderation
 // (i.e. approval). Mutual follows make two users "friends." Follows also drive the `FOLLOWING_POSTS`/`FOLLOWING_EVENTS`
 // listing types and `LIMITED`-visibility content.
 //
-// - **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)'s membership (or pending join request/invitation)
+// ##### Memberships
+// A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)'s membership (or pending join request/invitation)
 // in a [`Group`](#jonline-Group), tracking the user's [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 // (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group's members.
-////
-// - **SyncDestinations**: A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
+//
+// ##### SyncDestinations
+// A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
 // external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
 // [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
 //
-// - **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
+// ##### EventSyncSources
+// A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
 // pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
 //
-// - **AIModelProviders**: A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
+// ##### AIModelProviders
+// A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
 // connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
 // them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
 // AIModelProvider section below.
 //
-// ##### Media
+// #### Media
 // [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
 // content itself is *not* served over gRPC - it's uploaded/downloaded via plain HTTP (`POST`/`GET /media`) - while
 // its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
 // (like `User.avatar`, `Group.avatar`, and `Post.media`) reference Media via the lightweight [`MediaReference`](#jonline-MediaReference) type.
 //
-// ##### Post
+// #### Post
 // [`Post`](#jonline-Post) is Jonline's fundamental content/building-block type: it's what actually carries a
 // title/link/content body, visibility, and moderation, and is reused (via [`PostContext`](#jonline-PostContext)) as the backing data for
 // replies, [`Event`](#jonline-Event)s, and [`EventInstance`](#jonline-EventInstance)s alike. Posts can be replied to (threaded via
 // `reply_to_post_id`), cross-posted to [`Group`](#jonline-Group)s ([`GroupPost`](#jonline-GroupPost)), and shared directly with users ([`UserPost`](#jonline-UserPost)).
 //
-// - **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
+// ##### GroupPosts
+// A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 // moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
 //
-// - **UserPosts**: A [`UserPost`](#jonline-UserPost) is a "direct share" of a [`Post`](#jonline-Post) to a [`User`](#jonline-User) (see also `DIRECT`
+// ##### UserPosts
+// A [`UserPost`](#jonline-UserPost) is a "direct share" of a [`Post`](#jonline-Post) to a [`User`](#jonline-User) (see also `DIRECT`
 // [`Visibility`](#jonline-Visibility)). Currently unused/unimplemented.
 //
-// - **SyncDestinations**: A [`Post`](#jonline-Post) may also be synced (cross-posted) out to a user-owned
+// ##### SyncDestinations
+// A [`Post`](#jonline-Post) may also be synced (cross-posted) out to a user-owned
 // [`SyncDestination`](#jonline-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
 // [`EventInstance`](#jonline-EventInstance)s use (see below) - each Post may push to several destinations at once, tracked via the
 // repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)).
 //
-// ##### Event
+// #### Event
 // An [`Event`](#jonline-Event) is a wrapper for *at least two* [`Post`](#jonline-Post)s. It always has its own top-level [`Post`](#jonline-Post)
 // (`PostContext.EVENT`, holding the event's overall title/description) *and* it must have at least one
 // [`EventInstance`](#jonline-EventInstance) (see below), each of which in turn must have its own [`Post`](#jonline-Post)
@@ -140,7 +208,8 @@ import "server_configuration.proto";
 // title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
 // instances back one Post per instance beyond that.
 //
-// - **EventInstances**: An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an [`Event`](#jonline-Event) -
+// ##### EventInstances
+// An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an [`Event`](#jonline-Event) -
 // it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#jonline-Location) that the parent [`Event`](#jonline-Event) itself does not have.
 // An [`Event`](#jonline-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#jonline-Event) must have at least one.
 //
@@ -161,18 +230,20 @@ import "server_configuration.proto";
 //     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
 //     the destination's resulting post ID/URL and last-synced time.
 //
-// ##### Group
+// #### Group
 // A [`Group`](#jonline-Group) organizes [`User`](#jonline-User)s, [`Post`](#jonline-Post)s, and [`Event`](#jonline-Event)s together under shared visibility, moderation,
 // and permission defaults.
 //
-// - **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)'s membership (or pending join request/invitation)
+// ##### Memberships
+// A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)'s membership (or pending join request/invitation)
 // in a [`Group`](#jonline-Group), tracking the user's [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 // (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group's members.
 //
-// - **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
+// ##### GroupPosts
+// A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 // moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
 //
-// ##### Message
+// #### Message
 // [`Message`](#jonline-Message) is Jonline's "low trust" messaging/email system, meant to let strangers on a server
 // make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
 // open access to all Messages on a server.
@@ -181,10 +252,11 @@ import "server_configuration.proto";
 // a Stalwart server to be running and configured to forward emails to the Jonline server. Jonline provides tooling
 // to do this automatically, but it is completely optional.
 //
-// - **MessagingGroup**: A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
+// ##### MessagingGroup
+// A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
 // belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the [`Message`](#jonline-Message) they receive omits it.
 //
-// #### Authentication
+// ### Authentication
 // Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s (both [`ExpirableToken`s](#jonline-ExpirableToken)).
 // Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 // `authorization` header (no `Bearer ` prefix).
@@ -200,7 +272,7 @@ import "server_configuration.proto";
 // may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 // one in client storage.)
 //
-// ##### Federated Authentication
+// #### Federated Authentication
 // tl;dr: Lets you sign in to the `jon@bullcity.social` user on `jonline.io`, without ever entering your `bullcity.social`
 // credentials on `jonline.io`.
 //
@@ -234,19 +306,19 @@ import "server_configuration.proto";
 //
 // See the two HTTP-level routes below for the exact URL/crypto shape.
 //
-// #### Federation
+// ### Federation
 // Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 // Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
 // "nice to have" features require it, so it is not used.
 //
-// ##### Federated Servers
+// #### Federated Servers
 // Jonline servers can recommend other servers to clients with the `federation_info` field (a [`FederationInfo` message](#jonline-FederationInfo)) in [`ServerConfiguration`](#jonline-ServerConfiguration).
 // Clients can use this information to discover other servers, or users can add new servers manually.
 // Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
 // allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
 // unless you explicitly allow it.
 //
-// ##### Federated Profiles
+// #### Federated Profiles
 // Jonline users can federate with users on any other Jonline server. This works by two-way verification:
 // For example, Jon has the user [`jonline.io/jon`](https://jonline.io/jon), [`oakcity.social/jon`](https://oakcity.social/jon),
 // and [`bullcity.social/jon`](https://bullcity.social/jon) associated with one another. 
@@ -258,21 +330,21 @@ import "server_configuration.proto";
 //
 // Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
 // 
-// ##### Federated Browsing
+// #### Federated Browsing
 // Jonline's protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers
 // in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media
 // platforms.
 //
-// ##### Federated Messaging
+// #### Federated Messaging
 // Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
 // from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 //
-// #### Synchronization
+// ### Synchronization
 // While Federation is a first-class feature of Jonline, it also supports synchronization with other
 // fediverse platforms as well as other less-open platforms. All API keys for external services are stored
 // in [`ServerConfiguration`](#jonline-ServerConfiguration)'s `federation_info`.
 //
-// ##### SyncDestination
+// #### SyncDestination
 // A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
 // [`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's
 // each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not, say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several
@@ -292,14 +364,14 @@ import "server_configuration.proto";
 // [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
 // way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
 //
-// ###### Facebook
+// ##### Facebook
 // `configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
 // Connecting one requires a short-lived user access token from client-side Facebook Login
 // (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
 // short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
 // `SYNC_POSTS_TO_FACEBOOK`.
 //
-// ###### Instagram
+// ##### Instagram
 // `configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
 // Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
 // connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
@@ -308,20 +380,20 @@ import "server_configuration.proto";
 // [`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
 // `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
 //
-// ###### Mastodon
+// ##### Mastodon
 // `configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
 // account, on any instance the user names (`instance_host`) -- there's no single app to register the way
 // Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
 // (`MastodonAccount.access_token`, generated on the user's own instance under Preferences > Development) rather than
 // an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
 //
-// ###### Bluesky
+// ##### Bluesky
 // `configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
 // Protocol) account. Connecting one is a user-supplied "App Password" (`BlueskyAccount.app_password`, generated at
 // Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
 // `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
 //
-// ###### X (Twitter)
+// ##### X (Twitter)
 // `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
 // server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
 // sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
@@ -331,7 +403,7 @@ import "server_configuration.proto";
 // each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`'s own doc).
 // Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
 //
-// ###### Threads
+// ##### Threads
 // `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
 // Threads API is a product added to this server's *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
 // separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
@@ -341,7 +413,7 @@ import "server_configuration.proto";
 // implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
 // text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 //
-// ##### EventSyncSource
+// #### EventSyncSource
 // An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
 // pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
 // `oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the
@@ -354,7 +426,7 @@ import "server_configuration.proto";
 // (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 // [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
 //
-// ##### AIModelProvider
+// #### AIModelProvider
 // An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
 // Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
 // [`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
@@ -370,7 +442,8 @@ import "server_configuration.proto";
 // [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
 // -- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)'s RPCs.
 //
-// - **AIModelProviderGrants**: A provider's owner may share metered access to it with other users via
+// ##### AIModelProviderGrants
+// A provider's owner may share metered access to it with other users via
 // [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
 // Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
 // `(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
@@ -378,9 +451,9 @@ import "server_configuration.proto";
 // these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
 // its owner may hand out access to it.
 //
-// #### HTTP Endpoints
-// ##### Internal HTTP server (27705)
-// ###### `POST /email`: Stalwart Email Integration
+// ### HTTP Endpoints
+// #### Internal HTTP server (27705)
+// ##### `POST /email`: Stalwart Email Integration
 // Delivery endpoint called by the [Stalwart](https://stalw.art) mail server (see
 // [`deploys/email`](https://github.com/JonLatane/jonline/tree/main/deploys/email)'s
 // [README](https://github.com/JonLatane/jonline/blob/main/deploys/email/README.md) for setup/architecture) once it
@@ -425,14 +498,14 @@ import "server_configuration.proto";
 // status; combined with the `MtaHook`'s `tempFailOnError: true`, that surfaces to the sending client as a
 // `451` temp-fail rather than anything indicating the real cause.
 //
-// ##### External HTTP servers (80, 8000, 443)
+// #### External HTTP servers (80, 8000, 443)
 // Note that, if the TLS server on port 443 starts up successfully, the server on port 80
 // will simply redirect to HTTPS.
 //
 // The server on port 8000 will always serve up unsecured HTTP. It is up to server admins to block this
 // port if they find that necessary.
 //
-// ###### `GET /backend_host`: HTTP-based client host negotiation (for external CDNs)
+// ##### `GET /backend_host`: HTTP-based client host negotiation (for external CDNs)
 // When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 // to connect to `jonline.io` via gRPC on 27707/443, the client
 // is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
@@ -442,7 +515,7 @@ import "server_configuration.proto";
 // be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
 // `jonline.io`.
 //
-// ###### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
+// ##### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
 // Half [web UI path](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in), half
 // endpoint: it's an Elm SPA page (`Pages.Auth.To.Key_`, served like any other SPA route -- under the `/elm` base
 // path when the Elm frontend isn't the one mounted at `/`) rather than a backend/gRPC handler, but it consumes
@@ -466,7 +539,7 @@ import "server_configuration.proto";
 // part base64url) and the browser is redirected to
 // `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
 //
-// ###### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
+// ##### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
 // Likewise a [web
 // UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in)/endpoint hybrid: the Elm
 // SPA page (`Pages.Auth.From.EncodedAccount_`) that closes the loop from
@@ -489,11 +562,11 @@ import "server_configuration.proto";
 // and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
 // client implementations of this negotiation.
 //
-// ###### `GET /robots.txt`: Robots
+// ##### `GET /robots.txt`: Robots
 // Generated on the fly (not a static file) from the request's `Host` header, publicly cacheable for 1 hour. Always
 // allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https://{host}/sitemap.xml`.
 //
-// ###### `GET /sitemap.xml`: Sitemap
+// ##### `GET /sitemap.xml`: Sitemap
 // Generated on the fly (not a static file) from the request's `Host` header, publicly cacheable for 1 hour. Lists a
 // fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
 // `/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
@@ -503,7 +576,7 @@ import "server_configuration.proto";
 // [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
 // It does not (yet) enumerate individual [`User`](#jonline-User) pages.
 //
-// ###### `GET /favicon.ico`: ICO Favicon
+// ##### `GET /favicon.ico`: ICO Favicon
 // Serves the server's configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a [`Media`](#jonline-Media)
 // reference) as an `.ico`, publicly cacheable for 12 hours (`must-revalidate`), converting on the fly if the
 // stored rendition is a `.png`. If no logo is configured, falls back to the bundled Tamagui frontend's default
@@ -511,10 +584,10 @@ import "server_configuration.proto";
 // Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
 // so there's no reason to prefer a bigger one).
 //
-// ###### `GET /favicon.png`: PNG Favicon
+// ##### `GET /favicon.png`: PNG Favicon
 // As `GET /favicon.ico` above, but serves (and if necessary converts to) `.png` instead.
 //
-// ###### `POST /media`: Upload Media
+// ##### `POST /media`: Upload Media
 // See the [Media](#jonline-Media) section for the [`Media`](#jonline-Media) type itself; this is how its bytes actually get in
 // (an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
 // `Authorization` header or a `jonline_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
@@ -525,7 +598,7 @@ import "server_configuration.proto";
 // a default `video_preview_time_ms`) and its ID returned as plain text -- there's no separate "confirm" step, and
 // no image/video conversion happens synchronously on this request (see the background media-conversion job).
 //
-// ###### `GET /media/{id}?size={original|small|medium|large}`: Download Media
+// ##### `GET /media/{id}?size={original|small|medium|large}`: Download Media
 // (An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
 // -- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`'s
 // implementation), so a [`Media`](#jonline-Media) ID is currently a bearer capability. `size` (default `medium`) selects a converted
@@ -533,17 +606,17 @@ import "server_configuration.proto";
 // rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
 // from that cache. Cacheable for 12 hours (`must-revalidate`).
 //
-// ###### `GET /calendar.ics`: Server Calendar
+// ##### `GET /calendar.ics`: Server Calendar
 // Jonline events support iCalendar/RFC5545; only public events are included. "Subscribe" to a Jonline server at,
 // for instance, `https://jonline.io/calendar.ics` to get a calendar of all public events on the server. In the
 // Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
 // the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
 //
-// ###### `GET /calendar.ics?user_id={id}`: User Calendar
+// ##### `GET /calendar.ics?user_id={id}`: User Calendar
 // "Subscribe" to a user's calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
 // calendar of all public events for that user.
 //
-// #### Web UI paths
+// ### Web UI paths
 // Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.
 //
 // Tamagui and Elm share one page structure (below) and are always *both* reachable, explicitly, at `/tamagui/*`
@@ -567,35 +640,35 @@ import "server_configuration.proto";
 // dynamic path segment; `[@{host}]` marks where a [federated](#federated-profiles) `{username}@{host}`-style
 // suffix is accepted for that segment):
 //
-// ##### `/`: Home
+// #### `/`: Home
 // The community's latest activity.
 //
-// ##### `/posts`: Posts
+// #### `/posts`: Posts
 // The Posts listing.
 //
-// ###### `/post/{postId}[@{host}]`: Post
+// ##### `/post/{postId}[@{host}]`: Post
 // An individual [`Post`](#jonline-Post) -- including [`Event`](#jonline-Event)/[`EventInstance`](#jonline-EventInstance) posts and replies, which are [`Post`](#jonline-Post)s
 // themselves (see [Post](#post) above).
 //
-// ##### `/events`: Events
+// #### `/events`: Events
 // The Events listing.
 //
-// ###### `/event/{eventInstanceId}[@{host}]`: Event
+// ##### `/event/{eventInstanceId}[@{host}]`: Event
 // An individual [`EventInstance`](#jonline-EventInstance).
 //
-// ###### `/event_ai`: AI Event Importer
+// ##### `/event_ai`: AI Event Importer
 // Tamagui-only, for now -- an AI-assisted bulk [`Event`](#jonline-Event) importer. Elm doesn't have this page yet.
 //
-// ##### `/people`: People
+// #### `/people`: People
 // The People listing.
 //
-// ###### `/people/follow_requests`: Follow Requests
+// ##### `/people/follow_requests`: Follow Requests
 // The current user's pending [`Follow`](#jonline-Follow) requests.
 //
-// ###### `/user/{userId}`: Profile
+// ##### `/user/{userId}`: Profile
 // A [`User`](#jonline-User) profile looked up by (stable) user ID.
 //
-// ##### `/{custom_tab_or_username}`: User pages by username, or a custom tab
+// #### `/{custom_tab_or_username}`: User pages by username, or a custom tab
 // The same [`User`](#jonline-User) profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
 // looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
 // since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
@@ -605,32 +678,32 @@ import "server_configuration.proto";
 // listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
 // set of reserved names can never be reached this way, only via `/user/{userId}`.
 //
-// ###### `/{username}/posts`: Posts
-// ###### `/{username}/friends`: Friends
-// ###### `/{username}/followers`: Followers
-// ###### `/{username}/following`: Following
+// ##### `/{username}/posts`: Posts
+// ##### `/{username}/friends`: Friends
+// ##### `/{username}/followers`: Followers
+// ##### `/{username}/following`: Following
 //
-// ##### `/g/{shortname}`: Groups
+// #### `/g/{shortname}`: Groups
 // A [`Group`](#jonline-Group)'s pages. Tamagui-only for now -- the Elm frontend doesn't have Group pages yet.
 //
-// ###### `/g/{shortname}`: Home
-// ###### `/g/{shortname}/posts`: Posts
-// ###### `/g/{shortname}/p/{postId}[@{host}]`: Post
+// ##### `/g/{shortname}`: Home
+// ##### `/g/{shortname}/posts`: Posts
+// ##### `/g/{shortname}/p/{postId}[@{host}]`: Post
 // An individual [`Post`](#jonline-Post) cross-posted into the group.
 //
-// ###### `/g/{shortname}/events`: Events
-// ###### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
-// ###### `/g/{shortname}/members`: Members
-// ###### `/g/{shortname}/m/{username}`: Member
+// ##### `/g/{shortname}/events`: Events
+// ##### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
+// ##### `/g/{shortname}/members`: Members
+// ##### `/g/{shortname}/m/{username}`: Member
 // An individual [`Member`](#jonline-Member)'s details.
 //
-// ##### `/server/{serverIdentifier}`: Server
+// #### `/server/{serverIdentifier}`: Server
 // Information about a (possibly federated) Jonline server.
 //
-// ##### `/about`, `/about_jonline`: About
+// #### `/about`, `/about_jonline`: About
 // This server's own About page, and a general "what is Jonline" page.
 //
-// ##### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
+// #### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
 // **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
 // purely to drive the [Federated Authentication](#federated-authentication) flow. Since they're consumed like
 // ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented

@@ -467,7 +467,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="https://hub.docker.com/r/jonlatane/jonline/tags">images</a> on <a href="https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags">DockerHub</a> and deployment to your K8s clusters available via
       a simple but powerful <code>Makefile</code>-based design language.
     </p>
-    <h4 id="ports--protocols"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports--protocols"><span class="octicon octicon-link"></span></a>Ports &#x26; Protocols</h4>
+    <h3 id="ports--protocols"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ports--protocols"><span class="octicon octicon-link"></span></a>Ports &#x26; Protocols</h3>
     <p>Jonline servers interact across several ports:</p>
     <ul>
       <li><a href="#grpc-api">gRPC (27707)</a> - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
@@ -488,8 +488,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
     </ul>
-    <h4 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h4>
-    <h5 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h5>
+    <h3 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h3>
+    <h4 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h4>
     <p>
       Jonline APIs are designed to support <a href="#jonline-Moderation"><code>Moderation</code></a> and <a href="#jonline-Visibility"><code>Visibility</code></a> controls at the level of individual entities. However, to keep things
       DRY, moderation and visibility controls are only implemented for <a href="#jonline-User"><code>User</code></a>s, <a href="#jonline-Media"><code>Media</code></a>, <a href="#jonline-Group"><code>Group</code></a>s, and <a href="#jonline-Post"><code>Post</code></a>s.
@@ -498,13 +498,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-Event"><code>Event</code></a>s and future <a href="#jonline-Post"><code>Post</code></a>-like types simply use the same implementation as their contained <a href="#jonline-Post"><code>Post</code></a>s. The intent here is to maximize
       both shared code and implementation robustness.
     </p>
-    <h5 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h5>
+    <h4 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h4>
     <p>
       Jonline's APIs are designed using composition over inheritance. For instance, an <a href="#jonline-Event"><code>Event</code></a> contains
       a <a href="#jonline-Post"><code>Post</code></a> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
       through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
     </p>
-    <h5 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h5>
+    <h4 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h4>
     <p>
       The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
       For instance, <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> is fully atomic.
@@ -525,13 +525,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
       approach to predictable atomicity.
     </p>
-    <h4 id="core-types"><a class="anchor" aria-hidden="true" tabindex="-1" href="#core-types"><span class="octicon octicon-link"></span></a>Core Types</h4>
+    <h3 id="core-types"><a class="anchor" aria-hidden="true" tabindex="-1" href="#core-types"><span class="octicon octicon-link"></span></a>Core Types</h3>
     <p>
       Jonline's data model centers around a handful of top-level types, most of which carry their own
       <a href="#jonline-Visibility"><code>Visibility</code></a> and <a href="#jonline-Moderation"><code>Moderation</code></a> state and can be organized into
       <a href="#jonline-Group"><code>Group</code></a>s.
     </p>
-    <h5 id="serverconfiguration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration"><span class="octicon octicon-link"></span></a>ServerConfiguration</h5>
+    <h4 id="serverconfiguration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration"><span class="octicon octicon-link"></span></a>ServerConfiguration</h4>
     <p>
       Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its <em>most</em> primitive type.
       <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a> is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
@@ -542,7 +542,75 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       Any client using the Jonline protocol is basically expected to follow a flow of "get service version, then <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>,
       then worry about auth, then finally about retrieving anything else."
     </p>
-    <h5 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h5>
+    <h5 id="server-info-and-theme"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server-info-and-theme"><span class="octicon octicon-link"></span></a>Server Info and Theme</h5>
+    <p>
+      <a href="#jonline-ServerInfo"><code>ServerInfo</code></a> (<code>server_info</code>) carries the server's public-facing identity: <code>name</code>,
+      <code>short_name</code>, <code>description</code>, <code>privacy_policy</code> and <code>media_policy</code> text shown during account creation and on the
+      <code>/about</code> page, a multi-size <a href="#jonline-ServerLogo"><code>ServerLogo</code></a> (separate light/dark, square/wide media IDs), a
+      <a href="#jonline-ServerColors"><code>ServerColors</code></a> scheme (primary/navigation accents plus author/admin/moderator name
+      colors), and <code>web_user_interface</code> choosing which UI a browser is served (React/Tamagui by default, or the Elm
+      SPA/Flutter Web alternatives).
+    </p>
+    <h5 id="custom-tabs"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom-tabs"><span class="octicon octicon-link"></span></a>Custom Tabs</h5>
+    <p>
+      <a href="#jonline-CustomNavigationTabSet"><code>CustomNavigationTabSet</code></a> (<code>custom_tabs</code>) lets a server admin override the Elm
+      UI's default navigation. <code>home</code> replaces just the <code>HOME_TAB</code> entry (linking to a predefined tab or a specific
+      Post); <code>tabs</code> (repeated <a href="#jonline-CustomNavigationTabWithPath"><code>CustomNavigationTabWithPath</code></a>) replaces the
+      <code>EVENTS_TAB</code>/<code>POSTS_TAB</code>/<code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code> set entirely, each pinned to a custom URL <code>path</code>. Each
+      <a href="#jonline-CustomNavigationTab"><code>CustomNavigationTab</code></a> targets either a predefined
+      <a href="#jonline-NavigationTab"><code>NavigationTab</code></a>, a Post ID, or (path-only) a user profile, with its own emoji- or
+      Media-backed icon and optional title override. This is currently UI-only -- the built-in <code>/events</code>, <code>/posts/</code>,
+      <code>/people</code>, and <code>/about</code> paths themselves can't be remapped.
+    </p>
+    <h5 id="anonymous-default-and-basic-user-permission-sets"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymous-default-and-basic-user-permission-sets"><span class="octicon octicon-link"></span></a>Anonymous, Default, and Basic User Permission Sets</h5>
+    <p>
+      Three <a href="#jonline-Permission"><code>Permission</code></a> lists set the server's baseline access, each enforced independently of
+      any per-User/per-Group grants: <code>anonymous_user_permissions</code> (what a logged-out visitor may do -- only the
+      <code>VIEW_*</code> permissions are valid here), <code>default_user_permissions</code> (what every new account starts with), and
+      <code>basic_user_permissions</code> (the superset a user holding <code>GRANT_BASIC_PERMISSIONS</code> may hand out to others). Granting
+      <code>GLOBAL_PUBLIC</code> as a feature's <code>default_visibility</code> (see <code>people_settings</code>/<code>group_settings</code>/<code>post_settings</code>/
+      <code>event_settings</code> below) requires the matching <code>PUBLISH_*_GLOBALLY</code> permission to actually be present in
+      <code>default_user_permissions</code>.
+    </p>
+    <h5 id="federation-settings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation-settings"><span class="octicon octicon-link"></span></a>Federation Settings</h5>
+    <p>
+      <a href="#jonline-FederationInfo"><code>FederationInfo</code></a> (<code>federation_info</code>) is where all federation and social-sync
+      credentials live.
+    </p>
+    <h6 id="other-jonline-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#other-jonline-servers"><span class="octicon octicon-link"></span></a>Other Jonline servers</h6>
+    <p>
+      <code>servers</code> (repeated <a href="#jonline-FederatedServer"><code>FederatedServer</code></a>) recommends other Jonline hosts to clients,
+      each optionally <code>configured_by_default</code> (client should enable/configure it automatically) and/or
+      <code>pinned_by_default</code> (client should pin its Events/Posts alongside the "main" server's).
+    </p>
+    <h6 id="facebook-and-x-twitter-api-keys"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook-and-x-twitter-api-keys"><span class="octicon octicon-link"></span></a>Facebook and X (Twitter) API keys</h6>
+    <p>
+      <code>facebook_auth_config</code> (a <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>, <code>app_id</code>/<code>app_secret</code>) registers
+      this server's Facebook App, enabling users to connect Facebook Page and Instagram Business
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s (see <a href="#synchronization">Synchronization</a> below);
+      <code>x_twitter_auth_config</code> (an <a href="#jonline-XTwitterAuthConfig"><code>XTwitterAuthConfig</code></a>, <code>client_id</code>/<code>client_secret</code>)
+      does the same for X (Twitter) -- until set, X SyncDestinations fail with <code>x_twitter_app_not_configured</code>. Both
+      <code>*_secret</code> fields are write-only/never serialized back to clients; admins rotate them directly in the database's
+      JSONB column.
+    </p>
+    <h5 id="web-push-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-push-configuration"><span class="octicon octicon-link"></span></a>Web Push Configuration</h5>
+    <p>
+      <a href="#jonline-WebPushConfig"><code>WebPushConfig</code></a> (<code>web_push_config</code>) holds the server's VAPID keypair for Web Push
+      notifications: <code>public_vapid_key</code> is served to clients so they can subscribe, while <code>private_vapid_key</code> signs
+      outgoing pushes and is <em>never</em> serialized to clients -- like the federation secrets above, admins set/rotate it
+      directly in the database.
+    </p>
+    <h5 id="cdn-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#cdn-configuration"><span class="octicon octicon-link"></span></a>CDN Configuration</h5>
+    <p>
+      <a href="#jonline-ExternalCDNConfig"><code>ExternalCDNConfig</code></a> (<code>external_cdn_config</code>) enables running Jonline behind a CDN
+      (e.g. Cloudflare's "CNAME HTTPS Proxy"): when set, the unsecured HTTP server (port 80) stops redirecting to
+      HTTPS and instead serves the Tamagui Web client directly, with <code>frontend_host</code>/<code>backend_host</code> telling the web
+      client which domains to use instead of <code>window.location.hostname</code> (Tamagui web only, for now). <code>secure_media</code>
+      plus its <code>media_ipv4_allowlist</code>/<code>media_ipv6_allowlist</code> are a (TODO, not yet enforced) way to restrict media
+      downloads on the unsecured server to the CDN's own IP ranges; <code>cdn_grpc</code> is a further (TODO) mode that would move
+      the gRPC server itself onto port 443 to ride along Cloudflare's gRPC support.
+    </p>
+    <h4 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h4>
     <p>
       A <a href="#jonline-User"><code>User</code></a> is a Jonline account: username, real name, bio, avatar, contact methods, and
       <a href="#jonline-Permission"><code>Permission</code></a>s, plus counts (followers, posts, events, etc.) and federation info (see
@@ -550,81 +618,68 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       avatar, real name, permissions) is embedded on <a href="#jonline-Post"><code>Post</code></a>s, <a href="#jonline-Message"><code>Message</code></a>s, and similar
       content types instead of a full <a href="#jonline-User"><code>User</code></a>, to keep those payloads small.
     </p>
-    <ul>
-      <li>
-        <p>
-          <strong>Follows</strong>: A <a href="#jonline-Follow"><code>Follow</code></a> is one <a href="#jonline-User"><code>User</code></a> following another, optionally subject to the target's moderation
-          (i.e. approval). Mutual follows make two users "friends." Follows also drive the <code>FOLLOWING_POSTS</code>/<code>FOLLOWING_EVENTS</code>
-          listing types and <code>LIMITED</code>-visibility content.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
-          in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
-          (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
-          //
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>SyncDestinations</strong>: A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
-          external targets to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and <a href="#jonline-Post"><code>Post</code></a>s out to, e.g. a connected Facebook Page (configured via
-          <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event and Post sections below for how these attach.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>EventSyncSources</strong>: A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
-          pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>AIModelProviders</strong>: A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s -
-          connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
-          them via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s. See <code>ai_model_providers.proto</code> and the
-          AIModelProvider section below.
-        </p>
-      </li>
-    </ul>
-    <h5 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h5>
+    <h5 id="follows"><a class="anchor" aria-hidden="true" tabindex="-1" href="#follows"><span class="octicon octicon-link"></span></a>Follows</h5>
+    <p>
+      A <a href="#jonline-Follow"><code>Follow</code></a> is one <a href="#jonline-User"><code>User</code></a> following another, optionally subject to the target's moderation
+      (i.e. approval). Mutual follows make two users "friends." Follows also drive the <code>FOLLOWING_POSTS</code>/<code>FOLLOWING_EVENTS</code>
+      listing types and <code>LIMITED</code>-visibility content.
+    </p>
+    <h5 id="memberships"><a class="anchor" aria-hidden="true" tabindex="-1" href="#memberships"><span class="octicon octicon-link"></span></a>Memberships</h5>
+    <p>
+      A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
+      in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
+      (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
+    </p>
+    <h5 id="syncdestinations"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinations"><span class="octicon octicon-link"></span></a>SyncDestinations</h5>
+    <p>
+      A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
+      external targets to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and <a href="#jonline-Post"><code>Post</code></a>s out to, e.g. a connected Facebook Page (configured via
+      <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event and Post sections below for how these attach.
+    </p>
+    <h5 id="eventsyncsources"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsources"><span class="octicon octicon-link"></span></a>EventSyncSources</h5>
+    <p>
+      A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
+      pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
+    </p>
+    <h5 id="aimodelproviders"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelproviders"><span class="octicon octicon-link"></span></a>AIModelProviders</h5>
+    <p>
+      A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s -
+      connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+      them via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s. See <code>ai_model_providers.proto</code> and the
+      AIModelProvider section below.
+    </p>
+    <h4 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h4>
     <p>
       <a href="#jonline-Media"><code>Media</code></a> represents an uploaded (or server-generated) photo or video. Unlike other types, Media
       content itself is <em>not</em> served over gRPC - it's uploaded/downloaded via plain HTTP (<code>POST</code>/<code>GET /media</code>) - while
       its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
       (like <code>User.avatar</code>, <code>Group.avatar</code>, and <code>Post.media</code>) reference Media via the lightweight <a href="#jonline-MediaReference"><code>MediaReference</code></a> type.
     </p>
-    <h5 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h5>
+    <h4 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h4>
     <p>
       <a href="#jonline-Post"><code>Post</code></a> is Jonline's fundamental content/building-block type: it's what actually carries a
       title/link/content body, visibility, and moderation, and is reused (via <a href="#jonline-PostContext"><code>PostContext</code></a>) as the backing data for
       replies, <a href="#jonline-Event"><code>Event</code></a>s, and <a href="#jonline-EventInstance"><code>EventInstance</code></a>s alike. Posts can be replied to (threaded via
       <code>reply_to_post_id</code>), cross-posted to <a href="#jonline-Group"><code>Group</code></a>s (<a href="#jonline-GroupPost"><code>GroupPost</code></a>), and shared directly with users (<a href="#jonline-UserPost"><code>UserPost</code></a>).
     </p>
-    <ul>
-      <li>
-        <p>
-          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
-          moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>UserPosts</strong>: A <a href="#jonline-UserPost"><code>UserPost</code></a> is a "direct share" of a <a href="#jonline-Post"><code>Post</code></a> to a <a href="#jonline-User"><code>User</code></a> (see also <code>DIRECT</code>
-          <a href="#jonline-Visibility"><code>Visibility</code></a>). Currently unused/unimplemented.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>SyncDestinations</strong>: A <a href="#jonline-Post"><code>Post</code></a> may also be synced (cross-posted) out to a user-owned
-          <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> (e.g. a connected Facebook Page), the same mechanism
-          <a href="#jonline-EventInstance"><code>EventInstance</code></a>s use (see below) - each Post may push to several destinations at once, tracked via the
-          repeated <code>Post.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>).
-        </p>
-      </li>
-    </ul>
-    <h5 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h5>
+    <h5 id="groupposts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#groupposts"><span class="octicon octicon-link"></span></a>GroupPosts</h5>
+    <p>
+      A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
+      moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
+    </p>
+    <h5 id="userposts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userposts"><span class="octicon octicon-link"></span></a>UserPosts</h5>
+    <p>
+      A <a href="#jonline-UserPost"><code>UserPost</code></a> is a "direct share" of a <a href="#jonline-Post"><code>Post</code></a> to a <a href="#jonline-User"><code>User</code></a> (see also <code>DIRECT</code>
+      <a href="#jonline-Visibility"><code>Visibility</code></a>). Currently unused/unimplemented.
+    </p>
+    <h5 id="syncdestinations-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinations-1"><span class="octicon octicon-link"></span></a>SyncDestinations</h5>
+    <p>
+      A <a href="#jonline-Post"><code>Post</code></a> may also be synced (cross-posted) out to a user-owned
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> (e.g. a connected Facebook Page), the same mechanism
+      <a href="#jonline-EventInstance"><code>EventInstance</code></a>s use (see below) - each Post may push to several destinations at once, tracked via the
+      repeated <code>Post.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>).
+    </p>
+    <h4 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h4>
     <p>
       An <a href="#jonline-Event"><code>Event</code></a> is a wrapper for <em>at least two</em> <a href="#jonline-Post"><code>Post</code></a>s. It always has its own top-level <a href="#jonline-Post"><code>Post</code></a>
       (<code>PostContext.EVENT</code>, holding the event's overall title/description) <em>and</em> it must have at least one
@@ -633,64 +688,62 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
       instances back one Post per instance beyond that.
     </p>
-    <ul>
-      <li>
-        <p>
-          <strong>EventInstances</strong>: An <a href="#jonline-EventInstance"><code>EventInstance</code></a> is the actual time-boxed occurrence of an <a href="#jonline-Event"><code>Event</code></a> -
-          it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <a href="#jonline-Location"><code>Location</code></a> that the parent <a href="#jonline-Event"><code>Event</code></a> itself does not have.
-          An <a href="#jonline-Event"><code>Event</code></a> with zero instances is meaningless (no time or place to attach to), so every <a href="#jonline-Event"><code>Event</code></a> must have at least one.
-        </p>
-        <ul>
-          <li>
-            <p>
-              <strong>EventAttendances</strong>: An <a href="#jonline-EventAttendance"><code>EventAttendance</code></a> (an "RSVP") tracks one attendee's status
-              (<code>INTERESTED</code>, <code>REQUESTED</code>, <code>GOING</code>, <code>NOT_GOING</code>) for a specific <a href="#jonline-EventInstance"><code>EventInstance</code></a>. Attendees may be logged-in <a href="#jonline-User"><code>User</code></a>s
-              or anonymous (tracked via <a href="#jonline-AnonymousAttendee"><code>AnonymousAttendee</code></a> plus an <code>auth_token</code>), and are subject to their own <a href="#jonline-Moderation"><code>Moderation</code></a>,
-              independent of the Event's/Instance's own Post moderation.
-            </p>
-          </li>
-          <li>
-            <p>
-              <strong>EventSyncSource</strong>: It's actually the parent <a href="#jonline-Event"><code>Event</code></a> (not the <a href="#jonline-EventInstance"><code>EventInstance</code></a>) that can be synced <em>in</em> from a
-              user-owned <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> (e.g. an iCal subscription). The relationship is
-              1:(0 or 1): a single source can back many synced <a href="#jonline-Event"><code>Event</code></a>s, but each <a href="#jonline-Event"><code>Event</code></a> has <em>at most one</em> source it came from
-              (<code>Event.event_sync_source</code> is a single optional field, not repeated).
-            </p>
-          </li>
-          <li>
-            <p>
-              <strong>SyncDestinations</strong>: Conversely, it's each <a href="#jonline-EventInstance"><code>EventInstance</code></a> (not the parent <a href="#jonline-Event"><code>Event</code></a>) that syncs <em>out</em> to
-              <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s (e.g. connected Facebook Pages) - the same mechanism <a href="#jonline-Post"><code>Post</code></a>s use
-              (see above). Unlike <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>, this is the outlier's counterpart - a many-to-many relationship: each
-              instance may push to several destinations at once, tracked per-destination via the repeated
-              <code>EventInstance.sync_destinations</code> (each a <a href="#jonline-SyncDestinationStatus"><code>SyncDestinationStatus</code></a>), carrying
-              the destination's resulting post ID/URL and last-synced time.
-            </p>
-          </li>
-        </ul>
-      </li>
-    </ul>
-    <h5 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h5>
+    <h5 id="eventinstances"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstances"><span class="octicon octicon-link"></span></a>EventInstances</h5>
+    <p>
+      An <a href="#jonline-EventInstance"><code>EventInstance</code></a> is the actual time-boxed occurrence of an <a href="#jonline-Event"><code>Event</code></a> -
+      it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <a href="#jonline-Location"><code>Location</code></a> that the parent <a href="#jonline-Event"><code>Event</code></a> itself does not have.
+      An <a href="#jonline-Event"><code>Event</code></a> with zero instances is meaningless (no time or place to attach to), so every <a href="#jonline-Event"><code>Event</code></a> must have at least one.
+    </p>
+    <pre><code class="code-highlight"><span class="code-line line-number" line="1">- **EventAttendances**: An [`EventAttendance`](#jonline-EventAttendance) (an &#x26;#34;RSVP&#x26;#34;) tracks one attendee&#x26;#39;s status
+</span><span class="code-line line-number" line="2">(`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`EventInstance`](#jonline-EventInstance). Attendees may be logged-in [`User`](#jonline-User)s
+</span><span class="code-line line-number" line="3">or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
+</span><span class="code-line line-number" line="4">independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
+</span><span class="code-line line-number" line="5">
+</span><span class="code-line line-number" line="6">- **EventSyncSource**: It&#x26;#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
+</span><span class="code-line line-number" line="7">user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+</span><span class="code-line line-number" line="8">1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
+</span><span class="code-line line-number" line="9">(`Event.event_sync_source` is a single optional field, not repeated).
+</span><span class="code-line line-number" line="10">
+</span><span class="code-line line-number" line="11">- **SyncDestinations**: Conversely, it&#x26;#39;s each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
+</span><span class="code-line line-number" line="12">[`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
+</span><span class="code-line line-number" line="13">(see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
+</span><span class="code-line line-number" line="14">instance may push to several destinations at once, tracked per-destination via the repeated
+</span><span class="code-line line-number" line="15">`EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
+</span><span class="code-line line-number" line="16">the destination&#x26;#39;s resulting post ID/URL and last-synced time.
+</span></code><div onclick="copied(this)" data-code="- **EventAttendances**: An [&#x60;EventAttendance&#x60;](#jonline-EventAttendance) (an &#x26;#34;RSVP&#x26;#34;) tracks one attendee&#x26;#39;s status
+(&#x60;INTERESTED&#x60;, &#x60;REQUESTED&#x60;, &#x60;GOING&#x60;, &#x60;NOT_GOING&#x60;) for a specific [&#x60;EventInstance&#x60;](#jonline-EventInstance). Attendees may be logged-in [&#x60;User&#x60;](#jonline-User)s
+or anonymous (tracked via [&#x60;AnonymousAttendee&#x60;](#jonline-AnonymousAttendee) plus an &#x60;auth_token&#x60;), and are subject to their own [&#x60;Moderation&#x60;](#jonline-Moderation),
+independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
+
+- **EventSyncSource**: It&#x26;#39;s actually the parent [&#x60;Event&#x60;](#jonline-Event) (not the [&#x60;EventInstance&#x60;](#jonline-EventInstance)) that can be synced *in* from a
+user-owned [&#x60;EventSyncSource&#x60;](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+1:(0 or 1): a single source can back many synced [&#x60;Event&#x60;](#jonline-Event)s, but each [&#x60;Event&#x60;](#jonline-Event) has *at most one* source it came from
+(&#x60;Event.event_sync_source&#x60; is a single optional field, not repeated).
+
+- **SyncDestinations**: Conversely, it&#x26;#39;s each [&#x60;EventInstance&#x60;](#jonline-EventInstance) (not the parent [&#x60;Event&#x60;](#jonline-Event)) that syncs *out* to
+[&#x60;SyncDestination&#x60;](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [&#x60;Post&#x60;](#jonline-Post)s use
+(see above). Unlike [&#x60;EventSyncSource&#x60;](#jonline-EventSyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
+instance may push to several destinations at once, tracked per-destination via the repeated
+&#x60;EventInstance.sync_destinations&#x60; (each a [&#x60;SyncDestinationStatus&#x60;](#jonline-SyncDestinationStatus)), carrying
+the destination&#x26;#39;s resulting post ID/URL and last-synced time.
+" class="copied"><svg class="octicon-copy" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path></svg><svg class="octicon-check" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg></div></pre>
+    <h4 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h4>
     <p>
       A <a href="#jonline-Group"><code>Group</code></a> organizes <a href="#jonline-User"><code>User</code></a>s, <a href="#jonline-Post"><code>Post</code></a>s, and <a href="#jonline-Event"><code>Event</code></a>s together under shared visibility, moderation,
       and permission defaults.
     </p>
-    <ul>
-      <li>
-        <p>
-          <strong>Memberships</strong>: A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
-          in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
-          (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
-        </p>
-      </li>
-      <li>
-        <p>
-          <strong>GroupPosts</strong>: A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
-          moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
-        </p>
-      </li>
-    </ul>
-    <h5 id="message"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message"><span class="octicon octicon-link"></span></a>Message</h5>
+    <h5 id="memberships-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#memberships-1"><span class="octicon octicon-link"></span></a>Memberships</h5>
+    <p>
+      A <a href="#jonline-Membership"><code>Membership</code></a> is a <a href="#jonline-User"><code>User</code></a>'s membership (or pending join request/invitation)
+      in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
+      (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
+    </p>
+    <h5 id="groupposts-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#groupposts-1"><span class="octicon octicon-link"></span></a>GroupPosts</h5>
+    <p>
+      A <a href="#jonline-GroupPost"><code>GroupPost</code></a> is the cross-posting of a <a href="#jonline-Post"><code>Post</code></a> into a <a href="#jonline-Group"><code>Group</code></a>, carrying the group-specific
+      moderation status and who shared it, separately from the Post's own (author-set) visibility/moderation.
+    </p>
+    <h4 id="message"><a class="anchor" aria-hidden="true" tabindex="-1" href="#message"><span class="octicon octicon-link"></span></a>Message</h4>
     <p>
       <a href="#jonline-Message"><code>Message</code></a> is Jonline's "low trust" messaging/email system, meant to let strangers on a server
       make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
@@ -701,13 +754,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       a Stalwart server to be running and configured to forward emails to the Jonline server. Jonline provides tooling
       to do this automatically, but it is completely optional.
     </p>
-    <ul>
-      <li>
-        <strong>MessagingGroup</strong>: A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <a href="#jonline-Message"><code>Message</code></a>
-        belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the <a href="#jonline-Message"><code>Message</code></a> they receive omits it.
-      </li>
-    </ul>
-    <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
+    <h5 id="messaginggroup"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messaginggroup"><span class="octicon octicon-link"></span></a>MessagingGroup</h5>
+    <p>
+      A <a href="#jonline-MessagingGroup"><code>MessagingGroup</code></a> is the set of participants in a Message conversation. Every <a href="#jonline-Message"><code>Message</code></a>
+      belongs to one; if a client wasn't a visible recipient (e.g. they were BCC'ed), the <a href="#jonline-Message"><code>Message</code></a> they receive omits it.
+    </p>
+    <h3 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h3>
     <p>
       Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s (both <a href="#jonline-ExpirableToken"><code>ExpirableToken</code>s</a>).
       Authenticated calls require an <code>access_token</code> in request metadata to be included / directly as the value of the
@@ -726,7 +778,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
-    <h5 id="federated-authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-authentication"><span class="octicon octicon-link"></span></a>Federated Authentication</h5>
+    <h4 id="federated-authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-authentication"><span class="octicon octicon-link"></span></a>Federated Authentication</h4>
     <p>
       tl;dr: Lets you sign in to the <code>jon@bullcity.social</code> user on <code>jonline.io</code>, without ever entering your <code>bullcity.social</code>
       credentials on <code>jonline.io</code>.
@@ -774,13 +826,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       </li>
     </ol>
     <p>See the two HTTP-level routes below for the exact URL/crypto shape.</p>
-    <h4 id="federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation"><span class="octicon octicon-link"></span></a>Federation</h4>
+    <h3 id="federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation"><span class="octicon octicon-link"></span></a>Federation</h3>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
       Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
       "nice to have" features require it, so it is not used.
     </p>
-    <h5 id="federated-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-servers"><span class="octicon octicon-link"></span></a>Federated Servers</h5>
+    <h4 id="federated-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-servers"><span class="octicon octicon-link"></span></a>Federated Servers</h4>
     <p>
       Jonline servers can recommend other servers to clients with the <code>federation_info</code> field (a <a href="#jonline-FederationInfo"><code>FederationInfo</code> message</a>) in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
       Clients can use this information to discover other servers, or users can add new servers manually.
@@ -788,7 +840,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
       unless you explicitly allow it.
     </p>
-    <h5 id="federated-profiles"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-profiles"><span class="octicon octicon-link"></span></a>Federated Profiles</h5>
+    <h4 id="federated-profiles"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-profiles"><span class="octicon octicon-link"></span></a>Federated Profiles</h4>
     <p>
       Jonline users can federate with users on any other Jonline server. This works by two-way verification:
       For example, Jon has the user <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a>, <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>,
@@ -801,24 +853,24 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       isn't linked to <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a> or <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>.
     </p>
     <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
-    <h5 id="federated-browsing"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-browsing"><span class="octicon octicon-link"></span></a>Federated Browsing</h5>
+    <h4 id="federated-browsing"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-browsing"><span class="octicon octicon-link"></span></a>Federated Browsing</h4>
     <p>
       Jonline's protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers
       in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media
       platforms.
     </p>
-    <h5 id="federated-messaging"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-messaging"><span class="octicon octicon-link"></span></a>Federated Messaging</h5>
+    <h4 id="federated-messaging"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-messaging"><span class="octicon octicon-link"></span></a>Federated Messaging</h4>
     <p>
       Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
       from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
     </p>
-    <h4 id="synchronization"><a class="anchor" aria-hidden="true" tabindex="-1" href="#synchronization"><span class="octicon octicon-link"></span></a>Synchronization</h4>
+    <h3 id="synchronization"><a class="anchor" aria-hidden="true" tabindex="-1" href="#synchronization"><span class="octicon octicon-link"></span></a>Synchronization</h3>
     <p>
       While Federation is a first-class feature of Jonline, it also supports synchronization with other
       fediverse platforms as well as other less-open platforms. All API keys for external services are stored
       in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>'s <code>federation_info</code>.
     </p>
-    <h5 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h5>
+    <h4 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h4>
     <p>
       A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> is a user-owned external target to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and
       <a href="#jonline-Post"><code>Post</code></a>s out to, via a <code>oneof configuration</code> naming which platform it is. This is a many-to-many relationship: it's
@@ -840,7 +892,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>/<a href="#grpc-api-DeletePostSyncDestination"><code>DeletePostSyncDestination</code></a>, gated the same
       way (the <code>_EVENTS_</code>/<code>_POSTS_</code> half matching which RPC).
     </p>
-    <h6 id="facebook"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook"><span class="octicon octicon-link"></span></a>Facebook</h6>
+    <h5 id="facebook"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook"><span class="octicon octicon-link"></span></a>Facebook</h5>
     <p>
       <code>configuration.facebook_page</code> (a <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>) is a connected Facebook Page.
       Connecting one requires a short-lived user access token from client-side Facebook Login
@@ -848,7 +900,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       short-lived token is write-only and never populated back in responses. Gated on <code>SYNC_EVENTS_TO_FACEBOOK</code>/
       <code>SYNC_POSTS_TO_FACEBOOK</code>.
     </p>
-    <h6 id="instagram"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagram"><span class="octicon octicon-link"></span></a>Instagram</h6>
+    <h5 id="instagram"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagram"><span class="octicon octicon-link"></span></a>Instagram</h5>
     <p>
       <code>configuration.instagram_account</code> (an <a href="#jonline-InstagramAccount"><code>InstagramAccount</code></a>) is a connected Instagram
       Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
@@ -858,7 +910,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-EventInstance"><code>EventInstance</code></a> with no attached media fails with <code>instagram_requires_media</code>. Gated on
       <code>SYNC_EVENTS_TO_INSTAGRAM</code>/<code>SYNC_POSTS_TO_INSTAGRAM</code>.
     </p>
-    <h6 id="mastodon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodon"><span class="octicon octicon-link"></span></a>Mastodon</h6>
+    <h5 id="mastodon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodon"><span class="octicon octicon-link"></span></a>Mastodon</h5>
     <p>
       <code>configuration.mastodon_account</code> (a <a href="#jonline-MastodonAccount"><code>MastodonAccount</code></a>) is a connected Mastodon
       account, on any instance the user names (<code>instance_host</code>) -- there's no single app to register the way
@@ -866,14 +918,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       (<code>MastodonAccount.access_token</code>, generated on the user's own instance under Preferences > Development) rather than
       an OAuth popup. Gated on <code>SYNC_EVENTS_TO_MASTODON</code>/<code>SYNC_POSTS_TO_MASTODON</code>.
     </p>
-    <h6 id="bluesky"><a class="anchor" aria-hidden="true" tabindex="-1" href="#bluesky"><span class="octicon octicon-link"></span></a>Bluesky</h6>
+    <h5 id="bluesky"><a class="anchor" aria-hidden="true" tabindex="-1" href="#bluesky"><span class="octicon octicon-link"></span></a>Bluesky</h5>
     <p>
       <code>configuration.bluesky_account</code> (a <a href="#jonline-BlueskyAccount"><code>BlueskyAccount</code></a>) is a connected Bluesky (AT
       Protocol) account. Connecting one is a user-supplied "App Password" (<code>BlueskyAccount.app_password</code>, generated at
       Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
       <code>SYNC_EVENTS_TO_BLUESKY</code>/<code>SYNC_POSTS_TO_BLUESKY</code>.
     </p>
-    <h6 id="x-twitter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter"><span class="octicon octicon-link"></span></a>X (Twitter)</h6>
+    <h5 id="x-twitter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter"><span class="octicon octicon-link"></span></a>X (Twitter)</h5>
     <p>
       <code>configuration.x_twitter_account</code> (an <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a>) is a connected X account. Requires this
       server to have a registered X Developer App configured (<code>FederationInfo.x_twitter_auth_config</code>) -- until an admin
@@ -884,7 +936,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       each post. Only image media is uploaded today; video is not yet supported (see <code>XTwitterAccount</code>'s own doc).
       Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code>.
     </p>
-    <h6 id="threads"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threads"><span class="octicon octicon-link"></span></a>Threads</h6>
+    <h5 id="threads"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threads"><span class="octicon octicon-link"></span></a>Threads</h5>
     <p>
       <code>configuration.threads_account</code> (a <a href="#jonline-ThreadsAccount"><code>ThreadsAccount</code></a>) is a connected Threads account.
       Threads API is a product added to this server's <em>existing</em> Facebook App (see <a href="#jonline-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>) rather than a
@@ -895,7 +947,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
       text-only posts. Gated on <code>SYNC_EVENTS_TO_THREADS</code>/<code>SYNC_POSTS_TO_THREADS</code>.
     </p>
-    <h5 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h5>
+    <h4 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h4>
     <p>
       An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> mirrors <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, but for pulling <a href="#jonline-Event"><code>Event</code></a>s in rather than
       pushing content out -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the
@@ -910,7 +962,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       (requires <code>SYNCHRONIZE_EVENTS</code>, or Admin), <a href="#grpc-api-UpdateEventSyncSource"><code>UpdateEventSyncSource</code></a>, and
       <a href="#grpc-api-DeleteEventSyncSource"><code>DeleteEventSyncSource</code></a>.
     </p>
-    <h5 id="aimodelprovider"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider"><span class="octicon octicon-link"></span></a>AIModelProvider</h5>
+    <h4 id="aimodelprovider"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider"><span class="octicon octicon-link"></span></a>AIModelProvider</h4>
     <p>
       An <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> is a user-owned connection to an external AI model API (e.g. a
       Gemini API key), via a <code>oneof provider</code> naming which service it is -- structurally similar to
@@ -928,20 +980,19 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>, and <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a>
       -- each gated self-or-Admin, the same shape as <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>'s RPCs.
     </p>
-    <ul>
-      <li>
-        <strong>AIModelProviderGrants</strong>: A provider's owner may share metered access to it with other users via
-        <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s, each carrying a <code>tokens_remaining</code> budget for that grantee.
-        Granted/reset via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> (upserted on the unique
-        <code>(ai_model_provider_id, grantee)</code> pair -- granting again <em>resets</em>, rather than adds to, <code>tokens_remaining</code>) and
-        removed via <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Unlike every other RPC pair in this section,
-        these two are <strong>owner-only, with no Admin override</strong> -- an Admin may manage the provider record itself, but only
-        its owner may hand out access to it.
-      </li>
-    </ul>
-    <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
-    <h5 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h5>
-    <h6 id="post-email-stalwart-email-integration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-email-stalwart-email-integration"><span class="octicon octicon-link"></span></a><code>POST /email</code>: Stalwart Email Integration</h6>
+    <h5 id="aimodelprovidergrants"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovidergrants"><span class="octicon octicon-link"></span></a>AIModelProviderGrants</h5>
+    <p>
+      A provider's owner may share metered access to it with other users via
+      <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s, each carrying a <code>tokens_remaining</code> budget for that grantee.
+      Granted/reset via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> (upserted on the unique
+      <code>(ai_model_provider_id, grantee)</code> pair -- granting again <em>resets</em>, rather than adds to, <code>tokens_remaining</code>) and
+      removed via <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Unlike every other RPC pair in this section,
+      these two are <strong>owner-only, with no Admin override</strong> -- an Admin may manage the provider record itself, but only
+      its owner may hand out access to it.
+    </p>
+    <h3 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h3>
+    <h4 id="internal-http-server-27705"><a class="anchor" aria-hidden="true" tabindex="-1" href="#internal-http-server-27705"><span class="octicon octicon-link"></span></a>Internal HTTP server (27705)</h4>
+    <h5 id="post-email-stalwart-email-integration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-email-stalwart-email-integration"><span class="octicon octicon-link"></span></a><code>POST /email</code>: Stalwart Email Integration</h5>
     <p>
       Delivery endpoint called by the <a href="https://stalw.art/">Stalwart</a> mail server (see
       <a href="https://github.com/JonLatane/jonline/tree/main/deploys/email"><code>deploys/email</code></a>'s
@@ -1006,7 +1057,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <code>451</code> temp-fail rather than anything indicating the real cause.
       </li>
     </ul>
-    <h5 id="external-http-servers-80-8000-443"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-http-servers-80-8000-443"><span class="octicon octicon-link"></span></a>External HTTP servers (80, 8000, 443)</h5>
+    <h4 id="external-http-servers-80-8000-443"><a class="anchor" aria-hidden="true" tabindex="-1" href="#external-http-servers-80-8000-443"><span class="octicon octicon-link"></span></a>External HTTP servers (80, 8000, 443)</h4>
     <p>
       Note that, if the TLS server on port 443 starts up successfully, the server on port 80
       will simply redirect to HTTPS.
@@ -1015,7 +1066,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       The server on port 8000 will always serve up unsecured HTTP. It is up to server admins to block this
       port if they find that necessary.
     </p>
-    <h6 id="get-backend_host-http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-backend_host-http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a><code>GET /backend_host</code>: HTTP-based client host negotiation (for external CDNs)</h6>
+    <h5 id="get-backend_host-http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-backend_host-http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a><code>GET /backend_host</code>: HTTP-based client host negotiation (for external CDNs)</h5>
     <p>
       When first negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
       to connect to <code>jonline.io</code> via gRPC on 27707/443, the client
@@ -1026,7 +1077,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       be <code>jonline.io</code>. The client can trust <code>jonline.io/backend_host</code> to always point to the correct backend host for
       <code>jonline.io</code>.
     </p>
-    <h6 id="get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><span class="octicon octicon-link"></span></a><code>GET /auth/to/{public_key}@{requesting_host}</code>: Federated Sign-In (sending side)</h6>
+    <h5 id="get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><span class="octicon octicon-link"></span></a><code>GET /auth/to/{public_key}@{requesting_host}</code>: Federated Sign-In (sending side)</h5>
     <p>
       Half <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web UI path</a>, half
       endpoint: it's an Elm SPA page (<code>Pages.Auth.To.Key_</code>, served like any other SPA route -- under the <code>/elm</code> base
@@ -1059,7 +1110,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <code>https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}</code>.
       </li>
     </ul>
-    <h6 id="get-authfromencrypted_account-federated-sign-in-receiving-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><span class="octicon octicon-link"></span></a><code>GET /auth/from/{encrypted_account}</code>: Federated Sign-In (receiving side)</h6>
+    <h5 id="get-authfromencrypted_account-federated-sign-in-receiving-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><span class="octicon octicon-link"></span></a><code>GET /auth/from/{encrypted_account}</code>: Federated Sign-In (receiving side)</h5>
     <p>
       Likewise a <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web
 UI</a>/endpoint hybrid: the Elm
@@ -1092,12 +1143,12 @@ UI</a>/endpoint hybrid: the Elm
       and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26">Flutter</a>
       client implementations of this negotiation.
     </p>
-    <h6 id="get-robotstxt-robots"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-robotstxt-robots"><span class="octicon octicon-link"></span></a><code>GET /robots.txt</code>: Robots</h6>
+    <h5 id="get-robotstxt-robots"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-robotstxt-robots"><span class="octicon octicon-link"></span></a><code>GET /robots.txt</code>: Robots</h5>
     <p>
       Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Always
       allows all crawling (<code>User-agent: * / Allow: /</code>) and points crawlers at <code>https://{host}/sitemap.xml</code>.
     </p>
-    <h6 id="get-sitemapxml-sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-sitemapxml-sitemap"><span class="octicon octicon-link"></span></a><code>GET /sitemap.xml</code>: Sitemap</h6>
+    <h5 id="get-sitemapxml-sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-sitemapxml-sitemap"><span class="octicon octicon-link"></span></a><code>GET /sitemap.xml</code>: Sitemap</h5>
     <p>
       Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Lists a
       fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_jonline</code>,
@@ -1108,7 +1159,7 @@ UI</a>/endpoint hybrid: the Elm
       <a href="#grpc-api-GetEvents"><code>GetEvents</code></a> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{instance_id}</code>.
       It does not (yet) enumerate individual <a href="#jonline-User"><code>User</code></a> pages.
     </p>
-    <h6 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h6>
+    <h5 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h5>
     <p>
       Serves the server's configured logo (<code>ServerConfiguration.server_info.logo.square_media_id</code>, a <a href="#jonline-Media"><code>Media</code></a>
       reference) as an <code>.ico</code>, publicly cacheable for 12 hours (<code>must-revalidate</code>), converting on the fly if the
@@ -1117,9 +1168,9 @@ UI</a>/endpoint hybrid: the Elm
       Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
       so there's no reason to prefer a bigger one).
     </p>
-    <h6 id="get-faviconpng-png-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconpng-png-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.png</code>: PNG Favicon</h6>
+    <h5 id="get-faviconpng-png-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconpng-png-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.png</code>: PNG Favicon</h5>
     <p>As <code>GET /favicon.ico</code> above, but serves (and if necessary converts to) <code>.png</code> instead.</p>
-    <h6 id="post-media-upload-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-media-upload-media"><span class="octicon octicon-link"></span></a><code>POST /media</code>: Upload Media</h6>
+    <h5 id="post-media-upload-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post-media-upload-media"><span class="octicon octicon-link"></span></a><code>POST /media</code>: Upload Media</h5>
     <p>
       See the <a href="#jonline-Media">Media</a> section for the <a href="#jonline-Media"><code>Media</code></a> type itself; this is how its bytes actually get in
       (an <code>OPTIONS /media</code> variant also exists, solely to satisfy CORS preflight requests). <em>Authenticated</em> (via
@@ -1131,7 +1182,7 @@ UI</a>/endpoint hybrid: the Elm
       a default <code>video_preview_time_ms</code>) and its ID returned as plain text -- there's no separate "confirm" step, and
       no image/video conversion happens synchronously on this request (see the background media-conversion job).
     </p>
-    <h6 id="get-mediaidsizeoriginalsmallmediumlarge-download-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaidsizeoriginalsmallmediumlarge-download-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}?size={original|small|medium|large}</code>: Download Media</h6>
+    <h5 id="get-mediaidsizeoriginalsmallmediumlarge-download-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaidsizeoriginalsmallmediumlarge-download-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}?size={original|small|medium|large}</code>: Download Media</h5>
     <p>
       (An <code>OPTIONS /media/{id}</code> variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
       -- <strong>moderation/visibility/permission checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s
@@ -1140,19 +1191,19 @@ UI</a>/endpoint hybrid: the Elm
       rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
       from that cache. Cacheable for 12 hours (<code>must-revalidate</code>).
     </p>
-    <h6 id="get-calendarics-server-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-server-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>: Server Calendar</h6>
+    <h5 id="get-calendarics-server-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-server-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>: Server Calendar</h5>
     <p>
       Jonline events support iCalendar/RFC5545; only public events are included. "Subscribe" to a Jonline server at,
       for instance, <code>https://jonline.io/calendar.ics</code> to get a calendar of all public events on the server. In the
       Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
       the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
     </p>
-    <h6 id="get-calendaricsuser_idid-user-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendaricsuser_idid-user-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics?user_id={id}</code>: User Calendar</h6>
+    <h5 id="get-calendaricsuser_idid-user-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendaricsuser_idid-user-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics?user_id={id}</code>: User Calendar</h5>
     <p>
       "Subscribe" to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code> to get a
       calendar of all public events for that user.
     </p>
-    <h4 id="web-ui-paths"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-ui-paths"><span class="octicon octicon-link"></span></a>Web UI paths</h4>
+    <h3 id="web-ui-paths"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-ui-paths"><span class="octicon octicon-link"></span></a>Web UI paths</h3>
     <p>Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.</p>
     <p>
       Tamagui and Elm share one page structure (below) and are always <em>both</em> reachable, explicitly, at <code>/tamagui/*</code>
@@ -1178,28 +1229,28 @@ directory</a> is (<code>{name}</code> denotes a
       dynamic path segment; <code>[@{host}]</code> marks where a <a href="#federated-profiles">federated</a> <code>{username}@{host}</code>-style
       suffix is accepted for that segment):
     </p>
-    <h5 id="-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#-home"><span class="octicon octicon-link"></span></a><code>/</code>: Home</h5>
+    <h4 id="-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#-home"><span class="octicon octicon-link"></span></a><code>/</code>: Home</h4>
     <p>The community's latest activity.</p>
-    <h5 id="posts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#posts-posts"><span class="octicon octicon-link"></span></a><code>/posts</code>: Posts</h5>
+    <h4 id="posts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#posts-posts"><span class="octicon octicon-link"></span></a><code>/posts</code>: Posts</h4>
     <p>The Posts listing.</p>
-    <h6 id="postpostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postpostidhost-post"><span class="octicon octicon-link"></span></a><code>/post/{postId}[@{host}]</code>: Post</h6>
+    <h5 id="postpostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postpostidhost-post"><span class="octicon octicon-link"></span></a><code>/post/{postId}[@{host}]</code>: Post</h5>
     <p>
       An individual <a href="#jonline-Post"><code>Post</code></a> -- including <a href="#jonline-Event"><code>Event</code></a>/<a href="#jonline-EventInstance"><code>EventInstance</code></a> posts and replies, which are <a href="#jonline-Post"><code>Post</code></a>s
       themselves (see <a href="#post">Post</a> above).
     </p>
-    <h5 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h5>
+    <h4 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h4>
     <p>The Events listing.</p>
-    <h6 id="eventeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{eventInstanceId}[@{host}]</code>: Event</h6>
+    <h5 id="eventeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{eventInstanceId}[@{host}]</code>: Event</h5>
     <p>An individual <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</p>
-    <h6 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h6>
+    <h5 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h5>
     <p>Tamagui-only, for now -- an AI-assisted bulk <a href="#jonline-Event"><code>Event</code></a> importer. Elm doesn't have this page yet.</p>
-    <h5 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h5>
+    <h4 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h4>
     <p>The People listing.</p>
-    <h6 id="peoplefollow_requests-follow-requests"><a class="anchor" aria-hidden="true" tabindex="-1" href="#peoplefollow_requests-follow-requests"><span class="octicon octicon-link"></span></a><code>/people/follow_requests</code>: Follow Requests</h6>
+    <h5 id="peoplefollow_requests-follow-requests"><a class="anchor" aria-hidden="true" tabindex="-1" href="#peoplefollow_requests-follow-requests"><span class="octicon octicon-link"></span></a><code>/people/follow_requests</code>: Follow Requests</h5>
     <p>The current user's pending <a href="#jonline-Follow"><code>Follow</code></a> requests.</p>
-    <h6 id="useruserid-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#useruserid-profile"><span class="octicon octicon-link"></span></a><code>/user/{userId}</code>: Profile</h6>
+    <h5 id="useruserid-profile"><a class="anchor" aria-hidden="true" tabindex="-1" href="#useruserid-profile"><span class="octicon octicon-link"></span></a><code>/user/{userId}</code>: Profile</h5>
     <p>A <a href="#jonline-User"><code>User</code></a> profile looked up by (stable) user ID.</p>
-    <h5 id="custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><span class="octicon octicon-link"></span></a><code>/{custom_tab_or_username}</code>: User pages by username, or a custom tab</h5>
+    <h4 id="custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><span class="octicon octicon-link"></span></a><code>/{custom_tab_or_username}</code>: User pages by username, or a custom tab</h4>
     <p>
       The same <a href="#jonline-User"><code>User</code></a> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
       looked up by the current <code>username</code> instead -- lighter-weight to link to, but less stable than <code>/user/{userId}</code>
@@ -1210,26 +1261,26 @@ directory</a> is (<code>{name}</code> denotes a
       listing at <code>/gigs</code> -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
       set of reserved names can never be reached this way, only via <code>/user/{userId}</code>.
     </p>
-    <h6 id="usernameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernameposts-posts"><span class="octicon octicon-link"></span></a><code>/{username}/posts</code>: Posts</h6>
-    <h6 id="usernamefriends-friends"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefriends-friends"><span class="octicon octicon-link"></span></a><code>/{username}/friends</code>: Friends</h6>
-    <h6 id="usernamefollowers-followers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowers-followers"><span class="octicon octicon-link"></span></a><code>/{username}/followers</code>: Followers</h6>
-    <h6 id="usernamefollowing-following"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowing-following"><span class="octicon octicon-link"></span></a><code>/{username}/following</code>: Following</h6>
-    <h5 id="gshortname-groups"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-groups"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Groups</h5>
+    <h5 id="usernameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernameposts-posts"><span class="octicon octicon-link"></span></a><code>/{username}/posts</code>: Posts</h5>
+    <h5 id="usernamefriends-friends"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefriends-friends"><span class="octicon octicon-link"></span></a><code>/{username}/friends</code>: Friends</h5>
+    <h5 id="usernamefollowers-followers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowers-followers"><span class="octicon octicon-link"></span></a><code>/{username}/followers</code>: Followers</h5>
+    <h5 id="usernamefollowing-following"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowing-following"><span class="octicon octicon-link"></span></a><code>/{username}/following</code>: Following</h5>
+    <h4 id="gshortname-groups"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-groups"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Groups</h4>
     <p>A <a href="#jonline-Group"><code>Group</code></a>'s pages. Tamagui-only for now -- the Elm frontend doesn't have Group pages yet.</p>
-    <h6 id="gshortname-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-home"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Home</h6>
-    <h6 id="gshortnameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameposts-posts"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/posts</code>: Posts</h6>
-    <h6 id="gshortnameppostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameppostidhost-post"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/p/{postId}[@{host}]</code>: Post</h6>
+    <h5 id="gshortname-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-home"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Home</h5>
+    <h5 id="gshortnameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameposts-posts"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/posts</code>: Posts</h5>
+    <h5 id="gshortnameppostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameppostidhost-post"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/p/{postId}[@{host}]</code>: Post</h5>
     <p>An individual <a href="#jonline-Post"><code>Post</code></a> cross-posted into the group.</p>
-    <h6 id="gshortnameevents-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameevents-events"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/events</code>: Events</h6>
-    <h6 id="gshortnameeeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameeeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/e/{eventInstanceId}[@{host}]</code>: Event</h6>
-    <h6 id="gshortnamemembers-members"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemembers-members"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/members</code>: Members</h6>
-    <h6 id="gshortnamemusername-member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemusername-member"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/m/{username}</code>: Member</h6>
+    <h5 id="gshortnameevents-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameevents-events"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/events</code>: Events</h5>
+    <h5 id="gshortnameeeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameeeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/e/{eventInstanceId}[@{host}]</code>: Event</h5>
+    <h5 id="gshortnamemembers-members"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemembers-members"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/members</code>: Members</h5>
+    <h5 id="gshortnamemusername-member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnamemusername-member"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/m/{username}</code>: Member</h5>
     <p>An individual <a href="#jonline-Member"><code>Member</code></a>'s details.</p>
-    <h5 id="serverserveridentifier-server"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverserveridentifier-server"><span class="octicon octicon-link"></span></a><code>/server/{serverIdentifier}</code>: Server</h5>
+    <h4 id="serverserveridentifier-server"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverserveridentifier-server"><span class="octicon octicon-link"></span></a><code>/server/{serverIdentifier}</code>: Server</h4>
     <p>Information about a (possibly federated) Jonline server.</p>
-    <h5 id="about-about_jonline-about"><a class="anchor" aria-hidden="true" tabindex="-1" href="#about-about_jonline-about"><span class="octicon octicon-link"></span></a><code>/about</code>, <code>/about_jonline</code>: About</h5>
+    <h4 id="about-about_jonline-about"><a class="anchor" aria-hidden="true" tabindex="-1" href="#about-about_jonline-about"><span class="octicon octicon-link"></span></a><code>/about</code>, <code>/about_jonline</code>: About</h4>
     <p>This server's own About page, and a general "what is Jonline" page.</p>
-    <h5 id="authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code> and <code>/auth/from/{encrypted_account}</code>: Federated Sign-In</h5>
+    <h4 id="authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code> and <code>/auth/from/{encrypted_account}</code>: Federated Sign-In</h4>
     <p>
       <strong>Elm-only</strong> -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
       purely to drive the <a href="#federated-authentication">Federated Authentication</a> flow. Since they're consumed like
@@ -3509,7 +3560,7 @@ directory</a> is (<code>{name}</code> denotes a
       </tbody>
     </table>
     <p><a name="jonline-MessagingGroup"></a></p>
-    <h3 id="messaginggroup"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messaginggroup"><span class="octicon octicon-link"></span></a>MessagingGroup</h3>
+    <h3 id="messaginggroup-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messaginggroup-1"><span class="octicon octicon-link"></span></a>MessagingGroup</h3>
     <p>
       A group of users who are participating in a conversation.
       Most servers will probably have a (dynamically created) "empty group" for an email like
