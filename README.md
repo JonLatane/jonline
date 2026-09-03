@@ -431,6 +431,14 @@ Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRP
 
 All Media also carries [`Visibility`](https://jonline.io/docs/protocol#jonline-Visibility) and [`Moderation`](https://jonline.io/docs/protocol#jonline-Moderation) values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
 
+### AI Model Providers
+
+Jonline supports optional, "bring your own key" AI image generation via [`AIModelProvider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) (currently Gemini and OpenAI credentials - see [`AIModelProvider.provider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) for the full oneof). Any user with the `CREATE_AI_MODEL_PROVIDERS` permission can connect their own API key from their profile page, and optionally meter out access to other users on the server via [`AIModelProviderGrant`](https://jonline.io/docs/protocol#jonline-AIModelProviderGrant) - a token budget, optionally scoped to specific models.
+
+The one feature currently built atop this is [`GenerateMedia`](https://jonline.io/docs/protocol#grpc-api-GenerateMedia) ("Generate Media…", shown next to "Edit Media…" on a Post's or Event's own page): it sends the target's own formatted content (title/description/date-time/location, reusing the same formatting [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination)s use) plus any selected reference photos to the chosen model, and attaches the result as the first item in that Post's (or Event's own Post's) media.
+
+Which models are actually available, and what each can do ([`AIModelCapability`](https://jonline.io/docs/protocol#jonline-AIModelCapability) - generation vs. editing), is a hand-maintained catalog in [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs) - the source of truth for which models Jonline actually offers, since none of Gemini/OpenAI/Anthropic expose a stable "list models" API to build this from at request time.
+
 ### Posts
 
 [`Post`](https://jonline.io/docs/protocol#jonline-Post)s follow a Twitter- or Reddit- like model. They have a [`PostContext`](https://jonline.io/docs/protocol#jonline-PostContext) as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a [`Visibility`](https://jonline.io/docs/protocol#jonline-Visibility) and [`Moderation`](https://jonline.io/docs/protocol#jonline-Moderation) value that is enforced by the APIs.

@@ -85,6 +85,7 @@ const AIModelProvider$json = {
     {'1': 'gemini_credentials', '3': 4, '4': 1, '5': 11, '6': '.jonline.GeminiCredentials', '9': 0, '10': 'geminiCredentials'},
     {'1': 'openai_credentials', '3': 5, '4': 1, '5': 11, '6': '.jonline.OpenAICredentials', '9': 0, '10': 'openaiCredentials'},
     {'1': 'anthropic_credentials', '3': 6, '4': 1, '5': 11, '6': '.jonline.AnthropicCredentials', '9': 0, '10': 'anthropicCredentials'},
+    {'1': 'digitalocean_credentials', '3': 7, '4': 1, '5': 11, '6': '.jonline.DigitalOceanCredentials', '9': 0, '10': 'digitaloceanCredentials'},
     {'1': 'grants', '3': 14, '4': 3, '5': 11, '6': '.jonline.AIModelProviderGrant', '10': 'grants'},
     {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
@@ -103,10 +104,12 @@ final $typed_data.Uint8List aIModelProviderDescriptor = $convert.base64Decode(
     'FscxJLChJvcGVuYWlfY3JlZGVudGlhbHMYBSABKAsyGi5qb25saW5lLk9wZW5BSUNyZWRlbnRp'
     'YWxzSABSEW9wZW5haUNyZWRlbnRpYWxzElQKFWFudGhyb3BpY19jcmVkZW50aWFscxgGIAEoCz'
     'IdLmpvbmxpbmUuQW50aHJvcGljQ3JlZGVudGlhbHNIAFIUYW50aHJvcGljQ3JlZGVudGlhbHMS'
-    'NQoGZ3JhbnRzGA4gAygLMh0uam9ubGluZS5BSU1vZGVsUHJvdmlkZXJHcmFudFIGZ3JhbnRzEj'
-    'kKCmNyZWF0ZWRfYXQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVk'
-    'QXQSPgoKdXBkYXRlZF9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAVIJdX'
-    'BkYXRlZEF0iAEBQgoKCHByb3ZpZGVyQg0KC191cGRhdGVkX2F0');
+    'XQoYZGlnaXRhbG9jZWFuX2NyZWRlbnRpYWxzGAcgASgLMiAuam9ubGluZS5EaWdpdGFsT2NlYW'
+    '5DcmVkZW50aWFsc0gAUhdkaWdpdGFsb2NlYW5DcmVkZW50aWFscxI1CgZncmFudHMYDiADKAsy'
+    'HS5qb25saW5lLkFJTW9kZWxQcm92aWRlckdyYW50UgZncmFudHMSOQoKY3JlYXRlZF9hdBgPIA'
+    'EoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0'
+    'GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBUgl1cGRhdGVkQXSIAQFCCgoIcH'
+    'JvdmlkZXJCDQoLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use aIModelProviderGrantDescriptor instead')
 const AIModelProviderGrant$json = {
@@ -116,6 +119,7 @@ const AIModelProviderGrant$json = {
     {'1': 'ai_model_grantee', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'aiModelGrantee'},
     {'1': 'model_names', '3': 3, '4': 3, '5': 9, '10': 'modelNames'},
     {'1': 'tokens_remaining', '3': 4, '4': 1, '5': 4, '10': 'tokensRemaining'},
+    {'1': 'overage', '3': 5, '4': 1, '5': 4, '10': 'overage'},
     {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'updatedAt', '17': true},
   ],
@@ -129,10 +133,10 @@ final $typed_data.Uint8List aIModelProviderGrantDescriptor = $convert.base64Deco
     'ChRBSU1vZGVsUHJvdmlkZXJHcmFudBIvChRhaV9tb2RlbF9wcm92aWRlcl9pZBgBIAEoCVIRYW'
     'lNb2RlbFByb3ZpZGVySWQSOQoQYWlfbW9kZWxfZ3JhbnRlZRgCIAEoCzIPLmpvbmxpbmUuQXV0'
     'aG9yUg5haU1vZGVsR3JhbnRlZRIfCgttb2RlbF9uYW1lcxgDIAMoCVIKbW9kZWxOYW1lcxIpCh'
-    'B0b2tlbnNfcmVtYWluaW5nGAQgASgEUg90b2tlbnNSZW1haW5pbmcSOQoKY3JlYXRlZF9hdBgP'
-    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2'
-    'F0GBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAUgl1cGRhdGVkQXSIAQFCDQoL'
-    'X3VwZGF0ZWRfYXQ=');
+    'B0b2tlbnNfcmVtYWluaW5nGAQgASgEUg90b2tlbnNSZW1haW5pbmcSGAoHb3ZlcmFnZRgFIAEo'
+    'BFIHb3ZlcmFnZRI5CgpjcmVhdGVkX2F0GA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdG'
+    'FtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGlt'
+    'ZXN0YW1wSABSCXVwZGF0ZWRBdIgBAUINCgtfdXBkYXRlZF9hdA==');
 
 @$core.Deprecated('Use getAIModelProvidersResponseDescriptor instead')
 const GetAIModelProvidersResponse$json = {
@@ -224,6 +228,22 @@ const OpenAICredentials$json = {
 final $typed_data.Uint8List openAICredentialsDescriptor = $convert.base64Decode(
     'ChFPcGVuQUlDcmVkZW50aWFscxIpCg5vcGVuYWlfYXBpX2tleRgBIAEoCUgAUgxvcGVuYWlBcG'
     'lLZXmIAQFCEQoPX29wZW5haV9hcGlfa2V5');
+
+@$core.Deprecated('Use digitalOceanCredentialsDescriptor instead')
+const DigitalOceanCredentials$json = {
+  '1': 'DigitalOceanCredentials',
+  '2': [
+    {'1': 'digitalocean_api_key', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'digitaloceanApiKey', '17': true},
+  ],
+  '8': [
+    {'1': '_digitalocean_api_key'},
+  ],
+};
+
+/// Descriptor for `DigitalOceanCredentials`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List digitalOceanCredentialsDescriptor = $convert.base64Decode(
+    'ChdEaWdpdGFsT2NlYW5DcmVkZW50aWFscxI1ChRkaWdpdGFsb2NlYW5fYXBpX2tleRgBIAEoCU'
+    'gAUhJkaWdpdGFsb2NlYW5BcGlLZXmIAQFCFwoVX2RpZ2l0YWxvY2Vhbl9hcGlfa2V5');
 
 @$core.Deprecated('Use anthropicCredentialsDescriptor instead')
 const AnthropicCredentials$json = {

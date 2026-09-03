@@ -97,7 +97,9 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   /// `provider.provider`'s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not
   /// anything reported by the provider's API itself. Feature gating keys off this rather than
   /// `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
-  /// `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn't need its own hardcoded list of model names.
+  /// `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or
+  /// just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it's empty) doesn't need its own hardcoded
+  /// list of model names.
   @$pb.TagNumber(2)
   $core.List<AIModelCapability> get capabilities => $_getList(1);
 
@@ -238,8 +240,11 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
   void clearUserPrompt() => clearField(2);
 
   /// Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/
-  /// reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored
-  /// if the chosen model doesn't accept image input.
+  /// reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave
+  /// empty for plain text-to-image generation instead -- `model` must have the matching capability either way
+  /// (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see
+  /// [`AIModelCapability`](#jonline-AIModelCapability)'s own doc). Every id must be owned by the current user (or
+  /// the current user must be an Admin).
   @$pb.TagNumber(3)
   $core.List<$core.String> get mediaIds => $_getList(2);
 
@@ -272,6 +277,7 @@ enum AIModelProvider_Provider {
   geminiCredentials, 
   openaiCredentials, 
   anthropicCredentials, 
+  digitaloceanCredentials, 
   notSet
 }
 
@@ -292,8 +298,10 @@ enum AIModelProvider_Provider {
 ///  record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
 ///  call only its owner should be able to make.
 ///
-///  [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
-///  working connection flow (Gemini's Interactions API, OpenAI's Images API);
+///  [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials)/
+///  [`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials) all have a working connection flow (Gemini's
+///  Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+///  OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
 ///  [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
 ///  accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
 class AIModelProvider extends $pb.GeneratedMessage {
@@ -304,6 +312,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
     GeminiCredentials? geminiCredentials,
     OpenAICredentials? openaiCredentials,
     AnthropicCredentials? anthropicCredentials,
+    DigitalOceanCredentials? digitaloceanCredentials,
     $core.Iterable<AIModelProviderGrant>? grants,
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
@@ -327,6 +336,9 @@ class AIModelProvider extends $pb.GeneratedMessage {
     if (anthropicCredentials != null) {
       $result.anthropicCredentials = anthropicCredentials;
     }
+    if (digitaloceanCredentials != null) {
+      $result.digitaloceanCredentials = digitaloceanCredentials;
+    }
     if (grants != null) {
       $result.grants.addAll(grants);
     }
@@ -346,16 +358,18 @@ class AIModelProvider extends $pb.GeneratedMessage {
     4 : AIModelProvider_Provider.geminiCredentials,
     5 : AIModelProvider_Provider.openaiCredentials,
     6 : AIModelProvider_Provider.anthropicCredentials,
+    7 : AIModelProvider_Provider.digitaloceanCredentials,
     0 : AIModelProvider_Provider.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AIModelProvider', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..oo(0, [4, 5, 6])
+    ..oo(0, [4, 5, 6, 7])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aOM<GeminiCredentials>(4, _omitFieldNames ? '' : 'geminiCredentials', subBuilder: GeminiCredentials.create)
     ..aOM<OpenAICredentials>(5, _omitFieldNames ? '' : 'openaiCredentials', subBuilder: OpenAICredentials.create)
     ..aOM<AnthropicCredentials>(6, _omitFieldNames ? '' : 'anthropicCredentials', subBuilder: AnthropicCredentials.create)
+    ..aOM<DigitalOceanCredentials>(7, _omitFieldNames ? '' : 'digitaloceanCredentials', subBuilder: DigitalOceanCredentials.create)
     ..pc<AIModelProviderGrant>(14, _omitFieldNames ? '' : 'grants', $pb.PbFieldType.PM, subBuilder: AIModelProviderGrant.create)
     ..aOM<$12.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
@@ -459,35 +473,51 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   AnthropicCredentials ensureAnthropicCredentials() => $_ensure(5);
 
+  /// A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
+  /// `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
+  /// Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+  /// `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
+  /// billing).
+  @$pb.TagNumber(7)
+  DigitalOceanCredentials get digitaloceanCredentials => $_getN(6);
+  @$pb.TagNumber(7)
+  set digitaloceanCredentials(DigitalOceanCredentials v) { setField(7, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasDigitaloceanCredentials() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearDigitaloceanCredentials() => clearField(7);
+  @$pb.TagNumber(7)
+  DigitalOceanCredentials ensureDigitaloceanCredentials() => $_ensure(6);
+
   /// Other users this provider's owner has granted metered access to, via
   /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) --
   /// see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders).
   @$pb.TagNumber(14)
-  $core.List<AIModelProviderGrant> get grants => $_getList(6);
+  $core.List<AIModelProviderGrant> get grants => $_getList(7);
 
   /// The time the provider was created.
   @$pb.TagNumber(15)
-  $12.Timestamp get createdAt => $_getN(7);
+  $12.Timestamp get createdAt => $_getN(8);
   @$pb.TagNumber(15)
   set createdAt($12.Timestamp v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasCreatedAt() => $_has(7);
+  $core.bool hasCreatedAt() => $_has(8);
   @$pb.TagNumber(15)
   void clearCreatedAt() => clearField(15);
   @$pb.TagNumber(15)
-  $12.Timestamp ensureCreatedAt() => $_ensure(7);
+  $12.Timestamp ensureCreatedAt() => $_ensure(8);
 
   /// The time the provider was last updated (renamed, or had its provider/credentials changed).
   @$pb.TagNumber(16)
-  $12.Timestamp get updatedAt => $_getN(8);
+  $12.Timestamp get updatedAt => $_getN(9);
   @$pb.TagNumber(16)
   set updatedAt($12.Timestamp v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasUpdatedAt() => $_has(8);
+  $core.bool hasUpdatedAt() => $_has(9);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => clearField(16);
   @$pb.TagNumber(16)
-  $12.Timestamp ensureUpdatedAt() => $_ensure(8);
+  $12.Timestamp ensureUpdatedAt() => $_ensure(9);
 }
 
 /// A grant of metered access to someone else's [`AIModelProvider`](#jonline-AIModelProvider), created/reset via
@@ -502,6 +532,7 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
     $15.Author? aiModelGrantee,
     $core.Iterable<$core.String>? modelNames,
     $fixnum.Int64? tokensRemaining,
+    $fixnum.Int64? overage,
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
   }) {
@@ -517,6 +548,9 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
     }
     if (tokensRemaining != null) {
       $result.tokensRemaining = tokensRemaining;
+    }
+    if (overage != null) {
+      $result.overage = overage;
     }
     if (createdAt != null) {
       $result.createdAt = createdAt;
@@ -535,6 +569,7 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'aiModelGrantee', subBuilder: $15.Author.create)
     ..pPS(3, _omitFieldNames ? '' : 'modelNames')
     ..a<$fixnum.Int64>(4, _omitFieldNames ? '' : 'tokensRemaining', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(5, _omitFieldNames ? '' : 'overage', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOM<$12.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
@@ -590,7 +625,9 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   $core.List<$core.String> get modelNames => $_getList(2);
 
   /// The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via
-  /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider).
+  /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia)
+  /// stops working for the grantee entirely, until the owner grants more via
+  /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again.
   @$pb.TagNumber(4)
   $fixnum.Int64 get tokensRemaining => $_getI64(3);
   @$pb.TagNumber(4)
@@ -600,30 +637,45 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearTokensRemaining() => clearField(4);
 
+  /// How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call's actual token usage overshot `tokens_remaining`
+  /// the moment it hit 0 -- effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
+  /// negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a
+  /// grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and
+  /// `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call
+  /// (any prior debt is cleared, not carried forward) -- see that RPC's own doc.
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get overage => $_getI64(4);
+  @$pb.TagNumber(5)
+  set overage($fixnum.Int64 v) { $_setInt64(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasOverage() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearOverage() => clearField(5);
+
   /// The time the grant was first created.
   @$pb.TagNumber(15)
-  $12.Timestamp get createdAt => $_getN(4);
+  $12.Timestamp get createdAt => $_getN(5);
   @$pb.TagNumber(15)
   set createdAt($12.Timestamp v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasCreatedAt() => $_has(4);
+  $core.bool hasCreatedAt() => $_has(5);
   @$pb.TagNumber(15)
   void clearCreatedAt() => clearField(15);
   @$pb.TagNumber(15)
-  $12.Timestamp ensureCreatedAt() => $_ensure(4);
+  $12.Timestamp ensureCreatedAt() => $_ensure(5);
 
   /// The time the grant was last updated (i.e. last reset by another
   /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call).
   @$pb.TagNumber(16)
-  $12.Timestamp get updatedAt => $_getN(5);
+  $12.Timestamp get updatedAt => $_getN(6);
   @$pb.TagNumber(16)
   set updatedAt($12.Timestamp v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasUpdatedAt() => $_has(5);
+  $core.bool hasUpdatedAt() => $_has(6);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => clearField(16);
   @$pb.TagNumber(16)
-  $12.Timestamp ensureUpdatedAt() => $_ensure(5);
+  $12.Timestamp ensureUpdatedAt() => $_ensure(6);
 }
 
 /// Response to a request for a user's [`AIModelProvider`](#jonline-AIModelProvider)s.
@@ -1019,6 +1071,64 @@ class OpenAICredentials extends $pb.GeneratedMessage {
   $core.bool hasOpenaiApiKey() => $_has(0);
   @$pb.TagNumber(1)
   void clearOpenaiApiKey() => clearField(1);
+}
+
+/// Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+/// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+/// Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via
+/// `https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
+/// and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+class DigitalOceanCredentials extends $pb.GeneratedMessage {
+  factory DigitalOceanCredentials({
+    $core.String? digitaloceanApiKey,
+  }) {
+    final $result = create();
+    if (digitaloceanApiKey != null) {
+      $result.digitaloceanApiKey = digitaloceanApiKey;
+    }
+    return $result;
+  }
+  DigitalOceanCredentials._() : super();
+  factory DigitalOceanCredentials.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DigitalOceanCredentials.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DigitalOceanCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'digitaloceanApiKey')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DigitalOceanCredentials clone() => DigitalOceanCredentials()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DigitalOceanCredentials copyWith(void Function(DigitalOceanCredentials) updates) => super.copyWith((message) => updates(message as DigitalOceanCredentials)) as DigitalOceanCredentials;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DigitalOceanCredentials create() => DigitalOceanCredentials._();
+  DigitalOceanCredentials createEmptyInstance() => create();
+  static $pb.PbList<DigitalOceanCredentials> createRepeated() => $pb.PbList<DigitalOceanCredentials>();
+  @$core.pragma('dart2js:noInline')
+  static DigitalOceanCredentials getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DigitalOceanCredentials>(create);
+  static DigitalOceanCredentials? _defaultInstance;
+
+  /// The DigitalOcean Serverless Inference API token. Required (and only used) on
+  /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  @$pb.TagNumber(1)
+  $core.String get digitaloceanApiKey => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set digitaloceanApiKey($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasDigitaloceanApiKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDigitaloceanApiKey() => clearField(1);
 }
 
 /// Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.

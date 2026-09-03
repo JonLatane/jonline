@@ -19,6 +19,7 @@ diesel::table! {
         tokens_remaining -> Int8,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        overage -> Int8,
     }
 }
 

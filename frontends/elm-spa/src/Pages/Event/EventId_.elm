@@ -1837,7 +1837,7 @@ eventDetailView shared model event instance =
                                     onGenerateMediaClicked =
                                         case maybeAccount of
                                             Just account ->
-                                                if List.any AIModelProviders.hasImageEditingCapability account.availableAiModels then
+                                                if List.any AIModelProviders.hasAnyImageCapability account.availableAiModels then
                                                     Just (GenerateMediaClicked event instance)
 
                                                 else

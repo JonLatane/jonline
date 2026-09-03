@@ -15,9 +15,10 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 /// What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
 /// (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
-/// models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`) without the gated feature needing its own
-/// hardcoded list of model names to check against. A model may carry more than one -- e.g. an
-/// image-editing model can also usually do plain text-to-image generation.
+/// models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
+/// without the gated feature needing its own hardcoded list of model names to check against. A
+/// model may carry more than one -- e.g. an image-editing model can also usually do plain
+/// text-to-image generation.
 class AIModelCapability extends $pb.ProtobufEnum {
   static const AIModelCapability AI_MODEL_CAPABILITY_UNKNOWN = AIModelCapability._(0, _omitEnumNames ? '' : 'AI_MODEL_CAPABILITY_UNKNOWN');
   static const AIModelCapability AI_MODEL_CAPABILITY_TEXT_GENERATION = AIModelCapability._(1, _omitEnumNames ? '' : 'AI_MODEL_CAPABILITY_TEXT_GENERATION');

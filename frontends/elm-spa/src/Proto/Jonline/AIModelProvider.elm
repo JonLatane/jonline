@@ -18,7 +18,8 @@ import Proto.Jonline.Internals_
 
 
 {-|  Identifies which external AI service this provider connects to, and carries that service's credentials. Only
- one variant may be set at a time. The `gemini_credentials`/`openai_credentials` variants are accepted by
+ one variant may be set at a time. The `gemini_credentials`/`openai_credentials`/`digitalocean_credentials`
+ variants are accepted by
  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
  see each credentials message below for why the actual key/secret is never sent back in a response.
 
@@ -40,6 +41,15 @@ import Proto.Jonline.Internals_
 ### AnthropicCredentials
 
  An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
+
+
+### DigitaloceanCredentials
+
+ A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
+ `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
+ Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+ `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
+ billing).
 
 
 -}

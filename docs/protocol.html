@@ -450,6 +450,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-DeleteAIModelProviderRequest">DeleteAIModelProviderRequest</a></p>
           </li>
           <li>
+            <p><a href="#jonline-DigitalOceanCredentials">DigitalOceanCredentials</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-GeminiCredentials">GeminiCredentials</a></p>
           </li>
           <li>
@@ -670,9 +673,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h5 id="aimodelproviders"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelproviders"><span class="octicon octicon-link"></span></a>AIModelProviders</h5>
     <p>
       A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s -
-      connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+      connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
       them via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s. See <code>ai_model_providers.proto</code> and the
-      AIModelProvider section below.
+      AIModelProvider section below. Which models are actually available, and what each can do
+      (<a href="#jonline-AIModelCapability"><code>AIModelCapability</code></a>), is a hand-maintained catalog (no provider exposes a stable
+      "list models" API to build this from at request time) - see
+      <a href="https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs"><code>backend/src/logic/ai_model_catalog.rs</code></a>
+      on GitHub for the actual source of truth.
     </p>
     <h4 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h4>
     <p>
@@ -1720,7 +1727,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>GenerateMedia</td>
           <td><a href="#jonline-GenerateMediaRequest">GenerateMediaRequest</a></td>
           <td><a href="#jonline-Media">Media</a></td>
-          <td>Generates (or edits, given reference <code>media_ids</code>) an image via one of the current user's AvailableAIModels, storing it as a new Media and, if <code>target</code> is set, attaching it to that Post/Event. <em>Authenticated</em> -- caller must own or have been granted access to the chosen AIModelProvider, and (if <code>target</code> is set) have edit access to that Post/Event.</td>
+          <td>Generates (or edits, given reference <code>media_ids</code>) an image via one of the current user's AvailableAIModels, storing it as a new Media and, if <code>target</code> is set, attaching it to that Post/Event. <em>Authenticated</em> -- caller must own or have been granted access to the chosen AIModelProvider, and (if <code>target</code> is set) have edit access to that Post/Event. A grantee (never the provider's own owner) spends real AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request's input cost alone, whichever catches an insufficient balance first.</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -7200,8 +7207,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
       call only its owner should be able to make.
     </p>
     <p>
-      <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>/<a href="#jonline-OpenAICredentials"><code>OpenAICredentials</code></a> both have a
-      working connection flow (Gemini's Interactions API, OpenAI's Images API);
+      <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>/<a href="#jonline-OpenAICredentials"><code>OpenAICredentials</code></a>/
+      <a href="#jonline-DigitalOceanCredentials"><code>DigitalOceanCredentials</code></a> all have a working connection flow (Gemini's
+      Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+      OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
       <a href="#jonline-AnthropicCredentials"><code>AnthropicCredentials</code></a> is defined for forward compatibility but is not yet
       accepted by <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (Anthropic doesn't offer image generation).
     </p>
@@ -7250,6 +7259,12 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></td>
           <td></td>
           <td>An Anthropic API connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
+        </tr>
+        <tr>
+          <td>digitalocean_credentials</td>
+          <td><a href="#jonline-DigitalOceanCredentials">DigitalOceanCredentials</a></td>
+          <td></td>
+          <td>A DigitalOcean Gradient AI Platform / Serverless Inference connection (see <code>docs.digitalocean.com/products/inference</code>), used for image generation (no editing -- DigitalOcean's Serverless Inference API has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
         </tr>
         <tr>
           <td>grants</td>
@@ -7313,7 +7328,13 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>tokens_remaining</td>
           <td><a href="#uint64">uint64</a></td>
           <td></td>
-          <td>The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>.</td>
+          <td>The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>. Once this reaches 0, <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> stops working for the grantee entirely, until the owner grants more via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> again.</td>
+        </tr>
+        <tr>
+          <td>overage</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>How far a single <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> call's actual token usage overshot <code>tokens_remaining</code> the moment it hit 0 -- effectively a "negative <code>tokens_remaining</code>" (which, being <code>uint64</code>, can't represent a negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with <code>tokens_remaining = 0</code> and <code>overage = 15</code>. Always 0 immediately after a fresh <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> call (any prior debt is cleared, not carried forward) -- see that RPC's own doc.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -7382,7 +7403,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>capabilities</td>
           <td><a href="#jonline-AIModelCapability">AIModelCapability</a></td>
           <td>repeated</td>
-          <td>What this model can actually do -- from the server's own hardcoded catalog for <code>provider.provider</code>'s variant (see <a href="#jonline-AIModelCapability"><code>AIModelCapability</code></a>), not anything reported by the provider's API itself. Feature gating keys off this rather than <code>model_name</code> directly, so e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> (which needs <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>) doesn't need its own hardcoded list of model names.</td>
+          <td>What this model can actually do -- from the server's own hardcoded catalog for <code>provider.provider</code>'s variant (see <a href="#jonline-AIModelCapability"><code>AIModelCapability</code></a>), not anything reported by the provider's API itself. Feature gating keys off this rather than <code>model_name</code> directly, so e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> (which needs <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> whenever <code>GenerateMediaRequest.media_ids</code> is non-empty, or just <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> when it's empty) doesn't need its own hardcoded list of model names.</td>
         </tr>
         <tr>
           <td>grant</td>
@@ -7416,6 +7437,33 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#jonline-AIModelProvider">AIModelProvider</a></td>
           <td></td>
           <td>The provider to be deleted.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-DigitalOceanCredentials"></a></p>
+    <h3 id="digitaloceancredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#digitaloceancredentials"><span class="octicon octicon-link"></span></a>DigitalOceanCredentials</h3>
+    <p>
+      Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
+      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via
+      <code>https://inference.do-ai.run/v1/images/generations</code>, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
+      and Stable Diffusion models -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>digitalocean_api_key</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The DigitalOcean Serverless Inference API token. Required (and only used) on <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> -- never populated in responses (see <a href="#jonline-GeminiCredentials"><code>GeminiCredentials.gemini_api_key</code></a>).</td>
         </tr>
       </tbody>
     </table>
@@ -7480,7 +7528,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>media_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>Existing <a href="#jonline-Media"><code>Media</code></a> to pass to the model alongside <code>user_prompt</code>, for image editing/ reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored if the chosen model doesn't accept image input.</td>
+          <td>Existing <a href="#jonline-Media"><code>Media</code></a> to pass to the model alongside <code>user_prompt</code>, for image editing/ reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave empty for plain text-to-image generation instead -- <code>model</code> must have the matching capability either way (<code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> here, <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> if empty -- see <a href="#jonline-AIModelCapability"><code>AIModelCapability</code></a>'s own doc). Every id must be owned by the current user (or the current user must be an Admin).</td>
         </tr>
         <tr>
           <td>post_id</td>
@@ -7628,9 +7676,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p>
       What an <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a> can actually do -- drives feature gating
       (e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>'s "Generate Media…" buttons/panel only offer
-      models carrying <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>) without the gated feature needing its own
-      hardcoded list of model names to check against. A model may carry more than one -- e.g. an
-      image-editing model can also usually do plain text-to-image generation.
+      models carrying <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>/<code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code>)
+      without the gated feature needing its own hardcoded list of model names to check against. A
+      model may carry more than one -- e.g. an image-editing model can also usually do plain
+      text-to-image generation.
     </p>
     <table>
       <thead>
@@ -7654,12 +7703,12 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
         <tr>
           <td>AI_MODEL_CAPABILITY_IMAGE_GENERATION</td>
           <td>2</td>
-          <td>The model can generate a new image from a text prompt alone.</td>
+          <td>The model can generate a new image from a text prompt alone -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires when <code>GenerateMediaRequest.media_ids</code> is empty (no reference images to edit with).</td>
         </tr>
         <tr>
           <td>AI_MODEL_CAPABILITY_IMAGE_EDITING</td>
           <td>3</td>
-          <td>The model can edit an existing image, given a text prompt and one or more reference images -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> actually requires, since it always sends the target Post/Event's own context as a prompt and (usually) at least one reference image.</td>
+          <td>The model can edit an existing image, given a text prompt and one or more reference images -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires instead, whenever <code>GenerateMediaRequest.media_ids</code> is non-empty. Not every model with <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> also has this -- some (e.g. the cheaper/faster <code>gemini-3.1-flash-lite-image</code> tier) only support plain generation.</td>
         </tr>
       </tbody>
     </table>

@@ -1,9 +1,10 @@
 //! A static, hand-maintained catalog of the models each `AIModelProvider.provider` variant
 //! supports, and what each one can actually do (see `protos/ai_model_providers.proto`'s
-//! `AIModelCapability`). None of Anthropic/OpenAI/Gemini expose a "list models" endpoint stable/
-//! simple enough to build `AvailableAIModel`s from at request time, so this list is updated by hand
-//! as new models ship -- see `models_for_provider`, used by `rpcs::ai_model_providers` to expand a
-//! provider (or a grant's `model_names`) into the `AvailableAIModel`s a user can actually see.
+//! `AIModelCapability`). None of Anthropic/OpenAI/Gemini/DigitalOcean expose a "list models"
+//! endpoint stable/simple enough to build `AvailableAIModel`s from at request time, so this list is
+//! updated by hand as new models ship -- see `models_for_provider`, used by `rpcs::ai_model_providers`
+//! to expand a provider (or a grant's `model_names`) into the `AvailableAIModel`s a user can
+//! actually see.
 
 use crate::protos::ai_model_provider::Provider;
 use crate::protos::AiModelCapability;
@@ -47,6 +48,19 @@ pub const OPENAI_MODELS: &[ModelInfo] = &[
     ModelInfo { name: "gpt-image-1-mini", capabilities: IMAGE_EDITING_CAPABILITIES },
 ];
 
+/// DigitalOcean's Gradient AI Platform / Serverless Inference (`docs.digitalocean.com/products/inference`) --
+/// GPT Image and Stable Diffusion models re-hosted under DigitalOcean's own billing, all reachable through one
+/// OpenAI-Images-API-shaped `POST /v1/images/generations` endpoint. Generation-only for every model here: unlike
+/// direct OpenAI, DigitalOcean's Serverless Inference API has no `/v1/images/edits`-equivalent endpoint at all
+/// (confirmed against its own endpoint list), so none of these carry `AiModelCapability::ImageEditing`, even the
+/// `gpt-image-*` models that *do* support editing when called directly against OpenAI's own API instead.
+pub const DIGITALOCEAN_MODELS: &[ModelInfo] = &[
+    ModelInfo { name: "openai-gpt-image-2", capabilities: IMAGE_GENERATION_ONLY_CAPABILITIES },
+    ModelInfo { name: "openai-gpt-image-1.5", capabilities: IMAGE_GENERATION_ONLY_CAPABILITIES },
+    ModelInfo { name: "openai-gpt-image-1", capabilities: IMAGE_GENERATION_ONLY_CAPABILITIES },
+    ModelInfo { name: "stable-diffusion-3.5-large", capabilities: IMAGE_GENERATION_ONLY_CAPABILITIES },
+];
+
 /// Anthropic models -- empty for now, since `AnthropicCredentials` isn't yet accepted by
 /// `CreateAIModelProvider` (see that message's own proto doc).
 pub const ANTHROPIC_MODELS: &[ModelInfo] = &[];
@@ -58,6 +72,7 @@ pub fn models_for_provider(provider: &Option<Provider>) -> &'static [ModelInfo] 
         Some(Provider::GeminiCredentials(_)) => GEMINI_MODELS,
         Some(Provider::OpenaiCredentials(_)) => OPENAI_MODELS,
         Some(Provider::AnthropicCredentials(_)) => ANTHROPIC_MODELS,
+        Some(Provider::DigitaloceanCredentials(_)) => DIGITALOCEAN_MODELS,
         None => &[],
     }
 }

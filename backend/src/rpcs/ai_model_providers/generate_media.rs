@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
 
 use chrono::{DateTime, Utc};
 use diesel::*;
@@ -18,6 +17,13 @@ use crate::models::POST_COLUMNS;
 use crate::protos::*;
 use crate::rpcs::{get_server_configuration_proto, validate_any_permission, validate_permission};
 use crate::schema::{ai_model_provider_grants, media, posts};
+
+const OPENAI_BASE_URL: &str = "https://api.openai.com";
+const DIGITALOCEAN_BASE_URL: &str = "https://inference.do-ai.run";
+
+// Pre-flight input-token estimate constants -- see their one use, below.
+const CHARS_PER_TOKEN_ESTIMATE: usize = 4;
+const IMAGE_TOKEN_ESTIMATE: i64 = 258;
 
 /// Generates (or edits, given reference `media_ids`) an image via one of the current user's
 /// [`AvailableAIModel`](#jonline-AvailableAIModel)s, stores it as a new `Media`, and -- if `target`
@@ -45,6 +51,14 @@ pub async fn generate_media(
     if user_prompt.is_empty() {
         return Err(Status::new(Code::InvalidArgument, "user_prompt_required"));
     }
+    // Parsed up front (not down by `load_reference_images`, its only other use) since which
+    // `AiModelCapability` the chosen model needs depends on whether this is empty -- see the
+    // capability check below.
+    let media_ids: Vec<i64> = request
+        .media_ids
+        .iter()
+        .map(|id| id.to_db_id_or_err("media_ids"))
+        .collect::<Result<_, _>>()?;
 
     let provider = models::get_ai_model_provider(provider_id, conn)?;
     let provider_proto = provider_configuration_to_proto(&provider.configuration);
@@ -54,13 +68,25 @@ pub async fn generate_media(
             "model_not_supported_by_provider",
         ));
     }
-    // This whole RPC is specifically for image editing (it always sends the target Post/Event's
-    // own context as a prompt, plus -- usually -- at least one reference image) -- see
-    // `AiModelCapability::ImageEditing`'s own doc.
-    if !capabilities_for_model(&provider_proto, &model_name).contains(&AiModelCapability::ImageEditing) {
+    // Editing (`AI_MODEL_CAPABILITY_IMAGE_EDITING`) is only actually required when there's at least
+    // one reference image to edit with -- a bare prompt with no reference media only needs plain
+    // generation (`AI_MODEL_CAPABILITY_IMAGE_GENERATION`), which some models support without also
+    // supporting editing (see `AiModelCapability`'s own doc, and `ai_model_catalog.rs`'s
+    // `IMAGE_GENERATION_ONLY_CAPABILITIES` models). `Shared.MediaGeneratorPanel`'s own model chooser
+    // mirrors this exact split client-side, but re-checked here since that's just UI, not enforcement.
+    let required_capability = if media_ids.is_empty() {
+        AiModelCapability::ImageGeneration
+    } else {
+        AiModelCapability::ImageEditing
+    };
+    if !capabilities_for_model(&provider_proto, &model_name).contains(&required_capability) {
         return Err(Status::new(
             Code::InvalidArgument,
-            "model_does_not_support_image_editing",
+            if media_ids.is_empty() {
+                "model_does_not_support_image_generation"
+            } else {
+                "model_does_not_support_image_editing"
+            },
         ));
     }
     let api_key = match &provider_proto {
@@ -70,6 +96,10 @@ pub async fn generate_media(
         }
         Some(ai_model_provider::Provider::OpenaiCredentials(_)) => {
             openai_api_key_from_configuration(&provider.configuration)
+                .ok_or_else(|| Status::new(Code::Internal, "invalid_provider_configuration"))?
+        }
+        Some(ai_model_provider::Provider::DigitaloceanCredentials(_)) => {
+            digitalocean_api_key_from_configuration(&provider.configuration)
                 .ok_or_else(|| Status::new(Code::Internal, "invalid_provider_configuration"))?
         }
         _ => {
@@ -206,20 +236,37 @@ pub async fn generate_media(
     };
 
     // Reference images, in the order the caller gave them -- see `GenerateMediaRequest.media_ids`'s
-    // own doc. Every one must actually be owned by `current_user` (or `current_user` must be an
-    // Admin) -- unlike the target Post/Event (read access to *those* is already implied by whatever
-    // let the caller name them in the first place), this is arbitrary media by id, so ownership is
-    // checked explicitly rather than assumed.
-    let media_ids: Vec<i64> = request
-        .media_ids
-        .iter()
-        .map(|id| id.to_db_id_or_err("media_ids"))
-        .collect::<Result<_, _>>()?;
+    // own doc (`media_ids` itself parsed up top, alongside the capability check that depends on
+    // whether it's empty). Every one must actually be owned by `current_user` (or `current_user`
+    // must be an Admin) -- unlike the target Post/Event (read access to *those* is already implied
+    // by whatever let the caller name them in the first place), this is arbitrary media by id, so
+    // ownership is checked explicitly rather than assumed.
     let reference_images = load_reference_images(&media_ids, current_user.id, admin, bucket, conn).await?;
 
+    // A grantee (never the owner -- their own key, their own budget) whose *predicted* input cost
+    // alone already exceeds what's left is rejected here, before any real (paid) request is ever
+    // sent -- the exact, response-driven spend happens after generation succeeds, below, but that's
+    // too late to avoid paying for a call we already know can't be afforded. Deliberately a rough
+    // estimate, not an exact per-provider tokenizer: ~4 characters per token is a common heuristic
+    // for English text, and `IMAGE_TOKEN_ESTIMATE` reuses Gemini's own documented minimum per-image
+    // cost (`ai.google.dev/gemini-api/docs/image-generation`) as a reasonable cross-provider
+    // stand-in, since we don't have exact pixel dimensions for reference media on hand to compute
+    // any provider's real formula precisely. Only ever under-rejects in the "prompt so short it
+    // rounds to 0 estimated tokens" case, which the plain `tokens_remaining <= 0` check above
+    // already covers regardless.
+    if let Some(grant) = &grant {
+        let estimated_input_tokens = (prompt.chars().count() / CHARS_PER_TOKEN_ESTIMATE) as i64
+            + (reference_images.len() as i64 * IMAGE_TOKEN_ESTIMATE);
+        if estimated_input_tokens > grant.tokens_remaining {
+            return Err(Status::new(Code::FailedPrecondition, "insufficient_tokens_for_request"));
+        }
+    }
+
     // Dispatches to the right provider's own API -- `api_key`/`model_name` were already validated
-    // against `provider_proto`'s variant above, so this can't hit the fallback arm.
-    let (generated_content_type, generated_bytes) = match &provider_proto {
+    // against `provider_proto`'s variant above, so this can't hit the fallback arm. `tokens_used`
+    // is `None` for models that don't report `usage.total_tokens` at all (see `openai_media`'s own
+    // doc on `OpenAiGeneratedImage.tokens_used`) -- falls back to a flat 1-token charge below.
+    let (generated_content_type, generated_bytes, tokens_used) = match &provider_proto {
         Some(ai_model_provider::Provider::GeminiCredentials(_)) => {
             let gemini_reference_images: Vec<GeminiImageInput> = reference_images
                 .iter()
@@ -229,7 +276,7 @@ pub async fn generate_media(
                 })
                 .collect();
             let generated = generate_image(&api_key, &model_name, &prompt, &gemini_reference_images)?;
-            (generated.content_type, generated.bytes)
+            (generated.content_type, generated.bytes, generated.tokens_used)
         }
         Some(ai_model_provider::Provider::OpenaiCredentials(_)) => {
             let openai_reference_images: Vec<OpenAiImageInput> = reference_images
@@ -239,26 +286,65 @@ pub async fn generate_media(
                     bytes: bytes.clone(),
                 })
                 .collect();
-            let generated = openai_generate_image(&api_key, &model_name, &prompt, &openai_reference_images)?;
-            (generated.content_type, generated.bytes)
+            let generated =
+                openai_generate_image(OPENAI_BASE_URL, &api_key, &model_name, &prompt, &openai_reference_images)?;
+            (generated.content_type, generated.bytes, generated.tokens_used)
+        }
+        // DigitalOcean's Serverless Inference API is OpenAI-Images-API-shaped (see `openai_media`'s
+        // own doc), so this reuses `openai_generate_image` wholesale -- just against DigitalOcean's
+        // own `base_url`. `reference_images` is always empty here in practice (DigitalOcean's
+        // catalog never grants `AiModelCapability::ImageEditing`, so the capability check above
+        // already rejects any request naming `media_ids` for one of its models before this point is
+        // ever reached), but `openai_generate_image` handles a non-empty list correctly regardless
+        // (it would just 404/error against DigitalOcean's own API, which has no edits endpoint).
+        Some(ai_model_provider::Provider::DigitaloceanCredentials(_)) => {
+            let digitalocean_reference_images: Vec<OpenAiImageInput> = reference_images
+                .iter()
+                .map(|(content_type, bytes)| OpenAiImageInput {
+                    content_type: content_type.clone(),
+                    bytes: bytes.clone(),
+                })
+                .collect();
+            let generated = openai_generate_image(
+                DIGITALOCEAN_BASE_URL,
+                &api_key,
+                &model_name,
+                &prompt,
+                &digitalocean_reference_images,
+            )?;
+            (generated.content_type, generated.bytes, generated.tokens_used)
         }
         _ => return Err(Status::new(Code::InvalidArgument, "ai_model_provider_not_yet_supported")),
     };
 
-    // Only actually spent once generation succeeds -- an atomic decrement (guarded on
-    // `tokens_remaining > 0`) so a race with another concurrent generation can't drive it negative.
+    // Only actually spent once generation succeeds -- `tokens_used` is this call's real cost (the
+    // provider's own reported `usage.total_tokens`, or a flat 1-token charge as a last resort for
+    // models that don't report one at all, e.g. DigitalOcean's `stable-diffusion-3.5-large`). A
+    // raw, parameterized `UPDATE` (rather than Diesel's query builder) so the clamp-to-zero and
+    // `overage` bookkeeping happen in one atomic statement -- `GREATEST(tokens_remaining - $1, 0)`
+    // clamps the new balance at 0 rather than going negative (`tokens_remaining` is unsigned in the
+    // proto, `BIGINT` but never actually negative in the DB either), and
+    // `GREATEST($1 - tokens_remaining, 0)` records the shortfall as `overage` whenever this single
+    // call costs more than what was left -- see `AIModelProviderGrant.overage`'s own proto doc.
+    // Still guarded on `tokens_remaining > 0` (a grant already fully at 0/in overage can't spend
+    // further at all -- see `GenerateMediaRequest`'s own doc on why), so a race with another
+    // concurrent generation can't double-spend the same tokens.
     if let Some(grant) = &grant {
-        let updated = update(ai_model_provider_grants::table.find(grant.id))
-            .filter(ai_model_provider_grants::tokens_remaining.gt(0))
-            .set((
-                ai_model_provider_grants::tokens_remaining.eq(ai_model_provider_grants::tokens_remaining - 1),
-                ai_model_provider_grants::updated_at.eq(SystemTime::now()),
-            ))
-            .execute(conn)
-            .map_err(|e| {
-                log::error!("Failed to spend AI model provider grant token: {:?}", e);
-                Status::new(Code::Internal, "failed_to_spend_token")
-            })?;
+        let tokens_used = tokens_used.unwrap_or(1).max(1);
+        let updated = diesel::sql_query(
+            "UPDATE ai_model_provider_grants \
+             SET tokens_remaining = GREATEST(tokens_remaining - $1, 0), \
+                 overage = GREATEST($1 - tokens_remaining, 0), \
+                 updated_at = NOW() \
+             WHERE id = $2 AND tokens_remaining > 0",
+        )
+        .bind::<diesel::sql_types::BigInt, _>(tokens_used)
+        .bind::<diesel::sql_types::BigInt, _>(grant.id)
+        .execute(conn)
+        .map_err(|e| {
+            log::error!("Failed to spend AI model provider grant tokens: {:?}", e);
+            Status::new(Code::Internal, "failed_to_spend_token")
+        })?;
         if updated == 0 {
             return Err(Status::new(Code::FailedPrecondition, "no_tokens_remaining"));
         }

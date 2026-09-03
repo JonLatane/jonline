@@ -52,6 +52,7 @@ impl ToProtoMarshalableAIModelProviderGrant for MarshalableAIModelProviderGrant 
             ai_model_grantee: Some(grantee.to_proto(None)),
             model_names: grant.model_names.clone(),
             tokens_remaining: grant.tokens_remaining as u64,
+            overage: grant.overage as u64,
             created_at: Some(grant.created_at.to_proto()),
             updated_at: grant.updated_at.map(|t| t.to_proto()),
         }
@@ -179,6 +180,13 @@ pub fn provider_configuration_to_proto(
             },
         ));
     }
+    if configuration.get("digitalocean_credentials").is_some() {
+        return Some(ai_model_provider::Provider::DigitaloceanCredentials(
+            DigitalOceanCredentials {
+                digitalocean_api_key: None,
+            },
+        ));
+    }
     None
 }
 
@@ -206,6 +214,18 @@ pub fn openai_api_key_from_configuration(configuration: &serde_json::Value) -> O
         .filter(|key| !key.trim().is_empty())
 }
 
+/// `gemini_api_key_from_configuration`'s counterpart for `DigitalOceanCredentials` -- same
+/// reasoning, used by `rpcs::ai_model_providers::generate_media` to actually call DigitalOcean's
+/// Serverless Inference API.
+pub fn digitalocean_api_key_from_configuration(configuration: &serde_json::Value) -> Option<String> {
+    configuration
+        .get("digitalocean_credentials")?
+        .get("digitalocean_api_key")?
+        .as_str()
+        .map(str::to_string)
+        .filter(|key| !key.trim().is_empty())
+}
+
 /// The reverse of `provider_configuration_to_proto` -- builds the `configuration` column value
 /// (with the real key/secret included) from a request's `oneof provider`. Used by
 /// `create_ai_model_provider`/`update_ai_model_provider`.
@@ -221,6 +241,9 @@ pub fn provider_configuration_to_json(
         }
         Some(ai_model_provider::Provider::AnthropicCredentials(credentials)) => {
             serde_json::json!({ "anthropic_credentials": { "anthropic_api_key": credentials.anthropic_api_key.clone().unwrap_or_default() } })
+        }
+        Some(ai_model_provider::Provider::DigitaloceanCredentials(credentials)) => {
+            serde_json::json!({ "digitalocean_credentials": { "digitalocean_api_key": credentials.digitalocean_api_key.clone().unwrap_or_default() } })
         }
         None => serde_json::json!({}),
     }

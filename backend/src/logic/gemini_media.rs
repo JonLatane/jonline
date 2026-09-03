@@ -20,6 +20,12 @@ pub struct GeminiImageInput {
 pub struct GeneratedImage {
     pub content_type: String,
     pub bytes: Vec<u8>,
+    /// This call's `usage.total_tokens`, if the response reported one -- what
+    /// `rpcs::ai_model_providers::generate_media` actually deducts from a grantee's
+    /// `AIModelProviderGrant.tokens_remaining`. `None` if the response had no `usage` object at
+    /// all (defensive -- every request we've seen has one, but this shouldn't hard-fail generation
+    /// itself if a future response ever omits it).
+    pub tokens_used: Option<i64>,
 }
 
 const GEMINI_INTERACTIONS_URL: &str = "https://generativelanguage.googleapis.com/v1beta/interactions";
@@ -103,6 +109,7 @@ fn parse_generated_image(value: &serde_json::Value) -> Result<GeneratedImage, St
     let bytes = STANDARD
         .decode(data)
         .map_err(|_| Status::new(Code::Internal, "gemini_invalid_image_data"))?;
+    let tokens_used = value["usage"]["total_tokens"].as_i64();
 
-    Ok(GeneratedImage { content_type, bytes })
+    Ok(GeneratedImage { content_type, bytes, tokens_used })
 }

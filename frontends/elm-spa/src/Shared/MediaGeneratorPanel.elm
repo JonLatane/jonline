@@ -155,21 +155,17 @@ update accountsPanelModel msg model =
     case msg of
         Open target host basePath ->
             let
-                account : Maybe AccountsPanel.Account
-                account =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
-
-                availableModels : List AvailableAIModel
-                availableModels =
-                    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+                media : List MediaReference
+                media =
+                    defaultMedia target
             in
             ( { init
                 | targetHost = host
                 , basePath = basePath
                 , target = target
-                , media = defaultMedia target
+                , media = media
                 , prompt = defaultPrompt target
-                , selectedModel = List.head availableModels
+                , selectedModel = List.head (availableModelsFor accountsPanelModel host media)
               }
             , Cmd.none
             , ( Nothing, Nothing )
@@ -180,13 +176,9 @@ update accountsPanelModel msg model =
 
         ModelSelected key ->
             let
-                account : Maybe AccountsPanel.Account
-                account =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
-
                 availableModels : List AvailableAIModel
                 availableModels =
-                    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+                    availableModelsFor accountsPanelModel model.targetHost model.media
             in
             ( { model | selectedModel = List.filter (\m -> availableAIModelKey m == key) availableModels |> List.head }
             , Cmd.none
@@ -200,7 +192,18 @@ update accountsPanelModel msg model =
             )
 
         MediaSaved media ->
-            ( { model | media = media, mediaEditActive = False }, Cmd.none, ( Nothing, Nothing ) )
+            -- Picking/clearing reference media can flip which capability is required (see
+            -- `availableModelsFor`'s own doc) -- `reselectIfInvalid` keeps `selectedModel` valid
+            -- for the new `media`, so the model chooser (`view`) and this panel's own `selectedModel`
+            -- never disagree about what's actually selected.
+            ( { model
+                | media = media
+                , mediaEditActive = False
+                , selectedModel = reselectIfInvalid (availableModelsFor accountsPanelModel model.targetHost media) model.selectedModel
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
 
         MediaEditClosed ->
             ( { model | mediaEditActive = False }, Cmd.none, ( Nothing, Nothing ) )
@@ -284,6 +287,54 @@ defaultPrompt target =
             ""
 
 
+{-| The `AvailableAIModel`s actually selectable right now -- editing-capable
+(`AIModelProviders.hasImageEditingCapability`) once `media` is non-empty (`GenerateMedia` requires
+`AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever there are reference images to edit with), otherwise
+generation-capable (`hasImageGenerationCapability`) -- which also includes every editing-capable
+model, since this session's catalog (`ai_model_catalog.rs`) always pairs the two, but is checked
+explicitly rather than assumed. Reused by `Open`/`ModelSelected`/`MediaSaved`/`view` so the model
+chooser, `selectedModel`, and what `GenerateClicked` can actually submit all stay in lockstep as
+`media` changes -- see `reselectIfInvalid`, the other half of that.
+-}
+availableModelsFor : AccountsPanel.Model -> String -> List MediaReference -> List AvailableAIModel
+availableModelsFor accountsPanelModel host media =
+    let
+        account : Maybe AccountsPanel.Account
+        account =
+            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+
+        capable : AvailableAIModel -> Bool
+        capable =
+            if List.isEmpty media then
+                AIModelProviders.hasImageGenerationCapability
+
+            else
+                AIModelProviders.hasImageEditingCapability
+    in
+    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter capable
+
+
+{-| Keeps `current` if it's still in `validModels` (compared by `availableAIModelKey`, not `==`,
+same reasoning `modelChooserView`'s own `selected` check has), otherwise falls back to
+`List.head validModels` (`Nothing` if that's empty too -- see `view`'s own "no valid model" message
+for that case). Used by `MediaSaved` -- picking/clearing reference media can flip which capability
+`availableModelsFor` requires, and a `selectedModel` that was valid before that flip might not be
+anymore.
+-}
+reselectIfInvalid : List AvailableAIModel -> Maybe AvailableAIModel -> Maybe AvailableAIModel
+reselectIfInvalid validModels current =
+    case current of
+        Just selected ->
+            if List.any (\m -> availableAIModelKey m == availableAIModelKey selected) validModels then
+                current
+
+            else
+                List.head validModels
+
+        Nothing ->
+            List.head validModels
+
+
 {-| A composite key identifying one `AvailableAIModel` in the model chooser `<select>` -- neither
 `modelName` nor `provider.id` alone is unique (the same model name can appear once per grant on
 different providers), but the pair always is. Mirrors `Components.Pages.UserProfilePage.aiModelProviderGrantKey`'s
@@ -328,7 +379,11 @@ availableAIModelLabel viewerUsername available =
         tokensSuffix =
             case available.grant of
                 Just grant ->
-                    " (" ++ String.fromInt (Conversions.int64ToInt grant.tokensRemaining) ++ " tokens left)"
+                    if Conversions.int64ToInt grant.overage > 0 then
+                        " (" ++ String.fromInt (Conversions.int64ToInt grant.overage) ++ " over budget)"
+
+                    else
+                        " (" ++ String.fromInt (Conversions.int64ToInt grant.tokensRemaining) ++ " tokens left)"
 
                 Nothing ->
                     ""
@@ -349,7 +404,7 @@ view time accountsPanelModel model =
 
         availableModels : List AvailableAIModel
         availableModels =
-            maybeAccount |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+            availableModelsFor accountsPanelModel model.targetHost model.media
 
         canGenerate : Bool
         canGenerate =
@@ -458,7 +513,15 @@ modelChooserView viewerUsername availableModels model =
     div [ class "media-generator-panel-field" ]
         [ span [ class "media-generator-panel-label" ] [ text "Model" ]
         , if List.isEmpty availableModels then
-            div [ class "media-generator-panel-no-models" ] [ text "No image-editing AI models available." ]
+            div [ class "media-generator-panel-no-models" ]
+                [ text
+                    (if List.isEmpty model.media then
+                        "No AI models available."
+
+                     else
+                        "No image-editing AI models available -- remove reference media to generate from a prompt alone instead."
+                    )
+                ]
 
           else
             select [ class "media-generator-panel-model-select", onInput ModelSelected ]

@@ -52,7 +52,7 @@ import Json.Decode as Decode
 import Set
 import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, EventSyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultEventSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
+import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, EventSyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultEventSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
 import Proto.Jonline.AIModelProvider.Provider as AIModelProviderProvider
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
@@ -583,13 +583,14 @@ type alias AIModelProviderRowEdit =
     }
 
 
-{-| Which credentials variant a new `AIModelProvider` is being created with -- both are currently
-creatable (see `AIModelProvider`'s own proto doc); `Anthropic` isn't included here since it isn't
-yet.
+{-| Which credentials variant a new `AIModelProvider` is being created with -- all three are
+currently creatable (see `AIModelProvider`'s own proto doc); `Anthropic` isn't included here since
+it isn't yet.
 -}
 type AddAIModelProviderType
     = AddGeminiProvider
     | AddOpenAIProvider
+    | AddDigitalOceanProvider
 
 
 type alias AIModelProviderAddForm =
@@ -2365,6 +2366,9 @@ updateInner shared msg model =
                                     Just (AIModelProviderProvider.OpenaiCredentials _) ->
                                         Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just edit.pendingApiKey })
 
+                                    Just (AIModelProviderProvider.DigitaloceanCredentials _) ->
+                                        Just (AIModelProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just edit.pendingApiKey })
+
                                     _ ->
                                         Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just edit.pendingApiKey })
                     }
@@ -2415,6 +2419,9 @@ updateInner shared msg model =
                     if typeString == "openai" then
                         AddOpenAIProvider
 
+                    else if typeString == "digitalocean" then
+                        AddDigitalOceanProvider
+
                     else
                         AddGeminiProvider
             in
@@ -2443,6 +2450,9 @@ updateInner shared msg model =
 
                                 AddOpenAIProvider ->
                                     Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just ap.addForm.apiKey })
+
+                                AddDigitalOceanProvider ->
+                                    Just (AIModelProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just ap.addForm.apiKey })
                     }
             in
             ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | status = Submitting }) ap }
@@ -4572,8 +4582,9 @@ aiModelProvidersContentView canAdd ap providers =
         [ div [ class "ai-model-providers-message" ] [ text "No AI model providers yet." ] ]
 
 
-{-| `gemini_credentials`/`openai_credentials` are both creatable (see `AIModelProvider`'s own proto
-doc); this covers all three variants for whenever an `anthropic_credentials` connect flow is added.
+{-| `gemini_credentials`/`openai_credentials`/`digitalocean_credentials` are all creatable (see
+`AIModelProvider`'s own proto doc); this covers all four variants for whenever an
+`anthropic_credentials` connect flow is added.
 -}
 aiModelProviderProviderLabel : AIModelProvider -> String
 aiModelProviderProviderLabel provider =
@@ -4586,6 +4597,9 @@ aiModelProviderProviderLabel provider =
 
         Just (AIModelProviderProvider.AnthropicCredentials _) ->
             "Anthropic"
+
+        Just (AIModelProviderProvider.DigitaloceanCredentials _) ->
+            "DigitalOcean"
 
         Nothing ->
             "AI Model Provider"
@@ -4850,7 +4864,18 @@ aiModelProviderGrantRowView config provider revokeStatus grant =
                     []
                )
             ++ [ span [ class "ai-model-provider-grant-models" ] [ text ("Models: " ++ modelsLabel) ]
-               , span [ class "ai-model-provider-grant-tokens" ] [ text (String.fromInt (Conversions.int64ToInt grant.tokensRemaining) ++ " tokens remaining") ]
+               , span [ class "ai-model-provider-grant-tokens" ]
+                    [ text
+                        (String.fromInt (Conversions.int64ToInt grant.tokensRemaining)
+                            ++ " tokens remaining"
+                            ++ (if Conversions.int64ToInt grant.overage > 0 then
+                                    " (" ++ String.fromInt (Conversions.int64ToInt grant.overage) ++ " over budget)"
+
+                                else
+                                    ""
+                               )
+                        )
+                    ]
                ]
             ++ (if config.canManage then
                     [ div [ class "ai-model-provider-grant-actions" ]
@@ -4897,6 +4922,9 @@ addAIModelProviderTypeValue providerType =
         AddOpenAIProvider ->
             "openai"
 
+        AddDigitalOceanProvider ->
+            "digitalocean"
+
 
 addAIModelProviderTypeLabel : AddAIModelProviderType -> String
 addAIModelProviderTypeLabel providerType =
@@ -4906,6 +4934,9 @@ addAIModelProviderTypeLabel providerType =
 
         AddOpenAIProvider ->
             "OpenAI"
+
+        AddDigitalOceanProvider ->
+            "DigitalOcean"
 
 
 aiModelProviderAddRowView : AIModelProviderAddForm -> Html Msg
@@ -4924,7 +4955,7 @@ aiModelProviderAddRowView addForm =
                         ]
                         [ text (addAIModelProviderTypeLabel providerType) ]
                 )
-                [ AddGeminiProvider, AddOpenAIProvider ]
+                [ AddGeminiProvider, AddOpenAIProvider, AddDigitalOceanProvider ]
             )
         , input
             [ class "ai-model-provider-name"

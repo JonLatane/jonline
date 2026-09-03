@@ -14,21 +14,28 @@ export const protobufPackage = "jonline";
 /**
  * What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
  * (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
- * models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`) without the gated feature needing its own
- * hardcoded list of model names to check against. A model may carry more than one -- e.g. an
- * image-editing model can also usually do plain text-to-image generation.
+ * models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
+ * without the gated feature needing its own hardcoded list of model names to check against. A
+ * model may carry more than one -- e.g. an image-editing model can also usually do plain
+ * text-to-image generation.
  */
 export enum AIModelCapability {
   /** AI_MODEL_CAPABILITY_UNKNOWN - The model's capabilities are unknown (e.g. the server doesn't know what this provider supports). */
   AI_MODEL_CAPABILITY_UNKNOWN = 0,
   /** AI_MODEL_CAPABILITY_TEXT_GENERATION - The model can generate new text from a prompt. */
   AI_MODEL_CAPABILITY_TEXT_GENERATION = 1,
-  /** AI_MODEL_CAPABILITY_IMAGE_GENERATION - The model can generate a new image from a text prompt alone. */
+  /**
+   * AI_MODEL_CAPABILITY_IMAGE_GENERATION - The model can generate a new image from a text prompt alone -- what
+   * [`GenerateMedia`](#grpc-api-GenerateMedia) requires when `GenerateMediaRequest.media_ids` is
+   * empty (no reference images to edit with).
+   */
   AI_MODEL_CAPABILITY_IMAGE_GENERATION = 2,
   /**
    * AI_MODEL_CAPABILITY_IMAGE_EDITING - The model can edit an existing image, given a text prompt and one or more reference images --
-   * what [`GenerateMedia`](#grpc-api-GenerateMedia) actually requires, since it always sends the
-   * target Post/Event's own context as a prompt and (usually) at least one reference image.
+   * what [`GenerateMedia`](#grpc-api-GenerateMedia) requires instead, whenever
+   * `GenerateMediaRequest.media_ids` is non-empty. Not every model with
+   * `AI_MODEL_CAPABILITY_IMAGE_GENERATION` also has this -- some (e.g. the cheaper/faster
+   * `gemini-3.1-flash-lite-image` tier) only support plain generation.
    */
   AI_MODEL_CAPABILITY_IMAGE_EDITING = 3,
   UNRECOGNIZED = -1,
@@ -89,7 +96,9 @@ export interface AvailableAIModel {
    * `provider.provider`'s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not
    * anything reported by the provider's API itself. Feature gating keys off this rather than
    * `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
-   * `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn't need its own hardcoded list of model names.
+   * `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or
+   * just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it's empty) doesn't need its own hardcoded
+   * list of model names.
    */
   capabilities: AIModelCapability[];
   /**
@@ -133,8 +142,11 @@ export interface GenerateMediaRequest {
   userPrompt: string;
   /**
    * Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/
-   * reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored
-   * if the chosen model doesn't accept image input.
+   * reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave
+   * empty for plain text-to-image generation instead -- `model` must have the matching capability either way
+   * (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see
+   * [`AIModelCapability`](#jonline-AIModelCapability)'s own doc). Every id must be owned by the current user (or
+   * the current user must be an Admin).
    */
   mediaIds: string[];
   /** Attach to (and use the content of) this Post. Caller must be its author, or an Admin. */
@@ -169,8 +181,10 @@ export interface GenerateMediaRequest {
  * record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
  * call only its owner should be able to make.
  *
- * [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
- * working connection flow (Gemini's Interactions API, OpenAI's Images API);
+ * [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials)/
+ * [`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials) all have a working connection flow (Gemini's
+ * Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+ * OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
  * [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
  * accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
  */
@@ -209,6 +223,16 @@ export interface AIModelProvider {
     | AnthropicCredentials
     | undefined;
   /**
+   * A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
+   * `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
+   * Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+   * `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
+   * billing).
+   */
+  digitaloceanCredentials?:
+    | DigitalOceanCredentials
+    | undefined;
+  /**
    * Other users this provider's owner has granted metered access to, via
    * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) --
    * see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders).
@@ -245,9 +269,20 @@ export interface AIModelProviderGrant {
   modelNames: string[];
   /**
    * The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via
-   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider).
+   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia)
+   * stops working for the grantee entirely, until the owner grants more via
+   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again.
    */
   tokensRemaining: number;
+  /**
+   * How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call's actual token usage overshot `tokens_remaining`
+   * the moment it hit 0 -- effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
+   * negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a
+   * grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and
+   * `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call
+   * (any prior debt is cleared, not carried forward) -- see that RPC's own doc.
+   */
+  overage: number;
   /** The time the grant was first created. */
   createdAt:
     | string
@@ -347,6 +382,22 @@ export interface OpenAICredentials {
    * never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
    */
   openaiApiKey?: string | undefined;
+}
+
+/**
+ * Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+ * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+ * Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via
+ * `https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
+ * and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+ */
+export interface DigitalOceanCredentials {
+  /**
+   * The DigitalOcean Serverless Inference API token. Required (and only used) on
+   * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+   * never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+   */
+  digitaloceanApiKey?: string | undefined;
 }
 
 /** Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only. */
@@ -618,6 +669,7 @@ function createBaseAIModelProvider(): AIModelProvider {
     geminiCredentials: undefined,
     openaiCredentials: undefined,
     anthropicCredentials: undefined,
+    digitaloceanCredentials: undefined,
     grants: [],
     createdAt: undefined,
     updatedAt: undefined,
@@ -643,6 +695,9 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     }
     if (message.anthropicCredentials !== undefined) {
       AnthropicCredentials.encode(message.anthropicCredentials, writer.uint32(50).fork()).join();
+    }
+    if (message.digitaloceanCredentials !== undefined) {
+      DigitalOceanCredentials.encode(message.digitaloceanCredentials, writer.uint32(58).fork()).join();
     }
     for (const v of message.grants) {
       AIModelProviderGrant.encode(v!, writer.uint32(114).fork()).join();
@@ -711,6 +766,14 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
           message.anthropicCredentials = AnthropicCredentials.decode(reader, reader.uint32());
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.digitaloceanCredentials = DigitalOceanCredentials.decode(reader, reader.uint32());
+          continue;
+        }
         case 14: {
           if (tag !== 114) {
             break;
@@ -758,6 +821,9 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
       anthropicCredentials: isSet(object.anthropicCredentials)
         ? AnthropicCredentials.fromJSON(object.anthropicCredentials)
         : undefined,
+      digitaloceanCredentials: isSet(object.digitaloceanCredentials)
+        ? DigitalOceanCredentials.fromJSON(object.digitaloceanCredentials)
+        : undefined,
       grants: globalThis.Array.isArray(object?.grants)
         ? object.grants.map((e: any) => AIModelProviderGrant.fromJSON(e))
         : [],
@@ -785,6 +851,9 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     }
     if (message.anthropicCredentials !== undefined) {
       obj.anthropicCredentials = AnthropicCredentials.toJSON(message.anthropicCredentials);
+    }
+    if (message.digitaloceanCredentials !== undefined) {
+      obj.digitaloceanCredentials = DigitalOceanCredentials.toJSON(message.digitaloceanCredentials);
     }
     if (message.grants?.length) {
       obj.grants = message.grants.map((e) => AIModelProviderGrant.toJSON(e));
@@ -817,6 +886,10 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     message.anthropicCredentials = (object.anthropicCredentials !== undefined && object.anthropicCredentials !== null)
       ? AnthropicCredentials.fromPartial(object.anthropicCredentials)
       : undefined;
+    message.digitaloceanCredentials =
+      (object.digitaloceanCredentials !== undefined && object.digitaloceanCredentials !== null)
+        ? DigitalOceanCredentials.fromPartial(object.digitaloceanCredentials)
+        : undefined;
     message.grants = object.grants?.map((e) => AIModelProviderGrant.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
@@ -830,6 +903,7 @@ function createBaseAIModelProviderGrant(): AIModelProviderGrant {
     aiModelGrantee: undefined,
     modelNames: [],
     tokensRemaining: 0,
+    overage: 0,
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -848,6 +922,9 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     }
     if (message.tokensRemaining !== 0) {
       writer.uint32(32).uint64(message.tokensRemaining);
+    }
+    if (message.overage !== 0) {
+      writer.uint32(40).uint64(message.overage);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(122).fork()).join();
@@ -897,6 +974,14 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
           message.tokensRemaining = longToNumber(reader.uint64());
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.overage = longToNumber(reader.uint64());
+          continue;
+        }
         case 15: {
           if (tag !== 122) {
             break;
@@ -930,6 +1015,7 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
         ? object.modelNames.map((e: any) => globalThis.String(e))
         : [],
       tokensRemaining: isSet(object.tokensRemaining) ? globalThis.Number(object.tokensRemaining) : 0,
+      overage: isSet(object.overage) ? globalThis.Number(object.overage) : 0,
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
@@ -948,6 +1034,9 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     }
     if (message.tokensRemaining !== 0) {
       obj.tokensRemaining = Math.round(message.tokensRemaining);
+    }
+    if (message.overage !== 0) {
+      obj.overage = Math.round(message.overage);
     }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
@@ -969,6 +1058,7 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
       : undefined;
     message.modelNames = object.modelNames?.map((e) => e) || [];
     message.tokensRemaining = object.tokensRemaining ?? 0;
+    message.overage = object.overage ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;
@@ -1413,6 +1503,66 @@ export const OpenAICredentials: MessageFns<OpenAICredentials> = {
   fromPartial<I extends Exact<DeepPartial<OpenAICredentials>, I>>(object: I): OpenAICredentials {
     const message = createBaseOpenAICredentials();
     message.openaiApiKey = object.openaiApiKey ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDigitalOceanCredentials(): DigitalOceanCredentials {
+  return { digitaloceanApiKey: undefined };
+}
+
+export const DigitalOceanCredentials: MessageFns<DigitalOceanCredentials> = {
+  encode(message: DigitalOceanCredentials, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.digitaloceanApiKey !== undefined) {
+      writer.uint32(10).string(message.digitaloceanApiKey);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DigitalOceanCredentials {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDigitalOceanCredentials();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.digitaloceanApiKey = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DigitalOceanCredentials {
+    return {
+      digitaloceanApiKey: isSet(object.digitaloceanApiKey) ? globalThis.String(object.digitaloceanApiKey) : undefined,
+    };
+  },
+
+  toJSON(message: DigitalOceanCredentials): unknown {
+    const obj: any = {};
+    if (message.digitaloceanApiKey !== undefined) {
+      obj.digitaloceanApiKey = message.digitaloceanApiKey;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DigitalOceanCredentials>, I>>(base?: I): DigitalOceanCredentials {
+    return DigitalOceanCredentials.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DigitalOceanCredentials>, I>>(object: I): DigitalOceanCredentials {
+    const message = createBaseDigitalOceanCredentials();
+    message.digitaloceanApiKey = object.digitaloceanApiKey ?? undefined;
     return message;
   },
 };

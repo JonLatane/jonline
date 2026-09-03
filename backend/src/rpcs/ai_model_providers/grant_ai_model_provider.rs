@@ -38,6 +38,9 @@ pub fn grant_ai_model_provider(
             grantee_id,
             model_names: request.model_names,
             tokens_remaining: request.tokens as i64,
+            // A (re-)grant always clears any prior debt -- see `AIModelProviderGrant.overage`'s
+            // own doc.
+            overage: 0,
         },
         conn,
     )?;

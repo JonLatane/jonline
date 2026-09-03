@@ -4,7 +4,9 @@ module Components.AIModelProviders exposing
     , generateMedia
     , getAIModelProviders
     , grantAIModelProvider
+    , hasAnyImageCapability
     , hasImageEditingCapability
+    , hasImageGenerationCapability
     , revokeAIModelProvider
     , updateAIModelProvider
     )
@@ -179,13 +181,36 @@ generateMedia accountsPanelModel maybeAccountServer request =
         )
 
 
-{-| Whether `available` can actually do the image editing `generateMedia`/`Shared.MediaGeneratorPanel`
-require -- `AvailableAIModel.capabilities` is the server's own hardcoded catalog for the model (see
+{-| Whether `available` can edit an existing image (given one or more reference images plus a
+prompt) -- `AvailableAIModel.capabilities` is the server's own hardcoded catalog for the model (see
 `AIModelCapability`'s own doc, `ai_model_providers.proto`), not anything this frontend infers from
-`modelName` itself. Used both to gate whether a Post/Event's "Generate Media…" button appears at all
-(`Components.Posts.generateMediaButton`'s callers) and to filter the model chooser inside the panel
-itself down to only the models that would actually work.
+`modelName` itself. `Shared.MediaGeneratorPanel`'s own model chooser filters down to only these once
+the user has picked any reference media (`GenerateMedia`'s own `AI_MODEL_CAPABILITY_IMAGE_EDITING`
+requirement in that case) -- see `hasImageGenerationCapability`'s own doc for the no-reference-media
+case.
 -}
 hasImageEditingCapability : AvailableAIModel -> Bool
 hasImageEditingCapability available =
     List.member AIMODELCAPABILITYIMAGEEDITING available.capabilities
+
+
+{-| `hasImageEditingCapability`'s counterpart for plain text-to-image generation (no reference
+media) -- some models (e.g. `gemini-3.1-flash-lite-image`, the cheaper/faster Gemini tier) only
+support this, not editing. `Shared.MediaGeneratorPanel`'s model chooser uses this instead of
+`hasImageEditingCapability` whenever its own `media` selection is empty, and reactively re-filters
+(re-picking `selectedModel` if it's no longer valid) the moment that changes either way.
+-}
+hasImageGenerationCapability : AvailableAIModel -> Bool
+hasImageGenerationCapability available =
+    List.member AIMODELCAPABILITYIMAGEGENERATION available.capabilities
+
+
+{-| Whether `available` is usable by `GenerateMedia` at all, in *either* mode -- editing (given
+reference media) or plain generation (given none). Used to gate whether a Post/Event's
+"Generate Media…" button appears at all (`Components.Posts.generateMediaButton`'s callers) --
+broader than either capability alone, since a generation-only model is still perfectly usable there
+as long as the user doesn't go on to pick any reference media in the panel it opens.
+-}
+hasAnyImageCapability : AvailableAIModel -> Bool
+hasAnyImageCapability available =
+    hasImageEditingCapability available || hasImageGenerationCapability available

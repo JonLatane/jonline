@@ -36,6 +36,10 @@ pub struct AIModelProviderGrant {
     pub tokens_remaining: i64,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
+    // How far a single `GenerateMedia` call's actual token usage overshot `tokens_remaining` the
+    // moment it hit 0 -- see `AIModelProviderGrant.overage`'s own proto doc, and
+    // `rpcs::ai_model_providers::generate_media`'s own spend logic.
+    pub overage: i64,
 }
 
 #[derive(Debug, Insertable)]
@@ -45,6 +49,11 @@ pub struct NewAIModelProviderGrant {
     pub grantee_id: i64,
     pub model_names: Vec<String>,
     pub tokens_remaining: i64,
+    // Always 0 for a fresh grant -- see `AIModelProviderGrant.overage`'s own doc. Included here
+    // (rather than relying on the column's own DB default) since `GrantAIModelProvider`'s upsert
+    // needs to reset it back to 0 on conflict too (a repeat grant clears any prior debt), and an
+    // `ON CONFLICT DO UPDATE SET` only touches columns actually present in `.set()`.
+    pub overage: i64,
 }
 
 pub fn get_ai_model_provider(id: i64, conn: &mut PgPooledConnection) -> Result<AIModelProvider, Status> {
@@ -151,6 +160,9 @@ pub fn upsert_ai_model_provider_grant(
         .set((
             ai_model_provider_grants::model_names.eq(&new_grant.model_names),
             ai_model_provider_grants::tokens_remaining.eq(new_grant.tokens_remaining),
+            // A (re-)grant always clears any prior debt -- see `AIModelProviderGrant.overage`'s
+            // own doc.
+            ai_model_provider_grants::overage.eq(new_grant.overage),
             ai_model_provider_grants::updated_at.eq(SystemTime::now()),
         ))
         .get_result::<AIModelProviderGrant>(conn)

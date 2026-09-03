@@ -170,9 +170,13 @@ import "server_configuration.proto";
 //
 // ##### AIModelProviders
 // A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
-// connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+// connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
 // them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
-// AIModelProvider section below.
+// AIModelProvider section below. Which models are actually available, and what each can do
+// ([`AIModelCapability`](#jonline-AIModelCapability)), is a hand-maintained catalog (no provider exposes a stable
+// "list models" API to build this from at request time) - see
+// [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs)
+// on GitHub for the actual source of truth.
 //
 // #### Media
 // [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -904,7 +908,10 @@ service Jonline {
   // Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
   // storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
   // must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
-  // to that Post/Event.
+  // to that Post/Event. A grantee (never the provider's own owner) spends real
+  // AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation
+  // succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
+  // request's input cost alone, whichever catches an insufficient balance first.
   rpc GenerateMedia(GenerateMediaRequest) returns (Media) {}
 
   // Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.*

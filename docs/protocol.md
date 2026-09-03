@@ -154,6 +154,7 @@
     - [AnthropicCredentials](#jonline-AnthropicCredentials)
     - [AvailableAIModel](#jonline-AvailableAIModel)
     - [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest)
+    - [DigitalOceanCredentials](#jonline-DigitalOceanCredentials)
     - [GeminiCredentials](#jonline-GeminiCredentials)
     - [GenerateMediaRequest](#jonline-GenerateMediaRequest)
     - [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse)
@@ -337,9 +338,13 @@ pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Even
 
 ##### AIModelProviders
 A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
-connections to external AI model APIs (e.g. a Gemini API key) - and grant other users metered access to
+connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
 them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
-AIModelProvider section below.
+AIModelProvider section below. Which models are actually available, and what each can do
+([`AIModelCapability`](#jonline-AIModelCapability)), is a hand-maintained catalog (no provider exposes a stable
+&#34;list models&#34; API to build this from at request time) - see
+[`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs)
+on GitHub for the actual source of truth.
 
 #### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -947,7 +952,7 @@ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federa
 | DeleteAIModelProvider | [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). |
 | GrantAIModelProvider | [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest) | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
 | RevokeAIModelProvider | [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
-| GenerateMedia | [GenerateMediaRequest](#jonline-GenerateMediaRequest) | [Media](#jonline-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AvailableAIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access to that Post/Event. |
+| GenerateMedia | [GenerateMediaRequest](#jonline-GenerateMediaRequest) | [Media](#jonline-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AvailableAIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access to that Post/Event. A grantee (never the provider&#39;s own owner) spends real AIModelProviderGrant.tokens_remaining on every call -- the provider&#39;s own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request&#39;s input cost alone, whichever catches an insufficient balance first. |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -3529,8 +3534,10 @@ unlike every other RPC pair here, are **owner-only with no Admin override**: an 
 record itself (rename it, rotate its key, delete it), but handing out access to *someone else&#39;s* API budget is a
 call only its owner should be able to make.
 
-[`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
-working connection flow (Gemini&#39;s Interactions API, OpenAI&#39;s Images API);
+[`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials)/
+[`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials) all have a working connection flow (Gemini&#39;s
+Interactions API, OpenAI&#39;s Images API, DigitalOcean&#39;s Serverless Inference API -- the last of which is also
+OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
 [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
 accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn&#39;t offer image generation).
 
@@ -3543,6 +3550,7 @@ accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropi
 | gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via its Interactions API. |
 | openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT Image models). |
 | anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
+| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A DigitalOcean Gradient AI Platform / Serverless Inference connection (see `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean&#39;s Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
 | grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
@@ -3568,7 +3576,8 @@ add to it.
 | ai_model_provider_id | [string](#string) |  | The ID of the [`AIModelProvider`](#jonline-AIModelProvider) this grant is for. |
 | ai_model_grantee | [Author](#jonline-Author) |  | The user this access was granted to. |
 | model_names | [string](#string) | repeated | The model name (that will be used to call the provider) that the grantee is allowed to use by this grant. If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here. Allows granters to set per-model (or per-model-group) token budgets, e.g. &#34;gpt-4&#34; vs &#34;gpt-3.5-turbo&#34;. |
-| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). |
+| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia) stops working for the grantee entirely, until the owner grants more via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again. |
+| overage | [uint64](#uint64) |  | How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call&#39;s actual token usage overshot `tokens_remaining` the moment it hit 0 -- effectively a &#34;negative `tokens_remaining`&#34; (which, being `uint64`, can&#39;t represent a negative value directly), recorded here instead as a positive debt for the owner&#39;s own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call (any prior debt is cleared, not carried forward) -- see that RPC&#39;s own doc. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the grant was first created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the grant was last updated (i.e. last reset by another [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call). |
 
@@ -3608,7 +3617,7 @@ every model the provider supports if that list is empty.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
-| capabilities | [AIModelCapability](#jonline-AIModelCapability) | repeated | What this model can actually do -- from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn&#39;t need its own hardcoded list of model names. |
+| capabilities | [AIModelCapability](#jonline-AIModelCapability) | repeated | What this model can actually do -- from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it&#39;s empty) doesn&#39;t need its own hardcoded list of model names. |
 | grant | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access -- no grant needed). |
 | provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
 
@@ -3626,6 +3635,25 @@ Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderG
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider to be deleted. |
+
+
+
+
+
+
+<a name="jonline-DigitalOceanCredentials"></a>
+
+### DigitalOceanCredentials
+Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via
+`https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
+and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| digitalocean_api_key | [string](#string) | optional | The DigitalOcean Serverless Inference API token. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
 
 
 
@@ -3664,7 +3692,7 @@ image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by
 | ----- | ---- | ----- | ----------- |
 | model | [AvailableAIModel](#jonline-AvailableAIModel) |  | Which of the current user&#39;s `AvailableAIModel`s to generate with -- `model.model_name` selects the actual model, `model.provider.id` identifies whose `AIModelProvider` (the current user&#39;s own, or one they&#39;ve been granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field sent here (e.g. a spoofed `grant`) is ignored in favor of the caller&#39;s real access, re-derived from `provider.id` and the current user. |
 | user_prompt | [string](#string) |  | The user-editable prompt describing what to generate, e.g. &#34;Please generate a square headline poster for the following event.&#34; Combined server-side with `target`&#39;s own formatted content (title/description/date-time range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to the model, so the user never has to paste that context in by hand. |
-| media_ids | [string](#string) | repeated | Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/ reference-based generation (e.g. a target Post/Event&#39;s own current photos), in the order given here. Ignored if the chosen model doesn&#39;t accept image input. |
+| media_ids | [string](#string) | repeated | Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/ reference-based generation (e.g. a target Post/Event&#39;s own current photos), in the order given here. Leave empty for plain text-to-image generation instead -- `model` must have the matching capability either way (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see [`AIModelCapability`](#jonline-AIModelCapability)&#39;s own doc). Every id must be owned by the current user (or the current user must be an Admin). |
 | post_id | [string](#string) |  | Attach to (and use the content of) this Post. Caller must be its author, or an Admin. |
 | event_instance_id | [string](#string) |  | Attach to (and use the content of) this EventInstance&#39;s parent Event&#39;s own Post -- named by EventInstance, not Event, since that&#39;s what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event&#39;s own Post&#39;s author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin. |
 
@@ -3752,16 +3780,17 @@ Request to revoke another user&#39;s access to one of the current user&#39;s
 ### AIModelCapability
 What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
 (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)&#39;s &#34;Generate Media…&#34; buttons/panel only offer
-models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`) without the gated feature needing its own
-hardcoded list of model names to check against. A model may carry more than one -- e.g. an
-image-editing model can also usually do plain text-to-image generation.
+models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
+without the gated feature needing its own hardcoded list of model names to check against. A
+model may carry more than one -- e.g. an image-editing model can also usually do plain
+text-to-image generation.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | AI_MODEL_CAPABILITY_UNKNOWN | 0 | The model&#39;s capabilities are unknown (e.g. the server doesn&#39;t know what this provider supports). |
 | AI_MODEL_CAPABILITY_TEXT_GENERATION | 1 | The model can generate new text from a prompt. |
-| AI_MODEL_CAPABILITY_IMAGE_GENERATION | 2 | The model can generate a new image from a text prompt alone. |
-| AI_MODEL_CAPABILITY_IMAGE_EDITING | 3 | The model can edit an existing image, given a text prompt and one or more reference images -- what [`GenerateMedia`](#grpc-api-GenerateMedia) actually requires, since it always sends the target Post/Event&#39;s own context as a prompt and (usually) at least one reference image. |
+| AI_MODEL_CAPABILITY_IMAGE_GENERATION | 2 | The model can generate a new image from a text prompt alone -- what [`GenerateMedia`](#grpc-api-GenerateMedia) requires when `GenerateMediaRequest.media_ids` is empty (no reference images to edit with). |
+| AI_MODEL_CAPABILITY_IMAGE_EDITING | 3 | The model can edit an existing image, given a text prompt and one or more reference images -- what [`GenerateMedia`](#grpc-api-GenerateMedia) requires instead, whenever `GenerateMediaRequest.media_ids` is non-empty. Not every model with `AI_MODEL_CAPABILITY_IMAGE_GENERATION` also has this -- some (e.g. the cheaper/faster `gemini-3.1-flash-lite-image` tier) only support plain generation. |
 
 
  
