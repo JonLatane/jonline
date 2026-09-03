@@ -28,6 +28,16 @@ pub fn create_ai_model_provider(
                 return Err(Status::new(Code::InvalidArgument, "gemini_api_key_required"));
             }
         }
+        Some(ai_model_provider::Provider::OpenaiCredentials(credentials)) => {
+            if credentials
+                .openai_api_key
+                .as_ref()
+                .map(|key| key.trim().is_empty())
+                .unwrap_or(true)
+            {
+                return Err(Status::new(Code::InvalidArgument, "openai_api_key_required"));
+            }
+        }
         Some(_) => {
             return Err(Status::new(
                 Code::InvalidArgument,

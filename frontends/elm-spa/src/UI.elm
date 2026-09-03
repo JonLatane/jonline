@@ -24,6 +24,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -60,6 +61,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (createNewPanel shared)
     , Html.map toMsg (markdownPanel shared)
+    , Html.map toMsg (mediaGeneratorPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
     , div [ classes [ "container", hostnameToCSSClass shared.accounts.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
@@ -2891,15 +2893,27 @@ markdownPanel shared =
     Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accounts shared.panels.markdownPanel)
 
 
+{-| The AI image generation panel (see `Shared.MediaGeneratorPanel`) -- opened contextually (a
+Post's/Event's own "Generate Media…" button, next to its "Edit Media…"), so it's mounted directly in
+`layout` too, same as `markdownPanel`. Sits just below `myMediaPanel` (see
+`media_generator_panel.css`'s own z-index comment) -- this panel opens that one, in `MultiSelect`
+mode, to pick its own reference media, and it should visibly win that overlap rather than getting
+buried behind it.
+-}
+mediaGeneratorPanel : Shared.Model -> Html Shared.Msg
+mediaGeneratorPanel shared =
+    Html.map Shared.MediaGeneratorPanelMsg (MediaGeneratorPanel.view shared.time shared.accounts shared.panels.mediaGeneratorPanel)
+
+
 {-| The "My Media" panel (see `Shared.MyMediaPanel`) -- opened from a
 signed-in Account chip's media button (`accountRow`, below), not a nav icon,
 so it's mounted directly in `layout` too, same as `markdownPanel`. Sits above
-the Markdown/New Post panels and `.navbar` itself -- and, with it, the
-Accounts/Starred panels (see `my_media_panel.css`'s z-index) -- browsing
-your own media reasonably wins over a stale editor/composer left open behind
-it, and should cover the very Accounts Panel it was opened from rather than
-getting buried behind it. Still below the Media Viewer panel and `.modal`,
-though.
+the Markdown/New Post/Media Generator panels and `.navbar` itself -- and, with
+it, the Accounts/Starred panels (see `my_media_panel.css`'s z-index) --
+browsing your own media reasonably wins over a stale editor/composer/generator
+left open behind it, and should cover the very Accounts Panel it was opened
+from rather than getting buried behind it. Still below the Media Viewer panel
+and `.modal`, though.
 -}
 myMediaPanel : Shared.Model -> Html Shared.Msg
 myMediaPanel shared =

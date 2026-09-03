@@ -52,7 +52,7 @@ import Json.Decode as Decode
 import Set
 import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, EventSyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultEventSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultSyncDestination)
+import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, EventSyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultEventSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
 import Proto.Jonline.AIModelProvider.Provider as AIModelProviderProvider
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
@@ -206,6 +206,7 @@ type Msg
     | AIModelProviderRowSaveClicked AIModelProvider
     | AIModelProviderRowCancelClicked AIModelProvider
     | GotAIModelProviderRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProvider ))
+    | AIModelProviderAddProviderTypeChanged String
     | AIModelProviderAddNameChanged String
     | AIModelProviderAddApiKeyChanged String
     | AIModelProviderAddClicked
@@ -582,8 +583,18 @@ type alias AIModelProviderRowEdit =
     }
 
 
+{-| Which credentials variant a new `AIModelProvider` is being created with -- both are currently
+creatable (see `AIModelProvider`'s own proto doc); `Anthropic` isn't included here since it isn't
+yet.
+-}
+type AddAIModelProviderType
+    = AddGeminiProvider
+    | AddOpenAIProvider
+
+
 type alias AIModelProviderAddForm =
-    { name : String
+    { providerType : AddAIModelProviderType
+    , name : String
     , apiKey : String
     , status : SubmitStatus
     }
@@ -591,7 +602,7 @@ type alias AIModelProviderAddForm =
 
 defaultAIModelProviderAddForm : AIModelProviderAddForm
 defaultAIModelProviderAddForm =
-    { name = "", apiKey = "", status = Idle }
+    { providerType = AddGeminiProvider, name = "", apiKey = "", status = Idle }
 
 
 {-| The in-progress "grant access" form for one AIModelProvider's expanded grants list -- a target
@@ -2337,7 +2348,10 @@ updateInner shared msg model =
                 -- A blank `pendingApiKey` leaves `provider` unset on the request entirely, which
                 -- the backend reads as "keep the stored credentials" (see
                 -- `update_ai_model_provider.rs`'s `if let Some(provider) = &request.provider`
-                -- gate) -- the same convention `AIModelProviderRowEdit`'s own doc explains.
+                -- gate) -- the same convention `AIModelProviderRowEdit`'s own doc explains. A
+                -- non-blank key rotates *this* provider's own existing credentials variant (see
+                -- `provider.provider`'s own pattern match below) -- never forces it back to Gemini,
+                -- so rotating an OpenAI provider's key doesn't silently reconfigure it as one.
                 updated : AIModelProvider
                 updated =
                     { provider
@@ -2347,7 +2361,12 @@ updateInner shared msg model =
                                 Nothing
 
                             else
-                                Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just edit.pendingApiKey })
+                                case provider.provider of
+                                    Just (AIModelProviderProvider.OpenaiCredentials _) ->
+                                        Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just edit.pendingApiKey })
+
+                                    _ ->
+                                        Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just edit.pendingApiKey })
                     }
             in
             ( { model | aiModelProviders = { ap | rowEdits = Dict.insert provider.id { edit | status = Submitting } ap.rowEdits } }
@@ -2389,6 +2408,18 @@ updateInner shared msg model =
             , Effect.none
             )
 
+        AIModelProviderAddProviderTypeChanged typeString ->
+            let
+                providerType : AddAIModelProviderType
+                providerType =
+                    if typeString == "openai" then
+                        AddOpenAIProvider
+
+                    else
+                        AddGeminiProvider
+            in
+            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | providerType = providerType }) model.aiModelProviders }, Effect.none )
+
         AIModelProviderAddNameChanged name ->
             ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | name = name }) model.aiModelProviders }, Effect.none )
 
@@ -2405,7 +2436,13 @@ updateInner shared msg model =
                 newProvider =
                     { defaultAIModelProvider
                         | name = ap.addForm.name
-                        , provider = Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just ap.addForm.apiKey })
+                        , provider =
+                            case ap.addForm.providerType of
+                                AddGeminiProvider ->
+                                    Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just ap.addForm.apiKey })
+
+                                AddOpenAIProvider ->
+                                    Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just ap.addForm.apiKey })
                     }
             in
             ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | status = Submitting }) ap }
@@ -4535,9 +4572,8 @@ aiModelProvidersContentView canAdd ap providers =
         [ div [ class "ai-model-providers-message" ] [ text "No AI model providers yet." ] ]
 
 
-{-| Only `gemini_credentials` is currently creatable (see `AIModelProvider`'s own proto doc), but
-this covers all three variants for whenever `openai_credentials`/`anthropic_credentials` connect
-flows are added.
+{-| `gemini_credentials`/`openai_credentials` are both creatable (see `AIModelProvider`'s own proto
+doc); this covers all three variants for whenever an `anthropic_credentials` connect flow is added.
 -}
 aiModelProviderProviderLabel : AIModelProvider -> String
 aiModelProviderProviderLabel provider =
@@ -4847,10 +4883,50 @@ aiModelProviderGrantRowView config provider revokeStatus grant =
         )
 
 
+{-| "Gemini"/"OpenAI" -- `addAIModelProviderTypeLabel`'s own counterpart for the add-form's `<select>`
+`value`s (`AIModelProviderAddProviderTypeChanged`'s own string decoding), kept distinct from
+`aiModelProviderProviderLabel` (which reads an already-created `AIModelProvider`'s real `provider`,
+not this in-progress form's own choice of what to create).
+-}
+addAIModelProviderTypeValue : AddAIModelProviderType -> String
+addAIModelProviderTypeValue providerType =
+    case providerType of
+        AddGeminiProvider ->
+            "gemini"
+
+        AddOpenAIProvider ->
+            "openai"
+
+
+addAIModelProviderTypeLabel : AddAIModelProviderType -> String
+addAIModelProviderTypeLabel providerType =
+    case providerType of
+        AddGeminiProvider ->
+            "Gemini"
+
+        AddOpenAIProvider ->
+            "OpenAI"
+
+
 aiModelProviderAddRowView : AIModelProviderAddForm -> Html Msg
 aiModelProviderAddRowView addForm =
     div [ classes [ "ai-model-provider-row", "ai-model-provider-add-row" ] ]
-        [ input
+        [ select
+            [ class "ai-model-provider-add-type"
+            , disabled (addForm.status == Submitting)
+            , onInput AIModelProviderAddProviderTypeChanged
+            ]
+            (List.map
+                (\providerType ->
+                    option
+                        [ value (addAIModelProviderTypeValue providerType)
+                        , selected (providerType == addForm.providerType)
+                        ]
+                        [ text (addAIModelProviderTypeLabel providerType) ]
+                )
+                [ AddGeminiProvider, AddOpenAIProvider ]
+            )
+        , input
             [ class "ai-model-provider-name"
             , type_ "text"
             , value addForm.name
@@ -4863,7 +4939,7 @@ aiModelProviderAddRowView addForm =
             [ class "ai-model-provider-api-key"
             , type_ "password"
             , value addForm.apiKey
-            , placeholder "Gemini API Key"
+            , placeholder (addAIModelProviderTypeLabel addForm.providerType ++ " API Key")
             , disabled (addForm.status == Submitting)
             , onInput AIModelProviderAddApiKeyChanged
             ]
@@ -4878,7 +4954,7 @@ aiModelProviderAddRowView addForm =
                     "Adding…"
 
                  else
-                    "+ Add Gemini Provider"
+                    "+ Add " ++ addAIModelProviderTypeLabel addForm.providerType ++ " Provider"
                 )
             ]
         , case addForm.status of

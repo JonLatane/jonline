@@ -12,6 +12,66 @@ import { Timestamp } from "./google/protobuf/timestamp";
 export const protobufPackage = "jonline";
 
 /**
+ * What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
+ * (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
+ * models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`) without the gated feature needing its own
+ * hardcoded list of model names to check against. A model may carry more than one -- e.g. an
+ * image-editing model can also usually do plain text-to-image generation.
+ */
+export enum AIModelCapability {
+  /** AI_MODEL_CAPABILITY_UNKNOWN - The model's capabilities are unknown (e.g. the server doesn't know what this provider supports). */
+  AI_MODEL_CAPABILITY_UNKNOWN = 0,
+  /** AI_MODEL_CAPABILITY_TEXT_GENERATION - The model can generate new text from a prompt. */
+  AI_MODEL_CAPABILITY_TEXT_GENERATION = 1,
+  /** AI_MODEL_CAPABILITY_IMAGE_GENERATION - The model can generate a new image from a text prompt alone. */
+  AI_MODEL_CAPABILITY_IMAGE_GENERATION = 2,
+  /**
+   * AI_MODEL_CAPABILITY_IMAGE_EDITING - The model can edit an existing image, given a text prompt and one or more reference images --
+   * what [`GenerateMedia`](#grpc-api-GenerateMedia) actually requires, since it always sends the
+   * target Post/Event's own context as a prompt and (usually) at least one reference image.
+   */
+  AI_MODEL_CAPABILITY_IMAGE_EDITING = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function aIModelCapabilityFromJSON(object: any): AIModelCapability {
+  switch (object) {
+    case 0:
+    case "AI_MODEL_CAPABILITY_UNKNOWN":
+      return AIModelCapability.AI_MODEL_CAPABILITY_UNKNOWN;
+    case 1:
+    case "AI_MODEL_CAPABILITY_TEXT_GENERATION":
+      return AIModelCapability.AI_MODEL_CAPABILITY_TEXT_GENERATION;
+    case 2:
+    case "AI_MODEL_CAPABILITY_IMAGE_GENERATION":
+      return AIModelCapability.AI_MODEL_CAPABILITY_IMAGE_GENERATION;
+    case 3:
+    case "AI_MODEL_CAPABILITY_IMAGE_EDITING":
+      return AIModelCapability.AI_MODEL_CAPABILITY_IMAGE_EDITING;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AIModelCapability.UNRECOGNIZED;
+  }
+}
+
+export function aIModelCapabilityToJSON(object: AIModelCapability): string {
+  switch (object) {
+    case AIModelCapability.AI_MODEL_CAPABILITY_UNKNOWN:
+      return "AI_MODEL_CAPABILITY_UNKNOWN";
+    case AIModelCapability.AI_MODEL_CAPABILITY_TEXT_GENERATION:
+      return "AI_MODEL_CAPABILITY_TEXT_GENERATION";
+    case AIModelCapability.AI_MODEL_CAPABILITY_IMAGE_GENERATION:
+      return "AI_MODEL_CAPABILITY_IMAGE_GENERATION";
+    case AIModelCapability.AI_MODEL_CAPABILITY_IMAGE_EDITING:
+      return "AI_MODEL_CAPABILITY_IMAGE_EDITING";
+    case AIModelCapability.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
  * One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
  * they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
  * granted them (`grant` set). Only ever defined relative to a user -- see
@@ -25,6 +85,14 @@ export interface AvailableAIModel {
   /** The exact model name to use when calling the provider (e.g. `"gemini-3.1-flash-image"`). */
   modelName: string;
   /**
+   * What this model can actually do -- from the server's own hardcoded catalog for
+   * `provider.provider`'s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not
+   * anything reported by the provider's API itself. Feature gating keys off this rather than
+   * `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
+   * `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn't need its own hardcoded list of model names.
+   */
+  capabilities: AIModelCapability[];
+  /**
    * The grant that allows this access, when the current user isn't `provider.owner` themselves.
    * Unset when the current user owns `provider` outright (full, ungated access -- no grant needed).
    */
@@ -37,6 +105,50 @@ export interface AvailableAIModel {
    * mere grantee never sees who else has been granted access to a provider they don't own.
    */
   provider: AIModelProvider | undefined;
+}
+
+/**
+ * Request to generate (or edit) an image via one of the current user's
+ * [`AvailableAIModel`](#jonline-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+ * image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by the current user, and -- if
+ * `target` is set -- prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
+ */
+export interface GenerateMediaRequest {
+  /**
+   * Which of the current user's `AvailableAIModel`s to generate with -- `model.model_name` selects the actual
+   * model, `model.provider.id` identifies whose `AIModelProvider` (the current user's own, or one they've been
+   * granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field
+   * sent here (e.g. a spoofed `grant`) is ignored in favor of the caller's real access, re-derived from
+   * `provider.id` and the current user.
+   */
+  model:
+    | AvailableAIModel
+    | undefined;
+  /**
+   * The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
+   * following event." Combined server-side with `target`'s own formatted content (title/description/date-time
+   * range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to
+   * the model, so the user never has to paste that context in by hand.
+   */
+  userPrompt: string;
+  /**
+   * Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/
+   * reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored
+   * if the chosen model doesn't accept image input.
+   */
+  mediaIds: string[];
+  /** Attach to (and use the content of) this Post. Caller must be its author, or an Admin. */
+  postId?:
+    | string
+    | undefined;
+  /**
+   * Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by
+   * EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
+   * the generated prompt its date/time/location context, the same way
+   * [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
+   * Post's author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin.
+   */
+  eventInstanceId?: string | undefined;
 }
 
 /**
@@ -57,9 +169,10 @@ export interface AvailableAIModel {
  * record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
  * call only its owner should be able to make.
  *
- * Currently only the [`GeminiCredentials`](#jonline-GeminiCredentials) variant has a working connection flow;
- * [`OpenAICredentials`](#jonline-OpenAICredentials)/[`AnthropicCredentials`](#jonline-AnthropicCredentials) are defined for
- * forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider).
+ * [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
+ * working connection flow (Gemini's Interactions API, OpenAI's Images API);
+ * [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
+ * accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
  */
 export interface AIModelProvider {
   /** Unique ID for the AIModelProvider. */
@@ -78,17 +191,20 @@ export interface AIModelProvider {
    */
   name: string;
   /**
-   * A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation
-   * endpoint, for generating Event posters). The only variant currently creatable.
+   * A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
+   * generating Event posters) via its Interactions API.
    */
   geminiCredentials?:
     | GeminiCredentials
     | undefined;
-  /** An OpenAI API connection. *Not yet creatable.* */
+  /**
+   * An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
+   * generation/editing via its Images API (GPT Image models).
+   */
   openaiCredentials?:
     | OpenAICredentials
     | undefined;
-  /** An Anthropic API connection. *Not yet creatable.* */
+  /** An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API. */
   anthropicCredentials?:
     | AnthropicCredentials
     | undefined;
@@ -204,8 +320,8 @@ export interface RevokeAIModelProviderRequest {
  * Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
  * [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Planned use is the Gemini image generation/editing endpoint (`ai.google.dev/gemini-api/docs/image-generation`),
- * to generate/edit Event posters from an Event's own content.
+ * Used for image generation/editing via Gemini's Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+ * e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface GeminiCredentials {
   /**
@@ -217,11 +333,18 @@ export interface GeminiCredentials {
   geminiApiKey?: string | undefined;
 }
 
-/** Credentials for an OpenAI API connection. *Not yet creatable* -- defined for forward compatibility only. */
+/**
+ * Credentials for an OpenAI API connection, accepted by
+ * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+ * Used for image generation/editing via OpenAI's Images API (`platform.openai.com/docs/guides/image-generation`,
+ * the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+ * [`GenerateMedia`](#grpc-api-GenerateMedia).
+ */
 export interface OpenAICredentials {
   /**
-   * The OpenAI API key. Never populated in responses (see
-   * [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+   * The OpenAI API key. Required (and only used) on
+   * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+   * never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
    */
   openaiApiKey?: string | undefined;
 }
@@ -236,7 +359,7 @@ export interface AnthropicCredentials {
 }
 
 function createBaseAvailableAIModel(): AvailableAIModel {
-  return { modelName: "", grant: undefined, provider: undefined };
+  return { modelName: "", capabilities: [], grant: undefined, provider: undefined };
 }
 
 export const AvailableAIModel: MessageFns<AvailableAIModel> = {
@@ -244,11 +367,16 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
     if (message.modelName !== "") {
       writer.uint32(10).string(message.modelName);
     }
+    writer.uint32(18).fork();
+    for (const v of message.capabilities) {
+      writer.int32(v);
+    }
+    writer.join();
     if (message.grant !== undefined) {
-      AIModelProviderGrant.encode(message.grant, writer.uint32(18).fork()).join();
+      AIModelProviderGrant.encode(message.grant, writer.uint32(26).fork()).join();
     }
     if (message.provider !== undefined) {
-      AIModelProvider.encode(message.provider, writer.uint32(26).fork()).join();
+      AIModelProvider.encode(message.provider, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -269,15 +397,33 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag === 16) {
+            message.capabilities.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.capabilities.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 3: {
+          if (tag !== 26) {
             break;
           }
 
           message.grant = AIModelProviderGrant.decode(reader, reader.uint32());
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
+        case 4: {
+          if (tag !== 34) {
             break;
           }
 
@@ -296,6 +442,9 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
   fromJSON(object: any): AvailableAIModel {
     return {
       modelName: isSet(object.modelName) ? globalThis.String(object.modelName) : "",
+      capabilities: globalThis.Array.isArray(object?.capabilities)
+        ? object.capabilities.map((e: any) => aIModelCapabilityFromJSON(e))
+        : [],
       grant: isSet(object.grant) ? AIModelProviderGrant.fromJSON(object.grant) : undefined,
       provider: isSet(object.provider) ? AIModelProvider.fromJSON(object.provider) : undefined,
     };
@@ -305,6 +454,9 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
     const obj: any = {};
     if (message.modelName !== "") {
       obj.modelName = message.modelName;
+    }
+    if (message.capabilities?.length) {
+      obj.capabilities = message.capabilities.map((e) => aIModelCapabilityToJSON(e));
     }
     if (message.grant !== undefined) {
       obj.grant = AIModelProviderGrant.toJSON(message.grant);
@@ -321,12 +473,139 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
   fromPartial<I extends Exact<DeepPartial<AvailableAIModel>, I>>(object: I): AvailableAIModel {
     const message = createBaseAvailableAIModel();
     message.modelName = object.modelName ?? "";
+    message.capabilities = object.capabilities?.map((e) => e) || [];
     message.grant = (object.grant !== undefined && object.grant !== null)
       ? AIModelProviderGrant.fromPartial(object.grant)
       : undefined;
     message.provider = (object.provider !== undefined && object.provider !== null)
       ? AIModelProvider.fromPartial(object.provider)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseGenerateMediaRequest(): GenerateMediaRequest {
+  return { model: undefined, userPrompt: "", mediaIds: [], postId: undefined, eventInstanceId: undefined };
+}
+
+export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
+  encode(message: GenerateMediaRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.model !== undefined) {
+      AvailableAIModel.encode(message.model, writer.uint32(10).fork()).join();
+    }
+    if (message.userPrompt !== "") {
+      writer.uint32(18).string(message.userPrompt);
+    }
+    for (const v of message.mediaIds) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.postId !== undefined) {
+      writer.uint32(42).string(message.postId);
+    }
+    if (message.eventInstanceId !== undefined) {
+      writer.uint32(50).string(message.eventInstanceId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GenerateMediaRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenerateMediaRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.model = AvailableAIModel.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.userPrompt = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.mediaIds.push(reader.string());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.postId = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.eventInstanceId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenerateMediaRequest {
+    return {
+      model: isSet(object.model) ? AvailableAIModel.fromJSON(object.model) : undefined,
+      userPrompt: isSet(object.userPrompt) ? globalThis.String(object.userPrompt) : "",
+      mediaIds: globalThis.Array.isArray(object?.mediaIds) ? object.mediaIds.map((e: any) => globalThis.String(e)) : [],
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : undefined,
+    };
+  },
+
+  toJSON(message: GenerateMediaRequest): unknown {
+    const obj: any = {};
+    if (message.model !== undefined) {
+      obj.model = AvailableAIModel.toJSON(message.model);
+    }
+    if (message.userPrompt !== "") {
+      obj.userPrompt = message.userPrompt;
+    }
+    if (message.mediaIds?.length) {
+      obj.mediaIds = message.mediaIds;
+    }
+    if (message.postId !== undefined) {
+      obj.postId = message.postId;
+    }
+    if (message.eventInstanceId !== undefined) {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GenerateMediaRequest>, I>>(base?: I): GenerateMediaRequest {
+    return GenerateMediaRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GenerateMediaRequest>, I>>(object: I): GenerateMediaRequest {
+    const message = createBaseGenerateMediaRequest();
+    message.model = (object.model !== undefined && object.model !== null)
+      ? AvailableAIModel.fromPartial(object.model)
+      : undefined;
+    message.userPrompt = object.userPrompt ?? "";
+    message.mediaIds = object.mediaIds?.map((e) => e) || [];
+    message.postId = object.postId ?? undefined;
+    message.eventInstanceId = object.eventInstanceId ?? undefined;
     return message;
   },
 };

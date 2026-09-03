@@ -901,6 +901,11 @@ service Jonline {
   rpc GrantAIModelProvider(GrantAIModelProviderRequest) returns (AIModelProviderGrant) {}
   // Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override).
   rpc RevokeAIModelProvider(RevokeAIModelProviderRequest) returns (google.protobuf.Empty) {}
+  // Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+  // storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+  // must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+  // to that Post/Event.
+  rpc GenerateMedia(GenerateMediaRequest) returns (Media) {}
 
   // Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.*
   rpc GetEventAttendances(GetEventAttendancesRequest) returns (EventAttendances) {}

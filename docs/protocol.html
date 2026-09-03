@@ -434,16 +434,42 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <li>
         <p><a href="#ai_model_providers-proto">ai_model_providers.proto</a></p>
         <ul>
-          <li><a href="#jonline-AIModelProvider">AIModelProvider</a></li>
-          <li><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></li>
-          <li><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></li>
-          <li><a href="#jonline-AvailableAIModel">AvailableAIModel</a></li>
-          <li><a href="#jonline-DeleteAIModelProviderRequest">DeleteAIModelProviderRequest</a></li>
-          <li><a href="#jonline-GeminiCredentials">GeminiCredentials</a></li>
-          <li><a href="#jonline-GetAIModelProvidersResponse">GetAIModelProvidersResponse</a></li>
-          <li><a href="#jonline-GrantAIModelProviderRequest">GrantAIModelProviderRequest</a></li>
-          <li><a href="#jonline-OpenAICredentials">OpenAICredentials</a></li>
-          <li><a href="#jonline-RevokeAIModelProviderRequest">RevokeAIModelProviderRequest</a></li>
+          <li>
+            <p><a href="#jonline-AIModelProvider">AIModelProvider</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AvailableAIModel">AvailableAIModel</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-DeleteAIModelProviderRequest">DeleteAIModelProviderRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GeminiCredentials">GeminiCredentials</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GenerateMediaRequest">GenerateMediaRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetAIModelProvidersResponse">GetAIModelProvidersResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GrantAIModelProviderRequest">GrantAIModelProviderRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-OpenAICredentials">OpenAICredentials</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-RevokeAIModelProviderRequest">RevokeAIModelProviderRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AIModelCapability">AIModelCapability</a></p>
+          </li>
         </ul>
       </li>
       <li>
@@ -1689,6 +1715,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-RevokeAIModelProviderRequest">RevokeAIModelProviderRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Revokes another user's access to one of the current user's AIModelProviders. <em>Authenticated</em>, owner-only (no Admin override).</td>
+        </tr>
+        <tr>
+          <td>GenerateMedia</td>
+          <td><a href="#jonline-GenerateMediaRequest">GenerateMediaRequest</a></td>
+          <td><a href="#jonline-Media">Media</a></td>
+          <td>Generates (or edits, given reference <code>media_ids</code>) an image via one of the current user's AvailableAIModels, storing it as a new Media and, if <code>target</code> is set, attaching it to that Post/Event. <em>Authenticated</em> -- caller must own or have been granted access to the chosen AIModelProvider, and (if <code>target</code> is set) have edit access to that Post/Event.</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -7168,9 +7200,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
       call only its owner should be able to make.
     </p>
     <p>
-      Currently only the <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a> variant has a working connection flow;
-      <a href="#jonline-OpenAICredentials"><code>OpenAICredentials</code></a>/<a href="#jonline-AnthropicCredentials"><code>AnthropicCredentials</code></a> are defined for
-      forward compatibility but are not yet accepted by <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>.
+      <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>/<a href="#jonline-OpenAICredentials"><code>OpenAICredentials</code></a> both have a
+      working connection flow (Gemini's Interactions API, OpenAI's Images API);
+      <a href="#jonline-AnthropicCredentials"><code>AnthropicCredentials</code></a> is defined for forward compatibility but is not yet
+      accepted by <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (Anthropic doesn't offer image generation).
     </p>
     <table>
       <thead>
@@ -7204,19 +7237,19 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>gemini_credentials</td>
           <td><a href="#jonline-GeminiCredentials">GeminiCredentials</a></td>
           <td></td>
-          <td>A Google Gemini API connection (see <code>ai.google.dev/gemini-api</code> -- planned use is its image generation endpoint, for generating Event posters). The only variant currently creatable.</td>
+          <td>A Google Gemini API connection (see <code>ai.google.dev/gemini-api</code>), used for image generation/editing (e.g. generating Event posters) via its Interactions API.</td>
         </tr>
         <tr>
           <td>openai_credentials</td>
           <td><a href="#jonline-OpenAICredentials">OpenAICredentials</a></td>
           <td></td>
-          <td>An OpenAI API connection. <em>Not yet creatable.</em></td>
+          <td>An OpenAI API connection (see <code>platform.openai.com/docs/guides/image-generation</code>), used for image generation/editing via its Images API (GPT Image models).</td>
         </tr>
         <tr>
           <td>anthropic_credentials</td>
           <td><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></td>
           <td></td>
-          <td>An Anthropic API connection. <em>Not yet creatable.</em></td>
+          <td>An Anthropic API connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
         </tr>
         <tr>
           <td>grants</td>
@@ -7346,6 +7379,12 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>The exact model name to use when calling the provider (e.g. <code>&#x26;#34;gemini-3.1-flash-image&#x26;#34;</code>).</td>
         </tr>
         <tr>
+          <td>capabilities</td>
+          <td><a href="#jonline-AIModelCapability">AIModelCapability</a></td>
+          <td>repeated</td>
+          <td>What this model can actually do -- from the server's own hardcoded catalog for <code>provider.provider</code>'s variant (see <a href="#jonline-AIModelCapability"><code>AIModelCapability</code></a>), not anything reported by the provider's API itself. Feature gating keys off this rather than <code>model_name</code> directly, so e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> (which needs <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>) doesn't need its own hardcoded list of model names.</td>
+        </tr>
+        <tr>
           <td>grant</td>
           <td><a href="#jonline-AIModelProviderGrant">AIModelProviderGrant</a></td>
           <td>optional</td>
@@ -7386,8 +7425,8 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
       Credentials for a Google Gemini API connection (<code>ai.google.dev/gemini-api</code>) -- the only
       <a href="#jonline-AIModelProvider"><code>AIModelProvider.provider</code></a> variant currently accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Planned use is the Gemini image generation/editing endpoint (<code>ai.google.dev/gemini-api/docs/image-generation</code>),
-      to generate/edit Event posters from an Event's own content.
+      Used for image generation/editing via Gemini's Interactions API (<code>ai.google.dev/gemini-api/docs/image-generation</code>),
+      e.g. to generate/edit Event posters from an Event's own content -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
       <thead>
@@ -7404,6 +7443,56 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>The Gemini API key. Required (and only used) on <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> -- <strong>never populated in responses</strong>, the same write-only convention as e.g. <a href="#jonline-MastodonAccount"><code>MastodonAccount.access_token</code></a> in <code>sync.proto</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GenerateMediaRequest"></a></p>
+    <h3 id="generatemediarequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#generatemediarequest"><span class="octicon octicon-link"></span></a>GenerateMediaRequest</h3>
+    <p>
+      Request to generate (or edit) an image via one of the current user's
+      <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a>s -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>. The resulting
+      image is stored as a new <a href="#jonline-Media"><code>Media</code></a> (<code>generated = true</code>) owned by the current user, and -- if
+      <code>target</code> is set -- prepended as the <em>first</em> item in that Post's (or Event's own Post's) <code>media</code> list.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>model</td>
+          <td><a href="#jonline-AvailableAIModel">AvailableAIModel</a></td>
+          <td></td>
+          <td>Which of the current user's <code>AvailableAIModel</code>s to generate with -- <code>model.model_name</code> selects the actual model, <code>model.provider.id</code> identifies whose <code>AIModelProvider</code> (the current user's own, or one they've been granted access to) to call it through. Only <code>model_name</code>/<code>provider.id</code> are read server-side -- any other field sent here (e.g. a spoofed <code>grant</code>) is ignored in favor of the caller's real access, re-derived from <code>provider.id</code> and the current user.</td>
+        </tr>
+        <tr>
+          <td>user_prompt</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the following event." Combined server-side with <code>target</code>'s own formatted content (title/description/date-time range/location -- the same formatting <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s use) before being sent to the model, so the user never has to paste that context in by hand.</td>
+        </tr>
+        <tr>
+          <td>media_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Existing <a href="#jonline-Media"><code>Media</code></a> to pass to the model alongside <code>user_prompt</code>, for image editing/ reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored if the chosen model doesn't accept image input.</td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Attach to (and use the content of) this Post. Caller must be its author, or an Admin.</td>
+        </tr>
+        <tr>
+          <td>event_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by EventInstance, not Event, since that's what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a> does). Caller must be the Event's own Post's author, or hold <code>MODERATE_POSTS</code>/<code>MODERATE_EVENTS</code>, or be an Admin.</td>
         </tr>
       </tbody>
     </table>
@@ -7478,7 +7567,13 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     </table>
     <p><a name="jonline-OpenAICredentials"></a></p>
     <h3 id="openaicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#openaicredentials"><span class="octicon octicon-link"></span></a>OpenAICredentials</h3>
-    <p>Credentials for an OpenAI API connection. <em>Not yet creatable</em> -- defined for forward compatibility only.</p>
+    <p>
+      Credentials for an OpenAI API connection, accepted by
+      <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
+      Used for image generation/editing via OpenAI's Images API (<code>platform.openai.com/docs/guides/image-generation</code>,
+      the GPT Image model family) -- same use case as <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>, see
+      <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
+    </p>
     <table>
       <thead>
         <tr>
@@ -7493,7 +7588,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>openai_api_key</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>The OpenAI API key. Never populated in responses (see <a href="#jonline-GeminiCredentials"><code>GeminiCredentials.gemini_api_key</code></a>).</td>
+          <td>The OpenAI API key. Required (and only used) on <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> -- never populated in responses (see <a href="#jonline-GeminiCredentials"><code>GeminiCredentials.gemini_api_key</code></a>).</td>
         </tr>
       </tbody>
     </table>
@@ -7525,6 +7620,46 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The AIModelProvider to revoke access to. Must be owned by the caller.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AIModelCapability"></a></p>
+    <h3 id="aimodelcapability"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelcapability"><span class="octicon octicon-link"></span></a>AIModelCapability</h3>
+    <p>
+      What an <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a> can actually do -- drives feature gating
+      (e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>'s "Generate Media…" buttons/panel only offer
+      models carrying <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>) without the gated feature needing its own
+      hardcoded list of model names to check against. A model may carry more than one -- e.g. an
+      image-editing model can also usually do plain text-to-image generation.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AI_MODEL_CAPABILITY_UNKNOWN</td>
+          <td>0</td>
+          <td>The model's capabilities are unknown (e.g. the server doesn't know what this provider supports).</td>
+        </tr>
+        <tr>
+          <td>AI_MODEL_CAPABILITY_TEXT_GENERATION</td>
+          <td>1</td>
+          <td>The model can generate new text from a prompt.</td>
+        </tr>
+        <tr>
+          <td>AI_MODEL_CAPABILITY_IMAGE_GENERATION</td>
+          <td>2</td>
+          <td>The model can generate a new image from a text prompt alone.</td>
+        </tr>
+        <tr>
+          <td>AI_MODEL_CAPABILITY_IMAGE_EDITING</td>
+          <td>3</td>
+          <td>The model can edit an existing image, given a text prompt and one or more reference images -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> actually requires, since it always sends the target Post/Event's own context as a prompt and (usually) at least one reference image.</td>
         </tr>
       </tbody>
     </table>

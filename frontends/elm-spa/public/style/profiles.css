@@ -626,6 +626,18 @@ input.ai-model-provider-api-key {
   font-weight: normal;
 }
 
+/* The add-row's own credentials-variant picker (`aiModelProviderAddRowView`) -- sits before the
+   name/API key inputs it decides the placeholder text of. */
+select.ai-model-provider-add-type {
+  flex: 0 1 7rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
 .ai-model-provider-type,
 .ai-model-provider-key-status {
   color: var(--muted);

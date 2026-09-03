@@ -1,8 +1,10 @@
 module Components.AIModelProviders exposing
     ( createAIModelProvider
     , deleteAIModelProvider
+    , generateMedia
     , getAIModelProviders
     , grantAIModelProvider
+    , hasImageEditingCapability
     , revokeAIModelProvider
     , updateAIModelProvider
     )
@@ -26,11 +28,15 @@ import Proto.Jonline
     exposing
         ( AIModelProvider
         , AIModelProviderGrant
+        , AvailableAIModel
+        , GenerateMediaRequest
         , GetAIModelProvidersResponse
         , GrantAIModelProviderRequest
+        , Media
         , RevokeAIModelProviderRequest
         , defaultUser
         )
+import Proto.Jonline.AIModelCapability exposing (AIModelCapability(..))
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
@@ -150,3 +156,36 @@ revokeAIModelProvider accountsPanelModel maybeAccountServer request =
                 |> Grpc.toTask
                 |> Task.map (always ())
         )
+
+
+{-| Generates (or edits, given reference `mediaIds`) an image via one of the calling account's
+`AvailableAIModel`s -- see `GenerateMediaRequest`'s own doc (`ai_model_providers.proto`). Used by
+`Shared.MediaGeneratorPanel`.
+-}
+generateMedia :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> GenerateMediaRequest
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Media )
+generateMedia accountsPanelModel maybeAccountServer request =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.generateMedia request
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Whether `available` can actually do the image editing `generateMedia`/`Shared.MediaGeneratorPanel`
+require -- `AvailableAIModel.capabilities` is the server's own hardcoded catalog for the model (see
+`AIModelCapability`'s own doc, `ai_model_providers.proto`), not anything this frontend infers from
+`modelName` itself. Used both to gate whether a Post/Event's "Generate Media…" button appears at all
+(`Components.Posts.generateMediaButton`'s callers) and to filter the model chooser inside the panel
+itself down to only the models that would actually work.
+-}
+hasImageEditingCapability : AvailableAIModel -> Bool
+hasImageEditingCapability available =
+    List.member AIMODELCAPABILITYIMAGEEDITING available.capabilities

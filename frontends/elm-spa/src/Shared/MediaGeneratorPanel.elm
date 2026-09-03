@@ -1,0 +1,575 @@
+module Shared.MediaGeneratorPanel exposing
+    ( Model
+    , Msg(..)
+    , Target(..)
+    , init
+    , update
+    , view
+    )
+
+{-| A single, app-wide AI image generation panel -- opened contextually (a Post/Event's own
+"Generate Media…" button, next to its existing "Edit Media…" -- see `Components.Posts.postDetail`/
+`Pages.Event.EventId_`), the same "one shared instance, `Nothing`/`""` means closed" convention
+`Shared.MarkdownPanel`/`Shared.MyMediaPanel` already use. Shaped like `MarkdownPanel` (a prompt to
+edit, Save/Cancel below), but with three inputs instead of one: which of the caller's
+`AvailableAIModel`s to call (`modelChooserView`), the editable prompt (`promptView`), and a set of
+reference media (`mediaSectionView`) -- reusing `Shared.MyMediaPanel`'s own `MultiSelect` chooser
+for the last, the same picker Post/Event editing already uses for their own `media`, rather than
+building a second one.
+
+In terms of z-axis (see `media_generator_panel.css`), this sits just *below* `Shared.MyMediaPanel`
+-- deliberately, since `EditMediaClicked` (below) opens that panel over this one to pick reference
+media, and it should visibly win that overlap the same way every other "panel opens a picker over
+itself" pair in this app does (`Shared.CreateNewPanel`'s own Edit Media button, `Pages.Post.PostId_`'s).
+That reuse means this panel can't consume `MyMediaPanel`'s `SaveMediaClicked`/`CloseClicked`
+directly the way a *page* would (via its own `SharedMsg`/`fromShared`, gated on a page-level
+"am I mid-edit" flag) -- since this panel itself lives in `Shared.Model`, not a page, that
+gating instead happens one level up, in `Shared.update`'s own `MyMediaPanelMsg` case, mirroring
+exactly how it already lets `Shared.CreateNewPanel` do the same (see `MediaSaved`/`MediaEditClosed`
+below, and `Shared.update`'s own doc on why).
+
+Once generation succeeds, this panel closes itself and the resulting `GotGenerateResult` is left to
+bubble up as an ordinary `Shared.Msg` -- `Main.notifyPageOfSharedMsg` already forwards every
+`Shared.Msg` to whichever page is current regardless of who opened this panel, so the page that
+opened it (`Components.Pages.PostPage`/`Pages.Event.EventId_`) just matches on this exact message in
+its own `SharedMsg` handling, gated on its own "did I open this" flag (mirrors `mediaEditActive`), to
+refetch and pick up the newly attached `Media` -- see those modules' own `GenerateMediaClicked`/
+`SharedMsg` handling.
+
+-}
+
+import Components.AIModelProviders as AIModelProviders
+import Components.Events as Events
+import Components.MediaRenderer as MediaRenderer
+import Components.Posts as Posts
+import Grpc
+import Html exposing (Html, button, div, option, select, span, text, textarea)
+import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
+import Html.Events exposing (onClick, onInput)
+import Proto.Jonline exposing (AvailableAIModel, Event, EventInstance, Media, MediaReference, Post, defaultGenerateMediaRequest)
+import Proto.Jonline.GenerateMediaRequest.Target as GenerateMediaRequestTarget
+import Shared.AccountsPanel as AccountsPanel
+import Shared.Conversions as Conversions
+import Shared.MyMediaPanel as MyMediaPanel
+import Shared.Time as SharedTime
+import Task exposing (Task)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+
+
+type alias Model =
+    { -- `""` means closed -- same convention `Shared.MyMediaPanel.targetHost` uses (unlike
+      -- `MarkdownPanel.target`, `target` below can legitimately be `Nothing` while this panel is
+      -- open -- see `Target`'s own doc -- so it can't double as the "is this open" flag itself).
+      targetHost : String
+
+    -- Which `frontendHost`-relative base path to build a target's card preview link with (see
+    -- `targetCardView`) -- threaded through from whichever page's `Effect.fromShared` opened this,
+    -- same reasoning `Shared.Breadcrumbs.basePath` is threaded for its own preview panel.
+    , basePath : String
+    , target : Maybe Target
+    , selectedModel : Maybe AvailableAIModel
+    , prompt : String
+    , media : List MediaReference
+
+    -- Whether `Shared.MyMediaPanel` is currently open *for this panel's own* `EditMediaClicked` --
+    -- see the module doc on why this (not a page-level field) is what `Shared.update`'s own
+    -- `MyMediaPanelMsg` case gates `MediaSaved`/`MediaEditClosed` on.
+    , mediaEditActive : Bool
+
+    -- Whether the target indicator's popover (`targetIndicatorView`) is currently showing.
+    , targetPreviewOpen : Bool
+    , status : SubmitStatus
+    }
+
+
+{-| What this panel is generating media *for* -- `Nothing` (see `Model.target`) just generates and
+stores the image in the current user's own Media (as `MyMediaPanel` then shows it), without
+attaching it to anything. `TargetEvent` carries both the `Event` and the specific `EventInstance`
+being viewed (`Pages.Event.EventId_`'s own `instance`) purely so `targetCardView` can render the
+same `Components.Events.eventCard` that page already shows elsewhere -- generation itself only ever
+targets the Event's own Post (see `ai_model_providers.proto`'s own doc on `GenerateMediaRequest.target`),
+never a particular instance.
+-}
+type Target
+    = TargetPost Post
+    | TargetEvent Event EventInstance
+
+
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
+
+
+type Msg
+    = Open (Maybe Target) String String
+    | PromptChanged String
+    | ModelSelected String
+    | EditMediaClicked
+      -- Fired by `Shared.update`'s own `MyMediaPanelMsg` case once `MyMediaPanel.SaveMediaClicked`
+      -- lands while this panel is the one that opened it (`mediaEditActive`) -- see the module doc.
+    | MediaSaved (List MediaReference)
+      -- Same, for `MyMediaPanel.CloseClicked` -- a cancel, `model.media` is left untouched.
+    | MediaEditClosed
+    | TargetPreviewToggled
+    | CancelClicked
+    | GenerateClicked
+    | GotGenerateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Media ))
+    | NoOp
+
+
+type alias Resolved =
+    { server : AccountsPanel.Server
+    , account : AccountsPanel.Account
+    }
+
+
+init : Model
+init =
+    { targetHost = ""
+    , basePath = ""
+    , target = Nothing
+    , selectedModel = Nothing
+    , prompt = ""
+    , media = []
+    , mediaEditActive = False
+    , targetPreviewOpen = False
+    , status = Idle
+    }
+
+
+isOpen : Model -> Bool
+isOpen model =
+    model.targetHost /= ""
+
+
+{-| Needs `AccountsPanel.Model` for the same reasons `Shared.MarkdownPanel.update` does --
+resolving `targetHost` to the signed-in `Account` to submit as (`resolve`), and (here) also to look
+up `Account.availableAiModels` for `ModelSelected`/`Open`'s own default pick. The extra
+`Maybe MyMediaPanel.Msg` mirrors `Shared.CreateNewPanel.update`'s own `EditMediaClicked` request --
+this panel can't dispatch `MyMediaPanel.Open` directly without importing `Shared`, which would
+cycle, so `Shared.update` does it on this panel's behalf (see module doc).
+-}
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MyMediaPanel.Msg ) )
+update accountsPanelModel msg model =
+    case msg of
+        Open target host basePath ->
+            let
+                account : Maybe AccountsPanel.Account
+                account =
+                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+
+                availableModels : List AvailableAIModel
+                availableModels =
+                    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+            in
+            ( { init
+                | targetHost = host
+                , basePath = basePath
+                , target = target
+                , media = defaultMedia target
+                , prompt = defaultPrompt target
+                , selectedModel = List.head availableModels
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        PromptChanged prompt ->
+            ( { model | prompt = prompt }, Cmd.none, ( Nothing, Nothing ) )
+
+        ModelSelected key ->
+            let
+                account : Maybe AccountsPanel.Account
+                account =
+                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+
+                availableModels : List AvailableAIModel
+                availableModels =
+                    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+            in
+            ( { model | selectedModel = List.filter (\m -> availableAIModelKey m == key) availableModels |> List.head }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        EditMediaClicked ->
+            ( { model | mediaEditActive = True }
+            , Cmd.none
+            , ( Nothing, Just (MyMediaPanel.Open (Just (MyMediaPanel.MultiSelect { initialSelection = model.media })) model.targetHost) )
+            )
+
+        MediaSaved media ->
+            ( { model | media = media, mediaEditActive = False }, Cmd.none, ( Nothing, Nothing ) )
+
+        MediaEditClosed ->
+            ( { model | mediaEditActive = False }, Cmd.none, ( Nothing, Nothing ) )
+
+        TargetPreviewToggled ->
+            ( { model | targetPreviewOpen = not model.targetPreviewOpen }, Cmd.none, ( Nothing, Nothing ) )
+
+        CancelClicked ->
+            ( init, Cmd.none, ( Nothing, Nothing ) )
+
+        GenerateClicked ->
+            case ( model.selectedModel, resolve accountsPanelModel model.targetHost ) of
+                ( Just selectedModel, Ok resolved ) ->
+                    ( { model | status = Submitting }
+                    , generateTask accountsPanelModel resolved model.targetHost selectedModel model.prompt model.media model.target
+                        |> Task.attempt GotGenerateResult
+                    , ( Nothing, Nothing )
+                    )
+
+                ( Nothing, _ ) ->
+                    ( { model | status = SubmitFailed "Choose a model." }, Cmd.none, ( Nothing, Nothing ) )
+
+                ( _, Err err ) ->
+                    ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, Nothing ) )
+
+        GotGenerateResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            ( init, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+
+        GotGenerateResult (Err err) ->
+            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
+
+        NoOp ->
+            ( model, Cmd.none, ( Nothing, Nothing ) )
+
+
+{-| The target's own current media, prepopulating `model.media` (still freely editable via
+`EditMediaClicked` afterward) -- for an Event, the union of its own Post's media and the specific
+`EventInstance`'s own Post's media, Event-first, mirroring
+`backend/src/rpcs/events/sync_event_instance.rs`'s `combine_media` (an instance-level Post rarely
+carries its own media override, so without the Event's own this would often come up empty).
+-}
+defaultMedia : Maybe Target -> List MediaReference
+defaultMedia target =
+    case target of
+        Just (TargetPost post) ->
+            post.media
+
+        Just (TargetEvent event instance) ->
+            let
+                eventMedia : List MediaReference
+                eventMedia =
+                    event.post |> Maybe.map .media |> Maybe.withDefault []
+
+                eventMediaIds : List String
+                eventMediaIds =
+                    List.map .id eventMedia
+
+                instanceMedia : List MediaReference
+                instanceMedia =
+                    instance.post
+                        |> Maybe.map .media
+                        |> Maybe.withDefault []
+                        |> List.filter (\m -> not (List.member m.id eventMediaIds))
+            in
+            eventMedia ++ instanceMedia
+
+        Nothing ->
+            []
+
+
+defaultPrompt : Maybe Target -> String
+defaultPrompt target =
+    case target of
+        Just (TargetPost _) ->
+            "Please generate a square headline image for the following post. I've attached other media that may be useful for reference."
+
+        Just (TargetEvent _ _) ->
+            "Please generate a square headline poster for the following event. I've attached other media that may be useful for reference."
+
+        Nothing ->
+            ""
+
+
+{-| A composite key identifying one `AvailableAIModel` in the model chooser `<select>` -- neither
+`modelName` nor `provider.id` alone is unique (the same model name can appear once per grant on
+different providers), but the pair always is. Mirrors `Components.Pages.UserProfilePage.aiModelProviderGrantKey`'s
+own reasoning for the same underlying data.
+-}
+availableAIModelKey : AvailableAIModel -> String
+availableAIModelKey model =
+    (model.provider |> Maybe.map .id |> Maybe.withDefault "") ++ "|" ++ model.modelName
+
+
+{-| "modelName (N tokens left) — via username", trimmed to whichever parts actually apply -- the
+tokens suffix only for a granted (not owned) model, the "via" suffix only when the provider's owner
+isn't the viewer themselves. See `AvailableAIModel`'s own doc (`ai_model_providers.proto`) for why a
+`grant`/no-`grant` `AvailableAIModel` means "granted"/"owned outright".
+-}
+availableAIModelLabel : Maybe String -> AvailableAIModel -> String
+availableAIModelLabel viewerUsername available =
+    let
+        ownerUsername : Maybe String
+        ownerUsername =
+            case available.provider of
+                Just provider ->
+                    provider.owner |> Maybe.andThen .username
+
+                Nothing ->
+                    Nothing
+
+        ownerSuffix : String
+        ownerSuffix =
+            case ownerUsername of
+                Just owner ->
+                    if Just owner /= viewerUsername then
+                        " — via " ++ owner
+
+                    else
+                        ""
+
+                Nothing ->
+                    ""
+
+        tokensSuffix : String
+        tokensSuffix =
+            case available.grant of
+                Just grant ->
+                    " (" ++ String.fromInt (Conversions.int64ToInt grant.tokensRemaining) ++ " tokens left)"
+
+                Nothing ->
+                    ""
+    in
+    available.modelName ++ tokensSuffix ++ ownerSuffix
+
+
+
+-- VIEW
+
+
+view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
+view time accountsPanelModel model =
+    let
+        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount =
+            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+
+        availableModels : List AvailableAIModel
+        availableModels =
+            maybeAccount |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter AIModelProviders.hasImageEditingCapability
+
+        canGenerate : Bool
+        canGenerate =
+            model.selectedModel /= Nothing && model.status /= Submitting
+    in
+    div [ classes [ "media-generator-panel", "nav-panel", openClosedClass (isOpen model), hostnameToCSSClass model.targetHost ] ]
+        [ div [ class "media-generator-panel-header" ]
+            [ span [ class "media-generator-panel-title" ] [ text "Generate Media" ]
+            , button [ class "media-generator-panel-close", onClick CancelClicked ] [ text "✕" ]
+            ]
+        , div [ class "media-generator-panel-body" ]
+            [ targetIndicatorView time accountsPanelModel model
+            , modelChooserView (maybeAccount |> Maybe.map .username) availableModels model
+            , promptView model
+            , mediaSectionView accountsPanelModel model
+            ]
+        , case model.status of
+            SubmitFailed err ->
+                div [ class "media-generator-panel-error" ] [ text err ]
+
+            _ ->
+                text ""
+        , div [ class "media-generator-panel-actions" ]
+            [ button
+                [ class "media-generator-panel-cancel"
+                , onClick CancelClicked
+                , disabled (model.status == Submitting)
+                ]
+                [ text "Cancel" ]
+            , button
+                [ classes [ "media-generator-panel-generate", model.targetHost, "background-color-primary" ]
+                , onClick GenerateClicked
+                , disabled (not canGenerate)
+                ]
+                [ text
+                    (if model.status == Submitting then
+                        "Generating…"
+
+                     else
+                        "Generate"
+                    )
+                ]
+            ]
+        ]
+
+
+{-| The "for Post: <title>"/"for Event: <title>" indicator -- tapping it toggles a popover (built on
+`ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/`.popover-backdrop`, the
+same way `Components.Pages.EventsPage.exportButtonView` does for its own Export popover) showing the
+same `Posts.postCard`/`Events.eventCard` that target's own page renders it with -- read-only here
+(every optional callback is a no-op/`False`), same convention `Shared.StarredPanel` uses to show
+those same cards outside their native page. Renders nothing at all for `Target.Nothing` (bare
+generate-and-store, with nothing to show a card for).
+-}
+targetIndicatorView : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
+targetIndicatorView time accountsPanelModel model =
+    case model.target of
+        Nothing ->
+            text ""
+
+        Just target ->
+            let
+                label : String
+                label =
+                    case target of
+                        TargetPost post ->
+                            "for Post: " ++ Posts.postTitleText post
+
+                        TargetEvent event _ ->
+                            "for Event: " ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "Untitled Event")
+            in
+            div [ classes [ "media-generator-panel-target", "popover-anchor" ] ]
+                [ button
+                    [ classes [ "media-generator-panel-target-toggle", "popover-toggle", openClosedClass model.targetPreviewOpen ]
+                    , type_ "button"
+                    , onClick TargetPreviewToggled
+                    ]
+                    [ text label ]
+                , div [ classes [ "popover-backdrop", openClosedClass model.targetPreviewOpen ], onClick TargetPreviewToggled ] []
+                , div [ classes [ "media-generator-panel-target-popover", "popover", openClosedClass model.targetPreviewOpen ] ]
+                    [ targetCardView time accountsPanelModel model.basePath model.targetHost target ]
+                ]
+
+
+targetCardView : SharedTime.Model -> AccountsPanel.Model -> String -> String -> Target -> Html Msg
+targetCardView time accountsPanelModel basePath host target =
+    let
+        maybeServer : Maybe AccountsPanel.Server
+        maybeServer =
+            AccountsPanel.serverForHost accountsPanelModel.servers host
+
+        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount =
+            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+    in
+    case target of
+        TargetPost post ->
+            Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) True False False Nothing False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) post
+
+        TargetEvent event instance ->
+            Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.ExtraSmall False Nothing False False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event instance
+
+
+modelChooserView : Maybe String -> List AvailableAIModel -> Model -> Html Msg
+modelChooserView viewerUsername availableModels model =
+    div [ class "media-generator-panel-field" ]
+        [ span [ class "media-generator-panel-label" ] [ text "Model" ]
+        , if List.isEmpty availableModels then
+            div [ class "media-generator-panel-no-models" ] [ text "No image-editing AI models available." ]
+
+          else
+            select [ class "media-generator-panel-model-select", onInput ModelSelected ]
+                (availableModels
+                    |> List.map
+                        (\available ->
+                            option
+                                [ value (availableAIModelKey available)
+                                , selected (Just (availableAIModelKey available) == Maybe.map availableAIModelKey model.selectedModel)
+                                ]
+                                [ text (availableAIModelLabel viewerUsername available) ]
+                        )
+                )
+        ]
+
+
+promptView : Model -> Html Msg
+promptView model =
+    div [ class "media-generator-panel-field" ]
+        [ span [ class "media-generator-panel-label" ] [ text "Prompt" ]
+        , textarea
+            [ class "media-generator-panel-prompt"
+            , value model.prompt
+            , onInput PromptChanged
+            , placeholder "Describe what to generate…"
+            ]
+            []
+        ]
+
+
+mediaSectionView : AccountsPanel.Model -> Model -> Html Msg
+mediaSectionView accountsPanelModel model =
+    div [ class "media-generator-panel-field" ]
+        [ span [ class "media-generator-panel-label" ] [ text "Reference Media" ]
+        , case AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost of
+            Just server ->
+                if List.isEmpty model.media then
+                    div [ class "media-generator-panel-media-empty" ] [ text "No media selected." ]
+
+                else
+                    let
+                        maybeAccount : Maybe AccountsPanel.Account
+                        maybeAccount =
+                            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+                    in
+                    div [ class "media-generator-panel-media-strip" ]
+                        (List.map
+                            (\mediaRef -> MediaRenderer.view MediaRenderer.ExtraSmall MediaRenderer.ToWidthAndHeight server maybeAccount (\_ -> NoOp) mediaRef)
+                            model.media
+                        )
+
+            Nothing ->
+                text ""
+        , button [ type_ "button", class "media-generator-panel-edit-media", onClick EditMediaClicked ] [ text "Edit Media…" ]
+        ]
+
+
+{-| Verifies `host` is actually usable right now -- resolves to a known, currently-enabled `Server`
+with a signed-in `Account` -- mirrors `Shared.MarkdownPanel.resolve`/`Shared.MyMediaPanel.resolve`
+exactly (no per-`Target` permission branching needed here, unlike `MarkdownPanel`'s own `resolve`:
+this panel's targets have no client-checkable permission beyond "signed in on that server", the
+actual author-or-Admin/owner-or-grantee checks all happen server-side, in `GenerateMedia` itself).
+-}
+resolve : AccountsPanel.Model -> String -> Result String Resolved
+resolve accountsPanelModel host =
+    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+        Nothing ->
+            Err "That server isn't connected."
+
+        Just server ->
+            if not server.enabled then
+                Err (server.frontendHost ++ " is disabled.")
+
+            else
+                case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+                    Nothing ->
+                        Err "You're not signed in on that server."
+
+                    Just account ->
+                        Ok { server = server, account = account }
+
+
+generateTask :
+    AccountsPanel.Model
+    -> Resolved
+    -> String
+    -> AvailableAIModel
+    -> String
+    -> List MediaReference
+    -> Maybe Target
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Media )
+generateTask accountsPanelModel resolved host selectedModel prompt media target =
+    let
+        targetField : Maybe (GenerateMediaRequestTarget.Target String String)
+        targetField =
+            case target of
+                Just (TargetPost post) ->
+                    Just (GenerateMediaRequestTarget.PostId post.id)
+
+                Just (TargetEvent _ instance) ->
+                    Just (GenerateMediaRequestTarget.EventInstanceId instance.id)
+
+                Nothing ->
+                    Nothing
+    in
+    AIModelProviders.generateMedia
+        accountsPanelModel
+        ( Just resolved.account.userId, host )
+        { defaultGenerateMediaRequest
+            | model = Just selectedModel
+            , userPrompt = prompt
+            , mediaIds = List.map .id media
+            , target = targetField
+        }

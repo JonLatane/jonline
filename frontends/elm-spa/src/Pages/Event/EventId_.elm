@@ -18,6 +18,7 @@ exactly what makes the date-picker strip possible without a second request.
 
 import Animation
 import Browser.Dom as Dom
+import Components.AIModelProviders as AIModelProviders
 import Components.Authors as Authors
 import Components.Events as Events
 import Components.Markdown as Markdown
@@ -48,6 +49,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
@@ -90,6 +92,11 @@ type alias Model =
     -- `Pages.Post.PostId_.Model.mediaEditActive` exactly, see its own doc for
     -- why this gating is needed at all.
     , mediaEditActive : Bool
+
+    -- Set by `GenerateMediaClicked`, until `Shared.MediaGeneratorPanel` reports back a
+    -- `GotGenerateResult`/`CancelClicked` -- mirrors `Components.Pages.PostPage.Model.mediaGeneratorActive`
+    -- exactly, see its own doc for why.
+    , mediaGeneratorActive : Bool
 
     -- Live only while one of the title/link/content editors (see
     -- `postFieldEditFormView`) is open, for the `Event`'s own primary `Post`
@@ -151,6 +158,10 @@ type Msg
       -- (`Post`, `Event`, `EventInstance`, ...), so nothing about `UpdateEvent`
       -- is needed just to change which media this Post carries.
     | MediaEditClicked Post
+      -- The Event's own "Generate Media…" button (see `eventDetailView`) -- opens
+      -- `Shared.MediaGeneratorPanel` targeting the Event's own Post, mirroring
+      -- `Components.Pages.PostPage.GenerateMediaClicked` exactly.
+    | GenerateMediaClicked Event EventInstance
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- One of the Event's own `Post`'s title/link editors (see
       -- `postFieldEditFormView`) -- each shown to the post's own author or
@@ -431,6 +442,7 @@ init shared params =
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
                 , mediaEditActive = False
+                , mediaGeneratorActive = False
                 , postFieldEdit = Nothing
                 , moderationEdit = Nothing
                 , visibilityEdit = Nothing
@@ -573,6 +585,14 @@ update shared req msg model =
                         (Just (MyMediaPanel.MultiSelect { initialSelection = post.media }))
                         model.targetHost
                     )
+                )
+            )
+
+        GenerateMediaClicked event instance ->
+            ( { model | mediaGeneratorActive = True }
+            , Effect.fromShared
+                (Shared.MediaGeneratorPanelMsg
+                    (MediaGeneratorPanel.Open (Just (MediaGeneratorPanel.TargetEvent event instance)) model.targetHost shared.basePath)
                 )
             )
 
@@ -1167,6 +1187,24 @@ update shared req msg model =
 
                         Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
                             ( { model | mediaEditActive = False }, Effect.none )
+
+                        -- See `Pages.Post.PostId_`'s own identical branch -- `mediaGeneratorActive`
+                        -- (set by `GenerateMediaClicked`) gates this the same "don't mistake an
+                        -- unrelated use of the panel for this page's own" reasoning
+                        -- `mediaEditActive` above already gives.
+                        Shared.MediaGeneratorPanelMsg (MediaGeneratorPanel.GotGenerateResult (Ok _)) ->
+                            if model.mediaGeneratorActive then
+                                let
+                                    ( refetchedModel, refetchEffect ) =
+                                        refetch shared model
+                                in
+                                ( { refetchedModel | mediaGeneratorActive = False }, refetchEffect )
+
+                            else
+                                ( model, Effect.none )
+
+                        Shared.MediaGeneratorPanelMsg MediaGeneratorPanel.CancelClicked ->
+                            ( { model | mediaGeneratorActive = False }, Effect.none )
 
                         -- This page's own `DeleteClicked` (via
                         -- `Shared.RequestDelete`/`Shared.ConfirmDelete`)
@@ -1790,9 +1828,30 @@ eventDetailView shared model event instance =
                         , instanceDetailAndStrip
                         , case maybeServer of
                             Just server ->
+                                let
+                                    -- `Nothing` when the viewer has no image-capable `AvailableAIModel`
+                                    -- at all -- see `Posts.generateMediaButton`'s own doc, mirrors
+                                    -- `Components.Pages.PostPage.postDetailView`'s identical
+                                    -- `onGenerateMediaClicked`.
+                                    onGenerateMediaClicked : Maybe Msg
+                                    onGenerateMediaClicked =
+                                        case maybeAccount of
+                                            Just account ->
+                                                if List.any AIModelProviders.hasImageEditingCapability account.availableAiModels then
+                                                    Just (GenerateMediaClicked event instance)
+
+                                                else
+                                                    Nothing
+
+                                            Nothing ->
+                                                Nothing
+                                in
                                 div []
                                     [ MultiMediaRenderer.view eventPost.postMediaLayout server maybeAccount (MediaClicked eventPost) eventPost.media
-                                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                                    , div [ class "event-post-media-edit-row" ]
+                                        [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost
+                                        , Posts.generateMediaButton maybeAccount onGenerateMediaClicked eventPost
+                                        ]
                                     ]
 
                             Nothing ->

@@ -13,13 +13,32 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use aIModelCapabilityDescriptor instead')
+const AIModelCapability$json = {
+  '1': 'AIModelCapability',
+  '2': [
+    {'1': 'AI_MODEL_CAPABILITY_UNKNOWN', '2': 0},
+    {'1': 'AI_MODEL_CAPABILITY_TEXT_GENERATION', '2': 1},
+    {'1': 'AI_MODEL_CAPABILITY_IMAGE_GENERATION', '2': 2},
+    {'1': 'AI_MODEL_CAPABILITY_IMAGE_EDITING', '2': 3},
+  ],
+};
+
+/// Descriptor for `AIModelCapability`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List aIModelCapabilityDescriptor = $convert.base64Decode(
+    'ChFBSU1vZGVsQ2FwYWJpbGl0eRIfChtBSV9NT0RFTF9DQVBBQklMSVRZX1VOS05PV04QABInCi'
+    'NBSV9NT0RFTF9DQVBBQklMSVRZX1RFWFRfR0VORVJBVElPThABEigKJEFJX01PREVMX0NBUEFC'
+    'SUxJVFlfSU1BR0VfR0VORVJBVElPThACEiUKIUFJX01PREVMX0NBUEFCSUxJVFlfSU1BR0VfRU'
+    'RJVElORxAD');
+
 @$core.Deprecated('Use availableAIModelDescriptor instead')
 const AvailableAIModel$json = {
   '1': 'AvailableAIModel',
   '2': [
     {'1': 'model_name', '3': 1, '4': 1, '5': 9, '10': 'modelName'},
-    {'1': 'grant', '3': 2, '4': 1, '5': 11, '6': '.jonline.AIModelProviderGrant', '9': 0, '10': 'grant', '17': true},
-    {'1': 'provider', '3': 3, '4': 1, '5': 11, '6': '.jonline.AIModelProvider', '10': 'provider'},
+    {'1': 'capabilities', '3': 2, '4': 3, '5': 14, '6': '.jonline.AIModelCapability', '10': 'capabilities'},
+    {'1': 'grant', '3': 3, '4': 1, '5': 11, '6': '.jonline.AIModelProviderGrant', '9': 0, '10': 'grant', '17': true},
+    {'1': 'provider', '3': 4, '4': 1, '5': 11, '6': '.jonline.AIModelProvider', '10': 'provider'},
   ],
   '8': [
     {'1': '_grant'},
@@ -28,10 +47,33 @@ const AvailableAIModel$json = {
 
 /// Descriptor for `AvailableAIModel`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List availableAIModelDescriptor = $convert.base64Decode(
-    'ChBBdmFpbGFibGVBSU1vZGVsEh0KCm1vZGVsX25hbWUYASABKAlSCW1vZGVsTmFtZRI4CgVncm'
-    'FudBgCIAEoCzIdLmpvbmxpbmUuQUlNb2RlbFByb3ZpZGVyR3JhbnRIAFIFZ3JhbnSIAQESNAoI'
-    'cHJvdmlkZXIYAyABKAsyGC5qb25saW5lLkFJTW9kZWxQcm92aWRlclIIcHJvdmlkZXJCCAoGX2'
-    'dyYW50');
+    'ChBBdmFpbGFibGVBSU1vZGVsEh0KCm1vZGVsX25hbWUYASABKAlSCW1vZGVsTmFtZRI+CgxjYX'
+    'BhYmlsaXRpZXMYAiADKA4yGi5qb25saW5lLkFJTW9kZWxDYXBhYmlsaXR5UgxjYXBhYmlsaXRp'
+    'ZXMSOAoFZ3JhbnQYAyABKAsyHS5qb25saW5lLkFJTW9kZWxQcm92aWRlckdyYW50SABSBWdyYW'
+    '50iAEBEjQKCHByb3ZpZGVyGAQgASgLMhguam9ubGluZS5BSU1vZGVsUHJvdmlkZXJSCHByb3Zp'
+    'ZGVyQggKBl9ncmFudA==');
+
+@$core.Deprecated('Use generateMediaRequestDescriptor instead')
+const GenerateMediaRequest$json = {
+  '1': 'GenerateMediaRequest',
+  '2': [
+    {'1': 'model', '3': 1, '4': 1, '5': 11, '6': '.jonline.AvailableAIModel', '10': 'model'},
+    {'1': 'user_prompt', '3': 2, '4': 1, '5': 9, '10': 'userPrompt'},
+    {'1': 'media_ids', '3': 3, '4': 3, '5': 9, '10': 'mediaIds'},
+    {'1': 'post_id', '3': 5, '4': 1, '5': 9, '9': 0, '10': 'postId'},
+    {'1': 'event_instance_id', '3': 6, '4': 1, '5': 9, '9': 0, '10': 'eventInstanceId'},
+  ],
+  '8': [
+    {'1': 'target'},
+  ],
+};
+
+/// Descriptor for `GenerateMediaRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List generateMediaRequestDescriptor = $convert.base64Decode(
+    'ChRHZW5lcmF0ZU1lZGlhUmVxdWVzdBIvCgVtb2RlbBgBIAEoCzIZLmpvbmxpbmUuQXZhaWxhYm'
+    'xlQUlNb2RlbFIFbW9kZWwSHwoLdXNlcl9wcm9tcHQYAiABKAlSCnVzZXJQcm9tcHQSGwoJbWVk'
+    'aWFfaWRzGAMgAygJUghtZWRpYUlkcxIZCgdwb3N0X2lkGAUgASgJSABSBnBvc3RJZBIsChFldm'
+    'VudF9pbnN0YW5jZV9pZBgGIAEoCUgAUg9ldmVudEluc3RhbmNlSWRCCAoGdGFyZ2V0');
 
 @$core.Deprecated('Use aIModelProviderDescriptor instead')
 const AIModelProvider$json = {

@@ -10,6 +10,7 @@ import {
   AIModelProvider,
   AIModelProviderGrant,
   DeleteAIModelProviderRequest,
+  GenerateMediaRequest,
   GetAIModelProvidersResponse,
   GrantAIModelProviderRequest,
   RevokeAIModelProviderRequest,
@@ -1444,6 +1445,20 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /**
+     * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+     * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+     * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+     * to that Post/Event.
+     */
+    generateMedia: {
+      name: "GenerateMedia",
+      requestType: GenerateMediaRequest,
+      requestStream: false,
+      responseType: Media,
+      responseStream: false,
+      options: {},
+    },
     /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
@@ -1830,6 +1845,13 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
     request: RevokeAIModelProviderRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
+  /**
+   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+   * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+   * to that Post/Event.
+   */
+  generateMedia(request: GenerateMediaRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Media>>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
@@ -2171,6 +2193,13 @@ export interface JonlineClient<CallOptionsExt = {}> {
     request: DeepPartial<RevokeAIModelProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
+  /**
+   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+   * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+   * to that Post/Event.
+   */
+  generateMedia(request: DeepPartial<GenerateMediaRequest>, options?: CallOptions & CallOptionsExt): Promise<Media>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: DeepPartial<GetEventAttendancesRequest>,

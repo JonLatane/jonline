@@ -28,11 +28,14 @@
      rather than getting buried behind it. Also above `.create-new-panel` (29,
      see create_new_panel.css) -- opening this from `CreateNewPanel`'s own
      Edit button should win over that composer, same reasoning as
-     `.markdown-panel` above it. Still below the Media Viewer panel
-     (32, see media_viewer_panel.css) and `.modal`'s own 33/34 -- a fullscreen
-     lightbox, or a Cancel/Confirm dialog, should still win over a media
-     browser left open behind it. */
-  z-index: 31;
+     `.markdown-panel` above it. Also above `.media-generator-panel` (31, see
+     media_generator_panel.css) -- opening this to pick reference media *from*
+     that panel should cover it, the whole reason that panel asked to sit
+     just below this one (see its own doc). Still below the Media Viewer
+     panel (33, see media_viewer_panel.css) and `.modal`'s own 34/35 -- a
+     fullscreen lightbox, or a Cancel/Confirm dialog, should still win over a
+     media browser left open behind it. */
+  z-index: 32;
 }
 
 .my-media-panel.nav-panel.is-closed {

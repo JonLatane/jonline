@@ -155,10 +155,13 @@
     - [AvailableAIModel](#jonline-AvailableAIModel)
     - [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest)
     - [GeminiCredentials](#jonline-GeminiCredentials)
+    - [GenerateMediaRequest](#jonline-GenerateMediaRequest)
     - [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse)
     - [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest)
     - [OpenAICredentials](#jonline-OpenAICredentials)
     - [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest)
+  
+    - [AIModelCapability](#jonline-AIModelCapability)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -944,6 +947,7 @@ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federa
 | DeleteAIModelProvider | [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). |
 | GrantAIModelProvider | [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest) | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
 | RevokeAIModelProvider | [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
+| GenerateMedia | [GenerateMediaRequest](#jonline-GenerateMediaRequest) | [Media](#jonline-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AvailableAIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access to that Post/Event. |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -3525,9 +3529,10 @@ unlike every other RPC pair here, are **owner-only with no Admin override**: an 
 record itself (rename it, rotate its key, delete it), but handing out access to *someone else&#39;s* API budget is a
 call only its owner should be able to make.
 
-Currently only the [`GeminiCredentials`](#jonline-GeminiCredentials) variant has a working connection flow;
-[`OpenAICredentials`](#jonline-OpenAICredentials)/[`AnthropicCredentials`](#jonline-AnthropicCredentials) are defined for
-forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider).
+[`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
+working connection flow (Gemini&#39;s Interactions API, OpenAI&#39;s Images API);
+[`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
+accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn&#39;t offer image generation).
 
 
 | Field | Type | Label | Description |
@@ -3535,9 +3540,9 @@ forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grp
 | id | [string](#string) |  | Unique ID for the AIModelProvider. |
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
 | name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic -- has no effect on behavior. |
-| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation endpoint, for generating Event posters). The only variant currently creatable. |
-| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection. *Not yet creatable.* |
-| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable.* |
+| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via its Interactions API. |
+| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT Image models). |
+| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
 | grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
@@ -3603,6 +3608,7 @@ every model the provider supports if that list is empty.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
+| capabilities | [AIModelCapability](#jonline-AIModelCapability) | repeated | What this model can actually do -- from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn&#39;t need its own hardcoded list of model names. |
 | grant | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access -- no grant needed). |
 | provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
 
@@ -3632,13 +3638,35 @@ Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderG
 Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
 [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Planned use is the Gemini image generation/editing endpoint (`ai.google.dev/gemini-api/docs/image-generation`),
-to generate/edit Event posters from an Event&#39;s own content.
+Used for image generation/editing via Gemini&#39;s Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+e.g. to generate/edit Event posters from an Event&#39;s own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | gemini_api_key | [string](#string) | optional | The Gemini API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- **never populated in responses**, the same write-only convention as e.g. [`MastodonAccount.access_token`](#jonline-MastodonAccount) in `sync.proto`. |
+
+
+
+
+
+
+<a name="jonline-GenerateMediaRequest"></a>
+
+### GenerateMediaRequest
+Request to generate (or edit) an image via one of the current user&#39;s
+[`AvailableAIModel`](#jonline-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by the current user, and -- if
+`target` is set -- prepended as the *first* item in that Post&#39;s (or Event&#39;s own Post&#39;s) `media` list.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| model | [AvailableAIModel](#jonline-AvailableAIModel) |  | Which of the current user&#39;s `AvailableAIModel`s to generate with -- `model.model_name` selects the actual model, `model.provider.id` identifies whose `AIModelProvider` (the current user&#39;s own, or one they&#39;ve been granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field sent here (e.g. a spoofed `grant`) is ignored in favor of the caller&#39;s real access, re-derived from `provider.id` and the current user. |
+| user_prompt | [string](#string) |  | The user-editable prompt describing what to generate, e.g. &#34;Please generate a square headline poster for the following event.&#34; Combined server-side with `target`&#39;s own formatted content (title/description/date-time range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to the model, so the user never has to paste that context in by hand. |
+| media_ids | [string](#string) | repeated | Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/ reference-based generation (e.g. a target Post/Event&#39;s own current photos), in the order given here. Ignored if the chosen model doesn&#39;t accept image input. |
+| post_id | [string](#string) |  | Attach to (and use the content of) this Post. Caller must be its author, or an Admin. |
+| event_instance_id | [string](#string) |  | Attach to (and use the content of) this EventInstance&#39;s parent Event&#39;s own Post -- named by EventInstance, not Event, since that&#39;s what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event&#39;s own Post&#39;s author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin. |
 
 
 
@@ -3683,12 +3711,16 @@ Request to grant (or reset) another user&#39;s metered access to one of the curr
 <a name="jonline-OpenAICredentials"></a>
 
 ### OpenAICredentials
-Credentials for an OpenAI API connection. *Not yet creatable* -- defined for forward compatibility only.
+Credentials for an OpenAI API connection, accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Used for image generation/editing via OpenAI&#39;s Images API (`platform.openai.com/docs/guides/image-generation`,
+the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+[`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| openai_api_key | [string](#string) | optional | The OpenAI API key. Never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+| openai_api_key | [string](#string) | optional | The OpenAI API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
 
 
 
@@ -3713,6 +3745,24 @@ Request to revoke another user&#39;s access to one of the current user&#39;s
 
 
  
+
+
+<a name="jonline-AIModelCapability"></a>
+
+### AIModelCapability
+What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
+(e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)&#39;s &#34;Generate Media…&#34; buttons/panel only offer
+models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`) without the gated feature needing its own
+hardcoded list of model names to check against. A model may carry more than one -- e.g. an
+image-editing model can also usually do plain text-to-image generation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AI_MODEL_CAPABILITY_UNKNOWN | 0 | The model&#39;s capabilities are unknown (e.g. the server doesn&#39;t know what this provider supports). |
+| AI_MODEL_CAPABILITY_TEXT_GENERATION | 1 | The model can generate new text from a prompt. |
+| AI_MODEL_CAPABILITY_IMAGE_GENERATION | 2 | The model can generate a new image from a text prompt alone. |
+| AI_MODEL_CAPABILITY_IMAGE_EDITING | 3 | The model can edit an existing image, given a text prompt and one or more reference images -- what [`GenerateMedia`](#grpc-api-GenerateMedia) actually requires, since it always sends the target Post/Event&#39;s own context as a prompt and (usually) at least one reference image. |
+
 
  
 

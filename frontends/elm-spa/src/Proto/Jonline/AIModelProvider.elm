@@ -18,7 +18,7 @@ import Proto.Jonline.Internals_
 
 
 {-|  Identifies which external AI service this provider connects to, and carries that service's credentials. Only
- one variant may be set at a time. Only the `gemini_credentials` variant is currently accepted by
+ one variant may be set at a time. The `gemini_credentials`/`openai_credentials` variants are accepted by
  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
  see each credentials message below for why the actual key/secret is never sent back in a response.
 
@@ -27,18 +27,19 @@ import Proto.Jonline.Internals_
 
 ### GeminiCredentials
 
- A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation
- endpoint, for generating Event posters). The only variant currently creatable.
+ A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
+ generating Event posters) via its Interactions API.
 
 
 ### OpenaiCredentials
 
- An OpenAI API connection. *Not yet creatable.*
+ An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
+ generation/editing via its Images API (GPT Image models).
 
 
 ### AnthropicCredentials
 
- An Anthropic API connection. *Not yet creatable.*
+ An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
 
 
 -}

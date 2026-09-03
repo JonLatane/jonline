@@ -14,8 +14,11 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'ai_model_providers.pbenum.dart';
 import 'authors.pb.dart' as $15;
 import 'google/protobuf/timestamp.pb.dart' as $12;
+
+export 'ai_model_providers.pbenum.dart';
 
 /// One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
 /// they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
@@ -28,12 +31,16 @@ import 'google/protobuf/timestamp.pb.dart' as $12;
 class AvailableAIModel extends $pb.GeneratedMessage {
   factory AvailableAIModel({
     $core.String? modelName,
+    $core.Iterable<AIModelCapability>? capabilities,
     AIModelProviderGrant? grant,
     AIModelProvider? provider,
   }) {
     final $result = create();
     if (modelName != null) {
       $result.modelName = modelName;
+    }
+    if (capabilities != null) {
+      $result.capabilities.addAll(capabilities);
     }
     if (grant != null) {
       $result.grant = grant;
@@ -49,8 +56,9 @@ class AvailableAIModel extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AvailableAIModel', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'modelName')
-    ..aOM<AIModelProviderGrant>(2, _omitFieldNames ? '' : 'grant', subBuilder: AIModelProviderGrant.create)
-    ..aOM<AIModelProvider>(3, _omitFieldNames ? '' : 'provider', subBuilder: AIModelProvider.create)
+    ..pc<AIModelCapability>(2, _omitFieldNames ? '' : 'capabilities', $pb.PbFieldType.KE, valueOf: AIModelCapability.valueOf, enumValues: AIModelCapability.values, defaultEnumValue: AIModelCapability.AI_MODEL_CAPABILITY_UNKNOWN)
+    ..aOM<AIModelProviderGrant>(3, _omitFieldNames ? '' : 'grant', subBuilder: AIModelProviderGrant.create)
+    ..aOM<AIModelProvider>(4, _omitFieldNames ? '' : 'provider', subBuilder: AIModelProvider.create)
     ..hasRequiredFields = false
   ;
 
@@ -85,32 +93,179 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearModelName() => clearField(1);
 
+  /// What this model can actually do -- from the server's own hardcoded catalog for
+  /// `provider.provider`'s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not
+  /// anything reported by the provider's API itself. Feature gating keys off this rather than
+  /// `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
+  /// `AI_MODEL_CAPABILITY_IMAGE_EDITING`) doesn't need its own hardcoded list of model names.
+  @$pb.TagNumber(2)
+  $core.List<AIModelCapability> get capabilities => $_getList(1);
+
   /// The grant that allows this access, when the current user isn't `provider.owner` themselves.
   /// Unset when the current user owns `provider` outright (full, ungated access -- no grant needed).
-  @$pb.TagNumber(2)
-  AIModelProviderGrant get grant => $_getN(1);
-  @$pb.TagNumber(2)
-  set grant(AIModelProviderGrant v) { setField(2, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasGrant() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearGrant() => clearField(2);
-  @$pb.TagNumber(2)
-  AIModelProviderGrant ensureGrant() => $_ensure(1);
+  @$pb.TagNumber(3)
+  AIModelProviderGrant get grant => $_getN(2);
+  @$pb.TagNumber(3)
+  set grant(AIModelProviderGrant v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasGrant() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearGrant() => clearField(3);
+  @$pb.TagNumber(3)
+  AIModelProviderGrant ensureGrant() => $_ensure(2);
 
   /// The provider this model belongs to. Its own `grants` list is only populated when the current
   /// user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
   /// mere grantee never sees who else has been granted access to a provider they don't own.
+  @$pb.TagNumber(4)
+  AIModelProvider get provider => $_getN(3);
+  @$pb.TagNumber(4)
+  set provider(AIModelProvider v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasProvider() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearProvider() => clearField(4);
+  @$pb.TagNumber(4)
+  AIModelProvider ensureProvider() => $_ensure(3);
+}
+
+enum GenerateMediaRequest_Target {
+  postId, 
+  eventInstanceId, 
+  notSet
+}
+
+/// Request to generate (or edit) an image via one of the current user's
+/// [`AvailableAIModel`](#jonline-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+/// image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by the current user, and -- if
+/// `target` is set -- prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
+class GenerateMediaRequest extends $pb.GeneratedMessage {
+  factory GenerateMediaRequest({
+    AvailableAIModel? model,
+    $core.String? userPrompt,
+    $core.Iterable<$core.String>? mediaIds,
+    $core.String? postId,
+    $core.String? eventInstanceId,
+  }) {
+    final $result = create();
+    if (model != null) {
+      $result.model = model;
+    }
+    if (userPrompt != null) {
+      $result.userPrompt = userPrompt;
+    }
+    if (mediaIds != null) {
+      $result.mediaIds.addAll(mediaIds);
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    return $result;
+  }
+  GenerateMediaRequest._() : super();
+  factory GenerateMediaRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GenerateMediaRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static const $core.Map<$core.int, GenerateMediaRequest_Target> _GenerateMediaRequest_TargetByTag = {
+    5 : GenerateMediaRequest_Target.postId,
+    6 : GenerateMediaRequest_Target.eventInstanceId,
+    0 : GenerateMediaRequest_Target.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GenerateMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..oo(0, [5, 6])
+    ..aOM<AvailableAIModel>(1, _omitFieldNames ? '' : 'model', subBuilder: AvailableAIModel.create)
+    ..aOS(2, _omitFieldNames ? '' : 'userPrompt')
+    ..pPS(3, _omitFieldNames ? '' : 'mediaIds')
+    ..aOS(5, _omitFieldNames ? '' : 'postId')
+    ..aOS(6, _omitFieldNames ? '' : 'eventInstanceId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  GenerateMediaRequest clone() => GenerateMediaRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  GenerateMediaRequest copyWith(void Function(GenerateMediaRequest) updates) => super.copyWith((message) => updates(message as GenerateMediaRequest)) as GenerateMediaRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GenerateMediaRequest create() => GenerateMediaRequest._();
+  GenerateMediaRequest createEmptyInstance() => create();
+  static $pb.PbList<GenerateMediaRequest> createRepeated() => $pb.PbList<GenerateMediaRequest>();
+  @$core.pragma('dart2js:noInline')
+  static GenerateMediaRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GenerateMediaRequest>(create);
+  static GenerateMediaRequest? _defaultInstance;
+
+  GenerateMediaRequest_Target whichTarget() => _GenerateMediaRequest_TargetByTag[$_whichOneof(0)]!;
+  void clearTarget() => clearField($_whichOneof(0));
+
+  /// Which of the current user's `AvailableAIModel`s to generate with -- `model.model_name` selects the actual
+  /// model, `model.provider.id` identifies whose `AIModelProvider` (the current user's own, or one they've been
+  /// granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field
+  /// sent here (e.g. a spoofed `grant`) is ignored in favor of the caller's real access, re-derived from
+  /// `provider.id` and the current user.
+  @$pb.TagNumber(1)
+  AvailableAIModel get model => $_getN(0);
+  @$pb.TagNumber(1)
+  set model(AvailableAIModel v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasModel() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearModel() => clearField(1);
+  @$pb.TagNumber(1)
+  AvailableAIModel ensureModel() => $_ensure(0);
+
+  /// The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
+  /// following event." Combined server-side with `target`'s own formatted content (title/description/date-time
+  /// range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to
+  /// the model, so the user never has to paste that context in by hand.
+  @$pb.TagNumber(2)
+  $core.String get userPrompt => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set userPrompt($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUserPrompt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUserPrompt() => clearField(2);
+
+  /// Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/
+  /// reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Ignored
+  /// if the chosen model doesn't accept image input.
   @$pb.TagNumber(3)
-  AIModelProvider get provider => $_getN(2);
-  @$pb.TagNumber(3)
-  set provider(AIModelProvider v) { setField(3, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasProvider() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearProvider() => clearField(3);
-  @$pb.TagNumber(3)
-  AIModelProvider ensureProvider() => $_ensure(2);
+  $core.List<$core.String> get mediaIds => $_getList(2);
+
+  /// Attach to (and use the content of) this Post. Caller must be its author, or an Admin.
+  @$pb.TagNumber(5)
+  $core.String get postId => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set postId($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasPostId() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearPostId() => clearField(5);
+
+  /// Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by
+  /// EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
+  /// the generated prompt its date/time/location context, the same way
+  /// [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
+  /// Post's author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin.
+  @$pb.TagNumber(6)
+  $core.String get eventInstanceId => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set eventInstanceId($core.String v) { $_setString(4, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasEventInstanceId() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearEventInstanceId() => clearField(6);
 }
 
 enum AIModelProvider_Provider {
@@ -137,9 +292,10 @@ enum AIModelProvider_Provider {
 ///  record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
 ///  call only its owner should be able to make.
 ///
-///  Currently only the [`GeminiCredentials`](#jonline-GeminiCredentials) variant has a working connection flow;
-///  [`OpenAICredentials`](#jonline-OpenAICredentials)/[`AnthropicCredentials`](#jonline-AnthropicCredentials) are defined for
-///  forward compatibility but are not yet accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider).
+///  [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials) both have a
+///  working connection flow (Gemini's Interactions API, OpenAI's Images API);
+///  [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
+///  accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
 class AIModelProvider extends $pb.GeneratedMessage {
   factory AIModelProvider({
     $core.String? id,
@@ -265,8 +421,8 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearName() => clearField(3);
 
-  /// A Google Gemini API connection (see `ai.google.dev/gemini-api` -- planned use is its image generation
-  /// endpoint, for generating Event posters). The only variant currently creatable.
+  /// A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
+  /// generating Event posters) via its Interactions API.
   @$pb.TagNumber(4)
   GeminiCredentials get geminiCredentials => $_getN(3);
   @$pb.TagNumber(4)
@@ -278,7 +434,8 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   GeminiCredentials ensureGeminiCredentials() => $_ensure(3);
 
-  /// An OpenAI API connection. *Not yet creatable.*
+  /// An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
+  /// generation/editing via its Images API (GPT Image models).
   @$pb.TagNumber(5)
   OpenAICredentials get openaiCredentials => $_getN(4);
   @$pb.TagNumber(5)
@@ -290,7 +447,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   OpenAICredentials ensureOpenaiCredentials() => $_ensure(4);
 
-  /// An Anthropic API connection. *Not yet creatable.*
+  /// An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
   @$pb.TagNumber(6)
   AnthropicCredentials get anthropicCredentials => $_getN(5);
   @$pb.TagNumber(6)
@@ -750,8 +907,8 @@ class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
 /// Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
 /// [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-/// Planned use is the Gemini image generation/editing endpoint (`ai.google.dev/gemini-api/docs/image-generation`),
-/// to generate/edit Event posters from an Event's own content.
+/// Used for image generation/editing via Gemini's Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+/// e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 class GeminiCredentials extends $pb.GeneratedMessage {
   factory GeminiCredentials({
     $core.String? geminiApiKey,
@@ -806,7 +963,11 @@ class GeminiCredentials extends $pb.GeneratedMessage {
   void clearGeminiApiKey() => clearField(1);
 }
 
-/// Credentials for an OpenAI API connection. *Not yet creatable* -- defined for forward compatibility only.
+/// Credentials for an OpenAI API connection, accepted by
+/// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+/// Used for image generation/editing via OpenAI's Images API (`platform.openai.com/docs/guides/image-generation`,
+/// the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+/// [`GenerateMedia`](#grpc-api-GenerateMedia).
 class OpenAICredentials extends $pb.GeneratedMessage {
   factory OpenAICredentials({
     $core.String? openaiApiKey,
@@ -847,8 +1008,9 @@ class OpenAICredentials extends $pb.GeneratedMessage {
   static OpenAICredentials getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<OpenAICredentials>(create);
   static OpenAICredentials? _defaultInstance;
 
-  /// The OpenAI API key. Never populated in responses (see
-  /// [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  /// The OpenAI API key. Required (and only used) on
+  /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
   @$pb.TagNumber(1)
   $core.String get openaiApiKey => $_getSZ(0);
   @$pb.TagNumber(1)

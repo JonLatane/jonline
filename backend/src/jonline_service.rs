@@ -501,6 +501,12 @@ impl Jonline for JonlineService {
     ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::revoke_ai_model_provider, request)
     }
+    async fn generate_media(
+        &self,
+        request: Request<GenerateMediaRequest>,
+    ) -> Result<Response<Media>, Status> {
+        authenticated_bucket_rpc!(self, rpcs::generate_media, request)
+    }
 
     async fn upsert_event_attendance(
         &self,

@@ -446,6 +446,7 @@
    identical. */
 .post-edit-button,
 .post-media-edit-button,
+.post-generate-media-button,
 .post-visibility-edit-button,
 .post-visibility-save,
 .post-visibility-cancel,
@@ -476,10 +477,13 @@
    `MultiMediaRenderer.view` in `postDetail` -- same small-button vocabulary
    as `.post-edit-button`, just left-aligned (there's no meta line/other
    content sharing this row the way `.post-detail-edit-row` has) and closer
-   to the media above it than that row's own `margin-top`. */
+   to the media above it than that row's own `margin-top`. `gap` accommodates
+   `Components.Posts.generateMediaButton` sharing this row alongside
+   `mediaEditButton` (a no-op when only one of the two actually renders). */
 .post-detail-media-edit-row {
   display: flex;
   justify-content: flex-start;
+  gap: 0.4rem;
   margin-top: 0.3rem;
 }
 

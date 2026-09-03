@@ -44,3 +44,9 @@ pub use user_counts::*;
 
 mod media_conversion;
 pub use media_conversion::*;
+
+mod gemini_media;
+pub use gemini_media::*;
+
+mod openai_media;
+pub use openai_media::*;

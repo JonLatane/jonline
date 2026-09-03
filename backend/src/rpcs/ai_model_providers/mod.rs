@@ -15,3 +15,6 @@ pub use grant_ai_model_provider::grant_ai_model_provider;
 
 mod revoke_ai_model_provider;
 pub use revoke_ai_model_provider::revoke_ai_model_provider;
+
+mod generate_media;
+pub use generate_media::generate_media;

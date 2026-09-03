@@ -4,7 +4,7 @@ use tonic::Status;
 
 use super::{ToProtoAuthor, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
-use crate::logic::models_for_provider;
+use crate::logic::{capabilities_for_model, models_for_provider};
 use crate::models;
 use crate::protos::*;
 
@@ -98,9 +98,10 @@ pub fn build_available_ai_models_for_users(
         let grants = grants_by_provider_id.get(&provider.id).cloned().unwrap_or_default();
         let provider_proto = MarshalableAIModelProvider(provider.clone(), owner.clone(), grants).to_proto();
         if let Some(entry) = result.get_mut(&provider.user_id) {
-            for model_name in models_for_provider(&provider_proto.provider) {
+            for model in models_for_provider(&provider_proto.provider) {
                 entry.1.push(AvailableAiModel {
-                    model_name: model_name.to_string(),
+                    model_name: model.name.to_string(),
+                    capabilities: model.capabilities.iter().map(|c| *c as i32).collect(),
                     grant: None,
                     provider: Some(provider_proto.clone()),
                 });
@@ -126,7 +127,7 @@ pub fn build_available_ai_models_for_users(
         let model_names: Vec<String> = if grant.model_names.is_empty() {
             models_for_provider(&provider_proto.provider)
                 .iter()
-                .map(|m| m.to_string())
+                .map(|m| m.name.to_string())
                 .collect()
         } else {
             grant.model_names.clone()
@@ -134,8 +135,13 @@ pub fn build_available_ai_models_for_users(
         let grant_proto = MarshalableAIModelProviderGrant(grant, grantee_author.clone()).to_proto();
         if let Some(entry) = result.get_mut(&grantee_id) {
             for model_name in model_names {
+                let capabilities = capabilities_for_model(&provider_proto.provider, &model_name)
+                    .iter()
+                    .map(|c| *c as i32)
+                    .collect();
                 entry.1.push(AvailableAiModel {
                     model_name,
+                    capabilities,
                     grant: Some(grant_proto.clone()),
                     provider: Some(provider_proto.clone()),
                 });
@@ -174,6 +180,30 @@ pub fn provider_configuration_to_proto(
         ));
     }
     None
+}
+
+/// Reads the real Gemini API key back out of a provider's `configuration` column -- the one place
+/// this ever leaves the database, used only server-side (by `rpcs::ai_model_providers::generate_media`
+/// to actually call Gemini) and never included in a response (see `provider_configuration_to_proto`,
+/// which always sends `gemini_api_key: None`).
+pub fn gemini_api_key_from_configuration(configuration: &serde_json::Value) -> Option<String> {
+    configuration
+        .get("gemini_credentials")?
+        .get("gemini_api_key")?
+        .as_str()
+        .map(str::to_string)
+        .filter(|key| !key.trim().is_empty())
+}
+
+/// `gemini_api_key_from_configuration`'s counterpart for `OpenAICredentials` -- same reasoning,
+/// used by `rpcs::ai_model_providers::generate_media` to actually call OpenAI's Images API.
+pub fn openai_api_key_from_configuration(configuration: &serde_json::Value) -> Option<String> {
+    configuration
+        .get("openai_credentials")?
+        .get("openai_api_key")?
+        .as_str()
+        .map(str::to_string)
+        .filter(|key| !key.trim().is_empty())
 }
 
 /// The reverse of `provider_configuration_to_proto` -- builds the `configuration` column value

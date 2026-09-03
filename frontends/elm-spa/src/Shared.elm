@@ -42,6 +42,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -118,6 +119,7 @@ type Msg
     | StarredPanelMsg StarredPanel.Msg
     | UserPreferencesMsg UserPreferences.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
+    | MediaGeneratorPanelMsg MediaGeneratorPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
@@ -321,6 +323,7 @@ type alias Panels =
     { federatedAuth : FederatedAuth.Model
     , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
+    , mediaGeneratorPanel : MediaGeneratorPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
@@ -408,6 +411,7 @@ init basePath req flags =
                 { federatedAuth = federatedAuthModel
                 , starredPanel = StarredPanel.init starredPostsFlags
                 , markdownPanel = MarkdownPanel.init
+                , mediaGeneratorPanel = MediaGeneratorPanel.init
                 , mediaViewerPanel = MediaViewerPanel.init
                 , myMediaPanel = MyMediaPanel.init
                 , createNewPanel = CreateNewPanel.init
@@ -905,6 +909,50 @@ sharedUpdate req msg model =
                 ]
             )
 
+        MediaGeneratorPanelMsg subMsg ->
+            let
+                panels : Panels
+                panels =
+                    model.panels
+
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMyMediaPanelMsg ) ) =
+                    MediaGeneratorPanel.update model.accounts subMsg panels.mediaGeneratorPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+
+                -- `MediaGeneratorPanel.EditMediaClicked`'s own request (see its module doc) to
+                -- actually open `MyMediaPanel` on its behalf -- it can't dispatch that directly
+                -- without importing `Shared`, which would cycle. Mirrors `CreateNewPanelMsg`'s own
+                -- `maybeMyMediaPanelMsg` handling above exactly.
+                ( myMediaPanelModel, myMediaPanelCmd ) =
+                    case maybeMyMediaPanelMsg of
+                        Just myMediaPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg panels.myMediaPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( panels.myMediaPanel, Cmd.none )
+            in
+            ( { model
+                | accounts = accountsPanelModel
+                , panels = { panels | mediaGeneratorPanel = subModel, myMediaPanel = myMediaPanelModel }
+              }
+            , Cmd.batch
+                [ Cmd.map MediaGeneratorPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map MyMediaPanelMsg myMediaPanelCmd
+                ]
+            )
+
         MyMediaPanelMsg subMsg ->
             let
                 panels : Panels
@@ -930,6 +978,28 @@ sharedUpdate req msg model =
 
                         _ ->
                             Nothing
+
+                -- `Shared.MediaGeneratorPanel`'s own `EditMediaClicked` request, picked up the same
+                -- way `savedMedia`/`createNewPanelModel` above do for `CreateNewPanel` -- gated on
+                -- `mediaEditActive`, not just `isOpen`, since this panel staying open doesn't by
+                -- itself mean *it* was who opened `MyMediaPanel` just now (see that field's own
+                -- doc). `CloseClicked` (a cancel) is forwarded too, so `mediaEditActive` doesn't
+                -- linger `True` after backing out of the picker without saving.
+                mediaGeneratorMsg : Maybe MediaGeneratorPanel.Msg
+                mediaGeneratorMsg =
+                    if panels.mediaGeneratorPanel.mediaEditActive then
+                        case subMsg of
+                            MyMediaPanel.SaveMediaClicked media ->
+                                Just (MediaGeneratorPanel.MediaSaved media)
+
+                            MyMediaPanel.CloseClicked ->
+                                Just MediaGeneratorPanel.MediaEditClosed
+
+                            _ ->
+                                Nothing
+
+                    else
+                        Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest, maybeMediaViewerPanelMsg ) ) =
                     MyMediaPanel.update model.accounts subMsg panels.myMediaPanel
@@ -969,6 +1039,18 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( panels.createNewPanel, Cmd.none )
 
+                ( mediaGeneratorPanelModel, mediaGeneratorPanelCmd ) =
+                    case mediaGeneratorMsg of
+                        Just innerMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MediaGeneratorPanel.update model.accounts innerMsg panels.mediaGeneratorPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( panels.mediaGeneratorPanel, Cmd.none )
+
                 -- `MediaItemClicked` in Browse mode (see `MyMediaPanel.update`'s
                 -- own doc) -- opens `Shared.MediaViewerPanel` on the tapped
                 -- tile, same forwarding convention `StarredPanelMsg`'s own
@@ -988,6 +1070,7 @@ sharedUpdate req msg model =
                         | myMediaPanel = subModel
                         , confirmingDeleteFor = confirmingDeleteFor
                         , createNewPanel = createNewPanelModel
+                        , mediaGeneratorPanel = mediaGeneratorPanelModel
                         , mediaViewerPanel = mediaViewerPanelModel
                     }
               }
@@ -995,6 +1078,7 @@ sharedUpdate req msg model =
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                , Cmd.map MediaGeneratorPanelMsg mediaGeneratorPanelCmd
                 , Cmd.map MediaViewerPanelMsg mediaViewerPanelCmd
                 ]
             )

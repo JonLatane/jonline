@@ -292,6 +292,10 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/RevokeAIModelProvider',
       ($11.RevokeAIModelProviderRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$generateMedia = $grpc.ClientMethod<$11.GenerateMediaRequest, $5.Media>(
+      '/jonline.Jonline/GenerateMedia',
+      ($11.GenerateMediaRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $5.Media.fromBuffer(value));
   static final _$getEventAttendances = $grpc.ClientMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
       '/jonline.Jonline/GetEventAttendances',
       ($9.GetEventAttendancesRequest value) => value.writeToBuffer(),
@@ -589,6 +593,10 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$0.Empty> revokeAIModelProvider($11.RevokeAIModelProviderRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$revokeAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Media> generateMedia($11.GenerateMediaRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$generateMedia, request, options: options);
   }
 
   $grpc.ResponseFuture<$9.EventAttendances> getEventAttendances($9.GetEventAttendancesRequest request, {$grpc.CallOptions? options}) {
@@ -1084,6 +1092,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $11.RevokeAIModelProviderRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.GenerateMediaRequest, $5.Media>(
+        'GenerateMedia',
+        generateMedia_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.GenerateMediaRequest.fromBuffer(value),
+        ($5.Media value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
         'GetEventAttendances',
         getEventAttendances_Pre,
@@ -1402,6 +1417,10 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return revokeAIModelProvider(call, await request);
   }
 
+  $async.Future<$5.Media> generateMedia_Pre($grpc.ServiceCall call, $async.Future<$11.GenerateMediaRequest> request) async {
+    return generateMedia(call, await request);
+  }
+
   $async.Future<$9.EventAttendances> getEventAttendances_Pre($grpc.ServiceCall call, $async.Future<$9.GetEventAttendancesRequest> request) async {
     return getEventAttendances(call, await request);
   }
@@ -1499,6 +1518,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$0.Empty> deleteAIModelProvider($grpc.ServiceCall call, $11.DeleteAIModelProviderRequest request);
   $async.Future<$11.AIModelProviderGrant> grantAIModelProvider($grpc.ServiceCall call, $11.GrantAIModelProviderRequest request);
   $async.Future<$0.Empty> revokeAIModelProvider($grpc.ServiceCall call, $11.RevokeAIModelProviderRequest request);
+  $async.Future<$5.Media> generateMedia($grpc.ServiceCall call, $11.GenerateMediaRequest request);
   $async.Future<$9.EventAttendances> getEventAttendances($grpc.ServiceCall call, $9.GetEventAttendancesRequest request);
   $async.Future<$9.EventAttendance> upsertEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);
   $async.Future<$0.Empty> deleteEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);
