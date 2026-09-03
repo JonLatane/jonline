@@ -8,6 +8,7 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "recipient_type"))]
     pub struct RecipientType;
+
 }
 
 diesel::table! {
@@ -66,8 +67,7 @@ diesel::table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::TsVector;
 
-    event_instances (id) {
-        id -> Int8,
+    event_instances (post_id) {
         event_id -> Int8,
         post_id -> Int8,
         info -> Jsonb,
@@ -98,8 +98,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    events (id) {
-        id -> Int8,
+    events (post_id) {
         post_id -> Int8,
         info -> Jsonb,
         created_at -> Timestamp,

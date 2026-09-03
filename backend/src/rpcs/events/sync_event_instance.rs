@@ -96,7 +96,7 @@ pub fn sync_event_instance(
         .as_ref()
         .map(|c| c.frontend_host.clone())
         .filter(|h| !h.trim().is_empty())
-        .map(|host| format!("https://{host}/event/{}", instance.id.to_proto_id()));
+        .map(|host| format!("https://{host}/event/{}", instance.post_id.to_proto_id()));
     let media_ids: Vec<i64> = combine_media(&event_post.media, &instance_post.media);
     let media_lookup = load_media_lookup(media_ids.clone(), conn);
     let media: Vec<MediaAttachment> = external_cdn_config
@@ -166,7 +166,7 @@ pub fn sync_event_instance(
     };
 
     let new_row = models::NewEventInstanceSyncDestination {
-        event_instance_id: instance.id,
+        event_instance_id: instance.post_id,
         sync_destination_id: destination.id,
         destination_instance_id: Some(destination_instance_id),
         destination_url: Some(destination_url),
@@ -186,9 +186,10 @@ pub fn sync_event_instance(
             Status::new(Code::Internal, "failed_to_record_event_instance_sync")
         })?;
 
+    let instance_post_id = instance.post_id.to_proto_id();
     let events = crate::rpcs::get_events(
         GetEventsRequest {
-            event_instance_id: Some(instance.id.to_proto_id()),
+            post_id: Some(instance_post_id.clone()),
             ..Default::default()
         },
         &Some(current_user),
@@ -198,10 +199,9 @@ pub fn sync_event_instance(
     events
         .into_iter()
         .find_map(|event| {
-            event
-                .instances
-                .into_iter()
-                .find(|i| i.id == instance.id.to_proto_id())
+            event.instances.into_iter().find(|i| {
+                i.post.as_ref().map(|p| p.id.as_str()) == Some(instance_post_id.as_str())
+            })
         })
         .ok_or_else(|| Status::new(Code::Internal, "failed_to_reload_synced_event_instance"))
 }

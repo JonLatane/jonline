@@ -454,6 +454,8 @@ linking any unique [`Group`](https://jonline.io/docs/protocol#jonline-Group) to 
 
 [`Event`](https://jonline.io/docs/protocol#jonline-Event)s are a thin layer atop [`Post`](https://jonline.io/docs/protocol#jonline-Post)s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the [`GroupPost`](https://jonline.io/docs/protocol#jonline-GroupPost) mechanism.
 
+An [`Event`](https://jonline.io/docs/protocol#jonline-Event)'s ID *is* its own [`Post`](https://jonline.io/docs/protocol#jonline-Post)'s ID, and likewise an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)'s ID is its own Post's ID -- neither carries a separate surrogate ID. [`GetEventsRequest.post_id`](https://jonline.io/docs/protocol#jonline-GetEventsRequest) looks a single Event up either way (by its own Post ID, or by any of its EventInstances' Post IDs), always returning the whole Event with all its instances.
+
 ### Messages
 
 [`Message`](https://jonline.io/docs/protocol#jonline-Message) is Jonline's "low trust" messaging/email system, meant to let strangers on a server make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have open access to all Messages on a server.

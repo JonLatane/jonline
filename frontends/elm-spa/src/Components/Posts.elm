@@ -953,7 +953,7 @@ edit-mode/Save/Cancel state for the caller to own; it saves on every change.
 
 `availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete` drive an always-shown
 `postSyncDestinationsView` at the bottom of the detail view, mirroring
-`Pages.Event.EventId_`'s own `Events.eventSyncDestinationsView` call exactly -- `Nothing` until the
+`Pages.Event.PostId_`'s own `Events.eventSyncDestinationsView` call exactly -- `Nothing` until the
 caller's own fetch of the viewer's `SyncDestination`s (gated on being `post`'s author or Admin)
 resolves, same `Nothing`-falls-back-to-read-only-links behavior as that page (see
 `Components.Pages.PostPage.Model.availableSyncDestinations`'s own doc for the fetch itself).
@@ -1313,7 +1313,7 @@ postMediaLayoutFromText text =
 
 
 {-| The moderation-status options offered by a moderation-editing `<select>`
-(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
+(see `Pages.Post.PostId_`/`Pages.Event.PostId_`'s own moderation selectors)
 -- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
 the proto's own declaration order.
 -}

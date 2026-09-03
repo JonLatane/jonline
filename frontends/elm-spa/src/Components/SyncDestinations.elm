@@ -15,7 +15,7 @@ destination isn't exposed in the UI yet, only link/unlink.
 -- it already has the account's full `User` (via `Components.Users.Resolver`), which embeds
 `syncDestinations` directly (self-or-Admin gated server-side, see `protos/users.proto`'s doc on
 `User.sync_destinations`). `getSyncDestinations` exists for pages that only need *just* that list
-without fetching a whole `User` -- e.g. `Pages.Event.EventId_`/`Components.Pages.PostPage`, which
+without fetching a whole `User` -- e.g. `Pages.Event.PostId_`/`Components.Pages.PostPage`, which
 need the viewer's own destinations to offer a real Push button on a single Post/EventInstance's
 detail view, but have no other reason to fetch their own full profile.
 

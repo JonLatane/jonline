@@ -3848,8 +3848,7 @@ type alias Proto__Jonline__EventInstanceInfo =
 
 -}
 fieldNumbersProto__Jonline__EventInstance :
-    { id : Int
-    , eventId : Int
+    { eventId : Int
     , post : Int
     , info : Int
     , startsAt : Int
@@ -3862,8 +3861,7 @@ fieldNumbersProto__Jonline__EventInstance :
     , syncDestinations : Int
     }
 fieldNumbersProto__Jonline__EventInstance =
-    { id = 1
-    , eventId = 2
+    { eventId = 2
     , post = 3
     , info = 4
     , startsAt = 5
@@ -3882,8 +3880,7 @@ fieldNumbersProto__Jonline__EventInstance =
 -}
 defaultProto__Jonline__EventInstance : Proto__Jonline__EventInstance
 defaultProto__Jonline__EventInstance =
-    { id = ""
-    , eventId = ""
+    { eventId = ""
     , post = Nothing
     , info = Nothing
     , startsAt = Nothing
@@ -3904,8 +3901,7 @@ decodeProto__Jonline__EventInstance : Protobuf.Decode.Decoder Proto__Jonline__Ev
 decodeProto__Jonline__EventInstance =
     Protobuf.Decode.message
         defaultProto__Jonline__EventInstance
-        [ Protobuf.Decode.optional 1 Protobuf.Decode.string (\a r -> { r | id = a })
-        , Protobuf.Decode.optional 2 Protobuf.Decode.string (\a r -> { r | eventId = a })
+        [ Protobuf.Decode.optional 2 Protobuf.Decode.string (\a r -> { r | eventId = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just decodeProto__Jonline__Post) (\a r -> { r | post = a })
         , Protobuf.Decode.optional
             4
@@ -3953,8 +3949,7 @@ decodeProto__Jonline__EventInstance =
 encodeProto__Jonline__EventInstance : Proto__Jonline__EventInstance -> Protobuf.Encode.Encoder
 encodeProto__Jonline__EventInstance value =
     Protobuf.Encode.message
-        [ ( 1, Protobuf.Encode.string value.id )
-        , ( 2, Protobuf.Encode.string value.eventId )
+        [ ( 2, Protobuf.Encode.string value.eventId )
         , ( 3, (Maybe.map encodeProto__Jonline__Post >> Maybe.withDefault Protobuf.Encode.none) value.post )
         , ( 4
           , (Maybe.map encodeProto__Jonline__EventInstanceInfo >> Maybe.withDefault Protobuf.Encode.none) value.info
@@ -3997,8 +3992,7 @@ encodeProto__Jonline__EventInstance value =
 
 -}
 type alias Proto__Jonline__EventInstance =
-    { id : String
-    , eventId : String
+    { eventId : String
     , post : Maybe Proto__Jonline__Post
     , info : Maybe Proto__Jonline__EventInstanceInfo
     , startsAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
@@ -4198,9 +4192,9 @@ type alias Proto__Jonline__SyncEventInstanceRequest =
 {-| The field numbers for the fields of `Proto__Jonline__Event`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Jonline__Event : { id : Int, post : Int, info : Int, instances : Int, eventSyncSource : Int }
+fieldNumbersProto__Jonline__Event : { post : Int, info : Int, instances : Int, eventSyncSource : Int }
 fieldNumbersProto__Jonline__Event =
-    { id = 1, post = 2, info = 3, instances = 4, eventSyncSource = 5 }
+    { post = 2, info = 3, instances = 4, eventSyncSource = 5 }
 
 
 {-| Default for Proto__Jonline__Event. Should only be used for 'required' decoders as an initial value.
@@ -4208,7 +4202,7 @@ fieldNumbersProto__Jonline__Event =
 -}
 defaultProto__Jonline__Event : Proto__Jonline__Event
 defaultProto__Jonline__Event =
-    { id = "", post = Nothing, info = Nothing, instances = [], eventSyncSource = Nothing }
+    { post = Nothing, info = Nothing, instances = [], eventSyncSource = Nothing }
 
 
 {-| Declares how to decode a `Proto__Jonline__Event` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -4218,8 +4212,7 @@ decodeProto__Jonline__Event : Protobuf.Decode.Decoder Proto__Jonline__Event
 decodeProto__Jonline__Event =
     Protobuf.Decode.message
         defaultProto__Jonline__Event
-        [ Protobuf.Decode.optional 1 Protobuf.Decode.string (\a r -> { r | id = a })
-        , Protobuf.Decode.optional 2 (Protobuf.Decode.map Just decodeProto__Jonline__Post) (\a r -> { r | post = a })
+        [ Protobuf.Decode.optional 2 (Protobuf.Decode.map Just decodeProto__Jonline__Post) (\a r -> { r | post = a })
         , Protobuf.Decode.optional
             3
             (Protobuf.Decode.map Just decodeProto__Jonline__EventInfo)
@@ -4238,8 +4231,7 @@ decodeProto__Jonline__Event =
 encodeProto__Jonline__Event : Proto__Jonline__Event -> Protobuf.Encode.Encoder
 encodeProto__Jonline__Event value =
     Protobuf.Encode.message
-        [ ( 1, Protobuf.Encode.string value.id )
-        , ( 2, (Maybe.map encodeProto__Jonline__Post >> Maybe.withDefault Protobuf.Encode.none) value.post )
+        [ ( 2, (Maybe.map encodeProto__Jonline__Post >> Maybe.withDefault Protobuf.Encode.none) value.post )
         , ( 3, (Maybe.map encodeProto__Jonline__EventInfo >> Maybe.withDefault Protobuf.Encode.none) value.info )
         , ( 4, (Protobuf.Encode.list encodeProto__Jonline__EventInstance) value.instances )
         , ( 5
@@ -4253,8 +4245,7 @@ encodeProto__Jonline__Event value =
 
 -}
 type alias Proto__Jonline__Event =
-    { id : String
-    , post : Maybe Proto__Jonline__Post
+    { post : Maybe Proto__Jonline__Post
     , info : Maybe Proto__Jonline__EventInfo
     , instances : List Proto__Jonline__EventInstance
     , eventSyncSource : Maybe Proto__Jonline__EventSyncSource
@@ -4392,10 +4383,8 @@ type alias Proto__Jonline__TimeFilter =
 
 -}
 fieldNumbersProto__Jonline__GetEventsRequest :
-    { eventId : Int
-    , authorUserId : Int
+    { authorUserId : Int
     , groupId : Int
-    , eventInstanceId : Int
     , timeFilter : Int
     , attendeeId : Int
     , attendanceStatuses : Int
@@ -4406,10 +4395,8 @@ fieldNumbersProto__Jonline__GetEventsRequest :
     , anonymousAttendeeAuthToken : Int
     }
 fieldNumbersProto__Jonline__GetEventsRequest =
-    { eventId = 1
-    , authorUserId = 2
+    { authorUserId = 2
     , groupId = 3
-    , eventInstanceId = 4
     , timeFilter = 5
     , attendeeId = 6
     , attendanceStatuses = 7
@@ -4426,10 +4413,8 @@ fieldNumbersProto__Jonline__GetEventsRequest =
 -}
 defaultProto__Jonline__GetEventsRequest : Proto__Jonline__GetEventsRequest
 defaultProto__Jonline__GetEventsRequest =
-    { eventId = Nothing
-    , authorUserId = Nothing
+    { authorUserId = Nothing
     , groupId = Nothing
-    , eventInstanceId = Nothing
     , timeFilter = Nothing
     , attendeeId = Nothing
     , attendanceStatuses = []
@@ -4448,16 +4433,11 @@ decodeProto__Jonline__GetEventsRequest : Protobuf.Decode.Decoder Proto__Jonline_
 decodeProto__Jonline__GetEventsRequest =
     Protobuf.Decode.message
         defaultProto__Jonline__GetEventsRequest
-        [ Protobuf.Decode.optional 1 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | eventId = a })
-        , Protobuf.Decode.optional
+        [ Protobuf.Decode.optional
             2
             (Protobuf.Decode.map Just Protobuf.Decode.string)
             (\a r -> { r | authorUserId = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | groupId = a })
-        , Protobuf.Decode.optional
-            4
-            (Protobuf.Decode.map Just Protobuf.Decode.string)
-            (\a r -> { r | eventInstanceId = a })
         , Protobuf.Decode.optional
             5
             (Protobuf.Decode.map Just decodeProto__Jonline__TimeFilter)
@@ -4492,10 +4472,8 @@ decodeProto__Jonline__GetEventsRequest =
 encodeProto__Jonline__GetEventsRequest : Proto__Jonline__GetEventsRequest -> Protobuf.Encode.Encoder
 encodeProto__Jonline__GetEventsRequest value =
     Protobuf.Encode.message
-        [ ( 1, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.eventId )
-        , ( 2, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.authorUserId )
+        [ ( 2, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.authorUserId )
         , ( 3, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.groupId )
-        , ( 4, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.eventInstanceId )
         , ( 5, (Maybe.map encodeProto__Jonline__TimeFilter >> Maybe.withDefault Protobuf.Encode.none) value.timeFilter )
         , ( 6, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.attendeeId )
         , ( 7, (Protobuf.Encode.list Proto.Jonline.AttendanceStatus.encodeAttendanceStatus) value.attendanceStatuses )
@@ -4514,10 +4492,8 @@ encodeProto__Jonline__GetEventsRequest value =
 
 -}
 type alias Proto__Jonline__GetEventsRequest =
-    { eventId : Maybe String
-    , authorUserId : Maybe String
+    { authorUserId : Maybe String
     , groupId : Maybe String
-    , eventInstanceId : Maybe String
     , timeFilter : Maybe Proto__Jonline__TimeFilter
     , attendeeId : Maybe String
     , attendanceStatuses : List Proto.Jonline.AttendanceStatus.AttendanceStatus

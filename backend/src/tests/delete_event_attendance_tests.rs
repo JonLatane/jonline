@@ -38,7 +38,7 @@ fn event_owner_can_delete_any_attendance() {
 
         delete_event_attendance(
             EventAttendance {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 attendee: Some(event_attendance::Attendee::UserAttendee(UserAttendee {
                     user_id: attendee.id.to_proto_id(),
                     ..Default::default()
@@ -51,7 +51,7 @@ fn event_owner_can_delete_any_attendance() {
         .expect("event owner delete should succeed");
 
         let remaining: i64 = event_attendances::table
-            .filter(event_attendances::event_instance_id.eq(instance.id))
+            .filter(event_attendances::event_instance_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -88,7 +88,7 @@ fn attendee_can_delete_their_own_attendance() {
 
         delete_event_attendance(
             EventAttendance {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 attendee: Some(event_attendance::Attendee::UserAttendee(UserAttendee {
                     user_id: attendee.id.to_proto_id(),
                     ..Default::default()
@@ -101,7 +101,7 @@ fn attendee_can_delete_their_own_attendance() {
         .expect("attendee self delete should succeed");
 
         let remaining: i64 = event_attendances::table
-            .filter(event_attendances::event_instance_id.eq(instance.id))
+            .filter(event_attendances::event_instance_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -139,7 +139,7 @@ fn delete_rejects_an_unrelated_user() {
 
         let err = delete_event_attendance(
             EventAttendance {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 attendee: Some(event_attendance::Attendee::UserAttendee(UserAttendee {
                     user_id: attendee.id.to_proto_id(),
                     ..Default::default()
@@ -154,7 +154,7 @@ fn delete_rejects_an_unrelated_user() {
         assert_eq!(err.message(), "not_your_event_or_attendance");
 
         let remaining: i64 = event_attendances::table
-            .filter(event_attendances::event_instance_id.eq(instance.id))
+            .filter(event_attendances::event_instance_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -192,7 +192,7 @@ fn anonymous_attendance_is_deleted_with_a_matching_auth_token() {
 
         delete_event_attendance(
             EventAttendance {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 attendee: Some(event_attendance::Attendee::AnonymousAttendee(
                     AnonymousAttendee {
                         name: "Anon".to_string(),
@@ -208,7 +208,7 @@ fn anonymous_attendance_is_deleted_with_a_matching_auth_token() {
         .expect("matching auth_token delete should succeed");
 
         let remaining: i64 = event_attendances::table
-            .filter(event_attendances::event_instance_id.eq(instance.id))
+            .filter(event_attendances::event_instance_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -246,7 +246,7 @@ fn anonymous_attendance_delete_fails_with_the_wrong_auth_token() {
 
         let err = delete_event_attendance(
             EventAttendance {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 attendee: Some(event_attendance::Attendee::AnonymousAttendee(
                     AnonymousAttendee {
                         name: "Anon".to_string(),

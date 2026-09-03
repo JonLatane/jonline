@@ -1,6 +1,6 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
-import { FederatedGroup, createEvent, createGroupPost, federatedEntity, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, identifyEvent, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
@@ -15,7 +15,7 @@ import { themedButtonBackground } from 'app/utils';
 import { EventsFullCalendar } from './events_full_calendar';
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
-export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
+export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -67,7 +67,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
         }),
       ],
     });
-    return federatedEntity(event, accountOrServer.server);
+    return federatedEntity(identifyEvent(event), accountOrServer.server);
   }, [location, startsAt, endsAt, accountOrServer.server]);
 
   const doCreate = useCallback((

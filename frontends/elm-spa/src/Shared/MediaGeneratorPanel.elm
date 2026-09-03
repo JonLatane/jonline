@@ -9,7 +9,7 @@ module Shared.MediaGeneratorPanel exposing
 
 {-| A single, app-wide AI image generation panel -- opened contextually (a Post/Event's own
 "Generate Media…" button, next to its existing "Edit Media…" -- see `Components.Posts.postDetail`/
-`Pages.Event.EventId_`), the same "one shared instance, `Nothing`/`""` means closed" convention
+`Pages.Event.PostId_`), the same "one shared instance, `Nothing`/`""` means closed" convention
 `Shared.MarkdownPanel`/`Shared.MyMediaPanel` already use. Shaped like `MarkdownPanel` (a prompt to
 edit, Save/Cancel below), but with three inputs instead of one: which of the caller's
 `AvailableAIModel`s to call (`modelChooserView`), the editable prompt (`promptView`), and a set of
@@ -31,7 +31,7 @@ below, and `Shared.update`'s own doc on why).
 Once generation succeeds, this panel closes itself and the resulting `GotGenerateResult` is left to
 bubble up as an ordinary `Shared.Msg` -- `Main.notifyPageOfSharedMsg` already forwards every
 `Shared.Msg` to whichever page is current regardless of who opened this panel, so the page that
-opened it (`Components.Pages.PostPage`/`Pages.Event.EventId_`) just matches on this exact message in
+opened it (`Components.Pages.PostPage`/`Pages.Event.PostId_`) just matches on this exact message in
 its own `SharedMsg` handling, gated on its own "did I open this" flag (mirrors `mediaEditActive`), to
 refetch and pick up the newly attached `Media` -- see those modules' own `GenerateMediaClicked`/
 `SharedMsg` handling.
@@ -85,7 +85,7 @@ type alias Model =
 {-| What this panel is generating media *for* -- `Nothing` (see `Model.target`) just generates and
 stores the image in the current user's own Media (as `MyMediaPanel` then shows it), without
 attaching it to anything. `TargetEvent` carries both the `Event` and the specific `EventInstance`
-being viewed (`Pages.Event.EventId_`'s own `instance`) purely so `targetCardView` can render the
+being viewed (`Pages.Event.PostId_`'s own `instance`) purely so `targetCardView` can render the
 same `Components.Events.eventCard` that page already shows elsewhere -- generation itself only ever
 targets the Event's own Post (see `ai_model_providers.proto`'s own doc on `GenerateMediaRequest.target`),
 never a particular instance.
@@ -622,7 +622,7 @@ generateTask accountsPanelModel resolved host selectedModel prompt media target 
                     Just (GenerateMediaRequestTarget.PostId post.id)
 
                 Just (TargetEvent _ instance) ->
-                    Just (GenerateMediaRequestTarget.EventInstanceId instance.id)
+                    Just (GenerateMediaRequestTarget.EventInstanceId (instance.post |> Maybe.map .id |> Maybe.withDefault ""))
 
                 Nothing ->
                     Nothing

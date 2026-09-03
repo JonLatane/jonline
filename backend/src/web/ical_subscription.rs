@@ -105,7 +105,10 @@ async fn ical_subscription(
         };
 
         for instance in &event.instances {
-            let instance_id = &instance.id;
+            let Some(instance_post) = &instance.post else {
+                continue; // Skip instances without posts
+            };
+            let instance_id = &instance_post.id;
 
             // Convert timestamps to DateTime<Utc>
             let starts_at = instance

@@ -796,7 +796,7 @@ fn get_post(post_id: String, connection: &mut PgPooledConnection) -> Option<Post
 fn get_event(event_instance_id: String, connection: &mut PgPooledConnection) -> Option<Event> {
     let event = rpcs::get_events(
         GetEventsRequest {
-            event_instance_id: Some(event_instance_id),
+            post_id: Some(event_instance_id),
             ..Default::default()
         },
         &None,

@@ -3223,7 +3223,7 @@ against that placeholder the instant the app boots, before there's an actual
 connection to fetch from -- failing immediately, and (since these fetches are
 typically only attempted once) staying failed even after the real reconnect
 lands moments later. Callers that need to fetch from a specific route-named
-host (`Pages.Event.EventId_`, `Pages.Post.PostId_`,
+host (`Pages.Event.PostId_`, `Pages.Post.PostId_`,
 `Components.Users.Resolver`) should gate on this instead of `serverForHost`
 directly.
 -}

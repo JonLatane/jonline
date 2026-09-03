@@ -33,7 +33,10 @@ fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
 
         delete_event(
             Event {
-                id: event.id.to_proto_id(),
+                post: Some(Post {
+                    id: event.post_id.to_proto_id(),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             &author,
@@ -42,13 +45,13 @@ fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
         .expect("self delete should succeed");
 
         let remaining_events: i64 = events::table
-            .filter(events::id.eq(event.id))
+            .filter(events::post_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_events, 0);
         let remaining_instances: i64 = event_instances::table
-            .filter(event_instances::id.eq(instance.id))
+            .filter(event_instances::post_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -75,7 +78,10 @@ fn delete_rejects_non_owner_non_admin() {
 
         let err = delete_event(
             Event {
-                id: event.id.to_proto_id(),
+                post: Some(Post {
+                    id: event.post_id.to_proto_id(),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             &other,
@@ -86,7 +92,7 @@ fn delete_rejects_non_owner_non_admin() {
         assert_eq!(err.message(), "permission_denied");
 
         let remaining: i64 = events::table
-            .filter(events::id.eq(event.id))
+            .filter(events::post_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -107,7 +113,10 @@ fn admin_can_delete_another_users_event() {
 
         delete_event(
             Event {
-                id: event.id.to_proto_id(),
+                post: Some(Post {
+                    id: event.post_id.to_proto_id(),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             &admin,
@@ -116,7 +125,7 @@ fn admin_can_delete_another_users_event() {
         .expect("admin delete should succeed");
 
         let remaining: i64 = events::table
-            .filter(events::id.eq(event.id))
+            .filter(events::post_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();

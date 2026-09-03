@@ -659,6 +659,9 @@ import "server_configuration.proto";
 // #### `/events`: Events
 // The Events listing.
 //
+// #### `/[-._~:/?#[]@!$&'()*+,;%=]{postId}`: Short Post/Event URLs
+// TODO: Document this 
+//
 // ##### `/event/{eventInstanceId}[@{host}]`: Event
 // An individual [`EventInstance`](#jonline-EventInstance).
 //

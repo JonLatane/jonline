@@ -57,48 +57,48 @@ final $typed_data.Uint8List attendanceStatusDescriptor = $convert.base64Decode(
 const GetEventsRequest$json = {
   '1': 'GetEventsRequest',
   '2': [
-    {'1': 'event_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'eventId', '17': true},
-    {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'authorUserId', '17': true},
-    {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
-    {'1': 'event_instance_id', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'eventInstanceId', '17': true},
-    {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 4, '10': 'timeFilter', '17': true},
-    {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 5, '10': 'attendeeId', '17': true},
+    {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'authorUserId', '17': true},
+    {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'groupId', '17': true},
+    {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 2, '10': 'timeFilter', '17': true},
+    {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'attendeeId', '17': true},
     {'1': 'attendance_statuses', '3': 7, '4': 3, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'attendanceStatuses'},
-    {'1': 'post_id', '3': 8, '4': 1, '5': 9, '9': 6, '10': 'postId', '17': true},
+    {'1': 'post_id', '3': 8, '4': 1, '5': 9, '9': 4, '10': 'postId', '17': true},
     {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
-    {'1': 'search_text', '3': 11, '4': 1, '5': 9, '9': 7, '10': 'searchText', '17': true},
+    {'1': 'search_text', '3': 11, '4': 1, '5': 9, '9': 5, '10': 'searchText', '17': true},
     {'1': 'event_instance_post_ids', '3': 12, '4': 3, '5': 9, '10': 'eventInstancePostIds'},
-    {'1': 'anonymous_attendee_auth_token', '3': 13, '4': 1, '5': 9, '9': 8, '10': 'anonymousAttendeeAuthToken', '17': true},
+    {'1': 'anonymous_attendee_auth_token', '3': 13, '4': 1, '5': 9, '9': 6, '10': 'anonymousAttendeeAuthToken', '17': true},
   ],
   '8': [
-    {'1': '_event_id'},
     {'1': '_author_user_id'},
     {'1': '_group_id'},
-    {'1': '_event_instance_id'},
     {'1': '_time_filter'},
     {'1': '_attendee_id'},
     {'1': '_post_id'},
     {'1': '_search_text'},
     {'1': '_anonymous_attendee_auth_token'},
   ],
+  '9': [
+    {'1': 1, '2': 2},
+    {'1': 4, '2': 5},
+  ],
+  '10': ['event_id', 'event_instance_id'],
 };
 
 /// Descriptor for `GetEventsRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
-    'ChBHZXRFdmVudHNSZXF1ZXN0Eh4KCGV2ZW50X2lkGAEgASgJSABSB2V2ZW50SWSIAQESKQoOYX'
-    'V0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJ'
-    'SAJSB2dyb3VwSWSIAQESLwoRZXZlbnRfaW5zdGFuY2VfaWQYBCABKAlIA1IPZXZlbnRJbnN0YW'
-    '5jZUlkiAEBEjkKC3RpbWVfZmlsdGVyGAUgASgLMhMuam9ubGluZS5UaW1lRmlsdGVySARSCnRp'
-    'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
-    'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
-    'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESPAoMbGlzdGluZ1'
-    '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtz'
-    'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBEjUKF2V2ZW50X2luc3RhbmNlX3Bvc3'
-    'RfaWRzGAwgAygJUhRldmVudEluc3RhbmNlUG9zdElkcxJGCh1hbm9ueW1vdXNfYXR0ZW5kZWVf'
-    'YXV0aF90b2tlbhgNIAEoCUgIUhphbm9ueW1vdXNBdHRlbmRlZUF1dGhUb2tlbogBAUILCglfZX'
-    'ZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFu'
-    'Y2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZEIOCgxfc2'
-    'VhcmNoX3RleHRCIAoeX2Fub255bW91c19hdHRlbmRlZV9hdXRoX3Rva2Vu');
+    'ChBHZXRFdmVudHNSZXF1ZXN0EikKDmF1dGhvcl91c2VyX2lkGAIgASgJSABSDGF1dGhvclVzZX'
+    'JJZIgBARIeCghncm91cF9pZBgDIAEoCUgBUgdncm91cElkiAEBEjkKC3RpbWVfZmlsdGVyGAUg'
+    'ASgLMhMuam9ubGluZS5UaW1lRmlsdGVySAJSCnRpbWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaW'
+    'QYBiABKAlIA1IKYXR0ZW5kZWVJZIgBARJKChNhdHRlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhku'
+    'am9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRlbmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZB'
+    'gIIAEoCUgEUgZwb3N0SWSIAQESPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVu'
+    'dExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtzZWFyY2hfdGV4dBgLIAEoCUgFUgpzZWFyY2'
+    'hUZXh0iAEBEjUKF2V2ZW50X2luc3RhbmNlX3Bvc3RfaWRzGAwgAygJUhRldmVudEluc3RhbmNl'
+    'UG9zdElkcxJGCh1hbm9ueW1vdXNfYXR0ZW5kZWVfYXV0aF90b2tlbhgNIAEoCUgGUhphbm9ueW'
+    '1vdXNBdHRlbmRlZUF1dGhUb2tlbogBAUIRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3VwX2lk'
+    'Qg4KDF90aW1lX2ZpbHRlckIOCgxfYXR0ZW5kZWVfaWRCCgoIX3Bvc3RfaWRCDgoMX3NlYXJjaF'
+    '90ZXh0QiAKHl9hbm9ueW1vdXNfYXR0ZW5kZWVfYXV0aF90b2tlbkoECAEQAkoECAQQBVIIZXZl'
+    'bnRfaWRSEWV2ZW50X2luc3RhbmNlX2lk');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {
@@ -144,7 +144,6 @@ final $typed_data.Uint8List getEventsResponseDescriptor = $convert.base64Decode(
 const Event$json = {
   '1': 'Event',
   '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
     {'1': 'info', '3': 3, '4': 1, '5': 11, '6': '.jonline.EventInfo', '10': 'info'},
     {'1': 'instances', '3': 4, '4': 3, '5': 11, '6': '.jonline.EventInstance', '10': 'instances'},
@@ -157,11 +156,11 @@ const Event$json = {
 
 /// Descriptor for `Event`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
-    'CgVFdmVudBIOCgJpZBgBIAEoCVICaWQSIQoEcG9zdBgCIAEoCzINLmpvbmxpbmUuUG9zdFIEcG'
-    '9zdBImCgRpbmZvGAMgASgLMhIuam9ubGluZS5FdmVudEluZm9SBGluZm8SNAoJaW5zdGFuY2Vz'
-    'GAQgAygLMhYuam9ubGluZS5FdmVudEluc3RhbmNlUglpbnN0YW5jZXMSSQoRZXZlbnRfc3luY1'
-    '9zb3VyY2UYBSABKAsyGC5qb25saW5lLkV2ZW50U3luY1NvdXJjZUgAUg9ldmVudFN5bmNTb3Vy'
-    'Y2WIAQFCFAoSX2V2ZW50X3N5bmNfc291cmNl');
+    'CgVFdmVudBIhCgRwb3N0GAIgASgLMg0uam9ubGluZS5Qb3N0UgRwb3N0EiYKBGluZm8YAyABKA'
+    'syEi5qb25saW5lLkV2ZW50SW5mb1IEaW5mbxI0CglpbnN0YW5jZXMYBCADKAsyFi5qb25saW5l'
+    'LkV2ZW50SW5zdGFuY2VSCWluc3RhbmNlcxJJChFldmVudF9zeW5jX3NvdXJjZRgFIAEoCzIYLm'
+    'pvbmxpbmUuRXZlbnRTeW5jU291cmNlSABSD2V2ZW50U3luY1NvdXJjZYgBAUIUChJfZXZlbnRf'
+    'c3luY19zb3VyY2U=');
 
 @$core.Deprecated('Use syncEventInstanceRequestDescriptor instead')
 const SyncEventInstanceRequest$json = {
@@ -227,7 +226,6 @@ final $typed_data.Uint8List eventInfoDescriptor = $convert.base64Decode(
 const EventInstance$json = {
   '1': 'EventInstance',
   '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'event_id', '3': 2, '4': 1, '5': 9, '10': 'eventId'},
     {'1': 'post', '3': 3, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
     {'1': 'info', '3': 4, '4': 1, '5': 11, '6': '.jonline.EventInstanceInfo', '10': 'info'},
@@ -251,21 +249,21 @@ const EventInstance$json = {
 
 /// Descriptor for `EventInstance`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
-    'Cg1FdmVudEluc3RhbmNlEg4KAmlkGAEgASgJUgJpZBIZCghldmVudF9pZBgCIAEoCVIHZXZlbn'
-    'RJZBIhCgRwb3N0GAMgASgLMg0uam9ubGluZS5Qb3N0UgRwb3N0Ei4KBGluZm8YBCABKAsyGi5q'
-    'b25saW5lLkV2ZW50SW5zdGFuY2VJbmZvUgRpbmZvEjcKCXN0YXJ0c19hdBgFIAEoCzIaLmdvb2'
-    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCHN0YXJ0c0F0EjMKB2VuZHNfYXQYBiABKAsyGi5nb29n'
-    'bGUucHJvdG9idWYuVGltZXN0YW1wUgZlbmRzQXQSMgoIbG9jYXRpb24YByABKAsyES5qb25saW'
-    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBEkUKHWV2ZW50X3N5bmNfc291cmNlX2luc3RhbmNl'
-    'X2lkGAggASgJSAFSGWV2ZW50U3luY1NvdXJjZUluc3RhbmNlSWSIAQESTQoSc3luY19taXNzaW'
-    '5nX3NpbmNlGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUhBzeW5jTWlzc2lu'
-    'Z1NpbmNliAEBEkAKC2F0dGVuZGFuY2VzGAogASgLMhkuam9ubGluZS5FdmVudEF0dGVuZGFuY2'
-    'VzSANSC2F0dGVuZGFuY2VziAEBElUKF2N1cnJlbnRfdXNlcl9hdHRlbmRhbmNlGAsgASgLMhgu'
-    'am9ubGluZS5FdmVudEF0dGVuZGFuY2VIBFIVY3VycmVudFVzZXJBdHRlbmRhbmNliAEBEksKEX'
-    'N5bmNfZGVzdGluYXRpb25zGAwgAygLMh4uam9ubGluZS5TeW5jRGVzdGluYXRpb25TdGF0dXNS'
-    'EHN5bmNEZXN0aW5hdGlvbnNCCwoJX2xvY2F0aW9uQiAKHl9ldmVudF9zeW5jX3NvdXJjZV9pbn'
-    'N0YW5jZV9pZEIVChNfc3luY19taXNzaW5nX3NpbmNlQg4KDF9hdHRlbmRhbmNlc0IaChhfY3Vy'
-    'cmVudF91c2VyX2F0dGVuZGFuY2U=');
+    'Cg1FdmVudEluc3RhbmNlEhkKCGV2ZW50X2lkGAIgASgJUgdldmVudElkEiEKBHBvc3QYAyABKA'
+    'syDS5qb25saW5lLlBvc3RSBHBvc3QSLgoEaW5mbxgEIAEoCzIaLmpvbmxpbmUuRXZlbnRJbnN0'
+    'YW5jZUluZm9SBGluZm8SNwoJc3RhcnRzX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
+    'VzdGFtcFIIc3RhcnRzQXQSMwoHZW5kc19hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1l'
+    'c3RhbXBSBmVuZHNBdBIyCghsb2NhdGlvbhgHIAEoCzIRLmpvbmxpbmUuTG9jYXRpb25IAFIIbG'
+    '9jYXRpb26IAQESRQodZXZlbnRfc3luY19zb3VyY2VfaW5zdGFuY2VfaWQYCCABKAlIAVIZZXZl'
+    'bnRTeW5jU291cmNlSW5zdGFuY2VJZIgBARJNChJzeW5jX21pc3Npbmdfc2luY2UYCSABKAsyGi'
+    '5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAJSEHN5bmNNaXNzaW5nU2luY2WIAQESQAoLYXR0'
+    'ZW5kYW5jZXMYCiABKAsyGS5qb25saW5lLkV2ZW50QXR0ZW5kYW5jZXNIA1ILYXR0ZW5kYW5jZX'
+    'OIAQESVQoXY3VycmVudF91c2VyX2F0dGVuZGFuY2UYCyABKAsyGC5qb25saW5lLkV2ZW50QXR0'
+    'ZW5kYW5jZUgEUhVjdXJyZW50VXNlckF0dGVuZGFuY2WIAQESSwoRc3luY19kZXN0aW5hdGlvbn'
+    'MYDCADKAsyHi5qb25saW5lLlN5bmNEZXN0aW5hdGlvblN0YXR1c1IQc3luY0Rlc3RpbmF0aW9u'
+    'c0ILCglfbG9jYXRpb25CIAoeX2V2ZW50X3N5bmNfc291cmNlX2luc3RhbmNlX2lkQhUKE19zeW'
+    '5jX21pc3Npbmdfc2luY2VCDgoMX2F0dGVuZGFuY2VzQhoKGF9jdXJyZW50X3VzZXJfYXR0ZW5k'
+    'YW5jZQ==');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

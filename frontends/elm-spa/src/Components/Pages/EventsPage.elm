@@ -264,7 +264,7 @@ type alias Model =
 
     -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
     -- destinationId` (many instances on screen at once, unlike
-    -- `Pages.Event.EventId_`'s own single-instance `pushStatuses`, which
+    -- `Pages.Event.PostId_`'s own single-instance `pushStatuses`, which
     -- only needs to key by `destinationId`) -- drives the `isPushing`/
     -- `pushError` closures `eventCardView` builds for `Events.eventCard`.
     , pushStatuses : Dict String SubmitStatus
@@ -290,7 +290,7 @@ type Msg
       -- `Msg`'s own (untargeted, port-delivered) payload. A payload that
       -- fails to decode is treated the same as `measurementPhase` already
       -- being `NotMeasuring` -- give up silently, same fallback
-      -- `EventId_.scrollToInstance` already relies on for its own
+      -- `PostId_.scrollToInstance` already relies on for its own
       -- `Dom`-adjacent calls.
     | GotMeasuredRects Decode.Value
       -- One deliberate `requestAnimationFrame` wait (via a throwaway
@@ -383,7 +383,7 @@ type Msg
       -- backdrop click.
     | CalendarPreviewClosed
       -- `scrollToCalendarPreviewCard`'s measurement resolving -- mirrors
-      -- `Pages.Event.EventId_.GotScrollTarget` exactly, including giving up
+      -- `Pages.Event.PostId_.GotScrollTarget` exactly, including giving up
       -- silently (`Err`) if the strip/card aren't found (e.g. the modal was
       -- closed again before this resolved). Also clears `model.pendingCalendarPreviewScroll`
       -- unconditionally (mirrors `Components.Pages.MessagesPage.ScrollAttempted`'s
@@ -413,7 +413,7 @@ type Msg
     | CalendarPreviewCardNavigated String
 
 
-{-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
+{-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.PostId_.SubmitStatus`
 exactly -- see `Model.pushStatuses`.
 -}
 type SubmitStatus
@@ -427,7 +427,7 @@ in -- `VerticalList` (the default, a single full-width column, mirroring
 fixed-tile-width grid, reusing `flip.css`'s existing `.flip-animated-grid`,
 built for `Shared.MyMediaPanel`'s media tiles), `HorizontalList` (a
 single horizontally-scrolling row of that same fixed tile width, mirroring
-`Pages.Event.EventId_`'s own date-picker strip), and `Calendar` (a
+`Pages.Event.PostId_`'s own date-picker strip), and `Calendar` (a
 [FullCalendar](https://fullcalendar.io/) view rendered by JS via
 `Ports.renderCalendar` -- see `calendarView`/`calendarEvents`). `Grid`/
 `HorizontalList` share one card size, but `VerticalList`'s is genuinely
@@ -1199,7 +1199,7 @@ updateInner shared msg model =
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
-well-formed array -- but mirrors `EventId_.GotScrollTarget (Err _)`'s "give
+well-formed array -- but mirrors `PostId_.GotScrollTarget (Err _)`'s "give
 up silently" convention regardless): still applies a pending mode switch if
 `model.measurementPhase` had one in flight, just with no slide animation,
 rather than leaving the click seemingly do nothing.
@@ -1719,12 +1719,12 @@ setBreadcrumbsRoot shared model =
 fetched it, for `eventAnimations` -- also used verbatim (prefixed) as the
 card's DOM `id`, so `DisplayModeChanged`'s FLIP measurement can look the same
 element back up after a layout switch. Mirrors `PostsPage.postAnimationKey`,
-just keyed on `EventInstance.id` (this listing's own unit, see the module
-doc) rather than `Post.id`.
+just keyed on the `EventInstance`'s own `Post` id (this listing's own unit,
+see the module doc) rather than `Post.id` directly.
 -}
 eventAnimationKey : String -> EventInstance -> String
 eventAnimationKey host instance =
-    host ++ "@" ++ instance.id
+    host ++ "@" ++ (instance.post |> Maybe.map .id |> Maybe.withDefault "")
 
 
 eventCardDomId : String -> String
@@ -1945,7 +1945,7 @@ syncCalendarAnimations model =
 
 {-| The most events `eventsListView` ever renders (and the only ones
 `DisplayModeChanged` ever measures/animates) -- a long recurring `Event` can
-rack up hundreds of future instances (`Pages.Event.EventId_` has the same
+rack up hundreds of future instances (`Pages.Event.PostId_` has the same
 concern for its own date-picker strip), and rendering/measuring/sliding all
 of them at once on every mode switch is both wasteful and, empirically, the
 reason a switch into `HorizontalList` could visibly "glitch" -- a card whose
@@ -2349,7 +2349,7 @@ calendarView embeddedPage =
 
 {-| The DOM id `calendarPreviewModalView`'s horizontal strip is rendered with
 -- paired with `calendarPreviewCardDomId` by `scrollToCalendarPreviewCard`,
-mirroring `Pages.Event.EventId_.instanceStripDomId`/`instanceChipDomId`
+mirroring `Pages.Event.PostId_.instanceStripDomId`/`instanceChipDomId`
 exactly.
 -}
 calendarPreviewStripDomId : String
@@ -2365,10 +2365,10 @@ calendarPreviewCardDomId key =
 {-| Scrolls `calendarPreviewStripDomId`'s strip horizontally so `key`'s own
 card is centered in view -- fired whenever `CalendarEventClicked` opens the
 modal (or re-targets it to a different event while already open). Mirrors
-`Pages.Event.EventId_.scrollToInstance` exactly (see its own doc for why this
+`Pages.Event.PostId_.scrollToInstance` exactly (see its own doc for why this
 measures via `Dom.getElement`/`Dom.getViewportOf` then applies the result via
 `Ports.scrollElementLeft` rather than `Browser.Dom.setViewportOf`), just with
-a much shorter delay: `EventId_`'s own delay is there to let a FLIP
+a much shorter delay: `PostId_`'s own delay is there to let a FLIP
 enter/grow transition clear before measuring, but `calendarPreviewCardView`
 renders its cards directly (no FLIP, no `eventAnimations` involved -- see
 `calendarPreviewModalView`'s own doc for why), so the only thing this delay
@@ -2815,7 +2815,7 @@ onEscape msg =
 of control sharing one row) for `current`, and pushed to the row's right edge
 (see `view`'s `.filter-controls-trailing`/`.events-controls-trailing`, plus
 `.events-mode-buttons` here in `events.css`) -- mirrors
-`Pages.Event.EventId_.historyButtonView`'s pill styling.
+`Pages.Event.PostId_.historyButtonView`'s pill styling.
 
 Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
 see `view`'s own doc) and the "Show all event layouts" admin setting
@@ -2966,7 +2966,7 @@ exportButtonView shared model =
 {-| `model.mode`'s own container class + `UI.Flip.Axis` -- `VerticalList`
 collapses/reflows vertically (mirrors `PostsPage.postsListView`'s own
 `.flip-animated-column`), `Grid`/`HorizontalList` both collapse/reflow
-horizontally (mirrors `EventId_.instanceContainerAttributes`' own choice for
+horizontally (mirrors `PostId_.instanceContainerAttributes`' own choice for
 its strip/grid).
 
 While any card is still mid `DisplayModeChanged` slide (`anim.move.moving`),
@@ -3196,13 +3196,17 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
             else
                 MediaRenderer.Small
 
+        instancePostId : String
+        instancePostId =
+            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+
         isPushing : String -> Bool
         isPushing destinationId =
-            Dict.get (pushStatusKey instance.id destinationId) pushStatuses == Just Submitting
+            Dict.get (pushStatusKey instancePostId destinationId) pushStatuses == Just Submitting
 
         pushError : String -> Maybe String
         pushError destinationId =
-            case Dict.get (pushStatusKey instance.id destinationId) pushStatuses of
+            case Dict.get (pushStatusKey instancePostId destinationId) pushStatuses of
                 Just (SubmitFailed err) ->
                     Just err
 
@@ -3211,7 +3215,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
 
         onPush : String -> Msg
         onPush destinationId =
-            PushEventInstanceToDestination host instance.id destinationId
+            PushEventInstanceToDestination host instancePostId destinationId
 
         onDelete : String -> String -> Msg
         onDelete destinationId destinationLabel =

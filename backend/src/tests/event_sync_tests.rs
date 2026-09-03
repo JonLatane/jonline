@@ -69,7 +69,7 @@ fn single_vevent_creates_event_and_instance() {
         assert_eq!(post.title, Some("Single Event".to_string()));
         assert_eq!(post.content, Some("Single description".to_string()));
 
-        let instances = instances_for(conn, event.id);
+        let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
         assert!(instances[0].event_sync_source_instance_id.is_some());
 
@@ -95,7 +95,7 @@ fn recurring_vevent_expands_into_multiple_instances() {
         sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "recur-1").expect("event should have been created");
-        let instances = instances_for(conn, event.id);
+        let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 5, "RRULE COUNT=5 should expand to 5 instances");
 
         Ok(())
@@ -126,7 +126,7 @@ fn recurrence_id_override_changes_one_occurrence() {
         sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "override-1").expect("event should have been created");
-        let instances = instances_for(conn, event.id);
+        let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 3);
 
         let overridden_post_titles: Vec<Option<String>> = instances
@@ -192,14 +192,14 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         );
         sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-1").expect("event should exist after first sync");
-        assert_eq!(instances_for(conn, event.id).len(), 1);
+        assert_eq!(instances_for(conn, event.post_id).len(), 1);
 
         // Manually backdate that instance to simulate a pre-existing old occurrence, and insert
         // an extra manually-tagged "old" instance under the same event/source to prove old rows
         // aren't deleted by resync even when absent from the feed.
         let old_start_db: std::time::SystemTime = old_start.into();
         let old_end_db: std::time::SystemTime = old_end.into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.id)))
+        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
             .set((
                 event_instances::starts_at.eq(old_start_db),
                 event_instances::ends_at.eq(old_end_db),
@@ -213,7 +213,7 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         sync_event_sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert_eq!(
-            instances_for(conn, event.id).len(),
+            instances_for(conn, event.post_id).len(),
             1,
             "an instance older than the 1-year lookback should survive even after it drops out of the feed"
         );
@@ -241,18 +241,18 @@ fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
         );
         sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-2").expect("event should exist after first sync");
-        let original_instance_id = instances_for(conn, event.id)[0].id;
+        let original_instance_id = instances_for(conn, event.post_id)[0].post_id;
 
         let ics_v2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
         sync_event_sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert!(
-            events::table.filter(events::id.eq(event.id)).first::<models::Event>(conn).optional().unwrap().is_some(),
+            events::table.filter(events::post_id.eq(event.post_id)).first::<models::Event>(conn).optional().unwrap().is_some(),
             "an event whose only instance just went missing this sync should not be deleted yet"
         );
-        let instances = instances_for(conn, event.id);
+        let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1, "the instance should still exist, just marked missing");
-        assert_eq!(instances[0].id, original_instance_id);
+        assert_eq!(instances[0].post_id, original_instance_id);
         assert!(instances[0].sync_missing_since.is_some());
 
         Ok(())
@@ -278,18 +278,18 @@ fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
         );
         sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "reappear-1").expect("event should exist after first sync");
-        let original_instance = instances_for(conn, event.id).into_iter().next().unwrap();
+        let original_instance = instances_for(conn, event.post_id).into_iter().next().unwrap();
 
         // Simulates a transient/partial upstream response that momentarily drops the occurrence.
         let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
         sync_event_sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
-        assert!(instances_for(conn, event.id)[0].sync_missing_since.is_some());
+        assert!(instances_for(conn, event.post_id)[0].sync_missing_since.is_some());
 
         // The feed recovers before the grace period elapses.
         sync_event_sync_source_text(&source, &ics_v1, conn).expect("third sync should succeed");
-        let instances = instances_for(conn, event.id);
+        let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
-        assert_eq!(instances[0].id, original_instance.id, "should reuse the same instance/Post, not recreate it");
+        assert_eq!(instances[0].post_id, original_instance.post_id, "should reuse the same instance/Post, not recreate it");
         assert_eq!(instances[0].post_id, original_instance.post_id);
         assert!(instances[0].sync_missing_since.is_none(), "reappearing should clear the missing marker");
 
@@ -321,17 +321,17 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
 
         // Simulate the grace period having elapsed by backdating the missing-since stamp.
         let long_ago: std::time::SystemTime = (Utc::now() - Duration::days(4)).into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.id)))
+        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
             .set(event_instances::sync_missing_since.eq(long_ago))
             .execute(conn)
             .unwrap();
 
         sync_event_sync_source_text(&source, ics_empty, conn).expect("third sync should succeed");
 
-        assert_eq!(instances_for(conn, event.id).len(), 0);
+        assert_eq!(instances_for(conn, event.post_id).len(), 0);
         assert!(
             events::table
-                .filter(events::id.eq(event.id))
+                .filter(events::post_id.eq(event.post_id))
                 .first::<models::Event>(conn)
                 .optional()
                 .unwrap()

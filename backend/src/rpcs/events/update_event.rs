@@ -7,7 +7,7 @@ use crate::protos::*;
 
 use super::create_new_event_instances::create_new_event_instances_impl;
 use super::delete_removed_event_instances::delete_removed_event_instances_impl;
-use super::event_permissions::validate_event_edit_permission;
+use super::event_permissions::{event_post_id, validate_event_edit_permission};
 use super::update_event_details::update_event_details_impl;
 use super::update_event_instances::update_event_instances_impl;
 
@@ -27,7 +27,7 @@ pub fn update_event(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
-    let event_id = request.id.to_db_id_or_err("id")?;
+    let event_id = event_post_id(&request)?;
     update_event_details_impl(event_id, &request, current_user, conn)?;
 
     let event = models::get_event(event_id, &Some(current_user), conn)?;
@@ -39,7 +39,7 @@ pub fn update_event(
 
     Ok(super::get_events(
         GetEventsRequest {
-            event_id: Some(event_id.to_proto_id()),
+            post_id: Some(event_id.to_proto_id()),
             ..Default::default()
         },
         &Some(current_user),

@@ -132,7 +132,7 @@ type alias Model =
     }
 
 
-{-| Mirrors `Components.Pages.EventsPage.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
+{-| Mirrors `Components.Pages.EventsPage.SubmitStatus`/`Pages.Event.PostId_.SubmitStatus`
 exactly -- see `Model.pushStatuses`.
 -}
 type SubmitStatus

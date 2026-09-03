@@ -2682,22 +2682,20 @@ currentStarredPostKey shared currentRoute =
             Nothing
 
 
-{-| The `EventInstance.id` currently being viewed (see
-`Pages.Event.EventId_`), if `currentRoute` is that page -- mirrors
+{-| The currently-viewed `EventInstance`'s own `Post` id (see
+`Pages.Event.PostId_`), if `currentRoute` is that page -- mirrors
 `currentStarredPostKey` exactly, just for `Shared.StarredPanel`'s Event
 highlighting (see `Components.Events.eventCard`'s own `current` param).
-`params.eventId` is, despite its name, an `EventInstance.id`, not an
-`Event.id` -- see `Components.Events.parseEventRouteId`'s own doc.
 -}
 currentStarredEventInstanceKey : Shared.Model -> Route -> Maybe String
 currentStarredEventInstanceKey shared currentRoute =
     case currentRoute of
-        Route.Event__EventId_ params ->
+        Route.Event__PostId_ params ->
             let
-                ( instanceId, _ ) =
-                    Events.parseEventRouteId shared.accounts.mainFrontendHost params.eventId
+                ( instancePostId, _ ) =
+                    Events.parseEventRouteId shared.accounts.mainFrontendHost params.postId
             in
-            Just instanceId
+            Just instancePostId
 
         _ ->
             Nothing

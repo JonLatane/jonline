@@ -79,6 +79,14 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
     validate_length(&value, "username", 1, 47)?;
     validate_all_word_chars(&value, "username")?;
     validate_reserved_values(&value, "username", &RESERVED_PATHS)
+
+    //TODO: Prevent usernames starting with: -, ., _, ~, :, /, ?, #, [, ], @, !, $, &, ', (, ), *, +, ,, ;, %, and =
+    //      We should also prevent custom tab paths starting with them.
+    //      Rename/extend `UsernameOrCustomTab.elm` to `PostOrEventOrUsernameOrCustomTab.elm`
+    //      If it detects the path starting with any of those, it should treat the path as, e.g., `/:postId`
+    //      (which is now the same ), it should be the same as /post/postId or /event/eventId.
+    //      So we can have super short urls like jonline.io/:postId, ato.band/~postId, or jonline.io/#eventIsJustAPostId
+    //      Document this in the jonline.proto section: ### `/[-._~:/?#[]@!$&'()*+,;%=]{postId}`: Short Post/Event URLs
 }
 
 pub fn validate_custom_tab_path(path: &str, is_profile: bool) -> Result<(), Status> {
@@ -97,6 +105,14 @@ pub fn validate_custom_tab_path(path: &str, is_profile: bool) -> Result<(), Stat
         ));
     }
     Ok(())
+
+    //TODO: Prevent custom tab paths starting with: -, ., _, ~, :, /, ?, #, [, ], @, !, $, &, ', (, ), *, +, ,, ;, %, and =
+    //      We should also prevent usernames starting with them.
+    //      Rename/extend `UsernameOrCustomTab.elm` to `PostOrEventOrUsernameOrCustomTab.elm`
+    //      If it detects the path starting with any of those, it should treat the path as, e.g., `/:postId`
+    //      (which is now the same ), it should be the same as /post/postId or /event/eventId.
+    //      So we can have super short urls like jonline.io/:postId, ato.band/~postId, or jonline.io/#eventIsJustAPostId
+    //      Document this in the jonline.proto section: ### `/[-._~:/?#[]@!$&'()*+,;%=]{postId}`: Short Post/Event URLs
 }
 
 pub fn validate_password(value: &str) -> Result<(), Status> {

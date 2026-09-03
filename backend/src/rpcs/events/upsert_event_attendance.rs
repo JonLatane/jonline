@@ -31,9 +31,9 @@ pub fn upsert_event_attendance(
         models::Post,
         models::EventInstance,
     ) = event_instances::table
-        .inner_join(events::table.on(event_instances::event_id.eq(events::id)))
+        .inner_join(events::table.on(event_instances::event_id.eq(events::post_id)))
         .inner_join(posts::table.on(events::post_id.eq(posts::id)))
-        .filter(event_instances::id.eq(event_instance_id))
+        .filter(event_instances::post_id.eq(event_instance_id))
         .select((
             events::all_columns,
             models::POST_COLUMNS,

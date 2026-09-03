@@ -35,7 +35,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User, defaultEvent)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -141,14 +141,14 @@ type Msg
       -- `Shared.Msg`, into whichever page is active
       -- (`Main.notifyPageOfSharedMsg`), so
       -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
-      -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
+      -- `Pages.Event.PostId_`'s own `SharedMsg` handling can update their
       -- own list/navigate away on success.
     | GotEventSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
       -- (after which nothing about the deleted `Event` is left to look at, so
-      -- `Pages.Event.EventId_` just navigates Home), the `Event` here is the
+      -- `Pages.Event.PostId_` just navigates Home), the `Event` here is the
       -- *survivor*: `DeleteRemovedEventInstances`'s own return value, still
       -- carrying every other `EventInstance` that wasn't deleted -- letting
       -- that page navigate to one of those instead, keeping the viewer on the
@@ -264,7 +264,7 @@ type DeleteConfirmation
       -- delegate a `DeleteConfirmed` into -- each is a plain list (or, for
       -- `ConfirmUserDelete`, a single button) rendered by exactly one page
       -- (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
-      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
+      -- `Pages.Event.PostId_`), so `ConfirmDelete` fires the delete RPC
       -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
       -- `GotPostDeleteResult`/`GotEventDeleteResult`/`GotUserDeleteResult`)
       -- is forwarded on to whichever page is active the same as any other
@@ -280,7 +280,7 @@ type DeleteConfirmation
       -- `DeleteRemovedEventInstances` with `event.instances` minus `instance`
       -- as the "keep" list, same "no Shared-owned home needed" shape as
       -- `ConfirmPostDelete`/`ConfirmEventDelete` above. Shown by
-      -- `Pages.Event.EventId_`'s "Delete Instance" button, next to "Delete
+      -- `Pages.Event.PostId_`'s "Delete Instance" button, next to "Delete
       -- Event", only once an `Event` has more than one `EventInstance` (with
       -- exactly one, deleting it *is* deleting the Event -- see
       -- `backend/src/rpcs/events/get_events.rs`'s own `INNER JOIN`, which
@@ -1507,7 +1507,7 @@ sharedUpdate req msg model =
                     , Events.deleteEvent
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        event.id
+                        (event.post |> Maybe.map .id |> Maybe.withDefault "")
                         |> Task.attempt GotEventDeleteResult
                     )
 
@@ -1516,9 +1516,10 @@ sharedUpdate req msg model =
                     , Events.deleteRemovedEventInstances
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        { defaultEvent
-                            | id = event.id
-                            , instances = event.instances |> List.filter (\other -> other.id /= instance.id)
+                        { event
+                            | instances =
+                                event.instances
+                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (instance.post |> Maybe.map .id))
                         }
                         |> Task.attempt GotEventInstanceDeleteResult
                     )
@@ -1537,7 +1538,7 @@ sharedUpdate req msg model =
                     , Events.deleteEventInstanceSyncDestination
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        instance.id
+                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
                         eventSyncDestinationId
                         |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
                     )

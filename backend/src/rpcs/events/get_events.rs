@@ -43,18 +43,12 @@ pub fn get_events(
     } else {
         match (
             request.listing_type(),
-            request.to_owned().event_id,
-            request.to_owned().event_instance_id,
             request.to_owned().author_user_id,
             request.to_owned().post_id,
         ) {
             // TODO: implement the other listing types
-            (_, Some(event_id), _, _, _) => get_event_by_id(&user, &event_id, conn)?,
-            (_, _, Some(instance_id), _, _) => get_event_by_instance_id(&user, &instance_id, conn)?,
-            (EventListingType::EventTextSearch, _, _, _, _) => {
-                get_search_events(&request, &user, conn)?
-            }
-            (EventListingType::GroupEvents, _, _, _, _) => match &request.group_id {
+            (EventListingType::EventTextSearch, _, _) => get_search_events(&request, &user, conn)?,
+            (EventListingType::GroupEvents, _, _) => match &request.group_id {
                 Some(group_id) => get_group_events(
                     group_id.to_db_id_or_err("group_id")?,
                     &user,
@@ -63,13 +57,13 @@ pub fn get_events(
                 )?,
                 _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
             },
-            (_, _, _, Some(author_user_id), _) => get_user_events(
+            (_, Some(author_user_id), _) => get_user_events(
                 author_user_id.to_db_id_or_err("author_user_id")?,
                 user,
                 conn,
                 request.time_filter,
             )?,
-            (_, _, _, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
+            (_, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
             _ => get_public_and_following_events(&user, conn, request.time_filter)?,
         }
     };
@@ -134,7 +128,7 @@ fn attach_event_instance_attendances(
             .unwrap_or(false);
         for MarshalableEventInstance(instance, _) in instances {
             context_by_instance.insert(
-                instance.id,
+                instance.post_id,
                 EventInstanceAttendanceContext {
                     owner_user_id: event_post.0.user_id,
                     hide_location_until_rsvp_approved,
@@ -193,10 +187,10 @@ fn attach_event_instance_attendances(
         for (MarshalableEventInstance(instance, _), instance_proto) in
             marshalable_event.2.iter().zip(event.instances.iter_mut())
         {
-            let context = &context_by_instance[&instance.id];
+            let context = &context_by_instance[&instance.post_id];
             let is_owner = current_user_id.is_some() && context.owner_user_id == current_user_id;
             let instance_attendances = attendances_by_instance
-                .get(&instance.id)
+                .get(&instance.post_id)
                 .cloned()
                 .unwrap_or_default();
 
@@ -262,7 +256,7 @@ macro_rules! query_visible_events {
         info!("query_visible_events ends_after={:?}", ends_after);
 
         event_instances::table
-            .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
+            .inner_join(events::table.on(events::post_id.eq(event_instances::event_id)))
             .inner_join(posts::table.on(posts::id.eq(events::post_id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             .left_join(
@@ -449,8 +443,8 @@ fn get_search_events(
     // order is fine here regardless -- this query only collects ids, `binding` below is what's
     // actually ordered by rank).
     let mut matching_instance_ids = query_visible_events!(user, request.time_filter)
-        .select(event_instances::id)
-        .order(event_instances::id)
+        .select(event_instances::post_id)
+        .order(event_instances::post_id)
         .filter(event_instances::search_text.matches(search_query))
         .into_boxed();
 
@@ -463,7 +457,7 @@ fn get_search_events(
     let instance_users = alias!(users as instance_users);
 
     let binding: Vec<EventLoadData> = event_instances::table
-        .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
+        .inner_join(events::table.on(events::post_id.eq(event_instances::event_id)))
         .inner_join(posts::table.on(posts::id.eq(events::post_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .inner_join(instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))))
@@ -472,7 +466,7 @@ fn get_search_events(
                 .field(posts::user_id)
                 .eq(instance_users.field(users::id).nullable())),
         )
-        .filter(event_instances::id.eq_any(matching_instance_ids))
+        .filter(event_instances::post_id.eq_any(matching_instance_ids))
         .select((
             models::EVENT_INSTANCE_COLUMNS,
             events::all_columns,
@@ -532,20 +526,6 @@ fn get_events_by_instance_post_ids(
     Ok(marshalable_event_data!(event_data))
 }
 
-fn get_event_by_instance_id(
-    user: &Option<&models::User>,
-    instance_id: &str,
-    conn: &mut PgPooledConnection,
-) -> Result<Vec<MarshalableEvent>, Status> {
-    let instance = models::get_event_instance(
-        instance_id.to_string().to_db_id_or_err("instance_id")?,
-        user,
-        conn,
-    )?;
-    info!("get_event_by_instance_id instance: {:?}", instance);
-    get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
-}
-
 fn get_event_by_post_id(
     user: &Option<&models::User>,
     post_id: &str,
@@ -553,7 +533,7 @@ fn get_event_by_post_id(
 ) -> Result<Vec<MarshalableEvent>, Status> {
     let post_db_id = post_id.to_string().to_db_id_or_err("post_id")?;
     let event_id = match event_instances::table
-        .left_join(events::table.on(events::id.eq(event_instances::event_id)))
+        .left_join(events::table.on(events::post_id.eq(event_instances::event_id)))
         .select(event_instances::event_id)
         .filter(
             event_instances::post_id
@@ -564,12 +544,17 @@ fn get_event_by_post_id(
     {
         Ok(event_id) => event_id,
         Err(_) => match events::table
-            .select(events::id)
+            .select(events::post_id)
             .filter(events::post_id.eq(post_db_id))
             .first::<i64>(conn)
         {
             Ok(event_id) => event_id,
-            Err(_) => return Err(Status::new(Code::NotFound, "event_instance_not_found")),
+            // `post_id` no longer distinguishes "the Event's own post" from "one of its
+            // EventInstances' posts" (both removed fields collapsed into this one) -- so there's
+            // no way to tell which the caller meant once neither resolves. Same message
+            // `get_event_by_id` itself uses below for "resolved but not visible", since from the
+            // caller's perspective both are just "can't get this Event".
+            Err(_) => return Err(Status::new(Code::NotFound, "event_not_found")),
         },
     };
     get_event_by_id(user, &event_id.to_proto_id(), conn)
@@ -586,7 +571,7 @@ fn get_event_by_id(
     };
     info!("get_event_by_id event_db_id: {}", event_db_id);
     let query = query_visible_events!(user, None::<TimeFilter>, SINGLE_EVENT_INSTANCE_LIMIT)
-        .filter(events::id.eq(event_db_id));
+        .filter(events::post_id.eq(event_db_id));
     let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
     info!("get_event_by_id event_data: {:?}", event_data);

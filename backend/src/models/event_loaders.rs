@@ -113,7 +113,7 @@ pub fn get_event(
 ) -> Result<Event, Status> {
     events::table
         .select(events::all_columns)
-        .filter(events::id.eq(event_id))
+        .filter(events::post_id.eq(event_id))
         .first::<Event>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
 }
@@ -125,7 +125,7 @@ pub fn get_event_instance(
 ) -> Result<EventInstance, Status> {
     event_instances::table
         .select(EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::id.eq(event_instance_id))
+        .filter(event_instances::post_id.eq(event_instance_id))
         .first::<EventInstance>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
 }
@@ -197,7 +197,8 @@ pub fn get_event_attendances(
 ) -> Result<Vec<EventAttendance>, Status> {
     event_attendances::table
         .inner_join(
-            event_instances::table.on(event_attendances::event_instance_id.eq(event_instances::id)),
+            event_instances::table
+                .on(event_attendances::event_instance_id.eq(event_instances::post_id)),
         )
         .left_join(posts::table.on(event_instances::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))

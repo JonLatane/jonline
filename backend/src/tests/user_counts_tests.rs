@@ -198,7 +198,10 @@ fn delete_event_clears_event_and_event_instance_counts() {
         let event = create_event(new_event(2), &author, conn)?;
         delete_event(
             Event {
-                id: event.id,
+                post: Some(Post {
+                    id: event.post.as_ref().unwrap().id.clone(),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             &author,

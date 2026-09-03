@@ -2,7 +2,7 @@ import { Event } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
-import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
+import { CalendarImplementation, identifyEvent, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useCallback, useState } from 'react';
 import { ToggleRow } from '../../components/toggle_row';
@@ -250,7 +250,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                   <EventsFullCalendar weeklyOnly width='100%' disableSelection
                     events={[
                       federatedEntity(
-                        Event.create({
+                        identifyEvent(Event.create({
                           post: {
                             title: 'Example Event'
                           },
@@ -260,7 +260,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                               endsAt: moment().add(1, 'hour').toISOString()
                             }
                           ]
-                        }),
+                        })),
                         currentHostServer
                       )
                     ]} />

@@ -211,7 +211,7 @@ pub async fn generate_media(
                 .filter(|a| !a.trim().is_empty())
                 .map(str::to_string);
             let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
-            let event_url = frontend_url(conn, "event", instance.id)?;
+            let event_url = frontend_url(conn, "event", instance.post_id)?;
             let message = build_event_instance_message(EventInstanceMessageInput {
                 title: &title,
                 content: &content,

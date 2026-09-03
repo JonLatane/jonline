@@ -1,18 +1,20 @@
-module Pages.Event.EventId_ exposing (Model, Msg, fromShared, page)
+module Pages.Event.PostId_ exposing (Model, Msg, fromShared, page)
 
-{-| `/event/:eventId` -- a single Event's detail/"invitation" view: the
+{-| `/event/:postId` -- a single Event's detail/"invitation" view: the
 `Event`'s own `Post` (title, link, media, content) up top, then a
 horizontally-scrolling date-picker strip of the `Event`'s other
 `EventInstance`s (see `instanceHistoryView`) if it has more than one, then
 the specific `EventInstance` being viewed (its start/end time and location),
 then that `EventInstance`'s own optional override `Post`.
 
-`eventId` (the route segment, matching `Pages.Post.PostId_`'s own `postId`
-naming) is actually an `EventInstance.id`, not an `Event.id` --
-`GetEventsRequest.event_instance_id` is the only way to fetch a single Event
-(see `events.proto`), and it returns that instance's whole parent `Event`
-with _every_ one of its instances, not just the one asked for -- which is
-exactly what makes the date-picker strip possible without a second request.
+`postId` (the route segment, matching `Pages.Post.PostId_`'s own `postId`
+naming) is genuinely the viewed `EventInstance`'s own `Post` id -- an
+`EventInstance`'s identity is its own `Post`'s id (see `Proto.Jonline.EventInstance`).
+`GetEventsRequest.post_id` is the only way to fetch a single Event (see
+`events.proto`), and looking it up by an `EventInstance`'s own Post id
+returns that instance's whole parent `Event` with _every_ one of its
+instances, not just the one asked for -- which is exactly what makes the
+date-picker strip possible without a second request.
 
 -}
 
@@ -29,7 +31,7 @@ import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
-import Gen.Params.Event.EventId_ exposing (Params)
+import Gen.Params.Event.PostId_ exposing (Params)
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, h2, h3, option, p, select, span, text)
@@ -39,7 +41,7 @@ import Json.Encode as Encode
 import Page
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEvent, defaultEventInstance, defaultLocation)
+import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEventInstance, defaultLocation)
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.Visibility exposing (Visibility)
@@ -428,7 +430,7 @@ init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     let
         ( eventId, targetHost ) =
-            Events.parseEventRouteId shared.accounts.mainFrontendHost params.eventId
+            Events.parseEventRouteId shared.accounts.mainFrontendHost params.postId
 
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
@@ -860,9 +862,8 @@ update shared req msg model =
                             , Events.updateEventInstances
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
-                                { defaultEvent
-                                    | id = event.id
-                                    , instances =
+                                { event
+                                    | instances =
                                         [ { instance
                                             | startsAt = Just (Conversions.posixToTimestamp startsAt)
                                             , endsAt = Just (Conversions.posixToTimestamp endsAt)
@@ -932,7 +933,7 @@ update shared req msg model =
                     , Events.updateEventInstances
                         shared.accounts
                         ( Just account.userId, server.frontendHost )
-                        { defaultEvent | id = event.id, instances = [ { instance | location = newLocation } ] }
+                        { event | instances = [ { instance | location = newLocation } ] }
                         |> Task.attempt GotInstanceLocationSaveResult
                         |> Effect.fromCmd
                     )
@@ -986,7 +987,7 @@ update shared req msg model =
                             , Events.createNewEventInstances
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
-                                { defaultEvent | id = event.id, instances = newInstances }
+                                { event | instances = newInstances }
                                 |> Task.attempt GotAddMoreResult
                                 |> Effect.fromCmd
                             )
@@ -1100,7 +1101,11 @@ update shared req msg model =
             case ( model.eventStatus, serverAndAccount shared model ) of
                 ( EventLoaded _ instance, Just ( server, account ) ) ->
                     ( { model | syncDestinationPushStatuses = Dict.insert destinationId Submitting model.syncDestinationPushStatuses }
-                    , Events.syncEventInstance shared.accounts ( Just account.userId, server.frontendHost ) instance.id destinationId
+                    , Events.syncEventInstance
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+                        destinationId
                         |> Task.attempt (GotSyncDestinationPushResult destinationId)
                         |> Effect.fromCmd
                     )
@@ -1232,16 +1237,20 @@ update shared req msg model =
                             case List.head updatedEvent.instances of
                                 Just sibling ->
                                     let
+                                        siblingPostId : String
+                                        siblingPostId =
+                                            sibling.post |> Maybe.map .id |> Maybe.withDefault ""
+
                                         routeId : String
                                         routeId =
                                             if model.targetHost == shared.accounts.mainFrontendHost then
-                                                sibling.id
+                                                siblingPostId
 
                                             else
-                                                sibling.id ++ "@" ++ model.targetHost
+                                                siblingPostId ++ "@" ++ model.targetHost
                                     in
                                     ( model
-                                    , Request.pushRoute (Gen.Route.Event__EventId_ { eventId = routeId }) req
+                                    , Request.pushRoute (Gen.Route.Event__PostId_ { postId = routeId }) req
                                         |> Effect.fromCmd
                                     )
 
@@ -1392,13 +1401,14 @@ applyUpdatedEvent now model updatedEvent =
 `startsAt`/`endsAt` than the last (`n = 1..count`, via `SharedTime.addRecurrence`
 in `zone` -- see that function's own doc for the DST guarantee this relies
 on). Every duplicate copies `instance`'s own `post` (its title/link/content/
-visibility override, if any -- `create_instance` on the backend ignores
-whatever `id`/`author` a submitted `post` carries and always creates a fresh
-Post authored by the caller, so reusing the same record verbatim for every
-copy is safe) and `location` verbatim -- nothing about "add more like this
-one" should silently drop either. Each new instance's own `id` is left at
-`defaultEventInstance`'s blank default, so `CreateNewEventInstances` always
-treats it as new rather than matching some unrelated existing instance.
+visibility override, if any) and `location` verbatim -- nothing about "add
+more like this one" should silently drop either. Copying `post` along also
+copies its own id (an `EventInstance`'s identity, post-migration -- see this
+module's own top-of-file doc), but that's harmless: `create_instance` on the
+backend ignores whatever `id`/`author` a submitted `post` carries and always
+creates a fresh Post authored by the caller, so every duplicate still ends up
+a genuinely new `EventInstance`, never mistaken for `instance` itself.
+Everything else is left at `defaultEventInstance`'s blank defaults.
 `[]` (a no-op back in `AddMoreFrequencyClicked`) if `instance` is missing
 either `startsAt` or `endsAt`, which shouldn't happen in practice -- both are
 required fields everywhere an `EventInstance` is created.
@@ -1627,7 +1637,7 @@ syncInstanceAnimations now model =
                 currentInstances =
                     event.instances
                         |> List.filter (instanceMatchesHistoryDisplay now model.instanceHistoryDisplay)
-                        |> List.map (\instance -> ( instance.id, instance ))
+                        |> List.map (\instance -> ( instance.post |> Maybe.map .id |> Maybe.withDefault "", instance ))
                         |> Dict.fromList
             in
             { model
@@ -2724,7 +2734,11 @@ instanceHistoryView shared model event instance =
             , div
                 (id instanceStripDomId :: instanceContainerAttributes model.instanceLayout)
                 (event.instances
-                    |> List.filterMap (\eventInstance -> Dict.get eventInstance.id model.instanceAnimations)
+                    |> List.filterMap
+                        (\eventInstance ->
+                            eventInstance.post
+                                |> Maybe.andThen (\post -> Dict.get post.id model.instanceAnimations)
+                        )
                     |> List.map (instanceChipView shared model instance)
                 )
             ]
@@ -2877,7 +2891,7 @@ historyButtons now event =
 
 {-| One date chip -- links to `anim.instance`'s own page (see
 `Components.Events.eventInstanceHref`), highlighted if it's the instance
-currently being viewed (`model.eventId`). `currentInstance` is that
+currently being viewed (`model.eventInstanceId`). `currentInstance` is that
 currently-viewed instance (see `instanceHistoryView`'s own `instance`
 parameter) -- passed through to `Components.Events.siblingInstanceWhenText`
 so a sibling chip that shares `currentInstance`'s own time-of-day can drop
@@ -2889,14 +2903,18 @@ selects (see `syncInstanceAnimations`).
 instanceChipView : Shared.Model -> Model -> EventInstance -> InstanceAnimation -> Html Msg
 instanceChipView shared model currentInstance { instance, flip } =
     let
+        instancePostId : String
+        instancePostId =
+            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+
         isCurrent : Bool
         isCurrent =
-            instance.id == model.eventInstanceId
+            instancePostId == model.eventInstanceId
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flip False)
         [ a
             [ href (Events.eventInstanceHref shared.basePath shared.accounts.mainFrontendHost model.targetHost instance)
-            , id (instanceChipDomId instance.id)
+            , id (instanceChipDomId instancePostId)
             , classes
                 ([ "event-instance-chip", hostnameToCSSClass model.targetHost ]
                     ++ (if isCurrent then

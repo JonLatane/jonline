@@ -1,9 +1,8 @@
-import { EventInstance } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
+import { IdentifiedEventInstance, accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -54,7 +53,7 @@ export function EventDetailsScreen() {
   // debugger
 
   const subjectInstances = subjectEvent?.instances;
-  const [subjectInstance, setSubjectInstance] = useState<EventInstance | undefined>(undefined);
+  const [subjectInstance, setSubjectInstance] = useState<IdentifiedEventInstance | undefined>(undefined);
 
   const instancePost = useAppSelector(state => subjectInstance
     ? selectPostById(state.posts, federateId(subjectInstance.post!.id, serverHost))
@@ -87,7 +86,7 @@ export function EventDetailsScreen() {
 
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
-  function onEventInstancesUpdated(instances: EventInstance[]) {
+  function onEventInstancesUpdated(instances: IdentifiedEventInstance[]) {
     if (!instances.some(i => i.id === serverInstanceId)) {
       updateParams({
         instanceId: `${instances.find(i => !isPastInstance(i))?.id

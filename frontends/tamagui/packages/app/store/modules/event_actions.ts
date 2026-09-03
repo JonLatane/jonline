@@ -1,34 +1,56 @@
-import { Event, EventAttendances, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
+import { Event, EventAttendances, EventInstance, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import { AccountOrServer, getCredentialClient } from "..";
+import { HasIdFromServer } from "../federation";
+
+// `Event`/`EventInstance` no longer carry their own surrogate `id` -- each one's identity *is* its
+// own `post.id`. The Redux store's federation machinery (`FederatedEntity<T>`/`federatedId`/etc.,
+// see `../federation.ts`) is generic over `T extends HasIdFromServer` (`{ id: string }`) and reads
+// `.id` directly at runtime, so every `Event`/`EventInstance` gets a synthetic top-level `id`
+// stamped on here, at the API boundary, copied from its own `post.id` -- once stamped, the rest of
+// the store (and any code reading a `FederatedEvent`/`FederatedEventInstance` out of it) can keep
+// treating `.id` as a normal field, same as any other entity (User, Post, Group, etc.).
+export type IdentifiedEventInstance = EventInstance & HasIdFromServer;
+export type IdentifiedEvent = Omit<Event, "instances"> & HasIdFromServer & { instances: IdentifiedEventInstance[] };
+export type IdentifiedGetEventsResponse = Omit<GetEventsResponse, "events"> & { events: IdentifiedEvent[] };
+
+export function identifyEventInstance(instance: EventInstance): IdentifiedEventInstance {
+  return { ...instance, id: instance.post!.id };
+}
+export function identifyEvent(event: Event): IdentifiedEvent {
+  return { ...event, id: event.post!.id, instances: event.instances.map(identifyEventInstance) };
+}
+export function identifyGetEventsResponse(response: GetEventsResponse): IdentifiedGetEventsResponse {
+  return { ...response, events: response.events.map(identifyEvent) };
+}
 
 export type CreateEvent = AccountOrServer & Event;
-export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(
+export const createEvent: AsyncThunk<IdentifiedEvent, CreateEvent, any> = createAsyncThunk<IdentifiedEvent, CreateEvent>(
   "events/create",
   async (request) => {
     const client = await getCredentialClient(request);
-    return await client.createEvent(request, client.credential);
+    return identifyEvent(await client.createEvent(request, client.credential));
   }
 );
 
 export type UpdateEvent = AccountOrServer & Event;
-export const updateEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, UpdateEvent>(
+export const updateEvent: AsyncThunk<IdentifiedEvent, CreateEvent, any> = createAsyncThunk<IdentifiedEvent, UpdateEvent>(
   "events/update",
   async (request) => {
     const client = await getCredentialClient(request);
-    return await client.updateEvent(request, client.credential);
+    return identifyEvent(await client.updateEvent(request, client.credential));
   }
 );
 
 export type DeleteEvent = AccountOrServer & Event;
-export const deleteEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, DeleteEvent>(
+export const deleteEvent: AsyncThunk<IdentifiedEvent, CreateEvent, any> = createAsyncThunk<IdentifiedEvent, DeleteEvent>(
   "events/delete",
   async (request) => {
     const client = await getCredentialClient(request);
-    return await client.deleteEvent(request, client.credential);
+    return identifyEvent(await client.deleteEvent(request, client.credential));
   }
 );
 
@@ -39,7 +61,7 @@ export type LoadEventsRequest = AccountOrServer & {
   force?: boolean
 };
 export const defaultEventListingType = EventListingType.ALL_ACCESSIBLE_EVENTS;
-export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
+export const loadEventsPage: AsyncThunk<IdentifiedGetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<IdentifiedGetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {
     let client = await getCredentialClient(request);
@@ -49,7 +71,7 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
       timeFilter: request.filter
     }, client.credential);
     // console.log('loadEventsPage', request.server?.host, response);
-    return response;
+    return identifyGetEventsResponse(response);
   },
   // {
   //   condition: (request, { getState }) => {
@@ -60,18 +82,19 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
 );
 
 export type LoadEvent = { id?: string, postId?: string, instanceId?: string } & AccountOrServer;
-export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Event, LoadEvent>(
+export const loadEvent: AsyncThunk<IdentifiedEvent, LoadEvent, any> = createAsyncThunk<IdentifiedEvent, LoadEvent>(
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
+    // `event_id`/`event_instance_id` were removed from `GetEventsRequest` -- `post_id` is a
+    // strict superset (looks up by the Event's own Post ID *or* any of its EventInstances' Post
+    // ID), so any of `id`/`postId`/`instanceId` (all historically post ids under the hood) works.
     const response = await client.getEvents(GetEventsRequest.create({
-      eventId: request.id,
-      postId: request.postId,
-      eventInstanceId: request.instanceId
+      postId: request.id ?? request.postId ?? request.instanceId
     }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
-    return event;
+    return identifyEvent(event);
   }
 );
 
