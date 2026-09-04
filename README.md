@@ -234,6 +234,11 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
     - [People, Followers and Friends](#people-followers-and-friends)
     - [Groups and Memberships](#groups-and-memberships)
     - [Media](#media)
+    - [AI Model Providers](#ai-model-providers)
+      - [Gemini](#gemini)
+      - [OpenAI](#openai)
+      - [Anthropic](#anthropic)
+      - [DigitalOcean](#digitalocean)
     - [Posts](#posts)
       - [GroupPost](#grouppost)
     - [Events](#events)
@@ -351,9 +356,11 @@ While Federation is a first-class feature of Jonline, it also supports synchroni
 
 #### Sync Sources
 
-A [`SyncSource`](https://jonline.io/docs/protocol#jonline-SyncSource) mirrors [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) below, but for pulling [`Event`](https://jonline.io/docs/protocol#jonline-Event)s in rather than pushing content out -- currently only an iCal subscription URL, though the `oneof` leaves room for other source types. Unlike [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event) (not the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)) that gets synced in and tagged with its source, since a single source can back many synced [`Event`](https://jonline.io/docs/protocol#jonline-Event)s but each [`Event`](https://jonline.io/docs/protocol#jonline-Event) has at most one source it came from. A background job re-pulls each source on its own configurable interval.
+A [`SyncSource`](https://jonline.io/docs/protocol#jonline-SyncSource) is a server-owned external origin to pull [`Event`](https://jonline.io/docs/protocol#jonline-Event)s and [`Post`](https://jonline.io/docs/protocol#jonline-Post)s in from, via a `oneof configuration` naming which source type it is -- currently only an iCal subscription URL, though the `oneof` leaves room for other source types. This is a 1:(0 or 1) relationship: it's the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event) (not the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)) that gets synced in and tagged with its source, since a single source can back many synced [`Event`](https://jonline.io/docs/protocol#jonline-Event)s but each [`Event`](https://jonline.io/docs/protocol#jonline-Event) has at most one source it came from. A background job re-pulls each source on its own configurable interval.
 
 Sources are managed via [`GetSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetSyncSources), [`CreateSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateSyncSource) (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncSource), and [`DeleteSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncSource).
+
+See also: [Sync Destinations](#sync-destinations)
 
 ##### iCal
 
@@ -364,6 +371,8 @@ Sources are managed via [`GetSyncSources`](https://jonline.io/docs/protocol#grpc
 A [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)s and [`Post`](https://jonline.io/docs/protocol#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's each [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) (not, say, the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event)) that syncs out, and each may push to several destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a [`SyncDestinationStatus`](https://jonline.io/docs/protocol#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval.
 
 Destinations are managed via the [`GetSyncDestinations`](https://jonline.io/docs/protocol#grpc-api-GetSyncDestinations), [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination), and [`DeleteSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncDestination) RPCs -- each gated on the `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform below). Actually syncing (or un-syncing) a given [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) to a destination is a separate step, via [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`DeleteEventInstanceSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteEventInstanceSyncDestination) and [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost)/[`DeletePostSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeletePostSyncDestination).
+
+See also: [Sync Sources](#sync-sources)
 
 ##### Facebook
 
@@ -448,6 +457,22 @@ Jonline supports optional, "bring your own key" AI image generation via [`AIMode
 The one feature currently built atop this is [`GenerateMedia`](https://jonline.io/docs/protocol#grpc-api-GenerateMedia) ("Generate Media…", shown next to "Edit Media…" on a Post's or Event's own page): it sends the target's own formatted content (title/description/date-time/location, reusing the same formatting [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination)s use) plus any selected reference photos to the chosen model, and attaches the result as the first item in that Post's (or Event's own Post's) media.
 
 Which models are actually available, and what each can do ([`AIModelCapability`](https://jonline.io/docs/protocol#jonline-AIModelCapability) - generation vs. editing), is a hand-maintained catalog in [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs) - the source of truth for which models Jonline actually offers, since none of Gemini/OpenAI/Anthropic expose a stable "list models" API to build this from at request time.
+
+#### Gemini
+
+A Google Gemini API connection ([`GeminiCredentials`](https://jonline.io/docs/protocol#jonline-GeminiCredentials)), used for image generation/editing (e.g. generating Event posters) via Gemini's Interactions API.
+
+#### OpenAI
+
+An OpenAI API connection ([`OpenAICredentials`](https://jonline.io/docs/protocol#jonline-OpenAICredentials)), used for image generation/editing via OpenAI's Images API (GPT Image models).
+
+#### Anthropic
+
+An Anthropic API connection ([`AnthropicCredentials`](https://jonline.io/docs/protocol#jonline-AnthropicCredentials)), reserved but **not yet creatable** -- Anthropic doesn't offer an image generation API, so this is defined only for forward compatibility.
+
+#### DigitalOcean
+
+A DigitalOcean Gradient AI Platform / Serverless Inference connection ([`DigitalOceanCredentials`](https://jonline.io/docs/protocol#jonline-DigitalOceanCredentials)), used for image *generation only* (no editing) via an OpenAI-Images-API-shaped endpoint re-hosting GPT Image and Stable Diffusion models under DigitalOcean's own billing.
 
 ### Posts
 

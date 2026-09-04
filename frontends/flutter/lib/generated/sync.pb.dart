@@ -28,7 +28,7 @@ enum SyncDestination_Configuration {
 }
 
 /// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
-/// but for pushing content out rather than pulling events in. Originally Event-specific
+/// but for pushing content out rather than pulling content in. Originally Event-specific
 /// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
 /// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
 class SyncDestination extends $pb.GeneratedMessage {

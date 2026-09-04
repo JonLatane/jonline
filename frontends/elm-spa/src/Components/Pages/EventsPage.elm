@@ -892,24 +892,55 @@ updateInner shared msg model =
             if newMode == model.mode then
                 ( model, Effect.none )
 
-            else if newMode == Calendar || model.mode == Calendar then
-                -- `Calendar` isn't a card layout -- switching to/from it has
-                -- nothing to measure/slide via `measureElementsEffect`'s FLIP
+            else if newMode == Calendar then
+                -- Switching *into* `Calendar` renders instantly, with no
+                -- cross-fade at all -- unlike leaving it (below), there's no
+                -- good place for the outgoing cards to visually go: they'd
+                -- have to collapse away underneath a calendar that's already
+                -- occupying their old spot (`calendar-flip-item`'s own
+                -- `order: -1`, events.css), which is exactly the "cards
+                -- linger below the calendar for a beat" lag this was worth
+                -- avoiding. Skips `syncAnimations`/`syncCalendarAnimations`
+                -- entirely: `eventAnimations` is cleared outright (no fade,
+                -- no `remove` to wait on) and `calendarAnimations` seeds
+                -- straight into `UI.Flip.restingState` (already fully
+                -- visible/settled, not `enter`'s fade-in). `update`'s own
+                -- `calendarRenderEffect` still separately picks up actually
+                -- rendering the calendar's contents regardless of this
+                -- shortcut.
+                let
+                    newModel : Model
+                    newModel =
+                        { model
+                            | mode = newMode
+                            , eventAnimations = Dict.empty
+                            , calendarAnimations = Dict.singleton calendarAnimationKey { flip = UI.Flip.restingState }
+                        }
+
+                    preferenceEffect : Effect Msg
+                    preferenceEffect =
+                        if model.syncsCalendarPreference then
+                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar True))
+
+                        else
+                            Effect.none
+                in
+                ( newModel, Effect.batch [ pushUrl newModel, preferenceEffect ] )
+
+            else if model.mode == Calendar then
+                -- Switching *out of* `Calendar` still cross-fades, same as
+                -- ever -- `Calendar` isn't a card layout, so there's nothing
+                -- to measure/slide via `measureElementsEffect`'s FLIP
                 -- round-trip (that's still exactly what the `else` branch
                 -- below handles, for a switch among `VerticalList`/`Grid`/
-                -- `HorizontalList`). Instead this re-syncs both animation
-                -- dicts against the new `mode` -- `syncAnimations` fades every
-                -- real card out (`Calendar` becoming active) or back in
-                -- (`Calendar` becoming inactive), `syncCalendarAnimations`
-                -- fades the calendar view itself in/out the opposite way --
-                -- see `eventsListView`'s own doc for how the two dicts render
-                -- as one combined, cross-fading list. `update`'s own
-                -- `calendarRenderEffect` separately picks up actually
-                -- rendering the calendar's contents. Also, if
-                -- `model.syncsCalendarPreference` (`Pages.Home_`/`Pages.Events`
-                -- only), persists this switch into/out of `Calendar` as
-                -- `Shared.UserPreferences.prefersCalendar` -- see that field's
-                -- own doc.
+                -- `HorizontalList`). `syncAnimations` fades every real card
+                -- back in, `syncCalendarAnimations` fades the calendar view
+                -- itself out -- see `eventsListView`'s own doc for how the
+                -- two dicts render as one combined, cross-fading list. Also,
+                -- if `model.syncsCalendarPreference` (`Pages.Home_`'s/
+                -- `Pages.Events`'s own copies only), persists this switch out
+                -- of `Calendar` as `Shared.UserPreferences.prefersCalendar`
+                -- -- see that field's own doc.
                 let
                     newModel : Model
                     newModel =
@@ -920,7 +951,7 @@ updateInner shared msg model =
                     preferenceEffect : Effect Msg
                     preferenceEffect =
                         if model.syncsCalendarPreference then
-                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar (newMode == Calendar)))
+                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar False))
 
                         else
                             Effect.none
@@ -3126,11 +3157,19 @@ item's, is what actually picks which grid axis collapses -- see
 collapses correctly along whichever axis the container it's inside actually
 is).
 
+Kept as the *last* entry in `eventsListView`'s own keyed list (rather than
+listed first, to visually lead) -- `UI.Flip.remove`'s own doc warns that
+relocating a still-present item in that list (even just to sneak this one in
+ahead of it) cancels its CSS collapse transition outright, since the browser
+has nothing to transition *from* once a keyed node's actually moved in the
+DOM. `calendar-flip-item` (see `events.css`) instead reorders this one item
+*visually* to the front via the flex container's own `order`, leaving every
+real card's DOM position (and thus its collapse transition) untouched.
 -}
 calendarAnimationView : Bool -> ( String, CalendarAnimation ) -> ( String, Html Msg )
 calendarAnimationView embeddedPage ( key, anim ) =
     ( key
-    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False) [ calendarView embeddedPage ]
+    , div (class "calendar-flip-item" :: UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False) [ calendarView embeddedPage ]
     )
 
 

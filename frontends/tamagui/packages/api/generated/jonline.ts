@@ -179,16 +179,19 @@ export const protobufPackage = "jonline";
  * each optionally `configured_by_default` (client should enable/configure it automatically) and/or
  * `pinned_by_default` (client should pin its Events/Posts alongside the "main" server's).
  *
- * ###### Facebook and X (Twitter) API keys
+ * ###### Facebook API Keys
  * `facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
  * this server's Facebook App, enabling users to connect Facebook Page and Instagram Business
- * [`SyncDestination`](#jonline-SyncDestination)s (see [Synchronization](#synchronization) below);
+ * [`SyncDestination`](#jonline-SyncDestination)s. `app_secret` is write-only/never serialized back to clients;
+ * admins set/rotate it via [`ConfigureServer`](#grpc-api-ConfigureServer) (i.e. the same admin UI form that
+ * manages the rest of [`ServerConfiguration`](#jonline-ServerConfiguration)) -- the secret is simply never echoed
+ * back in subsequent [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) responses.
+ *
+ * ###### X (Twitter) API Keys
  * `x_twitter_auth_config` (an [`XTwitterAuthConfig`](#jonline-XTwitterAuthConfig), `client_id`/`client_secret`)
- * does the same for X (Twitter) -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. Both
- * `*_secret` fields are write-only/never serialized back to clients; admins set/rotate them via
- * [`ConfigureServer`](#grpc-api-ConfigureServer) (i.e. the same admin UI form that manages the rest of
- * [`ServerConfiguration`](#jonline-ServerConfiguration)) -- the secret is simply never echoed back in
- * subsequent [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) responses.
+ * registers this server's X Developer App, enabling users to connect X [`SyncDestination`](#jonline-SyncDestination)s
+ * -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. `client_secret` is write-only/never
+ * serialized back to clients, set/rotated the same way as the Facebook API keys above.
  *
  * ##### Web Push Configuration
  * [`WebPushConfig`](#jonline-WebPushConfig) (`web_push_config`) holds the server's VAPID keypair for Web Push
@@ -223,13 +226,104 @@ export const protobufPackage = "jonline";
  * (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group's members.
  *
  * ##### SyncSources
- * A [`User`](#jonline-User) can own many [`SyncSource`](#jonline-SyncSource)s - external calendars to
- * pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+ * While Federation is a first-class feature of Jonline, a [`User`](#jonline-User) can also own many
+ * [`SyncSource`](#jonline-SyncSource)s - server-owned external origins to sync with other fediverse and less-open
+ * platforms, pulling [`Event`](#jonline-Event)s and [`Post`](#jonline-Post)s in via a `oneof configuration` naming
+ * which source type it is -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though
+ * the `oneof` leaves room for other source types. This is a 1:(0 or 1) relationship: it's the parent
+ * [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with
+ * its source (`Event.sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each
+ * [`Event`](#jonline-Event) has at most one source it came from -- see the Event section below for how these attach.
+ * A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
+ * `event_count`/`event_instance_count` on every sync.
+ *
+ * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
+ * (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+ * [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
+ *
+ * See also: [`SyncDestination`](#jonline-SyncDestination)
+ *
+ * ###### iCal
+ * `configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
+ * background job fetches and parses it on each sync, creating/updating one [`Event`](#jonline-Event) per iCal `VEVENT`
+ * (keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
+ * `event_instance_count`. An `Event`'s `sync_missing_since` is set the first time one of its instances stops
+ * appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
+ * supported yet -- only public iCal URLs.
  *
  * ##### SyncDestinations
- * A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
- * external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
- * [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
+ * A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s - user-owned external
+ * targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to (see the Event and
+ * Post sections below for how these attach), via a `oneof configuration` naming which platform it is. This is a
+ * many-to-many relationship: it's each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not,
+ * say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several destinations at once,
+ * tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+ * [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and
+ * last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval, so
+ * `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
+ * recomputed-and-stored. All API keys for these external platforms are stored in
+ * [`ServerConfiguration`](#jonline-ServerConfiguration)'s `federation_info`.
+ *
+ * Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+ * [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
+ * and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+ * `SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform's own
+ * section below). Actually syncing (or un-syncing) a given [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) to a destination is a separate
+ * step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+ * [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+ * [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
+ * way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
+ *
+ * See also: [`SyncSource`](#jonline-SyncSource)
+ *
+ * ###### Facebook
+ * `configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
+ * Connecting one requires a short-lived user access token from client-side Facebook Login
+ * (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+ * short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
+ * `SYNC_POSTS_TO_FACEBOOK`.
+ *
+ * ###### Instagram
+ * `configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
+ * Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+ * connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+ * the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
+ * (`instagram_business_account_id`). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
+ * [`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
+ * `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+ *
+ * ###### Mastodon
+ * `configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
+ * account, on any instance the user names (`instance_host`) -- there's no single app to register the way
+ * Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+ * (`MastodonAccount.access_token`, generated on the user's own instance under Preferences > Development) rather than
+ * an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+ *
+ * ###### Bluesky
+ * `configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
+ * Protocol) account. Connecting one is a user-supplied "App Password" (`BlueskyAccount.app_password`, generated at
+ * Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
+ * `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+ *
+ * ###### X (Twitter)
+ * `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
+ * server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
+ * sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
+ * configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (`response_type=code`, like
+ * Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn't) -- the server exchanges
+ * the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
+ * each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`'s own doc).
+ * Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
+ *
+ * ###### Threads
+ * `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
+ * Threads API is a product added to this server's *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
+ * separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
+ * facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a
+ * Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
+ * short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+ * implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
+ * text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
  *
  * ##### AIModelProviders
  * A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
@@ -240,6 +334,51 @@ export const protobufPackage = "jonline";
  * "list models" API to build this from at request time) - see
  * [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs)
  * on GitHub for the actual source of truth.
+ *
+ * #### AIModelProvider
+ * An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+ * Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+ * [`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource), but rather than pushing/pulling
+ * content, it's metered *access* an owner can share out to other users of this server. As with
+ * [`SyncDestination`](#jonline-SyncDestination)'s platform credentials, the actual API key is write-only -- accepted
+ * on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider)
+ * but never populated back in a response.
+ *
+ * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+ * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+ * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+ * -- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)'s RPCs.
+ *
+ * ##### Gemini
+ * `provider.gemini_credentials` (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is a Google Gemini API
+ * connection (`ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via
+ * its Interactions API.
+ *
+ * ##### OpenAI
+ * `provider.openai_credentials` (an [`OpenAICredentials`](#jonline-OpenAICredentials)) is an OpenAI API connection
+ * (`platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT
+ * Image models).
+ *
+ * ##### Anthropic
+ * `provider.anthropic_credentials` (an [`AnthropicCredentials`](#jonline-AnthropicCredentials)) is reserved for a
+ * connected Anthropic API, but **not yet creatable** -- Anthropic doesn't offer an image generation API, so it's
+ * defined only for forward compatibility.
+ *
+ * ##### DigitalOcean
+ * `provider.digitalocean_credentials` (a [`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials)) is a
+ * DigitalOcean Gradient AI Platform / Serverless Inference connection (`docs.digitalocean.com/products/inference`),
+ * used for image *generation only* (no editing -- DigitalOcean's Serverless Inference API has no
+ * `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT
+ * Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).
+ *
+ * ##### AIModelProviderGrants
+ * A provider's owner may share metered access to it with other users via
+ * [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+ * Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
+ * `(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+ * removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+ * these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+ * its owner may hand out access to it.
  *
  * #### Media
  * [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -410,126 +549,6 @@ export const protobufPackage = "jonline";
  * #### Federated Messaging
  * Jonline's Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
  * from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
- *
- * ### Synchronization
- * While Federation is a first-class feature of Jonline, it also supports synchronization with other
- * fediverse platforms as well as other less-open platforms. All API keys for external services are stored
- * in [`ServerConfiguration`](#jonline-ServerConfiguration)'s `federation_info`.
- *
- * #### SyncSource
- * A [`SyncSource`](#jonline-SyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination) below, but for pulling [`Event`](#jonline-Event)s in rather than
- * pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
- * `oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the
- * parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
- * (`Event.sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
- * source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
- * recomputing `event_count`/`event_instance_count` on every sync.
- *
- * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
- * (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
- * [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
- *
- * ##### iCal
- * `configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
- * background job fetches and parses it on each sync, creating/updating one [`Event`](#jonline-Event) per iCal `VEVENT`
- * (keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
- * `event_instance_count`. An `Event`'s `sync_missing_since` is set the first time one of its instances stops
- * appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
- * supported yet -- only public iCal URLs.
- *
- * #### SyncDestination
- * A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
- * [`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's
- * each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not, say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several
- * destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/
- * `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the
- * destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
- * in bulk on an interval, so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request
- * time instead of being recomputed-and-stored.
- *
- * Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
- * [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
- * and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
- * `SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform's own
- * section below). Actually syncing (or un-syncing) a given [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) to a destination is a separate
- * step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
- * [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
- * [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
- * way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
- *
- * ##### Facebook
- * `configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
- * Connecting one requires a short-lived user access token from client-side Facebook Login
- * (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
- * short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
- * `SYNC_POSTS_TO_FACEBOOK`.
- *
- * ##### Instagram
- * `configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
- * Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
- * connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
- * the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
- * (`instagram_business_account_id`). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
- * [`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
- * `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
- *
- * ##### Mastodon
- * `configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
- * account, on any instance the user names (`instance_host`) -- there's no single app to register the way
- * Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
- * (`MastodonAccount.access_token`, generated on the user's own instance under Preferences > Development) rather than
- * an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
- *
- * ##### Bluesky
- * `configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
- * Protocol) account. Connecting one is a user-supplied "App Password" (`BlueskyAccount.app_password`, generated at
- * Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
- * `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
- *
- * ##### X (Twitter)
- * `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
- * server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
- * sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
- * configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (`response_type=code`, like
- * Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn't) -- the server exchanges
- * the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
- * each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`'s own doc).
- * Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
- *
- * ##### Threads
- * `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
- * Threads API is a product added to this server's *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
- * separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
- * facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a
- * Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
- * short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
- * implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
- * text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
- *
- * #### AIModelProvider
- * An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
- * Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
- * [`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource), but rather than pushing/pulling
- * content, it's metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
- * variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
- * `anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)'s
- * platform credentials, the actual API key is write-only -- accepted on
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) but
- * never populated back in a response.
- *
- * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
- * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
- * -- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)'s RPCs.
- *
- * ##### AIModelProviderGrants
- * A provider's owner may share metered access to it with other users via
- * [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
- * Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
- * `(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
- * removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
- * these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
- * its owner may hand out access to it.
  *
  * ### HTTP Endpoints
  * #### Internal HTTP server (27705)

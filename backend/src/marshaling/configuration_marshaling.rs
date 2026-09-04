@@ -138,7 +138,38 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
 ///      version -- fall back to `None` (no custom tabs) rather than ever failing the whole
 ///      `ServerConfiguration` fetch over it. Logged (unlike the old unconditional `.ok()` this
 ///      replaces) so a revert to defaults is at least diagnosable, never silent operationally.
+///
+/// Checks for a legacy-shaped `tabs` entry (any element carrying a `custom_tab` key) *before*
+/// ever attempting step 1 above -- every field `CustomNavigationTab` (current) has other than
+/// `path` is an `Option<T>`, and serde's derived `Deserialize` treats `Option<T>` fields as
+/// implicitly optional (defaulting to `None`) whether or not `#[serde(default)]` is written on
+/// them, unlike this module's own hand-written `legacy_custom_tabs` structs, which only get that
+/// leniency where explicitly annotated. That means step 1 doesn't actually fail on a legacy blob
+/// -- `path` is a sibling of `custom_tab` in both shapes, so it deserializes "successfully",
+/// silently dropping `target`/`icon`/`title` to `None` instead of erroring and falling through to
+/// the real migration in step 2. Confirmed live: an admin's real legacy `custom_tabs` column
+/// deserialized as the current shape with every tab's `path` intact and `target`/`icon`/`title`
+/// all `None` -- tabs that render, but link nowhere and show no icon/title, which is exactly what
+/// silently matched a `CustomNavigationTab` missing every field but `path` would produce.
 fn deserialize_custom_tabs(value: serde_json::Value) -> Option<CustomNavigationTabSet> {
+    let looks_legacy = value
+        .get("tabs")
+        .and_then(|tabs| tabs.as_array())
+        .is_some_and(|tabs| tabs.iter().any(|tab| tab.get("custom_tab").is_some()));
+
+    if looks_legacy {
+        return match serde_json::from_value::<legacy_custom_tabs::CustomNavigationTabSet>(value) {
+            Ok(legacy) => Some(legacy.into_current()),
+            Err(legacy_err) => {
+                log::warn!(
+                    "custom_tabs looked legacy-shaped but failed to deserialize as one ({}) -- resetting to unset rather than failing the configuration fetch",
+                    legacy_err
+                );
+                None
+            }
+        };
+    }
+
     match serde_json::from_value::<CustomNavigationTabSet>(value.clone()) {
         Ok(current) => Some(current),
         Err(current_err) => match serde_json::from_value::<legacy_custom_tabs::CustomNavigationTabSet>(value) {
@@ -387,5 +418,80 @@ mod custom_tabs_migration_tests {
     fn unrecognized_shape_falls_back_to_none() {
         let garbage = serde_json::json!({ "totally": "unrecognized" });
         assert_eq!(deserialize_custom_tabs(garbage), None);
+    }
+
+    /// Regression test for a real legacy blob (6 tabs, `home: null`) that used to silently
+    /// deserialize as the *current* shape -- see `deserialize_custom_tabs`'s own doc for why:
+    /// `path` is a sibling of `custom_tab` in both shapes, and every other field is an implicitly
+    /// optional `Option<T>`, so step 1 "succeeded" with just `path` intact and `target`/`icon`/
+    /// `title` all silently `None`, never reaching the real migration below. Distinct from
+    /// `legacy_shape_migrates` above in one load-bearing way: that test's tabs all use plain
+    /// string/bool oneof variants (`PostId`, `IsProfile`), which happen to still be present as
+    /// *some* value under the wrong key structure; this one also exercises `Tab(i32)` (an
+    /// enumeration oneof) and a non-ASCII `EmojiIcon`, and -- most importantly -- asserts the
+    /// actual field *values* survive the migration, not just that migration returns `Some` with
+    /// the right tab count (which is exactly what the bug this guards against would still do).
+    #[test]
+    fn legacy_shape_with_six_tabs_migrates_with_fields_intact() {
+        let value = serde_json::json!({
+          "home": null,
+          "tabs": [
+            {
+              "path": "what_is_jonline",
+              "custom_tab": {
+                "icon": { "IconMediaId": "5F6wnF" },
+                "title": "What Is Jonline?",
+                "target": { "PostId": "4zHQSj" }
+              }
+            },
+            {
+              "path": "jon",
+              "custom_tab": {
+                "icon": { "IconMediaId": "54j2oq" },
+                "title": null,
+                "target": { "IsProfile": true }
+              }
+            },
+            {
+              "path": "events",
+              "custom_tab": {
+                "icon": { "EmojiIcon": "📅" },
+                "title": null,
+                "target": { "Tab": 10 }
+              }
+            }
+          ]
+        });
+
+        let migrated = deserialize_custom_tabs(value).expect("legacy shape should migrate");
+
+        assert_eq!(migrated.home, None);
+        assert_eq!(migrated.tabs.len(), 3);
+        assert_eq!(migrated.tabs[0].path, "what_is_jonline");
+        assert_eq!(migrated.tabs[0].title, Some("What Is Jonline?".to_string()));
+        assert_eq!(
+            migrated.tabs[0].target,
+            Some(custom_navigation_tab::Target::PostId("4zHQSj".to_string()))
+        );
+        assert_eq!(
+            migrated.tabs[0].icon,
+            Some(custom_navigation_tab::Icon::IconMediaId("5F6wnF".to_string()))
+        );
+        assert_eq!(migrated.tabs[1].path, "jon");
+        assert_eq!(
+            migrated.tabs[1].target,
+            Some(custom_navigation_tab::Target::IsProfile(true))
+        );
+        assert_eq!(migrated.tabs[2].path, "events");
+        assert_eq!(
+            migrated.tabs[2].target,
+            Some(custom_navigation_tab::Target::Tab(
+                NavigationTab::EventsTab as i32
+            ))
+        );
+        assert_eq!(
+            migrated.tabs[2].icon,
+            Some(custom_navigation_tab::Icon::EmojiIcon("📅".to_string()))
+        );
     }
 }

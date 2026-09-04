@@ -549,6 +549,20 @@
 }
 
 
+/* `Components.Pages.EventsPage.calendarAnimationView`'s own wrapper --
+   deliberately the *last* entry in `.events-list`'s keyed children (see that
+   function's own doc: moving it earlier in the DOM would relocate a
+   still-present card and silently cancel its collapse transition), so this
+   pulls it to the front purely visually via the flex container's `order`
+   (`.events-list`'s `flip-animated-column` is itself a flex column -- see
+   flip.css) instead. Lets a mode switch into/out of `Calendar` show the
+   calendar appearing/disappearing at the top of the list immediately, while
+   the real cards it's cross-fading with collapse away below it exactly where
+   they already were. */
+.calendar-flip-item {
+  order: -1;
+}
+
 /* `Components.Pages.EventsPage`'s `Calendar` display mode -- the FullCalendar
    instance (`Ports.renderCalendar`, `public/index.html`) sizes itself to
    `height: "100%"` of this box, so this is the one place that height is
