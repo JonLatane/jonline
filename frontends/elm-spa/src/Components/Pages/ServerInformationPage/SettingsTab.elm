@@ -900,7 +900,7 @@ permissionsSection set label_ maybeAdminAccount maybeEdit permissions =
                         (permissions |> List.map (\permission -> span [ Html.Attributes.class "permission-badge" ] [ text (Users.permissionText permission) ]))
                 , case maybeAdminAccount of
                     Just _ ->
-                        button [ Html.Attributes.class "server-details-rename-button", onClick (PermissionsEditClicked set) ] [ text "Edit" ]
+                        button [ Html.Attributes.class "server-details-rename-button", onClick (PermissionsEditClicked set) ] [ text <| "Edit " ++ label_ ]
 
                     Nothing ->
                         text ""
@@ -925,7 +925,7 @@ by `set`) -- a collapsible panel (`expanded`, toggled by `FeatureSettingsSection
 to expanded -- see `Model.collapsedFeatureSettings`), reusing the same `.section-title`/
 `.expandable-section-title`/`.expandable-section-arrow` header look
 `Components.Pages.UserProfilePage.expandableProfileSection` establishes for its own
-Permissions/Event Sync sections. The body is `featureSettingsDisplayView` (plain text/a disabled
+Permissions/Sync sections. The body is `featureSettingsDisplayView` (plain text/a disabled
 checkbox, plus an Edit button for an admin) when this section has no in-progress
 `FeatureSettingsEdit`, or `featureSettingsEditView` (an enabled checkbox + Moderation/Visibility
 `<select>`s + Save/Cancel) while being edited -- mirrors `permissionsSection`'s own edit/non-edit
@@ -1023,7 +1023,7 @@ featureSettingsDisplayView set maybeAdminAccount current =
                 []
             , [ case maybeAdminAccount of
                     Just _ ->
-                        button [ Html.Attributes.class "server-details-rename-button", onClick (FeatureSettingsEditClicked set) ] [ text "Edit" ]
+                        button [ Html.Attributes.class "server-details-rename-button", onClick (FeatureSettingsEditClicked set) ] [ text <| "Edit " ++ (featureSettingsLabel set) ++ " Settings" ]
 
                     Nothing ->
                         text ""

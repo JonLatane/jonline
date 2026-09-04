@@ -27,7 +27,7 @@ enum SyncDestination_Configuration {
   notSet
 }
 
-/// A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+/// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
 /// but for pushing content out rather than pulling events in. Originally Event-specific
 /// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
 /// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
@@ -186,7 +186,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(3);
 
   /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
+  /// request time (unlike [`SyncSource`](#jonline-SyncSource)'s `event_count`/`event_instance_count`, which are
   /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   /// in bulk on an interval.
   @$pb.TagNumber(6)
@@ -1096,14 +1096,14 @@ class SyncDestinationStatus extends $pb.GeneratedMessage {
   $12.Timestamp ensureSyncedAt() => $_ensure(3);
 }
 
-enum EventSyncSource_Configuration {
+enum SyncSource_Configuration {
   icsSubscriptionUrl, 
   notSet
 }
 
 /// A user-owned source to sync events from.
-class EventSyncSource extends $pb.GeneratedMessage {
-  factory EventSyncSource({
+class SyncSource extends $pb.GeneratedMessage {
+  factory SyncSource({
     $core.String? id,
     $15.Author? owner,
     $fixnum.Int64? syncIntervalSeconds,
@@ -1113,6 +1113,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
     $fixnum.Int64? eventCount,
     $fixnum.Int64? eventInstanceCount,
     $core.String? icsSubscriptionUrl,
+    $fixnum.Int64? postCount,
   }) {
     final $result = create();
     if (id != null) {
@@ -1142,17 +1143,20 @@ class EventSyncSource extends $pb.GeneratedMessage {
     if (icsSubscriptionUrl != null) {
       $result.icsSubscriptionUrl = icsSubscriptionUrl;
     }
+    if (postCount != null) {
+      $result.postCount = postCount;
+    }
     return $result;
   }
-  EventSyncSource._() : super();
-  factory EventSyncSource.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventSyncSource.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  SyncSource._() : super();
+  factory SyncSource.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncSource.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static const $core.Map<$core.int, EventSyncSource_Configuration> _EventSyncSource_ConfigurationByTag = {
-    9 : EventSyncSource_Configuration.icsSubscriptionUrl,
-    0 : EventSyncSource_Configuration.notSet
+  static const $core.Map<$core.int, SyncSource_Configuration> _SyncSource_ConfigurationByTag = {
+    9 : SyncSource_Configuration.icsSubscriptionUrl,
+    0 : SyncSource_Configuration.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..oo(0, [9])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
@@ -1163,6 +1167,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
+    ..a<$fixnum.Int64>(10, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
 
@@ -1170,24 +1175,24 @@ class EventSyncSource extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  EventSyncSource clone() => EventSyncSource()..mergeFromMessage(this);
+  SyncSource clone() => SyncSource()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  EventSyncSource copyWith(void Function(EventSyncSource) updates) => super.copyWith((message) => updates(message as EventSyncSource)) as EventSyncSource;
+  SyncSource copyWith(void Function(SyncSource) updates) => super.copyWith((message) => updates(message as SyncSource)) as SyncSource;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EventSyncSource create() => EventSyncSource._();
-  EventSyncSource createEmptyInstance() => create();
-  static $pb.PbList<EventSyncSource> createRepeated() => $pb.PbList<EventSyncSource>();
+  static SyncSource create() => SyncSource._();
+  SyncSource createEmptyInstance() => create();
+  static $pb.PbList<SyncSource> createRepeated() => $pb.PbList<SyncSource>();
   @$core.pragma('dart2js:noInline')
-  static EventSyncSource getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventSyncSource>(create);
-  static EventSyncSource? _defaultInstance;
+  static SyncSource getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncSource>(create);
+  static SyncSource? _defaultInstance;
 
-  EventSyncSource_Configuration whichConfiguration() => _EventSyncSource_ConfigurationByTag[$_whichOneof(0)]!;
+  SyncSource_Configuration whichConfiguration() => _SyncSource_ConfigurationByTag[$_whichOneof(0)]!;
   void clearConfiguration() => clearField($_whichOneof(0));
 
   /// Unique ID for the synchronization.
@@ -1200,7 +1205,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// The user information for the owner of this event sync.
+  /// The user information for the owner of this sync source.
   @$pb.TagNumber(2)
   $15.Author get owner => $_getN(1);
   @$pb.TagNumber(2)
@@ -1222,7 +1227,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearSyncIntervalSeconds() => clearField(3);
 
-  /// The time the EventSyncSource was created.
+  /// The time the SyncSource was created.
   @$pb.TagNumber(4)
   $12.Timestamp get createdAt => $_getN(3);
   @$pb.TagNumber(4)
@@ -1234,7 +1239,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $12.Timestamp ensureCreatedAt() => $_ensure(3);
 
-  /// The time the EventSyncSource was last updated.
+  /// The time the SyncSource was last updated.
   @$pb.TagNumber(5)
   $12.Timestamp get updatedAt => $_getN(4);
   @$pb.TagNumber(5)
@@ -1246,7 +1251,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $12.Timestamp ensureUpdatedAt() => $_ensure(4);
 
-  /// The time the EventSyncSource was last synced.
+  /// The time the SyncSource was last synced.
   @$pb.TagNumber(6)
   $12.Timestamp get lastSyncedAt => $_getN(5);
   @$pb.TagNumber(6)
@@ -1258,7 +1263,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $12.Timestamp ensureLastSyncedAt() => $_ensure(5);
 
-  /// The number of events total associated with this EventSyncSource. Recomputed
+  /// The number of events total associated with this SyncSource. Recomputed
   /// on each sync.
   @$pb.TagNumber(7)
   $fixnum.Int64 get eventCount => $_getI64(6);
@@ -1269,7 +1274,7 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearEventCount() => clearField(7);
 
-  /// The number of event instances total associated with this EventSyncSource. Recomputed
+  /// The number of event instances total associated with this SyncSource. Recomputed
   /// on each sync.
   @$pb.TagNumber(8)
   $fixnum.Int64 get eventInstanceCount => $_getI64(7);
@@ -1289,11 +1294,22 @@ class EventSyncSource extends $pb.GeneratedMessage {
   $core.bool hasIcsSubscriptionUrl() => $_has(8);
   @$pb.TagNumber(9)
   void clearIcsSubscriptionUrl() => clearField(9);
+
+  /// The number of posts total associated with this SyncSource. Not yet populated --
+  /// no source type syncs posts in yet.
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get postCount => $_getI64(9);
+  @$pb.TagNumber(10)
+  set postCount($fixnum.Int64 v) { $_setInt64(9, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasPostCount() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearPostCount() => clearField(10);
 }
 
-class GetEventSyncSourcesResponse extends $pb.GeneratedMessage {
-  factory GetEventSyncSourcesResponse({
-    $core.Iterable<EventSyncSource>? sources,
+class GetSyncSourcesResponse extends $pb.GeneratedMessage {
+  factory GetSyncSourcesResponse({
+    $core.Iterable<SyncSource>? sources,
   }) {
     final $result = create();
     if (sources != null) {
@@ -1301,12 +1317,12 @@ class GetEventSyncSourcesResponse extends $pb.GeneratedMessage {
     }
     return $result;
   }
-  GetEventSyncSourcesResponse._() : super();
-  factory GetEventSyncSourcesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetEventSyncSourcesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  GetSyncSourcesResponse._() : super();
+  factory GetSyncSourcesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetSyncSourcesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventSyncSourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<EventSyncSource>(1, _omitFieldNames ? '' : 'sources', $pb.PbFieldType.PM, subBuilder: EventSyncSource.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncSourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<SyncSource>(1, _omitFieldNames ? '' : 'sources', $pb.PbFieldType.PM, subBuilder: SyncSource.create)
     ..hasRequiredFields = false
   ;
 
@@ -1314,31 +1330,31 @@ class GetEventSyncSourcesResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  GetEventSyncSourcesResponse clone() => GetEventSyncSourcesResponse()..mergeFromMessage(this);
+  GetSyncSourcesResponse clone() => GetSyncSourcesResponse()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetEventSyncSourcesResponse copyWith(void Function(GetEventSyncSourcesResponse) updates) => super.copyWith((message) => updates(message as GetEventSyncSourcesResponse)) as GetEventSyncSourcesResponse;
+  GetSyncSourcesResponse copyWith(void Function(GetSyncSourcesResponse) updates) => super.copyWith((message) => updates(message as GetSyncSourcesResponse)) as GetSyncSourcesResponse;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncSourcesResponse create() => GetEventSyncSourcesResponse._();
-  GetEventSyncSourcesResponse createEmptyInstance() => create();
-  static $pb.PbList<GetEventSyncSourcesResponse> createRepeated() => $pb.PbList<GetEventSyncSourcesResponse>();
+  static GetSyncSourcesResponse create() => GetSyncSourcesResponse._();
+  GetSyncSourcesResponse createEmptyInstance() => create();
+  static $pb.PbList<GetSyncSourcesResponse> createRepeated() => $pb.PbList<GetSyncSourcesResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetEventSyncSourcesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventSyncSourcesResponse>(create);
-  static GetEventSyncSourcesResponse? _defaultInstance;
+  static GetSyncSourcesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetSyncSourcesResponse>(create);
+  static GetSyncSourcesResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<EventSyncSource> get sources => $_getList(0);
+  $core.List<SyncSource> get sources => $_getList(0);
 }
 
-/// Request to delete an EventSyncSource.
-class DeleteEventSyncSourceRequest extends $pb.GeneratedMessage {
-  factory DeleteEventSyncSourceRequest({
-    EventSyncSource? source,
+/// Request to delete a SyncSource.
+class DeleteSyncSourceRequest extends $pb.GeneratedMessage {
+  factory DeleteSyncSourceRequest({
+    SyncSource? source,
     $core.bool? deleteSyncedEvents,
   }) {
     final $result = create();
@@ -1350,12 +1366,12 @@ class DeleteEventSyncSourceRequest extends $pb.GeneratedMessage {
     }
     return $result;
   }
-  DeleteEventSyncSourceRequest._() : super();
-  factory DeleteEventSyncSourceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory DeleteEventSyncSourceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  DeleteSyncSourceRequest._() : super();
+  factory DeleteSyncSourceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteSyncSourceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventSyncSourceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<EventSyncSource>(1, _omitFieldNames ? '' : 'source', subBuilder: EventSyncSource.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncSourceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<SyncSource>(1, _omitFieldNames ? '' : 'source', subBuilder: SyncSource.create)
     ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedEvents')
     ..hasRequiredFields = false
   ;
@@ -1364,34 +1380,34 @@ class DeleteEventSyncSourceRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  DeleteEventSyncSourceRequest clone() => DeleteEventSyncSourceRequest()..mergeFromMessage(this);
+  DeleteSyncSourceRequest clone() => DeleteSyncSourceRequest()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  DeleteEventSyncSourceRequest copyWith(void Function(DeleteEventSyncSourceRequest) updates) => super.copyWith((message) => updates(message as DeleteEventSyncSourceRequest)) as DeleteEventSyncSourceRequest;
+  DeleteSyncSourceRequest copyWith(void Function(DeleteSyncSourceRequest) updates) => super.copyWith((message) => updates(message as DeleteSyncSourceRequest)) as DeleteSyncSourceRequest;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncSourceRequest create() => DeleteEventSyncSourceRequest._();
-  DeleteEventSyncSourceRequest createEmptyInstance() => create();
-  static $pb.PbList<DeleteEventSyncSourceRequest> createRepeated() => $pb.PbList<DeleteEventSyncSourceRequest>();
+  static DeleteSyncSourceRequest create() => DeleteSyncSourceRequest._();
+  DeleteSyncSourceRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteSyncSourceRequest> createRepeated() => $pb.PbList<DeleteSyncSourceRequest>();
   @$core.pragma('dart2js:noInline')
-  static DeleteEventSyncSourceRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteEventSyncSourceRequest>(create);
-  static DeleteEventSyncSourceRequest? _defaultInstance;
+  static DeleteSyncSourceRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteSyncSourceRequest>(create);
+  static DeleteSyncSourceRequest? _defaultInstance;
 
   /// The source to be deleted.
   @$pb.TagNumber(1)
-  EventSyncSource get source => $_getN(0);
+  SyncSource get source => $_getN(0);
   @$pb.TagNumber(1)
-  set source(EventSyncSource v) { setField(1, v); }
+  set source(SyncSource v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasSource() => $_has(0);
   @$pb.TagNumber(1)
   void clearSource() => clearField(1);
   @$pb.TagNumber(1)
-  EventSyncSource ensureSource() => $_ensure(0);
+  SyncSource ensureSource() => $_ensure(0);
 
   /// Whether to delete synced events.
   @$pb.TagNumber(2)

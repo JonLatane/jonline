@@ -86,17 +86,17 @@ message User {
   // (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
   // listing type.
   repeated SyncDestination sync_destinations = 82;
-  // The target user's own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for
+  // The target user's own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for
   // the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
   // single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
   // filled in, batch-loaded in one query rather than per-user. Also populated by
   // [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
   // any other viewer.
-  repeated EventSyncSource event_sync_sources = 83;
+  repeated SyncSource sync_sources = 83;
 
   // Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
   // providers' models, plus any models granted to them on other users' providers (see
-  // [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources`
+  // [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources`
   // (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
   // [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
   repeated AvailableAIModel available_ai_models = 84;

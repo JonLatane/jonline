@@ -831,8 +831,8 @@ permissionText permission =
         RSVPTOEVENTS ->
             "RSVP To Events"
 
-        SYNCHRONIZEEVENTS ->
-            "Synchronize Events"
+        SYNCEVENTSFROMICS ->
+            "Sync Events from iCal"
 
         VIEWMEDIA ->
             "View Media"
@@ -944,7 +944,7 @@ allPermissions =
     , PUBLISHEVENTSGLOBALLY
     , MODERATEEVENTS
     , RSVPTOEVENTS
-    , SYNCHRONIZEEVENTS
+    , SYNCEVENTSFROMICS
     , SYNCEVENTSTOFACEBOOK
     , SYNCPOSTSTOFACEBOOK
     , SYNCEVENTSTOINSTAGRAM
@@ -977,7 +977,7 @@ allPermissions =
 `basicUserPermissions` -- unlike `allPermissions` (a single user's own grant
 list), this excludes anything that only makes sense granted to one person at
 a time (`ADMIN`, `MODERATE*`, `GRANT_BASIC_PERMISSIONS`, `FOLLOW_USERS`,
-`INVITE_GROUP_MEMBERS`, `REPLY_TO_POSTS`, `SYNCHRONIZE_EVENTS`, `BUSINESS`,
+`INVITE_GROUP_MEMBERS`, `REPLY_TO_POSTS`, `BUSINESS`,
 `RUN_BOTS`, `VIEW_PRIVATE_CONTACT_METHODS`). Same list for all three sets --
 mirrors the Tamagui app's `server_details_screen.tsx` `configurableUserPermissions`,
 which likewise reuses one list across its Anonymous/Default/Basic editors
@@ -1006,6 +1006,7 @@ configurableServerPermissions =
     , RSVPTOEVENTS
     , PUBLISHEVENTSLOCALLY
     , PUBLISHEVENTSGLOBALLY
+    , SYNCEVENTSFROMICS
     , READPERSONALMESSAGES
     ]
 

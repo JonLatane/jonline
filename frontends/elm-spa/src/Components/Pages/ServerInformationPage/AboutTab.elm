@@ -248,7 +248,7 @@ policySectionView sectionClass heading editClicked maybeAdminAccount content =
                         p [ class "server-details-policy-unset" ] [ text "Not set." ]
                 , case maybeAdminAccount of
                     Just _ ->
-                        button [ class "server-details-rename-button", onClick editClicked ] [ text "Edit" ]
+                        button [ class "server-details-rename-button", onClick editClicked ] [ text "Edit Name" ]
 
                     Nothing ->
                         text ""
@@ -326,7 +326,7 @@ shortNameView maybeShortName shortNameStatus maybeAdminAccount =
                     [ class "server-details-rename-button"
                     , onClick (ShortNameEditClicked (Maybe.withDefault "" maybeShortName))
                     ]
-                    [ text "Edit" ]
+                    [ text "Edit Short Name" ]
                 ]
 
         -- `Renaming` with no admin account is unreachable in practice -- only

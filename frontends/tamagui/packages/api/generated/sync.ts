@@ -12,7 +12,7 @@ import { Timestamp } from "./google/protobuf/timestamp";
 export const protobufPackage = "jonline";
 
 /**
- * A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+ * A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
  * but for pushing content out rather than pulling events in. Originally Event-specific
  * (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
  * [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
@@ -34,7 +34,7 @@ export interface SyncDestination {
     | undefined;
   /**
    * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-   * request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
+   * request time (unlike [`SyncSource`](#jonline-SyncSource)'s `event_count`/`event_instance_count`, which are
    * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
    * in bulk on an interval.
    */
@@ -279,50 +279,55 @@ export interface SyncDestinationStatus {
 }
 
 /** A user-owned source to sync events from. */
-export interface EventSyncSource {
+export interface SyncSource {
   /** Unique ID for the synchronization. */
   id: string;
-  /** The user information for the owner of this event sync. */
+  /** The user information for the owner of this sync source. */
   owner:
     | Author
     | undefined;
   /** How frequently the sync should happen in seconds. */
   syncIntervalSeconds: number;
-  /** The time the EventSyncSource was created. */
+  /** The time the SyncSource was created. */
   createdAt:
     | string
     | undefined;
-  /** The time the EventSyncSource was last updated. */
+  /** The time the SyncSource was last updated. */
   updatedAt?:
     | string
     | undefined;
-  /** The time the EventSyncSource was last synced. */
+  /** The time the SyncSource was last synced. */
   lastSyncedAt?:
     | string
     | undefined;
   /**
-   * The number of events total associated with this EventSyncSource. Recomputed
+   * The number of events total associated with this SyncSource. Recomputed
    * on each sync.
    */
   eventCount: number;
   /**
-   * The number of event instances total associated with this EventSyncSource. Recomputed
+   * The number of event instances total associated with this SyncSource. Recomputed
    * on each sync.
    */
   eventInstanceCount: number;
+  /**
+   * The number of posts total associated with this SyncSource. Not yet populated --
+   * no source type syncs posts in yet.
+   */
+  postCount: number;
   /** The iCal subscription URL for the calendar sync. */
   icsSubscriptionUrl?: string | undefined;
 }
 
-export interface GetEventSyncSourcesResponse {
-  sources: EventSyncSource[];
+export interface GetSyncSourcesResponse {
+  sources: SyncSource[];
 }
 
-/** Request to delete an EventSyncSource. */
-export interface DeleteEventSyncSourceRequest {
+/** Request to delete a SyncSource. */
+export interface DeleteSyncSourceRequest {
   /** The source to be deleted. */
   source:
-    | EventSyncSource
+    | SyncSource
     | undefined;
   /** Whether to delete synced events. */
   deleteSyncedEvents: boolean;
@@ -1433,7 +1438,7 @@ export const SyncDestinationStatus: MessageFns<SyncDestinationStatus> = {
   },
 };
 
-function createBaseEventSyncSource(): EventSyncSource {
+function createBaseSyncSource(): SyncSource {
   return {
     id: "",
     owner: undefined,
@@ -1443,12 +1448,13 @@ function createBaseEventSyncSource(): EventSyncSource {
     lastSyncedAt: undefined,
     eventCount: 0,
     eventInstanceCount: 0,
+    postCount: 0,
     icsSubscriptionUrl: undefined,
   };
 }
 
-export const EventSyncSource: MessageFns<EventSyncSource> = {
-  encode(message: EventSyncSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SyncSource: MessageFns<SyncSource> = {
+  encode(message: SyncSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -1473,16 +1479,19 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     if (message.eventInstanceCount !== 0) {
       writer.uint32(64).uint64(message.eventInstanceCount);
     }
+    if (message.postCount !== 0) {
+      writer.uint32(80).uint64(message.postCount);
+    }
     if (message.icsSubscriptionUrl !== undefined) {
       writer.uint32(74).string(message.icsSubscriptionUrl);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EventSyncSource {
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncSource {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventSyncSource();
+    const message = createBaseSyncSource();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1550,6 +1559,14 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
           message.eventInstanceCount = longToNumber(reader.uint64());
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.postCount = longToNumber(reader.uint64());
+          continue;
+        }
         case 9: {
           if (tag !== 74) {
             break;
@@ -1567,7 +1584,7 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     return message;
   },
 
-  fromJSON(object: any): EventSyncSource {
+  fromJSON(object: any): SyncSource {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
@@ -1577,11 +1594,12 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
       lastSyncedAt: isSet(object.lastSyncedAt) ? globalThis.String(object.lastSyncedAt) : undefined,
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
       eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
+      postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
     };
   },
 
-  toJSON(message: EventSyncSource): unknown {
+  toJSON(message: SyncSource): unknown {
     const obj: any = {};
     if (message.id !== "") {
       obj.id = message.id;
@@ -1607,17 +1625,20 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     if (message.eventInstanceCount !== 0) {
       obj.eventInstanceCount = Math.round(message.eventInstanceCount);
     }
+    if (message.postCount !== 0) {
+      obj.postCount = Math.round(message.postCount);
+    }
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EventSyncSource>, I>>(base?: I): EventSyncSource {
-    return EventSyncSource.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SyncSource>, I>>(base?: I): SyncSource {
+    return SyncSource.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventSyncSource>, I>>(object: I): EventSyncSource {
-    const message = createBaseEventSyncSource();
+  fromPartial<I extends Exact<DeepPartial<SyncSource>, I>>(object: I): SyncSource {
+    const message = createBaseSyncSource();
     message.id = object.id ?? "";
     message.owner = (object.owner !== undefined && object.owner !== null)
       ? Author.fromPartial(object.owner)
@@ -1628,27 +1649,28 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     message.lastSyncedAt = object.lastSyncedAt ?? undefined;
     message.eventCount = object.eventCount ?? 0;
     message.eventInstanceCount = object.eventInstanceCount ?? 0;
+    message.postCount = object.postCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
     return message;
   },
 };
 
-function createBaseGetEventSyncSourcesResponse(): GetEventSyncSourcesResponse {
+function createBaseGetSyncSourcesResponse(): GetSyncSourcesResponse {
   return { sources: [] };
 }
 
-export const GetEventSyncSourcesResponse: MessageFns<GetEventSyncSourcesResponse> = {
-  encode(message: GetEventSyncSourcesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const GetSyncSourcesResponse: MessageFns<GetSyncSourcesResponse> = {
+  encode(message: GetSyncSourcesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.sources) {
-      EventSyncSource.encode(v!, writer.uint32(10).fork()).join();
+      SyncSource.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): GetEventSyncSourcesResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSyncSourcesResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetEventSyncSourcesResponse();
+    const message = createBaseGetSyncSourcesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1657,7 +1679,7 @@ export const GetEventSyncSourcesResponse: MessageFns<GetEventSyncSourcesResponse
             break;
           }
 
-          message.sources.push(EventSyncSource.decode(reader, reader.uint32()));
+          message.sources.push(SyncSource.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -1669,40 +1691,38 @@ export const GetEventSyncSourcesResponse: MessageFns<GetEventSyncSourcesResponse
     return message;
   },
 
-  fromJSON(object: any): GetEventSyncSourcesResponse {
+  fromJSON(object: any): GetSyncSourcesResponse {
     return {
-      sources: globalThis.Array.isArray(object?.sources)
-        ? object.sources.map((e: any) => EventSyncSource.fromJSON(e))
-        : [],
+      sources: globalThis.Array.isArray(object?.sources) ? object.sources.map((e: any) => SyncSource.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: GetEventSyncSourcesResponse): unknown {
+  toJSON(message: GetSyncSourcesResponse): unknown {
     const obj: any = {};
     if (message.sources?.length) {
-      obj.sources = message.sources.map((e) => EventSyncSource.toJSON(e));
+      obj.sources = message.sources.map((e) => SyncSource.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<GetEventSyncSourcesResponse>, I>>(base?: I): GetEventSyncSourcesResponse {
-    return GetEventSyncSourcesResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<GetSyncSourcesResponse>, I>>(base?: I): GetSyncSourcesResponse {
+    return GetSyncSourcesResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<GetEventSyncSourcesResponse>, I>>(object: I): GetEventSyncSourcesResponse {
-    const message = createBaseGetEventSyncSourcesResponse();
-    message.sources = object.sources?.map((e) => EventSyncSource.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<GetSyncSourcesResponse>, I>>(object: I): GetSyncSourcesResponse {
+    const message = createBaseGetSyncSourcesResponse();
+    message.sources = object.sources?.map((e) => SyncSource.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseDeleteEventSyncSourceRequest(): DeleteEventSyncSourceRequest {
+function createBaseDeleteSyncSourceRequest(): DeleteSyncSourceRequest {
   return { source: undefined, deleteSyncedEvents: false };
 }
 
-export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceRequest> = {
-  encode(message: DeleteEventSyncSourceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DeleteSyncSourceRequest: MessageFns<DeleteSyncSourceRequest> = {
+  encode(message: DeleteSyncSourceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.source !== undefined) {
-      EventSyncSource.encode(message.source, writer.uint32(10).fork()).join();
+      SyncSource.encode(message.source, writer.uint32(10).fork()).join();
     }
     if (message.deleteSyncedEvents !== false) {
       writer.uint32(16).bool(message.deleteSyncedEvents);
@@ -1710,10 +1730,10 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteEventSyncSourceRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteSyncSourceRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteEventSyncSourceRequest();
+    const message = createBaseDeleteSyncSourceRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1722,7 +1742,7 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
             break;
           }
 
-          message.source = EventSyncSource.decode(reader, reader.uint32());
+          message.source = SyncSource.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -1742,17 +1762,17 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
     return message;
   },
 
-  fromJSON(object: any): DeleteEventSyncSourceRequest {
+  fromJSON(object: any): DeleteSyncSourceRequest {
     return {
-      source: isSet(object.source) ? EventSyncSource.fromJSON(object.source) : undefined,
+      source: isSet(object.source) ? SyncSource.fromJSON(object.source) : undefined,
       deleteSyncedEvents: isSet(object.deleteSyncedEvents) ? globalThis.Boolean(object.deleteSyncedEvents) : false,
     };
   },
 
-  toJSON(message: DeleteEventSyncSourceRequest): unknown {
+  toJSON(message: DeleteSyncSourceRequest): unknown {
     const obj: any = {};
     if (message.source !== undefined) {
-      obj.source = EventSyncSource.toJSON(message.source);
+      obj.source = SyncSource.toJSON(message.source);
     }
     if (message.deleteSyncedEvents !== false) {
       obj.deleteSyncedEvents = message.deleteSyncedEvents;
@@ -1760,13 +1780,13 @@ export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceReque
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DeleteEventSyncSourceRequest>, I>>(base?: I): DeleteEventSyncSourceRequest {
-    return DeleteEventSyncSourceRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<DeleteSyncSourceRequest>, I>>(base?: I): DeleteSyncSourceRequest {
+    return DeleteSyncSourceRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DeleteEventSyncSourceRequest>, I>>(object: I): DeleteEventSyncSourceRequest {
-    const message = createBaseDeleteEventSyncSourceRequest();
+  fromPartial<I extends Exact<DeepPartial<DeleteSyncSourceRequest>, I>>(object: I): DeleteSyncSourceRequest {
+    const message = createBaseDeleteSyncSourceRequest();
     message.source = (object.source !== undefined && object.source !== null)
-      ? EventSyncSource.fromPartial(object.source)
+      ? SyncSource.fromPartial(object.source)
       : undefined;
     message.deleteSyncedEvents = object.deleteSyncedEvents ?? false;
     return message;

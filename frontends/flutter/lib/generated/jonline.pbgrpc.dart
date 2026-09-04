@@ -228,21 +228,21 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeleteRemovedEventInstances',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
-  static final _$getEventSyncSources = $grpc.ClientMethod<$4.User, $10.GetEventSyncSourcesResponse>(
-      '/jonline.Jonline/GetEventSyncSources',
+  static final _$getSyncSources = $grpc.ClientMethod<$4.User, $10.GetSyncSourcesResponse>(
+      '/jonline.Jonline/GetSyncSources',
       ($4.User value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $10.GetEventSyncSourcesResponse.fromBuffer(value));
-  static final _$createEventSyncSource = $grpc.ClientMethod<$10.EventSyncSource, $10.EventSyncSource>(
-      '/jonline.Jonline/CreateEventSyncSource',
-      ($10.EventSyncSource value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $10.EventSyncSource.fromBuffer(value));
-  static final _$updateEventSyncSource = $grpc.ClientMethod<$10.EventSyncSource, $10.EventSyncSource>(
-      '/jonline.Jonline/UpdateEventSyncSource',
-      ($10.EventSyncSource value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $10.EventSyncSource.fromBuffer(value));
-  static final _$deleteEventSyncSource = $grpc.ClientMethod<$10.DeleteEventSyncSourceRequest, $0.Empty>(
-      '/jonline.Jonline/DeleteEventSyncSource',
-      ($10.DeleteEventSyncSourceRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $10.GetSyncSourcesResponse.fromBuffer(value));
+  static final _$createSyncSource = $grpc.ClientMethod<$10.SyncSource, $10.SyncSource>(
+      '/jonline.Jonline/CreateSyncSource',
+      ($10.SyncSource value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $10.SyncSource.fromBuffer(value));
+  static final _$updateSyncSource = $grpc.ClientMethod<$10.SyncSource, $10.SyncSource>(
+      '/jonline.Jonline/UpdateSyncSource',
+      ($10.SyncSource value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $10.SyncSource.fromBuffer(value));
+  static final _$deleteSyncSource = $grpc.ClientMethod<$10.DeleteSyncSourceRequest, $0.Empty>(
+      '/jonline.Jonline/DeleteSyncSource',
+      ($10.DeleteSyncSourceRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getSyncDestinations = $grpc.ClientMethod<$4.User, $10.GetSyncDestinationsResponse>(
       '/jonline.Jonline/GetSyncDestinations',
@@ -531,20 +531,20 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$deleteRemovedEventInstances, request, options: options);
   }
 
-  $grpc.ResponseFuture<$10.GetEventSyncSourcesResponse> getEventSyncSources($4.User request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$getEventSyncSources, request, options: options);
+  $grpc.ResponseFuture<$10.GetSyncSourcesResponse> getSyncSources($4.User request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getSyncSources, request, options: options);
   }
 
-  $grpc.ResponseFuture<$10.EventSyncSource> createEventSyncSource($10.EventSyncSource request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$createEventSyncSource, request, options: options);
+  $grpc.ResponseFuture<$10.SyncSource> createSyncSource($10.SyncSource request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createSyncSource, request, options: options);
   }
 
-  $grpc.ResponseFuture<$10.EventSyncSource> updateEventSyncSource($10.EventSyncSource request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$updateEventSyncSource, request, options: options);
+  $grpc.ResponseFuture<$10.SyncSource> updateSyncSource($10.SyncSource request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateSyncSource, request, options: options);
   }
 
-  $grpc.ResponseFuture<$0.Empty> deleteEventSyncSource($10.DeleteEventSyncSourceRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$deleteEventSyncSource, request, options: options);
+  $grpc.ResponseFuture<$0.Empty> deleteSyncSource($10.DeleteSyncSourceRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteSyncSource, request, options: options);
   }
 
   $grpc.ResponseFuture<$10.GetSyncDestinationsResponse> getSyncDestinations($4.User request, {$grpc.CallOptions? options}) {
@@ -980,33 +980,33 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
         ($9.Event value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.User, $10.GetEventSyncSourcesResponse>(
-        'GetEventSyncSources',
-        getEventSyncSources_Pre,
+    $addMethod($grpc.ServiceMethod<$4.User, $10.GetSyncSourcesResponse>(
+        'GetSyncSources',
+        getSyncSources_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $4.User.fromBuffer(value),
-        ($10.GetEventSyncSourcesResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$10.EventSyncSource, $10.EventSyncSource>(
-        'CreateEventSyncSource',
-        createEventSyncSource_Pre,
+        ($10.GetSyncSourcesResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$10.SyncSource, $10.SyncSource>(
+        'CreateSyncSource',
+        createSyncSource_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $10.EventSyncSource.fromBuffer(value),
-        ($10.EventSyncSource value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$10.EventSyncSource, $10.EventSyncSource>(
-        'UpdateEventSyncSource',
-        updateEventSyncSource_Pre,
+        ($core.List<$core.int> value) => $10.SyncSource.fromBuffer(value),
+        ($10.SyncSource value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$10.SyncSource, $10.SyncSource>(
+        'UpdateSyncSource',
+        updateSyncSource_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $10.EventSyncSource.fromBuffer(value),
-        ($10.EventSyncSource value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$10.DeleteEventSyncSourceRequest, $0.Empty>(
-        'DeleteEventSyncSource',
-        deleteEventSyncSource_Pre,
+        ($core.List<$core.int> value) => $10.SyncSource.fromBuffer(value),
+        ($10.SyncSource value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$10.DeleteSyncSourceRequest, $0.Empty>(
+        'DeleteSyncSource',
+        deleteSyncSource_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $10.DeleteEventSyncSourceRequest.fromBuffer(value),
+        ($core.List<$core.int> value) => $10.DeleteSyncSourceRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.User, $10.GetSyncDestinationsResponse>(
         'GetSyncDestinations',
@@ -1353,20 +1353,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteRemovedEventInstances(call, await request);
   }
 
-  $async.Future<$10.GetEventSyncSourcesResponse> getEventSyncSources_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
-    return getEventSyncSources(call, await request);
+  $async.Future<$10.GetSyncSourcesResponse> getSyncSources_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
+    return getSyncSources(call, await request);
   }
 
-  $async.Future<$10.EventSyncSource> createEventSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.EventSyncSource> request) async {
-    return createEventSyncSource(call, await request);
+  $async.Future<$10.SyncSource> createSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.SyncSource> request) async {
+    return createSyncSource(call, await request);
   }
 
-  $async.Future<$10.EventSyncSource> updateEventSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.EventSyncSource> request) async {
-    return updateEventSyncSource(call, await request);
+  $async.Future<$10.SyncSource> updateSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.SyncSource> request) async {
+    return updateSyncSource(call, await request);
   }
 
-  $async.Future<$0.Empty> deleteEventSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.DeleteEventSyncSourceRequest> request) async {
-    return deleteEventSyncSource(call, await request);
+  $async.Future<$0.Empty> deleteSyncSource_Pre($grpc.ServiceCall call, $async.Future<$10.DeleteSyncSourceRequest> request) async {
+    return deleteSyncSource(call, await request);
   }
 
   $async.Future<$10.GetSyncDestinationsResponse> getSyncDestinations_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
@@ -1502,10 +1502,10 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$9.Event> createNewEventInstances($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> updateEventInstances($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> deleteRemovedEventInstances($grpc.ServiceCall call, $9.Event request);
-  $async.Future<$10.GetEventSyncSourcesResponse> getEventSyncSources($grpc.ServiceCall call, $4.User request);
-  $async.Future<$10.EventSyncSource> createEventSyncSource($grpc.ServiceCall call, $10.EventSyncSource request);
-  $async.Future<$10.EventSyncSource> updateEventSyncSource($grpc.ServiceCall call, $10.EventSyncSource request);
-  $async.Future<$0.Empty> deleteEventSyncSource($grpc.ServiceCall call, $10.DeleteEventSyncSourceRequest request);
+  $async.Future<$10.GetSyncSourcesResponse> getSyncSources($grpc.ServiceCall call, $4.User request);
+  $async.Future<$10.SyncSource> createSyncSource($grpc.ServiceCall call, $10.SyncSource request);
+  $async.Future<$10.SyncSource> updateSyncSource($grpc.ServiceCall call, $10.SyncSource request);
+  $async.Future<$0.Empty> deleteSyncSource($grpc.ServiceCall call, $10.DeleteSyncSourceRequest request);
   $async.Future<$10.GetSyncDestinationsResponse> getSyncDestinations($grpc.ServiceCall call, $4.User request);
   $async.Future<$10.SyncDestination> createSyncDestination($grpc.ServiceCall call, $10.SyncDestination request);
   $async.Future<$10.SyncDestination> updateSyncDestination($grpc.ServiceCall call, $10.SyncDestination request);

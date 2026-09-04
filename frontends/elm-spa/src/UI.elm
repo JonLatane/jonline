@@ -1,6 +1,6 @@
 module UI exposing (imageOrInitial, layout, pageTitle, themeToggle, webUiToggleRow)
 
-import Components.EventSyncSources as EventSyncSources
+import Components.SyncSources as SyncSources
 import Components.Events as Events
 import Components.Markdown as Markdown
 import Components.Posts as Posts
@@ -13,7 +13,7 @@ import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, s
 import Html.Keyed
 import Json.Decode as Decode
 import Proto.Jonline exposing (FederatedServer)
-import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.SyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
@@ -2462,7 +2462,7 @@ deleteConfirmationModal shared =
                             , "Delete Changes"
                             )
 
-                        Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
+                        Shared.ConfirmSyncSourceDelete source deleteSyncedEvents _ ->
                             let
                                 sourceLabel : String
                                 sourceLabel =
@@ -2473,19 +2473,19 @@ deleteConfirmationModal shared =
                                         Nothing ->
                                             "this source"
                             in
-                            ( "Delete Event Sync Source?"
+                            ( "Delete Sync Source?"
                             , if deleteSyncedEvents then
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ ", deleting the "
-                                    ++ EventSyncSources.syncedCountsLabel source
+                                    ++ SyncSources.syncedCountsLabel source
                                     ++ " it synced? This can't be undone."
 
                               else
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ "? This will leave the "
-                                    ++ EventSyncSources.syncedCountsLabel source
+                                    ++ SyncSources.syncedCountsLabel source
                                     ++ " it synced on your profile, no longer associated with a source."
                             , "Delete"
                             )

@@ -822,10 +822,10 @@ mediaField accountsPanelModel model host =
             , button [ class "create-new-panel-edit-button", onClick EditMediaClicked ]
                 [ text
                     (if List.isEmpty model.media then
-                        "+ Add"
+                        "+ Add Media"
 
                      else
-                        "Edit"
+                        "Edit Media"
                     )
                 ]
             ]
@@ -855,10 +855,10 @@ contentField model =
             , button [ class "create-new-panel-edit-button", onClick EditContentClicked ]
                 [ text
                     (if String.isEmpty (String.trim model.content) then
-                        "+ Add"
+                        "+ Add Content"
 
                      else
-                        "Edit"
+                        "Edit Content"
                     )
                 ]
             ]

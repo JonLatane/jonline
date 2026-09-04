@@ -220,13 +220,15 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [Federated Browsing](#federated-browsing)
       - [Federated Messaging](#federated-messaging)
     - [Synchronization with Outside Servers](#synchronization-with-outside-servers)
-      - [Facebook](#facebook)
-      - [Instagram](#instagram)
-      - [Mastodon](#mastodon)
-      - [Bluesky](#bluesky)
-      - [X (Twitter)](#x-twitter)
-      - [Threads](#threads)
-      - [Event Sync Sources](#event-sync-sources)
+      - [Sync Sources](#sync-sources)
+        - [iCal](#ical)
+      - [Sync Destinations](#sync-destinations)
+        - [Facebook](#facebook)
+        - [Instagram](#instagram)
+        - [Mastodon](#mastodon)
+        - [Bluesky](#bluesky)
+        - [X (Twitter)](#x-twitter)
+        - [Threads](#threads)
   - [Single-Instance Features](#single-instance-features)
     - [Jonline Identifiers: Usernames, Group Names, and IDs](#jonline-identifiers-usernames-group-names-and-ids)
     - [People, Followers and Friends](#people-followers-and-friends)
@@ -347,37 +349,45 @@ Jonline's Elm Messaging UI is generally a multi-server federated messenger. The 
 
 While Federation is a first-class feature of Jonline, it also supports synchronization with other fediverse platforms as well as other less-open platforms. All API keys for external services are stored in [`ServerConfiguration`](https://jonline.io/docs/protocol#jonline-ServerConfiguration)'s `federation_info`.
 
+#### Sync Sources
+
+A [`SyncSource`](https://jonline.io/docs/protocol#jonline-SyncSource) mirrors [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) below, but for pulling [`Event`](https://jonline.io/docs/protocol#jonline-Event)s in rather than pushing content out -- currently only an iCal subscription URL, though the `oneof` leaves room for other source types. Unlike [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event) (not the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)) that gets synced in and tagged with its source, since a single source can back many synced [`Event`](https://jonline.io/docs/protocol#jonline-Event)s but each [`Event`](https://jonline.io/docs/protocol#jonline-Event) has at most one source it came from. A background job re-pulls each source on its own configurable interval.
+
+Sources are managed via [`GetSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetSyncSources), [`CreateSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateSyncSource) (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncSource), and [`DeleteSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncSource).
+
+##### iCal
+
+`configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The background job fetches and parses it on each sync, creating/updating one [`Event`](https://jonline.io/docs/protocol#jonline-Event) per iCal `VEVENT`, recomputing `event_count`/`event_instance_count`. No auth/credentials are supported yet -- only public iCal URLs.
+
+#### Sync Destinations
+
 A [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)s and [`Post`](https://jonline.io/docs/protocol#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's each [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) (not, say, the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event)) that syncs out, and each may push to several destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a [`SyncDestinationStatus`](https://jonline.io/docs/protocol#jonline-SyncDestinationStatus), carrying the destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval.
 
 Destinations are managed via the [`GetSyncDestinations`](https://jonline.io/docs/protocol#grpc-api-GetSyncDestinations), [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination), and [`DeleteSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncDestination) RPCs -- each gated on the `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform below). Actually syncing (or un-syncing) a given [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) or [`Post`](https://jonline.io/docs/protocol#jonline-Post) to a destination is a separate step, via [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`DeleteEventInstanceSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteEventInstanceSyncDestination) and [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost)/[`DeletePostSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeletePostSyncDestination).
 
-#### Facebook
+##### Facebook
 
 `configuration.facebook_page` (a [`FacebookPage`](https://jonline.io/docs/protocol#jonline-FacebookPage)) is a connected Facebook Page. Connecting one requires a short-lived user access token from client-side Facebook Login, which the server exchanges for a long-lived Page access token. Gated on `SYNC_EVENTS_TO_FACEBOOK`/`SYNC_POSTS_TO_FACEBOOK`.
 
-#### Instagram
+##### Instagram
 
 `configuration.instagram_account` (an [`InstagramAccount`](https://jonline.io/docs/protocol#jonline-InstagramAccount)) is a connected Instagram Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account. Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a [`Post`](https://jonline.io/docs/protocol#jonline-Post)/[`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) with no attached media fails. Gated on `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
 
-#### Mastodon
+##### Mastodon
 
 `configuration.mastodon_account` (a [`MastodonAccount`](https://jonline.io/docs/protocol#jonline-MastodonAccount)) is a connected Mastodon account, on any instance the user names -- there's no single app to register the way Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token (generated on the user's own instance under Preferences > Development) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
 
-#### Bluesky
+##### Bluesky
 
 `configuration.bluesky_account` (a [`BlueskyAccount`](https://jonline.io/docs/protocol#jonline-BlueskyAccount)) is a connected Bluesky (AT Protocol) account. Connecting one is a user-supplied "App Password" (generated at Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
 
-#### X (Twitter)
+##### X (Twitter)
 
 `configuration.x_twitter_account` (an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount)) is reserved for a connected X account, but **not yet functional** -- this requires a registered X Developer App (`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](https://jonline.io/docs/protocol#jonline-XTwitterAccount) destination currently fails. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
 
-#### Threads
+##### Threads
 
 `configuration.threads_account` (a [`ThreadsAccount`](https://jonline.io/docs/protocol#jonline-ThreadsAccount)) is a connected Threads account. The Threads API is a product added to a server's *existing* Facebook App rather than a separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a Page" step -- it directly authorizes the user's own Threads account. Unlike Instagram, Threads supports text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
-
-#### Event Sync Sources
-
-An [`EventSyncSource`](https://jonline.io/docs/protocol#jonline-EventSyncSource) mirrors [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), but for pulling [`Event`](https://jonline.io/docs/protocol#jonline-Event)s in rather than pushing content out -- currently only an iCal subscription URL, though the `oneof` leaves room for other source types. Unlike [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the parent [`Event`](https://jonline.io/docs/protocol#jonline-Event) (not the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)) that gets synced in and tagged with its source, since a single source can back many synced [`Event`](https://jonline.io/docs/protocol#jonline-Event)s but each [`Event`](https://jonline.io/docs/protocol#jonline-Event) has at most one source it came from. A background job re-pulls each source on its own configurable interval. Sources are managed via [`GetEventSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateEventSyncSource) (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateEventSyncSource), and [`DeleteEventSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteEventSyncSource).
 
 ## Single-Instance Features 
 

@@ -417,16 +417,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#sync-proto">sync.proto</a></p>
         <ul>
           <li><a href="#jonline-BlueskyAccount">BlueskyAccount</a></li>
-          <li><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></li>
           <li><a href="#jonline-DeleteSyncDestinationRequest">DeleteSyncDestinationRequest</a></li>
-          <li><a href="#jonline-EventSyncSource">EventSyncSource</a></li>
+          <li><a href="#jonline-DeleteSyncSourceRequest">DeleteSyncSourceRequest</a></li>
           <li><a href="#jonline-FacebookPage">FacebookPage</a></li>
-          <li><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></li>
           <li><a href="#jonline-GetSyncDestinationsResponse">GetSyncDestinationsResponse</a></li>
+          <li><a href="#jonline-GetSyncSourcesResponse">GetSyncSourcesResponse</a></li>
           <li><a href="#jonline-InstagramAccount">InstagramAccount</a></li>
           <li><a href="#jonline-MastodonAccount">MastodonAccount</a></li>
           <li><a href="#jonline-SyncDestination">SyncDestination</a></li>
           <li><a href="#jonline-SyncDestinationStatus">SyncDestinationStatus</a></li>
+          <li><a href="#jonline-SyncSource">SyncSource</a></li>
           <li><a href="#jonline-ThreadsAccount">ThreadsAccount</a></li>
           <li><a href="#jonline-XTwitterAccount">XTwitterAccount</a></li>
         </ul>
@@ -663,16 +663,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       in a <a href="#jonline-Group"><code>Group</code></a>, tracking the user's <a href="#jonline-Permission"><code>Permission</code></a>s within the group plus separate group-side and user-side <a href="#jonline-Moderation"><code>Moderation</code></a>
       (for join-approval flows). Returned as part of <a href="#jonline-User"><code>User</code></a>/<a href="#jonline-Group"><code>Group</code></a> payloads, and via <a href="#jonline-Member"><code>Member</code></a> when listing a Group's members.
     </p>
+    <h5 id="syncsources"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncsources"><span class="octicon octicon-link"></span></a>SyncSources</h5>
+    <p>
+      A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-SyncSource"><code>SyncSource</code></a>s - external calendars to
+      pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
+    </p>
     <h5 id="syncdestinations"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinations"><span class="octicon octicon-link"></span></a>SyncDestinations</h5>
     <p>
       A <a href="#jonline-User"><code>User</code></a> can also own many <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s -
       external targets to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and <a href="#jonline-Post"><code>Post</code></a>s out to, e.g. a connected Facebook Page (configured via
       <a href="#jonline-FacebookPage"><code>FacebookPage</code></a>). See the Event and Post sections below for how these attach.
-    </p>
-    <h5 id="eventsyncsources"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsources"><span class="octicon octicon-link"></span></a>EventSyncSources</h5>
-    <p>
-      A <a href="#jonline-User"><code>User</code></a> can own many <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s - external calendars to
-      pull <a href="#jonline-Event"><code>Event</code></a>s in from, e.g. an iCal subscription. See the Event section below for how these attach to <a href="#jonline-Event"><code>Event</code></a>s.
     </p>
     <h5 id="aimodelproviders"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelproviders"><span class="octicon octicon-link"></span></a>AIModelProviders</h5>
     <p>
@@ -736,14 +736,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
 </span><span class="code-line line-number" line="3">or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
 </span><span class="code-line line-number" line="4">independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
 </span><span class="code-line line-number" line="5">
-</span><span class="code-line line-number" line="6">- **EventSyncSource**: It&#x26;#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
-</span><span class="code-line line-number" line="7">user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+</span><span class="code-line line-number" line="6">- **SyncSource**: It&#x26;#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
+</span><span class="code-line line-number" line="7">user-owned [`SyncSource`](#jonline-SyncSource) (e.g. an iCal subscription). The relationship is
 </span><span class="code-line line-number" line="8">1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
-</span><span class="code-line line-number" line="9">(`Event.event_sync_source` is a single optional field, not repeated).
+</span><span class="code-line line-number" line="9">(`Event.sync_source` is a single optional field, not repeated).
 </span><span class="code-line line-number" line="10">
 </span><span class="code-line line-number" line="11">- **SyncDestinations**: Conversely, it&#x26;#39;s each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
 </span><span class="code-line line-number" line="12">[`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
-</span><span class="code-line line-number" line="13">(see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
+</span><span class="code-line line-number" line="13">(see above). Unlike [`SyncSource`](#jonline-SyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
 </span><span class="code-line line-number" line="14">instance may push to several destinations at once, tracked per-destination via the repeated
 </span><span class="code-line line-number" line="15">`EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
 </span><span class="code-line line-number" line="16">the destination&#x26;#39;s resulting post ID/URL and last-synced time.
@@ -752,14 +752,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
 or anonymous (tracked via [&#x60;AnonymousAttendee&#x60;](#jonline-AnonymousAttendee) plus an &#x60;auth_token&#x60;), and are subject to their own [&#x60;Moderation&#x60;](#jonline-Moderation),
 independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
 
-- **EventSyncSource**: It&#x26;#39;s actually the parent [&#x60;Event&#x60;](#jonline-Event) (not the [&#x60;EventInstance&#x60;](#jonline-EventInstance)) that can be synced *in* from a
-user-owned [&#x60;EventSyncSource&#x60;](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+- **SyncSource**: It&#x26;#39;s actually the parent [&#x60;Event&#x60;](#jonline-Event) (not the [&#x60;EventInstance&#x60;](#jonline-EventInstance)) that can be synced *in* from a
+user-owned [&#x60;SyncSource&#x60;](#jonline-SyncSource) (e.g. an iCal subscription). The relationship is
 1:(0 or 1): a single source can back many synced [&#x60;Event&#x60;](#jonline-Event)s, but each [&#x60;Event&#x60;](#jonline-Event) has *at most one* source it came from
-(&#x60;Event.event_sync_source&#x60; is a single optional field, not repeated).
+(&#x60;Event.sync_source&#x60; is a single optional field, not repeated).
 
 - **SyncDestinations**: Conversely, it&#x26;#39;s each [&#x60;EventInstance&#x60;](#jonline-EventInstance) (not the parent [&#x60;Event&#x60;](#jonline-Event)) that syncs *out* to
 [&#x60;SyncDestination&#x60;](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [&#x60;Post&#x60;](#jonline-Post)s use
-(see above). Unlike [&#x60;EventSyncSource&#x60;](#jonline-EventSyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
+(see above). Unlike [&#x60;SyncSource&#x60;](#jonline-SyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
 instance may push to several destinations at once, tracked per-destination via the repeated
 &#x60;EventInstance.sync_destinations&#x60; (each a [&#x60;SyncDestinationStatus&#x60;](#jonline-SyncDestinationStatus)), carrying
 the destination&#x26;#39;s resulting post ID/URL and last-synced time.
@@ -914,6 +914,30 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       fediverse platforms as well as other less-open platforms. All API keys for external services are stored
       in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>'s <code>federation_info</code>.
     </p>
+    <h4 id="syncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncsource"><span class="octicon octicon-link"></span></a>SyncSource</h4>
+    <p>
+      A <a href="#jonline-SyncSource"><code>SyncSource</code></a> mirrors <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> below, but for pulling <a href="#jonline-Event"><code>Event</code></a>s in rather than
+      pushing content out -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the
+      <code>oneof</code> leaves room for other source types. Unlike <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, this is a 1:(0 or 1) relationship: it's the
+      parent <a href="#jonline-Event"><code>Event</code></a> (not the <a href="#jonline-EventInstance"><code>EventInstance</code></a>) that gets synced in and tagged with its source
+      (<code>Event.sync_source</code>), since a single source can back many synced <a href="#jonline-Event"><code>Event</code></a>s but each <a href="#jonline-Event"><code>Event</code></a> has at most one
+      source it came from. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence,
+      recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
+    </p>
+    <p>
+      Sources are managed via <a href="#grpc-api-GetSyncSources"><code>GetSyncSources</code></a>, <a href="#grpc-api-CreateSyncSource"><code>CreateSyncSource</code></a>
+      (requires <code>SYNC_EVENTS_FROM_ICS</code>, or Admin), <a href="#grpc-api-UpdateSyncSource"><code>UpdateSyncSource</code></a>, and
+      <a href="#grpc-api-DeleteSyncSource"><code>DeleteSyncSource</code></a>.
+    </p>
+    <h5 id="ical"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ical"><span class="octicon octicon-link"></span></a>iCal</h5>
+    <p>
+      <code>configuration.ics_subscription_url</code> is the only source type today: a plain iCal (<code>.ics</code>) subscription URL. The
+      background job fetches and parses it on each sync, creating/updating one <a href="#jonline-Event"><code>Event</code></a> per iCal <code>VEVENT</code>
+      (keyed by the iCal UID, stored as <code>EventInstance.sync_source_instance_id</code>) and recomputing <code>event_count</code>/
+      <code>event_instance_count</code>. An <code>Event</code>'s <code>sync_missing_since</code> is set the first time one of its instances stops
+      appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
+      supported yet -- only public iCal URLs.
+    </p>
     <h4 id="syncdestination"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination"><span class="octicon octicon-link"></span></a>SyncDestination</h4>
     <p>
       A <a href="#jonline-SyncDestination"><code>SyncDestination</code></a> is a user-owned external target to push <a href="#jonline-EventInstance"><code>EventInstance</code></a>s and
@@ -991,26 +1015,11 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
       text-only posts. Gated on <code>SYNC_EVENTS_TO_THREADS</code>/<code>SYNC_POSTS_TO_THREADS</code>.
     </p>
-    <h4 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h4>
-    <p>
-      An <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> mirrors <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, but for pulling <a href="#jonline-Event"><code>Event</code></a>s in rather than
-      pushing content out -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though the
-      <code>oneof</code> leaves room for other source types. Unlike <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>, this is a 1:(0 or 1) relationship: it's the
-      parent <a href="#jonline-Event"><code>Event</code></a> (not the <a href="#jonline-EventInstance"><code>EventInstance</code></a>) that gets synced in and tagged with its source
-      (<code>Event.event_sync_source</code>), since a single source can back many synced <a href="#jonline-Event"><code>Event</code></a>s but each <a href="#jonline-Event"><code>Event</code></a> has at most one
-      source it came from. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence,
-      recomputing <code>event_count</code>/<code>event_instance_count</code> on every sync.
-    </p>
-    <p>
-      Sources are managed via <a href="#grpc-api-GetEventSyncSources"><code>GetEventSyncSources</code></a>, <a href="#grpc-api-CreateEventSyncSource"><code>CreateEventSyncSource</code></a>
-      (requires <code>SYNCHRONIZE_EVENTS</code>, or Admin), <a href="#grpc-api-UpdateEventSyncSource"><code>UpdateEventSyncSource</code></a>, and
-      <a href="#grpc-api-DeleteEventSyncSource"><code>DeleteEventSyncSource</code></a>.
-    </p>
     <h4 id="aimodelprovider"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider"><span class="octicon octicon-link"></span></a>AIModelProvider</h4>
     <p>
       An <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> is a user-owned connection to an external AI model API (e.g. a
       Gemini API key), via a <code>oneof provider</code> naming which service it is -- structurally similar to
-      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>, but rather than pushing/pulling
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-SyncSource"><code>SyncSource</code></a>, but rather than pushing/pulling
       content, it's metered <em>access</em> an owner can share out to other users of this server. Only the <code>gemini_credentials</code>
       variant (a <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>) is currently creatable; <code>openai_credentials</code>/
       <code>anthropic_credentials</code> are defined for forward compatibility only. As with <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>'s
@@ -1646,28 +1655,28 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Deletes EventInstances in an existing Event that aren't present in the input Event. <em>Authenticated.</em></td>
         </tr>
         <tr>
-          <td>GetEventSyncSources</td>
+          <td>GetSyncSources</td>
           <td><a href="#jonline-User">User</a></td>
-          <td><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></td>
-          <td>Gets a user's EventSyncSources. <em>Authenticated</em> (self, or Admin for any user).</td>
+          <td><a href="#jonline-GetSyncSourcesResponse">GetSyncSourcesResponse</a></td>
+          <td>Gets a user's SyncSources. <em>Authenticated</em> (self, or Admin for any user).</td>
         </tr>
         <tr>
-          <td>CreateEventSyncSource</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td>Creates an EventSyncSource for the current user. <em>Authenticated</em>, requires <code>SYNCHRONIZE_EVENTS</code> (or Admin).</td>
+          <td>CreateSyncSource</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
+          <td>Creates a SyncSource for the current user. <em>Authenticated</em>, requires <code>SYNC_EVENTS_FROM_ICS</code> (or Admin).</td>
         </tr>
         <tr>
-          <td>UpdateEventSyncSource</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td>Updates an EventSyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNCHRONIZE_EVENTS</code> (or Admin).</td>
+          <td>UpdateSyncSource</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
+          <td>Updates a SyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_FROM_ICS</code> (or Admin).</td>
         </tr>
         <tr>
-          <td>DeleteEventSyncSource</td>
-          <td><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></td>
+          <td>DeleteSyncSource</td>
+          <td><a href="#jonline-DeleteSyncSourceRequest">DeleteSyncSourceRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td>Deletes an EventSyncSource. <em>Authenticated</em> (owner, or Admin).</td>
+          <td>Deletes a SyncSource. <em>Authenticated</em> (owner, or Admin).</td>
         </tr>
         <tr>
           <td>GetSyncDestinations</td>
@@ -2478,11 +2487,6 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Allow the user to RSVP to events that allow RSVPs.</td>
         </tr>
         <tr>
-          <td>SYNCHRONIZE_EVENTS</td>
-          <td>36</td>
-          <td>Allow the user to synchronize events from outside sources.</td>
-        </tr>
-        <tr>
           <td>VIEW_MEDIA</td>
           <td>40</td>
           <td>Allow the user to view media with <code>SERVER_PUBLIC</code> or higher visibility. <em>Not currently enforced.</em> Allow anonymous users to view media with <code>GLOBAL_PUBLIC</code> visibility (when configured as an anonymous user permission). <em>Not currently enforced.</em></td>
@@ -2521,6 +2525,11 @@ directory</a> is (<code>{name}</code> denotes a
           <td>CREATE_AI_MODEL_PROVIDERS</td>
           <td>60</td>
           <td>Allow the user to create/update their own <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a>s (see <code>ai_model_providers.proto</code>) and grant/revoke other users' access to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_FROM_ICS</td>
+          <td>700</td>
+          <td>Allow the user to create/update <a href="#jonline-SyncSource"><code>SyncSource</code></a>s (iCal subscriptions) that synchronize <a href="#jonline-Event"><code>Event</code></a>s in.</td>
         </tr>
         <tr>
           <td>SYNC_EVENTS_TO_FACEBOOK</td>
@@ -2957,16 +2966,16 @@ directory</a> is (<code>{name}</code> denotes a
           <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin, and by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view) -- always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type.</td>
         </tr>
         <tr>
-          <td>event_sync_sources</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>sync_sources</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
           <td>repeated</td>
-          <td>The target user's own <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>s. Unlike <code>sync_destinations</code>, also populated for the target user themselves <em>or an Admin</em> across every <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type (not just single-user lookups) -- e.g. an Admin's <code>EVERYONE</code> listing gets every returned user's sources filled in, batch-loaded in one query rather than per-user. Also populated by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view). Always empty for any other viewer.</td>
+          <td>The target user's own <a href="#jonline-SyncSource"><code>SyncSource</code></a>s. Unlike <code>sync_destinations</code>, also populated for the target user themselves <em>or an Admin</em> across every <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type (not just single-user lookups) -- e.g. an Admin's <code>EVERYONE</code> listing gets every returned user's sources filled in, batch-loaded in one query rather than per-user. Also populated by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view). Always empty for any other viewer.</td>
         </tr>
         <tr>
           <td>available_ai_models</td>
           <td><a href="#jonline-AvailableAIModel">AvailableAIModel</a></td>
           <td>repeated</td>
-          <td>Every <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> model the target user may currently call -- their own providers' models, plus any models granted to them on other users' providers (see <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a>). Gated and populated the same way as <code>event_sync_sources</code> (target user themselves, or an Admin, across any <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type, plus <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>).</td>
+          <td>Every <a href="#jonline-AIModelProvider"><code>AIModelProvider</code></a> model the target user may currently call -- their own providers' models, plus any models granted to them on other users' providers (see <a href="#jonline-AvailableAIModel"><code>AvailableAIModel</code></a>). Gated and populated the same way as <code>sync_sources</code> (target user themselves, or an Admin, across any <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type, plus <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>).</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -4875,8 +4884,8 @@ directory</a> is (<code>{name}</code> denotes a
           <td>A list of instances for the Event. <em>Events will only include all instances if the request is for a single event.</em></td>
         </tr>
         <tr>
-          <td>event_sync_source</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>sync_source</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
           <td>optional</td>
           <td>If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from.</td>
         </tr>
@@ -5103,10 +5112,10 @@ directory</a> is (<code>{name}</code> denotes a
           <td>The location of the event.</td>
         </tr>
         <tr>
-          <td>event_sync_source_instance_id</td>
+          <td>sync_source_instance_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>The "iCal ID" (or external ID) of this instance, if its <a href="#jonline-Event"><code>Event</code></a> was synced from an <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>.</td>
+          <td>The "iCal ID" (or external ID) of this instance, if its <a href="#jonline-Event"><code>Event</code></a> was synced from a <a href="#jonline-SyncSource"><code>SyncSource</code></a>.</td>
         </tr>
         <tr>
           <td>sync_missing_since</td>
@@ -6667,33 +6676,6 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-DeleteEventSyncSourceRequest"></a></p>
-    <h3 id="deleteeventsyncsourcerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventsyncsourcerequest"><span class="octicon octicon-link"></span></a>DeleteEventSyncSourceRequest</h3>
-    <p>Request to delete an EventSyncSource.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>source</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td></td>
-          <td>The source to be deleted.</td>
-        </tr>
-        <tr>
-          <td>delete_synced_events</td>
-          <td><a href="#bool">bool</a></td>
-          <td></td>
-          <td>Whether to delete synced events.</td>
-        </tr>
-      </tbody>
-    </table>
     <p><a name="jonline-DeleteSyncDestinationRequest"></a></p>
     <h3 id="deletesyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deletesyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeleteSyncDestinationRequest</h3>
     <p>Request to delete a SyncDestination.</p>
@@ -6721,9 +6703,9 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-EventSyncSource"></a></p>
-    <h3 id="eventsyncsource-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource-1"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
-    <p>A user-owned source to sync events from.</p>
+    <p><a name="jonline-DeleteSyncSourceRequest"></a></p>
+    <h3 id="deletesyncsourcerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deletesyncsourcerequest"><span class="octicon octicon-link"></span></a>DeleteSyncSourceRequest</h3>
+    <p>Request to delete a SyncSource.</p>
     <table>
       <thead>
         <tr>
@@ -6735,58 +6717,16 @@ directory</a> is (<code>{name}</code> denotes a
       </thead>
       <tbody>
         <tr>
-          <td>id</td>
-          <td><a href="#string">string</a></td>
+          <td>source</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
           <td></td>
-          <td>Unique ID for the synchronization.</td>
+          <td>The source to be deleted.</td>
         </tr>
         <tr>
-          <td>owner</td>
-          <td><a href="#jonline-Author">Author</a></td>
+          <td>delete_synced_events</td>
+          <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>The user information for the owner of this event sync.</td>
-        </tr>
-        <tr>
-          <td>sync_interval_seconds</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>How frequently the sync should happen in seconds.</td>
-        </tr>
-        <tr>
-          <td>created_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td></td>
-          <td>The time the EventSyncSource was created.</td>
-        </tr>
-        <tr>
-          <td>updated_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td>optional</td>
-          <td>The time the EventSyncSource was last updated.</td>
-        </tr>
-        <tr>
-          <td>last_synced_at</td>
-          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
-          <td>optional</td>
-          <td>The time the EventSyncSource was last synced.</td>
-        </tr>
-        <tr>
-          <td>event_count</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>The number of events total associated with this EventSyncSource. Recomputed on each sync.</td>
-        </tr>
-        <tr>
-          <td>event_instance_count</td>
-          <td><a href="#uint64">uint64</a></td>
-          <td></td>
-          <td>The number of event instances total associated with this EventSyncSource. Recomputed on each sync.</td>
-        </tr>
-        <tr>
-          <td>ics_subscription_url</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The iCal subscription URL for the calendar sync.</td>
+          <td>Whether to delete synced events.</td>
         </tr>
       </tbody>
     </table>
@@ -6838,26 +6778,6 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-GetEventSyncSourcesResponse"></a></p>
-    <h3 id="geteventsyncsourcesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsyncsourcesresponse"><span class="octicon octicon-link"></span></a>GetEventSyncSourcesResponse</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>sources</td>
-          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
-          <td>repeated</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
     <p><a name="jonline-GetSyncDestinationsResponse"></a></p>
     <h3 id="getsyncdestinationsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getsyncdestinationsresponse"><span class="octicon octicon-link"></span></a>GetSyncDestinationsResponse</h3>
     <p>Response to a request for the current user's <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s.</p>
@@ -6876,6 +6796,26 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#jonline-SyncDestination">SyncDestination</a></td>
           <td>repeated</td>
           <td>The current user's SyncDestinations.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetSyncSourcesResponse"></a></p>
+    <h3 id="getsyncsourcesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getsyncsourcesresponse"><span class="octicon octicon-link"></span></a>GetSyncSourcesResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sources</td>
+          <td><a href="#jonline-SyncSource">SyncSource</a></td>
+          <td>repeated</td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -6979,7 +6919,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-SyncDestination"></a></p>
     <h3 id="syncdestination-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestination-1"><span class="octicon octicon-link"></span></a>SyncDestination</h3>
     <p>
-      A user-owned destination to sync (cross-post) content out to. Mirrors <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>,
+      A user-owned destination to sync (cross-post) content out to. Mirrors <a href="#jonline-SyncSource"><code>SyncSource</code></a>,
       but for pushing content out rather than pulling events in. Originally Event-specific
       (as <code>EventSyncDestination</code>), now shared by both <a href="#jonline-EventInstance"><code>EventInstance</code></a>s (see <code>events.proto</code>'s
       <a href="#jonline-SyncEventInstanceRequest"><code>SyncEventInstanceRequest</code></a>) and <a href="#jonline-Post"><code>Post</code></a>s (see <code>posts.proto</code>'s <a href="#jonline-SyncPostRequest"><code>SyncPostRequest</code></a>).
@@ -7022,7 +6962,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>synced_event_instance_count</td>
           <td><a href="#uint64">uint64</a></td>
           <td>optional</td>
-          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
+          <td>The number of EventInstances synced to this destination so far. Computed with a <code>COUNT</code> at request time (unlike <a href="#jonline-SyncSource"><code>SyncSource</code></a>'s <code>event_count</code>/<code>event_instance_count</code>, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval.</td>
         </tr>
         <tr>
           <td>synced_post_count</td>
@@ -7108,6 +7048,81 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
           <td>The time this content was last successfully synced to the destination.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-SyncSource"></a></p>
+    <h3 id="syncsource-1"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncsource-1"><span class="octicon octicon-link"></span></a>SyncSource</h3>
+    <p>A user-owned source to sync events from.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the synchronization.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this sync source.</td>
+        </tr>
+        <tr>
+          <td>sync_interval_seconds</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>How frequently the sync should happen in seconds.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the SyncSource was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the SyncSource was last updated.</td>
+        </tr>
+        <tr>
+          <td>last_synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the SyncSource was last synced.</td>
+        </tr>
+        <tr>
+          <td>event_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of events total associated with this SyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>event_instance_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of event instances total associated with this SyncSource. Recomputed on each sync.</td>
+        </tr>
+        <tr>
+          <td>post_count</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The number of posts total associated with this SyncSource. Not yet populated -- no source type syncs posts in yet.</td>
+        </tr>
+        <tr>
+          <td>ics_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The iCal subscription URL for the calendar sync.</td>
         </tr>
       </tbody>
     </table>
@@ -7222,7 +7237,7 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p>
       An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
       key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
-      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-EventSyncSource"><code>EventSyncSource</code></a> (also user-owned integrations
+      <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>/<a href="#jonline-SyncSource"><code>SyncSource</code></a> (also user-owned integrations
       with an <a href="#jonline-Author"><code>Author</code></a> <code>owner</code> and a <code>oneof</code> naming which external system is configured), but where
       those push/pull content, an AIModelProvider is metered <em>access</em> to a third-party LLM API -- shared out to
       other users via <a href="#jonline-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s rather than posted-to/subscribed-from.

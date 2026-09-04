@@ -135,16 +135,16 @@
   
 - [sync.proto](#sync-proto)
     - [BlueskyAccount](#jonline-BlueskyAccount)
-    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
     - [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest)
-    - [EventSyncSource](#jonline-EventSyncSource)
+    - [DeleteSyncSourceRequest](#jonline-DeleteSyncSourceRequest)
     - [FacebookPage](#jonline-FacebookPage)
-    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
     - [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse)
+    - [GetSyncSourcesResponse](#jonline-GetSyncSourcesResponse)
     - [InstagramAccount](#jonline-InstagramAccount)
     - [MastodonAccount](#jonline-MastodonAccount)
     - [SyncDestination](#jonline-SyncDestination)
     - [SyncDestinationStatus](#jonline-SyncDestinationStatus)
+    - [SyncSource](#jonline-SyncSource)
     - [ThreadsAccount](#jonline-ThreadsAccount)
     - [XTwitterAccount](#jonline-XTwitterAccount)
   
@@ -331,14 +331,14 @@ A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s members
 in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
 
+##### SyncSources
+A [`User`](#jonline-User) can own many [`SyncSource`](#jonline-SyncSource)s - external calendars to
+pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+
 ##### SyncDestinations
 A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
 external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
 [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
-
-##### EventSyncSources
-A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
-pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
 
 ##### AIModelProviders
 A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
@@ -394,14 +394,14 @@ An [`Event`](#jonline-Event) with zero instances is meaningless (no time or plac
     or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
     independent of the Event&#39;s/Instance&#39;s own Post moderation.
 
-    - **EventSyncSource**: It&#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
-    user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+    - **SyncSource**: It&#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
+    user-owned [`SyncSource`](#jonline-SyncSource) (e.g. an iCal subscription). The relationship is
     1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
-    (`Event.event_sync_source` is a single optional field, not repeated).
+    (`Event.sync_source` is a single optional field, not repeated).
 
     - **SyncDestinations**: Conversely, it&#39;s each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
     [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
-    (see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
+    (see above). Unlike [`SyncSource`](#jonline-SyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
     instance may push to several destinations at once, tracked per-destination via the repeated
     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
@@ -525,6 +525,27 @@ While Federation is a first-class feature of Jonline, it also supports synchroni
 fediverse platforms as well as other less-open platforms. All API keys for external services are stored
 in [`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `federation_info`.
 
+#### SyncSource
+A [`SyncSource`](#jonline-SyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination) below, but for pulling [`Event`](#jonline-Event)s in rather than
+pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
+`oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it&#39;s the
+parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
+(`Event.sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
+source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
+recomputing `event_count`/`event_instance_count` on every sync.
+
+Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
+(requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+[`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
+
+##### iCal
+`configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
+background job fetches and parses it on each sync, creating/updating one [`Event`](#jonline-Event) per iCal `VEVENT`
+(keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
+`event_instance_count`. An `Event`&#39;s `sync_missing_since` is set the first time one of its instances stops
+appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
+supported yet -- only public iCal URLs.
+
 #### SyncDestination
 A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
 [`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it&#39;s
@@ -594,23 +615,10 @@ short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant
 implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
 text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 
-#### EventSyncSource
-An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
-pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
-`oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it&#39;s the
-parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
-(`Event.event_sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
-source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
-recomputing `event_count`/`event_instance_count` on every sync.
-
-Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
-(requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
-[`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
-
 #### AIModelProvider
 An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
 Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
-[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
+[`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource), but rather than pushing/pulling
 content, it&#39;s metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
 variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
 `anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)&#39;s
@@ -951,10 +959,10 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | CreateNewEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates EventInstances in an existing Event for every EventInstance in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
 | UpdateEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates EventInstances in an existing Event for every EventInstance in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
 | DeleteRemovedEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Deletes EventInstances in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
-| GetEventSyncSources | [User](#jonline-User) | [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse) | Gets a user&#39;s EventSyncSources. *Authenticated* (self, or Admin for any user). |
-| CreateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). |
-| UpdateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNCHRONIZE_EVENTS` (or Admin). |
-| DeleteEventSyncSource | [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an EventSyncSource. *Authenticated* (owner, or Admin). |
+| GetSyncSources | [User](#jonline-User) | [GetSyncSourcesResponse](#jonline-GetSyncSourcesResponse) | Gets a user&#39;s SyncSources. *Authenticated* (self, or Admin for any user). |
+| CreateSyncSource | [SyncSource](#jonline-SyncSource) | [SyncSource](#jonline-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
+| UpdateSyncSource | [SyncSource](#jonline-SyncSource) | [SyncSource](#jonline-SyncSource) | Updates a SyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
+| DeleteSyncSource | [DeleteSyncSourceRequest](#jonline-DeleteSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncSource. *Authenticated* (owner, or Admin). |
 | GetSyncDestinations | [User](#jonline-User) | [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse) | Gets a user&#39;s SyncDestinations. *Authenticated* (self, or Admin for any user). |
 | CreateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | UpdateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Updates a SyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
@@ -1316,7 +1324,6 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
-| SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1325,6 +1332,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
 | CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
+| SYNC_EVENTS_FROM_ICS | 700 | Allow the user to create/update [`SyncSource`](#jonline-SyncSource)s (iCal subscriptions) that synchronize [`Event`](#jonline-Event)s in. |
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
@@ -1498,8 +1506,8 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
 | sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type. |
-| event_sync_sources | [EventSyncSource](#jonline-EventSyncSource) | repeated | The target user&#39;s own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
-| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
+| sync_sources | [SyncSource](#jonline-SyncSource) | repeated | The target user&#39;s own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -2423,7 +2431,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` -- there is no separate surrogate ID. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
-| event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
+| sync_source | [SyncSource](#jonline-SyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
 
 
 
@@ -2511,7 +2519,7 @@ a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and 
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#jonline-Location) | optional | The location of the event. |
-| event_sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource). |
+| sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from a [`SyncSource`](#jonline-SyncSource). |
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
@@ -3240,22 +3248,6 @@ video embeds need a separate, more complex upload-and-processing flow not yet bu
 
 
 
-<a name="jonline-DeleteEventSyncSourceRequest"></a>
-
-### DeleteEventSyncSourceRequest
-Request to delete an EventSyncSource.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
-| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
-
-
-
-
-
-
 <a name="jonline-DeleteSyncDestinationRequest"></a>
 
 ### DeleteSyncDestinationRequest
@@ -3272,23 +3264,16 @@ Request to delete a SyncDestination.
 
 
 
-<a name="jonline-EventSyncSource"></a>
+<a name="jonline-DeleteSyncSourceRequest"></a>
 
-### EventSyncSource
-A user-owned source to sync events from.
+### DeleteSyncSourceRequest
+Request to delete a SyncSource.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the synchronization. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
-| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
-| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
-| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
-| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+| source | [SyncSource](#jonline-SyncSource) |  | The source to be deleted. |
+| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
 
 
 
@@ -3324,21 +3309,6 @@ dropped (Facebook Pages can&#39;t attach both to a single feed post).
 
 
 
-<a name="jonline-GetEventSyncSourcesResponse"></a>
-
-### GetEventSyncSourcesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
-
-
-
-
-
-
 <a name="jonline-GetSyncDestinationsResponse"></a>
 
 ### GetSyncDestinationsResponse
@@ -3348,6 +3318,21 @@ Response to a request for the current user&#39;s [`SyncDestination`](#jonline-Sy
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The current user&#39;s SyncDestinations. |
+
+
+
+
+
+
+<a name="jonline-GetSyncSourcesResponse"></a>
+
+### GetSyncSourcesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sources | [SyncSource](#jonline-SyncSource) | repeated |  |
 
 
 
@@ -3411,7 +3396,7 @@ individual upload is skipped rather than failing the whole post.
 <a name="jonline-SyncDestination"></a>
 
 ### SyncDestination
-A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
 but for pushing content out rather than pulling events in. Originally Event-specific
 (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`&#39;s
 [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`&#39;s [`SyncPostRequest`](#jonline-SyncPostRequest)).
@@ -3423,7 +3408,7 @@ but for pushing content out rather than pulling events in. Originally Event-spec
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncDestination was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncDestination was last updated. |
-| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`SyncSource`](#jonline-SyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
 | synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_event_instance_count`, just against Posts instead of EventInstances. |
 | facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances/Posts to. |
 | instagram_account | [InstagramAccount](#jonline-InstagramAccount) |  | A connected Instagram Business/Creator account to post EventInstances/Posts to. |
@@ -3451,6 +3436,30 @@ one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `Event
 | destination_instance_id | [string](#string) | optional | The ID of the resulting post on the destination (e.g. a Facebook Post ID). |
 | destination_url | [string](#string) | optional | A link to the resulting post on the destination, if available. |
 | synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time this content was last successfully synced to the destination. |
+
+
+
+
+
+
+<a name="jonline-SyncSource"></a>
+
+### SyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this sync source. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Not yet populated -- no source type syncs posts in yet. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
 
 
 
@@ -3538,7 +3547,7 @@ not yet built; a video attachment is silently skipped.
 ### AIModelProvider
 An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
 key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
-[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+[`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource) (also user-owned integrations
 with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
 those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
 other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.

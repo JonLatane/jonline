@@ -20,7 +20,7 @@
 //! (`grant_type=th_refresh_token`), unlike Facebook's Page tokens (effectively non-expiring) or
 //! Bluesky's app passwords (never expire). No refresh job is built this round -- a connected
 //! Threads destination will silently stop working ~60 days after connecting until the user
-//! reconnects it. A background job mirroring `sync_event_sync_sources` could refresh tokens before
+//! reconnects it. A background job mirroring `sync_sources` could refresh tokens before
 //! expiry as a future follow-up.
 
 use tonic::{Code, Status};

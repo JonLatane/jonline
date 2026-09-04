@@ -403,29 +403,29 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_events, request)
     }
 
-    async fn get_event_sync_sources(
+    async fn get_sync_sources(
         &self,
         request: Request<User>,
-    ) -> Result<Response<GetEventSyncSourcesResponse>, Status> {
-        authenticated_rpc!(self, rpcs::get_event_sync_sources, request)
+    ) -> Result<Response<GetSyncSourcesResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_sync_sources, request)
     }
-    async fn create_event_sync_source(
+    async fn create_sync_source(
         &self,
-        request: Request<EventSyncSource>,
-    ) -> Result<Response<EventSyncSource>, Status> {
-        authenticated_rpc!(self, rpcs::create_event_sync_source, request)
+        request: Request<SyncSource>,
+    ) -> Result<Response<SyncSource>, Status> {
+        authenticated_rpc!(self, rpcs::create_sync_source, request)
     }
-    async fn update_event_sync_source(
+    async fn update_sync_source(
         &self,
-        request: Request<EventSyncSource>,
-    ) -> Result<Response<EventSyncSource>, Status> {
-        authenticated_rpc!(self, rpcs::update_event_sync_source, request)
+        request: Request<SyncSource>,
+    ) -> Result<Response<SyncSource>, Status> {
+        authenticated_rpc!(self, rpcs::update_sync_source, request)
     }
-    async fn delete_event_sync_source(
+    async fn delete_sync_source(
         &self,
-        request: Request<DeleteEventSyncSourceRequest>,
+        request: Request<DeleteSyncSourceRequest>,
     ) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_event_sync_source, request)
+        authenticated_rpc!(self, rpcs::delete_sync_source, request)
     }
 
     async fn get_sync_destinations(

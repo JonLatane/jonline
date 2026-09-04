@@ -1,0 +1,14 @@
+ALTER INDEX idx_event_instances_sync_source_instance_id RENAME TO idx_event_instances_event_sync_source_instance_id;
+ALTER TABLE event_instances RENAME COLUMN sync_source_instance_id TO event_sync_source_instance_id;
+
+ALTER INDEX idx_events_sync_source_id RENAME TO idx_events_event_sync_source_id;
+ALTER TABLE events RENAME CONSTRAINT events_sync_source_id_fkey TO events_event_sync_source_id_fkey;
+ALTER TABLE events RENAME COLUMN sync_source_id TO event_sync_source_id;
+
+ALTER TABLE sync_sources DROP COLUMN post_count;
+
+ALTER INDEX idx_sync_sources_user_id RENAME TO idx_event_sync_sources_user_id;
+ALTER TABLE sync_sources RENAME CONSTRAINT sync_sources_user_id_fkey TO event_sync_sources_user_id_fkey;
+ALTER TABLE sync_sources RENAME CONSTRAINT sync_sources_pkey TO event_sync_sources_pkey;
+ALTER SEQUENCE sync_sources_id_seq RENAME TO event_sync_sources_id_seq;
+ALTER TABLE sync_sources RENAME TO event_sync_sources;

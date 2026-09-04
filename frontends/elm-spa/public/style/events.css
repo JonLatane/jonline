@@ -178,7 +178,7 @@
 }
 
 /* Credits the ICS feed an `Event` was synced from (see
-   `Shared.EventSyncSourcesPanel`) -- one clipped, not wrapped, line at the
+   `Shared.SyncSourcesPanel`) -- one clipped, not wrapped, line at the
    bottom of the event detail view, or `eventCard`. `position: relative`
    mirrors `.event-card-link`'s own paint-order trick (see that class's doc
    comment) so it stays independently clickable above

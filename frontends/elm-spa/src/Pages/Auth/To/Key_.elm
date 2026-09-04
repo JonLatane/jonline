@@ -575,7 +575,7 @@ accountFromLogin server resp =
                 , realName = user.realName
                 , needsPassword = False
                 , syncDestinations = user.syncDestinations
-                , eventSyncSources = user.eventSyncSources
+                , syncSources = user.syncSources
                 , availableAiModels = user.availableAiModels
                 }
 

@@ -68,7 +68,7 @@ const User$json = {
     {'1': 'has_advanced_data', '3': 80, '4': 1, '5': 8, '10': 'hasAdvancedData'},
     {'1': 'federated_profiles', '3': 81, '4': 3, '5': 11, '6': '.jonline.FederatedAccount', '10': 'federatedProfiles'},
     {'1': 'sync_destinations', '3': 82, '4': 3, '5': 11, '6': '.jonline.SyncDestination', '10': 'syncDestinations'},
-    {'1': 'event_sync_sources', '3': 83, '4': 3, '5': 11, '6': '.jonline.EventSyncSource', '10': 'eventSyncSources'},
+    {'1': 'sync_sources', '3': 83, '4': 3, '5': 11, '6': '.jonline.SyncSource', '10': 'syncSources'},
     {'1': 'available_ai_models', '3': 84, '4': 3, '5': 11, '6': '.jonline.AvailableAIModel', '10': 'availableAiModels'},
     {'1': 'created_at', '3': 100, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 101, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 14, '10': 'updatedAt', '17': true},
@@ -116,17 +116,17 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     'RHcm91cE1lbWJlcnNoaXCIAQESKgoRaGFzX2FkdmFuY2VkX2RhdGEYUCABKAhSD2hhc0FkdmFu'
     'Y2VkRGF0YRJIChJmZWRlcmF0ZWRfcHJvZmlsZXMYUSADKAsyGS5qb25saW5lLkZlZGVyYXRlZE'
     'FjY291bnRSEWZlZGVyYXRlZFByb2ZpbGVzEkUKEXN5bmNfZGVzdGluYXRpb25zGFIgAygLMhgu'
-    'am9ubGluZS5TeW5jRGVzdGluYXRpb25SEHN5bmNEZXN0aW5hdGlvbnMSRgoSZXZlbnRfc3luY1'
-    '9zb3VyY2VzGFMgAygLMhguam9ubGluZS5FdmVudFN5bmNTb3VyY2VSEGV2ZW50U3luY1NvdXJj'
-    'ZXMSSQoTYXZhaWxhYmxlX2FpX21vZGVscxhUIAMoCzIZLmpvbmxpbmUuQXZhaWxhYmxlQUlNb2'
-    'RlbFIRYXZhaWxhYmxlQWlNb2RlbHMSOQoKY3JlYXRlZF9hdBhkIAEoCzIaLmdvb2dsZS5wcm90'
-    'b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GGUgASgLMhouZ29vZ2xlLn'
-    'Byb3RvYnVmLlRpbWVzdGFtcEgOUgl1cGRhdGVkQXSIAQFCCAoGX2VtYWlsQggKBl9waG9uZUIJ'
-    'CgdfYXZhdGFyQhEKD19mb2xsb3dlcl9jb3VudEISChBfZm9sbG93aW5nX2NvdW50Qg8KDV9mcm'
-    'llbmRfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50QhEKD19yZXNwb25zZV9j'
-    'b3VudEIOCgxfZXZlbnRfY291bnRCFwoVX2V2ZW50X2luc3RhbmNlX2NvdW50QhYKFF9jdXJyZW'
-    '50X3VzZXJfZm9sbG93Qh0KG190YXJnZXRfY3VycmVudF91c2VyX2ZvbGxvd0IbChlfY3VycmVu'
-    'dF9ncm91cF9tZW1iZXJzaGlwQg0KC191cGRhdGVkX2F0');
+    'am9ubGluZS5TeW5jRGVzdGluYXRpb25SEHN5bmNEZXN0aW5hdGlvbnMSNgoMc3luY19zb3VyY2'
+    'VzGFMgAygLMhMuam9ubGluZS5TeW5jU291cmNlUgtzeW5jU291cmNlcxJJChNhdmFpbGFibGVf'
+    'YWlfbW9kZWxzGFQgAygLMhkuam9ubGluZS5BdmFpbGFibGVBSU1vZGVsUhFhdmFpbGFibGVBaU'
+    '1vZGVscxI5CgpjcmVhdGVkX2F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJ'
+    'Y3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW'
+    '1wSA5SCXVwZGF0ZWRBdIgBAUIICgZfZW1haWxCCAoGX3Bob25lQgkKB19hdmF0YXJCEQoPX2Zv'
+    'bGxvd2VyX2NvdW50QhIKEF9mb2xsb3dpbmdfY291bnRCDwoNX2ZyaWVuZF9jb3VudEIOCgxfZ3'
+    'JvdXBfY291bnRCDQoLX3Bvc3RfY291bnRCEQoPX3Jlc3BvbnNlX2NvdW50Qg4KDF9ldmVudF9j'
+    'b3VudEIXChVfZXZlbnRfaW5zdGFuY2VfY291bnRCFgoUX2N1cnJlbnRfdXNlcl9mb2xsb3dCHQ'
+    'obX3RhcmdldF9jdXJyZW50X3VzZXJfZm9sbG93QhsKGV9jdXJyZW50X2dyb3VwX21lbWJlcnNo'
+    'aXBCDQoLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use followDescriptor instead')
 const Follow$json = {

@@ -248,11 +248,11 @@ type alias Model =
     -- toggle for.
     , hideStartedOrLongEvents : Bool
 
-    -- Whether `eventCardView` shows each card's `Events.eventSyncSourceView`/
+    -- Whether `eventCardView` shows each card's `Events.syncSourceView`/
     -- `Events.eventSyncDestinationsView` -- both default to `False` (`init`),
     -- set via `ShowSyncSourcesChanged`/`ShowSyncDestinationsChanged`.
     -- `Components.Pages.UserProfilePage`'s embedded copy keeps these in sync
-    -- with its own `eventSyncSourcesExpanded`/`eventSyncDestinationsExpanded`
+    -- with its own `syncSourcesExpanded`/`eventSyncDestinationsExpanded`
     -- section toggles; no other caller ever sets them, so they stay `False`
     -- (and these lines don't render) everywhere else.
     , showSyncSources : Bool
@@ -363,7 +363,7 @@ type Msg
       -- `syncAnimations`), so there's nothing to fetch here.
     | HideStartedEventsToggled
       -- Sets `model.showSyncSources`/`model.showSyncDestinations` -- driven
-      -- by `Components.Pages.UserProfilePage`'s own "Event Sync Sources"/
+      -- by `Components.Pages.UserProfilePage`'s own "Sync Sources"/
       -- "Sync Destinations" section-expanded toggles (see
       -- `Model.showSyncSources`'s own doc), not by anything in this page's
       -- own UI.
@@ -720,7 +720,7 @@ searchTextChanged =
 
 
 {-| Lets `Components.Pages.UserProfilePage` keep this page's `showSyncSources`
-in sync with its own "Event Sync Sources" section's `eventSyncSourcesExpanded`
+in sync with its own "Sync Sources" section's `syncSourcesExpanded`
 toggle -- same "expose a `Bool -> Msg`/`String -> Msg` wrapper, round-trip it
 through `update`" convention as `searchTextChanged` itself.
 -}
@@ -729,8 +729,8 @@ showSyncSourcesChanged =
     ShowSyncSourcesChanged
 
 
-{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Event Sync
-Destinations" section's `eventSyncDestinationsExpanded` toggle.
+{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Sync
+Destinations" section's `syncDestinationsExpanded` toggle.
 -}
 showSyncDestinationsChanged : Bool -> Msg
 showSyncDestinationsChanged =

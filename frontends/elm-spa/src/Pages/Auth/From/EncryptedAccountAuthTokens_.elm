@@ -129,7 +129,7 @@ update shared req msg model =
                     , realName = user.realName
                     , needsPassword = False
                     , syncDestinations = user.syncDestinations
-                    , eventSyncSources = user.eventSyncSources
+                    , syncSources = user.syncSources
                     , availableAiModels = user.availableAiModels
                     }
             in

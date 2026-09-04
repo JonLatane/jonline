@@ -654,7 +654,7 @@ same cards.
 
 `showSyncDestinations`/`availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete`
 mirror `Components.Events.eventCard`'s own trailing params of the same name/shape exactly (just
-without an `Events`-style `showSyncSource`/`eventSyncSourceView` pair -- Posts have no "synced
+without an `Events`-style `showSyncSource`/`syncSourceView` pair -- Posts have no "synced
 from" concept, only "synced to") -- `showSyncDestinations` gates `postSyncDestinationsView` at the
 bottom of the card, the rest thread straight into that call. `availableSyncDestinations` is
 `Nothing` for every caller except `Components.Pages.UserProfilePage`'s embedded posts feed, so

@@ -180,7 +180,7 @@ cdnDisplayView maybeAdminAccount cdnConfig =
     , Common.settingsRow "External CDN gRPC Support" (Common.switchDisplay (cdnConfig |> Maybe.map .cdnGrpc |> Maybe.withDefault False))
     , case maybeAdminAccount of
         Just _ ->
-            button [ class "server-details-rename-button", onClick CdnEditClicked ] [ text "Edit" ]
+            button [ class "server-details-rename-button", onClick CdnEditClicked ] [ text "Edit CDN Settings" ]
 
         Nothing ->
             text ""

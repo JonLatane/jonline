@@ -102,7 +102,7 @@ spec:
               protocol: TCP
               name: jonline-mail
 ---
-# Runs backend/background_jobs.sh (delete_expired_tokens, sync_event_sync_sources,
+# Runs backend/background_jobs.sh (delete_expired_tokens, sync_sources,
 # delete_unowned_media, update_user_counts, convert_media_sizes -- see that file for the
 # authoritative list of jobs and their intervals) in a single long-running pod, one forked loop
 # per job, instead of one k8s CronJob per job. CronJobs of this shape (5min-and-under schedules,
@@ -110,7 +110,7 @@ spec:
 # network endpoint -- every few minutes; that churn was a major contributor to the 2026-09-04
 # node incident (see incident notes), so this trades it for one steady-state pod per namespace.
 #
-# replicas MUST stay at 1 (running two would duplicate every job -- notably sync_event_sync_sources,
+# replicas MUST stay at 1 (running two would duplicate every job -- notably sync_sources,
 # which posts to external SyncDestinations, so a duplicate run isn't just wasted work, it's a
 # real double-post) and strategy MUST stay Recreate (a RollingUpdate would briefly run the old and
 # new pod's job loops at once during a deploy, same problem).

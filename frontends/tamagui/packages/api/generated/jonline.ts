@@ -63,12 +63,12 @@ import {
 } from "./posts";
 import { ServerConfiguration } from "./server_configuration";
 import {
-  DeleteEventSyncSourceRequest,
   DeleteSyncDestinationRequest,
-  EventSyncSource,
-  GetEventSyncSourcesResponse,
+  DeleteSyncSourceRequest,
   GetSyncDestinationsResponse,
+  GetSyncSourcesResponse,
   SyncDestination,
+  SyncSource,
 } from "./sync";
 import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./users";
 
@@ -222,14 +222,14 @@ export const protobufPackage = "jonline";
  * in a [`Group`](#jonline-Group), tracking the user's [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
  * (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group's members.
  *
+ * ##### SyncSources
+ * A [`User`](#jonline-User) can own many [`SyncSource`](#jonline-SyncSource)s - external calendars to
+ * pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+ *
  * ##### SyncDestinations
  * A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
  * external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
  * [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
- *
- * ##### EventSyncSources
- * A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
- * pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
  *
  * ##### AIModelProviders
  * A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
@@ -285,14 +285,14 @@ export const protobufPackage = "jonline";
  *     or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
  *     independent of the Event's/Instance's own Post moderation.
  *
- *     - **EventSyncSource**: It's actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
- *     user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+ *     - **SyncSource**: It's actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
+ *     user-owned [`SyncSource`](#jonline-SyncSource) (e.g. an iCal subscription). The relationship is
  *     1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
- *     (`Event.event_sync_source` is a single optional field, not repeated).
+ *     (`Event.sync_source` is a single optional field, not repeated).
  *
  *     - **SyncDestinations**: Conversely, it's each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
  *     [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
- *     (see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier's counterpart - a many-to-many relationship: each
+ *     (see above). Unlike [`SyncSource`](#jonline-SyncSource), this is the outlier's counterpart - a many-to-many relationship: each
  *     instance may push to several destinations at once, tracked per-destination via the repeated
  *     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
  *     the destination's resulting post ID/URL and last-synced time.
@@ -416,6 +416,27 @@ export const protobufPackage = "jonline";
  * fediverse platforms as well as other less-open platforms. All API keys for external services are stored
  * in [`ServerConfiguration`](#jonline-ServerConfiguration)'s `federation_info`.
  *
+ * #### SyncSource
+ * A [`SyncSource`](#jonline-SyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination) below, but for pulling [`Event`](#jonline-Event)s in rather than
+ * pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
+ * `oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the
+ * parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
+ * (`Event.sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
+ * source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
+ * recomputing `event_count`/`event_instance_count` on every sync.
+ *
+ * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
+ * (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+ * [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
+ *
+ * ##### iCal
+ * `configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
+ * background job fetches and parses it on each sync, creating/updating one [`Event`](#jonline-Event) per iCal `VEVENT`
+ * (keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
+ * `event_instance_count`. An `Event`'s `sync_missing_since` is set the first time one of its instances stops
+ * appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
+ * supported yet -- only public iCal URLs.
+ *
  * #### SyncDestination
  * A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
  * [`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's
@@ -485,23 +506,10 @@ export const protobufPackage = "jonline";
  * implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
  * text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
  *
- * #### EventSyncSource
- * An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
- * pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
- * `oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it's the
- * parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
- * (`Event.event_sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
- * source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
- * recomputing `event_count`/`event_instance_count` on every sync.
- *
- * Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
- * (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
- * [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
- *
  * #### AIModelProvider
  * An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
  * Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
- * [`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
+ * [`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource), but rather than pushing/pulling
  * content, it's metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
  * variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
  * `anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)'s
@@ -1320,37 +1328,37 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
-    getEventSyncSources: {
-      name: "GetEventSyncSources",
+    /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
+    getSyncSources: {
+      name: "GetSyncSources",
       requestType: User,
       requestStream: false,
-      responseType: GetEventSyncSourcesResponse,
+      responseType: GetSyncSourcesResponse,
       responseStream: false,
       options: {},
     },
-    /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
-    createEventSyncSource: {
-      name: "CreateEventSyncSource",
-      requestType: EventSyncSource,
+    /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+    createSyncSource: {
+      name: "CreateSyncSource",
+      requestType: SyncSource,
       requestStream: false,
-      responseType: EventSyncSource,
+      responseType: SyncSource,
       responseStream: false,
       options: {},
     },
-    /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
-    updateEventSyncSource: {
-      name: "UpdateEventSyncSource",
-      requestType: EventSyncSource,
+    /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+    updateSyncSource: {
+      name: "UpdateSyncSource",
+      requestType: SyncSource,
       requestStream: false,
-      responseType: EventSyncSource,
+      responseType: SyncSource,
       responseStream: false,
       options: {},
     },
-    /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
-    deleteEventSyncSource: {
-      name: "DeleteEventSyncSource",
-      requestType: DeleteEventSyncSourceRequest,
+    /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
+    deleteSyncSource: {
+      name: "DeleteSyncSource",
+      requestType: DeleteSyncSourceRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
@@ -1787,24 +1795,15 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   updateEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
   deleteRemovedEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
-  /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
-  getEventSyncSources(
-    request: User,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetEventSyncSourcesResponse>>;
-  /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
-  createEventSyncSource(
-    request: EventSyncSource,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<EventSyncSource>>;
-  /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
-  updateEventSyncSource(
-    request: EventSyncSource,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<EventSyncSource>>;
-  /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
-  deleteEventSyncSource(
-    request: DeleteEventSyncSourceRequest,
+  /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
+  getSyncSources(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<GetSyncSourcesResponse>>;
+  /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  createSyncSource(request: SyncSource, context: CallContext & CallContextExt): Promise<DeepPartial<SyncSource>>;
+  /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  updateSyncSource(request: SyncSource, context: CallContext & CallContextExt): Promise<DeepPartial<SyncSource>>;
+  /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
+  deleteSyncSource(
+    request: DeleteSyncSourceRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
   /** Gets a user's SyncDestinations. *Authenticated* (self, or Admin for any user). */
@@ -2138,24 +2137,15 @@ export interface JonlineClient<CallOptionsExt = {}> {
   updateEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
   deleteRemovedEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
-  /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
-  getEventSyncSources(
-    request: DeepPartial<User>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetEventSyncSourcesResponse>;
-  /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
-  createEventSyncSource(
-    request: DeepPartial<EventSyncSource>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<EventSyncSource>;
-  /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
-  updateEventSyncSource(
-    request: DeepPartial<EventSyncSource>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<EventSyncSource>;
-  /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
-  deleteEventSyncSource(
-    request: DeepPartial<DeleteEventSyncSourceRequest>,
+  /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
+  getSyncSources(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<GetSyncSourcesResponse>;
+  /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  createSyncSource(request: DeepPartial<SyncSource>, options?: CallOptions & CallOptionsExt): Promise<SyncSource>;
+  /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  updateSyncSource(request: DeepPartial<SyncSource>, options?: CallOptions & CallOptionsExt): Promise<SyncSource>;
+  /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
+  deleteSyncSource(
+    request: DeepPartial<DeleteSyncSourceRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
   /** Gets a user's SyncDestinations. *Authenticated* (self, or Admin for any user). */

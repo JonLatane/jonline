@@ -57,7 +57,7 @@ JONLINE_COMMANDS=(
   environment edit_environment
   local_db_create local_db_drop local_db_reset local_db_connect
   local_minio_start local_minio_create local_minio_delete
-  delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts convert_media_sizes generate_preview_images
+  delete_expired_tokens delete_unowned_media sync_sources update_user_counts convert_media_sizes generate_preview_images
   set_permission delete_preview_images disable_cdn_grpc
   to_db_id to_proto_id grpcurl
   deploy
@@ -105,7 +105,7 @@ Commands:
                                                      most deploys
     jobs                     Run background jobs on a loop (@@JOBS_SCRIPT_PATH@@) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
-                             sync_event_sync_sources every 1m, update_user_counts every 1h,
+                             sync_sources every 1m, update_user_counts every 1h,
                              convert_media_sizes every 10m, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
@@ -131,7 +131,7 @@ Commands:
 
     delete_expired_tokens    Delete expired auth tokens from the database
     delete_unowned_media     Delete media no longer referenced by any post/user/etc.
-    sync_event_sync_sources  Sync any EventSyncSource (ICS subscription) that's due, per its
+    sync_sources             Sync any SyncSource (ICS subscription) that's due, per its
                              sync_interval_seconds/last_synced_at
     update_user_counts       Recompute follower/following/friend/group/post/response/event/
                              event_instance counts for every User, correcting any drift
@@ -328,8 +328,8 @@ delete_unowned_media() {
   _jonline_exec_bin delete_unowned_media "$@"
 }
 
-sync_event_sync_sources() {
-  _jonline_exec_bin sync_event_sync_sources "$@"
+sync_sources() {
+  _jonline_exec_bin sync_sources "$@"
 }
 
 update_user_counts() {

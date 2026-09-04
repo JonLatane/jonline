@@ -98,7 +98,7 @@ message GenerateMediaRequest {
 
 // An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
 // key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
-// [`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+// [`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource) (also user-owned integrations
 // with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
 // those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
 // other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.

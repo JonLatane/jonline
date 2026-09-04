@@ -28,8 +28,8 @@ pub use push_subscriptions::*;
 pub mod events;
 pub use events::*;
 
-pub mod event_sync_sources;
-pub use event_sync_sources::*;
+pub mod sync_sources;
+pub use sync_sources::*;
 
 pub mod sync_destinations;
 pub use sync_destinations::*;

@@ -17,7 +17,7 @@ export const protobufPackage = "jonline";
  *
  * Lives in its own file (rather than `users.proto`, where it used to live) so that both
  * `users.proto` (`User.sync_destinations`) and `sync.proto` (`SyncDestination.owner`,
- * `EventSyncSource.owner`) can depend on it without a `users.proto` <-> `sync.proto` import cycle.
+ * `SyncSource.owner`) can depend on it without a `users.proto` <-> `sync.proto` import cycle.
  */
 export interface Author {
   /** Permanent string ID for the user. Will never contain a `@` symbol. */

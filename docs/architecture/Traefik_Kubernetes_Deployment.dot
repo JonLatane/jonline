@@ -200,11 +200,11 @@ digraph G {
           color = white;
           node [style = filled; color = white;];
 
-          event_sync_sources [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          sync_sources [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Sources</b>>;];
           sync_destinations [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
-        vapid_configuration -> event_sync_sources [style = invis;];
+        vapid_configuration -> sync_sources [style = invis;];
       }
     }
     jonline0 -> minio0;
@@ -218,7 +218,7 @@ digraph G {
     push_content [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline0 -> pull_events [weight = 8;];
     jonline0 -> push_content [weight = 8;];
-    event_sync_sources -> pull_events [style = bold;];
+    sync_sources -> pull_events [style = bold;];
     sync_destinations -> push_content [style = bold;];
     facebook_configuration -> push_content [style = bold;];
   }
@@ -262,11 +262,11 @@ digraph G {
           color = white;
           node [style = filled; color = white;];
 
-          event_sync_sources1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          sync_sources1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Sources</b>>;];
           sync_destinations1 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
-        vapid_configuration1 -> event_sync_sources1 [style = invis;];
+        vapid_configuration1 -> sync_sources1 [style = invis;];
       }
     }
     jonline1 -> minio1;
@@ -280,7 +280,7 @@ digraph G {
     push_content1 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline1 -> pull_events1 [weight = 8;];
     jonline1 -> push_content1 [weight = 8;];
-    event_sync_sources1 -> pull_events1 [style = bold;];
+    sync_sources1 -> pull_events1 [style = bold;];
     sync_destinations1 -> push_content1 [style = bold;];
     facebook_configuration1 -> push_content1 [style = bold;];
 
@@ -325,11 +325,11 @@ digraph G {
           color = white;
           node [style = filled; color = white;];
 
-          event_sync_sources2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          sync_sources2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Sources</b>>;];
           sync_destinations2 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
-        vapid_configuration2 -> event_sync_sources2 [style = invis;];
+        vapid_configuration2 -> sync_sources2 [style = invis;];
       }
     }
     jonline2 -> minio2;
@@ -343,7 +343,7 @@ digraph G {
     push_content2 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline2 -> pull_events2 [weight = 8;];
     jonline2 -> push_content2 [weight = 8;];
-    event_sync_sources2 -> pull_events2 [style = bold;];
+    sync_sources2 -> pull_events2 [style = bold;];
     sync_destinations2 -> push_content2 [style = bold;];
     facebook_configuration2 -> push_content2 [style = bold;];
 
@@ -388,11 +388,11 @@ digraph G {
           color = white;
           node [style = filled; color = white;];
 
-          event_sync_sources3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Event Sync Sources</b>>;];
+          sync_sources3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Sources</b>>;];
           sync_destinations3 [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Sync Destinations</b>>;];
         }
         // Invisible, rank-only edge: hints Server Level above User Level instead of beside it.
-        vapid_configuration3 -> event_sync_sources3 [style = invis;];
+        vapid_configuration3 -> sync_sources3 [style = invis;];
       }
     }
     jonline3 -> minio3;
@@ -406,7 +406,7 @@ digraph G {
     push_content3 [shape = parallelogram;label = "Push Posts/Events To Destination";];
     jonline3 -> pull_events3 [weight = 8;];
     jonline3 -> push_content3 [weight = 8;];
-    event_sync_sources3 -> pull_events3 [style = bold;];
+    sync_sources3 -> pull_events3 [style = bold;];
     sync_destinations3 -> push_content3 [style = bold;];
     facebook_configuration3 -> push_content3 [style = bold;];
 
@@ -459,9 +459,9 @@ digraph G {
   vapid_push3 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
   vapid_push_service -> browser [constraint = false; style = tapered; penwidth = 6;];
 
-  // EventSyncSource (an iCal subscription) is pulled *in*; SyncDestination (e.g. a Facebook
+  // SyncSource (an iCal subscription) is pulled *in*; SyncDestination (e.g. a Facebook
   // Page -- used to push out both Posts and EventInstances) is pushed *out* -- see
-  // backend/src/protos/jonline.rs's EventSyncSource/SyncDestination doc comments. Arrow direction
+  // backend/src/protos/jonline.rs's SyncSource/SyncDestination doc comments. Arrow direction
   // follows the data, same as VAPID push above.
   ical_feeds -> pull_events [constraint = false; style = dotted;];
   ical_feeds -> pull_events1 [constraint = false; style = dotted;];

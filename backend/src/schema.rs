@@ -76,24 +76,10 @@ diesel::table! {
         location -> Nullable<Jsonb>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
-        event_sync_source_instance_id -> Nullable<Varchar>,
+        sync_source_instance_id -> Nullable<Varchar>,
         search_text -> TsVector,
         user_id -> Nullable<Int8>,
         sync_missing_since -> Nullable<Timestamp>,
-    }
-}
-
-diesel::table! {
-    event_sync_sources (id) {
-        id -> Int8,
-        user_id -> Int8,
-        sync_interval_seconds -> Int8,
-        configuration -> Jsonb,
-        last_synced_at -> Nullable<Timestamp>,
-        created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
-        event_count -> Int8,
-        event_instance_count -> Int8,
     }
 }
 
@@ -103,7 +89,7 @@ diesel::table! {
         info -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
-        event_sync_source_id -> Nullable<Int8>,
+        sync_source_id -> Nullable<Int8>,
     }
 }
 
@@ -355,6 +341,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    sync_sources (id) {
+        id -> Int8,
+        user_id -> Int8,
+        sync_interval_seconds -> Int8,
+        configuration -> Jsonb,
+        last_synced_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+        event_count -> Int8,
+        event_instance_count -> Int8,
+        post_count -> Int8,
+    }
+}
+
+diesel::table! {
     user_access_tokens (id) {
         id -> Int8,
         refresh_token_id -> Int8,
@@ -433,9 +434,8 @@ diesel::joinable!(event_instance_sync_destinations -> event_instances (event_ins
 diesel::joinable!(event_instance_sync_destinations -> sync_destinations (sync_destination_id));
 diesel::joinable!(event_instances -> events (event_id));
 diesel::joinable!(event_instances -> posts (post_id));
-diesel::joinable!(event_sync_sources -> users (user_id));
-diesel::joinable!(events -> event_sync_sources (event_sync_source_id));
 diesel::joinable!(events -> posts (post_id));
+diesel::joinable!(events -> sync_sources (sync_source_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
 diesel::joinable!(federated_profiles -> federated_users (federated_user_id));
@@ -457,6 +457,7 @@ diesel::joinable!(post_sync_destinations -> sync_destinations (sync_destination_
 diesel::joinable!(posts -> users (user_id));
 diesel::joinable!(push_subscriptions -> users (user_id));
 diesel::joinable!(sync_destinations -> users (user_id));
+diesel::joinable!(sync_sources -> users (user_id));
 diesel::joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
 diesel::joinable!(user_devices -> users (user_id));
 diesel::joinable!(user_posts -> posts (post_id));
@@ -469,7 +470,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     event_attendances,
     event_instance_sync_destinations,
     event_instances,
-    event_sync_sources,
     events,
     federated_accounts,
     federated_profiles,
@@ -489,6 +489,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     push_subscriptions,
     server_configurations,
     sync_destinations,
+    sync_sources,
     user_access_tokens,
     user_devices,
     user_posts,

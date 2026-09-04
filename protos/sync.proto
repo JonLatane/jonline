@@ -5,7 +5,7 @@ package jonline;
 import "google/protobuf/timestamp.proto";
 import "authors.proto";
 
-// A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
+// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
 // but for pushing content out rather than pulling events in. Originally Event-specific
 // (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
 // [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
@@ -21,7 +21,7 @@ message SyncDestination {
   optional google.protobuf.Timestamp updated_at = 5;
 
   // The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  // request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)'s `event_count`/`event_instance_count`, which are
+  // request time (unlike [`SyncSource`](#jonline-SyncSource)'s `event_count`/`event_instance_count`, which are
   // recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   // in bulk on an interval.
   optional uint64 synced_event_instance_count = 6;
@@ -216,27 +216,30 @@ message SyncDestinationStatus {
 }
 
 // A user-owned source to sync events from.
-message EventSyncSource {
+message SyncSource {
   // Unique ID for the synchronization.
   string id = 1;
-  // The user information for the owner of this event sync.
+  // The user information for the owner of this sync source.
   Author owner = 2;
   // How frequently the sync should happen in seconds.
   uint64 sync_interval_seconds = 3;
 
-  // The time the EventSyncSource was created.
+  // The time the SyncSource was created.
   google.protobuf.Timestamp created_at = 4;
-  // The time the EventSyncSource was last updated.
+  // The time the SyncSource was last updated.
   optional google.protobuf.Timestamp updated_at = 5;
-  // The time the EventSyncSource was last synced.
+  // The time the SyncSource was last synced.
   optional google.protobuf.Timestamp last_synced_at = 6;
 
-  // The number of events total associated with this EventSyncSource. Recomputed
+  // The number of events total associated with this SyncSource. Recomputed
   // on each sync.
   uint64 event_count = 7;
-  // The number of event instances total associated with this EventSyncSource. Recomputed
+  // The number of event instances total associated with this SyncSource. Recomputed
   // on each sync.
   uint64 event_instance_count = 8;
+  // The number of posts total associated with this SyncSource. Not yet populated --
+  // no source type syncs posts in yet.
+  uint64 post_count = 10;
 
   oneof configuration {
     // The iCal subscription URL for the calendar sync.
@@ -244,14 +247,14 @@ message EventSyncSource {
   }
 }
 
-message GetEventSyncSourcesResponse {
-  repeated EventSyncSource sources = 1;
+message GetSyncSourcesResponse {
+  repeated SyncSource sources = 1;
 }
 
-// Request to delete an EventSyncSource.
-message DeleteEventSyncSourceRequest {
+// Request to delete a SyncSource.
+message DeleteSyncSourceRequest {
   // The source to be deleted.
-  EventSyncSource source = 1;
+  SyncSource source = 1;
   // Whether to delete synced events.
   bool delete_synced_events = 2;
 }

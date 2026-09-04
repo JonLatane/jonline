@@ -1,6 +1,6 @@
 use super::{
-    Author, Event, EventAttendance, EventInstance, EventInstanceSyncDestination, EventSyncSource,
-    Post, User, AUTHOR_COLUMNS, EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
+    Author, Event, EventAttendance, EventInstance, EventInstanceSyncDestination, Post, SyncSource,
+    User, AUTHOR_COLUMNS, EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
 };
 use diesel::{
     dsl::sql,
@@ -13,81 +13,78 @@ use crate::{
     db_connection::PgPooledConnection,
     // protos::Author,
     schema::{
-        event_attendances, event_instance_sync_destinations, event_instances, event_sync_sources,
-        events, follows, posts, users,
+        event_attendances, event_instance_sync_destinations, event_instances, events, follows,
+        posts, sync_sources, users,
     },
 };
 
-pub fn get_event_sync_source(
-    id: i64,
-    conn: &mut PgPooledConnection,
-) -> Result<EventSyncSource, Status> {
-    event_sync_sources::table
-        .select(event_sync_sources::all_columns)
-        .filter(event_sync_sources::id.eq(id))
-        .first::<EventSyncSource>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "event_sync_source_not_found"))
+pub fn get_sync_source(id: i64, conn: &mut PgPooledConnection) -> Result<SyncSource, Status> {
+    sync_sources::table
+        .select(sync_sources::all_columns)
+        .filter(sync_sources::id.eq(id))
+        .first::<SyncSource>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "sync_source_not_found"))
 }
 
-pub fn get_event_sync_sources_for_user(
+pub fn get_sync_sources_for_user(
     user_id: i64,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<(EventSyncSource, Author)>, Status> {
-    event_sync_sources::table
-        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
-        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
-        .filter(event_sync_sources::user_id.eq(user_id))
-        .order(event_sync_sources::created_at.desc())
-        .load::<(EventSyncSource, Author)>(conn)
+) -> Result<Vec<(SyncSource, Author)>, Status> {
+    sync_sources::table
+        .inner_join(users::table.on(sync_sources::user_id.eq(users::id)))
+        .select((sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(sync_sources::user_id.eq(user_id))
+        .order(sync_sources::created_at.desc())
+        .load::<(SyncSource, Author)>(conn)
         .map_err(|e| {
             log::error!(
-                "Failed to load event sync sources for user_id={}: {:?}",
+                "Failed to load sync sources for user_id={}: {:?}",
                 user_id,
                 e
             );
-            Status::new(Code::Internal, "failed_to_load_event_sync_sources")
+            Status::new(Code::Internal, "failed_to_load_sync_sources")
         })
 }
 
-/// Batched variant of `get_event_sync_sources_for_user` -- every EventSyncSource owned by any of
+/// Batched variant of `get_sync_sources_for_user` -- every SyncSource owned by any of
 /// `user_ids`, paired with each owner's `Author`. Used by `get_users.rs`'s
-/// `attach_advanced_admin_data` to fill in `User.event_sync_sources` for many users in one query
+/// `attach_advanced_admin_data` to fill in `User.sync_sources` for many users in one query
 /// rather than one per user.
-pub fn get_event_sync_sources_for_users(
+pub fn get_sync_sources_for_users(
     user_ids: &[i64],
     conn: &mut PgPooledConnection,
-) -> Result<Vec<(EventSyncSource, Author)>, Status> {
+) -> Result<Vec<(SyncSource, Author)>, Status> {
     if user_ids.is_empty() {
         return Ok(vec![]);
     }
-    event_sync_sources::table
-        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
-        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
-        .filter(event_sync_sources::user_id.eq_any(user_ids))
-        .order(event_sync_sources::created_at.desc())
-        .load::<(EventSyncSource, Author)>(conn)
+    sync_sources::table
+        .inner_join(users::table.on(sync_sources::user_id.eq(users::id)))
+        .select((sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(sync_sources::user_id.eq_any(user_ids))
+        .order(sync_sources::created_at.desc())
+        .load::<(SyncSource, Author)>(conn)
         .map_err(|e| {
             log::error!(
-                "Failed to load event sync sources for user_ids={:?}: {:?}",
+                "Failed to load sync sources for user_ids={:?}: {:?}",
                 user_ids,
                 e
             );
-            Status::new(Code::Internal, "failed_to_load_event_sync_sources")
+            Status::new(Code::Internal, "failed_to_load_sync_sources")
         })
 }
 
-pub fn get_event_sync_sources_by_ids(
+pub fn get_sync_sources_by_ids(
     ids: Vec<i64>,
     conn: &mut PgPooledConnection,
-) -> Vec<(EventSyncSource, Author)> {
+) -> Vec<(SyncSource, Author)> {
     if ids.is_empty() {
         return vec![];
     }
-    event_sync_sources::table
-        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
-        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
-        .filter(event_sync_sources::id.eq_any(ids))
-        .load::<(EventSyncSource, Author)>(conn)
+    sync_sources::table
+        .inner_join(users::table.on(sync_sources::user_id.eq(users::id)))
+        .select((sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(sync_sources::id.eq_any(ids))
+        .load::<(SyncSource, Author)>(conn)
         .unwrap_or_default()
 }
 

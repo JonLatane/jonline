@@ -834,7 +834,7 @@ view shared server maybeAdminAccount model =
                 federationDisplayView shared savedServers
         , case ( model.federationEdit, maybeAdminAccount ) of
             ( Nothing, Just _ ) ->
-                button [ class "server-details-rename-button", onClick FederationEditClicked ] [ text "Edit" ]
+                button [ class "server-details-rename-button", onClick FederationEditClicked ] [ text "Edit Federation" ]
 
             _ ->
                 text ""

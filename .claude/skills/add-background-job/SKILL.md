@@ -1,9 +1,9 @@
 ---
 name: add-background-job
-description: Add a new periodic background job binary (like delete_expired_tokens, delete_unowned_media, sync_event_sync_sources) to Jonline's backend. Use when asked to create a new scheduled/cron-style maintenance or sync job for the Rust backend, since there's no central registry -- it must be wired by hand into ~7 files.
+description: Add a new periodic background job binary (like delete_expired_tokens, delete_unowned_media, sync_sources) to Jonline's backend. Use when asked to create a new scheduled/cron-style maintenance or sync job for the Rust backend, since there's no central registry -- it must be wired by hand into ~7 files.
 ---
 
-Jonline's background jobs are small standalone binaries under `backend/src/bin/*.rs`, each doing one pass of work (no internal loop/sleep) and exiting. Looping/scheduling is entirely external and, everywhere the job runs (local/Homebrew/Linux tarball, and cluster deploys since 2026-09-04), goes through the same `backend/background_jobs.sh`, which re-invokes the binary on an interval -- cluster deploys run it in the single `jonline-jobs` Deployment (`deploys/k8s/server_internal.yaml` & co.) rather than a per-job K8s `CronJob`. There's no registry file to grep for "the list of jobs" -- every one of the touch points below has its own hand-maintained copy of the job list, so adding a job means editing all of them the same way `delete_expired_tokens`/`delete_unowned_media`/`sync_event_sync_sources` already are.
+Jonline's background jobs are small standalone binaries under `backend/src/bin/*.rs`, each doing one pass of work (no internal loop/sleep) and exiting. Looping/scheduling is entirely external and, everywhere the job runs (local/Homebrew/Linux tarball, and cluster deploys since 2026-09-04), goes through the same `backend/background_jobs.sh`, which re-invokes the binary on an interval -- cluster deploys run it in the single `jonline-jobs` Deployment (`deploys/k8s/server_internal.yaml` & co.) rather than a per-job K8s `CronJob`. There's no registry file to grep for "the list of jobs" -- every one of the touch points below has its own hand-maintained copy of the job list, so adding a job means editing all of them the same way `delete_expired_tokens`/`delete_unowned_media`/`sync_sources` already are.
 
 ## 1. The binary: `backend/src/bin/<job_name>.rs`
 

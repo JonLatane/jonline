@@ -130,7 +130,7 @@ message Event {
 
   // If the event was synced from a source (meaning only its media should not be editable),
   // this is the source it was synced from.
-  optional EventSyncSource event_sync_source = 5;
+  optional SyncSource sync_source = 5;
 }
 
 // Syncs (cross-posts) a single EventInstance to one SyncDestination.
@@ -186,8 +186,8 @@ message EventInstance {
   google.protobuf.Timestamp ends_at = 6;
   // The location of the event.
   optional Location location = 7;
-  // The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource).
-  optional string event_sync_source_instance_id = 8;
+  // The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from a [`SyncSource`](#jonline-SyncSource).
+  optional string sync_source_instance_id = 8;
   // The time since this event "disappeared" from the sync source.
   // It is up to the owner whether this means it should be deleted.
   optional google.protobuf.Timestamp sync_missing_since = 9;
