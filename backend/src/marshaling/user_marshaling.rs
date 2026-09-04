@@ -76,6 +76,11 @@ impl ToProtoUser for models::User {
             // post-`to_proto` step -- see `attach_own_sync_destinations`.
             // Never populated here, unlike `federated_profiles` above.
             sync_destinations: vec![],
+            // Same deal as `sync_destinations`, but populated by `get_users.rs`'s
+            // `attach_advanced_admin_data` across *every* listing type (not just the two
+            // single-user lookups) -- see that function's own doc.
+            event_sync_sources: vec![],
+            available_ai_models: vec![],
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
             target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
             current_group_membership: None, // TODO

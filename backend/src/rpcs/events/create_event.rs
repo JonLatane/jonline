@@ -182,7 +182,7 @@ pub fn create_event(
             // };
             let inserted_instance = insert_into(event_instances::table)
                 .values(&models::NewEventInstance {
-                    event_id: inserted_event.id,
+                    event_id: inserted_event.post_id,
                     post_id: instance_post.id,
                     starts_at: instance.starts_at.as_ref().unwrap().to_db(),
                     ends_at: instance.ends_at.as_ref().unwrap().to_db(),
@@ -215,7 +215,7 @@ pub fn create_event(
             let marshalable_post = &marshalable_event.1;
             let post = &marshalable_post.0;
             let instances = &marshalable_event.2;
-            log::info!("Event created! EventID: {:?}", event.id);
+            log::info!("Event created! EventID: {:?}", event.post_id);
             let mut media_ids = post.media.clone();
             user.avatar_media_id.map(|id| media_ids.push(Some(id)));
             media_ids.append(

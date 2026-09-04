@@ -24,6 +24,7 @@ the calling page's own `Request`.
 -}
 
 import Browser.Navigation
+import Components.AIModelProviders as AIModelProviders
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -45,6 +46,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
@@ -87,6 +89,12 @@ type alias Model =
     -- mistaken for this page's own.
     , mediaEditActive : Bool
 
+    -- Set by `GenerateMediaClicked`, until `Shared.MediaGeneratorPanel` reports back a
+    -- `GotGenerateResult`/`CancelClicked` -- same "am I mid-edit" gating `mediaEditActive` uses for
+    -- `Shared.MyMediaPanel`, needed here for the same reason (see that panel's own module doc on why
+    -- this lives at the page level rather than inside the panel itself).
+    , mediaGeneratorActive : Bool
+
     -- Captured once at `init` -- see the module doc.
     , pageIsSecure : Bool
     , navKey : Browser.Navigation.Key
@@ -94,12 +102,12 @@ type alias Model =
     -- `Submitting`/`SubmitFailed` push status per `syncDestinationId`, for the
     -- "synced to" listing's own Push/Push-again button (see
     -- `Posts.postSyncDestinationsView`'s `isPushing`/`pushError`) -- mirrors
-    -- `Pages.Event.EventId_.Model.syncDestinationPushStatuses` exactly, since
+    -- `Pages.Event.PostId_.Model.syncDestinationPushStatuses` exactly, since
     -- this page too only ever shows one Post's own sync status at a time.
     , syncDestinationPushStatuses : Dict String SubmitStatus
 
     -- The viewer's own `SyncDestination`s, fetched once `GotPost` confirms they're this Post's
-    -- author (or Admin) -- mirrors `Pages.Event.EventId_.Model.availableSyncDestinations` exactly,
+    -- author (or Admin) -- mirrors `Pages.Event.PostId_.Model.availableSyncDestinations` exactly,
     -- including the `Nothing`-until-fetched/non-author fallback to a read-only view. See that
     -- field's own doc.
     , availableSyncDestinations : Maybe (List SyncDestination)
@@ -121,6 +129,7 @@ type Msg
     | ReplyClicked Post
     | MediaClicked Post String
     | MediaEditClicked Post
+    | GenerateMediaClicked Post
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- `Components.Posts.mediaLayoutSelector`'s `onMediaLayoutChanged` --
       -- unlike `MediaEditClicked`, this saves straight away (no picker panel,
@@ -153,12 +162,12 @@ type Msg
       -- row (see `Model.syncDestinationPushStatuses`'s own doc) -- the Delete
       -- button on that same row instead goes straight through
       -- `Shared.RequestDelete`/`Shared.ConfirmPostSyncDestinationDelete`
-      -- (see `postDetailView`), mirroring `Pages.Event.EventId_`'s identical
+      -- (see `postDetailView`), mirroring `Pages.Event.PostId_`'s identical
       -- split exactly.
     | PushSyncDestinationClicked String
     | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- `Model.availableSyncDestinations`'s own fetch (see `GotPost`'s Ok branch) resolving --
-      -- mirrors `Pages.Event.EventId_.GotSyncDestinationsResult` exactly, including the
+      -- mirrors `Pages.Event.PostId_.GotSyncDestinationsResult` exactly, including the
       -- no-error-banner-on-failure behavior.
     | GotSyncDestinationsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse ))
     | Poll
@@ -225,6 +234,7 @@ init shared pageIsSecure rawPostId navKey =
                 , visibilityEdit = Nothing
                 , moderationEdit = Nothing
                 , mediaEditActive = False
+                , mediaGeneratorActive = False
                 , pageIsSecure = pageIsSecure
                 , navKey = navKey
                 , syncDestinationPushStatuses = Dict.empty
@@ -318,7 +328,7 @@ update shared msg model =
                             ( { model | postStatus = PostFailed }, Effect.none )
 
                 -- Only the Post's author (or an Admin) can ever push it to a `SyncDestination` --
-                -- mirrors `Pages.Event.EventId_.GotEvent`'s identical
+                -- mirrors `Pages.Event.PostId_.GotEvent`'s identical
                 -- `syncDestinationsFetchEffect`/`isOwner` gate exactly, including the
                 -- guard-on-`Nothing` so a post-edit refetch doesn't re-issue this.
                 syncDestinationsFetchEffect : Effect Msg
@@ -415,6 +425,14 @@ update shared msg model =
                         (Just (MyMediaPanel.MultiSelect { initialSelection = post.media }))
                         model.targetHost
                     )
+                )
+            )
+
+        GenerateMediaClicked post ->
+            ( { model | mediaGeneratorActive = True }
+            , Effect.fromShared
+                (Shared.MediaGeneratorPanelMsg
+                    (MediaGeneratorPanel.Open (Just (MediaGeneratorPanel.TargetPost post)) model.targetHost shared.basePath)
                 )
             )
 
@@ -655,6 +673,27 @@ update shared msg model =
                         Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
                             ( { model | mediaEditActive = False }, Effect.none )
 
+                        -- `Shared.MediaGeneratorPanel`'s own module doc covers why this arrives as
+                        -- a forwarded `Shared.Msg` rather than a callback -- gated on
+                        -- `mediaGeneratorActive` (set by `GenerateMediaClicked`) for the same
+                        -- "don't mistake some unrelated use of the panel for this page's own"
+                        -- reasoning `mediaEditActive` above already gives. Only refetches on `Ok`
+                        -- (a new `Media` was actually attached to this post) -- an `Err` leaves the
+                        -- panel open showing the error, so this page has nothing new to pick up yet.
+                        Shared.MediaGeneratorPanelMsg (MediaGeneratorPanel.GotGenerateResult (Ok _)) ->
+                            if model.mediaGeneratorActive then
+                                let
+                                    ( refetchedModel, refetchEffect ) =
+                                        refetch shared model
+                                in
+                                ( { refetchedModel | mediaGeneratorActive = False }, refetchEffect )
+
+                            else
+                                ( model, Effect.none )
+
+                        Shared.MediaGeneratorPanelMsg MediaGeneratorPanel.CancelClicked ->
+                            ( { model | mediaGeneratorActive = False }, Effect.none )
+
                         -- This page's own `DeleteClicked` (via
                         -- `Shared.RequestDelete`/`Shared.ConfirmDelete`)
                         -- resolving successfully -- navigate away, since
@@ -664,7 +703,7 @@ update shared msg model =
 
                         -- The "synced to" listing's own Delete button (see
                         -- `Model.syncDestinationPushStatuses`'s own doc) resolving
-                        -- successfully -- mirrors `Pages.Event.EventId_`'s identical
+                        -- successfully -- mirrors `Pages.Event.PostId_`'s identical
                         -- branch: refetch, since a successful un-sync changes
                         -- `post.syncDestinations` behind this already-fetched copy's
                         -- back the same way, and the result carries no destination id
@@ -829,6 +868,22 @@ postDetailView shared model post =
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
+
+        -- `Nothing` when the viewer has no image-capable `AvailableAIModel` at all -- see
+        -- `Posts.generateMediaButton`'s own doc on why this decision lives at the call site rather
+        -- than inside `Components.Posts`.
+        onGenerateMediaClicked : Maybe Msg
+        onGenerateMediaClicked =
+            case maybeAccount of
+                Just account ->
+                    if List.any AIModelProviders.hasAnyImageCapability account.availableAiModels then
+                        Just (GenerateMediaClicked displayPost)
+
+                    else
+                        Nothing
+
+                Nothing ->
+                    Nothing
     in
     Posts.postDetail shared.time
         shared.basePath
@@ -838,6 +893,7 @@ postDetailView shared model post =
         maybeAccount
         onMediaClicked
         (MediaEditClicked displayPost)
+        onGenerateMediaClicked
         (MediaLayoutChanged displayPost)
         starred
         onStarClicked

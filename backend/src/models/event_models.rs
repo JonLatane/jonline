@@ -8,8 +8,8 @@ use crate::schema::{
 };
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
+#[diesel(primary_key(post_id))]
 pub struct Event {
-    pub id: i64,
     pub post_id: i64,
     pub info: serde_json::Value,
     pub created_at: SystemTime,
@@ -27,8 +27,8 @@ pub struct NewEvent {
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(Event))]
+#[diesel(primary_key(post_id))]
 pub struct EventInstance {
-    pub id: i64,
     pub event_id: i64,
     pub post_id: i64,
     pub info: serde_json::Value,
@@ -55,7 +55,6 @@ pub struct EventInstance {
 ///   back into application code, and `EventInstance` derives `AsChangeset`, so a field here would
 ///   let a stray `.set(&existing_instance)` stomp the trigger-maintained value with stale data.
 pub const EVENT_INSTANCE_COLUMNS: (
-    event_instances::id,
     event_instances::event_id,
     event_instances::post_id,
     event_instances::info,
@@ -67,7 +66,6 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::event_sync_source_instance_id,
     event_instances::sync_missing_since,
 ) = (
-    event_instances::id,
     event_instances::event_id,
     event_instances::post_id,
     event_instances::info,

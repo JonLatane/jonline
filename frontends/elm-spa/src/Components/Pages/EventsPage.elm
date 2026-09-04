@@ -187,7 +187,10 @@ type alias Model =
     -- before that (this page used to seed a placeholder `Time.millisToPosix
     -- 0`, i.e. the UNIX epoch, so its very first request asked for events
     -- "ending after 1970") was the actual cause of very old events
-    -- occasionally flashing up on first load.
+    -- occasionally flashing up on first load. Switching to `EventsAfterDate`
+    -- for the first time this session (`TabChanged`) instead seeds this from
+    -- `Shared.UserPreferences.eventsAfter`, if set, rather than wherever
+    -- `UpcomingEvents`' live clock last left it -- see that field's own doc.
     , endsAfter : Maybe Time.Posix
 
     -- Debounces `EndsAfterInputChanged` (500ms) -- mirrors
@@ -250,9 +253,18 @@ type alias Model =
     -- `Just user.eventSyncDestinations` -- see `init`'s own doc.
     , availableSyncDestinations : Maybe (List SyncDestination)
 
+    -- Overrides `calendarDisplayMode shared`'s own server-wide `EventSettings.default_calendar_display_mode`
+    -- for this copy's `Calendar` mode alone -- `Nothing` everywhere except `Pages.Home_`'s own
+    -- embedded strip(s), which pass `Just customTabs.home.default_events_strip_calendar_display_mode`
+    -- once an admin's actually configured `home` (see `Pages.Home_.eventsStripCalendarDisplayModeOverride`),
+    -- so the home page's own strip can open to a different granularity (e.g. "Week") than the
+    -- standalone Events page's own server-wide default (e.g. "Month") without changing that global
+    -- setting. Read only by `calendarRenderEffect`.
+    , calendarDisplayModeOverride : Maybe CalendarDisplayMode
+
     -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
     -- destinationId` (many instances on screen at once, unlike
-    -- `Pages.Event.EventId_`'s own single-instance `pushStatuses`, which
+    -- `Pages.Event.PostId_`'s own single-instance `pushStatuses`, which
     -- only needs to key by `destinationId`) -- drives the `isPushing`/
     -- `pushError` closures `eventCardView` builds for `Events.eventCard`.
     , pushStatuses : Dict String SubmitStatus
@@ -278,7 +290,7 @@ type Msg
       -- `Msg`'s own (untargeted, port-delivered) payload. A payload that
       -- fails to decode is treated the same as `measurementPhase` already
       -- being `NotMeasuring` -- give up silently, same fallback
-      -- `EventId_.scrollToInstance` already relies on for its own
+      -- `PostId_.scrollToInstance` already relies on for its own
       -- `Dom`-adjacent calls.
     | GotMeasuredRects Decode.Value
       -- One deliberate `requestAnimationFrame` wait (via a throwaway
@@ -302,7 +314,11 @@ type Msg
       -- `DisplayModeChanged` in spirit but needs none of its FLIP
       -- machinery: there's no shared layout to slide between, just a
       -- different fetch cutoff, so this just updates `model.tab`/refetches/
-      -- persists the URL directly. See `tabsView`.
+      -- persists the URL directly. See `tabsView`. Switching into
+      -- `EventsAfterDate` for the first time this session also seeds
+      -- `model.endsAfter` from `Shared.UserPreferences.eventsAfter`, if set
+      -- -- see that field's own doc -- rather than leaving it wherever
+      -- `UpcomingEvents`' live clock last left it.
     | TabChanged EventsTab
       -- The `EventsAfterDate` tab's `<input type="datetime-local">` firing
       -- -- parsed via `Shared.Time.posixFromDateTimeLocalInput`;
@@ -311,7 +327,9 @@ type Msg
       -- else in this module. A valid one switches to that tab too (even if
       -- `UpcomingEvents` was active), per `tabsView`'s own doc. Updates
       -- `model.endsAfter` (so the input/tab reflect it immediately) but
-      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`.
+      -- only *fetches*, debounced 500ms -- see `EndsAfterDebounceElapsed`,
+      -- which also persists it as `Shared.UserPreferences.eventsAfter` once
+      -- the debounce settles.
     | EndsAfterInputChanged String
       -- `EndsAfterInputChanged`'s debounce timer elapsing -- mirrors
       -- `PostsPage.SearchDebounceElapsed` exactly: a no-op if a later edit
@@ -365,7 +383,7 @@ type Msg
       -- backdrop click.
     | CalendarPreviewClosed
       -- `scrollToCalendarPreviewCard`'s measurement resolving -- mirrors
-      -- `Pages.Event.EventId_.GotScrollTarget` exactly, including giving up
+      -- `Pages.Event.PostId_.GotScrollTarget` exactly, including giving up
       -- silently (`Err`) if the strip/card aren't found (e.g. the modal was
       -- closed again before this resolved). Also clears `model.pendingCalendarPreviewScroll`
       -- unconditionally (mirrors `Components.Pages.MessagesPage.ScrollAttempted`'s
@@ -395,7 +413,7 @@ type Msg
     | CalendarPreviewCardNavigated String
 
 
-{-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.EventId_.SubmitStatus`
+{-| Mirrors `Pages.Post.PostId_.SubmitStatus`/`Pages.Event.PostId_.SubmitStatus`
 exactly -- see `Model.pushStatuses`.
 -}
 type SubmitStatus
@@ -409,7 +427,7 @@ in -- `VerticalList` (the default, a single full-width column, mirroring
 fixed-tile-width grid, reusing `flip.css`'s existing `.flip-animated-grid`,
 built for `Shared.MyMediaPanel`'s media tiles), `HorizontalList` (a
 single horizontally-scrolling row of that same fixed tile width, mirroring
-`Pages.Event.EventId_`'s own date-picker strip), and `Calendar` (a
+`Pages.Event.PostId_`'s own date-picker strip), and `Calendar` (a
 [FullCalendar](https://fullcalendar.io/) view rendered by JS via
 `Ports.renderCalendar` -- see `calendarView`/`calendarEvents`). `Grid`/
 `HorizontalList` share one card size, but `VerticalList`'s is genuinely
@@ -565,8 +583,8 @@ is far lower value than the standalone `/events`-like pages this actually
 matters for).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> ( Model, Effect Msg )
+init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -620,6 +638,7 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , showSyncSources = False
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
+                , calendarDisplayModeOverride = calendarDisplayModeOverride
                 , pushStatuses = Dict.empty
                 }
                 |> Tuple.mapFirst syncCalendarAnimations
@@ -978,15 +997,30 @@ updateInner shared msg model =
                 ( model, Effect.none )
 
             else
-                -- `endsAfter` itself isn't changing (this just starts the
-                -- picker off wherever `UpcomingEvents`' live clock last left
-                -- it) so there's nothing to refetch, just the tab/URL.
-                let
-                    newModel : Model
-                    newModel =
-                        { model | tab = EventsAfterDate }
-                in
-                ( newModel, pushUrl newModel )
+                case shared.userPreferences.eventsAfter of
+                    Just preferredEndsAfter ->
+                        -- The user has a remembered cutoff from a previous
+                        -- session (see `Shared.UserPreferences.eventsAfter`'s
+                        -- own doc) -- start the picker there instead of
+                        -- wherever `UpcomingEvents`' live clock last left
+                        -- `endsAfter`, and (since the cutoff is actually
+                        -- changing this time) refetch with it.
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared { model | tab = EventsAfterDate, endsAfter = Just preferredEndsAfter } (relevantServers shared model)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    Nothing ->
+                        -- `endsAfter` itself isn't changing (this just starts the
+                        -- picker off wherever `UpcomingEvents`' live clock last left
+                        -- it) so there's nothing to refetch, just the tab/URL.
+                        let
+                            newModel : Model
+                            newModel =
+                                { model | tab = EventsAfterDate }
+                        in
+                        ( newModel, pushUrl newModel )
 
         EndsAfterInputChanged raw ->
             case SharedTime.posixFromDateTimeLocalInput shared.time.browserTimeZone.zone raw of
@@ -1011,7 +1045,13 @@ updateInner shared msg model =
                     ( refetchedModel, refetchEffect ) =
                         refetchServers shared model (relevantServers shared model)
                 in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+                ( refetchedModel
+                , Effect.batch
+                    [ refetchEffect
+                    , pushUrl refetchedModel
+                    , Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetEventsAfter model.endsAfter))
+                    ]
+                )
 
             else
                 -- A later edit already bumped `endsAfterInputGeneration`
@@ -1159,7 +1199,7 @@ updateInner shared msg model =
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
-well-formed array -- but mirrors `EventId_.GotScrollTarget (Err _)`'s "give
+well-formed array -- but mirrors `PostId_.GotScrollTarget (Err _)`'s "give
 up silently" convention regardless): still applies a pending mode switch if
 `model.measurementPhase` had one in flight, just with no slide animation,
 rather than leaving the click seemingly do nothing.
@@ -1679,12 +1719,12 @@ setBreadcrumbsRoot shared model =
 fetched it, for `eventAnimations` -- also used verbatim (prefixed) as the
 card's DOM `id`, so `DisplayModeChanged`'s FLIP measurement can look the same
 element back up after a layout switch. Mirrors `PostsPage.postAnimationKey`,
-just keyed on `EventInstance.id` (this listing's own unit, see the module
-doc) rather than `Post.id`.
+just keyed on the `EventInstance`'s own `Post` id (this listing's own unit,
+see the module doc) rather than `Post.id` directly.
 -}
 eventAnimationKey : String -> EventInstance -> String
 eventAnimationKey host instance =
-    host ++ "@" ++ instance.id
+    host ++ "@" ++ (instance.post |> Maybe.map .id |> Maybe.withDefault "")
 
 
 eventCardDomId : String -> String
@@ -1905,7 +1945,7 @@ syncCalendarAnimations model =
 
 {-| The most events `eventsListView` ever renders (and the only ones
 `DisplayModeChanged` ever measures/animates) -- a long recurring `Event` can
-rack up hundreds of future instances (`Pages.Event.EventId_` has the same
+rack up hundreds of future instances (`Pages.Event.PostId_` has the same
 concern for its own date-picker strip), and rendering/measuring/sliding all
 of them at once on every mode switch is both wasteful and, empirically, the
 reason a switch into `HorizontalList` could visibly "glitch" -- a card whose
@@ -2218,7 +2258,12 @@ calendarRenderEffect shared oldModel newModel =
             (Encode.object
                 [ ( "id", Encode.string calendarContainerId )
                 , ( "events", Encode.list calendarEventEncoder (calendarEvents newModel) )
-                , ( "initialView", Encode.string (fullCalendarInitialView (calendarDisplayMode shared)) )
+                , ( "initialView"
+                  , Encode.string
+                        (fullCalendarInitialView
+                            (newModel.calendarDisplayModeOverride |> Maybe.withDefault (calendarDisplayMode shared))
+                        )
+                  )
                 ]
             )
             |> Effect.fromCmd
@@ -2304,7 +2349,7 @@ calendarView embeddedPage =
 
 {-| The DOM id `calendarPreviewModalView`'s horizontal strip is rendered with
 -- paired with `calendarPreviewCardDomId` by `scrollToCalendarPreviewCard`,
-mirroring `Pages.Event.EventId_.instanceStripDomId`/`instanceChipDomId`
+mirroring `Pages.Event.PostId_.instanceStripDomId`/`instanceChipDomId`
 exactly.
 -}
 calendarPreviewStripDomId : String
@@ -2320,10 +2365,10 @@ calendarPreviewCardDomId key =
 {-| Scrolls `calendarPreviewStripDomId`'s strip horizontally so `key`'s own
 card is centered in view -- fired whenever `CalendarEventClicked` opens the
 modal (or re-targets it to a different event while already open). Mirrors
-`Pages.Event.EventId_.scrollToInstance` exactly (see its own doc for why this
+`Pages.Event.PostId_.scrollToInstance` exactly (see its own doc for why this
 measures via `Dom.getElement`/`Dom.getViewportOf` then applies the result via
 `Ports.scrollElementLeft` rather than `Browser.Dom.setViewportOf`), just with
-a much shorter delay: `EventId_`'s own delay is there to let a FLIP
+a much shorter delay: `PostId_`'s own delay is there to let a FLIP
 enter/grow transition clear before measuring, but `calendarPreviewCardView`
 renders its cards directly (no FLIP, no `eventAnimations` involved -- see
 `calendarPreviewModalView`'s own doc for why), so the only thing this delay
@@ -2770,7 +2815,7 @@ onEscape msg =
 of control sharing one row) for `current`, and pushed to the row's right edge
 (see `view`'s `.filter-controls-trailing`/`.events-controls-trailing`, plus
 `.events-mode-buttons` here in `events.css`) -- mirrors
-`Pages.Event.EventId_.historyButtonView`'s pill styling.
+`Pages.Event.PostId_.historyButtonView`'s pill styling.
 
 Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
 see `view`'s own doc) and the "Show all event layouts" admin setting
@@ -2921,7 +2966,7 @@ exportButtonView shared model =
 {-| `model.mode`'s own container class + `UI.Flip.Axis` -- `VerticalList`
 collapses/reflows vertically (mirrors `PostsPage.postsListView`'s own
 `.flip-animated-column`), `Grid`/`HorizontalList` both collapse/reflow
-horizontally (mirrors `EventId_.instanceContainerAttributes`' own choice for
+horizontally (mirrors `PostId_.instanceContainerAttributes`' own choice for
 its strip/grid).
 
 While any card is still mid `DisplayModeChanged` slide (`anim.move.moving`),
@@ -3151,13 +3196,17 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
             else
                 MediaRenderer.Small
 
+        instancePostId : String
+        instancePostId =
+            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+
         isPushing : String -> Bool
         isPushing destinationId =
-            Dict.get (pushStatusKey instance.id destinationId) pushStatuses == Just Submitting
+            Dict.get (pushStatusKey instancePostId destinationId) pushStatuses == Just Submitting
 
         pushError : String -> Maybe String
         pushError destinationId =
-            case Dict.get (pushStatusKey instance.id destinationId) pushStatuses of
+            case Dict.get (pushStatusKey instancePostId destinationId) pushStatuses of
                 Just (SubmitFailed err) ->
                     Just err
 
@@ -3166,7 +3215,7 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
 
         onPush : String -> Msg
         onPush destinationId =
-            PushEventInstanceToDestination host instance.id destinationId
+            PushEventInstanceToDestination host instancePostId destinationId
 
         onDelete : String -> String -> Msg
         onDelete destinationId destinationLabel =

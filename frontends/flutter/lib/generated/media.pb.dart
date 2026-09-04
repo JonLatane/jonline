@@ -13,8 +13,8 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $11;
-import 'visibility_moderation.pbenum.dart' as $12;
+import 'google/protobuf/timestamp.pb.dart' as $12;
+import 'visibility_moderation.pbenum.dart' as $13;
 
 ///  A Jonline `Media` message represents a single media item, such as a photo or video.
 ///  Media data is deliberately *not accessible from the gRPC API*. Instead, the client
@@ -44,13 +44,13 @@ class Media extends $pb.GeneratedMessage {
     $core.String? contentType,
     $core.String? name,
     $core.String? description,
-    $12.Visibility? visibility,
-    $12.Moderation? moderation,
+    $13.Visibility? visibility,
+    $13.Moderation? moderation,
     $core.bool? generated,
     $core.bool? processed,
     $core.double? aspectRatio,
-    $11.Timestamp? createdAt,
-    $11.Timestamp? updatedAt,
+    $12.Timestamp? createdAt,
+    $12.Timestamp? updatedAt,
     MediaMetadata? metadata,
   }) {
     final $result = create();
@@ -105,13 +105,13 @@ class Media extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'contentType')
     ..aOS(4, _omitFieldNames ? '' : 'name')
     ..aOS(5, _omitFieldNames ? '' : 'description')
-    ..e<$12.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
-    ..e<$12.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..e<$13.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
+    ..e<$13.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..aOB(8, _omitFieldNames ? '' : 'generated')
     ..aOB(9, _omitFieldNames ? '' : 'processed')
     ..a<$core.double>(10, _omitFieldNames ? '' : 'aspectRatio', $pb.PbFieldType.OF)
-    ..aOM<$11.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
+    ..aOM<$12.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..aOM<MediaMetadata>(17, _omitFieldNames ? '' : 'metadata', subBuilder: MediaMetadata.create)
     ..hasRequiredFields = false
   ;
@@ -189,9 +189,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Visibility of the media item.
   @$pb.TagNumber(6)
-  $12.Visibility get visibility => $_getN(5);
+  $13.Visibility get visibility => $_getN(5);
   @$pb.TagNumber(6)
-  set visibility($12.Visibility v) { setField(6, v); }
+  set visibility($13.Visibility v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasVisibility() => $_has(5);
   @$pb.TagNumber(6)
@@ -199,9 +199,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Moderation of the media item.
   @$pb.TagNumber(7)
-  $12.Moderation get moderation => $_getN(6);
+  $13.Moderation get moderation => $_getN(6);
   @$pb.TagNumber(7)
-  set moderation($12.Moderation v) { setField(7, v); }
+  set moderation($13.Moderation v) { setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -240,26 +240,26 @@ class Media extends $pb.GeneratedMessage {
   void clearAspectRatio() => clearField(10);
 
   @$pb.TagNumber(15)
-  $11.Timestamp get createdAt => $_getN(10);
+  $12.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(15)
-  set createdAt($11.Timestamp v) { setField(15, v); }
+  set createdAt($12.Timestamp v) { setField(15, v); }
   @$pb.TagNumber(15)
   $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(15)
   void clearCreatedAt() => clearField(15);
   @$pb.TagNumber(15)
-  $11.Timestamp ensureCreatedAt() => $_ensure(10);
+  $12.Timestamp ensureCreatedAt() => $_ensure(10);
 
   @$pb.TagNumber(16)
-  $11.Timestamp get updatedAt => $_getN(11);
+  $12.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(16)
-  set updatedAt($11.Timestamp v) { setField(16, v); }
+  set updatedAt($12.Timestamp v) { setField(16, v); }
   @$pb.TagNumber(16)
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => clearField(16);
   @$pb.TagNumber(16)
-  $11.Timestamp ensureUpdatedAt() => $_ensure(11);
+  $12.Timestamp ensureUpdatedAt() => $_ensure(11);
 
   @$pb.TagNumber(17)
   MediaMetadata get metadata => $_getN(12);

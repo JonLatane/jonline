@@ -1204,7 +1204,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
 
                 current : Bool
                 current =
-                    currentInstanceId == Just instance.id
+                    currentInstanceId == (instance.post |> Maybe.map .id)
 
                 onStarClicked : Maybe Msg
                 onStarClicked =

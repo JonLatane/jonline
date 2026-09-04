@@ -28,7 +28,7 @@ fn event_instance_row(
 ) -> Option<models::EventInstance> {
     event_instances::table
         .select(models::EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::id.eq(id))
+        .filter(event_instances::post_id.eq(id))
         .first::<models::EventInstance>(conn)
         .ok()
 }
@@ -51,11 +51,10 @@ mod update_event_details_specs {
             let author = create_user(conn, "uedt_author");
             let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
             let (event, event_post) = create_event(conn, &author, EventOpts::default());
-            let (instance, _) = get_event_instances(conn, event.id);
+            let (instance, _) = get_event_instances(conn, event.post_id);
 
             let updated = update_event_details(
                 Event {
-                    id: event.id.to_proto_id(),
                     post: Some(Post {
                         id: event_post.id.to_proto_id(),
                         title: Some("New Title".to_string()),
@@ -79,8 +78,8 @@ mod update_event_details_specs {
             );
             assert_eq!(updated.instances.len(), 1);
             assert_eq!(
-                updated.instances[0].id,
-                instance.id.to_proto_id(),
+                updated.instances[0].post.as_ref().unwrap().id,
+                instance.post_id.to_proto_id(),
                 "the untouched instance should still be present"
             );
 
@@ -94,11 +93,10 @@ mod update_event_details_specs {
         conn.test_transaction::<_, Status, _>(|conn| {
             let author = create_user(conn, "uedt_nopost_author");
             let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
-            let (event, _event_post) = create_event(conn, &author, EventOpts::default());
+            let (_event, _event_post) = create_event(conn, &author, EventOpts::default());
 
             let err = update_event_details(
                 Event {
-                    id: event.id.to_proto_id(),
                     post: None,
                     ..Default::default()
                 },
@@ -106,7 +104,12 @@ mod update_event_details_specs {
                 conn,
             )
             .unwrap_err();
-            assert_eq!(err.message(), "event must contain associated post");
+            // `event_post_id` (the request's own `post`-derived identity check, called before
+            // `update_event_details_impl` ever runs) now rejects a post-less request first --
+            // `update_event_details_impl`'s own "event must contain associated post" check further
+            // downstream is unreachable through this RPC, kept only as a defensive fallback for any
+            // future direct caller of that `_impl` function.
+            assert_eq!(err.message(), "post_required");
 
             Ok(())
         });
@@ -119,11 +122,10 @@ mod update_event_details_specs {
             let author = create_user(conn, "uedt_owner");
             let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
             let stranger = create_user(conn, "uedt_stranger");
-            let (event, event_post) = create_event(conn, &author, EventOpts::default());
+            let (_event, event_post) = create_event(conn, &author, EventOpts::default());
 
             let err = update_event_details(
                 Event {
-                    id: event.id.to_proto_id(),
                     post: Some(Post {
                         id: event_post.id.to_proto_id(),
                         title: Some("Hijacked".to_string()),
@@ -169,11 +171,17 @@ mod create_new_event_instances_specs {
 
             let updated = create_new_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event_post.id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![
                         // Matches `existing` -- should be ignored (not duplicated).
                         EventInstance {
-                            id: existing.id.to_proto_id(),
+                            post: Some(Post {
+                                id: existing.post_id.to_proto_id(),
+                                ..Default::default()
+                            }),
                             starts_at: Some(whole_second_instant(1).to_proto()),
                             ends_at: Some(whole_second_instant(2).to_proto()),
                             ..Default::default()
@@ -198,13 +206,13 @@ mod create_new_event_instances_specs {
 
             assert_eq!(updated.instances.len(), 2, "1 pre-existing + 1 created");
             let total: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(event.id))
+                .filter(event_instances::event_id.eq(event.post_id))
                 .count()
                 .get_result(conn)
                 .unwrap();
             assert_eq!(total, 2);
 
-            let existing_row = event_instance_row(conn, existing.id).unwrap();
+            let existing_row = event_instance_row(conn, existing.post_id).unwrap();
             assert_eq!(
                 existing_row.starts_at, existing.starts_at,
                 "the already-existing instance should be untouched, not updated to the request's values"
@@ -213,8 +221,8 @@ mod create_new_event_instances_specs {
             let created_id = updated
                 .instances
                 .iter()
-                .map(|i| i.id.to_db_id().unwrap())
-                .find(|id| *id != existing.id)
+                .map(|i| i.post.as_ref().unwrap().id.to_db_id().unwrap())
+                .find(|id| *id != existing.post_id)
                 .expect("the newly-created instance should be present");
             let created_row = event_instance_row(conn, created_id).unwrap();
             assert_eq!(created_row.starts_at, new_starts_at);
@@ -223,7 +231,6 @@ mod create_new_event_instances_specs {
             let author = models::get_user(author.id, conn)?;
             assert_eq!(author.event_instance_count, 2);
 
-            let _ = event_post;
             Ok(())
         });
     }
@@ -246,7 +253,10 @@ mod create_new_event_instances_specs {
 
             let err = create_new_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![EventInstance {
                         starts_at: Some(whole_second_instant(3600).to_proto()),
                         ends_at: Some(whole_second_instant(7200).to_proto()),
@@ -261,7 +271,7 @@ mod create_new_event_instances_specs {
             assert_ne!(err.message(), "");
 
             let total: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(event.id))
+                .filter(event_instances::event_id.eq(event.post_id))
                 .count()
                 .get_result(conn)
                 .unwrap();
@@ -305,13 +315,16 @@ mod update_event_instances_specs {
 
             update_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![
                         EventInstance {
-                            id: instance.id.to_proto_id(),
                             starts_at: Some(new_starts_at.to_proto()),
                             ends_at: Some(new_ends_at.to_proto()),
                             post: Some(Post {
+                                id: instance.post_id.to_proto_id(),
                                 visibility: Visibility::ServerPublic as i32,
                                 ..Default::default()
                             }),
@@ -331,12 +344,12 @@ mod update_event_instances_specs {
             )
             .expect("update_event_instances should succeed");
 
-            let row = event_instance_row(conn, instance.id).unwrap();
+            let row = event_instance_row(conn, instance.post_id).unwrap();
             assert_eq!(row.starts_at, new_starts_at);
             assert_eq!(row.ends_at, new_ends_at);
 
             let total: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(event.id))
+                .filter(event_instances::event_id.eq(event.post_id))
                 .count()
                 .get_result(conn)
                 .unwrap();
@@ -357,13 +370,19 @@ mod update_event_instances_specs {
             let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
             let stranger = create_user(conn, "uei_stranger");
             let (event, _) = create_event(conn, &author, EventOpts::default());
-            let (instance, _) = get_event_instances(conn, event.id);
+            let (instance, _) = get_event_instances(conn, event.post_id);
 
             let err = update_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![EventInstance {
-                        id: instance.id.to_proto_id(),
+                        post: Some(Post {
+                            id: instance.post_id.to_proto_id(),
+                            ..Default::default()
+                        }),
                         starts_at: Some(whole_second_instant(10_000).to_proto()),
                         ends_at: Some(whole_second_instant(20_000).to_proto()),
                         ..Default::default()
@@ -376,7 +395,7 @@ mod update_event_instances_specs {
             .unwrap_err();
             assert_ne!(err.message(), "");
 
-            let row = event_instance_row(conn, instance.id).unwrap();
+            let row = event_instance_row(conn, instance.post_id).unwrap();
             assert_eq!(
                 row.starts_at, instance.starts_at,
                 "the instance should be untouched"
@@ -411,9 +430,15 @@ mod delete_removed_event_instances_specs {
 
             delete_removed_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![EventInstance {
-                        id: kept.id.to_proto_id(),
+                        post: Some(Post {
+                            id: kept.post_id.to_proto_id(),
+                            ..Default::default()
+                        }),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -423,8 +448,8 @@ mod delete_removed_event_instances_specs {
             )
             .expect("delete_removed_event_instances should succeed");
 
-            assert!(event_instance_row(conn, kept.id).is_some());
-            assert!(event_instance_row(conn, removed.id).is_none());
+            assert!(event_instance_row(conn, kept.post_id).is_some());
+            assert!(event_instance_row(conn, removed.post_id).is_none());
             let surviving_post = post_row(conn, removed_post.id);
             assert_eq!(
                 surviving_post.id, removed_post.id,
@@ -455,7 +480,10 @@ mod delete_removed_event_instances_specs {
 
             let err = delete_removed_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![], // would delete `only_instance`, if it were authorized
                     ..Default::default()
                 },
@@ -466,7 +494,7 @@ mod delete_removed_event_instances_specs {
             assert_ne!(err.message(), "");
 
             assert!(
-                event_instance_row(conn, only_instance.id).is_some(),
+                event_instance_row(conn, only_instance.post_id).is_some(),
                 "the instance should not have been deleted"
             );
 
@@ -495,7 +523,10 @@ mod delete_removed_event_instances_specs {
 
             delete_removed_event_instances(
                 Event {
-                    id: event.id.to_proto_id(),
+                    post: Some(Post {
+                        id: event.post_id.to_proto_id(),
+                        ..Default::default()
+                    }),
                     instances: vec![],
                     ..Default::default()
                 },
@@ -506,7 +537,7 @@ mod delete_removed_event_instances_specs {
             // own `deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events`
 
             assert!(
-                event_instance_row(conn, only_instance.id).is_none(),
+                event_instance_row(conn, only_instance.post_id).is_none(),
                 "the merge itself should still have committed"
             );
 

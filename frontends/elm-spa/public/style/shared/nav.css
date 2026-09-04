@@ -28,8 +28,9 @@
      position as the Accounts/Starred panels (see its own `top`
      comment), so it needs to win this particular overlap the way those two
      never have to (they're .navbar descendants, not siblings). Below
-     .markdown-panel (30, see markdown_panel.css), .my-media-panel (31, see
-     my_media_panel.css) and .media-viewer-panel (32, see
+     .markdown-panel (30, see markdown_panel.css), .media-generator-panel (31,
+     see media_generator_panel.css), .my-media-panel (32, see
+     my_media_panel.css) and .media-viewer-panel (33, see
      media_viewer_panel.css) too, for the same reason -- opening any of those
      from an Accounts Panel chip or the New Post panel should cover it rather
      than getting buried behind it. */

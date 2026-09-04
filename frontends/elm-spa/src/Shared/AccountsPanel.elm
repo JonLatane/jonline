@@ -78,7 +78,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, EventSyncSource, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -410,6 +410,16 @@ type alias Account =
     , permissions : List Permission
     , realName : String
     , needsPassword : Bool
+
+    -- The signed-in user's own linked SyncDestinations/EventSyncSources/AvailableAIModels (see
+    -- `Proto.Jonline.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
+    -- `refreshPermissionsTask` (which now calls `GetUsers { userId = Just account.userId }` rather
+    -- than `GetCurrentUser`, since only a self-or-Admin `GetUsers` lookup ever populates these).
+    -- Login/CreateAccount (`GotAuthResult`) can't populate them either (same backend restriction),
+    -- so they start empty there and only appear once the first refresh lands.
+    , syncDestinations : List SyncDestination
+    , eventSyncSources : List EventSyncSource
+    , availableAiModels : List AvailableAIModel
     }
 
 
@@ -1719,6 +1729,14 @@ sendUpdate req msg model =
                             , permissions = user.permissions
                             , realName = user.realName
                             , needsPassword = False
+
+                            -- Login/CreateAccount's `User` never carries these (only a
+                            -- self-or-Admin `GetUsers` lookup does, see `Account`'s own doc) --
+                            -- read straight from `user` anyway rather than hardcoding `[]`, so
+                            -- this doesn't have to change if that's ever loosened.
+                            , syncDestinations = user.syncDestinations
+                            , eventSyncSources = user.eventSyncSources
+                            , availableAiModels = user.availableAiModels
                             }
 
                         newModel : Model
@@ -1776,17 +1794,30 @@ sendUpdate req msg model =
                 -- The account's server may not be known (or may be known but
                 -- disconnected) on this origin yet -- same situation `init`'s
                 -- `missingServerHosts` handles for accounts surviving from stale/
-                -- corrupted localStorage.
-                reconnectCmd : Cmd Msg
-                reconnectCmd =
-                    if List.any (\s -> s.frontendHost == enabledAccount.server && s.connected /= Nothing) model.servers then
-                        Cmd.none
+                -- corrupted localStorage. When it's already connected, `GotReconnectResult`
+                -- won't fire again the way it does for a fresh reconnect below (which itself
+                -- calls `refreshPermissionsForServer` on success) -- so this account's
+                -- `permissions`/`syncDestinations`/`eventSyncSources`/`availableAiModels`
+                -- (see `Account`'s own doc) would otherwise sit stale (whatever `account`
+                -- carried across the SSO hand-off) until some later, unrelated reconnect.
+                -- Refresh it directly here instead so it's current immediately.
+                existingConnectedServer : Maybe Server
+                existingConnectedServer =
+                    model.servers
+                        |> List.filter (\s -> s.frontendHost == enabledAccount.server && s.connected /= Nothing)
+                        |> List.head
 
-                    else
-                        negotiateServerConfig (isSecure req) enabledAccount.server
-                            |> Task.attempt (GotReconnectResult enabledAccount.server True False)
+                refreshCmd : Cmd Msg
+                refreshCmd =
+                    case existingConnectedServer of
+                        Just server ->
+                            refreshPermissions server enabledAccount
+
+                        Nothing ->
+                            negotiateServerConfig (isSecure req) enabledAccount.server
+                                |> Task.attempt (GotReconnectResult enabledAccount.server True False)
             in
-            ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
+            ( newModel, Cmd.batch [ persist newModel, refreshCmd ] )
 
         AccessTokenResponseReceived account accessTokenResponse ->
             let
@@ -3192,7 +3223,7 @@ against that placeholder the instant the app boots, before there's an actual
 connection to fetch from -- failing immediately, and (since these fetches are
 typically only attempted once) staying failed even after the real reconnect
 lands moments later. Callers that need to fetch from a specific route-named
-host (`Pages.Event.EventId_`, `Pages.Post.PostId_`,
+host (`Pages.Event.PostId_`, `Pages.Post.PostId_`,
 `Components.Users.Resolver`) should gate on this instead of `serverForHost`
 directly.
 -}
@@ -3512,8 +3543,11 @@ connectionOf server =
 
 {-| The bare `Task` behind `refreshPermissions`/`refreshPermissionsForServer` --
 refreshes an account's `permissions` (and `username`, in case it changed
-server-side) via `GetCurrentUser`, refreshing its access token first if
-needed -- see `performWithAccount`.
+server-side), plus `syncDestinations`/`eventSyncSources`/`availableAiModels`
+(see `Account`'s own doc), via `GetCurrentUser` (always a self-view, so the
+backend populates all of these -- see `attach_own_advanced_data` on the
+backend), refreshing its access token first if needed -- see
+`performWithAccount`.
 -}
 refreshPermissionsTask : Server -> Account -> Task Grpc.Error ( Account, User )
 refreshPermissionsTask server account =
@@ -3567,6 +3601,9 @@ applyPermissionsRefreshResult accId result accounts =
                     , avatarMediaId = Maybe.map .id user.avatar
                     , realName = user.realName
                     , needsPassword = False
+                    , syncDestinations = user.syncDestinations
+                    , eventSyncSources = user.eventSyncSources
+                    , availableAiModels = user.availableAiModels
                 }
                 accounts
 
@@ -4226,6 +4263,11 @@ encodeState model =
         ]
 
 
+{-| Deliberately omits `syncDestinations`/`eventSyncSources`/`availableAiModels` -- they're
+nested-proto-shaped, can be sizeable, and change often, so persisting them to `localStorage` (and
+writing the JSON codecs for their `oneof`s) isn't worth it when `refreshPermissionsTask` already
+refetches them on every reconnect/enable. See `accountDecoder`'s own doc for the decode side.
+-}
 encodeAccount : Account -> Encode.Value
 encodeAccount account =
     Encode.object
@@ -4354,13 +4396,17 @@ persistedStateDecoder =
         (Decode.field "servers" (Decode.list persistedServerDecoder))
 
 
-{-| `elm/json` only provides `map8`, but `Account` now has 10 fields -- so this
+{-| `elm/json` only provides `map8`, but `Account` now has 13 fields -- so this
 decodes the first 8 into a partially-applied `Account` constructor, then
-applies `realName` and `needsPassword` on top of that.
+applies `realName` and `needsPassword` on top of that. The last 3
+(`syncDestinations`/`eventSyncSources`/`availableAiModels`) are deliberately
+never persisted at all -- see `encodeAccount`'s own doc -- so they always
+decode to `[]` here regardless of what's in storage; the very next
+`refreshPermissionsTask` (fired on every reconnect/enable) fills them back in.
 -}
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map3 (\partial realName needsPassword -> partial realName needsPassword)
+    Decode.map3 (\partial realName needsPassword -> partial realName needsPassword [] [] [])
         (Decode.map8 Account
             (Decode.field "server" Decode.string)
             (Decode.field "userId" Decode.string)

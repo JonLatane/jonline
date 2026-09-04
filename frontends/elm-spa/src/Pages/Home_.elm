@@ -1,14 +1,22 @@
 module Pages.Home_ exposing (Model, Msg, fromShared, page)
 
 {-| `/` -- upcoming events plus recent posts from every enabled server (the `Feed` variant), unless
-`mainFrontendHost`'s own `ServerConfiguration.customTabs.home` overrides Home (`UI.CustomNav.homeTarget`,
-restricted to `HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB` or a bare `post_id` -- see that field's own proto
-doc), in which case this instead renders: a top-level `Components.Pages.EventsPage` (`HomeEvents`,
-target `EVENTS_TAB`) or `Components.Pages.PostsPage` (`HomePosts`, target `POSTS_TAB`) -- exactly
-`Pages.Events`/`Pages.Posts` themselves render, not `Feed`'s own compact embedded copies (see those
-two variants' own docs) -- or a specific Post (`HomePost`, target a `post_id`), exactly the way
-`Pages.UsernameOrCustomTab_.EmbeddedPost` renders a regular custom tab's own `TargetPost` (same
-`Components.Pages.PostPage`, same fetch, same edit/reply/delete/moderation UI).
+`mainFrontendHost`'s own `ServerConfiguration.customTabs.home` overrides Home (`UI.CustomNav.homeConfig`,
+whose `target` is restricted to `HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB` or a bare `post_id` -- see that
+field's own proto doc), in which case this instead renders: a top-level `Components.Pages.EventsPage`
+(`HomeEvents`, target `EVENTS_TAB`) or `Components.Pages.PostsPage` (`HomePosts`, target `POSTS_TAB`)
+-- exactly `Pages.Events`/`Pages.Posts` themselves render, not `Feed`'s own compact embedded copies
+(see those two variants' own docs) -- or a specific Post (`HomePost`, target a `post_id`), exactly
+the way `Pages.UsernameOrCustomTab_.EmbeddedPost` renders a regular custom tab's own `TargetPost`
+(same `Components.Pages.PostPage`, same fetch, same edit/reply/delete/moderation UI). When a
+`post_id` target also has `show_events_strip` set, `HomePostWithEvents` instead pairs that same Post
+with an `EventsPage` strip above it (mirroring `Feed`'s own Events-strip-above-feed shape, just over
+a single fixed Post instead of `PostsPage`'s own listing) -- its own `EventsPage` copy passes
+`embeddedPage = False` (unlike `Feed`'s), so its search box reads "Search events…" rather than
+"Search posts and events…": there's no Posts search happening alongside it, just the one fixed Post.
+`home`'s `default_events_strip_to_row`/`default_events_strip_calendar_display_mode` govern this
+strip's own initial layout/calendar-granularity defaults exactly the same way they govern `Feed`'s
+own strip -- see `withEventsStripDisplayOverride`/`eventsStripCalendarDisplayModeOverride`.
 
 `Feed` is a thin wrapper around `Components.Pages.EventsPage`/`Components.Pages.PostsPage`, which do
 all the actual work -- mirrors `Pages.User.UserId_`/`Pages.UsernameOrCustomTab_.Posts`' own use of
@@ -56,10 +64,12 @@ robustness/symmetry (e.g. a future `?search_text=` URL param divergence).
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostPage as PostPage
 import Components.Pages.PostsPage as PostsPage
+import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
 import Html exposing (h3, text)
 import Page
+import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode)
 import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
@@ -82,23 +92,34 @@ page shared req =
 
 
 {-| `Feed` is the ordinary Events+Posts composite (see the module doc); `HomeEvents`/`HomePosts`/
-`HomePost` are distinct variants (not, say, folded into `Feed` as a `Maybe`) for the same reason
-`Pages.UsernameOrCustomTab_.EmbeddedProfile` is kept separate from its own `Profile` -- once
-`updateInner`'s `SharedMsg` handling (below) has matched a `home` override and switched away from
-`Feed`, it must stop re-deriving `homeTargetFor` on every subsequent `Shared.Msg`, or a still-live
-`EventsPage`/`PostsPage`/`PostPage.Model` would be discarded and re-`init`ed (re-fetching) on every
-single message.
+`HomePost`/`HomePostWithEvents` are distinct variants (not, say, folded into `Feed` as a `Maybe`) for
+the same reason `Pages.UsernameOrCustomTab_.EmbeddedProfile` is kept separate from its own `Profile`
+-- once `updateInner`'s `SharedMsg` handling (below) has matched a `home` override and switched away
+from `Feed`, it must stop re-deriving `homeConfigFor` on every subsequent `Shared.Msg`, or a
+still-live `EventsPage`/`PostsPage`/`PostPage.Model` would be discarded and re-`init`ed (re-fetching)
+on every single message.
 -}
 type Model
     = Feed FeedModel
     | HomeEvents EventsPage.Model
     | HomePosts PostsPage.Model
     | HomePost PostPage.Model
+    | HomePostWithEvents PostWithEventsModel
 
 
 type alias FeedModel =
     { posts : PostsPage.Model
     , events : EventsPage.Model
+    }
+
+
+{-| `HomePostWithEvents`' own pair -- a fixed `home.target`'s `TargetPost` alongside an Events strip
+above it (`home.showEventsStrip`, see the module doc). Mirrors `FeedModel`'s shape, just over
+`PostPage` instead of `PostsPage`.
+-}
+type alias PostWithEventsModel =
+    { events : EventsPage.Model
+    , post : PostPage.Model
     }
 
 
@@ -108,12 +129,13 @@ type Msg
     | HomeEventsMsg EventsPage.Msg
     | HomePostsMsg PostsPage.Msg
     | HomePostMsg PostPage.Msg
+    | HomePostEventsMsg EventsPage.Msg
     | SharedMsg Shared.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    case initForTarget shared req (homeTargetFor shared) of
+    case initForTarget shared req (homeConfigFor shared) of
         Just result ->
             result
 
@@ -124,28 +146,45 @@ init shared req =
 initFeed : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 initFeed shared req =
     let
+        home : CustomNav.HomePageConfig
+        home =
+            homeConfigFor shared
+
         ( postsModel, postsEffect ) =
             PostsPage.init shared Nothing req.key req.url.path req.query True Nothing
 
         ( eventsModel, eventsEffect ) =
-            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment True True Nothing
+            EventsPage.init shared
+                Nothing
+                req.key
+                req.url.path
+                (withEventsStripDisplayOverride home req.query)
+                req.url.fragment
+                True
+                True
+                Nothing
+                (eventsStripCalendarDisplayModeOverride home)
     in
     ( Feed { posts = postsModel, events = eventsModel }
     , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared, Effect.fromShared Shared.UncollapseHome ]
     )
 
 
-{-| `target`'s own non-default init, if it has one -- `Nothing` for `TargetTab HOMETAB` (and any
-other value `homeTargetFor` shouldn't ever actually produce, e.g. a stray `TargetProfile`), meaning
-"fall back to `initFeed`." Factored out of `init` so `updateInner`'s `SharedMsg`/`Feed` branch (which
-re-checks `homeTargetFor` on every incoming `Shared.Msg`, see `homeTargetFor`'s own doc) can reuse
-the exact same three-way switch without duplicating it.
+{-| `home`'s own non-default init, if it has one -- `Nothing` for `TargetTab HOMETAB` (and any other
+value `homeConfigFor` shouldn't ever actually produce, e.g. a stray `TargetProfile`), meaning "fall
+back to `initFeed`." Factored out of `init` so `updateInner`'s `SharedMsg`/`Feed` branch (which
+re-checks `homeConfigFor` on every incoming `Shared.Msg`, see `homeConfigFor`'s own doc) can reuse
+the exact same switch without duplicating it. `TargetPost`'s own `home.showEventsStrip` picks between
+the plain `HomePost` and the paired `HomePostWithEvents` (see the module doc) -- `home.pinnedPostIds`
+isn't read here at all, since it isn't a *target* to render, just an overlay `PostsPage`/`Feed`'s own
+generic listing already excludes via `PostsPage.customNavPostIds` (not relevant for a `TargetPost`/
+`TargetTab EVENTSTAB`/`TargetTab POSTSTAB` home either way, none of which show that listing).
 -}
-initForTarget : Shared.Model -> Request.With Params -> CustomNav.CustomTabTarget -> Maybe ( Model, Effect Msg )
-initForTarget shared req target =
-    case target of
+initForTarget : Shared.Model -> Request.With Params -> CustomNav.HomePageConfig -> Maybe ( Model, Effect Msg )
+initForTarget shared req home =
+    case home.target of
         CustomNav.TargetTab EVENTSTAB ->
-            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing
+            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing
                 |> Tuple.mapFirst HomeEvents
                 |> Tuple.mapSecond (Effect.map HomeEventsMsg)
                 |> Just
@@ -157,29 +196,95 @@ initForTarget shared req target =
                 |> Just
 
         CustomNav.TargetPost postId ->
-            PostPage.init shared (AccountsPanel.isSecure req) postId req.key
-                |> Tuple.mapFirst HomePost
-                |> Tuple.mapSecond (Effect.map HomePostMsg)
-                |> Just
+            if home.showEventsStrip then
+                let
+                    ( eventsModel, eventsEffect ) =
+                        EventsPage.init shared
+                            Nothing
+                            req.key
+                            req.url.path
+                            (withEventsStripDisplayOverride home req.query)
+                            req.url.fragment
+                            False
+                            False
+                            Nothing
+                            (eventsStripCalendarDisplayModeOverride home)
+
+                    ( postModel, postEffect ) =
+                        PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                in
+                Just
+                    ( HomePostWithEvents { events = eventsModel, post = postModel }
+                    , Effect.batch [ Effect.map HomePostEventsMsg eventsEffect, Effect.map HomePostMsg postEffect ]
+                    )
+
+            else
+                PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                    |> Tuple.mapFirst HomePost
+                    |> Tuple.mapSecond (Effect.map HomePostMsg)
+                    |> Just
 
         _ ->
             Nothing
 
 
-{-| `mainFrontendHost`'s own `customTabs.home` override, resolved via `UI.CustomNav.homeTarget` --
-that function's own `Nothing`/unset-config fallback to `TargetTab HOMETAB` covers both "no override
-configured" and "`mainFrontendHost`'s `ServerConfiguration` hasn't loaded yet" identically (see
-`Pages.UsernameOrCustomTab_.customTabFor`'s identical reasoning for why that's the right fallback,
-not an error), which is exactly why `init` alone isn't enough: `updateInner`'s `SharedMsg` handling
-re-checks this on every incoming `Shared.Msg` while still in `Feed`, so a `home` override that
-arrives moments after `init` (the common case for a first visit, before `mainFrontendHost`'s config
-has finished connecting) still takes effect.
+{-| `mainFrontendHost`'s own `customTabs.home` override, resolved via `UI.CustomNav.homeConfig` --
+that function's own `Nothing`/unset-config fallback to `defaultHomePageConfig` covers both "no
+override configured" and "`mainFrontendHost`'s `ServerConfiguration` hasn't loaded yet" identically
+(see `Pages.UsernameOrCustomTab_.customTabFor`'s identical reasoning for why that's the right
+fallback, not an error), which is exactly why `init` alone isn't enough: `updateInner`'s `SharedMsg`
+handling re-checks this on every incoming `Shared.Msg` while still in `Feed`, so a `home` override
+that arrives moments after `init` (the common case for a first visit, before `mainFrontendHost`'s
+config has finished connecting) still takes effect.
 -}
-homeTargetFor : Shared.Model -> CustomNav.CustomTabTarget
-homeTargetFor shared =
+homeConfigFor : Shared.Model -> CustomNav.HomePageConfig
+homeConfigFor shared =
     AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
         |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
-        |> CustomNav.homeTarget
+        |> CustomNav.homeConfig
+
+
+{-| Seeds an Events strip's initial row-vs-calendar layout from `home.defaultEventsStripToRow`, via
+the same `?display=row`/`?display=calendar` mechanism `EventsPage.init` already gives top priority
+to (see its own `displayModeFromParam` handling) -- reused here rather than teaching `EventsPage` a
+second, parallel override, and consistent with an actual incoming `?display=` link (checked first,
+and left untouched) being the more specific request. Left alone entirely -- not even checking
+`defaultEventsStripToRow` -- when `home` is still `CustomNav.defaultHomePageConfig` (nothing
+configured), so an ordinary, unconfigured server keeps exactly today's behavior: `EventsPage`'s own
+`embeddedPage` fallback to `HorizontalList` (`Feed`'s strip) rather than silently starting to default
+to `Calendar` (this field's own unset-value meaning) the moment *any* unrelated `home` field gets
+configured.
+-}
+withEventsStripDisplayOverride : CustomNav.HomePageConfig -> Dict String String -> Dict String String
+withEventsStripDisplayOverride home query =
+    if home == CustomNav.defaultHomePageConfig || Dict.member "display" query then
+        query
+
+    else
+        Dict.insert "display"
+            (if home.defaultEventsStripToRow then
+                "row"
+
+             else
+                "calendar"
+            )
+            query
+
+
+{-| `EventsPage.init`'s own `calendarDisplayModeOverride` argument for an Events strip governed by
+`home` -- `Just home.defaultEventsStripCalendarDisplayMode` once *any* `home` field is configured
+(see `withEventsStripDisplayOverride`'s own doc for why that's the right threshold, not just
+`showEventsStrip`/a non-default `target`), `Nothing` (defer to the server-wide
+`EventSettings.default_calendar_display_mode`, `EventsPage.calendarDisplayMode`'s own default) for a
+wholly unconfigured `home`.
+-}
+eventsStripCalendarDisplayModeOverride : CustomNav.HomePageConfig -> Maybe CalendarDisplayMode
+eventsStripCalendarDisplayModeOverride home =
+    if home == CustomNav.defaultHomePageConfig then
+        Nothing
+
+    else
+        Just home.defaultEventsStripCalendarDisplayMode
 
 
 subscriptions : Model -> Sub Msg
@@ -199,6 +304,12 @@ subscriptions model =
 
         HomePost subModel ->
             Sub.map HomePostMsg (PostPage.subscriptions subModel)
+
+        HomePostWithEvents subModel ->
+            Sub.batch
+                [ Sub.map HomePostEventsMsg (EventsPage.subscriptions subModel.events)
+                , Sub.map HomePostMsg (PostPage.subscriptions subModel.post)
+                ]
 
 
 {-| `updateInner`, plus reissuing `setBreadcrumbsEffect` after every `update` --
@@ -263,14 +374,24 @@ updateInner shared req msg model =
                 |> Tuple.mapFirst HomePost
                 |> Tuple.mapSecond (Effect.map HomePostMsg)
 
-        -- Re-checked (via `homeTargetFor`) on every incoming `Shared.Msg` while still in `Feed` --
+        ( HomePostEventsMsg subMsg, HomePostWithEvents subModel ) ->
+            EventsPage.update shared subMsg subModel.events
+                |> Tuple.mapFirst (\newEvents -> HomePostWithEvents { subModel | events = newEvents })
+                |> Tuple.mapSecond (Effect.map HomePostEventsMsg)
+
+        ( HomePostMsg subMsg, HomePostWithEvents subModel ) ->
+            PostPage.update shared subMsg subModel.post
+                |> Tuple.mapFirst (\newPost -> HomePostWithEvents { subModel | post = newPost })
+                |> Tuple.mapSecond (Effect.map HomePostMsg)
+
+        -- Re-checked (via `homeConfigFor`) on every incoming `Shared.Msg` while still in `Feed` --
         -- covers `init` having run before `mainFrontendHost`'s own `ServerConfiguration.customTabs`
-        -- was known yet (see `homeTargetFor`'s own doc). Once matched, this switches straight to
+        -- was known yet (see `homeConfigFor`'s own doc). Once matched, this switches straight to
         -- the matching fresh variant (abandoning whatever `Feed` fetches were in flight, same as
         -- `Pages.UsernameOrCustomTab_`'s identical `Profile` handling) rather than forwarding
         -- `subMsg` into it.
         ( SharedMsg subMsg, Feed feed ) ->
-            case initForTarget shared req (homeTargetFor shared) of
+            case initForTarget shared req (homeConfigFor shared) of
                 Just result ->
                     result
 
@@ -322,6 +443,24 @@ updateInner shared req msg model =
                 |> Tuple.mapFirst HomePost
                 |> Tuple.mapSecond (Effect.map HomePostMsg)
 
+        -- Same `Effect.partitionShared` dedup as the `Feed` branch above (`PostPage.update`'s own
+        -- `SharedMsg` handling re-broadcasts `subMsg` unconditionally too, same as `PostsPage`'s) --
+        -- `postEffect` is kept as the one copy that actually re-broadcasts it.
+        ( SharedMsg subMsg, HomePostWithEvents subModel ) ->
+            let
+                ( newPost, postEffect ) =
+                    PostPage.update shared (PostPage.fromShared subMsg) subModel.post
+
+                ( newEvents, eventsEffectRaw ) =
+                    EventsPage.update shared (EventsPage.fromShared subMsg) subModel.events
+
+                ( _, eventsEffect ) =
+                    Effect.partitionShared eventsEffectRaw
+            in
+            ( HomePostWithEvents { events = newEvents, post = newPost }
+            , Effect.batch [ Effect.map HomePostMsg postEffect, Effect.map HomePostEventsMsg eventsEffect ]
+            )
+
         _ ->
             ( model, Effect.none )
 
@@ -334,10 +473,10 @@ docs) rather than each independently asserting a root of its own -- `Components.
 embeds the same two modules the same way, and used to let each of them (plus its own
 `setBreadcrumbsHost`) independently assert a root on every `update`, including every animation tick;
 whichever root won only lasted until the next tick reasserted the other, a continuous flicker
-between them. `HomeEvents`/`HomePosts`/`HomePost` are all left alone entirely -- the former two own
-their own breadcrumb root the same as `Pages.Events`/`Pages.Posts` (`embeddedPage = False`), and
-`PostPage.init`/`.update` (the latter) already own theirs, the same as
-`Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.EmbeddedPost`.
+between them. `HomeEvents`/`HomePosts`/`HomePost`/`HomePostWithEvents` are all left alone entirely --
+the former two own their own breadcrumb root the same as `Pages.Events`/`Pages.Posts` (`embeddedPage
+= False`), and `PostPage.init`/`.update` (the latter two, `HomePostWithEvents`' own `.post` included)
+already own theirs, the same as `Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.EmbeddedPost`.
 -}
 setBreadcrumbsEffect : Shared.Model -> Model -> Effect Msg
 setBreadcrumbsEffect shared model =
@@ -352,6 +491,9 @@ setBreadcrumbsEffect shared model =
             Effect.none
 
         HomePost _ ->
+            Effect.none
+
+        HomePostWithEvents _ ->
             Effect.none
 
 
@@ -391,15 +533,20 @@ view shared req model =
 
                 HomePost subModel ->
                     [ Html.map HomePostMsg (PostPage.view shared subModel) ]
+
+                HomePostWithEvents subModel ->
+                    [ Html.map HomePostEventsMsg (EventsPage.view shared True subModel.events)
+                    , Html.map HomePostMsg (PostPage.view shared subModel.post)
+                    ]
             )
     }
 
 
 {-| `Feed` has no title of its own (matching this page's pre-existing behavior); `HomeEvents` mirrors
 `Pages.Events`' own (none -- its own "Upcoming Events"/"Events After <date>" tabs already say what
-the listing is); `HomePosts` mirrors `Pages.Posts`' own ("Posts"); `HomePost` uses the featured
-Post's own title, same as `Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.titleFor`'s `EmbeddedPost`
-case.
+the listing is); `HomePosts` mirrors `Pages.Posts`' own ("Posts"); `HomePost`/`HomePostWithEvents`
+use the featured Post's own title, same as `Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.titleFor`'s
+`EmbeddedPost` case.
 -}
 titleFor : Model -> List String
 titleFor model =
@@ -415,6 +562,9 @@ titleFor model =
 
         HomePost subModel ->
             [ PostPage.titleFor subModel ]
+
+        HomePostWithEvents subModel ->
+            [ PostPage.titleFor subModel.post ]
 
 
 {-| "Recent Posts"/"Recent Replies", matching `model.context` -- always "Recent Posts" in

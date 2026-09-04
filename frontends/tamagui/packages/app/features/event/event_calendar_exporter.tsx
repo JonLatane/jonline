@@ -1,7 +1,7 @@
-import { FederatedEvent, FederatedUser, JonlineServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedUser, IdentifiedEventInstance, JonlineServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { Author, EventInstance, Visibility } from "@jonline/api";
+import { Author, Visibility } from "@jonline/api";
 import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink, Link } from "@tamagui/lucide-icons";
 import { useAnonymousAuthToken, useComponentKey, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
@@ -18,7 +18,7 @@ import { AuthorInfo } from "../post";
 
 type Props = {
   event?: FederatedEvent,
-  instance?: EventInstance,
+  instance?: IdentifiedEventInstance,
   tiny?: boolean;
   showSubscriptions?: {
     user?: FederatedUser,

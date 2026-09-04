@@ -35,13 +35,14 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User, defaultEvent)
+import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -118,6 +119,7 @@ type Msg
     | StarredPanelMsg StarredPanel.Msg
     | UserPreferencesMsg UserPreferences.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
+    | MediaGeneratorPanelMsg MediaGeneratorPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
@@ -139,14 +141,14 @@ type Msg
       -- `Shared.Msg`, into whichever page is active
       -- (`Main.notifyPageOfSharedMsg`), so
       -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
-      -- `Pages.Event.EventId_`'s own `SharedMsg` handling can update their
+      -- `Pages.Event.PostId_`'s own `SharedMsg` handling can update their
       -- own list/navigate away on success.
-    | GotEventSyncSourceDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | GotEventSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
       -- (after which nothing about the deleted `Event` is left to look at, so
-      -- `Pages.Event.EventId_` just navigates Home), the `Event` here is the
+      -- `Pages.Event.PostId_` just navigates Home), the `Event` here is the
       -- *survivor*: `DeleteRemovedEventInstances`'s own return value, still
       -- carrying every other `EventInstance` that wasn't deleted -- letting
       -- that page navigate to one of those instead, keeping the viewer on the
@@ -262,7 +264,7 @@ type DeleteConfirmation
       -- delegate a `DeleteConfirmed` into -- each is a plain list (or, for
       -- `ConfirmUserDelete`, a single button) rendered by exactly one page
       -- (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
-      -- `Pages.Event.EventId_`), so `ConfirmDelete` fires the delete RPC
+      -- `Pages.Event.PostId_`), so `ConfirmDelete` fires the delete RPC
       -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
       -- `GotPostDeleteResult`/`GotEventDeleteResult`/`GotUserDeleteResult`)
       -- is forwarded on to whichever page is active the same as any other
@@ -278,7 +280,7 @@ type DeleteConfirmation
       -- `DeleteRemovedEventInstances` with `event.instances` minus `instance`
       -- as the "keep" list, same "no Shared-owned home needed" shape as
       -- `ConfirmPostDelete`/`ConfirmEventDelete` above. Shown by
-      -- `Pages.Event.EventId_`'s "Delete Instance" button, next to "Delete
+      -- `Pages.Event.PostId_`'s "Delete Instance" button, next to "Delete
       -- Event", only once an `Event` has more than one `EventInstance` (with
       -- exactly one, deleting it *is* deleting the Event -- see
       -- `backend/src/rpcs/events/get_events.rs`'s own `INNER JOIN`, which
@@ -321,6 +323,7 @@ type alias Panels =
     { federatedAuth : FederatedAuth.Model
     , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
+    , mediaGeneratorPanel : MediaGeneratorPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
     , createNewPanel : CreateNewPanel.Model
@@ -408,6 +411,7 @@ init basePath req flags =
                 { federatedAuth = federatedAuthModel
                 , starredPanel = StarredPanel.init starredPostsFlags
                 , markdownPanel = MarkdownPanel.init
+                , mediaGeneratorPanel = MediaGeneratorPanel.init
                 , mediaViewerPanel = MediaViewerPanel.init
                 , myMediaPanel = MyMediaPanel.init
                 , createNewPanel = CreateNewPanel.init
@@ -905,6 +909,50 @@ sharedUpdate req msg model =
                 ]
             )
 
+        MediaGeneratorPanelMsg subMsg ->
+            let
+                panels : Panels
+                panels =
+                    model.panels
+
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMyMediaPanelMsg ) ) =
+                    MediaGeneratorPanel.update model.accounts subMsg panels.mediaGeneratorPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accounts
+
+                        Nothing ->
+                            ( model.accounts, Cmd.none )
+
+                -- `MediaGeneratorPanel.EditMediaClicked`'s own request (see its module doc) to
+                -- actually open `MyMediaPanel` on its behalf -- it can't dispatch that directly
+                -- without importing `Shared`, which would cycle. Mirrors `CreateNewPanelMsg`'s own
+                -- `maybeMyMediaPanelMsg` handling above exactly.
+                ( myMediaPanelModel, myMediaPanelCmd ) =
+                    case maybeMyMediaPanelMsg of
+                        Just myMediaPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg panels.myMediaPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( panels.myMediaPanel, Cmd.none )
+            in
+            ( { model
+                | accounts = accountsPanelModel
+                , panels = { panels | mediaGeneratorPanel = subModel, myMediaPanel = myMediaPanelModel }
+              }
+            , Cmd.batch
+                [ Cmd.map MediaGeneratorPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map MyMediaPanelMsg myMediaPanelCmd
+                ]
+            )
+
         MyMediaPanelMsg subMsg ->
             let
                 panels : Panels
@@ -930,6 +978,28 @@ sharedUpdate req msg model =
 
                         _ ->
                             Nothing
+
+                -- `Shared.MediaGeneratorPanel`'s own `EditMediaClicked` request, picked up the same
+                -- way `savedMedia`/`createNewPanelModel` above do for `CreateNewPanel` -- gated on
+                -- `mediaEditActive`, not just `isOpen`, since this panel staying open doesn't by
+                -- itself mean *it* was who opened `MyMediaPanel` just now (see that field's own
+                -- doc). `CloseClicked` (a cancel) is forwarded too, so `mediaEditActive` doesn't
+                -- linger `True` after backing out of the picker without saving.
+                mediaGeneratorMsg : Maybe MediaGeneratorPanel.Msg
+                mediaGeneratorMsg =
+                    if panels.mediaGeneratorPanel.mediaEditActive then
+                        case subMsg of
+                            MyMediaPanel.SaveMediaClicked media ->
+                                Just (MediaGeneratorPanel.MediaSaved media)
+
+                            MyMediaPanel.CloseClicked ->
+                                Just MediaGeneratorPanel.MediaEditClosed
+
+                            _ ->
+                                Nothing
+
+                    else
+                        Nothing
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest, maybeMediaViewerPanelMsg ) ) =
                     MyMediaPanel.update model.accounts subMsg panels.myMediaPanel
@@ -969,6 +1039,18 @@ sharedUpdate req msg model =
                         Nothing ->
                             ( panels.createNewPanel, Cmd.none )
 
+                ( mediaGeneratorPanelModel, mediaGeneratorPanelCmd ) =
+                    case mediaGeneratorMsg of
+                        Just innerMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MediaGeneratorPanel.update model.accounts innerMsg panels.mediaGeneratorPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( panels.mediaGeneratorPanel, Cmd.none )
+
                 -- `MediaItemClicked` in Browse mode (see `MyMediaPanel.update`'s
                 -- own doc) -- opens `Shared.MediaViewerPanel` on the tapped
                 -- tile, same forwarding convention `StarredPanelMsg`'s own
@@ -988,6 +1070,7 @@ sharedUpdate req msg model =
                         | myMediaPanel = subModel
                         , confirmingDeleteFor = confirmingDeleteFor
                         , createNewPanel = createNewPanelModel
+                        , mediaGeneratorPanel = mediaGeneratorPanelModel
                         , mediaViewerPanel = mediaViewerPanelModel
                     }
               }
@@ -995,6 +1078,7 @@ sharedUpdate req msg model =
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                , Cmd.map MediaGeneratorPanelMsg mediaGeneratorPanelCmd
                 , Cmd.map MediaViewerPanelMsg mediaViewerPanelCmd
                 ]
             )
@@ -1406,7 +1490,7 @@ sharedUpdate req msg model =
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         source
                         deleteSyncedEvents
-                        |> Task.attempt (GotEventSyncSourceDeleteResult source.id)
+                        |> Task.attempt GotEventSyncSourceDeleteResult
                     )
 
                 Just (ConfirmPostDelete post host) ->
@@ -1423,7 +1507,7 @@ sharedUpdate req msg model =
                     , Events.deleteEvent
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        event.id
+                        (event.post |> Maybe.map .id |> Maybe.withDefault "")
                         |> Task.attempt GotEventDeleteResult
                     )
 
@@ -1432,9 +1516,10 @@ sharedUpdate req msg model =
                     , Events.deleteRemovedEventInstances
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        { defaultEvent
-                            | id = event.id
-                            , instances = event.instances |> List.filter (\other -> other.id /= instance.id)
+                        { event
+                            | instances =
+                                event.instances
+                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (instance.post |> Maybe.map .id))
                         }
                         |> Task.attempt GotEventInstanceDeleteResult
                     )
@@ -1453,7 +1538,7 @@ sharedUpdate req msg model =
                     , Events.deleteEventInstanceSyncDestination
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        instance.id
+                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
                         eventSyncDestinationId
                         |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
                     )
@@ -1471,7 +1556,7 @@ sharedUpdate req msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        GotEventSyncSourceDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotEventSyncSourceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1483,7 +1568,7 @@ sharedUpdate req msg model =
             in
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
-        GotEventSyncSourceDeleteResult _ (Err _) ->
+        GotEventSyncSourceDeleteResult (Err _) ->
             ( model, Cmd.none )
 
         GotEventInstanceSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->

@@ -170,7 +170,7 @@ pub fn sync_event_sync_source_text(
 
             reconcile_instances(
                 conn,
-                db_event.id,
+                db_event.post_id,
                 owner_user_id,
                 &moderation,
                 group,
@@ -193,7 +193,7 @@ pub fn sync_event_sync_source_text(
             };
             reconcile_instances(
                 conn,
-                stale_event.id,
+                stale_event.post_id,
                 owner_user_id,
                 &moderation,
                 &empty_group,
@@ -202,11 +202,11 @@ pub fn sync_event_sync_source_text(
             )?;
 
             let remaining: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(stale_event.id))
+                .filter(event_instances::event_id.eq(stale_event.post_id))
                 .count()
                 .get_result(conn)?;
             if remaining == 0 {
-                diesel::delete(events::table.filter(events::id.eq(stale_event.id)))
+                diesel::delete(events::table.filter(events::post_id.eq(stale_event.post_id)))
                     .execute(conn)?;
             }
         }
@@ -357,7 +357,8 @@ fn reconcile_instances(
                     || existing_instance.sync_missing_since.is_some()
                 {
                     diesel::update(
-                        event_instances::table.filter(event_instances::id.eq(existing_instance.id)),
+                        event_instances::table
+                            .filter(event_instances::post_id.eq(existing_instance.post_id)),
                     )
                     .set((
                         event_instances::starts_at.eq(starts_at_db),
@@ -424,24 +425,24 @@ fn reconcile_instances(
         .filter(|i| i.ends_at >= window_start_db)
     {
         match missing.sync_missing_since {
-            None => newly_missing_ids.push(missing.id),
+            None => newly_missing_ids.push(missing.post_id),
             Some(missing_since) => {
                 let missing_since: DateTime<Utc> = missing_since.into();
                 if now - missing_since >= Duration::days(MISSING_GRACE_PERIOD_DAYS) {
-                    expired_ids.push(missing.id);
+                    expired_ids.push(missing.post_id);
                 }
             }
         }
     }
     if !newly_missing_ids.is_empty() {
         diesel::update(
-            event_instances::table.filter(event_instances::id.eq_any(newly_missing_ids)),
+            event_instances::table.filter(event_instances::post_id.eq_any(newly_missing_ids)),
         )
         .set(event_instances::sync_missing_since.eq(now_db))
         .execute(conn)?;
     }
     if !expired_ids.is_empty() {
-        diesel::delete(event_instances::table.filter(event_instances::id.eq_any(expired_ids)))
+        diesel::delete(event_instances::table.filter(event_instances::post_id.eq_any(expired_ids)))
             .execute(conn)?;
     }
 

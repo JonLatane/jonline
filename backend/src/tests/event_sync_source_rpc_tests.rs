@@ -338,7 +338,7 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
 
         let event_id_before: i64 = events::table
             .filter(events::event_sync_source_id.eq(created.id.to_db_id().unwrap()))
-            .select(events::id)
+            .select(events::post_id)
             .first(conn)
             .unwrap();
 
@@ -353,7 +353,7 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
         .expect("delete should succeed");
 
         let event_after: models::Event = events::table
-            .filter(events::id.eq(event_id_before))
+            .filter(events::post_id.eq(event_id_before))
             .first(conn)
             .expect("event should still exist after a non-destructive delete");
         assert_eq!(event_after.event_sync_source_id, None, "event should be detached from the deleted source");
@@ -382,7 +382,7 @@ fn delete_with_delete_synced_events_removes_events_too() {
 
         let event_id_before: i64 = events::table
             .filter(events::event_sync_source_id.eq(created.id.to_db_id().unwrap()))
-            .select(events::id)
+            .select(events::post_id)
             .first(conn)
             .unwrap();
 
@@ -397,7 +397,7 @@ fn delete_with_delete_synced_events_removes_events_too() {
         .expect("delete should succeed");
 
         let remaining_event: Option<models::Event> = events::table
-            .filter(events::id.eq(event_id_before))
+            .filter(events::post_id.eq(event_id_before))
             .first(conn)
             .optional()
             .unwrap();

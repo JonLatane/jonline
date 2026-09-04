@@ -529,7 +529,7 @@ pub fn create_event_instance(
     );
     let instance = insert_into(event_instances::table)
         .values(&models::NewEventInstance {
-            event_id: event.id,
+            event_id: event.post_id,
             post_id: post.id,
             info: serde_json::json!({}),
             starts_at: opts.starts_at,
@@ -578,7 +578,7 @@ pub fn create_event_attendance(
 ) -> models::EventAttendance {
     insert_into(event_attendances::table)
         .values(&models::NewEventAttendance {
-            event_instance_id: instance.id,
+            event_instance_id: instance.post_id,
             user_id: opts.user_id,
             anonymous_attendee: opts.anonymous_attendee,
             number_of_guests: 0,
@@ -658,7 +658,7 @@ pub fn create_event_instance_sync_destination_row(
 ) {
     insert_into(event_instance_sync_destinations::table)
         .values(&models::NewEventInstanceSyncDestination {
-            event_instance_id: instance.id,
+            event_instance_id: instance.post_id,
             sync_destination_id: destination.id,
             destination_instance_id: Some("test-post-id".to_string()),
             destination_url: Some("https://www.facebook.com/test-post-id".to_string()),

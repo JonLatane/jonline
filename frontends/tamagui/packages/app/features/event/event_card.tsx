@@ -1,5 +1,5 @@
 import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, updateEvent, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedEventInstance, deleteEvent, federateId, federatedEntity, identifyEventInstance, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post, Visibility } from "@jonline/api";
@@ -30,7 +30,7 @@ import { LocationControl } from "./location_control";
 
 interface Props {
   event: FederatedEvent;
-  selectedInstance?: EventInstance;
+  selectedInstance?: IdentifiedEventInstance;
   isModalPreview?: boolean;
   isPreview?: boolean;
   // groupContext?: FederatedGroup;
@@ -40,7 +40,7 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
-  onInstancesUpdated?: (instances: EventInstance[]) => void;
+  onInstancesUpdated?: (instances: IdentifiedEventInstance[]) => void;
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
   // disableSharingButton?: boolean;
@@ -126,7 +126,7 @@ export const EventCard: React.FC<Props> = ({
   const instances = editing ? editedInstances : event.instances;
 
   const hasPastInstances = instances.find(isPastInstance) != undefined;
-  const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
+  const [editingInstance, setEditingInstance] = useState(undefined as IdentifiedEventInstance | undefined);
 
 
   const [repeatWeeks, setRepeatWeeks] = useState(1);
@@ -137,7 +137,7 @@ export const EventCard: React.FC<Props> = ({
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
-  function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
+  function editingOrPrimary<T>(getter: (i: IdentifiedEventInstance | undefined) => T): T {
     if (editingInstance) {
       return getter(editingInstance);
     } else {
@@ -191,7 +191,7 @@ export const EventCard: React.FC<Props> = ({
           shareable: editedShareable,
         },
         instances: editedInstances,
-      })).then((result: PayloadAction<Event, any, any, any>) => {
+      })).then((result: PayloadAction<IdentifiedEvent, any, any, any>) => {
         onInstancesUpdated?.(result.payload?.instances);
         setEditing(false);
         setPreviewingEdits(false);
@@ -208,13 +208,13 @@ export const EventCard: React.FC<Props> = ({
     setEditedInstances([newInstance, ...editedInstances]);
     setEditingInstance(newInstance);
   }, [editedInstances]);
-  const removeInstance = useCallback((target: EventInstance) => {
+  const removeInstance = useCallback((target: IdentifiedEventInstance) => {
     if (target.id === editingInstance?.id) {
       setEditingInstance(undefined);
     }
     setEditedInstances(editedInstances.filter(i => i.id != target.id));
   }, [editedInstances]);
-  const updateEditingInstance = useCallback((target: EventInstance) => {
+  const updateEditingInstance = useCallback((target: IdentifiedEventInstance) => {
     setEditedInstances(editedInstances.map(i => i.id === target.id ? target : i));
     if (target.id === editingInstance?.id) {
       setEditingInstance(target);
@@ -546,18 +546,18 @@ export const EventCard: React.FC<Props> = ({
   const forceUpdate = useForceUpdate();
 
   const repeatedInstances = useMemo(() => {
-    const instances: EventInstance[] = [];
+    const instances: IdentifiedEventInstance[] = [];
     if (editingInstance) {
       [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
-        const repeatedInstance = EventInstance.create({
-          id: `unsynchronized-event-instance-${newEventId++}`,
+        const repeatedInstance = identifyEventInstance(EventInstance.create({
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
           endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
           location: currentInstanceLocation,
           post: Post.create({
+            id: `unsynchronized-event-instance-${newEventId++}`,
             visibility: eventPost.visibility,
           })
-        });
+        }));
         instances.push(repeatedInstance);
       });
     }
@@ -574,7 +574,7 @@ export const EventCard: React.FC<Props> = ({
     // setTimeout(forceUpdate, 1);
   }, [editedInstances, repeatedInstances]);
 
-  const renderInstance = useCallback((i: EventInstance) => {
+  const renderInstance = useCallback((i: IdentifiedEventInstance) => {
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
@@ -1088,7 +1088,7 @@ export const EventCard: React.FC<Props> = ({
 
 export default EventCard;
 
-function useStartAndEndTime(instance: EventInstance | undefined, setInstance: (instance: EventInstance) => void) {
+function useStartAndEndTime(instance: IdentifiedEventInstance | undefined, setInstance: (instance: IdentifiedEventInstance) => void) {
   const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
   const setEndTime = useCallback((value: string) => {
     if (!instance) {

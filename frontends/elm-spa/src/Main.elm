@@ -60,7 +60,7 @@ import Gen.Route as Route
 import Html exposing (Html)
 import Html.Attributes
 import Pages.About
-import Pages.Event.EventId_
+import Pages.Event.PostId_
 import Pages.Events
 import Pages.Home_
 import Pages.Messages
@@ -310,8 +310,8 @@ sharedMsgForPage sharedMsg page =
         Gen.Model.Post__PostId_ _ _ ->
             Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
 
-        Gen.Model.Event__EventId_ _ _ ->
-            Just (Gen.Msg.Event__EventId_ (Pages.Event.EventId_.fromShared sharedMsg))
+        Gen.Model.Event__PostId_ _ _ ->
+            Just (Gen.Msg.Event__PostId_ (Pages.Event.PostId_.fromShared sharedMsg))
 
         Gen.Model.Server__ServerIdentifier_ _ _ ->
             Just (Gen.Msg.Server__ServerIdentifier_ (Pages.Server.ServerIdentifier_.fromShared sharedMsg))

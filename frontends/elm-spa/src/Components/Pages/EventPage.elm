@@ -1,23 +1,49 @@
-module Pages.Event.EventId_ exposing (Model, Msg, fromShared, page)
+module Components.Pages.EventPage exposing
+    ( Model
+    , Msg
+    , fromShared
+    , init
+    , subscriptions
+    , titleFor
+    , update
+    , view
+    )
 
-{-| `/event/:eventId` -- a single Event's detail/"invitation" view: the
+{-| The shared guts of a single Event's detail/"invitation" view: the
 `Event`'s own `Post` (title, link, media, content) up top, then a
 horizontally-scrolling date-picker strip of the `Event`'s other
 `EventInstance`s (see `instanceHistoryView`) if it has more than one, then
 the specific `EventInstance` being viewed (its start/end time and location),
-then that `EventInstance`'s own optional override `Post`.
+then that `EventInstance`'s own optional override `Post`. Reused by both
+`Pages.Event.PostId_` (`/event/:postId[@host]`) and
+`Components.Pages.PostOrEventPage` (once a short-URL id resolves to an
+Event/EventInstance -- see that module's own doc), and, through it,
+`Pages.UsernameOrCustomTab_` (once a segment starting with a reserved
+short-URL character resolves this way -- see that module's `initEmbedded`).
+Mirrors `Components.Pages.PostPage`'s own split from its two callers.
 
-`eventId` (the route segment, matching `Pages.Post.PostId_`'s own `postId`
-naming) is actually an `EventInstance.id`, not an `Event.id` --
-`GetEventsRequest.event_instance_id` is the only way to fetch a single Event
-(see `events.proto`), and it returns that instance's whole parent `Event`
+`postId` (passed to `init`, matching `Components.Pages.PostPage.init`'s own
+`rawPostId` naming) is genuinely the viewed `EventInstance`'s own `Post` id --
+an `EventInstance`'s identity is its own `Post`'s id (see
+`Proto.Jonline.EventInstance`). `GetEventsRequest.post_id` is the only way to
+fetch a single Event (see `events.proto`), and looking it up by an
+`EventInstance`'s own Post id returns that instance's whole parent `Event`
 with _every_ one of its instances, not just the one asked for -- which is
 exactly what makes the date-picker strip possible without a second request.
+
+`pageIsSecure`/`navKey` are captured once, at `init` (same reasoning as
+`Components.Pages.PostPage.Model.pageIsSecure`/`navKey`) -- needed later by
+`ConnectClicked` (`AccountsPanel.connectToServer`) and `update`'s own
+`Shared.GotEventDeleteResult`/`Shared.GotEventInstanceDeleteResult` handling
+(navigating away once the viewed Event/instance no longer exists), neither of
+which otherwise has access to the calling page's own `Request`.
 
 -}
 
 import Animation
 import Browser.Dom as Dom
+import Browser.Navigation
+import Components.AIModelProviders as AIModelProviders
 import Components.Authors as Authors
 import Components.Events as Events
 import Components.Markdown as Markdown
@@ -28,46 +54,33 @@ import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
-import Gen.Params.Event.EventId_ exposing (Params)
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, h2, h3, option, p, select, span, text)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
-import Page
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEvent, defaultEventInstance, defaultLocation)
+import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEventInstance, defaultLocation)
 import Proto.Jonline.Moderation exposing (Moderation)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.Visibility exposing (Visibility)
-import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
 import Task
 import Time
-import UI
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
-import View exposing (View)
 
-
-page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page shared req =
-    Page.advanced
-        { init = init shared req.params
-        , update = update shared req
-        , view = view shared req
-        , subscriptions = subscriptions
-        }
 
 type alias Model =
     { targetHost : String
@@ -76,8 +89,8 @@ type alias Model =
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
 
-    -- Mirrors `Pages.Post.PostId_.Model.fetchedAccountId` exactly -- the
-    -- `AccountsPanel.accountId` of whichever account was signed in on
+    -- Mirrors `Components.Pages.PostPage.Model.fetchedAccountId` exactly --
+    -- the `AccountsPanel.accountId` of whichever account was signed in on
     -- `targetHost` (the Event's own server) when the currently-held
     -- `eventStatus` was last fetched, if any.
     , fetchedAccountId : Maybe String
@@ -87,13 +100,18 @@ type alias Model =
 
     -- Set by `MediaEditClicked`, until the `Shared.MyMediaPanel` it opens
     -- reports back a `SaveMediaClicked`/`CloseClicked` -- mirrors
-    -- `Pages.Post.PostId_.Model.mediaEditActive` exactly, see its own doc for
+    -- `Components.Pages.PostPage.Model.mediaEditActive` exactly, see its own doc for
     -- why this gating is needed at all.
     , mediaEditActive : Bool
 
+    -- Set by `GenerateMediaClicked`, until `Shared.MediaGeneratorPanel` reports back a
+    -- `GotGenerateResult`/`CancelClicked` -- mirrors `Components.Pages.PostPage.Model.mediaGeneratorActive`
+    -- exactly, see its own doc for why.
+    , mediaGeneratorActive : Bool
+
     -- Live only while one of the title/link/content editors (see
     -- `postFieldEditFormView`) is open, for the `Event`'s own primary `Post`
-    -- -- mirrors `Pages.Post.PostId_.Model.visibilityEdit` (a
+    -- -- mirrors `Components.Pages.PostPage.Model.visibilityEdit` (a
     -- `pending`-vs-loaded split, independent until save succeeds), just over
     -- 3 possible fields instead of one, only one live at a time.
     , postFieldEdit : Maybe PostFieldEdit
@@ -136,6 +154,10 @@ type alias Model =
     -- `eventSyncDestinationsView`: no "Push" button, only already-synced rows, if any). See
     -- `Events.eventSyncDestinationsView`'s own doc for how `Just`/`Nothing` here changes rendering.
     , availableSyncDestinations : Maybe (List SyncDestination)
+
+    -- Captured once at `init` -- see the module doc.
+    , pageIsSecure : Bool
+    , navKey : Browser.Navigation.Key
     }
 
 
@@ -144,13 +166,17 @@ type Msg
     | MediaClicked Post String
       -- The Event's own `Post`'s media-edit button (see `eventDetailView`) --
       -- opens the shared `Shared.MyMediaPanel` chooser in `MultiSelect` mode,
-      -- mirroring `Pages.Post.PostId_.MediaEditClicked` exactly, including
+      -- mirroring `Components.Pages.PostPage.MediaEditClicked` exactly, including
       -- reusing plain `UpdatePost` (via `Posts.updatePost`) to save -- the
       -- backend's `update_post.rs` already updates `media` unconditionally
       -- for `admin || self_update` regardless of the post's own context
       -- (`Post`, `Event`, `EventInstance`, ...), so nothing about `UpdateEvent`
       -- is needed just to change which media this Post carries.
     | MediaEditClicked Post
+      -- The Event's own "Generate Media…" button (see `eventDetailView`) -- opens
+      -- `Shared.MediaGeneratorPanel` targeting the Event's own Post, mirroring
+      -- `Components.Pages.PostPage.GenerateMediaClicked` exactly.
+    | GenerateMediaClicked Event EventInstance
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- One of the Event's own `Post`'s title/link editors (see
       -- `postFieldEditFormView`) -- each shown to the post's own author or
@@ -165,7 +191,7 @@ type Msg
     | GotPostFieldSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- The Event's own `Post`'s "Edit Content" button (see
       -- `contentDisplayView`) -- opens the shared Markdown editor panel,
-      -- mirroring `Pages.Post.PostId_.EditClicked` exactly (down to reusing
+      -- mirroring `Components.Pages.PostPage.EditClicked` exactly (down to reusing
       -- `MarkdownPanel.PostContent`); its result
       -- (`Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _))`) is
       -- picked up in `SharedMsg` below, the same way `EditClicked`'s is there.
@@ -313,7 +339,7 @@ type alias InstanceAnimation =
     }
 
 
-{-| Mirrors `Pages.Post.PostId_.SubmitStatus` exactly.
+{-| Mirrors `Components.Pages.PostPage.SubmitStatus` exactly.
 -}
 type SubmitStatus
     = Idle
@@ -326,8 +352,8 @@ type SubmitStatus
 button (see `postFieldEditButtonView`), so only one of the two is ever live
 at a time. Content isn't a `PostField` -- its own "Edit Content" button
 (`EditContentClicked`) opens the shared `Shared.MarkdownPanel` instead,
-mirroring `Pages.Post.PostId_`'s own content-editing UX exactly rather than
-this plain-`<input>` form, which wouldn't suit Markdown well.
+mirroring this page's own content-editing UX exactly rather than this
+plain-`<input>` form, which wouldn't suit Markdown well.
 -}
 type PostField
     = TitleField
@@ -337,7 +363,7 @@ type PostField
 {-| Live only while `postFieldEditFormView` is open for `field`, editing the
 `Event`'s own primary `Post` -- `pending` is the in-progress `<input>`
 value, independent of the loaded `Post`'s own field until
-`PostFieldSaveClicked` succeeds. Mirrors `Pages.Post.PostId_.VisibilityEdit`,
+`PostFieldSaveClicked` succeeds. Mirrors `Components.Pages.PostPage.VisibilityEdit`,
 just parameterized over which field it's editing.
 -}
 type alias PostFieldEdit =
@@ -348,7 +374,7 @@ type alias PostFieldEdit =
 
 
 {-| Live only while the moderation-status selector is open -- mirrors
-`PostFieldEdit` in shape, `Pages.Post.PostId_.VisibilityEdit` in spirit.
+`PostFieldEdit` in shape, `Components.Pages.PostPage.VisibilityEdit` in spirit.
 -}
 type alias ModerationEdit =
     { pending : Moderation
@@ -413,11 +439,17 @@ type alias AddMoreMenu =
     }
 
 
-init : Shared.Model -> Params -> ( Model, Effect Msg )
-init shared params =
+{-| `rawPostId` is the unparsed `:postId[@host]` id (whatever the calling
+page derived it from -- a route segment directly, for `Pages.Event.PostId_`,
+or a short-URL id with its own reserved leading character stripped, for
+`Components.Pages.PostOrEventPage` -- see that module's own doc). Genuinely
+the viewed `EventInstance`'s own `Post` id -- see the module doc.
+-}
+init : Shared.Model -> Bool -> String -> Browser.Navigation.Key -> ( Model, Effect Msg )
+init shared pageIsSecure rawPostId navKey =
     let
         ( eventId, targetHost ) =
-            Events.parseEventRouteId shared.accounts.mainFrontendHost params.eventId
+            Events.parseEventRouteId shared.accounts.mainFrontendHost rawPostId
 
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
@@ -431,6 +463,7 @@ init shared params =
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
                 , mediaEditActive = False
+                , mediaGeneratorActive = False
                 , postFieldEdit = Nothing
                 , moderationEdit = Nothing
                 , visibilityEdit = Nothing
@@ -439,6 +472,8 @@ init shared params =
                 , addMoreMenu = Nothing
                 , syncDestinationPushStatuses = Dict.empty
                 , availableSyncDestinations = Nothing
+                , pageIsSecure = pageIsSecure
+                , navKey = navKey
                 }
     in
     ( fetchedModel
@@ -461,8 +496,8 @@ subscriptions model =
         ]
 
 
-update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
-update shared req msg model =
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared msg model =
     case msg of
         GotEvent (Ok ( maybeAccountsPanelMsg, response )) ->
             let
@@ -487,7 +522,7 @@ update shared req msg model =
                 -- `Shared.Breadcrumbs.FromEvent` exists but its `rootSegment`
                 -- isn't implemented yet (renders a literal "TODO" -- see its
                 -- own doc comment), so this just uses `FromServerHost` like
-                -- `Pages.Post.PostId_` does for a non-`REPLY` Post: shows a
+                -- `Components.Pages.PostPage` does for a non-`REPLY` Post: shows a
                 -- server chip in the trail when `targetHost` isn't
                 -- `mainFrontendHost`, nothing more.
                 breadcrumbsEffect : Effect Msg
@@ -573,6 +608,14 @@ update shared req msg model =
                         (Just (MyMediaPanel.MultiSelect { initialSelection = post.media }))
                         model.targetHost
                     )
+                )
+            )
+
+        GenerateMediaClicked event instance ->
+            ( { model | mediaGeneratorActive = True }
+            , Effect.fromShared
+                (Shared.MediaGeneratorPanelMsg
+                    (MediaGeneratorPanel.Open (Just (MediaGeneratorPanel.TargetEvent event instance)) model.targetHost shared.basePath)
                 )
             )
 
@@ -840,9 +883,8 @@ update shared req msg model =
                             , Events.updateEventInstances
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
-                                { defaultEvent
-                                    | id = event.id
-                                    , instances =
+                                { event
+                                    | instances =
                                         [ { instance
                                             | startsAt = Just (Conversions.posixToTimestamp startsAt)
                                             , endsAt = Just (Conversions.posixToTimestamp endsAt)
@@ -912,7 +954,7 @@ update shared req msg model =
                     , Events.updateEventInstances
                         shared.accounts
                         ( Just account.userId, server.frontendHost )
-                        { defaultEvent | id = event.id, instances = [ { instance | location = newLocation } ] }
+                        { event | instances = [ { instance | location = newLocation } ] }
                         |> Task.attempt GotInstanceLocationSaveResult
                         |> Effect.fromCmd
                     )
@@ -966,7 +1008,7 @@ update shared req msg model =
                             , Events.createNewEventInstances
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
-                                { defaultEvent | id = event.id, instances = newInstances }
+                                { event | instances = newInstances }
                                 |> Task.attempt GotAddMoreResult
                                 |> Effect.fromCmd
                             )
@@ -1000,7 +1042,7 @@ update shared req msg model =
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
-            , AccountsPanel.connectToServer (AccountsPanel.isSecure req) model.targetHost
+            , AccountsPanel.connectToServer model.pageIsSecure model.targetHost
                 |> Task.attempt GotConnectResult
                 |> Effect.fromCmd
             )
@@ -1080,7 +1122,11 @@ update shared req msg model =
             case ( model.eventStatus, serverAndAccount shared model ) of
                 ( EventLoaded _ instance, Just ( server, account ) ) ->
                     ( { model | syncDestinationPushStatuses = Dict.insert destinationId Submitting model.syncDestinationPushStatuses }
-                    , Events.syncEventInstance shared.accounts ( Just account.userId, server.frontendHost ) instance.id destinationId
+                    , Events.syncEventInstance
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+                        destinationId
                         |> Task.attempt (GotSyncDestinationPushResult destinationId)
                         |> Effect.fromCmd
                     )
@@ -1114,7 +1160,7 @@ update shared req msg model =
                         -- Also covers logging in/out of an Account for this
                         -- Event's own server (`AccountsPanel.
                         -- ToggleAccountEnabled`/`ToggleServerEnabled`) --
-                        -- mirrors `Pages.Post.PostId_`'s identical branch,
+                        -- mirrors `Components.Pages.PostPage`'s identical branch,
                         -- see its own doc for why `refetch` (rather than
                         -- `fetchIfReady`, which no-ops once `fetchStarted` is
                         -- already `True`) is needed here.
@@ -1126,7 +1172,7 @@ update shared req msg model =
                                 fetchIfReady shared model
 
                         -- `EditContentClicked`'s own Markdown panel save
-                        -- succeeding -- mirrors `Pages.Post.PostId_`'s
+                        -- succeeding -- mirrors `Components.Pages.PostPage`'s
                         -- identical branch, re-fetching the whole Event
                         -- (`refetch`) rather than re-fetching just the Post,
                         -- since there's no lighter-weight fetch for a single
@@ -1134,7 +1180,7 @@ update shared req msg model =
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
                             refetch shared model
 
-                        -- See `Pages.Post.PostId_`'s own identical branch --
+                        -- See `Components.Pages.PostPage`'s own identical branch --
                         -- `mediaEditActive` (set by `MediaEditClicked`) gates
                         -- this the same way `avatarEdit`/`mediaEditActive`
                         -- gate their own panels elsewhere, so an unrelated
@@ -1168,12 +1214,30 @@ update shared req msg model =
                         Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
                             ( { model | mediaEditActive = False }, Effect.none )
 
+                        -- See `Components.Pages.PostPage`'s own identical branch -- `mediaGeneratorActive`
+                        -- (set by `GenerateMediaClicked`) gates this the same "don't mistake an
+                        -- unrelated use of the panel for this page's own" reasoning
+                        -- `mediaEditActive` above already gives.
+                        Shared.MediaGeneratorPanelMsg (MediaGeneratorPanel.GotGenerateResult (Ok _)) ->
+                            if model.mediaGeneratorActive then
+                                let
+                                    ( refetchedModel, refetchEffect ) =
+                                        refetch shared model
+                                in
+                                ( { refetchedModel | mediaGeneratorActive = False }, refetchEffect )
+
+                            else
+                                ( model, Effect.none )
+
+                        Shared.MediaGeneratorPanelMsg MediaGeneratorPanel.CancelClicked ->
+                            ( { model | mediaGeneratorActive = False }, Effect.none )
+
                         -- This page's own `DeleteClicked` (via
                         -- `Shared.RequestDelete`/`Shared.ConfirmDelete`)
                         -- resolving successfully -- navigate away, since
                         -- there's nothing left here to show.
                         Shared.GotEventDeleteResult (Ok _) ->
-                            ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
+                            ( model, Browser.Navigation.pushUrl model.navKey (Gen.Route.toHref Gen.Route.Home_) |> Effect.fromCmd )
 
                         -- This page's own `DeleteInstanceClicked` resolving
                         -- successfully -- unlike `GotEventDeleteResult`
@@ -1194,21 +1258,25 @@ update shared req msg model =
                             case List.head updatedEvent.instances of
                                 Just sibling ->
                                     let
+                                        siblingPostId : String
+                                        siblingPostId =
+                                            sibling.post |> Maybe.map .id |> Maybe.withDefault ""
+
                                         routeId : String
                                         routeId =
                                             if model.targetHost == shared.accounts.mainFrontendHost then
-                                                sibling.id
+                                                siblingPostId
 
                                             else
-                                                sibling.id ++ "@" ++ model.targetHost
+                                                siblingPostId ++ "@" ++ model.targetHost
                                     in
                                     ( model
-                                    , Request.pushRoute (Gen.Route.Event__EventId_ { eventId = routeId }) req
+                                    , Browser.Navigation.pushUrl model.navKey (Gen.Route.toHref (Gen.Route.Event__PostId_ { postId = routeId }))
                                         |> Effect.fromCmd
                                     )
 
                                 Nothing ->
-                                    ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
+                                    ( model, Browser.Navigation.pushUrl model.navKey (Gen.Route.toHref Gen.Route.Home_) |> Effect.fromCmd )
 
                         -- The "synced to" listing's own Delete button (see
                         -- `Model.syncDestinationPushStatuses`'s own doc)
@@ -1228,7 +1296,7 @@ update shared req msg model =
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
 
 
-{-| Mirrors `Pages.Post.PostId_.fetchIfReady` exactly -- kicks off the actual
+{-| Mirrors `Components.Pages.PostPage.fetchIfReady` exactly -- kicks off the actual
 `GetEvents` fetch the first time `targetHost` is a known, connected server
 (see `AccountsPanel.knownConnectedServer` -- a known-but-still-connecting
 `targetHost`, e.g. right after startup, doesn't count).
@@ -1251,7 +1319,7 @@ fetchIfReady shared model =
                 ( model, Effect.none )
 
 
-{-| Mirrors `Pages.Post.PostId_.refetch` exactly -- re-fetches the Event
+{-| Mirrors `Components.Pages.PostPage.refetch` exactly -- re-fetches the Event
 unconditionally (unlike `fetchIfReady`, not gated on `fetchStarted`, which is
 already `True` by the time this is ever called) -- for `update`'s `SharedMsg`
 branch to call once the Markdown panel (see `Shared.MarkdownPanel`) reports a
@@ -1274,7 +1342,7 @@ maybeAccountServerFor shared model =
     )
 
 
-{-| Mirrors `Pages.Post.PostId_.currentAccountId` exactly -- the
+{-| Mirrors `Components.Pages.PostPage.currentAccountId` exactly -- the
 `AccountsPanel.accountId` of whichever account is currently signed in on
 `model.targetHost` (the Event's own server), if any -- compared against
 `model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
@@ -1290,7 +1358,7 @@ currentAccountId shared model =
 {-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
 both exist -- what `MediaEditClicked`'s own save (via `Shared.MyMediaPanel`'s
 `SaveMediaClicked`) needs to actually submit its `Posts.updatePost` task.
-Mirrors `Pages.Post.PostId_.serverAndAccount`.
+Mirrors `Components.Pages.PostPage.serverAndAccount`.
 -}
 serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
 serverAndAccount shared model =
@@ -1305,7 +1373,7 @@ serverAndAccount shared model =
 shouldn't happen in practice (this is only ever called from
 `GotMediaUpdateResult`, itself only reachable once `MediaEditClicked` has
 already rendered from a loaded `Event`). Mirrors
-`Pages.Post.PostId_.applyUpdatedPost`, just updating a nested field rather
+`Components.Pages.PostPage.applyUpdatedPost`, just updating a nested field rather
 than `Model`'s own top-level `postStatus`.
 -}
 applyUpdatedEventPost : Model -> Post -> Model
@@ -1354,13 +1422,14 @@ applyUpdatedEvent now model updatedEvent =
 `startsAt`/`endsAt` than the last (`n = 1..count`, via `SharedTime.addRecurrence`
 in `zone` -- see that function's own doc for the DST guarantee this relies
 on). Every duplicate copies `instance`'s own `post` (its title/link/content/
-visibility override, if any -- `create_instance` on the backend ignores
-whatever `id`/`author` a submitted `post` carries and always creates a fresh
-Post authored by the caller, so reusing the same record verbatim for every
-copy is safe) and `location` verbatim -- nothing about "add more like this
-one" should silently drop either. Each new instance's own `id` is left at
-`defaultEventInstance`'s blank default, so `CreateNewEventInstances` always
-treats it as new rather than matching some unrelated existing instance.
+visibility override, if any) and `location` verbatim -- nothing about "add
+more like this one" should silently drop either. Copying `post` along also
+copies its own id (an `EventInstance`'s identity, post-migration -- see this
+module's own top-of-file doc), but that's harmless: `create_instance` on the
+backend ignores whatever `id`/`author` a submitted `post` carries and always
+creates a fresh Post authored by the caller, so every duplicate still ends up
+a genuinely new `EventInstance`, never mistaken for `instance` itself.
+Everything else is left at `defaultEventInstance`'s blank defaults.
 `[]` (a no-op back in `AddMoreFrequencyClicked`) if `instance` is missing
 either `startsAt` or `endsAt`, which shouldn't happen in practice -- both are
 required fields everywhere an `EventInstance` is created.
@@ -1452,10 +1521,11 @@ nonBlank text =
         Just text
 
 
-
--- UPDATE
-
-
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+into `update`'s `SharedMsg` branch, without exposing the `SharedMsg`
+constructor itself (and thus every other constructor of this otherwise-opaque
+`Msg`) outside this module. Mirrors `Components.Pages.PostPage.fromShared`.
+-}
 fromShared : Shared.Msg -> Msg
 fromShared =
     SharedMsg
@@ -1589,7 +1659,7 @@ syncInstanceAnimations now model =
                 currentInstances =
                     event.instances
                         |> List.filter (instanceMatchesHistoryDisplay now model.instanceHistoryDisplay)
-                        |> List.map (\instance -> ( instance.id, instance ))
+                        |> List.map (\instance -> ( instance.post |> Maybe.map .id |> Maybe.withDefault "", instance ))
                         |> Dict.fromList
             in
             { model
@@ -1680,30 +1750,14 @@ scrollToInstance delayMs instanceId =
 
 
 
-view : Shared.Model -> Request.With Params -> Model -> View Msg
-view shared req model =
-    { title = titleFor shared model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
-    }
+-- VIEW
 
 
-titleFor : Shared.Model -> Model -> String
-titleFor shared model =
-    let
-        subtitle : String
-        subtitle =
-            case model.eventStatus of
-                EventLoaded event _ ->
-                    event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.eventInstanceId)
-
-                _ ->
-                    "Event " ++ model.eventInstanceId
-    in
-    UI.pageTitle shared [ subtitle ]
-
-
-bodyView : Shared.Model -> Model -> Html Msg
-bodyView shared model =
+{-| Just the body content -- the calling page wraps this in `UI.layout`/its own title (via
+`titleFor`), same split as `Components.Pages.PostPage.view`/etc.
+-}
+view : Shared.Model -> Model -> Html Msg
+view shared model =
     ServerDependentView.view
         { hostname = model.targetHost
         , servers = shared.accounts.servers
@@ -1731,6 +1785,19 @@ bodyView shared model =
                 EventLoaded event instance ->
                     eventDetailView shared model event instance
         )
+
+
+{-| Just the subtitle -- the loaded Event's own title, or "Event &lt;id&gt;" before it's loaded --
+for the calling page's own `UI.pageTitle`. Mirrors `Components.Pages.PostPage.titleFor`.
+-}
+titleFor : Model -> String
+titleFor model =
+    case model.eventStatus of
+        EventLoaded event _ ->
+            event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.eventInstanceId)
+
+        _ ->
+            "Event " ++ model.eventInstanceId
 
 
 eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
@@ -1790,9 +1857,30 @@ eventDetailView shared model event instance =
                         , instanceDetailAndStrip
                         , case maybeServer of
                             Just server ->
+                                let
+                                    -- `Nothing` when the viewer has no image-capable `AvailableAIModel`
+                                    -- at all -- see `Posts.generateMediaButton`'s own doc, mirrors
+                                    -- `Components.Pages.PostPage.postDetailView`'s identical
+                                    -- `onGenerateMediaClicked`.
+                                    onGenerateMediaClicked : Maybe Msg
+                                    onGenerateMediaClicked =
+                                        case maybeAccount of
+                                            Just account ->
+                                                if List.any AIModelProviders.hasAnyImageCapability account.availableAiModels then
+                                                    Just (GenerateMediaClicked event instance)
+
+                                                else
+                                                    Nothing
+
+                                            Nothing ->
+                                                Nothing
+                                in
                                 div []
                                     [ MultiMediaRenderer.view eventPost.postMediaLayout server maybeAccount (MediaClicked eventPost) eventPost.media
-                                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                                    , div [ class "event-post-media-edit-row" ]
+                                        [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost
+                                        , Posts.generateMediaButton maybeAccount onGenerateMediaClicked eventPost
+                                        ]
                                     ]
 
                             Nothing ->
@@ -1995,7 +2083,7 @@ contentDisplayView editable maybeAccount post =
 
 
 {-| The actual `<input>` + Save/Cancel controls for whichever of `TitleField`/
-`LinkField` `edit.field` names -- mirrors `Pages.Post.PostId_.visibilityView`'s
+`LinkField` `edit.field` names -- mirrors `Components.Pages.PostPage.visibilityView`'s
 edit half in spirit (a `pending`-vs-loaded split via `Model.postFieldEdit`),
 just with a plain `<input>` instead of a `<select>`. Wraps in a `span`, valid
 content for the `<h1>`/plain-link slot each replaces (see
@@ -2026,7 +2114,7 @@ postFieldEditFormView edit post =
 
 
 {-| The Save/Cancel buttons (plus any `SubmitFailed` error) shared by every
-`postFieldEditFormView` case -- reuses `Pages.Post.PostId_.visibilityView`'s
+`postFieldEditFormView` case -- reuses `Components.Pages.PostPage.visibilityView`'s
 own `.post-visibility-save`/`.post-visibility-cancel`/`.post-visibility-error`
 classes (posts.css) rather than `event-*` ones of its own.
 -}
@@ -2077,7 +2165,7 @@ collected into a shared row -- `onClickMsg` is whatever opening that field's
 own editor takes (`PostFieldEditClicked` for title/link, via
 `postFieldEditButtonView`; `EditContentClicked` directly for content, since
 it has no `PostField` of its own -- see that type's doc). Shown to `post`'s
-own author or an Admin, mirroring `Pages.Post.PostId_`'s own
+own author or an Admin, mirroring `Components.Pages.PostPage`'s own
 `isAuthor account post`-gated edit affordances (media edit, visibility
 edit). Reuses `Components.Posts`' `.post-edit-button` class (posts.css)
 rather than an `event-*` one of its own, so it looks identical to
@@ -2222,11 +2310,11 @@ visibilityView maybeAccount maybeEdit post =
 
 {-| The moderation-status segment slotted into the primary post section's
 byline (see `eventDetailView`) -- shown only to an Admin or a
-`MODERATEEVENTS` holder, mirroring `Pages.Post.PostId_.visibilityView`'s
+`MODERATEEVENTS` holder, mirroring `Components.Pages.PostPage.visibilityView`'s
 display-vs-editing split, just for `Moderation` instead of `Visibility`, and
 its own "Edit" button reading "Moderate" instead (per this feature's own
 request, to read distinctly from `postFieldEditButtonView`'s "Edit X"). Reuses
-`Pages.Post.PostId_.moderationView`'s own `.post-moderation-*` classes
+`Components.Pages.PostPage.moderationView`'s own `.post-moderation-*` classes
 (posts.css) rather than `event-*` ones of its own, so it looks identical to
 `postDetail`'s own moderation controls.
 -}
@@ -2665,7 +2753,11 @@ instanceHistoryView shared model event instance =
             , div
                 (id instanceStripDomId :: instanceContainerAttributes model.instanceLayout)
                 (event.instances
-                    |> List.filterMap (\eventInstance -> Dict.get eventInstance.id model.instanceAnimations)
+                    |> List.filterMap
+                        (\eventInstance ->
+                            eventInstance.post
+                                |> Maybe.andThen (\post -> Dict.get post.id model.instanceAnimations)
+                        )
                     |> List.map (instanceChipView shared model instance)
                 )
             ]
@@ -2818,7 +2910,7 @@ historyButtons now event =
 
 {-| One date chip -- links to `anim.instance`'s own page (see
 `Components.Events.eventInstanceHref`), highlighted if it's the instance
-currently being viewed (`model.eventId`). `currentInstance` is that
+currently being viewed (`model.eventInstanceId`). `currentInstance` is that
 currently-viewed instance (see `instanceHistoryView`'s own `instance`
 parameter) -- passed through to `Components.Events.siblingInstanceWhenText`
 so a sibling chip that shares `currentInstance`'s own time-of-day can drop
@@ -2830,14 +2922,18 @@ selects (see `syncInstanceAnimations`).
 instanceChipView : Shared.Model -> Model -> EventInstance -> InstanceAnimation -> Html Msg
 instanceChipView shared model currentInstance { instance, flip } =
     let
+        instancePostId : String
+        instancePostId =
+            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+
         isCurrent : Bool
         isCurrent =
-            instance.id == model.eventInstanceId
+            instancePostId == model.eventInstanceId
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flip False)
         [ a
             [ href (Events.eventInstanceHref shared.basePath shared.accounts.mainFrontendHost model.targetHost instance)
-            , id (instanceChipDomId instance.id)
+            , id (instanceChipDomId instancePostId)
             , classes
                 ([ "event-instance-chip", hostnameToCSSClass model.targetHost ]
                     ++ (if isCurrent then

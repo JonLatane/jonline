@@ -14,9 +14,9 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'federation.pb.dart' as $1;
-import 'permissions.pbenum.dart' as $13;
+import 'permissions.pbenum.dart' as $14;
 import 'server_configuration.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $12;
+import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'server_configuration.pbenum.dart';
 
@@ -25,9 +25,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   factory ServerConfiguration({
     ServerInfo? serverInfo,
     $1.FederationInfo? federationInfo,
-    $core.Iterable<$13.Permission>? anonymousUserPermissions,
-    $core.Iterable<$13.Permission>? defaultUserPermissions,
-    $core.Iterable<$13.Permission>? basicUserPermissions,
+    $core.Iterable<$14.Permission>? anonymousUserPermissions,
+    $core.Iterable<$14.Permission>? defaultUserPermissions,
+    $core.Iterable<$14.Permission>? basicUserPermissions,
     CustomNavigationTabSet? customTabs,
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
@@ -94,9 +94,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
     ..aOM<$1.FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: $1.FederationInfo.create)
-    ..pc<$13.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
-    ..pc<$13.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
-    ..pc<$13.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
+    ..pc<$14.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
+    ..pc<$14.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
+    ..pc<$14.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
     ..aOM<CustomNavigationTabSet>(19, _omitFieldNames ? '' : 'customTabs', subBuilder: CustomNavigationTabSet.create)
     ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
@@ -159,7 +159,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// admins to disable certain features for anonymous users. Valid values are
   /// `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
   @$pb.TagNumber(10)
-  $core.List<$13.Permission> get anonymousUserPermissions => $_getList(2);
+  $core.List<$14.Permission> get anonymousUserPermissions => $_getList(2);
 
   /// Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also
   /// grant/revoke these permissions for others. Valid values are
@@ -168,7 +168,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
   /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(11)
-  $core.List<$13.Permission> get defaultUserPermissions => $_getList(3);
+  $core.List<$14.Permission> get defaultUserPermissions => $_getList(3);
 
   /// Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are
   /// `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
@@ -176,7 +176,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
   /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(12)
-  $core.List<$13.Permission> get basicUserPermissions => $_getList(4);
+  $core.List<$14.Permission> get basicUserPermissions => $_getList(4);
 
   @$pb.TagNumber(19)
   CustomNavigationTabSet get customTabs => $_getN(5);
@@ -450,8 +450,8 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
 class MediaSettings extends $pb.GeneratedMessage {
   factory MediaSettings({
     $core.bool? visible,
-    $12.Moderation? defaultModeration,
-    $12.Visibility? defaultVisibility,
+    $13.Moderation? defaultModeration,
+    $13.Visibility? defaultVisibility,
   }) {
     final $result = create();
     if (visible != null) {
@@ -471,8 +471,8 @@ class MediaSettings extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$12.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
-    ..e<$12.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
+    ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..hasRequiredFields = false
   ;
 
@@ -514,9 +514,9 @@ class MediaSettings extends $pb.GeneratedMessage {
   /// posts are always visible to targeted users (who have not blocked
   /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $12.Moderation get defaultModeration => $_getN(1);
+  $13.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($12.Moderation v) { setField(2, v); }
+  set defaultModeration($13.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -526,9 +526,9 @@ class MediaSettings extends $pb.GeneratedMessage {
   /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
   /// as appropriate.
   @$pb.TagNumber(3)
-  $12.Visibility get defaultVisibility => $_getN(2);
+  $13.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($12.Visibility v) { setField(3, v); }
+  set defaultVisibility($13.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -540,8 +540,8 @@ class MediaSettings extends $pb.GeneratedMessage {
 class FeatureSettings extends $pb.GeneratedMessage {
   factory FeatureSettings({
     $core.bool? visible,
-    $12.Moderation? defaultModeration,
-    $12.Visibility? defaultVisibility,
+    $13.Moderation? defaultModeration,
+    $13.Visibility? defaultVisibility,
     $core.String? aliasSingular,
     $core.String? aliasPlural,
   }) {
@@ -569,8 +569,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$12.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
-    ..e<$12.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
+    ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
     ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
     ..hasRequiredFields = false
@@ -614,9 +614,9 @@ class FeatureSettings extends $pb.GeneratedMessage {
   /// posts are always visible to targeted users (who have not blocked
   /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $12.Moderation get defaultModeration => $_getN(1);
+  $13.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($12.Moderation v) { setField(2, v); }
+  set defaultModeration($13.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -626,9 +626,9 @@ class FeatureSettings extends $pb.GeneratedMessage {
   /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
   /// as appropriate.
   @$pb.TagNumber(3)
-  $12.Visibility get defaultVisibility => $_getN(2);
+  $13.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($12.Visibility v) { setField(3, v); }
+  set defaultVisibility($13.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -659,8 +659,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
 class PostSettings extends $pb.GeneratedMessage {
   factory PostSettings({
     $core.bool? visible,
-    $12.Moderation? defaultModeration,
-    $12.Visibility? defaultVisibility,
+    $13.Moderation? defaultModeration,
+    $13.Visibility? defaultVisibility,
     $core.String? aliasSingular,
     $core.String? aliasPlural,
     $core.bool? enableReplies,
@@ -692,8 +692,8 @@ class PostSettings extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$12.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
-    ..e<$12.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
+    ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
     ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
     ..aOB(6, _omitFieldNames ? '' : 'enableReplies')
@@ -738,9 +738,9 @@ class PostSettings extends $pb.GeneratedMessage {
   /// posts are always visible to targeted users (who have not blocked
   /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $12.Moderation get defaultModeration => $_getN(1);
+  $13.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($12.Moderation v) { setField(2, v); }
+  set defaultModeration($13.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -750,9 +750,9 @@ class PostSettings extends $pb.GeneratedMessage {
   /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
   /// as appropriate.
   @$pb.TagNumber(3)
-  $12.Visibility get defaultVisibility => $_getN(2);
+  $13.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($12.Visibility v) { setField(3, v); }
+  set defaultVisibility($13.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -794,8 +794,8 @@ class PostSettings extends $pb.GeneratedMessage {
 class EventSettings extends $pb.GeneratedMessage {
   factory EventSettings({
     $core.bool? visible,
-    $12.Moderation? defaultModeration,
-    $12.Visibility? defaultVisibility,
+    $13.Moderation? defaultModeration,
+    $13.Visibility? defaultVisibility,
     $core.String? aliasSingular,
     $core.String? aliasPlural,
     $core.bool? enableReplies,
@@ -835,8 +835,8 @@ class EventSettings extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$12.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
-    ..e<$12.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $12.Visibility.VISIBILITY_UNKNOWN, valueOf: $12.Visibility.valueOf, enumValues: $12.Visibility.values)
+    ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
+    ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'aliasSingular')
     ..aOS(5, _omitFieldNames ? '' : 'aliasPlural')
     ..aOB(6, _omitFieldNames ? '' : 'enableReplies')
@@ -883,9 +883,9 @@ class EventSettings extends $pb.GeneratedMessage {
   /// posts are always visible to targeted users (who have not blocked
   /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $12.Moderation get defaultModeration => $_getN(1);
+  $13.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($12.Moderation v) { setField(2, v); }
+  set defaultModeration($13.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -895,9 +895,9 @@ class EventSettings extends $pb.GeneratedMessage {
   /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
   /// as appropriate.
   @$pb.TagNumber(3)
-  $12.Visibility get defaultVisibility => $_getN(2);
+  $13.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($12.Visibility v) { setField(3, v); }
+  set defaultVisibility($13.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -1229,11 +1229,11 @@ class ServerLogo extends $pb.GeneratedMessage {
   void clearWideMediaIdDark() => clearField(4);
 }
 
-/// If set, should override the default tab set for the Elm navigation on a Jonline instance.
+/// If set, overrides the default tab set for the Elm navigation on a Jonline instance.
 class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet({
-    CustomNavigationTab? home,
-    $core.Iterable<CustomNavigationTabWithPath>? tabs,
+    CustomHomePage? home,
+    $core.Iterable<CustomNavigationTab>? tabs,
   }) {
     final $result = create();
     if (home != null) {
@@ -1249,8 +1249,8 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabSet', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'home', subBuilder: CustomNavigationTab.create)
-    ..pc<CustomNavigationTabWithPath>(2, _omitFieldNames ? '' : 'tabs', $pb.PbFieldType.PM, subBuilder: CustomNavigationTabWithPath.create)
+    ..aOM<CustomHomePage>(1, _omitFieldNames ? '' : 'home', subBuilder: CustomHomePage.create)
+    ..pc<CustomNavigationTab>(2, _omitFieldNames ? '' : 'tabs', $pb.PbFieldType.PM, subBuilder: CustomNavigationTab.create)
     ..hasRequiredFields = false
   ;
 
@@ -1275,24 +1275,173 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   static CustomNavigationTabSet getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabSet>(create);
   static CustomNavigationTabSet? _defaultInstance;
 
-  /// Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-  /// Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
+  /// Overrides the default `/` page. If unset, the default combined Events+Posts feed is used.
   @$pb.TagNumber(1)
-  CustomNavigationTab get home => $_getN(0);
+  CustomHomePage get home => $_getN(0);
   @$pb.TagNumber(1)
-  set home(CustomNavigationTab v) { setField(1, v); }
+  set home(CustomHomePage v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasHome() => $_has(0);
   @$pb.TagNumber(1)
   void clearHome() => clearField(1);
   @$pb.TagNumber(1)
-  CustomNavigationTab ensureHome() => $_ensure(0);
+  CustomHomePage ensureHome() => $_ensure(0);
 
   /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
-  /// Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
+  /// Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
+  /// matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+  /// `/` itself is overridden via `home` above instead.
   @$pb.TagNumber(2)
-  $core.List<CustomNavigationTabWithPath> get tabs => $_getList(1);
+  $core.List<CustomNavigationTab> get tabs => $_getList(1);
+}
+
+enum CustomHomePage_Target {
+  tab, 
+  postId, 
+  notSet
+}
+
+/// Overrides the app's default `/` page (the combined Events+Posts feed). Unlike a regular
+/// `CustomNavigationTab`, this has no `path` (it's always `/`) and no `icon`/`title` (the server's
+/// own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+class CustomHomePage extends $pb.GeneratedMessage {
+  factory CustomHomePage({
+    NavigationTab? tab,
+    $core.String? postId,
+    $core.Iterable<$core.String>? pinnedPostIds,
+    $core.bool? showEventsStrip,
+    $core.bool? defaultEventsStripToRow,
+    CalendarDisplayMode? defaultEventsStripCalendarDisplayMode,
+  }) {
+    final $result = create();
+    if (tab != null) {
+      $result.tab = tab;
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (pinnedPostIds != null) {
+      $result.pinnedPostIds.addAll(pinnedPostIds);
+    }
+    if (showEventsStrip != null) {
+      $result.showEventsStrip = showEventsStrip;
+    }
+    if (defaultEventsStripToRow != null) {
+      $result.defaultEventsStripToRow = defaultEventsStripToRow;
+    }
+    if (defaultEventsStripCalendarDisplayMode != null) {
+      $result.defaultEventsStripCalendarDisplayMode = defaultEventsStripCalendarDisplayMode;
+    }
+    return $result;
+  }
+  CustomHomePage._() : super();
+  factory CustomHomePage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CustomHomePage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static const $core.Map<$core.int, CustomHomePage_Target> _CustomHomePage_TargetByTag = {
+    1 : CustomHomePage_Target.tab,
+    2 : CustomHomePage_Target.postId,
+    0 : CustomHomePage_Target.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomHomePage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..e<NavigationTab>(1, _omitFieldNames ? '' : 'tab', $pb.PbFieldType.OE, defaultOrMaker: NavigationTab.HOME_TAB, valueOf: NavigationTab.valueOf, enumValues: NavigationTab.values)
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
+    ..pPS(3, _omitFieldNames ? '' : 'pinnedPostIds')
+    ..aOB(4, _omitFieldNames ? '' : 'showEventsStrip')
+    ..aOB(5, _omitFieldNames ? '' : 'defaultEventsStripToRow')
+    ..e<CalendarDisplayMode>(6, _omitFieldNames ? '' : 'defaultEventsStripCalendarDisplayMode', $pb.PbFieldType.OE, defaultOrMaker: CalendarDisplayMode.CALENDAR_DISPLAY_WEEK, valueOf: CalendarDisplayMode.valueOf, enumValues: CalendarDisplayMode.values)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CustomHomePage clone() => CustomHomePage()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CustomHomePage copyWith(void Function(CustomHomePage) updates) => super.copyWith((message) => updates(message as CustomHomePage)) as CustomHomePage;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CustomHomePage create() => CustomHomePage._();
+  CustomHomePage createEmptyInstance() => create();
+  static $pb.PbList<CustomHomePage> createRepeated() => $pb.PbList<CustomHomePage>();
+  @$core.pragma('dart2js:noInline')
+  static CustomHomePage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomHomePage>(create);
+  static CustomHomePage? _defaultInstance;
+
+  CustomHomePage_Target whichTarget() => _CustomHomePage_TargetByTag[$_whichOneof(0)]!;
+  void clearTarget() => clearField($_whichOneof(0));
+
+  /// What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
+  /// or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+  @$pb.TagNumber(1)
+  NavigationTab get tab => $_getN(0);
+  @$pb.TagNumber(1)
+  set tab(NavigationTab v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTab() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTab() => clearField(1);
+
+  /// Renders a specific Post at `/` instead (e.g. for a custom business site's landing page).
+  @$pb.TagNumber(2)
+  $core.String get postId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set postId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPostId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPostId() => clearField(2);
+
+  /// Posts pinned to the top of the home page, above its normal content. Loaded the same way
+  /// `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post's
+  /// backing Event alongside it, for posts that are actually about an Event).
+  @$pb.TagNumber(3)
+  $core.List<$core.String> get pinnedPostIds => $_getList(2);
+
+  /// Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always
+  /// shows above its Posts feed) above `target`'s own content. Only meaningful when `target` is
+  /// `post_id` (pins an Events strip above that single Post); has no effect when `target` is
+  /// unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving
+  /// `target` unset).
+  @$pb.TagNumber(4)
+  $core.bool get showEventsStrip => $_getBF(3);
+  @$pb.TagNumber(4)
+  set showEventsStrip($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasShowEventsStrip() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearShowEventsStrip() => clearField(4);
+
+  /// Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
+  /// `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+  /// row/list layout instead of a calendar. Unset defaults to the calendar layout.
+  @$pb.TagNumber(5)
+  $core.bool get defaultEventsStripToRow => $_getBF(4);
+  @$pb.TagNumber(5)
+  set defaultEventsStripToRow($core.bool v) { $_setBool(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasDefaultEventsStripToRow() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDefaultEventsStripToRow() => clearField(5);
+
+  /// Whenever an Events strip is shown above other content (see `default_events_strip_to_row`'s own
+  /// doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which
+  /// granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`.
+  @$pb.TagNumber(6)
+  CalendarDisplayMode get defaultEventsStripCalendarDisplayMode => $_getN(5);
+  @$pb.TagNumber(6)
+  set defaultEventsStripCalendarDisplayMode(CalendarDisplayMode v) { setField(6, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasDefaultEventsStripCalendarDisplayMode() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearDefaultEventsStripCalendarDisplayMode() => clearField(6);
 }
 
 enum CustomNavigationTab_Target {
@@ -1308,7 +1457,7 @@ enum CustomNavigationTab_Icon {
   notSet
 }
 
-/// Either one of the app's predefined tabs, or a Post
+/// Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`.
 class CustomNavigationTab extends $pb.GeneratedMessage {
   factory CustomNavigationTab({
     NavigationTab? tab,
@@ -1317,6 +1466,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     $core.String? emojiIcon,
     $core.String? iconMediaId,
     $core.String? title,
+    $core.String? path,
   }) {
     final $result = create();
     if (tab != null) {
@@ -1336,6 +1486,9 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     }
     if (title != null) {
       $result.title = title;
+    }
+    if (path != null) {
+      $result.path = path;
     }
     return $result;
   }
@@ -1363,6 +1516,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     ..aOS(10, _omitFieldNames ? '' : 'emojiIcon')
     ..aOS(11, _omitFieldNames ? '' : 'iconMediaId')
     ..aOS(12, _omitFieldNames ? '' : 'title')
+    ..aOS(13, _omitFieldNames ? '' : 'path')
     ..hasRequiredFields = false
   ;
 
@@ -1413,10 +1567,8 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
-  /// Only relevant for a CustomNavigationTabWithPath.
-  /// Indicates the custom tab is for an actual user profile.
-  /// Ultimately this isn't very "custom" in terms of the URL scheme, just
-  /// it being a navigation tab.
+  /// Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+  /// Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
   @$pb.TagNumber(3)
   $core.bool get isProfile => $_getBF(2);
   @$pb.TagNumber(3)
@@ -1455,80 +1607,21 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   $core.bool hasTitle() => $_has(5);
   @$pb.TagNumber(12)
   void clearTitle() => clearField(12);
-}
 
-/// A custom navigation tab with an associated path.
-/// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-/// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-class CustomNavigationTabWithPath extends $pb.GeneratedMessage {
-  factory CustomNavigationTabWithPath({
-    CustomNavigationTab? customTab,
-    $core.String? path,
-  }) {
-    final $result = create();
-    if (customTab != null) {
-      $result.customTab = customTab;
-    }
-    if (path != null) {
-      $result.path = path;
-    }
-    return $result;
-  }
-  CustomNavigationTabWithPath._() : super();
-  factory CustomNavigationTabWithPath.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CustomNavigationTabWithPath.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabWithPath', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<CustomNavigationTab>(1, _omitFieldNames ? '' : 'customTab', subBuilder: CustomNavigationTab.create)
-    ..aOS(2, _omitFieldNames ? '' : 'path')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  CustomNavigationTabWithPath clone() => CustomNavigationTabWithPath()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  CustomNavigationTabWithPath copyWith(void Function(CustomNavigationTabWithPath) updates) => super.copyWith((message) => updates(message as CustomNavigationTabWithPath)) as CustomNavigationTabWithPath;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static CustomNavigationTabWithPath create() => CustomNavigationTabWithPath._();
-  CustomNavigationTabWithPath createEmptyInstance() => create();
-  static $pb.PbList<CustomNavigationTabWithPath> createRepeated() => $pb.PbList<CustomNavigationTabWithPath>();
-  @$core.pragma('dart2js:noInline')
-  static CustomNavigationTabWithPath getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CustomNavigationTabWithPath>(create);
-  static CustomNavigationTabWithPath? _defaultInstance;
-
-  /// The tab to show at this path.
-  @$pb.TagNumber(1)
-  CustomNavigationTab get customTab => $_getN(0);
-  @$pb.TagNumber(1)
-  set customTab(CustomNavigationTab v) { setField(1, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasCustomTab() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearCustomTab() => clearField(1);
-  @$pb.TagNumber(1)
-  CustomNavigationTab ensureCustomTab() => $_ensure(0);
-
-  /// e.g. link `/gigs` or `/shows` for a band to the "Events" page.
-  /// Or, /weddings to a Post about wedding offerings for a custom business site.
-  /// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-  /// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-  @$pb.TagNumber(2)
-  $core.String get path => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set path($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasPath() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearPath() => clearField(2);
+  /// The path this tab is reachable at, e.g. `gigs` for a band's `/gigs` link to the Events page,
+  /// or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
+  /// `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
+  /// each may only be used to (redundantly) point back at its own matching predefined tab, never
+  /// remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+  /// overridden via `CustomNavigationTabSet.home` instead.
+  @$pb.TagNumber(13)
+  $core.String get path => $_getSZ(6);
+  @$pb.TagNumber(13)
+  set path($core.String v) { $_setString(6, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasPath() => $_has(6);
+  @$pb.TagNumber(13)
+  void clearPath() => clearField(13);
 }
 
 /// Color in ARGB hex format (i.e `0xAARRGGBB`).

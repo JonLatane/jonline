@@ -29,10 +29,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### IsProfile
 
- Only relevant for a CustomNavigationTabWithPath.
- Indicates the custom tab is for an actual user profile.
- Ultimately this isn't very "custom" in terms of the URL scheme, just
- it being a navigation tab.
+ Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+ Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
 
 
 -}

@@ -9,13 +9,13 @@ import {
 import moment from "moment";
 import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
+import { createEvent, defaultEventListingType, deleteEvent, IdentifiedEvent, IdentifiedEventInstance, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
 
-export type FederatedEvent = FederatedEntity<Event>;
-export type FederatedEventInstance = FederatedEntity<EventInstance>;
+export type FederatedEvent = FederatedEntity<IdentifiedEvent>;
+export type FederatedEventInstance = FederatedEntity<IdentifiedEventInstance>;
 export interface EventsState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
@@ -167,7 +167,7 @@ export const eventsSlice = createSlice({
     builder.addCase(loadEventsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
     });
-    const saveSingleEvent = (state: EventsState, action: PayloadAction<Event, any, any>) => {
+    const saveSingleEvent = (state: EventsState, action: PayloadAction<IdentifiedEvent, any, any>) => {
       const event = federatedPayload(action);
       mergeEvent(state, event, action);
     };

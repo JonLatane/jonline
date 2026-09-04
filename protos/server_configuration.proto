@@ -291,15 +291,15 @@ enum WebUserInterface {
   ELM_SPA = 3;
 }
 
-// If set, should override the default tab set for the Elm navigation on a Jonline instance.
+// If set, overrides the default tab set for the Elm navigation on a Jonline instance.
 message CustomNavigationTabSet {
-  // Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used.
-  // Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`.
-  optional CustomNavigationTab home = 1;
+  // Overrides the default `/` page. If unset, the default combined Events+Posts feed is used.
+  optional CustomHomePage home = 1;
   // Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
-  // Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable.
-  // `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-  repeated CustomNavigationTabWithPath tabs = 2;
+  // Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
+  // matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+  // `/` itself is overridden via `home` above instead.
+  repeated CustomNavigationTab tabs = 2;
 }
 
 // The default navigation tabs in Jonline's Elm UI.
@@ -316,17 +316,50 @@ enum NavigationTab {
   ABOUT_TAB = 15;
 }
 
-// Either one of the app's predefined tabs, or a Post
+// Overrides the app's default `/` page (the combined Events+Posts feed). Unlike a regular
+// `CustomNavigationTab`, this has no `path` (it's always `/`) and no `icon`/`title` (the server's
+// own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+message CustomHomePage {
+  oneof target {
+    // What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
+    // or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+    NavigationTab tab = 1;
+    // Renders a specific Post at `/` instead (e.g. for a custom business site's landing page).
+    string post_id = 2;
+  }
+
+  // Posts pinned to the top of the home page, above its normal content. Loaded the same way
+  // `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post's
+  // backing Event alongside it, for posts that are actually about an Event).
+  repeated string pinned_post_ids = 3;
+
+  // Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always
+  // shows above its Posts feed) above `target`'s own content. Only meaningful when `target` is
+  // `post_id` (pins an Events strip above that single Post); has no effect when `target` is
+  // unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving
+  // `target` unset).
+  bool show_events_strip = 4;
+
+  // Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
+  // `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+  // row/list layout instead of a calendar. Unset defaults to the calendar layout.
+  bool default_events_strip_to_row = 5;
+
+  // Whenever an Events strip is shown above other content (see `default_events_strip_to_row`'s own
+  // doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which
+  // granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`.
+  CalendarDisplayMode default_events_strip_calendar_display_mode = 6;
+}
+
+// Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`.
 message CustomNavigationTab {
   oneof target {
     // Links to one of the app's predefined tabs/pages.
     NavigationTab tab = 1;
     // Links to a specific Post (e.g. for a custom business site's page).
     string post_id = 2;
-    // Only relevant for a CustomNavigationTabWithPath.
-    // Indicates the custom tab is for an actual user profile.
-    // Ultimately this isn't very "custom" in terms of the URL scheme, just
-    // it being a navigation tab.
+    // Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+    // Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
     bool is_profile = 3;
   }
 
@@ -339,20 +372,14 @@ message CustomNavigationTab {
 
   // Title shown for the tab. Defaults to the predefined tab's/Post's title if unset.
   optional string title = 12;
-}
 
-
-// A custom navigation tab with an associated path.
-// Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-// `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-message CustomNavigationTabWithPath {
-  // The tab to show at this path.
-  CustomNavigationTab custom_tab = 1;
-  // e.g. link `/gigs` or `/shows` for a band to the "Events" page.
-  // Or, /weddings to a Post about wedding offerings for a custom business site.
-  // Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-  // `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-  string path = 2;
+  // The path this tab is reachable at, e.g. `gigs` for a band's `/gigs` link to the Events page,
+  // or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
+  // `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
+  // each may only be used to (redundantly) point back at its own matching predefined tab, never
+  // remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+  // overridden via `CustomNavigationTabSet.home` instead.
+  string path = 13;
 }
 
 // Color in ARGB hex format (i.e `0xAARRGGBB`).

@@ -24,6 +24,7 @@ module Components.Users exposing
     , permissionFromText
     , permissionText
     , profileHref
+    , startsWithReservedShortUrlCharacter
     , titleName
     , updateFollow
     , updateUser
@@ -361,6 +362,26 @@ reservedUsernames =
 isReservedUsername : String -> Bool
 isReservedUsername username =
     Set.member (String.toLower (String.trim username)) reservedUsernames
+
+
+{-| Whether `segment`'s first character is one no username (`^[\w.-]+$`, `Users`' own
+`validate_username`) or custom tab path (`^[a-z_]+$`, `validate_custom_tab_path`) could ever
+legally start with -- see `backend/src/rpcs/validations/validate_fields.rs`'s
+`RESERVED_LEAD_CHAR_RE`, which this set must stay in sync with. `Pages.UsernameOrCustomTab_`
+checks this before falling back to a plain username/custom-tab lookup: a route segment starting
+with one of these is unambiguously *not* a username or custom tab, so it's tried as a short
+Post/Event URL instead (`Components.Pages.PostOrEventPage`) -- see `jonline.proto`'s own
+`### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing doc. `#` is deliberately
+excluded: URL fragments never reach the server, so they're not part of this at all.
+-}
+startsWithReservedShortUrlCharacter : String -> Bool
+startsWithReservedShortUrlCharacter segment =
+    case String.uncons segment of
+        Just ( firstChar, _ ) ->
+            String.contains (String.fromChar firstChar) "-._~:/?[]@!$&'()*+,;%="
+
+        Nothing ->
+            False
 
 
 {-| The `/user/:id[@host]` href for a user, as seen from `viewingServerHost`
@@ -882,6 +903,9 @@ permissionText permission =
         READALLSYSTEMMESSAGES ->
             "Read All System Messages"
 
+        CREATEAIMODELPROVIDERS ->
+            "Create AI Model Providers"
+
         PermissionUnrecognized_ _ ->
             "Unknown"
 
@@ -940,6 +964,7 @@ allPermissions =
     , MODERATEMEDIA
     , READPERSONALMESSAGES
     , READALLSYSTEMMESSAGES
+    , CREATEAIMODELPROVIDERS
     , BUSINESS
     , RUNBOTS
     , ADMIN

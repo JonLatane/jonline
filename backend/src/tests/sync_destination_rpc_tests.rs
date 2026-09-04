@@ -458,7 +458,7 @@ fn sync_event_instance_requires_sync_events_to_facebook_permission() {
 
         let err = sync_event_instance(
             SyncEventInstanceRequest {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 sync_destination_id: destination.id.to_proto_id(),
             },
             &owner,
@@ -493,7 +493,7 @@ fn sync_event_instance_rejects_non_owner_non_admin_of_the_destination() {
 
         let err = sync_event_instance(
             SyncEventInstanceRequest {
-                event_instance_id: instance.id.to_proto_id(),
+                event_instance_id: instance.post_id.to_proto_id(),
                 sync_destination_id: destination.id.to_proto_id(),
             },
             &other,

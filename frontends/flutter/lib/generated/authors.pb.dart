@@ -14,7 +14,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $13;
+import 'permissions.pbenum.dart' as $14;
 
 ///  Post/authorship-centric version of User. UI can cross-reference user details
 ///  from its own cache (for things like admin/bot icons).
@@ -28,7 +28,7 @@ class Author extends $pb.GeneratedMessage {
     $core.String? username,
     $5.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$13.Permission>? permissions,
+    $core.Iterable<$14.Permission>? permissions,
   }) {
     final $result = create();
     if (userId != null) {
@@ -57,7 +57,7 @@ class Author extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$13.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
+    ..pc<$14.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
@@ -124,7 +124,7 @@ class Author extends $pb.GeneratedMessage {
   void clearRealName() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.List<$13.Permission> get permissions => $_getList(4);
+  $core.List<$14.Permission> get permissions => $_getList(4);
 }
 
 

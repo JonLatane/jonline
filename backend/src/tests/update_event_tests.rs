@@ -1,9 +1,11 @@
 //! Specs for `update_event`'s instance-merging behavior (`update_event_instances`, in
 //! `rpcs/events/update_event.rs`): given a request's `instances` list, each entry is matched
-//! against the event's existing instances by id, then either updated in place, created fresh, or
-//! (if an existing instance's id is missing from the request) deleted. These specs exercise that
-//! matching logic directly -- `create_event_sets_event_count_once_and_event_instance_count_per_instance`
-//! in `user_counts_tests` only covers the pure-create path (`CreateEvent`), not `UpdateEvent`'s
+//! against the event's existing instances by `post.id` (an `EventInstance`'s identity *is* its own
+//! Post's ID -- there's no separate surrogate ID), then either updated in place, created fresh, or
+//! (if an existing instance's `post.id` is missing from the request) deleted. These specs exercise
+//! that matching logic directly --
+//! `create_event_sets_event_count_once_and_event_instance_count_per_instance` in
+//! `user_counts_tests` only covers the pure-create path (`CreateEvent`), not `UpdateEvent`'s
 //! three-way merge.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -34,11 +36,11 @@ fn whole_second_instant(offset_secs: u64) -> SystemTime {
 
 fn event_instance_row(
     conn: &mut crate::db_connection::PgPooledConnection,
-    id: i64,
+    post_id: i64,
 ) -> Option<models::EventInstance> {
     event_instances::table
         .select(models::EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::id.eq(id))
+        .filter(event_instances::post_id.eq(post_id))
         .first::<models::EventInstance>(conn)
         .ok()
 }
@@ -86,18 +88,17 @@ fn updating_an_existing_instance_in_place_preserves_its_id_and_persists_changed_
 
         let updated = update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
                     ..Default::default()
                 }),
                 instances: vec![EventInstance {
-                    id: instance.id.to_proto_id(),
                     starts_at: Some(new_starts_at.to_proto()),
                     ends_at: Some(new_ends_at.to_proto()),
                     location: Some(new_location.clone()),
                     post: Some(Post {
+                        id: instance.post_id.to_proto_id(),
                         visibility: Visibility::ServerPublic as i32,
                         ..Default::default()
                     }),
@@ -112,12 +113,13 @@ fn updating_an_existing_instance_in_place_preserves_its_id_and_persists_changed_
 
         assert_eq!(updated.instances.len(), 1);
         assert_eq!(
-            updated.instances[0].id,
-            instance.id.to_proto_id(),
+            updated.instances[0].post.as_ref().unwrap().id,
+            instance.post_id.to_proto_id(),
             "the existing instance row should be reused, not replaced with a new id"
         );
 
-        let row = event_instance_row(conn, instance.id).expect("instance should still exist");
+        let row =
+            event_instance_row(conn, instance.post_id).expect("instance should still exist");
         assert_eq!(row.starts_at, new_starts_at);
         assert_eq!(row.ends_at, new_ends_at);
         assert_eq!(
@@ -147,17 +149,16 @@ fn an_instance_omitted_from_the_request_is_deleted_but_its_post_survives() {
 
         update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
                     ..Default::default()
                 }),
                 instances: vec![EventInstance {
-                    id: kept.id.to_proto_id(),
                     starts_at: Some(kept.starts_at.to_proto()),
                     ends_at: Some(kept.ends_at.to_proto()),
                     post: Some(Post {
+                        id: kept.post_id.to_proto_id(),
                         visibility: Visibility::ServerPublic as i32,
                         ..Default::default()
                     }),
@@ -171,11 +172,11 @@ fn an_instance_omitted_from_the_request_is_deleted_but_its_post_survives() {
         .expect("update_event should succeed");
 
         assert!(
-            event_instance_row(conn, kept.id).is_some(),
+            event_instance_row(conn, kept.post_id).is_some(),
             "the instance present in the request should survive"
         );
         assert!(
-            event_instance_row(conn, removed.id).is_none(),
+            event_instance_row(conn, removed.post_id).is_none(),
             "the instance omitted from the request should be deleted"
         );
         let surviving_post = post_row(conn, removed_post.id);
@@ -206,7 +207,6 @@ fn an_instance_with_no_id_in_the_request_creates_a_new_instance() {
 
         let updated = update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
@@ -214,17 +214,17 @@ fn an_instance_with_no_id_in_the_request_creates_a_new_instance() {
                 }),
                 instances: vec![
                     EventInstance {
-                        id: existing.id.to_proto_id(),
                         starts_at: Some(existing.starts_at.to_proto()),
                         ends_at: Some(existing.ends_at.to_proto()),
                         post: Some(Post {
+                            id: existing.post_id.to_proto_id(),
                             visibility: Visibility::ServerPublic as i32,
                             ..Default::default()
                         }),
                         ..Default::default()
                     },
                     EventInstance {
-                        // No `id` -- brand new instance.
+                        // No `post` (or a `post` with no `id`) -- brand new instance.
                         starts_at: Some(new_starts_at.to_proto()),
                         ends_at: Some(new_ends_at.to_proto()),
                         post: Some(Post {
@@ -243,7 +243,7 @@ fn an_instance_with_no_id_in_the_request_creates_a_new_instance() {
 
         assert_eq!(updated.instances.len(), 2);
         let total: i64 = event_instances::table
-            .filter(event_instances::event_id.eq(event.id))
+            .filter(event_instances::event_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -252,13 +252,13 @@ fn an_instance_with_no_id_in_the_request_creates_a_new_instance() {
         let created_id = updated
             .instances
             .iter()
-            .map(|i| i.id.to_db_id().unwrap())
-            .find(|id| *id != existing.id)
+            .map(|i| i.post.as_ref().unwrap().id.to_db_id().unwrap())
+            .find(|id| *id != existing.post_id)
             .expect("a second, newly-created instance should be present");
         let created_row = event_instance_row(conn, created_id).unwrap();
         assert_eq!(created_row.starts_at, new_starts_at);
         assert_eq!(created_row.ends_at, new_ends_at);
-        assert_eq!(created_row.event_id, event.id);
+        assert_eq!(created_row.event_id, event.post_id);
 
         Ok(())
     });
@@ -290,7 +290,6 @@ fn a_single_call_can_update_create_and_delete_instances_together() {
 
         let result = update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
@@ -298,10 +297,10 @@ fn a_single_call_can_update_create_and_delete_instances_together() {
                 }),
                 instances: vec![
                     EventInstance {
-                        id: updated_instance.id.to_proto_id(),
                         starts_at: Some(new_starts_at.to_proto()),
                         ends_at: Some(new_ends_at.to_proto()),
                         post: Some(Post {
+                            id: updated_instance.post_id.to_proto_id(),
                             visibility: Visibility::ServerPublic as i32,
                             ..Default::default()
                         }),
@@ -326,12 +325,12 @@ fn a_single_call_can_update_create_and_delete_instances_together() {
         .expect("update_event should succeed");
 
         assert_eq!(result.instances.len(), 2, "1 updated + 1 created");
-        assert!(event_instance_row(conn, updated_instance.id).is_some());
-        assert!(event_instance_row(conn, removed_a.id).is_none());
-        assert!(event_instance_row(conn, removed_b.id).is_none());
+        assert!(event_instance_row(conn, updated_instance.post_id).is_some());
+        assert!(event_instance_row(conn, removed_a.post_id).is_none());
+        assert!(event_instance_row(conn, removed_b.post_id).is_none());
 
         let total: i64 = event_instances::table
-            .filter(event_instances::event_id.eq(event.id))
+            .filter(event_instances::event_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -366,18 +365,17 @@ fn an_instance_id_belonging_to_a_different_event_is_not_reassigned() {
 
         let result = update_event(
             Event {
-                id: event_a.id.to_proto_id(),
                 post: Some(Post {
                     id: event_a_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
                     ..Default::default()
                 }),
                 instances: vec![EventInstance {
-                    // `instance_b`'s id, but submitted under event A.
-                    id: instance_b.id.to_proto_id(),
+                    // `instance_b`'s post id, but submitted under event A.
                     starts_at: Some(instance_b.starts_at.to_proto()),
                     ends_at: Some(instance_b.ends_at.to_proto()),
                     post: Some(Post {
+                        id: instance_b.post_id.to_proto_id(),
                         visibility: Visibility::ServerPublic as i32,
                         ..Default::default()
                     }),
@@ -391,35 +389,46 @@ fn an_instance_id_belonging_to_a_different_event_is_not_reassigned() {
         .expect("update_event should succeed");
 
         assert_eq!(result.instances.len(), 1);
-        let new_instance_id = result.instances[0].id.to_db_id().unwrap();
+        let new_instance_id = result.instances[0]
+            .post
+            .as_ref()
+            .unwrap()
+            .id
+            .to_db_id()
+            .unwrap();
         assert_ne!(
-            new_instance_id, instance_b.id,
+            new_instance_id, instance_b.post_id,
             "a foreign instance id should mint a new instance, not hijack the original"
         );
 
         let event_a_instances: i64 = event_instances::table
-            .filter(event_instances::event_id.eq(event_a.id))
+            .filter(event_instances::event_id.eq(event_a.post_id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(event_a_instances, 1);
 
-        let untouched = event_instance_row(conn, instance_b.id)
+        let untouched = event_instance_row(conn, instance_b.post_id)
             .expect("instance_b should be untouched, not moved or deleted");
-        assert_eq!(untouched.event_id, event_b.id, "still belongs to event B");
+        assert_eq!(
+            untouched.event_id, event_b.post_id,
+            "still belongs to event B"
+        );
         assert_eq!(untouched.starts_at, instance_b.starts_at);
 
         Ok(())
     });
 }
 
-/// Not really a "merge" case, but a sharp edge of one: an `EventInstance` entry that matches an
-/// existing instance by id but omits `post` entirely resets that instance's Post visibility to
-/// `PRIVATE`, since `update_event_instances` treats a missing `post` as an explicit
-/// `Visibility::Private` rather than "leave the current visibility alone" (see `update_event.rs`,
-/// the `unwrap_or(Visibility::Private)` on `request_instance.post.as_ref().map(|p| p.visibility())`).
+/// Resetting an instance's Post to `PRIVATE` requires explicitly sending `visibility: PRIVATE` in
+/// its `post` -- omitting `post` entirely can no longer double as "make this private" the way it
+/// used to (see `update_event_instances_impl`'s own doc comment): since an `EventInstance`'s
+/// identity *is* its `post.id`, an update entry with no `post` has nothing to match against, and
+/// would (dangerously) be treated as a brand new instance rather than updating the existing one --
+/// see `an_instance_update_with_no_post_creates_a_new_instance_instead_of_matching_the_existing_one`
+/// below for that sharp edge.
 #[test]
-fn omitting_an_existing_instances_post_resets_its_visibility_to_private() {
+fn explicitly_setting_an_existing_instances_post_visibility_to_private_persists_it() {
     let mut conn = test_conn();
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uet_visibility_author");
@@ -441,14 +450,67 @@ fn omitting_an_existing_instances_post_resets_its_visibility_to_private() {
 
         update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
                     ..Default::default()
                 }),
                 instances: vec![EventInstance {
-                    id: instance.id.to_proto_id(),
+                    starts_at: Some(instance.starts_at.to_proto()),
+                    ends_at: Some(instance.ends_at.to_proto()),
+                    post: Some(Post {
+                        id: instance_post.id.to_proto_id(),
+                        visibility: Visibility::Private as i32,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            },
+            &author,
+            conn,
+        )
+        .expect("update_event should succeed");
+
+        let post_after = post_row(conn, instance_post.id);
+        assert_eq!(post_after.visibility, "PRIVATE");
+
+        Ok(())
+    });
+}
+
+/// The old "omit `post`" trick no longer identifies an existing instance -- since identity moved
+/// to `post.id`, an update entry with no `post` at all is indistinguishable from a brand new
+/// instance, and `update_event`'s create-before-delete ordering (see its own doc comment) means it
+/// gets created rather than silently dropped or matched to the original.
+#[test]
+fn an_instance_update_with_no_post_creates_a_new_instance_instead_of_matching_the_existing_one() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let author = create_user(conn, "uet_nopost_author");
+        let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
+        let (event, event_post) = create_event(conn, &author, EventOpts {
+                default_instance: None,
+                ..Default::default()
+            });
+        let (instance, instance_post) = create_event_instance(
+            conn,
+            &event,
+            Some(&author),
+            EventInstanceOpts {
+                visibility: Visibility::ServerPublic,
+                ..Default::default()
+            },
+        );
+
+        let updated = update_event(
+            Event {
+                post: Some(Post {
+                    id: event_post.id.to_proto_id(),
+                    visibility: Visibility::ServerPublic as i32,
+                    ..Default::default()
+                }),
+                instances: vec![EventInstance {
                     starts_at: Some(instance.starts_at.to_proto()),
                     ends_at: Some(instance.ends_at.to_proto()),
                     post: None,
@@ -461,8 +523,36 @@ fn omitting_an_existing_instances_post_resets_its_visibility_to_private() {
         )
         .expect("update_event should succeed");
 
-        let post_after = post_row(conn, instance_post.id);
-        assert_eq!(post_after.visibility, "PRIVATE");
+        assert_eq!(
+            updated.instances.len(),
+            1,
+            "the original instance didn't match anything (no post.id) so it was deleted; the \
+             post-less entry created a new one in its place"
+        );
+        let new_post = updated.instances[0]
+            .post
+            .as_ref()
+            .expect("a post always comes back on read, even for a no-post-override instance");
+        assert_ne!(
+            new_post.id,
+            instance_post.id.to_proto_id(),
+            "this is a brand new instance/post, not the original one reset in place"
+        );
+        assert_eq!(
+            new_post.visibility(),
+            Visibility::GlobalPublic,
+            "a post-less create defaults to GLOBAL_PUBLIC, not PRIVATE -- proving the old \
+             \"omit post to reset to private\" trick no longer applies"
+        );
+        assert!(
+            event_instance_row(conn, instance.post_id).is_none(),
+            "the original instance is gone -- it didn't match anything in the request"
+        );
+        let original_post_after = post_row(conn, instance_post.id);
+        assert_eq!(
+            original_post_after.visibility, "SERVER_PUBLIC",
+            "the original instance's own Post is untouched (not deleted, not reset to PRIVATE)"
+        );
 
         Ok(())
     });
@@ -510,7 +600,6 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
 
         update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
@@ -524,10 +613,10 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
                     ..Default::default()
                 }),
                 instances: vec![EventInstance {
-                    id: kept.id.to_proto_id(),
                     starts_at: Some(kept.starts_at.to_proto()),
                     ends_at: Some(kept.ends_at.to_proto()),
                     post: Some(Post {
+                        id: kept.post_id.to_proto_id(),
                         visibility: Visibility::ServerPublic as i32,
                         ..Default::default()
                     }),
@@ -540,7 +629,7 @@ fn deleting_an_instance_owned_by_a_different_user_refreshes_that_users_event_ins
         )
         .expect("admin update_event should succeed");
 
-        assert!(event_instance_row(conn, removed.id).is_none());
+        assert!(event_instance_row(conn, removed.post_id).is_none());
         let instance_owner = models::get_user(instance_owner.id, conn)?;
         assert_eq!(
             instance_owner.event_instance_count, 0,
@@ -572,7 +661,6 @@ fn deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events() {
 
         let err = update_event(
             Event {
-                id: event.id.to_proto_id(),
                 post: Some(Post {
                     id: event_post.id.to_proto_id(),
                     visibility: Visibility::ServerPublic as i32,
@@ -588,9 +676,9 @@ fn deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events() {
         assert_eq!(err.message(), "event_not_found");
 
         // The merge itself still committed, despite the RPC returning an error.
-        assert!(event_instance_row(conn, only_instance.id).is_none());
+        assert!(event_instance_row(conn, only_instance.post_id).is_none());
         let surviving_event: i64 = crate::schema::events::table
-            .filter(crate::schema::events::id.eq(event.id))
+            .filter(crate::schema::events::post_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();

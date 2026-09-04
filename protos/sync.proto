@@ -45,7 +45,9 @@ message SyncDestination {
   }
 }
 
+// Response to a request for the current user's [`SyncDestination`](#jonline-SyncDestination)s.
 message GetSyncDestinationsResponse {
+  // The current user's SyncDestinations.
   repeated SyncDestination destinations = 1;
 }
 

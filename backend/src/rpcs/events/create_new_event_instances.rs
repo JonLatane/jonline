@@ -8,15 +8,15 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::{event_instances, posts};
 
-use super::event_permissions::{find_existing_instance, validate_event_edit_permission};
+use super::event_permissions::{event_post_id, find_existing_instance, validate_event_edit_permission};
 
 /// Creates an `EventInstance` for every entry in `instances` that isn't already on `event` (i.e.
-/// whose `id` doesn't parse, or doesn't belong to this event); entries that do match are left
+/// whose `post.id` doesn't parse, or doesn't belong to this event); entries that do match are left
 /// untouched (see `update_event_instances` for updating those in place). Returns `instances` with
-/// each created entry's `id` replaced by its newly-minted database id -- callers that need to know
-/// which instances survive this event (like `update_event`, feeding `delete_removed_event_instances`)
-/// can't otherwise tell a request instance just created apart from one about to be deleted, since
-/// both have no id the deletion pass would recognize.
+/// each created entry's `post.id` replaced by its newly-minted Post's id -- callers that need to
+/// know which instances survive this event (like `update_event`, feeding
+/// `delete_removed_event_instances`) can't otherwise tell a request instance just created apart
+/// from one about to be deleted, since both have no id the deletion pass would recognize.
 pub(super) fn create_new_event_instances_impl(
     event: &models::Event,
     instances: &[EventInstance],
@@ -25,13 +25,16 @@ pub(super) fn create_new_event_instances_impl(
 ) -> Result<Vec<EventInstance>, Status> {
     let mut resolved = Vec::with_capacity(instances.len());
     for request_instance in instances {
-        if find_existing_instance(&request_instance.id, event.id, conn).is_some() {
+        if find_existing_instance(request_instance, event.post_id, conn).is_some() {
             resolved.push(request_instance.clone());
             continue;
         }
-        let (created_instance, _) = create_instance(event, request_instance, current_user, conn)?;
+        let (_, created_instance_post) =
+            create_instance(event, request_instance, current_user, conn)?;
+        let mut resolved_post = request_instance.post.clone().unwrap_or_default();
+        resolved_post.id = created_instance_post.id.to_proto_id();
         resolved.push(EventInstance {
-            id: created_instance.id.to_proto_id(),
+            post: Some(resolved_post),
             ..request_instance.clone()
         });
     }
@@ -48,7 +51,7 @@ pub fn create_new_event_instances(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
-    let event_id = request.id.to_db_id_or_err("id")?;
+    let event_id = event_post_id(&request)?;
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
@@ -56,7 +59,7 @@ pub fn create_new_event_instances(
 
     Ok(super::get_events(
         GetEventsRequest {
-            event_id: Some(event_id.to_proto_id()),
+            post_id: Some(event_id.to_proto_id()),
             ..Default::default()
         },
         &Some(current_user),
@@ -121,7 +124,7 @@ pub fn create_instance(
         })?;
     let instance = insert_into(event_instances::table)
         .values(&models::NewEventInstance {
-            event_id: event.id,
+            event_id: event.post_id,
             post_id: instance_post.id,
             starts_at: instance.starts_at.as_ref().unwrap().to_db(),
             ends_at: instance.ends_at.as_ref().unwrap().to_db(),

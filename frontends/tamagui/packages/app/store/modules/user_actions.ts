@@ -4,6 +4,7 @@ import {
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import { AccountOrServer, federateId, getCredentialClient, store, usersAdapter } from "..";
+import { IdentifiedGetEventsResponse, identifyGetEventsResponse } from "./event_actions";
 
 export const defaultUserListingType = UserListingType.EVERYONE;
 
@@ -101,7 +102,7 @@ export const loadUserReplies: AsyncThunk<GetPostsResponse, LoadUserEntities, any
   }
 );
 export type LoadUserEvents = LoadUserEntities & { timeFilter?: TimeFilter }
-export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> = createAsyncThunk<GetEventsResponse, LoadUserEvents>(
+export const loadUserEvents: AsyncThunk<IdentifiedGetEventsResponse, LoadUserEvents, any> = createAsyncThunk<IdentifiedGetEventsResponse, LoadUserEvents>(
   "users/loadEvents",
   async (request) => {
     let client = await getCredentialClient(request);
@@ -110,7 +111,7 @@ export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> 
       // timeFilter: undefined,
       timeFilter: request.timeFilter,
     }, client.credential);
-    return result;
+    return identifyGetEventsResponse(result);
   }
 );
 

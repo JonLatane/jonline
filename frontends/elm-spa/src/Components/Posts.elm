@@ -9,6 +9,7 @@ module Components.Posts exposing
     , fetchPost
     , fetchPosts
     , fetchReplies
+    , generateMediaButton
     , isAuthor
     , mediaEditButton
     , moderationFromText
@@ -541,6 +542,27 @@ mediaEditButton maybeAccount onMediaEditClicked post =
             text ""
 
 
+{-| `mediaEditButton`'s sibling, opening `Shared.MediaGeneratorPanel` instead of `Shared.MyMediaPanel`
+-- same `isAuthor`-or-`ADMIN` gate, but `onGenerateMediaClicked` is itself a `Maybe msg` (not a bare
+`msg`, unlike every other button here) since the caller also has to know whether the viewer has any
+image-capable `AvailableAIModel` at all (`Account.availableAiModels`) before this button makes sense
+to offer -- `Nothing` there covers both "not this post's author/an Admin" and "no model available",
+without `Components.Posts` itself needing to know anything about `AvailableAIModel`.
+-}
+generateMediaButton : Maybe AccountsPanel.Account -> Maybe msg -> Post -> Html msg
+generateMediaButton maybeAccount onGenerateMediaClicked post =
+    case ( maybeAccount, onGenerateMediaClicked ) of
+        ( Just account, Just onClicked ) ->
+            if isAuthor account post || List.member ADMIN account.permissions then
+                button [ class "post-generate-media-button", Html.Events.onClick onClicked ] [ text "Generate Media…" ]
+
+            else
+                text ""
+
+        _ ->
+            text ""
+
+
 {-| `mediaEditButton`'s companion in `postDetail`'s media block, on its own
 row directly below it (same `isAuthor`-or-`ADMIN` gate, plus only shown once
 `post` actually has media to lay out -- an empty gallery has nothing for the
@@ -919,6 +941,10 @@ be a bare `postVisibilityText post` text node. `moderationView` is the same
 idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
 moderation-status segment.
 
+`onGenerateMediaClicked` drives `generateMediaButton`, shown alongside `mediaEditButton` in the same
+row -- `Nothing` if the caller has no reason to offer it (no image-capable `AvailableAIModel`, or
+the viewer isn't `post`'s author/an Admin; see that button's own doc).
+
 `onMediaLayoutChanged` drives `mediaLayoutSelector`, shown below
 `mediaEditButton` in the media block -- unlike `visibilityView`/
 `moderationView`, this one's a plain callback rather than caller-supplied
@@ -927,14 +953,14 @@ edit-mode/Save/Cancel state for the caller to own; it saves on every change.
 
 `availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete` drive an always-shown
 `postSyncDestinationsView` at the bottom of the detail view, mirroring
-`Pages.Event.EventId_`'s own `Events.eventSyncDestinationsView` call exactly -- `Nothing` until the
+`Pages.Event.PostId_`'s own `Events.eventSyncDestinationsView` call exactly -- `Nothing` until the
 caller's own fetch of the viewer's `SyncDestination`s (gated on being `post`'s author or Admin)
 resolves, same `Nothing`-falls-back-to-read-only-links behavior as that page (see
 `Components.Pages.PostPage.Model.availableSyncDestinations`'s own doc for the fetch itself).
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -964,7 +990,10 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
             Just server ->
                 div []
                     [ MultiMediaRenderer.view post.postMediaLayout server maybeAccount onMediaClicked post.media
-                    , div [ class "post-detail-media-edit-row" ] [ mediaEditButton maybeAccount onMediaEditClicked post ]
+                    , div [ class "post-detail-media-edit-row" ]
+                        [ mediaEditButton maybeAccount onMediaEditClicked post
+                        , generateMediaButton maybeAccount onGenerateMediaClicked post
+                        ]
                     , div [ class "post-detail-media-layout-row" ] [ mediaLayoutSelector maybeAccount onMediaLayoutChanged post ]
                     ]
 
@@ -1284,7 +1313,7 @@ postMediaLayoutFromText text =
 
 
 {-| The moderation-status options offered by a moderation-editing `<select>`
-(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
+(see `Pages.Post.PostId_`/`Pages.Event.PostId_`'s own moderation selectors)
 -- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
 the proto's own declaration order.
 -}

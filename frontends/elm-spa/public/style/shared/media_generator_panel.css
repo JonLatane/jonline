@@ -1,0 +1,205 @@
+/* The app-wide AI image generation panel (see Shared/MediaGeneratorPanel.elm)
+   -- opened contextually (a Post/Event's own "Generate Media…" button), same
+   shape as `.markdown-panel`: a large, centered overlay, not a small anchored
+   dropdown. Reuses the `.nav-panel` base rule (position/opacity/pointer-events
+   transition, see accounts_panel.css) for the same "always rendered,
+   open/closed is a plain CSS transition" convention every panel here follows,
+   overriding its positioning/sizing to suit -- mirrors `.markdown-panel.nav-panel`
+   almost exactly. */
+.media-generator-panel.nav-panel {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 640px);
+  height: 75vh;
+  max-height: 75vh;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  /* Above `.navbar` (28)/`.create-new-panel` (29)/`.markdown-panel` (30, see
+     nav.css/create_new_panel.css/markdown_panel.css) for the same reasoning
+     each of those already gives for sitting above the last. Deliberately
+     *below* `.my-media-panel` (32, see my_media_panel.css) though -- this
+     panel opens `Shared.MyMediaPanel` (in `MultiSelect` mode) to pick its own
+     reference media, and that picker should visibly cover this one while
+     it's choosing, not get buried behind it (see this panel's own module
+     doc). Still below `.media-viewer-panel` (33)/`.modal`'s own 34/35, same
+     as every other panel here. */
+  z-index: 31;
+}
+
+.media-generator-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(100%);
+}
+
+@media (max-width: 639px) {
+  .media-generator-panel.nav-panel {
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    transform: none;
+    border-radius: 0;
+  }
+
+  .media-generator-panel.nav-panel.is-closed {
+    transform: translateY(100%);
+  }
+}
+
+.media-generator-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.media-generator-panel-title {
+  font-weight: 700;
+}
+
+.media-generator-panel-close {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--muted);
+}
+
+.media-generator-panel-close:hover {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+.media-generator-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.media-generator-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.media-generator-panel-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.media-generator-panel-model-select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.media-generator-panel-no-models {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Anchors the "for Post: …"/"for Event: …" toggle's popover -- built on
+   `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/
+   `.popover-backdrop` (see that file's own doc), the same way
+   `EventsPage.exportButtonView` does for its own Export popover. */
+.media-generator-panel-target {
+  align-self: flex-start;
+}
+
+.media-generator-panel-target-toggle {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+.media-generator-panel-target-toggle:hover {
+  border-color: var(--fg);
+}
+
+.media-generator-panel-target-popover {
+  width: min(90vw, 380px);
+}
+
+.media-generator-panel-prompt {
+  width: 100%;
+  min-height: 5rem;
+  resize: vertical;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+}
+
+.media-generator-panel-media-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.media-generator-panel-media-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.media-generator-panel-media-item {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.media-generator-panel-edit-media {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+.media-generator-panel-edit-media:hover {
+  border-color: var(--fg);
+}
+
+.media-generator-panel-error {
+  color: var(--danger);
+  flex: 0 0 auto;
+}
+
+.media-generator-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.media-generator-panel-actions button {
+  flex: 1;
+}
+
+/* `.media-generator-panel-generate`'s actual color comes from the emitted
+   per-server `background-color-primary` utility class (see
+   UI/EmittedStylesheet.elm), added alongside it in
+   Shared/MediaGeneratorPanel.elm's `view`, same as `.markdown-panel-save`. */

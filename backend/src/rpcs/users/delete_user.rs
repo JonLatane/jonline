@@ -38,7 +38,7 @@ pub async fn delete_user(
     let event_ids = events::table
         .inner_join(posts::table.on(events::post_id.eq(posts::id)))
         .filter(posts::user_id.eq(Some(target_user_id)))
-        .select(events::id)
+        .select(events::post_id)
         .load::<i64>(conn)
         .map_err(|e| {
             log::error!("Error loading events for user {}: {:?}", target_user_id, e);
@@ -47,7 +47,10 @@ pub async fn delete_user(
     for event_id in event_ids {
         rpcs::delete_event(
             Event {
-                id: event_id.to_proto_id(),
+                post: Some(Post {
+                    id: event_id.to_proto_id(),
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             current_user,

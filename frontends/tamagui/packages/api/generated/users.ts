@@ -6,11 +6,12 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { AvailableAIModel } from "./ai_model_providers";
 import { FederatedAccount } from "./federation";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
-import { SyncDestination } from "./sync";
+import { EventSyncSource, SyncDestination } from "./sync";
 import {
   Moderation,
   moderationFromJSON,
@@ -235,12 +236,30 @@ export interface User {
   federatedProfiles: FederatedAccount[];
   /**
    * The target user's own linked SyncDestinations (e.g. Facebook Pages).
-   * Only ever populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by
-   * user_id) when the viewer is the target user themselves (and holds
-   * `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty
-   * otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser).
+   * Populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by user_id) when the
+   * viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or
+   * `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)
+   * (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
+   * listing type.
    */
   syncDestinations: SyncDestination[];
+  /**
+   * The target user's own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for
+   * the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
+   * single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
+   * filled in, batch-loaded in one query rather than per-user. Also populated by
+   * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
+   * any other viewer.
+   */
+  eventSyncSources: EventSyncSource[];
+  /**
+   * Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
+   * providers' models, plus any models granted to them on other users' providers (see
+   * [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources`
+   * (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
+   * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
+   */
+  availableAiModels: AvailableAIModel[];
   /** The time the user was created. */
   createdAt:
     | string
@@ -382,6 +401,8 @@ function createBaseUser(): User {
     hasAdvancedData: false,
     federatedProfiles: [],
     syncDestinations: [],
+    eventSyncSources: [],
+    availableAiModels: [],
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -465,6 +486,12 @@ export const User: MessageFns<User> = {
     }
     for (const v of message.syncDestinations) {
       SyncDestination.encode(v!, writer.uint32(658).fork()).join();
+    }
+    for (const v of message.eventSyncSources) {
+      EventSyncSource.encode(v!, writer.uint32(666).fork()).join();
+    }
+    for (const v of message.availableAiModels) {
+      AvailableAIModel.encode(v!, writer.uint32(674).fork()).join();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(802).fork()).join();
@@ -692,6 +719,22 @@ export const User: MessageFns<User> = {
           message.syncDestinations.push(SyncDestination.decode(reader, reader.uint32()));
           continue;
         }
+        case 83: {
+          if (tag !== 666) {
+            break;
+          }
+
+          message.eventSyncSources.push(EventSyncSource.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 84: {
+          if (tag !== 674) {
+            break;
+          }
+
+          message.availableAiModels.push(AvailableAIModel.decode(reader, reader.uint32()));
+          continue;
+        }
         case 100: {
           if (tag !== 802) {
             break;
@@ -755,6 +798,12 @@ export const User: MessageFns<User> = {
         : [],
       syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
         ? object.syncDestinations.map((e: any) => SyncDestination.fromJSON(e))
+        : [],
+      eventSyncSources: globalThis.Array.isArray(object?.eventSyncSources)
+        ? object.eventSyncSources.map((e: any) => EventSyncSource.fromJSON(e))
+        : [],
+      availableAiModels: globalThis.Array.isArray(object?.availableAiModels)
+        ? object.availableAiModels.map((e: any) => AvailableAIModel.fromJSON(e))
         : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
@@ -838,6 +887,12 @@ export const User: MessageFns<User> = {
     if (message.syncDestinations?.length) {
       obj.syncDestinations = message.syncDestinations.map((e) => SyncDestination.toJSON(e));
     }
+    if (message.eventSyncSources?.length) {
+      obj.eventSyncSources = message.eventSyncSources.map((e) => EventSyncSource.toJSON(e));
+    }
+    if (message.availableAiModels?.length) {
+      obj.availableAiModels = message.availableAiModels.map((e) => AvailableAIModel.toJSON(e));
+    }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
     }
@@ -891,6 +946,8 @@ export const User: MessageFns<User> = {
     message.hasAdvancedData = object.hasAdvancedData ?? false;
     message.federatedProfiles = object.federatedProfiles?.map((e) => FederatedAccount.fromPartial(e)) || [];
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestination.fromPartial(e)) || [];
+    message.eventSyncSources = object.eventSyncSources?.map((e) => EventSyncSource.fromPartial(e)) || [];
+    message.availableAiModels = object.availableAiModels?.map((e) => AvailableAIModel.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

@@ -10,22 +10,22 @@ use crate::protos::*;
 
 pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status> {
     if let Some(custom_tabs) = config.custom_tabs.as_ref() {
-        // `CustomNavigationTabSet.home`'s own proto doc restricts its `target` to only
-        // `HOME_TAB` (i.e. unset/default), `EVENTS_TAB`, `POSTS_TAB`, or a `post_id` -- never
-        // `PEOPLE_TAB`/`ABOUT_TAB`/`is_profile`. The Elm admin editor
-        // (`SettingsTab.applyCustomTabs`/`UI.CustomNav.toProtoHome`, gated on
+        // `CustomHomePage`'s own proto doc restricts `target` to only `HOME_TAB` (i.e.
+        // unset/default), `EVENTS_TAB`, `POSTS_TAB`, or a `post_id` -- its `oneof` doesn't even
+        // have a `PEOPLE_TAB`/`ABOUT_TAB`/`is_profile` branch to construct in the first place
+        // (see `CustomHomePage.target`), so only `tab` needs narrowing here. The Elm admin editor
+        // (`CustomTabsConfiguration.applyCustomTabs`/`UI.CustomNav.toProtoHome`, gated on
         // `UI.CustomNav.selectableHomeTargetKinds`) never constructs anything else, so this only
         // ever actually fires for a hand-edited/future-versioned config.
         if let Some(home) = custom_tabs.home.as_ref() {
             let home_target_ok = match home.target.as_ref() {
                 None => true,
-                Some(custom_navigation_tab::Target::Tab(tab)) => {
+                Some(custom_home_page::Target::Tab(tab)) => {
                     *tab == NavigationTab::HomeTab as i32
                         || *tab == NavigationTab::EventsTab as i32
                         || *tab == NavigationTab::PostsTab as i32
                 }
-                Some(custom_navigation_tab::Target::PostId(_)) => true,
-                Some(custom_navigation_tab::Target::IsProfile(_)) => false,
+                Some(custom_home_page::Target::PostId(_)) => true,
             };
             if !home_target_ok {
                 return Err(Status::new(
@@ -38,7 +38,7 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
         let mut seen_paths = HashSet::new();
         for tab in &custom_tabs.tabs {
             let is_profile_tab = matches!(
-                tab.custom_tab.as_ref().and_then(|ct| ct.target.as_ref()),
+                tab.target.as_ref(),
                 Some(custom_navigation_tab::Target::IsProfile(_))
             );
             super::validate_custom_tab_path(&tab.path, is_profile_tab)?;
@@ -62,8 +62,7 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
                 _ => None,
             };
             if let Some((required_tab, error_message)) = required_tab {
-                let target = tab.custom_tab.as_ref().and_then(|ct| ct.target.as_ref());
-                if target != Some(&custom_navigation_tab::Target::Tab(required_tab as i32)) {
+                if tab.target != Some(custom_navigation_tab::Target::Tab(required_tab as i32)) {
                     return Err(Status::new(Code::InvalidArgument, error_message));
                 }
             }

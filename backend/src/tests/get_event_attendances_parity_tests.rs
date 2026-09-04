@@ -122,7 +122,7 @@ fn via_get_events(
 ) -> EventInstance {
     let response = get_events(
         GetEventsRequest {
-            event_instance_id: Some(instance_id.to_proto_id()),
+            post_id: Some(instance_id.to_proto_id()),
             anonymous_attendee_auth_token,
             ..Default::default()
         },
@@ -137,7 +137,7 @@ fn via_get_events(
         .expect("get_events returned no event")
         .instances
         .into_iter()
-        .find(|instance| instance.id == instance_id.to_proto_id())
+        .find(|instance| instance.post.as_ref().unwrap().id == instance_id.to_proto_id())
         .expect("get_events response is missing the instance")
 }
 
@@ -216,7 +216,7 @@ fn public_viewer_sees_only_the_approved_attendance_notes_redacted_and_location_h
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "pub");
 
-        let (events_instance, attendances) = assert_parity(conn, &None, scenario.instance.id, None);
+        let (events_instance, attendances) = assert_parity(conn, &None, scenario.instance.post_id, None);
 
         assert_eq!(
             notes_by_id(&attendances),
@@ -238,7 +238,7 @@ fn own_pending_attendee_sees_their_own_row_but_location_stays_hidden() {
         let (events_instance, attendances) = assert_parity(
             conn,
             &Some(&scenario.pending_user),
-            scenario.instance.id,
+            scenario.instance.post_id,
             None,
         );
 
@@ -280,7 +280,7 @@ fn approved_attendee_unlocks_the_hidden_location() {
         let (events_instance, _attendances) = assert_parity(
             conn,
             &Some(&scenario.approved_user),
-            scenario.instance.id,
+            scenario.instance.post_id,
             None,
         );
 
@@ -308,7 +308,7 @@ fn anonymous_attendee_sees_their_own_pending_row_via_auth_token() {
         let (events_instance, attendances) = assert_parity(
             conn,
             &None,
-            scenario.instance.id,
+            scenario.instance.post_id,
             Some(ANONYMOUS_AUTH_TOKEN.to_string()),
         );
 
@@ -350,7 +350,7 @@ fn wrong_auth_token_is_treated_like_no_token() {
         let (events_instance, attendances) = assert_parity(
             conn,
             &None,
-            scenario.instance.id,
+            scenario.instance.post_id,
             Some("not-the-right-token".to_string()),
         );
 
@@ -374,7 +374,7 @@ fn event_owner_sees_every_attendance_unredacted_and_the_real_location() {
         let scenario = build_scenario(conn, "owner");
 
         let (events_instance, attendances) =
-            assert_parity(conn, &Some(&scenario.owner), scenario.instance.id, None);
+            assert_parity(conn, &Some(&scenario.owner), scenario.instance.post_id, None);
 
         assert_eq!(
             notes_by_id(&attendances),

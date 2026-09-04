@@ -1,7 +1,7 @@
-import { FederatedEvent, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedEventInstance, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { AttendanceStatus, EventAttendance, EventInstance, Permission } from "@jonline/api";
+import { AttendanceStatus, EventAttendance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, Text, TextArea, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
@@ -20,7 +20,7 @@ import { on } from '../../hooks/use_hash';
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
-  instance: EventInstance;
+  instance: IdentifiedEventInstance;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   isPreview?: boolean;
