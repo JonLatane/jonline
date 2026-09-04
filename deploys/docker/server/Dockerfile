@@ -20,6 +20,12 @@ COPY backend/target/release/convert_media_sizes__server_release /opt/convert_med
 # once it's been run against every deployed namespace's Messages.
 COPY backend/target/release/repair_email_messages__server_release /opt/repair_email_messages
 
+# Runs all the above background job binaries on a loop -- see backend/background_jobs.sh. Lives
+# alongside them in /opt, unsuffixed, so its "./binary_name" resolution step finds them directly
+# (same layout as the Homebrew macOS package). Used by the jonline-jobs Deployment in
+# deploys/k8s/server_internal.yaml (& co.) instead of one k8s CronJob per job.
+COPY backend/background_jobs.sh /opt/background_jobs.sh
+
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 COPY backend/target/release/set_permission__server_release /opt/set_permission

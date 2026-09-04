@@ -157,6 +157,17 @@ type alias Model =
     -- `eventAnimations`) would otherwise fight the real owner for it.
     , embeddedPage : Bool
 
+    -- Whether `searchRowView`'s box also searches a *paired* `PostsPage` feed shown alongside this
+    -- one (`Pages.Home_`'s `Feed`, `Components.Pages.UserProfilePage`'s combined view) -- `True`
+    -- there reads the placeholder "Search posts and events…" instead of plain "Search events…".
+    -- Independent of `embeddedPage` itself (which governs layout/`tabsView`/`modeButtonsView`, see
+    -- that field's own doc): `Pages.Home_.HomePostWithEvents` (a fixed Post with an Events strip
+    -- above it) wants `embeddedPage`'s compact layout without this being `True` -- its search box
+    -- has no paired Posts feed to search, just the one fixed Post, so it should read plain "Search
+    -- events…" same as any standalone copy. `False` everywhere except `Feed`'s/`UserProfilePage`'s
+    -- own two copies.
+    , combinedPostsSearch : Bool
+
     -- Whether switching `mode` into/out of `Calendar` (see `DisplayModeChanged`)
     -- writes `Shared.UserPreferences.prefersCalendar` -- `True` only for
     -- `Pages.Home_`'s and `Pages.Events`' own copies (passed via `init`'s own

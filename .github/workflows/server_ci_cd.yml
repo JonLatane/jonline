@@ -763,6 +763,9 @@ jobs:
       # - name: Reference the secret you just uploaded as an imagePullSecrets
       #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
+      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+        run: kubectl delete cronjob --all -n jonline --ignore-not-found=true
+
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n jonline
 
@@ -1278,6 +1281,9 @@ jobs:
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
+      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+        run: kubectl delete cronjob --all -n bullcitysocial --ignore-not-found=true
+
       - name: Deploy to Bull City Social via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n bullcitysocial
 
@@ -1336,6 +1342,9 @@ jobs:
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
+      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+        run: kubectl delete cronjob --all -n oakcitysocial --ignore-not-found=true
+
       - name: Deploy to Oak City Social via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n oakcitysocial
 
@@ -1393,6 +1402,9 @@ jobs:
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+        run: kubectl delete cronjob --all -n ato-band --ignore-not-found=true
 
       - name: Deploy to Ato Band via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n ato-band
