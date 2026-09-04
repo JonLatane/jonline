@@ -135,16 +135,16 @@
   
 - [sync.proto](#sync-proto)
     - [BlueskyAccount](#jonline-BlueskyAccount)
-    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
     - [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest)
-    - [EventSyncSource](#jonline-EventSyncSource)
+    - [DeleteSyncSourceRequest](#jonline-DeleteSyncSourceRequest)
     - [FacebookPage](#jonline-FacebookPage)
-    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
     - [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse)
+    - [GetSyncSourcesResponse](#jonline-GetSyncSourcesResponse)
     - [InstagramAccount](#jonline-InstagramAccount)
     - [MastodonAccount](#jonline-MastodonAccount)
     - [SyncDestination](#jonline-SyncDestination)
     - [SyncDestinationStatus](#jonline-SyncDestinationStatus)
+    - [SyncSource](#jonline-SyncSource)
     - [ThreadsAccount](#jonline-ThreadsAccount)
     - [XTwitterAccount](#jonline-XTwitterAccount)
   
@@ -288,20 +288,25 @@ credentials live.
 each optionally `configured_by_default` (client should enable/configure it automatically) and/or
 `pinned_by_default` (client should pin its Events/Posts alongside the &#34;main&#34; server&#39;s).
 
-###### Facebook and X (Twitter) API keys
+###### Facebook API Keys
 `facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
 this server&#39;s Facebook App, enabling users to connect Facebook Page and Instagram Business
-[`SyncDestination`](#jonline-SyncDestination)s (see [Synchronization](#synchronization) below);
+[`SyncDestination`](#jonline-SyncDestination)s. `app_secret` is write-only/never serialized back to clients;
+admins set/rotate it via [`ConfigureServer`](#grpc-api-ConfigureServer) (i.e. the same admin UI form that
+manages the rest of [`ServerConfiguration`](#jonline-ServerConfiguration)) -- the secret is simply never echoed
+back in subsequent [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) responses.
+
+###### X (Twitter) API Keys
 `x_twitter_auth_config` (an [`XTwitterAuthConfig`](#jonline-XTwitterAuthConfig), `client_id`/`client_secret`)
-does the same for X (Twitter) -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. Both
-`*_secret` fields are write-only/never serialized back to clients; admins rotate them directly in the database&#39;s
-JSONB column.
+registers this server&#39;s X Developer App, enabling users to connect X [`SyncDestination`](#jonline-SyncDestination)s
+-- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. `client_secret` is write-only/never
+serialized back to clients, set/rotated the same way as the Facebook API keys above.
 
 ##### Web Push Configuration
 [`WebPushConfig`](#jonline-WebPushConfig) (`web_push_config`) holds the server&#39;s VAPID keypair for Web Push
 notifications: `public_vapid_key` is served to clients so they can subscribe, while `private_vapid_key` signs
 outgoing pushes and is *never* serialized to clients -- like the federation secrets above, admins set/rotate it
-directly in the database.
+via [`ConfigureServer`](#grpc-api-ConfigureServer), not by editing the database directly.
 
 ##### CDN Configuration
 [`ExternalCDNConfig`](#jonline-ExternalCDNConfig) (`external_cdn_config`) enables running Jonline behind a CDN
@@ -329,14 +334,105 @@ A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s members
 in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
 
-##### SyncDestinations
-A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
-external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
-[`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
+##### SyncSources
+While Federation is a first-class feature of Jonline, a [`User`](#jonline-User) can also own many
+[`SyncSource`](#jonline-SyncSource)s - server-owned external origins to sync with other fediverse and less-open
+platforms, pulling [`Event`](#jonline-Event)s and [`Post`](#jonline-Post)s in via a `oneof configuration` naming
+which source type it is -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though
+the `oneof` leaves room for other source types. This is a 1:(0 or 1) relationship: it&#39;s the parent
+[`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with
+its source (`Event.sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each
+[`Event`](#jonline-Event) has at most one source it came from -- see the Event section below for how these attach.
+A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
+`event_count`/`event_instance_count` on every sync.
 
-##### EventSyncSources
-A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
-pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
+Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
+(requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+[`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
+
+See also: [`SyncDestination`](#jonline-SyncDestination)
+
+###### iCal
+`configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
+background job fetches and parses it on each sync, creating/updating one [`Event`](#jonline-Event) per iCal `VEVENT`
+(keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
+`event_instance_count`. An `Event`&#39;s `sync_missing_since` is set the first time one of its instances stops
+appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
+supported yet -- only public iCal URLs.
+
+##### SyncDestinations
+A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s - user-owned external
+targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to (see the Event and
+Post sections below for how these attach), via a `oneof configuration` naming which platform it is. This is a
+many-to-many relationship: it&#39;s each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not,
+say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several destinations at once,
+tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+[`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the destination&#39;s resulting post ID/URL and
+last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval, so
+`synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
+recomputed-and-stored. All API keys for these external platforms are stored in
+[`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `federation_info`.
+
+Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
+[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
+and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+`SYNC_POSTS_TO_*` permission pair matching the destination&#39;s own platform (or Admin; see each platform&#39;s own
+section below). Actually syncing (or un-syncing) a given [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) to a destination is a separate
+step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
+[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+[`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
+way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
+
+See also: [`SyncSource`](#jonline-SyncSource)
+
+###### Facebook
+`configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
+Connecting one requires a short-lived user access token from client-side Facebook Login
+(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
+short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
+`SYNC_POSTS_TO_FACEBOOK`.
+
+###### Instagram
+`configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
+Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
+connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+the token for the chosen Page&#39;s access token, then looks up that Page&#39;s linked Instagram Business account
+(`instagram_business_account_id`). Unlike Facebook, Instagram&#39;s Graph API has no text-only post type; syncing a
+[`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
+`SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+
+###### Mastodon
+`configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
+account, on any instance the user names (`instance_host`) -- there&#39;s no single app to register the way
+Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
+(`MastodonAccount.access_token`, generated on the user&#39;s own instance under Preferences &gt; Development) rather than
+an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+
+###### Bluesky
+`configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
+Protocol) account. Connecting one is a user-supplied &#34;App Password&#34; (`BlueskyAccount.app_password`, generated at
+Settings &gt; App Passwords -- not the account&#39;s main password) rather than an OAuth popup. Gated on
+`SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+
+###### X (Twitter)
+`configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
+server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
+sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
+configured, connecting is an OAuth 2.0 Authorization Code &#43; PKCE flow at x.com (`response_type=code`, like
+Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn&#39;t) -- the server exchanges
+the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
+each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`&#39;s own doc).
+Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
+
+###### Threads
+`configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
+Threads API is a product added to this server&#39;s *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
+separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
+facebook.com) using `response_type=code` rather than Facebook&#39;s implicit `response_type=token`, with no &#34;choose a
+Page&#34; step -- it directly authorizes the user&#39;s own Threads account. The server exchanges the code for a
+short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
+text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 
 ##### AIModelProviders
 A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
@@ -347,6 +443,51 @@ AIModelProvider section below. Which models are actually available, and what eac
 &#34;list models&#34; API to build this from at request time) - see
 [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs)
 on GitHub for the actual source of truth.
+
+#### AIModelProvider
+An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+[`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource), but rather than pushing/pulling
+content, it&#39;s metered *access* an owner can share out to other users of this server. As with
+[`SyncDestination`](#jonline-SyncDestination)&#39;s platform credentials, the actual API key is write-only -- accepted
+on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider)
+but never populated back in a response.
+
+Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+-- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs.
+
+##### Gemini
+`provider.gemini_credentials` (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is a Google Gemini API
+connection (`ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via
+its Interactions API.
+
+##### OpenAI
+`provider.openai_credentials` (an [`OpenAICredentials`](#jonline-OpenAICredentials)) is an OpenAI API connection
+(`platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT
+Image models).
+
+##### Anthropic
+`provider.anthropic_credentials` (an [`AnthropicCredentials`](#jonline-AnthropicCredentials)) is reserved for a
+connected Anthropic API, but **not yet creatable** -- Anthropic doesn&#39;t offer an image generation API, so it&#39;s
+defined only for forward compatibility.
+
+##### DigitalOcean
+`provider.digitalocean_credentials` (a [`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials)) is a
+DigitalOcean Gradient AI Platform / Serverless Inference connection (`docs.digitalocean.com/products/inference`),
+used for image *generation only* (no editing -- DigitalOcean&#39;s Serverless Inference API has no
+`/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT
+Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing).
+
+##### AIModelProviderGrants
+A provider&#39;s owner may share metered access to it with other users via
+[`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
+`(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+its owner may hand out access to it.
 
 #### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
@@ -392,14 +533,14 @@ An [`Event`](#jonline-Event) with zero instances is meaningless (no time or plac
     or anonymous (tracked via [`AnonymousAttendee`](#jonline-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#jonline-Moderation),
     independent of the Event&#39;s/Instance&#39;s own Post moderation.
 
-    - **EventSyncSource**: It&#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
-    user-owned [`EventSyncSource`](#jonline-EventSyncSource) (e.g. an iCal subscription). The relationship is
+    - **SyncSource**: It&#39;s actually the parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that can be synced *in* from a
+    user-owned [`SyncSource`](#jonline-SyncSource) (e.g. an iCal subscription). The relationship is
     1:(0 or 1): a single source can back many synced [`Event`](#jonline-Event)s, but each [`Event`](#jonline-Event) has *at most one* source it came from
-    (`Event.event_sync_source` is a single optional field, not repeated).
+    (`Event.sync_source` is a single optional field, not repeated).
 
     - **SyncDestinations**: Conversely, it&#39;s each [`EventInstance`](#jonline-EventInstance) (not the parent [`Event`](#jonline-Event)) that syncs *out* to
     [`SyncDestination`](#jonline-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#jonline-Post)s use
-    (see above). Unlike [`EventSyncSource`](#jonline-EventSyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
+    (see above). Unlike [`SyncSource`](#jonline-SyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
     instance may push to several destinations at once, tracked per-destination via the repeated
     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
@@ -453,10 +594,11 @@ credentials on `jonline.io`.
 Elm-only feature (`frontends/elm-spa`) letting a user sign in to one Jonline server using an account they already
 have (or are willing to create) on a *different* Jonline server, without either backend ever seeing a plaintext
 token that isn&#39;t its own. It&#39;s pure browser-to-browser: two Elm SPA page routes
-([`/auth/to/...`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) and
-[`/auth/from/...`](#get-authfromencrypted_account-federated-sign-in-receiving-side)) exchange
-an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
-the [`Login`](#grpc-api-Login) RPC itself.
+([`/auth/to/...`](#authtopublic_keyrequesting_host-sending-side) and
+[`/auth/from/...`](#authfromencrypted_account_auth_tokens-receiving-side)) exchange
+an encrypted pair of tokens via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
+the [`Login`](#grpc-api-Login) RPC itself (plus [`GetCurrentUser`](#grpc-api-GetCurrentUser) on the receiving side,
+to hydrate everything else -- see step 6).
 
 1. Say a user is on `jonline.io`, adding a new account, and enters `bullcity.social` as the server. Since that
 isn&#39;t the current host, the Accounts panel offers a &#34;Sign in via bullcity.social&#34; button instead of (or alongside)
@@ -470,15 +612,19 @@ plus a &#34;Sign back in here&#34; checkbox, checked by default.
 `bullcity.social` itself. If &#34;Sign back in here&#34; is checked, a **second**, independent [`Login`](#grpc-api-Login)
 call also runs, so `bullcity.social` gets its own local session too, and the two servers never end up sharing a
 token pair. (Hence &#34;1-2 refresh tokens.&#34;)
-5. The transfer account (server, user ID, username, both tokens, avatar, permissions, etc.) is JSON-encoded and
-encrypted to `jonline.io`&#39;s public key from step 2 (ephemeral ECDH &#43; HKDF &#43; AES-GCM -- see below), then the
-browser is redirected back to `jonline.io` at `/auth/from/{ciphertext}`.
-6. `jonline.io` decrypts the payload with the private key it generated in step 2, then either silently accepts it
-(if it knows where to send the user back to) or shows a confirmation screen (avatar/name/server, Confirm/Cancel)
-before adding the account to its Accounts panel. Either way, the one-time keypair generated in step 2 is discarded
-and a fresh one generated in its place, so it can&#39;t be reused for a second transfer.
+5. Only `bullcity.social`&#39;s hostname and that fresh `refresh_token`/`access_token` pair are JSON-encoded and
+encrypted to `jonline.io`&#39;s public key from step 2 (ephemeral ECDH &#43; HKDF &#43; AES-GCM -- see below) -- nothing else
+about the account travels in the payload. The browser is then redirected back to `jonline.io` at
+`/auth/from/{ciphertext}`.
+6. `jonline.io` decrypts the payload with the private key it generated in step 2, calls
+[`GetCurrentUser`](#grpc-api-GetCurrentUser) against `bullcity.social` with the decrypted `access_token` to hydrate
+the rest of the account (user ID, username, avatar, permissions, etc. straight from `bullcity.social` itself
+rather than trusting a client-supplied copy of them), then adds it to its Accounts panel and navigates the user
+onward -- no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
+generated in its place, so it can&#39;t be reused for a second transfer.
 
-See the two HTTP-level routes below for the exact URL/crypto shape.
+See the two [Web UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account_auth_tokens-receiving-side)
+page routes below for the exact URL/crypto shape.
 
 ### Federation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -512,118 +658,6 @@ platforms.
 #### Federated Messaging
 Jonline&#39;s Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
 from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
-
-### Synchronization
-While Federation is a first-class feature of Jonline, it also supports synchronization with other
-fediverse platforms as well as other less-open platforms. All API keys for external services are stored
-in [`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `federation_info`.
-
-#### SyncDestination
-A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
-[`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it&#39;s
-each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not, say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several
-destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/
-`Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus), carrying the
-destination&#39;s resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced
-in bulk on an interval, so `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request
-time instead of being recomputed-and-stored.
-
-Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
-[`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
-and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
-`SYNC_POSTS_TO_*` permission pair matching the destination&#39;s own platform (or Admin; see each platform&#39;s own
-section below). Actually syncing (or un-syncing) a given [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) to a destination is a separate
-step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
-[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
-[`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
-way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
-
-##### Facebook
-`configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
-Connecting one requires a short-lived user access token from client-side Facebook Login
-(`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
-short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
-`SYNC_POSTS_TO_FACEBOOK`.
-
-##### Instagram
-`configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
-Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
-connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
-the token for the chosen Page&#39;s access token, then looks up that Page&#39;s linked Instagram Business account
-(`instagram_business_account_id`). Unlike Facebook, Instagram&#39;s Graph API has no text-only post type; syncing a
-[`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
-`SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
-
-##### Mastodon
-`configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
-account, on any instance the user names (`instance_host`) -- there&#39;s no single app to register the way
-Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
-(`MastodonAccount.access_token`, generated on the user&#39;s own instance under Preferences &gt; Development) rather than
-an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
-
-##### Bluesky
-`configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
-Protocol) account. Connecting one is a user-supplied &#34;App Password&#34; (`BlueskyAccount.app_password`, generated at
-Settings &gt; App Passwords -- not the account&#39;s main password) rather than an OAuth popup. Gated on
-`SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
-
-##### X (Twitter)
-`configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
-server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
-sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
-configured, connecting is an OAuth 2.0 Authorization Code &#43; PKCE flow at x.com (`response_type=code`, like
-Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn&#39;t) -- the server exchanges
-the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
-each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`&#39;s own doc).
-Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
-
-##### Threads
-`configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
-Threads API is a product added to this server&#39;s *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
-separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
-facebook.com) using `response_type=code` rather than Facebook&#39;s implicit `response_type=token`, with no &#34;choose a
-Page&#34; step -- it directly authorizes the user&#39;s own Threads account. The server exchanges the code for a
-short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
-implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
-text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
-
-#### EventSyncSource
-An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
-pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
-`oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it&#39;s the
-parent [`Event`](#jonline-Event) (not the [`EventInstance`](#jonline-EventInstance)) that gets synced in and tagged with its source
-(`Event.event_sync_source`), since a single source can back many synced [`Event`](#jonline-Event)s but each [`Event`](#jonline-Event) has at most one
-source it came from. A background job re-pulls each source on its own `sync_interval_seconds` cadence,
-recomputing `event_count`/`event_instance_count` on every sync.
-
-Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), [`CreateEventSyncSource`](#grpc-api-CreateEventSyncSource)
-(requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
-[`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
-
-#### AIModelProvider
-An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
-Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
-[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
-content, it&#39;s metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
-variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
-`anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)&#39;s
-platform credentials, the actual API key is write-only -- accepted on
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) but
-never populated back in a response.
-
-Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
-[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
--- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs.
-
-##### AIModelProviderGrants
-A provider&#39;s owner may share metered access to it with other users via
-[`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
-Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
-`(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
-removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
-these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
-its owner may hand out access to it.
 
 ### HTTP Endpoints
 #### Internal HTTP server (27705)
@@ -688,48 +722,6 @@ is a valid domain, say, `jonline.io.itsj.online`, the client is expected to conn
 to `jonline.io.itsj.online` on port 27707/443 instead. To users, the server should still *generally* appear to 
 be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
 `jonline.io`.
-
-##### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
-Half [web UI path](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in), half
-endpoint: it&#39;s an Elm SPA page (`Pages.Auth.To.Key_`, served like any other SPA route -- under the `/elm` base
-path when the Elm frontend isn&#39;t the one mounted at `/`) rather than a backend/gRPC handler, but it consumes
-structured input straight from the URL and &#34;responds&#34; with a redirect carrying an encrypted payload, so it&#39;s
-documented here as an endpoint too. Handled entirely in-browser; reached only via the cross-origin redirect from
-step 2 above (built by the *requesting* origin&#39;s Accounts panel), never linked to directly.
-* **Path params**: `{public_key}` is the requesting origin&#39;s ECDH (P-256) public key, raw-exported and
-base64url-encoded; `{requesting_host}` is that origin&#39;s own hostname. The two are joined with a literal `@`
-(chosen because `@` never appears in the base64url/dot-joined ciphertext the
-[`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) route below expects, so the
-split is unambiguous).
-* **Query params**: `start_path` -- the app-relative path the user was on when they clicked &#34;Sign in via ...&#34;, so
-they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
-[`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) redirect.
-* **Behavior**: shows a sign-in form for *this* server (or a &#34;currently signed in as ...&#34; badge, if already
-authenticated here), plus a &#34;Sign back in here&#34;/&#34;Also sign in here&#34; checkbox (checked by default). Submitting
-calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint a transfer
-account; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
-into this server locally. The transfer account is then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH
-keypair per encryption, shared secret via ECDH &#43; HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each
-part base64url) and the browser is redirected to
-`https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
-
-##### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
-Likewise a [web
-UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in)/endpoint hybrid: the Elm
-SPA page (`Pages.Auth.From.EncodedAccount_`) that closes the loop from
-[`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) above, taking its ciphertext
-as input and &#34;responding&#34; by adding the decrypted account. Reached only via that redirect.
-* **Path params**: `{encrypted_account}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
-[`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
-* **Query params**: `start_path`, passed through unchanged from
-[`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
-* **Behavior**: decrypts `{encrypted_account}` using the private key this origin generated when it built the
-[`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) link (same ECDH &#43;
-HKDF-SHA256 &#43; AES-GCM derivation, in reverse), yielding the transfer account (including its
-`refresh_token`/`access_token`). If `start_path` is present, the account is added straight to the local Accounts
-panel and the browser navigates to it; otherwise a confirmation screen (avatar, name, server, Confirm/Cancel) is
-shown first. Either way, once the flow completes (confirmed or cancelled), the one-time private key is discarded
-and a fresh keypair generated, so it&#39;s single-use per completed/cancelled transfer.
 
 This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
 more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116) 
@@ -888,13 +880,50 @@ Information about a (possibly federated) Jonline server.
 #### `/about`, `/about_jonline`: About
 This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 
-#### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
-**Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
-purely to drive the [Federated Authentication](#federated-authentication) flow. Since they&#39;re consumed like
-ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
-alongside the rest of the [HTTP Endpoints](#external-http-servers-80-8000-443) above -- see
-[`GET /auth/to/{public_key}@{requesting_host}`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side)
-and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federated-sign-in-receiving-side).
+#### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account_auth_tokens}`: Federated Sign-In
+**Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent. They&#39;re Elm
+SPA pages (served like any other SPA route -- under the `/elm` base path when the Elm frontend isn&#39;t the one
+mounted at `/`) rather than backend/gRPC handlers, driving the
+[Federated Authentication](#federated-authentication) flow entirely in-browser via a pair of full-page redirects
+carrying an encrypted payload.
+
+##### `/auth/to/{public_key}@{requesting_host}`: sending side
+`Pages.Auth.To.Key_`. Reached only via the cross-origin redirect from step 2 above (built by the *requesting*
+origin&#39;s Accounts panel), never linked to directly.
+* **Path params**: `{public_key}` is the requesting origin&#39;s ECDH (P-256) public key, raw-exported and
+base64url-encoded; `{requesting_host}` is that origin&#39;s own hostname. The two are joined with a literal `@`
+(chosen because `@` never appears in the base64url/dot-joined ciphertext the
+[`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) page below expects, so the split is
+unambiguous).
+* **Query params**: `start_path` -- the app-relative path the user was on when they clicked &#34;Sign in via ...&#34;, so
+they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
+[`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) redirect.
+* **Behavior**: shows a sign-in form for *this* server (or a &#34;currently signed in as ...&#34; badge, if already
+authenticated here), plus a &#34;Sign back in here&#34;/&#34;Also sign in here&#34; checkbox (checked by default). Submitting
+calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint the transfer
+tokens; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
+into this server locally. `{requesting_host}`&#39;s hostname plus that fresh `refresh_token`/`access_token` pair are
+then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH keypair per encryption, shared secret via
+ECDH &#43; HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each part base64url) and the browser is
+redirected to `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
+
+##### `/auth/from/{encrypted_account_auth_tokens}`: receiving side
+`Pages.Auth.From.EncryptedAccountAuthTokens_`, closing the loop from
+[`/auth/to`](#authtopublic_keyrequesting_host-sending-side) above. Reached only via that redirect.
+* **Path params**: `{encrypted_account_auth_tokens}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
+[`/auth/to`](#authtopublic_keyrequesting_host-sending-side).
+* **Query params**: `start_path`, passed through unchanged from
+[`/auth/to`](#authtopublic_keyrequesting_host-sending-side); defaults to `/` if missing.
+* **Behavior**: decrypts `{encrypted_account_auth_tokens}` using the private key this origin generated when it
+built the [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) link (same ECDH &#43; HKDF-SHA256 &#43; AES-GCM
+derivation, in reverse), yielding `bullcity.social`&#39;s hostname and its `refresh_token`/`access_token`. Calls
+[`GetCurrentUser`](#grpc-api-GetCurrentUser) against that server with the decrypted `access_token` to hydrate the
+rest of the account, then adds it straight to the local Accounts panel and navigates to `start_path` -- no
+confirmation step (decryption succeeding is itself the authenticity check: the ciphertext is AEAD-encrypted to
+this origin&#39;s own one-time private key, so a forged or replayed payload just fails to decrypt rather than
+producing a wrong-but-valid account). If either step fails (bad decrypt, or the `GetCurrentUser` call itself),
+an error is shown instead. Either way, once the flow completes (added, or failed), the one-time private key is
+discarded and a fresh keypair generated, so it&#39;s single-use per completed/failed transfer.
 
 ### gRPC API
 
@@ -949,10 +978,10 @@ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federa
 | CreateNewEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates EventInstances in an existing Event for every EventInstance in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
 | UpdateEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates EventInstances in an existing Event for every EventInstance in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
 | DeleteRemovedEventInstances | [Event](#jonline-Event) | [Event](#jonline-Event) | Deletes EventInstances in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
-| GetEventSyncSources | [User](#jonline-User) | [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse) | Gets a user&#39;s EventSyncSources. *Authenticated* (self, or Admin for any user). |
-| CreateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). |
-| UpdateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNCHRONIZE_EVENTS` (or Admin). |
-| DeleteEventSyncSource | [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an EventSyncSource. *Authenticated* (owner, or Admin). |
+| GetSyncSources | [User](#jonline-User) | [GetSyncSourcesResponse](#jonline-GetSyncSourcesResponse) | Gets a user&#39;s SyncSources. *Authenticated* (self, or Admin for any user). |
+| CreateSyncSource | [SyncSource](#jonline-SyncSource) | [SyncSource](#jonline-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
+| UpdateSyncSource | [SyncSource](#jonline-SyncSource) | [SyncSource](#jonline-SyncSource) | Updates a SyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
+| DeleteSyncSource | [DeleteSyncSourceRequest](#jonline-DeleteSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncSource. *Authenticated* (owner, or Admin). |
 | GetSyncDestinations | [User](#jonline-User) | [GetSyncDestinationsResponse](#jonline-GetSyncDestinationsResponse) | Gets a user&#39;s SyncDestinations. *Authenticated* (self, or Admin for any user). |
 | CreateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | UpdateSyncDestination | [SyncDestination](#jonline-SyncDestination) | [SyncDestination](#jonline-SyncDestination) | Updates a SyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
@@ -1314,7 +1343,6 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
-| SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1323,6 +1351,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
 | CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
+| SYNC_EVENTS_FROM_ICS | 700 | Allow the user to create/update [`SyncSource`](#jonline-SyncSource)s (iCal subscriptions) that synchronize [`Event`](#jonline-Event)s in. |
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
@@ -1496,8 +1525,8 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
 | sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type. |
-| event_sync_sources | [EventSyncSource](#jonline-EventSyncSource) | repeated | The target user&#39;s own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
-| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
+| sync_sources | [SyncSource](#jonline-SyncSource) | repeated | The target user&#39;s own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -2421,7 +2450,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` -- there is no separate surrogate ID. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
-| event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
+| sync_source | [SyncSource](#jonline-SyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
 
 
 
@@ -2509,7 +2538,7 @@ a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and 
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#jonline-Location) | optional | The location of the event. |
-| event_sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource). |
+| sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from a [`SyncSource`](#jonline-SyncSource). |
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
@@ -2822,6 +2851,9 @@ Specific settings for Events.
 | enable_replies | [bool](#bool) | optional | Works the same as for Posts. |
 | calendar_lookback_days | [uint32](#uint32) | optional | How far to look back for the &#34;Upcoming Events&#34; tab in the server&#39;s UI. Defaults to `14`. Servers with fewer events may want to set to a higher value. |
 | default_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | What the Events Calendar&#39;s default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`. Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, or with more to `CALENDAR_DISPLAY_DAY`. |
+| show_started_or_long_events_by_default | [bool](#bool) |  | Affects the Elm UI &#34;▽&#34; button on EventsPages (embedded or no). When this is false, that filter defaults to &#34;on.&#34; When true, that filter defaults to &#34;off.&#34;
+
+For a band site (where you want to show your &#34;true calendar&#34;), this is best set to `true`. For a site where you have lots of event postings, it&#39;s best set to `false`. |
 
 
 
@@ -3235,22 +3267,6 @@ video embeds need a separate, more complex upload-and-processing flow not yet bu
 
 
 
-<a name="jonline-DeleteEventSyncSourceRequest"></a>
-
-### DeleteEventSyncSourceRequest
-Request to delete an EventSyncSource.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
-| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
-
-
-
-
-
-
 <a name="jonline-DeleteSyncDestinationRequest"></a>
 
 ### DeleteSyncDestinationRequest
@@ -3267,23 +3283,16 @@ Request to delete a SyncDestination.
 
 
 
-<a name="jonline-EventSyncSource"></a>
+<a name="jonline-DeleteSyncSourceRequest"></a>
 
-### EventSyncSource
-A user-owned source to sync events from.
+### DeleteSyncSourceRequest
+Request to delete a SyncSource.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the synchronization. |
-| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
-| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
-| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
-| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
-| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+| source | [SyncSource](#jonline-SyncSource) |  | The source to be deleted. |
+| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
 
 
 
@@ -3319,21 +3328,6 @@ dropped (Facebook Pages can&#39;t attach both to a single feed post).
 
 
 
-<a name="jonline-GetEventSyncSourcesResponse"></a>
-
-### GetEventSyncSourcesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
-
-
-
-
-
-
 <a name="jonline-GetSyncDestinationsResponse"></a>
 
 ### GetSyncDestinationsResponse
@@ -3343,6 +3337,21 @@ Response to a request for the current user&#39;s [`SyncDestination`](#jonline-Sy
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The current user&#39;s SyncDestinations. |
+
+
+
+
+
+
+<a name="jonline-GetSyncSourcesResponse"></a>
+
+### GetSyncSourcesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sources | [SyncSource](#jonline-SyncSource) | repeated |  |
 
 
 
@@ -3406,8 +3415,8 @@ individual upload is skipped rather than failing the whole post.
 <a name="jonline-SyncDestination"></a>
 
 ### SyncDestination
-A user-owned destination to sync (cross-post) content out to. Mirrors [`EventSyncSource`](#jonline-EventSyncSource),
-but for pushing content out rather than pulling events in. Originally Event-specific
+A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
+but for pushing content out rather than pulling content in. Originally Event-specific
 (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`&#39;s
 [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`&#39;s [`SyncPostRequest`](#jonline-SyncPostRequest)).
 
@@ -3418,7 +3427,7 @@ but for pushing content out rather than pulling events in. Originally Event-spec
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this destination. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncDestination was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncDestination was last updated. |
-| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`EventSyncSource`](#jonline-EventSyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`SyncSource`](#jonline-SyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
 | synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_event_instance_count`, just against Posts instead of EventInstances. |
 | facebook_page | [FacebookPage](#jonline-FacebookPage) |  | A connected Facebook Page to post EventInstances/Posts to. |
 | instagram_account | [InstagramAccount](#jonline-InstagramAccount) |  | A connected Instagram Business/Creator account to post EventInstances/Posts to. |
@@ -3446,6 +3455,30 @@ one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `Event
 | destination_instance_id | [string](#string) | optional | The ID of the resulting post on the destination (e.g. a Facebook Post ID). |
 | destination_url | [string](#string) | optional | A link to the resulting post on the destination, if available. |
 | synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time this content was last successfully synced to the destination. |
+
+
+
+
+
+
+<a name="jonline-SyncSource"></a>
+
+### SyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this sync source. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Not yet populated -- no source type syncs posts in yet. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
 
 
 
@@ -3533,7 +3566,7 @@ not yet built; a video attachment is silently skipped.
 ### AIModelProvider
 An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
 key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
-[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+[`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource) (also user-owned integrations
 with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
 those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
 other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.

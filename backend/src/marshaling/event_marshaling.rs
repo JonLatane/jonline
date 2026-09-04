@@ -12,42 +12,42 @@ use crate::{marshaling::ToProtoAuthor, models};
 
 use super::MarshalablePost;
 
-pub type EventSyncSourceLookup = HashMap<i64, MarshalableEventSyncSource>;
+pub type SyncSourceLookup = HashMap<i64, MarshalableSyncSource>;
 
-pub fn load_event_sync_source_lookup(
-    event_sync_source_ids: Vec<i64>,
+pub fn load_sync_source_lookup(
+    sync_source_ids: Vec<i64>,
     conn: &mut PgPooledConnection,
-) -> Option<EventSyncSourceLookup> {
+) -> Option<SyncSourceLookup> {
     Some(
-        models::get_event_sync_sources_by_ids(event_sync_source_ids, conn)
+        models::get_sync_sources_by_ids(sync_source_ids, conn)
             .into_iter()
-            .map(|(source, owner)| (source.id, MarshalableEventSyncSource(source, owner)))
-            .collect::<EventSyncSourceLookup>(),
+            .map(|(source, owner)| (source.id, MarshalableSyncSource(source, owner)))
+            .collect::<SyncSourceLookup>(),
     )
 }
 
-pub trait FindEventSyncSource {
-    fn find_event_sync_source(&self, id: i64) -> Option<&MarshalableEventSyncSource>;
+pub trait FindSyncSource {
+    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource>;
 }
 
-impl FindEventSyncSource for Option<&EventSyncSourceLookup> {
-    fn find_event_sync_source(&self, id: i64) -> Option<&MarshalableEventSyncSource> {
+impl FindSyncSource for Option<&SyncSourceLookup> {
+    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource> {
         self.map(|lookup| lookup.get(&id)).flatten()
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct MarshalableEventSyncSource(pub models::EventSyncSource, pub models::Author);
+pub struct MarshalableSyncSource(pub models::SyncSource, pub models::Author);
 
-pub trait ToProtoMarshalableEventSyncSource {
-    fn to_proto(&self) -> EventSyncSource;
+pub trait ToProtoMarshalableSyncSource {
+    fn to_proto(&self) -> SyncSource;
 }
 
-impl ToProtoMarshalableEventSyncSource for MarshalableEventSyncSource {
-    fn to_proto(&self) -> EventSyncSource {
+impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
+    fn to_proto(&self) -> SyncSource {
         let source = &self.0;
         let owner = &self.1;
-        EventSyncSource {
+        SyncSource {
             id: source.id.to_proto_id(),
             owner: Some(owner.to_proto(None)),
             sync_interval_seconds: source.sync_interval_seconds as u64,
@@ -56,6 +56,7 @@ impl ToProtoMarshalableEventSyncSource for MarshalableEventSyncSource {
             last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
             event_count: source.event_count as u64,
             event_instance_count: source.event_instance_count as u64,
+            post_count: source.post_count as u64,
             configuration: configuration_to_proto(&source.configuration),
         }
     }
@@ -65,18 +66,18 @@ impl ToProtoMarshalableEventSyncSource for MarshalableEventSyncSource {
 /// proto `oneof`, which currently has one variant.
 pub fn configuration_to_proto(
     configuration: &serde_json::Value,
-) -> Option<event_sync_source::Configuration> {
+) -> Option<sync_source::Configuration> {
     configuration
         .get("ics_subscription_url")
         .and_then(|v| v.as_str())
-        .map(|s| event_sync_source::Configuration::IcsSubscriptionUrl(s.to_string()))
+        .map(|s| sync_source::Configuration::IcsSubscriptionUrl(s.to_string()))
 }
 
 pub fn configuration_to_json(
-    configuration: &Option<event_sync_source::Configuration>,
+    configuration: &Option<sync_source::Configuration>,
 ) -> serde_json::Value {
     match configuration {
-        Some(event_sync_source::Configuration::IcsSubscriptionUrl(url)) => {
+        Some(sync_source::Configuration::IcsSubscriptionUrl(url)) => {
             serde_json::json!({ "ics_subscription_url": url })
         }
         None => serde_json::json!({}),
@@ -133,11 +134,11 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
 
     let lookup = load_media_lookup(media_ids, conn);
 
-    let event_sync_source_ids: Vec<i64> = data
+    let sync_source_ids: Vec<i64> = data
         .iter()
-        .filter_map(|marshalable_event| marshalable_event.0.event_sync_source_id)
+        .filter_map(|marshalable_event| marshalable_event.0.sync_source_id)
         .collect();
-    let sync_source_lookup = load_event_sync_source_lookup(event_sync_source_ids, conn);
+    let sync_source_lookup = load_sync_source_lookup(sync_source_ids, conn);
 
     let event_instance_ids: Vec<i64> = data
         .iter()
@@ -164,7 +165,7 @@ pub trait ToProtoMarshalableEvent {
     fn to_proto(
         &self,
         media_lookup: Option<&MediaLookup>,
-        sync_source_lookup: Option<&EventSyncSourceLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
         instance_sync_lookup: Option<&EventInstanceSyncLookup>,
     ) -> Event;
 }
@@ -173,7 +174,7 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
     fn to_proto(
         &self,
         media_lookup: Option<&MediaLookup>,
-        sync_source_lookup: Option<&EventSyncSourceLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
         instance_sync_lookup: Option<&EventInstanceSyncLookup>,
     ) -> Event {
         let event = self.0.to_owned();
@@ -195,9 +196,9 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
                 .map(|i| i.to_proto(media_lookup, hide_location, instance_sync_lookup))
                 .collect(),
             info: serde_json::from_value(self.0.info.to_owned()).ok(),
-            event_sync_source: event
-                .event_sync_source_id
-                .and_then(|id| sync_source_lookup.find_event_sync_source(id))
+            sync_source: event
+                .sync_source_id
+                .and_then(|id| sync_source_lookup.find_sync_source(id))
                 .map(|source| source.to_proto()),
             ..Default::default()
         }
@@ -240,7 +241,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
                 ..Default::default()
             }),
             location,
-            event_sync_source_instance_id: event_instance.event_sync_source_instance_id,
+            sync_source_instance_id: event_instance.sync_source_instance_id,
             sync_destinations,
             ..Default::default()
         }

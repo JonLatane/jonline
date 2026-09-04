@@ -157,6 +157,18 @@ type alias Model =
     -- `eventAnimations`) would otherwise fight the real owner for it.
     , embeddedPage : Bool
 
+    -- A modifier of `embeddedPage`, not an independent flag (see `searchRowView`'s own
+    -- `embeddedPage && embeddingPageSearchesPosts` check) -- whether an embedded copy's search box
+    -- also searches a *paired* `PostsPage` feed shown alongside it (`Pages.Home_`'s `Feed`,
+    -- `Components.Pages.UserProfilePage`'s combined view), reading the placeholder "Search posts and
+    -- events…" instead of plain "Search events…" when it does. `Pages.Home_.HomePostWithEvents` (a
+    -- fixed Post with an Events strip above it) is the first `embeddedPage = True` copy with no such
+    -- paired feed -- just the one fixed Post -- hence needing this as its own field rather than
+    -- reusing `embeddedPage` alone the way `searchRowView` used to. Meaningless (never read on its
+    -- own) whenever `embeddedPage` is `False`; `False` everywhere except `Feed`'s/`UserProfilePage`'s
+    -- own two copies.
+    , embeddingPageSearchesPosts : Bool
+
     -- Whether switching `mode` into/out of `Calendar` (see `DisplayModeChanged`)
     -- writes `Shared.UserPreferences.prefersCalendar` -- `True` only for
     -- `Pages.Home_`'s and `Pages.Events`' own copies (passed via `init`'s own
@@ -220,8 +232,10 @@ type alias Model =
     , copyLinkGeneration : Int
 
     -- Whether `syncAnimations` should hide `UpcomingEvents`-tab instances
-    -- that have already started (see `hiddenAsStarted`) -- defaults to `True`
-    -- (`init`), and has no effect on `EventsAfterDate`. Means something
+    -- that have already started (see `hiddenAsStarted`) -- defaults (`init`)
+    -- to `not (showStartedOrLongEventsByDefault shared)`, i.e. `True` unless
+    -- `mainFrontendHost`'s own `EventSettings.show_started_or_long_events_by_default`
+    -- is set, and has no effect on `EventsAfterDate`. Means something
     -- different while `model.mode == Calendar`, though: there, it instead
     -- hides instances spanning more than `longEventThresholdHours` (see
     -- `hiddenAsLong`) -- a multi-day event is exactly what makes `Calendar`'s
@@ -232,13 +246,13 @@ type alias Model =
     -- for it to hide, in whichever sense currently applies (see
     -- `anyStartedEvents`/`view`) -- nothing to filter, nothing to show a
     -- toggle for.
-    , hideStartedUpcomingOrLongEvents : Bool
+    , hideStartedOrLongEvents : Bool
 
-    -- Whether `eventCardView` shows each card's `Events.eventSyncSourceView`/
+    -- Whether `eventCardView` shows each card's `Events.syncSourceView`/
     -- `Events.eventSyncDestinationsView` -- both default to `False` (`init`),
     -- set via `ShowSyncSourcesChanged`/`ShowSyncDestinationsChanged`.
     -- `Components.Pages.UserProfilePage`'s embedded copy keeps these in sync
-    -- with its own `eventSyncSourcesExpanded`/`eventSyncDestinationsExpanded`
+    -- with its own `syncSourcesExpanded`/`eventSyncDestinationsExpanded`
     -- section toggles; no other caller ever sets them, so they stay `False`
     -- (and these lines don't render) everywhere else.
     , showSyncSources : Bool
@@ -349,7 +363,7 @@ type Msg
       -- `syncAnimations`), so there's nothing to fetch here.
     | HideStartedEventsToggled
       -- Sets `model.showSyncSources`/`model.showSyncDestinations` -- driven
-      -- by `Components.Pages.UserProfilePage`'s own "Event Sync Sources"/
+      -- by `Components.Pages.UserProfilePage`'s own "Sync Sources"/
       -- "Sync Destinations" section-expanded toggles (see
       -- `Model.showSyncSources`'s own doc), not by anything in this page's
       -- own UI.
@@ -583,8 +597,8 @@ is far lower value than the standalone `/events`-like pages this actually
 matters for).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> ( Model, Effect Msg )
-init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> Bool -> ( Model, Effect Msg )
+init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride embeddingPageSearchesPosts =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -634,10 +648,11 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , exportPopoverOpen = False
                 , copyLinkCopied = False
                 , copyLinkGeneration = 0
-                , hideStartedUpcomingOrLongEvents = True
+                , hideStartedOrLongEvents = not (showStartedOrLongEventsByDefault shared)
                 , showSyncSources = False
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
+                , embeddingPageSearchesPosts = embeddingPageSearchesPosts
                 , calendarDisplayModeOverride = calendarDisplayModeOverride
                 , pushStatuses = Dict.empty
                 }
@@ -705,7 +720,7 @@ searchTextChanged =
 
 
 {-| Lets `Components.Pages.UserProfilePage` keep this page's `showSyncSources`
-in sync with its own "Event Sync Sources" section's `eventSyncSourcesExpanded`
+in sync with its own "Sync Sources" section's `syncSourcesExpanded`
 toggle -- same "expose a `Bool -> Msg`/`String -> Msg` wrapper, round-trip it
 through `update`" convention as `searchTextChanged` itself.
 -}
@@ -714,8 +729,8 @@ showSyncSourcesChanged =
     ShowSyncSourcesChanged
 
 
-{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Event Sync
-Destinations" section's `eventSyncDestinationsExpanded` toggle.
+{-| Like `showSyncSourcesChanged`, for `UserProfilePage`'s "Sync
+Destinations" section's `syncDestinationsExpanded` toggle.
 -}
 showSyncDestinationsChanged : Bool -> Msg
 showSyncDestinationsChanged =
@@ -877,24 +892,55 @@ updateInner shared msg model =
             if newMode == model.mode then
                 ( model, Effect.none )
 
-            else if newMode == Calendar || model.mode == Calendar then
-                -- `Calendar` isn't a card layout -- switching to/from it has
-                -- nothing to measure/slide via `measureElementsEffect`'s FLIP
+            else if newMode == Calendar then
+                -- Switching *into* `Calendar` renders instantly, with no
+                -- cross-fade at all -- unlike leaving it (below), there's no
+                -- good place for the outgoing cards to visually go: they'd
+                -- have to collapse away underneath a calendar that's already
+                -- occupying their old spot (`calendar-flip-item`'s own
+                -- `order: -1`, events.css), which is exactly the "cards
+                -- linger below the calendar for a beat" lag this was worth
+                -- avoiding. Skips `syncAnimations`/`syncCalendarAnimations`
+                -- entirely: `eventAnimations` is cleared outright (no fade,
+                -- no `remove` to wait on) and `calendarAnimations` seeds
+                -- straight into `UI.Flip.restingState` (already fully
+                -- visible/settled, not `enter`'s fade-in). `update`'s own
+                -- `calendarRenderEffect` still separately picks up actually
+                -- rendering the calendar's contents regardless of this
+                -- shortcut.
+                let
+                    newModel : Model
+                    newModel =
+                        { model
+                            | mode = newMode
+                            , eventAnimations = Dict.empty
+                            , calendarAnimations = Dict.singleton calendarAnimationKey { flip = UI.Flip.restingState }
+                        }
+
+                    preferenceEffect : Effect Msg
+                    preferenceEffect =
+                        if model.syncsCalendarPreference then
+                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar True))
+
+                        else
+                            Effect.none
+                in
+                ( newModel, Effect.batch [ pushUrl newModel, preferenceEffect ] )
+
+            else if model.mode == Calendar then
+                -- Switching *out of* `Calendar` still cross-fades, same as
+                -- ever -- `Calendar` isn't a card layout, so there's nothing
+                -- to measure/slide via `measureElementsEffect`'s FLIP
                 -- round-trip (that's still exactly what the `else` branch
                 -- below handles, for a switch among `VerticalList`/`Grid`/
-                -- `HorizontalList`). Instead this re-syncs both animation
-                -- dicts against the new `mode` -- `syncAnimations` fades every
-                -- real card out (`Calendar` becoming active) or back in
-                -- (`Calendar` becoming inactive), `syncCalendarAnimations`
-                -- fades the calendar view itself in/out the opposite way --
-                -- see `eventsListView`'s own doc for how the two dicts render
-                -- as one combined, cross-fading list. `update`'s own
-                -- `calendarRenderEffect` separately picks up actually
-                -- rendering the calendar's contents. Also, if
-                -- `model.syncsCalendarPreference` (`Pages.Home_`/`Pages.Events`
-                -- only), persists this switch into/out of `Calendar` as
-                -- `Shared.UserPreferences.prefersCalendar` -- see that field's
-                -- own doc.
+                -- `HorizontalList`). `syncAnimations` fades every real card
+                -- back in, `syncCalendarAnimations` fades the calendar view
+                -- itself out -- see `eventsListView`'s own doc for how the
+                -- two dicts render as one combined, cross-fading list. Also,
+                -- if `model.syncsCalendarPreference` (`Pages.Home_`'s/
+                -- `Pages.Events`'s own copies only), persists this switch out
+                -- of `Calendar` as `Shared.UserPreferences.prefersCalendar`
+                -- -- see that field's own doc.
                 let
                     newModel : Model
                     newModel =
@@ -905,7 +951,7 @@ updateInner shared msg model =
                     preferenceEffect : Effect Msg
                     preferenceEffect =
                         if model.syncsCalendarPreference then
-                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar (newMode == Calendar)))
+                            Effect.fromShared (Shared.UserPreferencesMsg (UserPreferences.SetPrefersCalendar False))
 
                         else
                             Effect.none
@@ -1083,7 +1129,7 @@ updateInner shared msg model =
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
         HideStartedEventsToggled ->
-            ( { model | hideStartedUpcomingOrLongEvents = not model.hideStartedUpcomingOrLongEvents } |> syncAnimations, Effect.none )
+            ( { model | hideStartedOrLongEvents = not model.hideStartedOrLongEvents } |> syncAnimations, Effect.none )
 
         ShowSyncSourcesChanged showSyncSources ->
             ( { model | showSyncSources = showSyncSources }, Effect.none )
@@ -1792,7 +1838,7 @@ instead, a genuinely different filter, not this one extended to cover
 -}
 hiddenAsStarted : Model -> EventInstance -> Bool
 hiddenAsStarted model instance =
-    model.hideStartedUpcomingOrLongEvents && instanceHasStarted model instance
+    model.hideStartedOrLongEvents && instanceHasStarted model instance
 
 
 {-| Whether `instance` should be treated as absent from `syncAnimations`' own
@@ -2097,7 +2143,7 @@ hides anything outside `Calendar` mode.
 -}
 hiddenAsLong : Model -> EventInstance -> Bool
 hiddenAsLong model instance =
-    model.hideStartedUpcomingOrLongEvents && model.mode == Calendar && instanceIsLong instance
+    model.hideStartedOrLongEvents && model.mode == Calendar && instanceIsLong instance
 
 
 {-| Every `(host, Event, EventInstance)` `Calendar` mode should plot -- reads
@@ -2211,6 +2257,21 @@ calendarDisplayMode shared =
         |> Maybe.withDefault CalendarDisplayMode.defaultCalendarDisplayMode
 
 
+{-| `shared.accounts`' main server's `event_settings.show_started_or_long_events_by_default` --
+mirrors `calendarDisplayMode`'s own `serverForHost .. mainFrontendHost |> Maybe.map configurationOf`
+lookup and, like that field, isn't `optional` in the proto, so this falls back to `False` (the
+proto3 default for an unset `bool`) rather than a locally-defined constant. `init` reads this as
+`hideStartedOrLongEvents`'s initial value, inverted -- see that field's own doc.
+-}
+showStartedOrLongEventsByDefault : Shared.Model -> Bool
+showStartedOrLongEventsByDefault shared =
+    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .eventSettings
+        |> Maybe.map .showStartedOrLongEventsByDefault
+        |> Maybe.withDefault False
+
+
 {-| `calendarDisplayMode`'s value, as the FullCalendar `initialView` string
 `public/index.html`'s `renderCalendar` subscriber passes straight to
 `FullCalendar.Calendar`'s own `initialView` option -- names match that same
@@ -2252,7 +2313,7 @@ calendarRenderEffect shared oldModel newModel =
     if
         newModel.mode
             == Calendar
-            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.hideStartedUpcomingOrLongEvents /= newModel.hideStartedUpcomingOrLongEvents)
+            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.hideStartedOrLongEvents /= newModel.hideStartedOrLongEvents)
     then
         Ports.renderCalendar
             (Encode.object
@@ -2647,7 +2708,7 @@ hideStartedOrLongButtonView model =
         button
             [ classes
                 ("filter-icon-button"
-                    :: (if model.hideStartedUpcomingOrLongEvents then
+                    :: (if model.hideStartedOrLongEvents then
                             [ "background-color-primary" ]
 
                         else
@@ -2657,13 +2718,13 @@ hideStartedOrLongButtonView model =
             , onClick HideStartedEventsToggled
             , title
                 (if model.mode == Calendar then
-                    if model.hideStartedUpcomingOrLongEvents then
+                    if model.hideStartedOrLongEvents then
                         "Showing events that are under " ++ String.fromInt longEventThresholdHours ++ " hours"
 
                     else
                         "Hide events that are " ++ String.fromInt longEventThresholdHours ++ "+ hours"
 
-                 else if model.hideStartedUpcomingOrLongEvents then
+                 else if model.hideStartedOrLongEvents then
                     "Showing only events that haven't started"
 
                  else
@@ -2767,7 +2828,7 @@ searchRowView model =
             [ type_ "text"
             , class "filter-search-input"
             , placeholder <|
-                if model.embeddedPage then
+                if model.embeddedPage && model.embeddingPageSearchesPosts then
                     "Search posts and events..."
 
                 else
@@ -3096,11 +3157,19 @@ item's, is what actually picks which grid axis collapses -- see
 collapses correctly along whichever axis the container it's inside actually
 is).
 
+Kept as the *last* entry in `eventsListView`'s own keyed list (rather than
+listed first, to visually lead) -- `UI.Flip.remove`'s own doc warns that
+relocating a still-present item in that list (even just to sneak this one in
+ahead of it) cancels its CSS collapse transition outright, since the browser
+has nothing to transition *from* once a keyed node's actually moved in the
+DOM. `calendar-flip-item` (see `events.css`) instead reorders this one item
+*visually* to the front via the flex container's own `order`, leaving every
+real card's DOM position (and thus its collapse transition) untouched.
 -}
 calendarAnimationView : Bool -> ( String, CalendarAnimation ) -> ( String, Html Msg )
 calendarAnimationView embeddedPage ( key, anim ) =
     ( key
-    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False) [ calendarView embeddedPage ]
+    , div (class "calendar-flip-item" :: UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False) [ calendarView embeddedPage ]
     )
 
 

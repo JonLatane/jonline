@@ -48,6 +48,7 @@ const configurableUserPermissions = [
   Permission.RSVP_TO_EVENTS,
   Permission.PUBLISH_EVENTS_LOCALLY,
   Permission.PUBLISH_EVENTS_GLOBALLY,
+  Permission.SYNC_EVENTS_FROM_ICS,
 ];
 
 export function BaseServerDetailsScreen(specificServer?: string) {

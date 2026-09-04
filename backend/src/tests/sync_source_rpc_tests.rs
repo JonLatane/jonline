@@ -1,5 +1,5 @@
-//! Specs for the 4 EventSyncSource RPCs: `get_event_sync_sources`, `create_event_sync_source`,
-//! `update_event_sync_source`, `delete_event_sync_source`. Sync/parsing correctness itself is
+//! Specs for the 4 SyncSource RPCs: `get_sync_sources`, `create_sync_source`,
+//! `update_sync_source`, `delete_sync_source`. Sync/parsing correctness itself is
 //! covered by `event_sync_tests`; these specs focus on permissions, ownership, and the
 //! create-deletes-itself-on-failed-initial-sync/delete_synced_events contracts.
 
@@ -10,16 +10,13 @@ use tonic::Code;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::{
-    create_event_sync_source, delete_event_sync_source, get_event_sync_sources,
-    update_event_sync_source,
-};
-use crate::schema::{event_sync_sources, events};
+use crate::rpcs::{create_sync_source, delete_sync_source, get_sync_sources, update_sync_source};
+use crate::schema::{events, sync_sources};
 use crate::tests::factories::*;
 
-fn ics_source_request(url: &str) -> EventSyncSource {
-    EventSyncSource {
-        configuration: Some(event_sync_source::Configuration::IcsSubscriptionUrl(
+fn ics_source_request(url: &str) -> SyncSource {
+    SyncSource {
+        configuration: Some(sync_source::Configuration::IcsSubscriptionUrl(
             url.to_string(),
         )),
         ..Default::default()
@@ -29,19 +26,19 @@ fn ics_source_request(url: &str) -> EventSyncSource {
 const EMPTY_ICS: &str = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
 
 #[test]
-fn create_requires_synchronize_events_permission() {
+fn create_requires_sync_events_from_ics_permission() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_noperm");
 
-        let err = create_event_sync_source(
+        let err = create_sync_source(
             ics_source_request("http://example.invalid/cal.ics"),
             &user,
             conn,
         )
         .unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "permission_SYNCHRONIZE_EVENTS_required");
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_FROM_ICS_required");
 
         Ok(())
     });
@@ -52,9 +49,9 @@ fn create_requires_ics_subscription_url() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_nourl");
-        let user = grant_permissions(conn, &user, vec![Permission::SynchronizeEvents]);
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsFromIcs]);
 
-        let err = create_event_sync_source(EventSyncSource::default(), &user, conn).unwrap_err();
+        let err = create_sync_source(SyncSource::default(), &user, conn).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
         assert_eq!(err.message(), "ics_subscription_url_required");
 
@@ -67,7 +64,7 @@ fn create_succeeds_and_owner_is_always_current_user() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_ok");
-        let user = grant_permissions(conn, &user, vec![Permission::SynchronizeEvents]);
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsFromIcs]);
         let url = serve_ics(EMPTY_ICS);
 
         let mut request = ics_source_request(&url);
@@ -84,7 +81,7 @@ fn create_succeeds_and_owner_is_always_current_user() {
         );
 
         let created =
-            create_event_sync_source(request, &user, conn).expect("create should succeed");
+            create_sync_source(request, &user, conn).expect("create should succeed");
         assert_eq!(created.owner.unwrap().user_id, user.id.to_proto_id());
         assert!(
             created.last_synced_at.is_some(),
@@ -100,11 +97,11 @@ fn create_deletes_the_source_if_initial_sync_fails() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_failsync");
-        let user = grant_permissions(conn, &user, vec![Permission::SynchronizeEvents]);
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsFromIcs]);
 
         // Port 1 is a privileged port nothing is listening on -- fails fast without needing
         // real network access.
-        let err = create_event_sync_source(
+        let err = create_sync_source(
             ics_source_request("http://127.0.0.1:1/cal.ics"),
             &user,
             conn,
@@ -113,8 +110,8 @@ fn create_deletes_the_source_if_initial_sync_fails() {
         assert_eq!(err.code(), Code::FailedPrecondition);
         assert_eq!(err.message(), "ics_fetch_failed");
 
-        let remaining: i64 = event_sync_sources::table
-            .filter(event_sync_sources::user_id.eq(user.id))
+        let remaining: i64 = sync_sources::table
+            .filter(sync_sources::user_id.eq(user.id))
             .count()
             .get_result(conn)
             .unwrap();
@@ -128,14 +125,14 @@ fn create_deletes_the_source_if_initial_sync_fails() {
 }
 
 #[test]
-fn admin_can_create_without_synchronize_events_permission_but_owner_is_still_self() {
+fn admin_can_create_without_sync_events_from_ics_permission_but_owner_is_still_self() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let admin = create_user(conn, "esrt_create_admin");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
         let url = serve_ics(EMPTY_ICS);
 
-        let created = create_event_sync_source(ics_source_request(&url), &admin, conn)
+        let created = create_sync_source(ics_source_request(&url), &admin, conn)
             .expect("admin create should succeed");
         assert_eq!(created.owner.unwrap().user_id, admin.id.to_proto_id());
 
@@ -144,18 +141,18 @@ fn admin_can_create_without_synchronize_events_permission_but_owner_is_still_sel
 }
 
 #[test]
-fn get_event_sync_sources_self_only_by_default() {
+fn get_sync_sources_self_only_by_default() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_get_owner");
         let other = create_user(conn, "esrt_get_other");
-        create_event_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
+        create_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
 
         let response =
-            get_event_sync_sources(User::default(), &owner, conn).expect("self get should succeed");
+            get_sync_sources(User::default(), &owner, conn).expect("self get should succeed");
         assert_eq!(response.sources.len(), 1);
 
-        let err = get_event_sync_sources(
+        let err = get_sync_sources(
             User {
                 id: owner.id.to_proto_id(),
                 ..Default::default()
@@ -172,15 +169,15 @@ fn get_event_sync_sources_self_only_by_default() {
 }
 
 #[test]
-fn admin_can_get_another_users_event_sync_sources() {
+fn admin_can_get_another_users_sync_sources() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_get_owner2");
         let admin = create_user(conn, "esrt_get_admin2");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
-        create_event_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
+        create_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
 
-        let response = get_event_sync_sources(
+        let response = get_sync_sources(
             User {
                 id: owner.id.to_proto_id(),
                 ..Default::default()
@@ -196,14 +193,14 @@ fn admin_can_get_another_users_event_sync_sources() {
 }
 
 #[test]
-fn update_requires_synchronize_events_permission_even_for_the_owner() {
+fn update_requires_sync_events_from_ics_permission_even_for_the_owner() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_update_noperm");
-        let source = create_event_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
 
-        let err = update_event_sync_source(
-            EventSyncSource {
+        let err = update_sync_source(
+            SyncSource {
                 id: source.id.to_proto_id(),
                 ..Default::default()
             },
@@ -212,7 +209,7 @@ fn update_requires_synchronize_events_permission_even_for_the_owner() {
         )
         .unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "permission_SYNCHRONIZE_EVENTS_required");
+        assert_eq!(err.message(), "permission_SYNC_EVENTS_FROM_ICS_required");
 
         Ok(())
     });
@@ -223,13 +220,13 @@ fn update_rejects_non_owner_non_admin() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_update_owner");
-        let source = create_event_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
 
         let other = create_user(conn, "esrt_update_other");
-        let other = grant_permissions(conn, &other, vec![Permission::SynchronizeEvents]);
+        let other = grant_permissions(conn, &other, vec![Permission::SyncEventsFromIcs]);
 
-        let err = update_event_sync_source(
-            EventSyncSource {
+        let err = update_sync_source(
+            SyncSource {
                 id: source.id.to_proto_id(),
                 ..Default::default()
             },
@@ -249,12 +246,12 @@ fn owner_can_refresh_and_change_interval() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_update_ok");
-        let owner = grant_permissions(conn, &owner, vec![Permission::SynchronizeEvents]);
+        let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsFromIcs]);
         let url = serve_ics(EMPTY_ICS);
-        let source = create_event_sync_source_row(conn, &owner, &url);
+        let source = create_sync_source_row(conn, &owner, &url);
 
-        let updated = update_event_sync_source(
-            EventSyncSource {
+        let updated = update_sync_source(
+            SyncSource {
                 id: source.id.to_proto_id(),
                 sync_interval_seconds: 900,
                 ..Default::default()
@@ -276,13 +273,13 @@ fn admin_can_update_another_users_source() {
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_update_owner3");
         let url = serve_ics(EMPTY_ICS);
-        let source = create_event_sync_source_row(conn, &owner, &url);
+        let source = create_sync_source_row(conn, &owner, &url);
 
         let admin = create_user(conn, "esrt_update_admin3");
         let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
 
-        let updated = update_event_sync_source(
-            EventSyncSource {
+        let updated = update_sync_source(
+            SyncSource {
                 id: source.id.to_proto_id(),
                 sync_interval_seconds: 300,
                 ..Default::default()
@@ -303,12 +300,12 @@ fn delete_rejects_non_owner_non_admin() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "esrt_delete_owner");
-        let source = create_event_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &owner, "http://example.invalid/cal.ics");
         let other = create_user(conn, "esrt_delete_other");
 
-        let err = delete_event_sync_source(
-            DeleteEventSyncSourceRequest {
-                source: Some(EventSyncSource {
+        let err = delete_sync_source(
+            DeleteSyncSourceRequest {
+                source: Some(SyncSource {
                     id: source.id.to_proto_id(),
                     ..Default::default()
                 }),
@@ -333,17 +330,17 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
         let url = serve_ics(
             "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:detach-1\r\nDTSTART:20990101T090000Z\r\nDTEND:20990101T100000Z\r\nSUMMARY:Detach Me\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
         );
-        let owner = grant_permissions(conn, &owner, vec![Permission::SynchronizeEvents]);
-        let created = create_event_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
+        let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsFromIcs]);
+        let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::event_sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();
 
-        delete_event_sync_source(
-            DeleteEventSyncSourceRequest {
+        delete_sync_source(
+            DeleteSyncSourceRequest {
                 source: Some(created.clone()),
                 delete_synced_events: false,
             },
@@ -356,10 +353,10 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
             .filter(events::post_id.eq(event_id_before))
             .first(conn)
             .expect("event should still exist after a non-destructive delete");
-        assert_eq!(event_after.event_sync_source_id, None, "event should be detached from the deleted source");
+        assert_eq!(event_after.sync_source_id, None, "event should be detached from the deleted source");
 
-        let remaining_sources: i64 = event_sync_sources::table
-            .filter(event_sync_sources::id.eq(created.id.to_db_id().unwrap()))
+        let remaining_sources: i64 = sync_sources::table
+            .filter(sync_sources::id.eq(created.id.to_db_id().unwrap()))
             .count()
             .get_result(conn)
             .unwrap();
@@ -377,17 +374,17 @@ fn delete_with_delete_synced_events_removes_events_too() {
         let url = serve_ics(
             "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:cascade-1\r\nDTSTART:20990101T090000Z\r\nDTEND:20990101T100000Z\r\nSUMMARY:Delete Me Too\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
         );
-        let owner = grant_permissions(conn, &owner, vec![Permission::SynchronizeEvents]);
-        let created = create_event_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
+        let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsFromIcs]);
+        let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::event_sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();
 
-        delete_event_sync_source(
-            DeleteEventSyncSourceRequest {
+        delete_sync_source(
+            DeleteSyncSourceRequest {
                 source: Some(created.clone()),
                 delete_synced_events: true,
             },

@@ -675,7 +675,7 @@ view server maybeAdminAccount model =
                 customTabsDisplayView server (CustomNav.effectiveTabs (AccountsPanel.configurationOf server).customTabs)
         , case ( model.customTabsEdit, maybeAdminAccount ) of
             ( Nothing, Just _ ) ->
-                button [ Html.Attributes.class "server-details-rename-button", onClick CustomTabsEditClicked ] [ text "Edit" ]
+                button [ Html.Attributes.class "server-details-rename-button", onClick CustomTabsEditClicked ] [ text "Edit Tabs" ]
 
             _ ->
                 text ""

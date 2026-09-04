@@ -4,7 +4,7 @@ use diesel::*;
 
 use super::SyncDestination;
 use crate::schema::{
-    event_attendances, event_instance_sync_destinations, event_instances, event_sync_sources, events,
+    event_attendances, event_instance_sync_destinations, event_instances, events, sync_sources,
 };
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -14,7 +14,7 @@ pub struct Event {
     pub info: serde_json::Value,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub event_sync_source_id: Option<i64>,
+    pub sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Insertable)]
@@ -22,7 +22,7 @@ pub struct Event {
 pub struct NewEvent {
     pub post_id: i64,
     pub info: serde_json::Value,
-    pub event_sync_source_id: Option<i64>,
+    pub sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
@@ -37,8 +37,8 @@ pub struct EventInstance {
     pub location: Option<serde_json::Value>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub event_sync_source_instance_id: Option<String>,
-    /// When this synced instance first stopped appearing in its `EventSyncSource`'s feed --
+    pub sync_source_instance_id: Option<String>,
+    /// When this synced instance first stopped appearing in its `SyncSource`'s feed --
     /// `None` while it's present (or for instances never touched by sync). Gives it a grace
     /// period before `event_sync::reconcile_instances` actually deletes it, so a transient/partial
     /// upstream response can't permanently orphan the Post backing the instance's comment
@@ -63,7 +63,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::location,
     event_instances::created_at,
     event_instances::updated_at,
-    event_instances::event_sync_source_instance_id,
+    event_instances::sync_source_instance_id,
     event_instances::sync_missing_since,
 ) = (
     event_instances::event_id,
@@ -74,7 +74,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::location,
     event_instances::created_at,
     event_instances::updated_at,
-    event_instances::event_sync_source_instance_id,
+    event_instances::sync_source_instance_id,
     event_instances::sync_missing_since,
 );
 
@@ -87,11 +87,11 @@ pub struct NewEventInstance {
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
     pub location: Option<serde_json::Value>,
-    pub event_sync_source_instance_id: Option<String>,
+    pub sync_source_instance_id: Option<String>,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
-pub struct EventSyncSource {
+pub struct SyncSource {
     pub id: i64,
     pub user_id: i64,
     pub sync_interval_seconds: i64,
@@ -101,11 +101,12 @@ pub struct EventSyncSource {
     pub updated_at: Option<SystemTime>,
     pub event_count: i64,
     pub event_instance_count: i64,
+    pub post_count: i64,
 }
 
 #[derive(Debug, Insertable)]
-#[diesel(table_name = event_sync_sources)]
-pub struct NewEventSyncSource {
+#[diesel(table_name = sync_sources)]
+pub struct NewSyncSource {
     pub user_id: i64,
     pub sync_interval_seconds: i64,
     pub configuration: serde_json::Value,

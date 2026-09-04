@@ -53,7 +53,7 @@ class User extends $pb.GeneratedMessage {
     $core.bool? hasAdvancedData,
     $core.Iterable<$1.FederatedAccount>? federatedProfiles,
     $core.Iterable<$10.SyncDestination>? syncDestinations,
-    $core.Iterable<$10.EventSyncSource>? eventSyncSources,
+    $core.Iterable<$10.SyncSource>? syncSources,
     $core.Iterable<$11.AvailableAIModel>? availableAiModels,
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
@@ -134,8 +134,8 @@ class User extends $pb.GeneratedMessage {
     if (syncDestinations != null) {
       $result.syncDestinations.addAll(syncDestinations);
     }
-    if (eventSyncSources != null) {
-      $result.eventSyncSources.addAll(eventSyncSources);
+    if (syncSources != null) {
+      $result.syncSources.addAll(syncSources);
     }
     if (availableAiModels != null) {
       $result.availableAiModels.addAll(availableAiModels);
@@ -178,7 +178,7 @@ class User extends $pb.GeneratedMessage {
     ..aOB(80, _omitFieldNames ? '' : 'hasAdvancedData')
     ..pc<$1.FederatedAccount>(81, _omitFieldNames ? '' : 'federatedProfiles', $pb.PbFieldType.PM, subBuilder: $1.FederatedAccount.create)
     ..pc<$10.SyncDestination>(82, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestination.create)
-    ..pc<$10.EventSyncSource>(83, _omitFieldNames ? '' : 'eventSyncSources', $pb.PbFieldType.PM, subBuilder: $10.EventSyncSource.create)
+    ..pc<$10.SyncSource>(83, _omitFieldNames ? '' : 'syncSources', $pb.PbFieldType.PM, subBuilder: $10.SyncSource.create)
     ..pc<$11.AvailableAIModel>(84, _omitFieldNames ? '' : 'availableAiModels', $pb.PbFieldType.PM, subBuilder: $11.AvailableAIModel.create)
     ..aOM<$12.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
@@ -467,18 +467,18 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(82)
   $core.List<$10.SyncDestination> get syncDestinations => $_getList(24);
 
-  /// The target user's own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for
+  /// The target user's own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for
   /// the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
   /// single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
   /// filled in, batch-loaded in one query rather than per-user. Also populated by
   /// [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
   /// any other viewer.
   @$pb.TagNumber(83)
-  $core.List<$10.EventSyncSource> get eventSyncSources => $_getList(25);
+  $core.List<$10.SyncSource> get syncSources => $_getList(25);
 
   /// Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
   /// providers' models, plus any models granted to them on other users' providers (see
-  /// [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources`
+  /// [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources`
   /// (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
   /// [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
   @$pb.TagNumber(84)

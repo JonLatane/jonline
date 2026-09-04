@@ -1,29 +1,29 @@
-module Components.EventSyncSources exposing
-    ( createEventSyncSource
-    , deleteEventSyncSource
-    , getEventSyncSources
+module Components.SyncSources exposing
+    ( createSyncSource
+    , deleteSyncSource
+    , getSyncSources
     , intervalOptions
     , syncedCountsLabel
-    , updateEventSyncSource
+    , updateSyncSource
     )
 
-{-| RPC wrappers for `EventSyncSource` (`protos/events.proto`) -- mirrors
+{-| RPC wrappers for `SyncSource` (`protos/sync.proto`) -- mirrors
 `Components.Users`' `updateUser`/`federateProfile`/etc in shape: each takes
 the calling account/server as an `AccountsPanel.MaybeAccountServer` and
 returns a `Task` resolving to `( Maybe AccountsPanel.Msg, response )`, so a
 token refresh mid-request can still be forwarded on by the caller (see
 `Shared.AccountsPanel.performWithAccountServer`).
 
-`UserProfilePage` no longer fetches `EventSyncSource`s on its own initial load (it reads
-`User.event_sync_sources`, already carried by the resolved `User`), and every mutation now triggers
-a full `refetch` of that `User`. `getEventSyncSources` is still used, though -- by that section's
-manual "Refresh" button (`EventSyncSourcesRefreshClicked`), which overlays just the fresh `sources`
+`UserProfilePage` no longer fetches `SyncSource`s on its own initial load (it reads
+`User.sync_sources`, already carried by the resolved `User`), and every mutation now triggers
+a full `refetch` of that `User`. `getSyncSources` is still used, though -- by that section's
+manual "Refresh" button (`SyncSourcesRefreshClicked`), which overlays just the fresh `sources`
 onto the resolved `User` without a whole-profile refetch -- see `Components.AIModelProviders`' own
 matching doc comment on `getAIModelProviders`.
 -}
 
 import Grpc
-import Proto.Jonline exposing (EventSyncSource, GetEventSyncSourcesResponse, defaultUser)
+import Proto.Jonline exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions as Conversions
@@ -36,7 +36,7 @@ and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
 "delete along with its events" button) and `UI`'s shared delete-confirmation
 dialog for the same source, so it lives here rather than on either caller.
 -}
-syncedCountsLabel : EventSyncSource -> String
+syncedCountsLabel : SyncSource -> String
 syncedCountsLabel source =
     let
         eventCount : Int
@@ -70,21 +70,21 @@ pluralCount count noun =
 
 
 {-| `targetUserId = ""` asks the backend for the caller's own sources (see
-`backend/src/rpcs/event_sync_sources/get_event_sync_sources.rs`); any other
+`backend/src/rpcs/sync_sources/get_sync_sources.rs`); any other
 id asks for that user's sources instead, which only succeeds for an Admin
 caller.
 -}
-getEventSyncSources :
+getSyncSources :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventSyncSourcesResponse )
-getEventSyncSources accountsPanelModel maybeAccountServer targetUserId =
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncSourcesResponse )
+getSyncSources accountsPanelModel maybeAccountServer targetUserId =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getEventSyncSources { defaultUser | id = targetUserId }
+            Grpc.new Jonline.getSyncSources { defaultUser | id = targetUserId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -92,55 +92,55 @@ getEventSyncSources accountsPanelModel maybeAccountServer targetUserId =
 
 
 {-| Always creates a source owned by the calling account -- the backend
-ignores/overrides any `owner` sent (see `create_event_sync_source.rs`), so
-there's no `targetUserId` parameter here unlike `getEventSyncSources`.
+ignores/overrides any `owner` sent (see `create_sync_source.rs`), so
+there's no `targetUserId` parameter here unlike `getSyncSources`.
 -}
-createEventSyncSource :
+createSyncSource :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> EventSyncSource
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource )
-createEventSyncSource accountsPanelModel maybeAccountServer source =
+    -> SyncSource
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource )
+createSyncSource accountsPanelModel maybeAccountServer source =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.createEventSyncSource source
+            Grpc.new Jonline.createSyncSource source
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-updateEventSyncSource :
+updateSyncSource :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> EventSyncSource
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource )
-updateEventSyncSource accountsPanelModel maybeAccountServer source =
+    -> SyncSource
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource )
+updateSyncSource accountsPanelModel maybeAccountServer source =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.updateEventSyncSource source
+            Grpc.new Jonline.updateSyncSource source
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-deleteEventSyncSource :
+deleteSyncSource :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> EventSyncSource
+    -> SyncSource
     -> Bool
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
-deleteEventSyncSource accountsPanelModel maybeAccountServer source deleteSyncedEvents =
+deleteSyncSource accountsPanelModel maybeAccountServer source deleteSyncedEvents =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteEventSyncSource
+            Grpc.new Jonline.deleteSyncSource
                 { source = Just source, deleteSyncedEvents = deleteSyncedEvents }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)

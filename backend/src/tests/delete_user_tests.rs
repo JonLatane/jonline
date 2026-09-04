@@ -1,6 +1,6 @@
 //! Specs for `delete_user`: who's allowed to call it, and that it actually cleans up everything
 //! the user owned -- Events (via `delete_event`), Posts/Replies (via `delete_post`), Media
-//! (via `delete_media`, including its MinIO objects), and EventSyncSources/SyncDestinations --
+//! (via `delete_media`, including its MinIO objects), and SyncSources/SyncDestinations --
 //! before removing the `users` row itself. Needs a real MinIO connection for the Media leg -- see
 //! `factories::test_bucket`.
 
@@ -12,8 +12,7 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs::delete_user;
 use crate::schema::{
-    event_instances, event_sync_sources, events, media, post_sync_destinations, sync_destinations,
-    users,
+    event_instances, events, media, post_sync_destinations, sync_destinations, sync_sources, users,
 };
 use crate::tests::factories::*;
 
@@ -148,9 +147,8 @@ fn delete_cascades_events_posts_media_and_sync_config() {
             .expect("failed to seed test MinIO object");
         let user_media = create_media(conn, Some(&user), &media_path);
 
-        // An EventSyncSource/SyncDestination the user configured.
-        let sync_source =
-            create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        // A SyncSource/SyncDestination the user configured.
+        let sync_source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
         let sync_destination = create_sync_destination_row(conn, &user, "test-page-id");
 
         // A post of `user`'s own synced to *another* user's destination -- proves delete_user's
@@ -220,9 +218,9 @@ fn delete_cascades_events_posts_media_and_sync_config() {
         assert_eq!(remaining_media, 0);
         assert!(!tb.object_exists(&media_path));
 
-        // EventSyncSource/SyncDestination were removed.
-        let remaining_sources: i64 = event_sync_sources::table
-            .filter(event_sync_sources::id.eq(sync_source.id))
+        // SyncSource/SyncDestination were removed.
+        let remaining_sources: i64 = sync_sources::table
+            .filter(sync_sources::id.eq(sync_source.id))
             .count()
             .get_result(conn)
             .unwrap();

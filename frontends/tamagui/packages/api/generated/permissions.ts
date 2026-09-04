@@ -105,8 +105,6 @@ export enum Permission {
   MODERATE_EVENTS = 34,
   /** RSVP_TO_EVENTS - Allow the user to RSVP to events that allow RSVPs. */
   RSVP_TO_EVENTS = 35,
-  /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
-  SYNCHRONIZE_EVENTS = 36,
   /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -127,6 +125,11 @@ export enum Permission {
    * `ai_model_providers.proto`) and grant/revoke other users' access to them.
    */
   CREATE_AI_MODEL_PROVIDERS = 60,
+  /**
+   * SYNC_EVENTS_FROM_ICS - Allow the user to create/update [`SyncSource`](#jonline-SyncSource)s (iCal subscriptions) that
+   * synchronize [`Event`](#jonline-Event)s in.
+   */
+  SYNC_EVENTS_FROM_ICS = 700,
   /**
    * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and
    * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
@@ -295,9 +298,6 @@ export function permissionFromJSON(object: any): Permission {
     case 35:
     case "RSVP_TO_EVENTS":
       return Permission.RSVP_TO_EVENTS;
-    case 36:
-    case "SYNCHRONIZE_EVENTS":
-      return Permission.SYNCHRONIZE_EVENTS;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -322,6 +322,9 @@ export function permissionFromJSON(object: any): Permission {
     case 60:
     case "CREATE_AI_MODEL_PROVIDERS":
       return Permission.CREATE_AI_MODEL_PROVIDERS;
+    case 700:
+    case "SYNC_EVENTS_FROM_ICS":
+      return Permission.SYNC_EVENTS_FROM_ICS;
     case 1000:
     case "SYNC_EVENTS_TO_FACEBOOK":
       return Permission.SYNC_EVENTS_TO_FACEBOOK;
@@ -433,8 +436,6 @@ export function permissionToJSON(object: Permission): string {
       return "MODERATE_EVENTS";
     case Permission.RSVP_TO_EVENTS:
       return "RSVP_TO_EVENTS";
-    case Permission.SYNCHRONIZE_EVENTS:
-      return "SYNCHRONIZE_EVENTS";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:
@@ -451,6 +452,8 @@ export function permissionToJSON(object: Permission): string {
       return "READ_ALL_SYSTEM_MESSAGES";
     case Permission.CREATE_AI_MODEL_PROVIDERS:
       return "CREATE_AI_MODEL_PROVIDERS";
+    case Permission.SYNC_EVENTS_FROM_ICS:
+      return "SYNC_EVENTS_FROM_ICS";
     case Permission.SYNC_EVENTS_TO_FACEBOOK:
       return "SYNC_EVENTS_TO_FACEBOOK";
     case Permission.SYNC_POSTS_TO_FACEBOOK:

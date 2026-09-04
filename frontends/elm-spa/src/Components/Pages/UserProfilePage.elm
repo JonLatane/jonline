@@ -30,7 +30,7 @@ but none of this module's profile-editing machinery.
 
 import Browser.Navigation
 import Components.AIModelProviders as AIModelProviders
-import Components.EventSyncSources as EventSyncSources
+import Components.SyncSources as SyncSources
 import Components.Markdown as Markdown
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
@@ -52,9 +52,9 @@ import Json.Decode as Decode
 import Set
 import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, EventSyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultEventSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
+import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, SyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
 import Proto.Jonline.AIModelProvider.Provider as AIModelProviderProvider
-import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.SyncSource.Configuration as Configuration
 import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -87,8 +87,8 @@ type alias Model =
     , permissionsEdit : Maybe PermissionsEdit
     , permissionsExpanded : Bool
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
-    , eventSyncSources : EventSyncSourcesState
-    , eventSyncSourcesExpanded : Bool
+    , syncSources : SyncSourcesState
+    , syncSourcesExpanded : Bool
     , syncDestinations : SyncDestinationsState
     , syncDestinationsExpanded : Bool
     , aiModelProviders : AIModelProvidersState
@@ -161,19 +161,19 @@ type Msg
     | FederatedProfileRemoveClicked FederatedAccount
     | GotFederatedProfileRemoveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
     | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
-    | EventSyncSourceRowUrlChanged EventSyncSource String
-    | EventSyncSourceRowIntervalChanged EventSyncSource Int
-    | EventSyncSourceRowSaveClicked EventSyncSource
-    | EventSyncSourceRowRefreshClicked EventSyncSource
-    | GotEventSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
-    | EventSyncSourceAddUrlChanged String
-    | EventSyncSourceAddIntervalChanged Int
-    | EventSyncSourceAddClicked
-    | GotEventSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
-    | EventSyncSourceDeleteClicked EventSyncSource Bool
-    | EventSyncSourcesExpandedToggled
-    | EventSyncSourcesRefreshClicked
-    | GotEventSyncSourcesRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventSyncSourcesResponse ))
+    | SyncSourceRowUrlChanged SyncSource String
+    | SyncSourceRowIntervalChanged SyncSource Int
+    | SyncSourceRowSaveClicked SyncSource
+    | SyncSourceRowRefreshClicked SyncSource
+    | GotSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource ))
+    | SyncSourceAddUrlChanged String
+    | SyncSourceAddIntervalChanged Int
+    | SyncSourceAddClicked
+    | GotSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource ))
+    | SyncSourceDeleteClicked SyncSource Bool
+    | SyncSourcesExpandedToggled
+    | SyncSourcesRefreshClicked
+    | GotSyncSourcesRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetSyncSourcesResponse ))
     | SyncDestinationsExpandedToggled
     | FacebookLoginClicked
     | InstagramLoginClicked
@@ -341,9 +341,9 @@ type alias FederatedProfilesEdit =
 {-| A row's in-progress edit -- created (from the source's own current
 values, see `eventSyncRowEditFor`) the moment the URL/interval input is first
 touched, and dropped again once a save actually lands (see
-`GotEventSyncSourceRowSaveResult`). A row with no entry here just renders
-straight from its `EventSyncSource` and shows "Refresh" rather than "Save"
-(see `eventSyncSourceIsDirty`).
+`GotSyncSourceRowSaveResult`). A row with no entry here just renders
+straight from its `SyncSource` and shows "Refresh" rather than "Save"
+(see `syncSourceIsDirty`).
 -}
 type alias EventSyncRowEdit =
     { pendingUrl : String
@@ -364,8 +364,8 @@ defaultEventSyncAddForm =
     { url = "", intervalSeconds = 3600, status = Idle }
 
 
-{-| The "Event Sync Sources" section's own state -- basic CRUD over
-`EventSyncSource` (`protos/events.proto`) for this profile's own user (or,
+{-| The "Sync Sources" section's own state -- basic CRUD over
+`SyncSource` (`protos/sync.proto`) for this profile's own user (or,
 for an Admin viewing someone else's profile, that user's sources). Bundled
 into its own record (rather than flattened into `Model` alongside
 `realNameEdit`/`permissionsEdit`/etc) since, unlike those, it needs several
@@ -374,37 +374,37 @@ fields at once (`rowEdits`/`addForm`) that all change together.
 Unlike its own past self, the source list itself is **not** fetched/held
 here at all -- `Components.Users.Resolver` already resolves this profile's
 own `User` (via `GetUsers`), which (self-or-Admin gated server-side, see
-`protos/users.proto`'s own doc on `User.event_sync_sources`) already carries
-it, so `eventSyncSourcesSection` just reads `user.eventSyncSources` directly
+`protos/users.proto`'s own doc on `User.sync_sources`) already carries
+it, so `syncSourcesSection` just reads `user.syncSources` directly
 -- mirrors `SyncDestinationsState`'s own doc on `user.syncDestinations`
 exactly, just extended to this construct too.
 
-Used to live in `Shared.Model` (`Shared.EventSyncSourcesPanel`, since
+Used to live in `Shared.Model` (`Shared.SyncSourcesPanel`, since
 removed) despite being shown only here, on this one page -- solely because
 the delete confirmation dialog (`Shared.DeleteConfirmation`) is a global
 overlay that can only resolve back into a Shared-owned submodel. Deletes now
 follow the same shape `ConfirmPostDelete`/`ConfirmEventDelete` already used:
-`Shared.update`'s `ConfirmDelete` fires the `DeleteEventSyncSource` RPC
-directly (see `Shared.ConfirmEventSyncSourceDelete`), and its result
-(`Shared.GotEventSyncSourceDeleteResult`) is forwarded back here like any
+`Shared.update`'s `ConfirmDelete` fires the `DeleteSyncSource` RPC
+directly (see `Shared.ConfirmSyncSourceDelete`), and its result
+(`Shared.GotSyncSourceDeleteResult`) is forwarded back here like any
 other `Shared.Msg` (see `updateInner`'s `SharedMsg` branch) -- so this state
 has no reason to live anywhere but here. Unlike that old module, there's no
 `targetHost`/`viewedUserId` staleness guard: this `Model` (unlike a
 Shared-owned singleton) never outlives one profile.
 
 -}
-type alias EventSyncSourcesState =
+type alias SyncSourcesState =
     { rowEdits : Dict String EventSyncRowEdit
     , addForm : EventSyncAddForm
 
-    -- Manual "Refresh" button state (`EventSyncSourcesRefreshClicked`) -- overlays a fresh
-    -- `GetEventSyncSources` result onto the resolved `User` without a whole-profile `refetch`.
+    -- Manual "Refresh" button state (`SyncSourcesRefreshClicked`) -- overlays a fresh
+    -- `GetSyncSources` result onto the resolved `User` without a whole-profile `refetch`.
     , refreshStatus : SubmitStatus
     }
 
 
-initEventSyncSources : EventSyncSourcesState
-initEventSyncSources =
+initSyncSources : SyncSourcesState
+initSyncSources =
     { rowEdits = Dict.empty, addForm = defaultEventSyncAddForm, refreshStatus = Idle }
 
 
@@ -526,7 +526,7 @@ type XTwitterConnectStatus
     | XTwitterConnectFailed String
 
 
-{-| The "Sync Destinations" section's own state -- mirrors `EventSyncSourcesState`'s doc
+{-| The "Sync Destinations" section's own state -- mirrors `SyncSourcesState`'s doc
 (bundled into one record for the same reason), but far simpler: no per-row edits (a destination's
 only mutable-from-here field, in effect, is "does it exist"), so this is just the four connect
 flows' own state machines (`login` for Facebook/Instagram's shared popup flow, `mastodon`/
@@ -541,7 +541,7 @@ buttons if none are). The destinations themselves are no longer fetched/held her
 (self-or-Admin gated server-side, see `protos/users.proto`'s own doc on `User.sync_destinations`)
 already carries them, so `syncDestinationsSection` just reads `user.syncDestinations` directly.
 
-Unlike `EventSyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
+Unlike `SyncSourcesState`, deletes are NOT routed through `Shared.DeleteConfirmation`: unlinking
 a connected account is a low-stakes, easily-reversible action (nothing else gets deleted --
 `deleteSyncedPosts` is always sent `False`, see `Components.SyncDestinations`), so there's no
 need for the global "are you sure?" overlay here.
@@ -640,11 +640,11 @@ parseModelNames input =
         |> List.filter (String.isEmpty >> not)
 
 
-{-| The "AI Model Providers" section's own state -- mirrors `EventSyncSourcesState`'s doc: neither
+{-| The "AI Providers" section's own state -- mirrors `SyncSourcesState`'s doc: neither
 the owned-providers list nor the granted-to-you list is fetched/held here -- both are *derived* at
 render time from the resolved `User.availableAiModels` (see `ownedAIModelProviders`/
 `grantedAIModelAccess`), since `AvailableAIModel`s are self-or-Admin gated the same way
-`event_sync_sources` is (see that field's own proto doc, and `AvailableAIModel`'s). `expandedGrants`/
+`sync_sources` is (see that field's own proto doc, and `AvailableAIModel`'s). `expandedGrants`/
 `grantForms` track which providers' grant lists are open and their own in-progress "grant access"
 forms; `deleteStatuses`/`revokeStatuses` are `Dict`s (keyed by provider id, and by
 `"<providerId>:<granteeUserId>"` respectively) rather than single fields since, in principle, more
@@ -765,8 +765,8 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , permissionsEdit = Nothing
             , permissionsExpanded = False
             , federatedProfilesEdit = Nothing
-            , eventSyncSources = initEventSyncSources
-            , eventSyncSourcesExpanded = False
+            , syncSources = initSyncSources
+            , syncSourcesExpanded = False
             , syncDestinations = initSyncDestinations
             , syncDestinationsExpanded = False
             , aiModelProviders = initAIModelProviders
@@ -918,13 +918,13 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( eventsModel, eventsEffect ) =
-                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.syncDestinations) Nothing
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query Nothing True False (Just user.syncDestinations) Nothing True
                                     in
                                     ( { postsInitedModel
                                         | events =
                                             Just
                                                 { eventsModel
-                                                    | showSyncSources = model.eventSyncSourcesExpanded
+                                                    | showSyncSources = model.syncSourcesExpanded
                                                     , showSyncDestinations = model.syncDestinationsExpanded
                                                 }
                                       }
@@ -1084,22 +1084,22 @@ updateInner shared msg model =
                             , Effect.none
                             )
 
-                        -- A successful delete of an Event Sync Source (fired
+                        -- A successful delete of a Sync Source (fired
                         -- directly from `Shared.update`'s `ConfirmDelete`,
-                        -- see `Shared.ConfirmEventSyncSourceDelete`'s own
+                        -- see `Shared.ConfirmSyncSourceDelete`'s own
                         -- doc) can remove Events/EventInstances behind the
                         -- already-`init`ed `EventsPage` copy's back --
                         -- refresh it so the change shows up without a manual
                         -- page reload. Also refetches the resolved `User`
-                        -- itself (see `refetch`) so `user.eventSyncSources`
+                        -- itself (see `refetch`) so `user.syncSources`
                         -- (the section's own list, no longer held locally --
-                        -- see `EventSyncSourcesState`'s own doc) drops the
+                        -- see `SyncSourcesState`'s own doc) drops the
                         -- deleted source too. (A successful row Save/Refresh
                         -- triggers the same pair directly from
-                        -- `GotEventSyncSourceRowSaveResult` below, since that
+                        -- `GotSyncSourceRowSaveResult` below, since that
                         -- request -- unlike a delete -- is fired from this
                         -- page's own `Msg`, not routed through `Shared`.)
-                        Shared.GotEventSyncSourceDeleteResult (Ok _) ->
+                        Shared.GotSyncSourceDeleteResult (Ok _) ->
                             let
                                 ( eventsRefetchedModel, eventsRefetchEffect ) =
                                     refetchEvents shared resolvedModel
@@ -1639,61 +1639,61 @@ updateInner shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        EventSyncSourceRowUrlChanged source url ->
+        SyncSourceRowUrlChanged source url ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
                 edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
             in
-            ( { model | eventSyncSources = { es | rowEdits = Dict.insert source.id { edit | pendingUrl = url } es.rowEdits } }, Effect.none )
+            ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | pendingUrl = url } es.rowEdits } }, Effect.none )
 
-        EventSyncSourceRowIntervalChanged source seconds ->
+        SyncSourceRowIntervalChanged source seconds ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
                 edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
             in
-            ( { model | eventSyncSources = { es | rowEdits = Dict.insert source.id { edit | pendingIntervalSeconds = seconds } es.rowEdits } }, Effect.none )
+            ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | pendingIntervalSeconds = seconds } es.rowEdits } }, Effect.none )
 
-        EventSyncSourceRowSaveClicked source ->
+        SyncSourceRowSaveClicked source ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
                 edit : EventSyncRowEdit
                 edit =
                     eventSyncRowEditFor source es
 
-                updated : EventSyncSource
+                updated : SyncSource
                 updated =
                     { source
                         | configuration = Just (Configuration.IcsSubscriptionUrl edit.pendingUrl)
                         , syncIntervalSeconds = Conversions.int64FromInt edit.pendingIntervalSeconds
                     }
             in
-            ( { model | eventSyncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
-            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accounts accountServer updated)
-                |> Task.attempt (GotEventSyncSourceRowSaveResult source.id)
+            ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
+            , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer updated)
+                |> Task.attempt (GotSyncSourceRowSaveResult source.id)
                 |> Effect.fromCmd
             )
 
-        EventSyncSourceRowRefreshClicked source ->
+        SyncSourceRowRefreshClicked source ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
             in
             ( { model
-                | eventSyncSources =
+                | syncSources =
                     { es
                         | rowEdits =
                             Dict.insert source.id
@@ -1701,20 +1701,20 @@ updateInner shared msg model =
                                 es.rowEdits
                     }
               }
-            , performForOwner shared model (\accountServer -> EventSyncSources.updateEventSyncSource shared.accounts accountServer source)
-                |> Task.attempt (GotEventSyncSourceRowSaveResult source.id)
+            , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer source)
+                |> Task.attempt (GotSyncSourceRowSaveResult source.id)
                 |> Effect.fromCmd
             )
 
-        GotEventSyncSourceRowSaveResult id (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotSyncSourceRowSaveResult id (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
                 savedModel : Model
                 savedModel =
-                    { model | eventSyncSources = { es | rowEdits = Dict.remove id es.rowEdits } }
+                    { model | syncSources = { es | rowEdits = Dict.remove id es.rowEdits } }
 
                 ( eventsRefetchedModel, eventsRefetchEffect ) =
                     refetchEvents shared savedModel
@@ -1724,73 +1724,73 @@ updateInner shared msg model =
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, eventsRefetchEffect, refetchEffect ] )
 
-        GotEventSyncSourceRowSaveResult id (Err err) ->
+        GotSyncSourceRowSaveResult id (Err err) ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
             in
-            ( { model | eventSyncSources = { es | rowEdits = Dict.update id (Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })) es.rowEdits } }
+            ( { model | syncSources = { es | rowEdits = Dict.update id (Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })) es.rowEdits } }
             , Effect.none
             )
 
-        EventSyncSourceAddUrlChanged url ->
-            ( { model | eventSyncSources = mapEventSyncAddForm (\f -> { f | url = url }) model.eventSyncSources }, Effect.none )
+        SyncSourceAddUrlChanged url ->
+            ( { model | syncSources = mapEventSyncAddForm (\f -> { f | url = url }) model.syncSources }, Effect.none )
 
-        EventSyncSourceAddIntervalChanged seconds ->
-            ( { model | eventSyncSources = mapEventSyncAddForm (\f -> { f | intervalSeconds = seconds }) model.eventSyncSources }, Effect.none )
+        SyncSourceAddIntervalChanged seconds ->
+            ( { model | syncSources = mapEventSyncAddForm (\f -> { f | intervalSeconds = seconds }) model.syncSources }, Effect.none )
 
-        EventSyncSourceAddClicked ->
+        SyncSourceAddClicked ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
-                newSource : EventSyncSource
+                newSource : SyncSource
                 newSource =
-                    { defaultEventSyncSource
+                    { defaultSyncSource
                         | configuration = Just (Configuration.IcsSubscriptionUrl es.addForm.url)
                         , syncIntervalSeconds = Conversions.int64FromInt es.addForm.intervalSeconds
                     }
             in
-            ( { model | eventSyncSources = mapEventSyncAddForm (\f -> { f | status = Submitting }) es }
-            , performForOwner shared model (\accountServer -> EventSyncSources.createEventSyncSource shared.accounts accountServer newSource)
-                |> Task.attempt GotEventSyncSourceAddResult
+            ( { model | syncSources = mapEventSyncAddForm (\f -> { f | status = Submitting }) es }
+            , performForOwner shared model (\accountServer -> SyncSources.createSyncSource shared.accounts accountServer newSource)
+                |> Task.attempt GotSyncSourceAddResult
                 |> Effect.fromCmd
             )
 
-        GotEventSyncSourceAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotSyncSourceAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 addedModel : Model
                 addedModel =
-                    { model | eventSyncSources = mapEventSyncAddForm (always defaultEventSyncAddForm) model.eventSyncSources }
+                    { model | syncSources = mapEventSyncAddForm (always defaultEventSyncAddForm) model.syncSources }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared addedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotEventSyncSourceAddResult (Err err) ->
-            ( { model | eventSyncSources = mapEventSyncAddForm (\f -> { f | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }) model.eventSyncSources }, Effect.none )
+        GotSyncSourceAddResult (Err err) ->
+            ( { model | syncSources = mapEventSyncAddForm (\f -> { f | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }) model.syncSources }, Effect.none )
 
         -- Doesn't delete anything itself -- just opens the shared "are you
         -- sure?" dialog (`Shared.RequestDelete`), same as
         -- `AvatarEditClicked`/etc do for their own confirmations. The actual
-        -- `DeleteEventSyncSource` call happens in `Shared.update`'s
-        -- `ConfirmDelete` (see `Shared.ConfirmEventSyncSourceDelete`'s own
+        -- `DeleteSyncSource` call happens in `Shared.update`'s
+        -- `ConfirmDelete` (see `Shared.ConfirmSyncSourceDelete`'s own
         -- doc for why this is fired from there rather than from a page-owned
         -- `Task`), whose result comes back here as
-        -- `Shared.GotEventSyncSourceDeleteResult` (see `SharedMsg` above).
-        EventSyncSourceDeleteClicked source deleteSyncedEvents ->
+        -- `Shared.GotSyncSourceDeleteResult` (see `SharedMsg` above).
+        SyncSourceDeleteClicked source deleteSyncedEvents ->
             ( model
-            , Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents model.resolver.targetHost))
+            , Effect.fromShared (Shared.RequestDelete (Shared.ConfirmSyncSourceDelete source deleteSyncedEvents model.resolver.targetHost))
             )
 
-        EventSyncSourcesExpandedToggled ->
+        SyncSourcesExpandedToggled ->
             let
                 expanded : Bool
                 expanded =
-                    not model.eventSyncSourcesExpanded
+                    not model.syncSourcesExpanded
             in
             case model.events of
                 Just eventsModel ->
@@ -1798,59 +1798,59 @@ updateInner shared msg model =
                         ( newEventsModel, eventsEffect ) =
                             EventsPage.update shared (EventsPage.showSyncSourcesChanged expanded) eventsModel
                     in
-                    ( { model | eventSyncSourcesExpanded = expanded, events = Just newEventsModel }
+                    ( { model | syncSourcesExpanded = expanded, events = Just newEventsModel }
                     , Effect.map EventsMsg eventsEffect
                     )
 
                 Nothing ->
-                    ( { model | eventSyncSourcesExpanded = expanded }, Effect.none )
+                    ( { model | syncSourcesExpanded = expanded }, Effect.none )
 
-        -- Manual refresh -- overlays just `eventSyncSources` onto the resolved `User` (see
+        -- Manual refresh -- overlays just `syncSources` onto the resolved `User` (see
         -- `withResolvedUser`) rather than a whole-profile `refetch`, since that's all this
         -- section's data actually needs.
-        EventSyncSourcesRefreshClicked ->
+        SyncSourcesRefreshClicked ->
             case ( model.resolver.status, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just ( server, account ) ) ->
                     let
-                        es : EventSyncSourcesState
+                        es : SyncSourcesState
                         es =
-                            model.eventSyncSources
+                            model.syncSources
                     in
-                    ( { model | eventSyncSources = { es | refreshStatus = Submitting } }
-                    , EventSyncSources.getEventSyncSources shared.accounts ( Just account.userId, server.frontendHost ) user.id
-                        |> Task.attempt GotEventSyncSourcesRefreshResult
+                    ( { model | syncSources = { es | refreshStatus = Submitting } }
+                    , SyncSources.getSyncSources shared.accounts ( Just account.userId, server.frontendHost ) user.id
+                        |> Task.attempt GotSyncSourcesRefreshResult
                         |> Effect.fromCmd
                     )
 
                 _ ->
                     ( model, Effect.none )
 
-        GotEventSyncSourcesRefreshResult (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotSyncSourcesRefreshResult (Ok ( maybeAccountsPanelMsg, response )) ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
 
                 refreshedModel : Model
                 refreshedModel =
                     case model.resolver.status of
                         Resolver.Loaded user ->
-                            { model | resolver = withResolvedUser { user | eventSyncSources = response.sources } model.resolver }
+                            { model | resolver = withResolvedUser { user | syncSources = response.sources } model.resolver }
 
                         _ ->
                             model
             in
-            ( { refreshedModel | eventSyncSources = { es | refreshStatus = Idle } }
+            ( { refreshedModel | syncSources = { es | refreshStatus = Idle } }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotEventSyncSourcesRefreshResult (Err err) ->
+        GotSyncSourcesRefreshResult (Err err) ->
             let
-                es : EventSyncSourcesState
+                es : SyncSourcesState
                 es =
-                    model.eventSyncSources
+                    model.syncSources
             in
-            ( { model | eventSyncSources = { es | refreshStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) } }
+            ( { model | syncSources = { es | refreshStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) } }
             , Effect.none
             )
 
@@ -2273,7 +2273,7 @@ updateInner shared msg model =
         GotXTwitterLinkResult (Err err) ->
             ( setSyncDestinationsXTwitter (XTwitterConnectFailed (AccountsPanel.grpcErrorToString err)) model, Effect.none )
 
-        -- Unlike `EventSyncSourceDeleteClicked`, this deletes immediately rather than opening
+        -- Unlike `SyncSourceDeleteClicked`, this deletes immediately rather than opening
         -- the shared confirmation dialog -- see `SyncDestinationsState`'s own doc for why.
         SyncDestinationDeleteClicked destination ->
             let
@@ -2518,7 +2518,7 @@ updateInner shared msg model =
             ( { model | aiModelProvidersExpanded = not model.aiModelProvidersExpanded }, Effect.none )
 
         -- Manual refresh -- overlays just `availableAiModels` onto the resolved `User` (see
-        -- `withResolvedUser`, and `EventSyncSourcesRefreshClicked`'s identical shape) rather than a
+        -- `withResolvedUser`, and `SyncSourcesRefreshClicked`'s identical shape) rather than a
         -- whole-profile `refetch`. `response.providers` is a convenience duplicate of data already
         -- in `response.availableAiModels` (see `GetAIModelProvidersResponse`'s own proto doc) --
         -- `ownedAIModelProviders` re-derives it from `user.availableAiModels` the same way it
@@ -2750,7 +2750,7 @@ updateInner shared msg model =
             , Effect.none
             )
 
-        -- Same shape as `EventSyncSourceDeleteClicked`: just opens the
+        -- Same shape as `SyncSourceDeleteClicked`: just opens the
         -- shared "are you sure?" dialog -- the actual `DeleteUser` call
         -- happens in `Shared.update`'s `ConfirmDelete` (see
         -- `Shared.ConfirmUserDelete`'s own doc), whose result comes back
@@ -3026,9 +3026,9 @@ refetch shared model =
 
 
 {-| Re-`init`s the embedded `EventsPage` copy against `model.resolver`'s
-already-loaded user -- called after a successful Event Sync Source
-sync/update/delete (see `GotEventSyncSourceRowSaveResult` and `SharedMsg`'s
-`Shared.GotEventSyncSourceDeleteResult` case), since a source's sync can
+already-loaded user -- called after a successful Sync Source
+sync/update/delete (see `GotSyncSourceRowSaveResult` and `SharedMsg`'s
+`Shared.GotSyncSourceDeleteResult` case), since a source's sync can
 create, update, or remove Events/EventInstances that the already-`init`ed
 `EventsPage.Model` has no way to know about on its own. Mirrors the
 resolver-loaded `init` branch's own `EventsPage.init` call. A no-op if the
@@ -3040,13 +3040,13 @@ refetchEvents shared model =
         Resolver.Loaded user ->
             let
                 ( eventsModel, eventsEffect ) =
-                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.syncDestinations) Nothing
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query Nothing True False (Just user.syncDestinations) Nothing True
             in
             ( { model
                 | events =
                     Just
                         { eventsModel
-                            | showSyncSources = model.eventSyncSourcesExpanded
+                            | showSyncSources = model.syncSourcesExpanded
                             , showSyncDestinations = model.syncDestinationsExpanded
                         }
               }
@@ -3374,9 +3374,9 @@ facebookPagesDecoder =
         )
 
 
-{-| The `EventSyncSourceRowSaveClicked`/`EventSyncSourceRowRefreshClicked`/
-`EventSyncSourceAddClicked` requests' shared "who's acting" resolution --
-mirrors the old `Shared.EventSyncSourcesPanel.performForOwner` exactly, just
+{-| The `SyncSourceRowSaveClicked`/`SyncSourceRowRefreshClicked`/
+`SyncSourceAddClicked` requests' shared "who's acting" resolution --
+mirrors the old `Shared.SyncSourcesPanel.performForOwner` exactly, just
 reading `model.resolver.targetHost` (this page's own target server) instead
 of a bare `targetHost` field. Its failure mode (not signed in on that server
 anymore) has no dedicated `SubmitFailed` slot to land in from here, so it's
@@ -3563,7 +3563,7 @@ profileDetail shared model server maybeAccount user =
 
             Nothing ->
                 text ""
-        , eventSyncSourcesSection shared model canEdit (isOwnProfile maybeAccount user) user
+        , syncSourcesSection shared model canEdit (isOwnProfile maybeAccount user) user
         , syncDestinationsSection shared model maybeAccount user
         , aiModelProvidersSection model canEdit (isOwnProfile maybeAccount user) user
         , aiModelProviderGrantedSection model canEdit user
@@ -3693,7 +3693,7 @@ avatarView canEdit server maybeAccount maybeEdit user =
                         ]
 
                 Nothing ->
-                    button [ class "profile-edit-button", onClick AvatarEditClicked ] [ text "Edit" ]
+                    button [ class "profile-edit-button", onClick AvatarEditClicked ] [ text "Edit Avatar" ]
             ]
 
 
@@ -3755,7 +3755,7 @@ realNameView canEdit maybeEdit user =
                       else
                         span [ class "profile-real-name" ] [ text user.realName ]
                     , if canEdit then
-                        button [ class "profile-edit-button", onClick RealNameEditClicked ] [ text "Edit" ]
+                        button [ class "profile-edit-button", onClick RealNameEditClicked ] [ text "Edit Name" ]
 
                       else
                         text ""
@@ -3803,7 +3803,7 @@ visibilityView canEdit maybeAccount maybeEdit user =
             span [ class "profile-visibility-display" ]
                 [ text (Users.visibilityText user.visibility)
                 , if canEdit then
-                    button [ class "profile-edit-button", onClick VisibilityEditClicked ] [ text "Edit" ]
+                    button [ class "profile-edit-button", onClick VisibilityEditClicked ] [ text "Edit Visibility" ]
 
                   else
                     text ""
@@ -3904,7 +3904,7 @@ bioSection canEdit user =
               else
                 Markdown.view [ class "profile-bio" ] user.bio
             , if canEdit then
-                button [ class "profile-edit-button", onClick BioEditClicked ] [ text "Edit" ]
+                button [ class "profile-edit-button", onClick BioEditClicked ] [ text "Edit Bio" ]
 
               else
                 text ""
@@ -3990,8 +3990,8 @@ profileCountView ( label, count, maybeHref ) =
 
 
 {-| A `.section-title` header that also toggles a collapsed/expanded body
-below it -- shared by `permissionsSection`/`eventSyncSourcesSection`, both of
-which start collapsed (see `Model.permissionsExpanded`/`eventSyncSourcesExpanded`,
+below it -- shared by `permissionsSection`/`syncSourcesSection`, both of
+which start collapsed (see `Model.permissionsExpanded`/`syncSourcesExpanded`,
 both `False` in `init`) so neither dumps a wall of mostly-admin-only content
 onto every profile visit by default.
 -}
@@ -4077,7 +4077,7 @@ permissionsSection isAdmin expanded maybeEdit user =
                                 |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ])
                             )
                         , if isAdmin then
-                            button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit" ]
+                            button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit Permissions" ]
 
                           else
                             text ""
@@ -4216,7 +4216,7 @@ federatedProfilesEditControls shared model server canEdit user =
                 ]
 
             Nothing ->
-                [ button [ class "profile-edit-button", onClick FederatedProfilesEditClicked ] [ text "Edit" ] ]
+                [ button [ class "profile-edit-button", onClick FederatedProfilesEditClicked ] [ text "Edit Federated Profiles" ] ]
 
 
 {-| One federated profile's link/button -- always links out via
@@ -4297,7 +4297,7 @@ crossCheckBadge server user federatedUser =
 
 
 
--- EVENT SYNC SOURCES
+-- SYNC SOURCES
 
 
 {-| The in-progress edit for `source`'s row -- an existing one from
@@ -4305,13 +4305,13 @@ crossCheckBadge server user federatedUser =
 straight from `source`'s own current values (so a first keystroke in either
 field has something correct to diff against/build on).
 -}
-eventSyncRowEditFor : EventSyncSource -> EventSyncSourcesState -> EventSyncRowEdit
+eventSyncRowEditFor : SyncSource -> SyncSourcesState -> EventSyncRowEdit
 eventSyncRowEditFor source es =
     Dict.get source.id es.rowEdits
         |> Maybe.withDefault { pendingUrl = eventSyncIcsUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Idle }
 
 
-eventSyncIcsUrl : EventSyncSource -> String
+eventSyncIcsUrl : SyncSource -> String
 eventSyncIcsUrl source =
     case source.configuration of
         Just (Configuration.IcsSubscriptionUrl url) ->
@@ -4321,12 +4321,12 @@ eventSyncIcsUrl source =
             ""
 
 
-eventSyncSourceIsDirty : EventSyncSource -> EventSyncRowEdit -> Bool
-eventSyncSourceIsDirty source edit =
+syncSourceIsDirty : SyncSource -> EventSyncRowEdit -> Bool
+syncSourceIsDirty source edit =
     edit.pendingUrl /= eventSyncIcsUrl source || edit.pendingIntervalSeconds /= Conversions.int64ToInt source.syncIntervalSeconds
 
 
-mapEventSyncAddForm : (EventSyncAddForm -> EventSyncAddForm) -> EventSyncSourcesState -> EventSyncSourcesState
+mapEventSyncAddForm : (EventSyncAddForm -> EventSyncAddForm) -> SyncSourcesState -> SyncSourcesState
 mapEventSyncAddForm fn es =
     { es | addForm = fn es.addForm }
 
@@ -4355,14 +4355,14 @@ aiModelProviderGrantKey providerId granteeId =
 
 {-| Labels a row's "delete along with its events" button with exactly what
 it'll take with it, so this doubles as the only warning the user gets before
-those rows are gone for good. Also used (via `EventSyncSources.syncedCountsLabel`)
+those rows are gone for good. Also used (via `SyncSources.syncedCountsLabel`)
 in `UI`'s confirmation dialog for the same source. A row's other, plain
 "Delete" button leaves those events/instances alone -- see
 `UI.deleteConfirmationModal`'s own message for that case.
 -}
-eventSyncSourceDeleteButtonLabel : EventSyncSource -> String
-eventSyncSourceDeleteButtonLabel source =
-    "Delete along with " ++ EventSyncSources.syncedCountsLabel source
+syncSourceDeleteButtonLabel : SyncSource -> String
+syncSourceDeleteButtonLabel source =
+    "Delete along with " ++ SyncSources.syncedCountsLabel source
 
 
 {-| `canManage` is self-or-Admin (owner may always manage their own; an
@@ -4370,24 +4370,24 @@ Admin may manage anyone's) -- gates the whole section's edit/delete
 affordances (a caller with neither shouldn't even see this section, but this
 doesn't assume that's already been checked). `canAdd` is self-only (an Admin
 still can't create a source _for_ someone else, see
-`create_event_sync_source.rs`) -- gates just the add row. Collapsed by
-default (`model.eventSyncSourcesExpanded`) behind `expandableProfileSection`'s
+`create_sync_source.rs`) -- gates just the add row. Collapsed by
+default (`model.syncSourcesExpanded`) behind `expandableProfileSection`'s
 own header.
 -}
-eventSyncSourcesSection : Shared.Model -> Model -> Bool -> Bool -> User -> Html Msg
-eventSyncSourcesSection shared model canManage canAdd user =
+syncSourcesSection : Shared.Model -> Model -> Bool -> Bool -> User -> Html Msg
+syncSourcesSection shared model canManage canAdd user =
     if not canManage then
         text ""
 
     else
-        expandableProfileSection "event-sync-sources-section"
-            "Event Sync Sources"
-            model.eventSyncSourcesExpanded
-            EventSyncSourcesExpandedToggled
-            (refreshRowView EventSyncSourcesRefreshClicked model.eventSyncSources.refreshStatus
-                :: div [ class "event-sync-sources-list" ] (eventSyncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.eventSyncSources user.eventSyncSources)
+        expandableProfileSection "sync-sources-section"
+            "Sync Sources"
+            model.syncSourcesExpanded
+            SyncSourcesExpandedToggled
+            (refreshRowView SyncSourcesRefreshClicked model.syncSources.refreshStatus
+                :: div [ class "sync-sources-list" ] (syncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.syncSources user.syncSources)
                 :: (if canAdd then
-                        [ eventSyncSourceAddRowView model.resolver.targetHost model.eventSyncSources.addForm ]
+                        [ syncSourceAddRowView model.resolver.targetHost model.syncSources.addForm ]
 
                     else
                         []
@@ -4395,7 +4395,7 @@ eventSyncSourcesSection shared model canManage canAdd user =
             )
 
 
-{-| Shared by every section with a manual "Refresh" button (`EventSyncSourcesRefreshClicked`/
+{-| Shared by every section with a manual "Refresh" button (`SyncSourcesRefreshClicked`/
 `AIModelProvidersRefreshClicked`) -- these overlay just their own field onto the resolved `User`
 (see `withResolvedUser`) rather than the whole-profile `refetch` every mutation already triggers,
 for a cheaper "did something change on another device" check.
@@ -4425,17 +4425,17 @@ refreshRowView msg status =
         ]
 
 
-eventSyncSourcesContentView : String -> SharedTime.BrowserTimeZone -> EventSyncSourcesState -> List EventSyncSource -> List (Html Msg)
-eventSyncSourcesContentView targetHost browserTimeZone es sources =
+syncSourcesContentView : String -> SharedTime.BrowserTimeZone -> SyncSourcesState -> List SyncSource -> List (Html Msg)
+syncSourcesContentView targetHost browserTimeZone es sources =
     if not (List.isEmpty sources) then
-        List.map (eventSyncSourceRowView targetHost browserTimeZone es) sources
+        List.map (syncSourceRowView targetHost browserTimeZone es) sources
 
     else
-        [ div [ class "event-sync-sources-message" ] [ text "No event sync sources yet." ] ]
+        [ div [ class "sync-sources-message" ] [ text "No sync sources yet." ] ]
 
 
-eventSyncSourceRowView : String -> SharedTime.BrowserTimeZone -> EventSyncSourcesState -> EventSyncSource -> Html Msg
-eventSyncSourceRowView targetHost browserTimeZone es source =
+syncSourceRowView : String -> SharedTime.BrowserTimeZone -> SyncSourcesState -> SyncSource -> Html Msg
+syncSourceRowView targetHost browserTimeZone es source =
     let
         edit : EventSyncRowEdit
         edit =
@@ -4443,7 +4443,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
 
         dirty : Bool
         dirty =
-            eventSyncSourceIsDirty source edit
+            syncSourceIsDirty source edit
 
         submitting : Bool
         submitting =
@@ -4458,22 +4458,22 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
                 Nothing ->
                     "Never"
     in
-    div [ classes [ "event-sync-source-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
+    div [ classes [ "sync-source-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
         [ input
-            [ class "event-sync-source-url"
+            [ class "sync-source-url"
             , type_ "text"
             , value edit.pendingUrl
             , placeholder "iCal subscription URL"
             , disabled submitting
-            , onInput (EventSyncSourceRowUrlChanged source)
+            , onInput (SyncSourceRowUrlChanged source)
             ]
             []
-        , eventSyncIntervalSelect (EventSyncSourceRowIntervalChanged source) edit.pendingIntervalSeconds submitting
-        , div [ class "event-sync-source-actions" ]
-            [ span [ class "event-sync-source-last-synced" ] [ text ("Last synced: " ++ lastSyncedText) ]
+        , eventSyncIntervalSelect (SyncSourceRowIntervalChanged source) edit.pendingIntervalSeconds submitting
+        , div [ class "sync-source-actions" ]
+            [ span [ class "sync-source-last-synced" ] [ text ("Last synced: " ++ lastSyncedText) ]
             , if dirty then
                 button
-                    [ classes [ "event-sync-source-save", "background-color-nav" ], onClick (EventSyncSourceRowSaveClicked source), disabled submitting ]
+                    [ classes [ "sync-source-save", "background-color-nav" ], onClick (SyncSourceRowSaveClicked source), disabled submitting ]
                     [ text
                         (if submitting then
                             "Saving…"
@@ -4485,7 +4485,7 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
 
               else
                 button
-                    [ classes [ "event-sync-source-refresh", "background-color-nav" ], onClick (EventSyncSourceRowRefreshClicked source), disabled submitting ]
+                    [ classes [ "sync-source-refresh", "background-color-nav" ], onClick (SyncSourceRowRefreshClicked source), disabled submitting ]
                     [ text
                         (if submitting then
                             "Refreshing…"
@@ -4495,37 +4495,37 @@ eventSyncSourceRowView targetHost browserTimeZone es source =
                         )
                     ]
             , button
-                [ class "event-sync-source-delete-plain", onClick (EventSyncSourceDeleteClicked source False) ]
+                [ class "sync-source-delete-plain", onClick (SyncSourceDeleteClicked source False) ]
                 [ text "Delete" ]
             , button
-                [ class "event-sync-source-delete", onClick (EventSyncSourceDeleteClicked source True) ]
-                [ text (eventSyncSourceDeleteButtonLabel source) ]
+                [ class "sync-source-delete", onClick (SyncSourceDeleteClicked source True) ]
+                [ text (syncSourceDeleteButtonLabel source) ]
             ]
         , case edit.status of
             SubmitFailed err ->
-                div [ class "event-sync-source-error" ] [ text err ]
+                div [ class "sync-source-error" ] [ text err ]
 
             _ ->
                 text ""
         ]
 
 
-eventSyncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
-eventSyncSourceAddRowView targetHost addForm =
-    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost ] ]
+syncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
+syncSourceAddRowView targetHost addForm =
+    div [ classes [ "sync-source-row", "sync-source-add-row", hostnameToCSSClass targetHost ] ]
         [ input
-            [ class "event-sync-source-url"
+            [ class "sync-source-url"
             , type_ "text"
             , value addForm.url
             , placeholder "New iCal subscription URL"
             , disabled (addForm.status == Submitting)
-            , onInput EventSyncSourceAddUrlChanged
+            , onInput SyncSourceAddUrlChanged
             ]
             []
-        , eventSyncIntervalSelect EventSyncSourceAddIntervalChanged addForm.intervalSeconds (addForm.status == Submitting)
+        , eventSyncIntervalSelect SyncSourceAddIntervalChanged addForm.intervalSeconds (addForm.status == Submitting)
         , button
-            [ classes [ "event-sync-source-add", "background-color-primary" ]
-            , onClick EventSyncSourceAddClicked
+            [ classes [ "sync-source-add", "background-color-primary" ]
+            , onClick SyncSourceAddClicked
             , disabled (addForm.status == Submitting || String.isEmpty (String.trim addForm.url))
             ]
             [ text
@@ -4538,7 +4538,7 @@ eventSyncSourceAddRowView targetHost addForm =
             ]
         , case addForm.status of
             SubmitFailed err ->
-                div [ class "event-sync-source-error" ] [ text err ]
+                div [ class "sync-source-error" ] [ text err ]
 
             _ ->
                 text ""
@@ -4546,7 +4546,7 @@ eventSyncSourceAddRowView targetHost addForm =
 
 
 {-| `canManage` is self-or-Admin (an Admin may rename/rekey/delete anyone's provider) -- mirrors
-`eventSyncSourcesSection`'s own split. `canAdd` is self-only (create -- and, by extension,
+`syncSourcesSection`'s own split. `canAdd` is self-only (create -- and, by extension,
 grant/revoke, which are owner-only server-side regardless of who's viewing -- is always for the
 current user, matching `create_ai_model_provider.rs`'s "always for `current_user`" behavior), and
 also gates the Delete button, since only the owner (or an Admin, already covered by `canManage`)
@@ -4559,7 +4559,7 @@ aiModelProvidersSection model canManage canAdd user =
 
     else
         expandableProfileSection "ai-model-providers-section"
-            "AI Model Providers"
+            "AI Providers"
             model.aiModelProvidersExpanded
             AIModelProvidersExpandedToggled
             (refreshRowView AIModelProvidersRefreshClicked model.aiModelProviders.refreshStatus
@@ -4703,7 +4703,7 @@ aiModelProviderRowView canAdd ap provider =
                 , div [ class "ai-model-provider-actions" ]
                     [ button
                         [ class "ai-model-provider-edit", onClick (AIModelProviderRowNameChanged provider provider.name) ]
-                        [ text "Edit" ]
+                        [ text "Edit AI Provider" ]
                     , button
                         [ class "ai-model-provider-grants-toggle", onClick (AIModelProviderGrantsToggled provider.id) ]
                         [ text grantsLabel ]
@@ -4879,7 +4879,7 @@ aiModelProviderGrantRowView config provider revokeStatus grant =
                ]
             ++ (if config.canManage then
                     [ div [ class "ai-model-provider-grant-actions" ]
-                        [ button [ class "ai-model-provider-grant-edit", onClick (AIModelProviderGrantEditClicked provider grant) ] [ text "Edit" ]
+                        [ button [ class "ai-model-provider-grant-edit", onClick (AIModelProviderGrantEditClicked provider grant) ] [ text "Edit Grant" ]
                         , button
                             [ class "ai-model-provider-grant-revoke"
                             , onClick (AIModelProviderRevokeClicked provider grant)
@@ -5028,7 +5028,7 @@ aiModelProviderGrantedContentView granted =
         [ div [ class "ai-model-providers-message" ] [ text "No AI model access granted to you yet." ] ]
 
 
-{-| Unlike `eventSyncSourcesSection`, this is shown (or not) as a single all-or-nothing check --
+{-| Unlike `syncSourcesSection`, this is shown (or not) as a single all-or-nothing check --
 own profile, holding any of the 10 `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pairs (or
 `ADMIN`) (see `canUseSyncDestinations`) -- rather than a separate `canManage`/`canAdd` split
 (individual platform buttons within the section apply their own, more specific gate -- see
@@ -5411,11 +5411,11 @@ xTwitterConnectView status =
 eventSyncIntervalSelect : (Int -> Msg) -> Int -> Bool -> Html Msg
 eventSyncIntervalSelect onChange selectedSeconds disabledAttr =
     select
-        [ class "event-sync-source-interval"
+        [ class "sync-source-interval"
         , disabled disabledAttr
         , onInput (\s -> onChange (String.toInt s |> Maybe.withDefault selectedSeconds))
         ]
-        (EventSyncSources.intervalOptions
+        (SyncSources.intervalOptions
             |> List.map
                 (\( seconds, label ) ->
                     option [ value (String.fromInt seconds), selected (seconds == selectedSeconds) ] [ text label ]

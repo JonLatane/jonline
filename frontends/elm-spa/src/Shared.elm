@@ -24,7 +24,7 @@ appearance (dark/light/auto) setting that doesn't belong to it.
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
-import Components.EventSyncSources as EventSyncSources
+import Components.SyncSources as SyncSources
 import Components.Events as Events
 import Components.Pages.MessagesPage as MessagesPage
 import Components.Posts as Posts
@@ -35,7 +35,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventInstance, EventSyncSource, Media, Post, User)
+import Proto.Jonline exposing (Event, EventInstance, SyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -132,9 +132,9 @@ type Msg
     | RequestDelete DeleteConfirmation
     | CancelDelete
     | ConfirmDelete
-      -- `ConfirmDelete`'s own handling of `ConfirmEventSyncSourceDelete`/
+      -- `ConfirmDelete`'s own handling of `ConfirmSyncSourceDelete`/
       -- `ConfirmPostDelete`/`ConfirmEventDelete`/`ConfirmUserDelete` fires
-      -- the `DeleteEventSyncSource`/`DeletePost`/`DeleteEvent`/`DeleteUser`
+      -- the `DeleteSyncSource`/`DeletePost`/`DeleteEvent`/`DeleteUser`
       -- RPC directly (unlike every other `DeleteConfirmation`, none of these
       -- four is owned by any Shared-owned panel `Shared.update` could
       -- delegate to) -- these are their results. Forwarded, like every
@@ -143,7 +143,7 @@ type Msg
       -- `Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
       -- `Pages.Event.PostId_`'s own `SharedMsg` handling can update their
       -- own list/navigate away on success.
-    | GotEventSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | GotSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
@@ -235,11 +235,11 @@ Shared-owned submodel's own `DeleteConfirmed`/`CancelConfirmed`
 (`AccountsPanel`/`MyMediaPanel`/`MarkdownPanel`) once confirmed, since those
 submodels (unlike a page's own `Model`) are reachable from here.
 `ConfirmMediaDelete`/`ConfirmMarkdownEditingDataLost` could in principle
-follow the `ConfirmEventSyncSourceDelete`/`ConfirmPostDelete`/
+follow the `ConfirmSyncSourceDelete`/`ConfirmPostDelete`/
 `ConfirmEventDelete` shape below instead -- nothing about `MyMediaPanel`/
 `MarkdownPanel` _requires_ living in `Shared.Model`, it's just simpler to
 route through since they're already there (each _is_ a real global panel,
-opened from several pages, unlike the old `Shared.EventSyncSourcesPanel` used
+opened from several pages, unlike the old `Shared.SyncSourcesPanel` used
 to be). `ConfirmServerDelete`/`ConfirmAccountDelete` genuinely can't switch:
 removing a `Server`/`Account` has to mutate `AccountsPanel.Model` itself,
 which only exists here.
@@ -265,14 +265,14 @@ type DeleteConfirmation
       -- `ConfirmUserDelete`, a single button) rendered by exactly one page
       -- (`Components.Pages.UserProfilePage`/`Pages.Post.PostId_`/
       -- `Pages.Event.PostId_`), so `ConfirmDelete` fires the delete RPC
-      -- directly instead, and the result (`GotEventSyncSourceDeleteResult`/
+      -- directly instead, and the result (`GotSyncSourceDeleteResult`/
       -- `GotPostDeleteResult`/`GotEventDeleteResult`/`GotUserDeleteResult`)
       -- is forwarded on to whichever page is active the same as any other
       -- `Shared.Msg`, for that page's own `Model` to apply. This is the
       -- shape any *new* "list of deletable things shown on one page" should
       -- follow -- don't give the list itself a Shared-owned home just to
       -- reach this dialog.
-    | ConfirmEventSyncSourceDelete EventSyncSource Bool String
+    | ConfirmSyncSourceDelete SyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
       -- Deletes just `instance` from `event` (every other `EventInstance` is
@@ -1477,20 +1477,20 @@ sharedUpdate req msg model =
                 -- any Shared-owned panel to delegate a `DeleteConfirmed`
                 -- into -- each fires its delete RPC directly instead,
                 -- resolving the acting account from the carried `targetHost`.
-                -- Each result (`GotEventSyncSourceDeleteResult`/
+                -- Each result (`GotSyncSourceDeleteResult`/
                 -- `GotPostDeleteResult`/`GotEventDeleteResult`) is picked up
                 -- by whichever page is active, same as any other
                 -- `Shared.Msg` -- see `DeleteConfirmation`'s own doc for why
                 -- this is the shape new page-owned deletable lists should
                 -- follow.
-                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents host) ->
+                Just (ConfirmSyncSourceDelete source deleteSyncedEvents host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
-                    , EventSyncSources.deleteEventSyncSource
+                    , SyncSources.deleteSyncSource
                         model.accounts
                         ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         source
                         deleteSyncedEvents
-                        |> Task.attempt GotEventSyncSourceDeleteResult
+                        |> Task.attempt GotSyncSourceDeleteResult
                     )
 
                 Just (ConfirmPostDelete post host) ->
@@ -1556,7 +1556,7 @@ sharedUpdate req msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        GotEventSyncSourceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotSyncSourceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1568,7 +1568,7 @@ sharedUpdate req msg model =
             in
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
-        GotEventSyncSourceDeleteResult (Err _) ->
+        GotSyncSourceDeleteResult (Err _) ->
             ( model, Cmd.none )
 
         GotEventInstanceSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->

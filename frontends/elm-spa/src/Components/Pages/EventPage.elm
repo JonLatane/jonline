@@ -1817,7 +1817,7 @@ eventDetailView shared model event instance =
                 let
                     -- An `Event` pulled in from an ICS/iCal subscription (see
                     -- `Events.hasIcsSyncSource`) gets re-synced from that feed
-                    -- on every run of the backend's `sync_event_sync_sources`
+                    -- on every run of the backend's `sync_sources`
                     -- job, which would silently clobber any local edit to its
                     -- title/link/content -- so `titleView`/`linkView`/
                     -- `contentDisplayView` hide their own "Edit X" buttons
@@ -1937,7 +1937,7 @@ eventDetailView shared model event instance =
             Nothing ->
                 text ""
         , instanceMetaView shared model instance
-        , Events.eventSyncSourceView event
+        , Events.syncSourceView event
 
         -- `model.availableSyncDestinations` is `Nothing` until `GotEvent` confirms the viewer is
         -- this Event's author (or Admin) and its own fetch resolves (see that Msg's own doc) --
@@ -2379,7 +2379,7 @@ moderationView maybeAccount maybeEdit event post =
 
 
 {-| Whether `instance`'s own start/end time and location are safe to edit by
-hand at all -- an instance synced in from an ICS feed (`instance.eventSyncSourceInstanceId
+hand at all -- an instance synced in from an ICS feed (`instance.syncSourceInstanceId
 /= Nothing`, set by `logic::event_sync::reconcile_instances` when it creates
 an instance from a feed occurrence) has its `starts_at`/`ends_at`/`location`
 silently overwritten back to the feed's own values on every subsequent sync
@@ -2388,7 +2388,7 @@ run (see that function's own `existing_instance.starts_at != starts_at_db ||
 `editable`/`Events.hasIcsSyncSource` already guards title/link/content
 against, just decided per-instance rather than per-`Event`: an `Event` with a
 sync source can still have manually-added instances (via "Add More", which
-never sets `eventSyncSourceInstanceId`) safely alongside feed-sourced ones,
+never sets `syncSourceInstanceId`) safely alongside feed-sourced ones,
 so this checks `instance` itself rather than reusing `eventDetailView`'s
 `editable`. Also gates `addMoreView`'s own button (see its own doc) -- "Add
 More" duplicates `instance`'s own `post`/`location` (see `buildRecurringInstances`),
@@ -2398,7 +2398,7 @@ hand.
 -}
 instanceEditable : EventInstance -> Bool
 instanceEditable instance =
-    instance.eventSyncSourceInstanceId == Nothing
+    instance.syncSourceInstanceId == Nothing
 
 
 {-| The currently-viewed `EventInstance`'s own start/end time row (see

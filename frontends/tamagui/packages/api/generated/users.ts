@@ -11,7 +11,7 @@ import { FederatedAccount } from "./federation";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
-import { EventSyncSource, SyncDestination } from "./sync";
+import { SyncDestination, SyncSource } from "./sync";
 import {
   Moderation,
   moderationFromJSON,
@@ -244,18 +244,18 @@ export interface User {
    */
   syncDestinations: SyncDestination[];
   /**
-   * The target user's own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for
+   * The target user's own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for
    * the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
    * single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
    * filled in, batch-loaded in one query rather than per-user. Also populated by
    * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
    * any other viewer.
    */
-  eventSyncSources: EventSyncSource[];
+  syncSources: SyncSource[];
   /**
    * Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
    * providers' models, plus any models granted to them on other users' providers (see
-   * [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources`
+   * [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources`
    * (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
    * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
    */
@@ -401,7 +401,7 @@ function createBaseUser(): User {
     hasAdvancedData: false,
     federatedProfiles: [],
     syncDestinations: [],
-    eventSyncSources: [],
+    syncSources: [],
     availableAiModels: [],
     createdAt: undefined,
     updatedAt: undefined,
@@ -487,8 +487,8 @@ export const User: MessageFns<User> = {
     for (const v of message.syncDestinations) {
       SyncDestination.encode(v!, writer.uint32(658).fork()).join();
     }
-    for (const v of message.eventSyncSources) {
-      EventSyncSource.encode(v!, writer.uint32(666).fork()).join();
+    for (const v of message.syncSources) {
+      SyncSource.encode(v!, writer.uint32(666).fork()).join();
     }
     for (const v of message.availableAiModels) {
       AvailableAIModel.encode(v!, writer.uint32(674).fork()).join();
@@ -724,7 +724,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.eventSyncSources.push(EventSyncSource.decode(reader, reader.uint32()));
+          message.syncSources.push(SyncSource.decode(reader, reader.uint32()));
           continue;
         }
         case 84: {
@@ -799,8 +799,8 @@ export const User: MessageFns<User> = {
       syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
         ? object.syncDestinations.map((e: any) => SyncDestination.fromJSON(e))
         : [],
-      eventSyncSources: globalThis.Array.isArray(object?.eventSyncSources)
-        ? object.eventSyncSources.map((e: any) => EventSyncSource.fromJSON(e))
+      syncSources: globalThis.Array.isArray(object?.syncSources)
+        ? object.syncSources.map((e: any) => SyncSource.fromJSON(e))
         : [],
       availableAiModels: globalThis.Array.isArray(object?.availableAiModels)
         ? object.availableAiModels.map((e: any) => AvailableAIModel.fromJSON(e))
@@ -887,8 +887,8 @@ export const User: MessageFns<User> = {
     if (message.syncDestinations?.length) {
       obj.syncDestinations = message.syncDestinations.map((e) => SyncDestination.toJSON(e));
     }
-    if (message.eventSyncSources?.length) {
-      obj.eventSyncSources = message.eventSyncSources.map((e) => EventSyncSource.toJSON(e));
+    if (message.syncSources?.length) {
+      obj.syncSources = message.syncSources.map((e) => SyncSource.toJSON(e));
     }
     if (message.availableAiModels?.length) {
       obj.availableAiModels = message.availableAiModels.map((e) => AvailableAIModel.toJSON(e));
@@ -946,7 +946,7 @@ export const User: MessageFns<User> = {
     message.hasAdvancedData = object.hasAdvancedData ?? false;
     message.federatedProfiles = object.federatedProfiles?.map((e) => FederatedAccount.fromPartial(e)) || [];
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestination.fromPartial(e)) || [];
-    message.eventSyncSources = object.eventSyncSources?.map((e) => EventSyncSource.fromPartial(e)) || [];
+    message.syncSources = object.syncSources?.map((e) => SyncSource.fromPartial(e)) || [];
     message.availableAiModels = object.availableAiModels?.map((e) => AvailableAIModel.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;

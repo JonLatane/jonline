@@ -16,6 +16,13 @@ fn main() {
             "EventSettings.default_calendar_display_mode",
             "#[serde(default)]",
         )
+        // Same as above, for `show_started_or_long_events_by_default` -- lets `event_settings`
+        // JSON stored before this field existed deserialize instead of erroring, defaulting to
+        // `false`.
+        .field_attribute(
+            "EventSettings.show_started_or_long_events_by_default",
+            "#[serde(default)]",
+        )
         // This is specifically for rust-analyzer in VSCode
         // .client_attribute(".", "#![allow(non_snake_case)]")
         .extern_path(".google.protobuf.Any", "::prost_wkt_types::Any")

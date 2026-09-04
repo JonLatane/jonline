@@ -991,7 +991,7 @@ visibilityView maybeAccount maybeEdit post =
                     , case maybeAccount of
                         Just account ->
                             if Posts.isAuthor account post then
-                                button [ class "post-visibility-edit-button", onClick (VisibilityEditClicked post) ] [ text "Edit" ]
+                                button [ class "post-visibility-edit-button", onClick (VisibilityEditClicked post) ] [ text "Edit Visibility" ]
 
                             else
                                 text ""

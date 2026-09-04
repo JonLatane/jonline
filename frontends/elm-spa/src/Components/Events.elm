@@ -7,7 +7,7 @@ module Components.Events exposing
     , eventInstanceHref
     , eventInstancePairs
     , eventSyncDestinationsView
-    , eventSyncSourceView
+    , syncSourceView
     , fetchEvent
     , fetchEvents
     , fetchEventsByInstancePostIds
@@ -46,7 +46,7 @@ import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
 import Proto.Jonline exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultPost, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
-import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
+import Proto.Jonline.SyncSource.Configuration as SyncSourceConfiguration
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
@@ -167,7 +167,7 @@ already on the event (matched by its own `post.id`) -- any other instance in
 gated server-side, see `backend/src/rpcs/events/update_event_instances.rs`).
 Used by `Pages.Event.PostId_`'s "Edit Time"/"Edit Location" saves, each
 sending the whole currently-loaded `Event` (its own `post`/`info`/
-`eventSyncSource` identify it, since it has no id of its own anymore) plus a
+`syncSource` identify it, since it has no id of its own anymore) plus a
 single-element `instances` list built from the currently-loaded
 `EventInstance` with only the field(s) being edited overridden -- carrying
 the rest of that `EventInstance` (notably its own `post`) along unchanged
@@ -591,16 +591,16 @@ meaningfulPost post =
 
 
 {-| Whether `event` is pulled in from an ICS/iCal subscription (i.e. its
-`eventSyncSource` has an `IcsSubscriptionUrl` configuration) -- such an
+`syncSource` has an `IcsSubscriptionUrl` configuration) -- such an
 `Event` is re-synced from that feed on every run of the backend's
-`sync_event_sync_sources` job, so any local edit to its title/link/content
+`sync_sources` job, so any local edit to its title/link/content
 would just be clobbered the next time that happens. Used by
 `Pages.Event.PostId_` to hide those fields' own edit buttons for a synced
 `Event`.
 -}
 hasIcsSyncSource : Event -> Bool
 hasIcsSyncSource event =
-    case event.eventSyncSource |> Maybe.andThen .configuration of
+    case event.syncSource |> Maybe.andThen .configuration of
         Just (SyncSourceConfiguration.IcsSubscriptionUrl _) ->
             True
 
@@ -610,13 +610,13 @@ hasIcsSyncSource event =
 
 {-| One small-text, clipped-not-wrapped line crediting the source `event` was
 synced from (e.g. an ICS feed) -- see `Components.Pages.UserProfilePage`'s
-"Event Sync Sources" section. Renders nothing for a normal, non-synced event.
+"Sync Sources" section. Renders nothing for a normal, non-synced event.
 Shared by `Pages.Event.PostId_`'s detail view and `eventCard` (gated on
 `showSyncSource`).
 -}
-eventSyncSourceView : Event -> Html msg
-eventSyncSourceView event =
-    case event.eventSyncSource |> Maybe.andThen .configuration of
+syncSourceView : Event -> Html msg
+syncSourceView event =
+    case event.syncSource |> Maybe.andThen .configuration of
         Just (SyncSourceConfiguration.IcsSubscriptionUrl url) ->
             div [ class "event-synced-from" ]
                 [ text "synced from "
@@ -686,7 +686,7 @@ class, mirroring `post-card-current`) instead of the default
 caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 `Components.Pages.EventsPage`'s own listing always passes `False`.
 
-`showSyncSource`/`showSyncDestinations` gate `eventSyncSourceView event`/
+`showSyncSource`/`showSyncDestinations` gate `syncSourceView event`/
 `eventSyncDestinationsView` at the bottom of the card -- mirrors
 `Components.Pages.EventsPage.Model`'s own `showSyncSources`/
 `showSyncDestinations` fields, which `EventsPage.eventCardView` threads
@@ -820,7 +820,7 @@ eventCard time basePath viewingServerHost eventServerHost maybeServer maybeAccou
                             text ""
                     ]
                 , if showSyncSource then
-                    eventSyncSourceView event
+                    syncSourceView event
 
                   else
                     text ""

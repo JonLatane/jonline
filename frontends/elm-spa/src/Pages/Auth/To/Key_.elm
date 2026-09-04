@@ -7,10 +7,12 @@ the sending side of the cross-server SSO hand-off (see
 is -- lets them type in (or pick, via `usernameField`'s quick-fill buttons)
 the username to sign in as. Either way, asks for their password (a fresh
 Login RPC, not reusing any already-stored tokens, since only a freshly issued
-token pair is transferred), then encrypts the resulting `Account` to
+token pair is transferred), then encrypts the resulting `AccountAuthTokens`
+(just this server's hostname plus that fresh token pair -- everything else an
+`Account` needs is hydrated on the other end, via `GetCurrentUser`) to
 `requestingHost`'s public key and redirects back to
 `https://requestingHost/elm/auth/from/...`. The receiving side is
-`Pages.Auth.From.EncodedAccount_`.
+`Pages.Auth.From.EncryptedAccountAuthTokens_`.
 
 Optionally (`alsoSignInHere`), that same username/password is also used for a
 _second_, independent Login RPC (see `GotLoginResult`/`GotLocalSignInResult`)
@@ -35,7 +37,7 @@ import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse)
 import Proto.Jonline.Jonline as Jonline
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel exposing (Account, FormStatus(..), Token)
+import Shared.AccountsPanel as AccountsPanel exposing (Account, AccountAuthTokens, FormStatus(..), Token)
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.FederatedAuth as FederatedAuth
 import Task exposing (Task)
@@ -74,18 +76,18 @@ type alias Model =
     -- `browsingHost` -- see `GotLoginResult`/`GotLocalSignInResult`.
     , alsoSignInHere : Bool
 
-    -- The transfer `Account` (bound for `requestingHost`) and its public key,
+    -- The transfer `AccountAuthTokens` (bound for `requestingHost`) and its public key,
     -- held here between `GotLoginResult` and `GotLocalSignInResult` while
     -- `alsoSignInHere`'s second Login RPC is still in flight. `Nothing` the
     -- rest of the time -- including once that second RPC settles, at which
     -- point it's consumed to actually kick off the encrypt/redirect.
-    , pendingTransferAccount : Maybe ( Account, FederatedAuth.PublicKey )
+    , pendingTransferAccount : Maybe ( AccountAuthTokens, FederatedAuth.PublicKey )
     , status : FormStatus
 
     -- The path (app-relative, no `basePath`) the user was on when they
     -- clicked "Sign in from <server>" (see `UI.signInFromButton`) -- passed
     -- through unchanged into the redirect back to `requestingHost` (see
-    -- `GotEncryptResult`) so `Pages.Auth.From.EncodedAccount_` can send them
+    -- `GotEncryptResult`) so `Pages.Auth.From.EncryptedAccountAuthTokens_` can send them
     -- back where they started instead of just the home page.
     , startPath : Maybe String
     }
@@ -97,7 +99,7 @@ type Msg
     | UsernameButtonClicked String
     | AlsoSignInHereToggled
     | SignInClicked
-    | GotLoginResult (Result Grpc.Error ( Maybe Account, FederatedAuth.PublicKey ))
+    | GotLoginResult (Result Grpc.Error ( Maybe AccountAuthTokens, FederatedAuth.PublicKey ))
     | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
     | GotEncryptResult Encode.Value
     | SharedMsg Shared.Msg
@@ -185,7 +187,7 @@ update shared msg model =
                 ( Just server, Just publicKey ) ->
                     ( { model | status = Submitting }
                     , loginTask server (effectiveUsername shared model) model.password
-                        |> Task.map (\resp -> ( accountFromLogin browsingHost resp, publicKey ))
+                        |> Task.map (\resp -> ( accountAuthTokensFromLogin browsingHost resp, publicKey ))
                         |> Task.attempt GotLoginResult
                         |> Effect.fromCmd
                     )
@@ -298,9 +300,9 @@ loginTask server username password =
                 |> Grpc.toTask
 
 
-encryptAndSendEffect : FederatedAuth.PublicKey -> Account -> Effect Msg
-encryptAndSendEffect publicKey account =
-    FederatedAuth.encrypt publicKey (Encode.encode 0 (AccountsPanel.encodeAccount account))
+encryptAndSendEffect : FederatedAuth.PublicKey -> AccountAuthTokens -> Effect Msg
+encryptAndSendEffect publicKey tokens =
+    FederatedAuth.encrypt publicKey (Encode.encode 0 (AccountsPanel.encodeAccountAuthTokens tokens))
         |> Effect.fromCmd
 
 
@@ -530,10 +532,32 @@ ifConnected server =
         Just server
 
 
+{-| The transfer payload's own construction from a fresh `Login` response -- just `server` plus the
+fresh token pair (see `AccountAuthTokens`'s own doc), unlike `accountFromLogin`'s full `Account`
+below (used only for this same page's own, separate "sign back in here" local login). `Nothing` if
+the response is missing token data (an `update` branch above turns that into the same `Errored`
+state `GotAuthResult` would).
+-}
+accountAuthTokensFromLogin : String -> RefreshTokenResponse -> Maybe AccountAuthTokens
+accountAuthTokensFromLogin server resp =
+    case ( resp.refreshToken, resp.accessToken ) of
+        ( Just refreshToken, Just accessToken ) ->
+            Just
+                { server = server
+                , refreshToken = tokenFromExpirable refreshToken
+                , accessToken = tokenFromExpirable accessToken
+                }
+
+        _ ->
+            Nothing
+
+
 {-| Mirrors `Shared.AccountsPanel.sendUpdate`'s `GotAuthResult` account
-construction -- `Nothing` if the response is missing user/token data (an
-`update` branch above turns that into the same `Errored` state `GotAuthResult`
-would).
+construction -- used for this page's own "sign back in here" local login
+(`GotLocalSignInResult`), which needs a full `Account`, unlike the transfer
+payload itself (see `accountAuthTokensFromLogin`). `Nothing` if the response
+is missing user/token data (an `update` branch above turns that into the same
+`Errored` state `GotAuthResult` would).
 -}
 accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
 accountFromLogin server resp =
@@ -551,7 +575,7 @@ accountFromLogin server resp =
                 , realName = user.realName
                 , needsPassword = False
                 , syncDestinations = user.syncDestinations
-                , eventSyncSources = user.eventSyncSources
+                , syncSources = user.syncSources
                 , availableAiModels = user.availableAiModels
                 }
 

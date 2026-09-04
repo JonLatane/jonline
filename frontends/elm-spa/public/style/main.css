@@ -192,39 +192,17 @@ pre {
 }
 
 
-/* Pages/Auth/From/EncodedAccount_.elm's cross-server sign-in hand-off
-   confirmation page -- `.auth-from-header` splits into a left span (greeting
-   + avatar + name) and a right span (Cancel/Add Account), `flex-wrap`ping the
-   right span onto its own line -- still right-aligned -- once the left span
-   no longer leaves it room. `.profile-detail`/`.profile-header`/etc. below
-   are shared with Components/UserProfilePage.elm (see profiles.css); this
-   page has no fetched `User` to feed it, only an `AccountsPanel.Account`, so
-   it's populated by hand rather than reusing that component. */
+/* Pages/Auth/From/EncryptedAccountAuthTokens_.elm's cross-server sign-in
+   hand-off receiving page -- just a status line (decrypting/signing in/
+   error), no confirmation UI (decryption succeeding is itself the
+   authenticity check -- see that module's own doc). `.auth-from-greeting`/
+   `.auth-from-avatar`/`.auth-from-name` below are shared with
+   Pages/Auth/To/Key_.elm's `currentAccountBadge`. */
 
 .auth-from-page {
   max-width: 640px;
   margin: 1.5rem auto;
   padding: 0 1rem;
-}
-
-.auth-from-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem 1rem;
-}
-
-.auth-from-header-left {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
 }
 
 .auth-from-greeting {
@@ -252,28 +230,6 @@ pre {
 
 .auth-from-name {
   overflow-wrap: anywhere;
-}
-
-.auth-from-header-right {
-  display: flex;
-  gap: 0.5rem;
-  flex: 0 0 auto;
-  margin-left: auto;
-}
-
-.auth-from-header-right button {
-  padding: 0.4rem 0.8rem;
-}
-
-@media (max-width: 639px) {
-  .auth-from-header-right {
-    justify-content: flex-end;
-    width: 100%;
-  }
-}
-
-.auth-from-profile {
-  margin-top: 1.2rem;
 }
 
 

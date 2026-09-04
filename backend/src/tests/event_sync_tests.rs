@@ -1,13 +1,13 @@
-//! Specs for `logic::sync_event_sync_source[_text]` -- the actual ICS-pull/upsert logic behind
-//! `CreateEventSyncSource`/`UpdateEventSyncSource`. Most specs drive `sync_event_sync_source_text`
+//! Specs for `logic::sync_source[_text]` -- the actual ICS-pull/upsert logic behind
+//! `CreateSyncSource`/`UpdateSyncSource`. Most specs drive `sync_source_text`
 //! directly against a fixed ICS string (no network at all); a couple exercise
-//! `sync_event_sync_source` itself against `factories::serve_ics`'s local stub server to confirm
+//! `sync_source` itself against `factories::serve_ics`'s local stub server to confirm
 //! the HTTP fetch path also works end to end.
 
 use chrono::{Duration, Utc};
 use diesel::Connection;
 
-use crate::logic::{sync_event_sync_source, sync_event_sync_source_text};
+use crate::logic::{sync_source, sync_source_text};
 use crate::models;
 use crate::schema::{event_instances, events, posts};
 use crate::tests::factories::*;
@@ -32,11 +32,11 @@ fn synced_event(
     uid: &str,
 ) -> Option<models::Event> {
     events::table
-        .filter(events::event_sync_source_id.eq(source_id))
+        .filter(events::sync_source_id.eq(source_id))
         .load::<models::Event>(conn)
         .unwrap()
         .into_iter()
-        .find(|e| e.info.get("event_sync_source_uid").and_then(|v| v.as_str()) == Some(uid))
+        .find(|e| e.info.get("sync_source_uid").and_then(|v| v.as_str()) == Some(uid))
 }
 
 fn post_of(conn: &mut crate::db_connection::PgPooledConnection, post_id: i64) -> models::Post {
@@ -52,7 +52,7 @@ fn single_vevent_creates_event_and_instance() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_single_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -62,7 +62,7 @@ fn single_vevent_creates_event_and_instance() {
             end.format(ICS_FORMAT)
         );
 
-        sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "single-1").expect("event should have been created");
         let post = post_of(conn, event.post_id);
@@ -71,7 +71,7 @@ fn single_vevent_creates_event_and_instance() {
 
         let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
-        assert!(instances[0].event_sync_source_instance_id.is_some());
+        assert!(instances[0].sync_source_instance_id.is_some());
 
         Ok(())
     });
@@ -82,7 +82,7 @@ fn recurring_vevent_expands_into_multiple_instances() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_recur_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -92,7 +92,7 @@ fn recurring_vevent_expands_into_multiple_instances() {
             end.format(ICS_FORMAT)
         );
 
-        sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "recur-1").expect("event should have been created");
         let instances = instances_for(conn, event.post_id);
@@ -107,7 +107,7 @@ fn recurrence_id_override_changes_one_occurrence() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_override_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -123,7 +123,7 @@ fn recurrence_id_override_changes_one_occurrence() {
             moved_end.format(ICS_FORMAT),
         );
 
-        sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "override-1").expect("event should have been created");
         let instances = instances_for(conn, event.post_id);
@@ -148,7 +148,7 @@ fn occurrence_more_than_a_year_in_the_past_is_not_created() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_old_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() - Duration::days(400);
         let end = start + Duration::hours(1);
@@ -158,7 +158,7 @@ fn occurrence_more_than_a_year_in_the_past_is_not_created() {
             end.format(ICS_FORMAT)
         );
 
-        sync_event_sync_source_text(&source, &ics, conn).expect("sync should succeed");
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         assert!(
             synced_event(conn, source.id, "old-1").is_none(),
@@ -174,7 +174,7 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_prune_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let recent_start = Utc::now() + Duration::days(1);
         let recent_end = recent_start + Duration::hours(1);
@@ -190,7 +190,7 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
             recent_start.format(ICS_FORMAT),
             recent_end.format(ICS_FORMAT)
         );
-        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-1").expect("event should exist after first sync");
         assert_eq!(instances_for(conn, event.post_id).len(), 1);
 
@@ -210,7 +210,7 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         // Second sync: same UID, but the feed no longer mentions that (now old-dated) occurrence
         // at all (empty calendar). Since it's now more than a year in the past, it must survive.
         let ics_v2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
-        sync_event_sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
+        sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert_eq!(
             instances_for(conn, event.post_id).len(),
@@ -230,7 +230,7 @@ fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_prune2_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -239,12 +239,12 @@ fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
             start.format(ICS_FORMAT),
             end.format(ICS_FORMAT)
         );
-        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-2").expect("event should exist after first sync");
         let original_instance_id = instances_for(conn, event.post_id)[0].post_id;
 
         let ics_v2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
-        sync_event_sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
+        sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert!(
             events::table.filter(events::post_id.eq(event.post_id)).first::<models::Event>(conn).optional().unwrap().is_some(),
@@ -267,7 +267,7 @@ fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_reappear_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -276,17 +276,17 @@ fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
             start.format(ICS_FORMAT),
             end.format(ICS_FORMAT)
         );
-        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "reappear-1").expect("event should exist after first sync");
         let original_instance = instances_for(conn, event.post_id).into_iter().next().unwrap();
 
         // Simulates a transient/partial upstream response that momentarily drops the occurrence.
         let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
-        sync_event_sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
+        sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
         assert!(instances_for(conn, event.post_id)[0].sync_missing_since.is_some());
 
         // The feed recovers before the grace period elapses.
-        sync_event_sync_source_text(&source, &ics_v1, conn).expect("third sync should succeed");
+        sync_source_text(&source, &ics_v1, conn).expect("third sync should succeed");
         let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
         assert_eq!(instances[0].post_id, original_instance.post_id, "should reuse the same instance/Post, not recreate it");
@@ -304,7 +304,7 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_expire_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
 
         let start = Utc::now() + Duration::days(1);
         let end = start + Duration::hours(1);
@@ -313,11 +313,11 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
             start.format(ICS_FORMAT),
             end.format(ICS_FORMAT)
         );
-        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "expire-1").expect("event should exist after first sync");
 
         let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
-        sync_event_sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
+        sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
 
         // Simulate the grace period having elapsed by backdating the missing-since stamp.
         let long_ago: std::time::SystemTime = (Utc::now() - Duration::days(4)).into();
@@ -326,7 +326,7 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
             .execute(conn)
             .unwrap();
 
-        sync_event_sync_source_text(&source, ics_empty, conn).expect("third sync should succeed");
+        sync_source_text(&source, ics_empty, conn).expect("third sync should succeed");
 
         assert_eq!(instances_for(conn, event.post_id).len(), 0);
         assert!(
@@ -348,13 +348,13 @@ fn last_synced_at_is_updated() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_lastsync_owner");
-        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
         assert!(source.last_synced_at.is_none());
 
         let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
-        sync_event_sync_source_text(&source, ics, conn).expect("sync should succeed");
+        sync_source_text(&source, ics, conn).expect("sync should succeed");
 
-        let refreshed = models::get_event_sync_source(source.id, conn).unwrap();
+        let refreshed = models::get_sync_source(source.id, conn).unwrap();
         assert!(refreshed.last_synced_at.is_some());
 
         Ok(())
@@ -375,9 +375,9 @@ fn sync_via_http_fetches_and_parses_from_a_real_url() {
             end.format(ICS_FORMAT)
         );
         let url = serve_ics(&ics);
-        let source = create_event_sync_source_row(conn, &user, &url);
+        let source = create_sync_source_row(conn, &user, &url);
 
-        sync_event_sync_source(&source, conn).expect("sync over HTTP should succeed");
+        sync_source(&source, conn).expect("sync over HTTP should succeed");
 
         let event = synced_event(conn, source.id, "http-1").expect("event should have been created via HTTP sync");
         let post = post_of(conn, event.post_id);
@@ -393,10 +393,10 @@ fn missing_ics_url_fails_with_precondition_error() {
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_nourl_owner");
         let mut source =
-            create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+            create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
         source.configuration = serde_json::json!({});
 
-        let err = sync_event_sync_source(&source, conn).unwrap_err();
+        let err = sync_source(&source, conn).unwrap_err();
         assert_eq!(err.code(), tonic::Code::FailedPrecondition);
         assert_eq!(err.message(), "ics_url_required");
 

@@ -1,6 +1,6 @@
 module UI exposing (imageOrInitial, layout, pageTitle, themeToggle, webUiToggleRow)
 
-import Components.EventSyncSources as EventSyncSources
+import Components.SyncSources as SyncSources
 import Components.Events as Events
 import Components.Markdown as Markdown
 import Components.Posts as Posts
@@ -13,7 +13,7 @@ import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, s
 import Html.Keyed
 import Json.Decode as Decode
 import Proto.Jonline exposing (FederatedServer)
-import Proto.Jonline.EventSyncSource.Configuration as Configuration
+import Proto.Jonline.SyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
@@ -64,8 +64,35 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (mediaGeneratorPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
+    , Html.map toMsg (federatedSignInNoticeView shared)
     , div [ classes [ "container", hostnameToCSSClass shared.accounts.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
+
+
+{-| A brief "Signed in as ..." toast for `AccountsPanel.Model.federatedSignInNotice` -- see that
+field's own doc. Reuses `avatarOrPlaceholder`/`AccountsPanel.displayName`, the same building blocks
+`accountRow` itself uses, so it reads as the same account identity the Accounts Panel would show.
+Dismissible early by clicking it; otherwise `AccountsPanel.federatedSignInNoticeDuration` clears it on
+its own.
+-}
+federatedSignInNoticeView : Shared.Model -> Html Shared.Msg
+federatedSignInNoticeView shared =
+    case shared.accounts.federatedSignInNotice of
+        Nothing ->
+            text ""
+
+        Just account ->
+            div
+                [ classes [ "federated-sign-in-notice", hostnameToCSSClass account.server, "background-color-primary" ]
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.DismissFederatedSignInNotice)
+                ]
+                [ avatarOrPlaceholder shared.accounts.servers account
+                , div [ class "federated-sign-in-notice-text" ]
+                    [ div [ class "federated-sign-in-notice-title" ] [ text "Signed in as" ]
+                    , div [ class "federated-sign-in-notice-name" ] [ text (AccountsPanel.displayName account) ]
+                    , div [ class "federated-sign-in-notice-server" ] [ text account.server ]
+                    ]
+                ]
 
 
 {-| A tall, empty spacer at the bottom of `main_`'s content -- shown (see
@@ -2435,7 +2462,7 @@ deleteConfirmationModal shared =
                             , "Delete Changes"
                             )
 
-                        Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents _ ->
+                        Shared.ConfirmSyncSourceDelete source deleteSyncedEvents _ ->
                             let
                                 sourceLabel : String
                                 sourceLabel =
@@ -2446,19 +2473,19 @@ deleteConfirmationModal shared =
                                         Nothing ->
                                             "this source"
                             in
-                            ( "Delete Event Sync Source?"
+                            ( "Delete Sync Source?"
                             , if deleteSyncedEvents then
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ ", deleting the "
-                                    ++ EventSyncSources.syncedCountsLabel source
+                                    ++ SyncSources.syncedCountsLabel source
                                     ++ " it synced? This can't be undone."
 
                               else
                                 "Stop syncing from "
                                     ++ sourceLabel
                                     ++ "? This will leave the "
-                                    ++ EventSyncSources.syncedCountsLabel source
+                                    ++ SyncSources.syncedCountsLabel source
                                     ++ " it synced on your profile, no longer associated with a source."
                             , "Delete"
                             )

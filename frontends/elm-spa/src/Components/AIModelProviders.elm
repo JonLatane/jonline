@@ -12,7 +12,7 @@ module Components.AIModelProviders exposing
     )
 
 {-| RPC wrappers for `AIModelProvider`/`AIModelProviderGrant` (`protos/ai_model_providers.proto`)
--- mirrors `Components.EventSyncSources` in shape exactly: each takes the calling account/server as
+-- mirrors `Components.SyncSources` in shape exactly: each takes the calling account/server as
 an `AccountsPanel.MaybeAccountServer` and returns a `Task` resolving to
 `( Maybe AccountsPanel.Msg, response )`, so a token refresh mid-request can still be forwarded on by
 the caller (see `Shared.AccountsPanel.performWithAccountServer`).

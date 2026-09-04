@@ -63,6 +63,7 @@ type Msg
     | FeatureSettingsEnableRepliesToggled FeatureSettingsSet
     | FeatureSettingsCalendarLookbackDaysChanged FeatureSettingsSet String
     | FeatureSettingsCalendarDisplayModeChanged FeatureSettingsSet String
+    | FeatureSettingsShowStartedOrLongEventsToggled FeatureSettingsSet
     | FeatureSettingsCancelClicked FeatureSettingsSet
     | FeatureSettingsSaveClicked FeatureSettingsSet
     | GotFeatureSettingsSaveResult FeatureSettingsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
@@ -128,6 +129,7 @@ type alias FeatureSettingsEdit =
     , enableReplies : Bool
     , calendarLookbackDays : String
     , calendarDisplayMode : CalendarDisplayMode
+    , showStartedOrLongEventsByDefault : Bool
     , status : AccountsPanel.FormStatus
     }
 
@@ -263,6 +265,7 @@ update shared targetHost maybeServer msg model =
                             , enableReplies = Maybe.withDefault False current.enableReplies
                             , calendarLookbackDays = current.calendarLookbackDays |> Maybe.map String.fromInt |> Maybe.withDefault ""
                             , calendarDisplayMode = Maybe.withDefault CALENDARDISPLAYWEEK current.calendarDisplayMode
+                            , showStartedOrLongEventsByDefault = Maybe.withDefault False current.showStartedOrLongEventsByDefault
                             , status = AccountsPanel.Idle
                             }
                         )
@@ -324,6 +327,13 @@ update shared targetHost maybeServer msg model =
                 (featureSettingsEditFor set model
                     |> Maybe.map (\edit -> { edit | calendarDisplayMode = calendarDisplayModeFromText text |> Maybe.withDefault edit.calendarDisplayMode })
                 )
+                model
+            , Effect.none
+            )
+
+        FeatureSettingsShowStartedOrLongEventsToggled set ->
+            ( setFeatureSettingsEditFor set
+                (featureSettingsEditFor set model |> Maybe.map (\edit -> { edit | showStartedOrLongEventsByDefault = not edit.showStartedOrLongEventsByDefault }))
                 model
             , Effect.none
             )
@@ -568,23 +578,23 @@ which rows `featureSettingsDisplayView`/`featureSettingsEditView` show, and whic
 `applyFeatureSettingsFor` writes back. `MediaSettings` has none of them; `FeatureSettings`
 (People/Groups) has only alias; `PostSettings` adds replies; `EventSettings` alone has all four.
 -}
-featureSettingsFieldsFor : FeatureSettingsSet -> { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool }
+featureSettingsFieldsFor : FeatureSettingsSet -> { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool, showStartedOrLongEventsByDefault : Bool }
 featureSettingsFieldsFor set =
     case set of
         PeopleFeatureSettings ->
-            { alias = True, replies = False, calendarLookback = False, calendarDisplayMode = False }
+            { alias = True, replies = False, calendarLookback = False, calendarDisplayMode = False, showStartedOrLongEventsByDefault = False }
 
         GroupFeatureSettings ->
-            { alias = True, replies = False, calendarLookback = False, calendarDisplayMode = False }
+            { alias = True, replies = False, calendarLookback = False, calendarDisplayMode = False, showStartedOrLongEventsByDefault = False }
 
         PostFeatureSettings ->
-            { alias = True, replies = True, calendarLookback = False, calendarDisplayMode = False }
+            { alias = True, replies = True, calendarLookback = False, calendarDisplayMode = False, showStartedOrLongEventsByDefault = False }
 
         EventFeatureSettings ->
-            { alias = True, replies = True, calendarLookback = True, calendarDisplayMode = True }
+            { alias = True, replies = True, calendarLookback = True, calendarDisplayMode = True, showStartedOrLongEventsByDefault = True }
 
         MediaFeatureSettings ->
-            { alias = False, replies = False, calendarLookback = False, calendarDisplayMode = False }
+            { alias = False, replies = False, calendarLookback = False, calendarDisplayMode = False, showStartedOrLongEventsByDefault = False }
 
 
 {-| `currentFeatureSettingsFor`'s return shape -- every field every `FeatureSettingsSet` might show,
@@ -599,6 +609,7 @@ type alias FeatureSettingsSummary =
     , enableReplies : Maybe Bool
     , calendarLookbackDays : Maybe Int
     , calendarDisplayMode : Maybe CalendarDisplayMode
+    , showStartedOrLongEventsByDefault : Maybe Bool
     }
 
 
@@ -621,7 +632,7 @@ currentFeatureSettingsFor set config =
                 s =
                     Maybe.withDefault defaultFeatureSettings config.peopleSettings
             in
-            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing }
+            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing, showStartedOrLongEventsByDefault = Nothing }
 
         GroupFeatureSettings ->
             let
@@ -629,7 +640,7 @@ currentFeatureSettingsFor set config =
                 s =
                     Maybe.withDefault defaultFeatureSettings config.groupSettings
             in
-            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing }
+            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing, showStartedOrLongEventsByDefault = Nothing }
 
         PostFeatureSettings ->
             let
@@ -637,7 +648,7 @@ currentFeatureSettingsFor set config =
                 s =
                     Maybe.withDefault defaultPostSettings config.postSettings
             in
-            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = s.enableReplies, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing }
+            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = s.enableReplies, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing, showStartedOrLongEventsByDefault = Nothing }
 
         EventFeatureSettings ->
             let
@@ -645,7 +656,7 @@ currentFeatureSettingsFor set config =
                 s =
                     Maybe.withDefault defaultEventSettings config.eventSettings
             in
-            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = s.enableReplies, calendarLookbackDays = s.calendarLookbackDays, calendarDisplayMode = Just s.defaultCalendarDisplayMode }
+            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = s.aliasSingular, aliasPlural = s.aliasPlural, enableReplies = s.enableReplies, calendarLookbackDays = s.calendarLookbackDays, calendarDisplayMode = Just s.defaultCalendarDisplayMode, showStartedOrLongEventsByDefault = Just s.showStartedOrLongEventsByDefault }
 
         MediaFeatureSettings ->
             let
@@ -653,7 +664,7 @@ currentFeatureSettingsFor set config =
                 s =
                     Maybe.withDefault defaultMediaSettings config.mediaSettings
             in
-            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = Nothing, aliasPlural = Nothing, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing }
+            { visible = s.visible, moderation = s.defaultModeration, visibility = s.defaultVisibility, aliasSingular = Nothing, aliasPlural = Nothing, enableReplies = Nothing, calendarLookbackDays = Nothing, calendarDisplayMode = Nothing, showStartedOrLongEventsByDefault = Nothing }
 
 
 {-| Overlays a `FeatureSettingsEdit`'s `visible`/`moderation`/`visibility` onto whichever of
@@ -761,6 +772,7 @@ applyFeatureSettingsFor set edit config =
                             , enableReplies = Just edit.enableReplies
                             , calendarLookbackDays = optionalNonNegativeInt edit.calendarLookbackDays
                             , defaultCalendarDisplayMode = edit.calendarDisplayMode
+                            , showStartedOrLongEventsByDefault = edit.showStartedOrLongEventsByDefault
                         }
             }
 
@@ -888,7 +900,7 @@ permissionsSection set label_ maybeAdminAccount maybeEdit permissions =
                         (permissions |> List.map (\permission -> span [ Html.Attributes.class "permission-badge" ] [ text (Users.permissionText permission) ]))
                 , case maybeAdminAccount of
                     Just _ ->
-                        button [ Html.Attributes.class "server-details-rename-button", onClick (PermissionsEditClicked set) ] [ text "Edit" ]
+                        button [ Html.Attributes.class "server-details-rename-button", onClick (PermissionsEditClicked set) ] [ text <| "Edit " ++ label_ ]
 
                     Nothing ->
                         text ""
@@ -913,7 +925,7 @@ by `set`) -- a collapsible panel (`expanded`, toggled by `FeatureSettingsSection
 to expanded -- see `Model.collapsedFeatureSettings`), reusing the same `.section-title`/
 `.expandable-section-title`/`.expandable-section-arrow` header look
 `Components.Pages.UserProfilePage.expandableProfileSection` establishes for its own
-Permissions/Event Sync sections. The body is `featureSettingsDisplayView` (plain text/a disabled
+Permissions/Sync sections. The body is `featureSettingsDisplayView` (plain text/a disabled
 checkbox, plus an Edit button for an admin) when this section has no in-progress
 `FeatureSettingsEdit`, or `featureSettingsEditView` (an enabled checkbox + Moderation/Visibility
 `<select>`s + Save/Cancel) while being edited -- mirrors `permissionsSection`'s own edit/non-edit
@@ -968,7 +980,7 @@ as `permissionsSection`.
 featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.Account -> FeatureSettingsSummary -> Html Msg
 featureSettingsDisplayView set maybeAdminAccount current =
     let
-        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool }
+        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool, showStartedOrLongEventsByDefault : Bool }
         fields =
             featureSettingsFieldsFor set
 
@@ -1004,9 +1016,14 @@ featureSettingsDisplayView set maybeAdminAccount current =
 
               else
                 []
+            , if fields.showStartedOrLongEventsByDefault then
+                [ Common.settingsRow "Show Started/Long Events by Default" (Common.switchDisplay (Maybe.withDefault False current.showStartedOrLongEventsByDefault)) ]
+
+              else
+                []
             , [ case maybeAdminAccount of
                     Just _ ->
-                        button [ Html.Attributes.class "server-details-rename-button", onClick (FeatureSettingsEditClicked set) ] [ text "Edit" ]
+                        button [ Html.Attributes.class "server-details-rename-button", onClick (FeatureSettingsEditClicked set) ] [ text <| "Edit " ++ (featureSettingsLabel set) ++ " Settings" ]
 
                     Nothing ->
                         text ""
@@ -1027,7 +1044,7 @@ editing case. `moderation`/`visibility` are narrowed to `allowedDefaultModeratio
 featureSettingsEditView : FeatureSettingsSet -> FeatureSettingsEdit -> Html Msg
 featureSettingsEditView set edit =
     let
-        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool }
+        fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool, showStartedOrLongEventsByDefault : Bool }
         fields =
             featureSettingsFieldsFor set
 
@@ -1108,6 +1125,11 @@ featureSettingsEditView set edit =
                         )
                     )
                 ]
+
+              else
+                []
+            , if fields.showStartedOrLongEventsByDefault then
+                [ Common.settingsRow "Show Started/Long Events by Default" (Common.flagSwitch edit.showStartedOrLongEventsByDefault (FeatureSettingsShowStartedOrLongEventsToggled set)) ]
 
               else
                 []

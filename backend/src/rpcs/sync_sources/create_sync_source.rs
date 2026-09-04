@@ -2,25 +2,25 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::sync_event_sync_source;
+use crate::logic::sync_source;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::event_sync_sources;
+use crate::schema::sync_sources;
 
 const DEFAULT_SYNC_INTERVAL_SECONDS: i64 = 3600;
 const MIN_SYNC_INTERVAL_SECONDS: i64 = 60;
 
-pub fn create_event_sync_source(
-    request: EventSyncSource,
+pub fn create_sync_source(
+    request: SyncSource,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<EventSyncSource, Status> {
+) -> Result<SyncSource, Status> {
     // Create is always for the current user -- admins may manage other users' sources (see
-    // `update_event_sync_source`/`delete_event_sync_source`) but never create one on their
+    // `update_sync_source`/`delete_sync_source`) but never create one on their
     // behalf.
-    validate_permission(&Some(current_user), Permission::SynchronizeEvents)?;
+    validate_permission(&Some(current_user), Permission::SyncEventsFromIcs)?;
 
     let configuration = configuration_to_json(&request.configuration);
     if configuration
@@ -46,33 +46,33 @@ pub fn create_event_sync_source(
         request.sync_interval_seconds as i64
     };
 
-    let inserted = insert_into(event_sync_sources::table)
-        .values(&models::NewEventSyncSource {
+    let inserted = insert_into(sync_sources::table)
+        .values(&models::NewSyncSource {
             user_id: current_user.id,
             sync_interval_seconds,
             configuration,
         })
-        .get_result::<models::EventSyncSource>(conn)
+        .get_result::<models::SyncSource>(conn)
         .map_err(|e| {
-            log::error!("Failed to create event sync source: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_sync_source")
+            log::error!("Failed to create sync source: {:?}", e);
+            Status::new(Code::Internal, "failed_to_create_sync_source")
         })?;
 
     // Not transactional with the insert above (per product decision) -- if the very first sync
     // fails, delete the source we just created rather than leaving a never-synced, broken row
     // around, and surface the sync error to the caller.
-    if let Err(sync_err) = sync_event_sync_source(&inserted, conn) {
+    if let Err(sync_err) = sync_source(&inserted, conn) {
         log::error!(
-            "Initial sync failed for new EventSyncSource {}, deleting it: {:?}",
+            "Initial sync failed for new SyncSource {}, deleting it: {:?}",
             inserted.id,
             sync_err
         );
         if let Err(e) =
-            diesel::delete(event_sync_sources::table.filter(event_sync_sources::id.eq(inserted.id)))
+            diesel::delete(sync_sources::table.filter(sync_sources::id.eq(inserted.id)))
                 .execute(conn)
         {
             log::error!(
-                "Failed to delete EventSyncSource {} after failed initial sync: {:?}",
+                "Failed to delete SyncSource {} after failed initial sync: {:?}",
                 inserted.id,
                 e
             );
@@ -80,6 +80,6 @@ pub fn create_event_sync_source(
         return Err(sync_err);
     }
 
-    let synced = models::get_event_sync_source(inserted.id, conn)?;
-    Ok(MarshalableEventSyncSource(synced, current_user.to_author()).to_proto())
+    let synced = models::get_sync_source(inserted.id, conn)?;
+    Ok(MarshalableSyncSource(synced, current_user.to_author()).to_proto())
 }

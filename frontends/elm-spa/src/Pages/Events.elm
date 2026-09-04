@@ -39,7 +39,7 @@ type alias Msg =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing
+    EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing False
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )

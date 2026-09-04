@@ -243,7 +243,7 @@
    .permission-remove are shared with ServerInformationPage -- see main.css. */
 
 /* `expandableProfileSection`'s own clickable header, wrapping `.section-title`
-   -- used by the Permissions/Event Sync Sources sections, both collapsed by
+   -- used by the Permissions/Sync Sources sections, both collapsed by
    default. */
 .expandable-section-title {
   display: flex;
@@ -386,7 +386,7 @@
 }
 
 /* Shared "Refresh" button/error row -- see UserProfilePage.elm's `refreshRowView`, used by both
-   the Event Sync Sources and AI Model Providers sections. */
+   the Sync Sources and AI Model Providers sections. */
 .profile-section-refresh-row {
   display: flex;
   align-items: center;
@@ -402,9 +402,9 @@
   font-size: 0.8rem;
 }
 
-/* Shared.EventSyncSourcesPanel, embedded on UserProfilePage below permissions. */
+/* Shared.SyncSourcesPanel, embedded on UserProfilePage below permissions. */
 
-.event-sync-sources-section {
+.sync-sources-section {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -412,18 +412,18 @@
   margin-bottom: 16px;
 }
 
-.event-sync-sources-list {
+.sync-sources-list {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.event-sync-sources-message {
+.sync-sources-message {
   color: var(--muted);
   font-size: 0.85rem;
 }
 
-.event-sync-source-row {
+.sync-source-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -431,7 +431,7 @@
   padding: 0.3rem;
 }
 
-.event-sync-source-url {
+.sync-source-url {
   flex: 1 1 16rem;
   min-width: 10rem;
   padding: 0.15rem 0.4rem;
@@ -442,7 +442,7 @@
   font-size: 0.85rem;
 }
 
-.event-sync-source-interval {
+.sync-source-interval {
   padding: 0.15rem 0.4rem;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -451,29 +451,29 @@
   font-size: 0.85rem;
 }
 
-.event-sync-source-actions {
+.sync-source-actions {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin-left: auto;
 }
 
-.event-sync-source-add {
+.sync-source-add {
   margin-left: auto;
 }
 
-.event-sync-source-last-synced {
+.sync-source-last-synced {
   color: var(--muted);
   font-size: 0.8rem;
 }
 
-.event-sync-source-error {
+.sync-source-error {
   flex-basis: 100%;
   color: var(--danger);
   font-size: 0.8rem;
 }
 
-/* Components.EventSyncDestinations, embedded on UserProfilePage below Event Sync Sources. */
+/* Components.SyncDestinations, embedded on UserProfilePage below Sync Sources. */
 
 .sync-destinations-section {
   display: flex;

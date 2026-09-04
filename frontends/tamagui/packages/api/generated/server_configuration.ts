@@ -547,6 +547,15 @@ export interface EventSettings {
    * or with more to `CALENDAR_DISPLAY_DAY`.
    */
   defaultCalendarDisplayMode: CalendarDisplayMode;
+  /**
+   * Affects the Elm UI "▽" button on EventsPages (embedded or no).
+   * When this is false, that filter defaults to "on." When true, that filter
+   * defaults to "off."
+   *
+   * For a band site (where you want to show your "true calendar"), this is best set to `true`.
+   * For a site where you have lots of event postings, it's best set to `false`.
+   */
+  showStartedOrLongEventsByDefault: boolean;
 }
 
 /** User-facing information about the server displayed on the "about" page. */
@@ -1654,6 +1663,7 @@ function createBaseEventSettings(): EventSettings {
     enableReplies: undefined,
     calendarLookbackDays: undefined,
     defaultCalendarDisplayMode: 0,
+    showStartedOrLongEventsByDefault: false,
   };
 }
 
@@ -1682,6 +1692,9 @@ export const EventSettings: MessageFns<EventSettings> = {
     }
     if (message.defaultCalendarDisplayMode !== 0) {
       writer.uint32(64).int32(message.defaultCalendarDisplayMode);
+    }
+    if (message.showStartedOrLongEventsByDefault !== false) {
+      writer.uint32(72).bool(message.showStartedOrLongEventsByDefault);
     }
     return writer;
   },
@@ -1757,6 +1770,14 @@ export const EventSettings: MessageFns<EventSettings> = {
           message.defaultCalendarDisplayMode = reader.int32() as any;
           continue;
         }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.showStartedOrLongEventsByDefault = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1780,6 +1801,9 @@ export const EventSettings: MessageFns<EventSettings> = {
       defaultCalendarDisplayMode: isSet(object.defaultCalendarDisplayMode)
         ? calendarDisplayModeFromJSON(object.defaultCalendarDisplayMode)
         : 0,
+      showStartedOrLongEventsByDefault: isSet(object.showStartedOrLongEventsByDefault)
+        ? globalThis.Boolean(object.showStartedOrLongEventsByDefault)
+        : false,
     };
   },
 
@@ -1809,6 +1833,9 @@ export const EventSettings: MessageFns<EventSettings> = {
     if (message.defaultCalendarDisplayMode !== 0) {
       obj.defaultCalendarDisplayMode = calendarDisplayModeToJSON(message.defaultCalendarDisplayMode);
     }
+    if (message.showStartedOrLongEventsByDefault !== false) {
+      obj.showStartedOrLongEventsByDefault = message.showStartedOrLongEventsByDefault;
+    }
     return obj;
   },
 
@@ -1825,6 +1852,7 @@ export const EventSettings: MessageFns<EventSettings> = {
     message.enableReplies = object.enableReplies ?? undefined;
     message.calendarLookbackDays = object.calendarLookbackDays ?? undefined;
     message.defaultCalendarDisplayMode = object.defaultCalendarDisplayMode ?? 0;
+    message.showStartedOrLongEventsByDefault = object.showStartedOrLongEventsByDefault ?? false;
     return message;
   },
 };

@@ -801,6 +801,7 @@ class EventSettings extends $pb.GeneratedMessage {
     $core.bool? enableReplies,
     $core.int? calendarLookbackDays,
     CalendarDisplayMode? defaultCalendarDisplayMode,
+    $core.bool? showStartedOrLongEventsByDefault,
   }) {
     final $result = create();
     if (visible != null) {
@@ -827,6 +828,9 @@ class EventSettings extends $pb.GeneratedMessage {
     if (defaultCalendarDisplayMode != null) {
       $result.defaultCalendarDisplayMode = defaultCalendarDisplayMode;
     }
+    if (showStartedOrLongEventsByDefault != null) {
+      $result.showStartedOrLongEventsByDefault = showStartedOrLongEventsByDefault;
+    }
     return $result;
   }
   EventSettings._() : super();
@@ -842,6 +846,7 @@ class EventSettings extends $pb.GeneratedMessage {
     ..aOB(6, _omitFieldNames ? '' : 'enableReplies')
     ..a<$core.int>(7, _omitFieldNames ? '' : 'calendarLookbackDays', $pb.PbFieldType.OU3)
     ..e<CalendarDisplayMode>(8, _omitFieldNames ? '' : 'defaultCalendarDisplayMode', $pb.PbFieldType.OE, defaultOrMaker: CalendarDisplayMode.CALENDAR_DISPLAY_WEEK, valueOf: CalendarDisplayMode.valueOf, enumValues: CalendarDisplayMode.values)
+    ..aOB(9, _omitFieldNames ? '' : 'showStartedOrLongEventsByDefault')
     ..hasRequiredFields = false
   ;
 
@@ -955,6 +960,21 @@ class EventSettings extends $pb.GeneratedMessage {
   $core.bool hasDefaultCalendarDisplayMode() => $_has(7);
   @$pb.TagNumber(8)
   void clearDefaultCalendarDisplayMode() => clearField(8);
+
+  ///  Affects the Elm UI "▽" button on EventsPages (embedded or no).
+  ///  When this is false, that filter defaults to "on." When true, that filter
+  ///  defaults to "off."
+  ///
+  ///  For a band site (where you want to show your "true calendar"), this is best set to `true`.
+  ///  For a site where you have lots of event postings, it's best set to `false`.
+  @$pb.TagNumber(9)
+  $core.bool get showStartedOrLongEventsByDefault => $_getBF(8);
+  @$pb.TagNumber(9)
+  set showStartedOrLongEventsByDefault($core.bool v) { $_setBool(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasShowStartedOrLongEventsByDefault() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearShowStartedOrLongEventsByDefault() => clearField(9);
 }
 
 /// User-facing information about the server displayed on the "about" page.

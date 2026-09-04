@@ -6,7 +6,7 @@ module Components.SyncDestinations exposing
     )
 
 {-| RPC wrappers for `SyncDestination` (`protos/sync.proto`) -- mirrors
-`Components.EventSyncSources` in shape (each takes the calling account/server as an
+`Components.SyncSources` in shape (each takes the calling account/server as an
 `AccountsPanel.MaybeAccountServer` and returns a `Task` resolving to `( Maybe AccountsPanel.Msg,
 response )`). There's no `updateSyncDestination` wrapper here -- reconnecting an existing
 destination isn't exposed in the UI yet, only link/unlink.
@@ -39,7 +39,7 @@ import Task exposing (Task)
 {-| `targetUserId = ""` asks the backend for the caller's own destinations (see
 `backend/src/rpcs/sync_destinations/get_sync_destinations.rs`); any other id asks for that user's
 destinations instead, which only succeeds for an Admin caller. Mirrors
-`Components.EventSyncSources.getEventSyncSources`'s own doc/shape exactly.
+`Components.SyncSources.getSyncSources`'s own doc/shape exactly.
 -}
 getSyncDestinations :
     AccountsPanel.Model
@@ -59,7 +59,7 @@ getSyncDestinations accountsPanelModel maybeAccountServer targetUserId =
 
 
 {-| Always creates a destination owned by the calling account (mirrors
-`createEventSyncSource`'s own doc -- the backend ignores/overrides any `owner` sent). Requires
+`createSyncSource`'s own doc -- the backend ignores/overrides any `owner` sent). Requires
 `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin) server-side.
 -}
 createSyncDestination :

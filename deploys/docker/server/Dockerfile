@@ -10,7 +10,7 @@ COPY backend/target/release/jonline__server_release /opt/jonline
 COPY backend/target/release/disable_cdn_grpc__server_release /opt/disable_cdn_grpc
 COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_expired_tokens
 COPY backend/target/release/delete_unowned_media__server_release /opt/delete_unowned_media
-COPY backend/target/release/sync_event_sync_sources__server_release /opt/sync_event_sync_sources
+COPY backend/target/release/sync_sources__server_release /opt/sync_sources
 COPY backend/target/release/update_user_counts__server_release /opt/update_user_counts
 COPY backend/target/release/convert_media_sizes__server_release /opt/convert_media_sizes
 
@@ -19,6 +19,12 @@ COPY backend/target/release/convert_media_sizes__server_release /opt/convert_med
 # this COPY line, and its entry in server_ci_cd.yml's "Rename Rust binaries for Dockerfiles" step
 # once it's been run against every deployed namespace's Messages.
 COPY backend/target/release/repair_email_messages__server_release /opt/repair_email_messages
+
+# Runs all the above background job binaries on a loop -- see backend/background_jobs.sh. Lives
+# alongside them in /opt, unsuffixed, so its "./binary_name" resolution step finds them directly
+# (same layout as the Homebrew macOS package). Used by the jonline-jobs Deployment in
+# deploys/k8s/server_internal.yaml (& co.) instead of one k8s CronJob per job.
+COPY backend/background_jobs.sh /opt/background_jobs.sh
 
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images

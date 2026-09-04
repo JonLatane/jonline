@@ -22,7 +22,7 @@
 @@ -80,7 +77,7 @@
          created_at -> Timestamp,
          updated_at -> Nullable<Timestamp>,
-         event_sync_source_instance_id -> Nullable<Varchar>,
+         sync_source_instance_id -> Nullable<Varchar>,
 -        search_text -> Tsvector,
 +        search_text -> TsVector,
          user_id -> Nullable<Int8>,

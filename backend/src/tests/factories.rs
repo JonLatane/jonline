@@ -14,9 +14,9 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{
-    event_attendances, event_instance_sync_destinations, event_instances, event_sync_sources,
-    events, follows, group_posts, groups, media, memberships, messages, post_sync_destinations,
-    posts, server_configurations, sync_destinations, users,
+    event_attendances, event_instance_sync_destinations, event_instances, events, follows,
+    group_posts, groups, media, memberships, messages, post_sync_destinations, posts,
+    server_configurations, sync_destinations, sync_sources, users,
 };
 
 lazy_static! {
@@ -387,23 +387,23 @@ pub fn create_follow_with_moderation(
         .expect("failed to create test follow")
 }
 
-/// Inserts an `event_sync_sources` row directly (bypassing `rpcs::create_event_sync_source`, so
+/// Inserts a `sync_sources` row directly (bypassing `rpcs::create_sync_source`, so
 /// no sync/HTTP fetch happens) -- for specs that only care about ownership/permission handling,
 /// not the actual sync. Specs exercising sync itself should go through the RPC/logic functions
 /// against a `serve_ics`-backed URL instead.
-pub fn create_event_sync_source_row(
+pub fn create_sync_source_row(
     conn: &mut PgPooledConnection,
     user: &models::User,
     ics_subscription_url: &str,
-) -> models::EventSyncSource {
-    insert_into(event_sync_sources::table)
-        .values(&models::NewEventSyncSource {
+) -> models::SyncSource {
+    insert_into(sync_sources::table)
+        .values(&models::NewSyncSource {
             user_id: user.id,
             sync_interval_seconds: 3600,
             configuration: serde_json::json!({ "ics_subscription_url": ics_subscription_url }),
         })
-        .get_result::<models::EventSyncSource>(conn)
-        .expect("failed to create test event sync source")
+        .get_result::<models::SyncSource>(conn)
+        .expect("failed to create test sync source")
 }
 
 /// Options for `create_event`'s underlying container `Post` (context `EVENT`) - mirrors
@@ -467,7 +467,7 @@ pub fn create_event(
         .values(&models::NewEvent {
             post_id: post.id,
             info: opts.info,
-            event_sync_source_id: None,
+            sync_source_id: None,
         })
         .get_result::<models::Event>(conn)
         .expect("failed to create test event");
@@ -535,7 +535,7 @@ pub fn create_event_instance(
             starts_at: opts.starts_at,
             ends_at: opts.ends_at,
             location: opts.location,
-            event_sync_source_instance_id: None,
+            sync_source_instance_id: None,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)
@@ -596,8 +596,8 @@ pub fn create_event_attendance(
 /// receives (looping for the life of the test process -- there's no teardown, same as any other
 /// test-scoped leaked thread), and returns the `http://127.0.0.1:<port>/...` URL to fetch it
 /// from. Keeps sync specs hermetic: real network calls in a test suite are flaky and slow, so
-/// `sync_event_sync_source` (which always does a real HTTP fetch, unlike
-/// `sync_event_sync_source_text`) is exercised against this instead of the public internet.
+/// `sync_source` (which always does a real HTTP fetch, unlike
+/// `sync_source_text`) is exercised against this instead of the public internet.
 pub fn serve_ics(ics_text: &str) -> String {
     use std::io::{Read, Write};
     use std::net::TcpListener;

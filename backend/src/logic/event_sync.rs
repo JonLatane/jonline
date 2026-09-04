@@ -1,9 +1,9 @@
-//! Pulls events from an `EventSyncSource`'s external calendar (currently only ICS subscription
+//! Pulls events from a `SyncSource`'s external calendar (currently only ICS subscription
 //! URLs) and upserts them into `events`/`event_instances`/`posts`.
 //!
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
 //! one `Event`, and each occurrence maps to one `EventInstance`, keyed by
-//! `event_sync_source_instance_id = "{uid}|{occurrence_start_rfc3339}"` so re-syncing finds and
+//! `sync_source_instance_id = "{uid}|{occurrence_start_rfc3339}"` so re-syncing finds and
 //! updates the same rows rather than duplicating them. A `VEVENT` with a `RECURRENCE-ID`
 //! overrides that one occurrence's time/text (a moved or edited single instance of a series).
 //!
@@ -33,7 +33,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, event_sync_sources, events, posts};
+use crate::schema::{event_instances, events, posts, sync_sources};
 
 const SYNC_PAST_WINDOW_DAYS: i64 = 365;
 const SYNC_FUTURE_WINDOW_DAYS: i64 = 365;
@@ -42,16 +42,13 @@ const MAX_RRULE_OCCURRENCES: u16 = 2000;
 /// actually deletes it. See the module doc comment.
 const MISSING_GRACE_PERIOD_DAYS: i64 = 3;
 
-/// Fetches `source`'s ICS URL over HTTP, then delegates to [`sync_event_sync_source_text`].
+/// Fetches `source`'s ICS URL over HTTP, then delegates to [`sync_source_text`].
 /// Split out so specs can exercise the parsing/upserting logic against a fixed ICS string
 /// without any network access.
-pub fn sync_event_sync_source(
-    source: &models::EventSyncSource,
-    conn: &mut PgPooledConnection,
-) -> Result<(), Status> {
+pub fn sync_source(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {
     let url = ics_subscription_url(source)?;
     let ics_text = fetch_ics(url)?;
-    sync_event_sync_source_text(source, &ics_text, conn)
+    sync_source_text(source, &ics_text, conn)
 }
 
 /// RPC handlers here are plain sync functions, but in production they're still called from
@@ -85,7 +82,7 @@ fn fetch_ics(url: &str) -> Result<String, Status> {
     }
 }
 
-fn ics_subscription_url(source: &models::EventSyncSource) -> Result<&str, Status> {
+fn ics_subscription_url(source: &models::SyncSource) -> Result<&str, Status> {
     source
         .configuration
         .get("ics_subscription_url")
@@ -116,8 +113,8 @@ struct EventGroup {
     occurrences: Vec<Occurrence>,
 }
 
-pub fn sync_event_sync_source_text(
-    source: &models::EventSyncSource,
+pub fn sync_source_text(
+    source: &models::SyncSource,
     ics_text: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
@@ -139,14 +136,14 @@ pub fn sync_event_sync_source_text(
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
         let existing_events: Vec<models::Event> = events::table
-            .filter(events::event_sync_source_id.eq(source.id))
+            .filter(events::sync_source_id.eq(source.id))
             .load::<models::Event>(conn)?;
         let mut existing_by_uid: HashMap<String, models::Event> = existing_events
             .into_iter()
             .filter_map(|e| {
                 let uid = e
                     .info
-                    .get("event_sync_source_uid")
+                    .get("sync_source_uid")
                     .and_then(|v| v.as_str())
                     .map(str::to_string)?;
                 Some((uid, e))
@@ -212,20 +209,20 @@ pub fn sync_event_sync_source_text(
         }
 
         let event_count: i64 = events::table
-            .filter(events::event_sync_source_id.eq(source.id))
+            .filter(events::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
         let event_instance_count: i64 = event_instances::table
             .inner_join(events::table)
-            .filter(events::event_sync_source_id.eq(source.id))
+            .filter(events::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
 
-        diesel::update(event_sync_sources::table.filter(event_sync_sources::id.eq(source.id)))
+        diesel::update(sync_sources::table.filter(sync_sources::id.eq(source.id)))
             .set((
-                event_sync_sources::last_synced_at.eq(SystemTime::now()),
-                event_sync_sources::event_count.eq(event_count),
-                event_sync_sources::event_instance_count.eq(event_instance_count),
+                sync_sources::last_synced_at.eq(SystemTime::now()),
+                sync_sources::event_count.eq(event_count),
+                sync_sources::event_instance_count.eq(event_instance_count),
             ))
             .execute(conn)?;
 
@@ -235,8 +232,8 @@ pub fn sync_event_sync_source_text(
     });
 
     result.map_err(|e| {
-        log::error!("Failed to sync EventSyncSource {}: {:?}", source.id, e);
-        Status::new(Code::Internal, "failed_to_sync_event_sync_source")
+        log::error!("Failed to sync SyncSource {}: {:?}", source.id, e);
+        Status::new(Code::Internal, "failed_to_sync_source")
     })
 }
 
@@ -278,8 +275,8 @@ fn create_event_for_group(
     insert_into(events::table)
         .values(&models::NewEvent {
             post_id: post.id,
-            info: json!({ "event_sync_source_uid": group.uid }),
-            event_sync_source_id: Some(source_id),
+            info: json!({ "sync_source_uid": group.uid }),
+            sync_source_id: Some(source_id),
         })
         .get_result::<models::Event>(conn)
 }
@@ -325,7 +322,7 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
 /// An in-window instance that's missing isn't deleted immediately: the first sync that misses it
 /// stamps `sync_missing_since` and leaves it alone, and only a sync that *still* misses it after
 /// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An instance that
-/// reappears (matched by `event_sync_source_instance_id`) has its `sync_missing_since` cleared.
+/// reappears (matched by `sync_source_instance_id`) has its `sync_missing_since` cleared.
 fn reconcile_instances(
     conn: &mut PgPooledConnection,
     event_id: i64,
@@ -341,7 +338,7 @@ fn reconcile_instances(
         .load::<models::EventInstance>(conn)?;
     let mut existing_by_instance_id: HashMap<String, models::EventInstance> = existing_instances
         .into_iter()
-        .filter_map(|i| i.event_sync_source_instance_id.clone().map(|id| (id, i)))
+        .filter_map(|i| i.sync_source_instance_id.clone().map(|id| (id, i)))
         .collect();
 
     for occ in &group.occurrences {
@@ -410,7 +407,7 @@ fn reconcile_instances(
                         starts_at: starts_at_db,
                         ends_at: ends_at_db,
                         location: loc_json,
-                        event_sync_source_instance_id: Some(occ.instance_id.clone()),
+                        sync_source_instance_id: Some(occ.instance_id.clone()),
                     })
                     .execute(conn)?;
             }

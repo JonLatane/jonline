@@ -105,9 +105,6 @@ fieldNumbersPermission n_ =
         RSVPTOEVENTS ->
             35
 
-        SYNCHRONIZEEVENTS ->
-            36
-
         VIEWMEDIA ->
             40
 
@@ -131,6 +128,9 @@ fieldNumbersPermission n_ =
 
         CREATEAIMODELPROVIDERS ->
             60
+
+        SYNCEVENTSFROMICS ->
+            700
 
         SYNCEVENTSTOFACEBOOK ->
             1000
@@ -280,9 +280,6 @@ encodePermission value =
             RSVPTOEVENTS ->
                 35
 
-            SYNCHRONIZEEVENTS ->
-                36
-
             VIEWMEDIA ->
                 40
 
@@ -306,6 +303,9 @@ encodePermission value =
 
             CREATEAIMODELPROVIDERS ->
                 60
+
+            SYNCEVENTSFROMICS ->
+                700
 
             SYNCEVENTSTOFACEBOOK ->
                 1000
@@ -449,9 +449,6 @@ decodePermission =
                     35 ->
                         RSVPTOEVENTS
 
-                    36 ->
-                        SYNCHRONIZEEVENTS
-
                     40 ->
                         VIEWMEDIA
 
@@ -475,6 +472,9 @@ decodePermission =
 
                     60 ->
                         CREATEAIMODELPROVIDERS
+
+                    700 ->
+                        SYNCEVENTSFROMICS
 
                     1000 ->
                         SYNCEVENTSTOFACEBOOK
@@ -560,7 +560,6 @@ type Permission
     | PUBLISHEVENTSGLOBALLY
     | MODERATEEVENTS
     | RSVPTOEVENTS
-    | SYNCHRONIZEEVENTS
     | VIEWMEDIA
     | CREATEMEDIA
     | PUBLISHMEDIALOCALLY
@@ -569,6 +568,7 @@ type Permission
     | READPERSONALMESSAGES
     | READALLSYSTEMMESSAGES
     | CREATEAIMODELPROVIDERS
+    | SYNCEVENTSFROMICS
     | SYNCEVENTSTOFACEBOOK
     | SYNCPOSTSTOFACEBOOK
     | SYNCEVENTSTOINSTAGRAM

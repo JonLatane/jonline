@@ -105,137 +105,55 @@ spec:
               protocol: TCP
               name: jonline-mail
 ---
-apiVersion: batch/v1
-kind: CronJob
+# Runs backend/background_jobs.sh (delete_expired_tokens, sync_sources,
+# delete_unowned_media, update_user_counts, convert_media_sizes -- see that file for the
+# authoritative list of jobs and their intervals) in a single long-running pod, one forked loop
+# per job, instead of one k8s CronJob per job. CronJobs of this shape (5min-and-under schedules,
+# times four jobs, times four namespaces) create a new pod -- and therefore a new CNI/Cilium
+# network endpoint -- every few minutes; that churn was a major contributor to the 2026-09-04
+# node incident (see incident notes), so this trades it for one steady-state pod per namespace.
+#
+# replicas MUST stay at 1 (running two would duplicate every job -- notably sync_sources,
+# which posts to external SyncDestinations, so a duplicate run isn't just wasted work, it's a
+# real double-post) and strategy MUST stay Recreate (a RollingUpdate would briefly run the old and
+# new pod's job loops at once during a deploy, same problem).
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: delete-expired-tokens
+  name: jonline-jobs
+  labels:
+    app: jonline-jobs
 spec:
-  schedule: "*/5 * * * *"
-  successfulJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
-  jobTemplate:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jonline-jobs
+  template:
+    metadata:
+      labels:
+        app: jonline-jobs
     spec:
-      template:
-        spec:
-          containers:
-            - name: delete-expired-tokens
-              image: docker.io/jonlatane/jonline:0.5.553
-              imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
-              command:
-                - /opt/delete_expired_tokens
-          restartPolicy: Never
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: sync-event-sync-sources
-spec:
-  schedule: "* * * * *"
-  successfulJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: sync-event-sync-sources
-              image: docker.io/jonlatane/jonline:0.5.553
-              imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
-              command:
-                - /opt/sync_event_sync_sources
-          restartPolicy: Never
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: delete-unowned-media
-spec:
-  schedule: "*/10 * * * *"
-  successfulJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: delete-unowned-media
-              image: docker.io/jonlatane/jonline:0.5.553
-              imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
-                - name: MINIO_ENDPOINT
-                  value: http://jonline-minio:9000
-                - name: MINIO_REGION
-                  value: ""
-                - name: MINIO_BUCKET
-                  value: jonline
-                - name: MINIO_ACCESS_KEY
-                  value: minio
-                - name: MINIO_SECRET_KEY
-                  value: minio123
-              command:
-                - /opt/delete_unowned_media
-          restartPolicy: Never
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: update-user-counts
-spec:
-  schedule: "0 * * * *"
-  successfulJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: update-user-counts
-              image: docker.io/jonlatane/jonline:0.5.553
-              imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
-              command:
-                - /opt/update_user_counts
-          restartPolicy: Never
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: convert-media-sizes
-spec:
-  schedule: "*/10 * * * *"
-  successfulJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: convert-media-sizes
-              image: docker.io/jonlatane/jonline:0.5.553
-              imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
-                - name: MINIO_ENDPOINT
-                  value: http://jonline-minio:9000
-                - name: MINIO_REGION
-                  value: ""
-                - name: MINIO_BUCKET
-                  value: jonline
-                - name: MINIO_ACCESS_KEY
-                  value: minio
-                - name: MINIO_SECRET_KEY
-                  value: minio123
-              command:
-                - /opt/convert_media_sizes
-          restartPolicy: Never
+      containers:
+        - image: docker.io/jonlatane/jonline:0.5.553
+          name: jonline-jobs
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - /opt/background_jobs.sh
+          env:
+            - name: DATABASE_URL
+              value: postgres://admin:secure_password1@jonline-postgres/jonline
+            - name: MINIO_ENDPOINT
+              value: http://jonline-minio:9000
+            - name: MINIO_REGION
+              value: ""
+            - name: MINIO_BUCKET
+              value: jonline
+            - name: MINIO_ACCESS_KEY
+              value: minio
+            - name: MINIO_SECRET_KEY
+              value: minio123
+            - name: RUST_BACKTRACE
+              value: full
