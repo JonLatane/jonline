@@ -1,12 +1,21 @@
 module Pages.UsernameOrCustomTab_ exposing (Model, Msg, fromShared, page)
 
-{-| `/:usernameOrCustomTab[@host]` -- either a user profile looked up by (impermanent) username, on
-`mainFrontendHost` or (with an `@host` suffix) some other federated server, *or*, first, a check
-against `mainFrontendHost`'s own `ServerConfiguration.customTabs.tabs` (see `UI.CustomNav`) for a
-tab whose own `path` matches this segment -- letting an admin mount `Events`/`Posts`/`People`/`About`/
-a specific `Post` at a custom URL (e.g. a band's `/weddings` pointing at a Post about their wedding
-offerings), per `CustomNavigationTab.path`'s own doc. That check runs first (`customTabFor`),
-before the username fallback below, so a configured custom path always wins over a same-named user.
+{-| `/:usernameOrCustomTab[@host]` -- a user profile looked up by (impermanent) username, a short
+Post/Event URL, or a custom tab, on `mainFrontendHost` or (with an `@host` suffix, username lookups
+only) some other federated server. Three checks run in order:
+
+1. A check against `mainFrontendHost`'s own `ServerConfiguration.customTabs.tabs` (see
+   `UI.CustomNav`) for a tab whose own `path` matches this segment -- letting an admin mount
+   `Events`/`Posts`/`People`/`About`/a specific `Post` at a custom URL (e.g. a band's `/weddings`
+   pointing at a Post about their wedding offerings), per `CustomNavigationTab.path`'s own doc
+   (`customTabFor`). A configured custom path always wins over a same-named user or short URL.
+2. If no custom tab matched, and the segment starts with a character no username/custom tab path
+   could ever legally start with (`Components.Users.startsWithReservedShortUrlCharacter`), it's
+   tried as a short Post/Event URL instead (`Components.Pages.PostOrEventPage`) -- see
+   `jonline.proto`'s own `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
+   doc. Unlike `customTabFor`, this check is a pure string test with no async server config to wait
+   on, so it's decided once at `init` and never needs re-checking.
+3. Otherwise, the ordinary username fallback below.
 
 The top-level catch-all this implies means any username (or un-embeddable custom path) colliding
 with this app's own routes (or the `/user`/`/post` prefixes) can never be reached this way -- see
@@ -19,6 +28,7 @@ tries those literal static routes first, so this file's `init` never even runs f
 
 import Browser.Navigation
 import Components.Pages.EventsPage as EventsPage
+import Components.Pages.PostOrEventPage as PostOrEventPage
 import Components.Pages.PostPage as PostPage
 import Components.Pages.PostsPage as PostsPage
 import Components.Pages.ServerInformationPage as ServerInformationPage
@@ -82,6 +92,7 @@ type Model
     | EmbeddedAbout ServerInformationPage.Model
     | EmbeddedPost PostPage.Model
     | EmbeddedProfile UserProfilePage.Model
+    | EmbeddedPostOrEvent PostOrEventPage.Model
     | Redirecting
 
 
@@ -100,6 +111,7 @@ type Msg
     | AboutMsg ServerInformationPage.Msg
     | EmbeddedPostMsg PostPage.Msg
     | EmbeddedProfileMsg UserProfilePage.Msg
+    | EmbeddedPostOrEventMsg PostOrEventPage.Msg
     | SharedMsg Shared.Msg
 
 
@@ -110,7 +122,13 @@ init shared req =
             initEmbedded shared req tab
 
         Nothing ->
-            initProfile shared req
+            if Users.startsWithReservedShortUrlCharacter req.params.usernameOrCustomTab then
+                PostOrEventPage.init shared (AccountsPanel.isSecure req) req.params.usernameOrCustomTab req.key
+                    |> Tuple.mapFirst EmbeddedPostOrEvent
+                    |> Tuple.mapSecond (Effect.map EmbeddedPostOrEventMsg)
+
+            else
+                initProfile shared req
 
 
 {-| `mainFrontendHost`'s own `CustomNavigationTabSet.tabs` entry (if any, and if that server's
@@ -238,6 +256,9 @@ subscriptions model =
         EmbeddedProfile subModel ->
             Sub.map EmbeddedProfileMsg (UserProfilePage.subscriptions subModel)
 
+        EmbeddedPostOrEvent subModel ->
+            Sub.map EmbeddedPostOrEventMsg (PostOrEventPage.subscriptions subModel)
+
         Reserved _ ->
             Sub.none
 
@@ -282,6 +303,11 @@ update shared req msg model =
             UserProfilePage.update shared subMsg subModel
                 |> Tuple.mapFirst EmbeddedProfile
                 |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
+
+        ( EmbeddedPostOrEventMsg subMsg, EmbeddedPostOrEvent subModel ) ->
+            PostOrEventPage.update shared subMsg subModel
+                |> Tuple.mapFirst EmbeddedPostOrEvent
+                |> Tuple.mapSecond (Effect.map EmbeddedPostOrEventMsg)
 
         -- `Reserved`/`Profile` are re-examined (via `customTabFor`) on every incoming
         -- `Shared.Msg` first -- covers `init` having run before `mainFrontendHost`'s own
@@ -341,6 +367,11 @@ update shared req msg model =
                 |> Tuple.mapFirst EmbeddedProfile
                 |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
+        ( SharedMsg subMsg, EmbeddedPostOrEvent subModel ) ->
+            PostOrEventPage.update shared (PostOrEventPage.fromShared subMsg) subModel
+                |> Tuple.mapFirst EmbeddedPostOrEvent
+                |> Tuple.mapSecond (Effect.map EmbeddedPostOrEventMsg)
+
         _ ->
             ( model, Effect.none )
 
@@ -373,6 +404,9 @@ view shared req model =
 
                 EmbeddedProfile subModel ->
                     Html.map EmbeddedProfileMsg (UserProfilePage.view shared subModel)
+
+                EmbeddedPostOrEvent subModel ->
+                    Html.map EmbeddedPostOrEventMsg (PostOrEventPage.view shared subModel)
 
                 Reserved username ->
                     p [ class "profile-error" ] [ text ("\"" ++ username ++ "\" isn't a user.") ]
@@ -417,6 +451,9 @@ titleFor shared req model =
 
                 EmbeddedProfile subModel ->
                     [ UserProfilePage.titleFor subModel ]
+
+                EmbeddedPostOrEvent subModel ->
+                    [ PostOrEventPage.titleFor subModel ]
 
                 Reserved _ ->
                     [ "Not Found" ]

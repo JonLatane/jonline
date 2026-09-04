@@ -1275,10 +1275,20 @@ directory</a> is (<code>{name}</code> denotes a
     </p>
     <h4 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h4>
     <p>The Events listing.</p>
-    <h4 id="-_amp3943postid-short-postevent-urls"><a class="anchor" aria-hidden="true" tabindex="-1" href="#-_amp3943postid-short-postevent-urls"><span class="octicon octicon-link"></span></a><code>/[-._~:/?#[]@!$&#x26;amp;&#x26;#39;()*&#x26;#43;,;%=]{postId}</code>: Short Post/Event URLs</h4>
-    <p>TODO: Document this</p>
-    <h5 id="eventeventinstanceidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventeventinstanceidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{eventInstanceId}[@{host}]</code>: Event</h5>
-    <p>An individual <a href="#jonline-EventInstance"><code>EventInstance</code></a>.</p>
+    <h4 id="-_amp3943postid-short-postevent-urls"><a class="anchor" aria-hidden="true" tabindex="-1" href="#-_amp3943postid-short-postevent-urls"><span class="octicon octicon-link"></span></a><code>/[-._~:/?[]@!$&#x26;amp;&#x26;#39;()*&#x26;#43;,;%=]{postId}</code>: Short Post/Event URLs</h4>
+    <p>
+      A <a href="#jonline-Post"><code>Post</code></a> or <a href="#jonline-Event"><code>Event</code></a>/<a href="#jonline-EventInstance"><code>EventInstance</code></a>, reached at its own <code>post.id</code> prefixed
+      with any single character a username/custom tab path could never legally start with (see
+      <a href="https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs"><code>validate_username</code></a>'s
+      own reserved-lead-character check) -- e.g. <code>jonline.io/:4rAfoSKAuJo</code> or <code>ato.band/~4rAfoSKAuJo</code>.
+      This is purely a shorter, friendlier alias for <code>/post/{postId}[@{host}]</code> or
+      <code>/event/{postId}[@{host}]</code> (whichever the id turns out to belong to) -- it renders exactly that
+      same content in place, without redirecting the address bar away from the short URL. <code>#</code> is
+      deliberately excluded from the reserved set: URL fragments never reach the server, so they
+      can't be used for this.
+    </p>
+    <h5 id="eventpostidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventpostidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{postId}[@{host}]</code>: Event</h5>
+    <p>An individual <a href="#jonline-Event"><code>Event</code></a>, looked up by its own <code>post.id</code> or any of its <a href="#jonline-EventInstance"><code>EventInstance</code></a>s' <code>post.id</code>s.</p>
     <h5 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h5>
     <p>Tamagui-only, for now -- an AI-assisted bulk <a href="#jonline-Event"><code>Event</code></a> importer. Elm doesn't have this page yet.</p>
     <h4 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h4>

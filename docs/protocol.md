@@ -827,11 +827,19 @@ themselves (see [Post](#post) above).
 #### `/events`: Events
 The Events listing.
 
-#### `/[-._~:/?#[]@!$&amp;&#39;()*&#43;,;%=]{postId}`: Short Post/Event URLs
-TODO: Document this 
+#### `/[-._~:/?[]@!$&amp;&#39;()*&#43;,;%=]{postId}`: Short Post/Event URLs
+A [`Post`](#jonline-Post) or [`Event`](#jonline-Event)/[`EventInstance`](#jonline-EventInstance), reached at its own `post.id` prefixed
+with any single character a username/custom tab path could never legally start with (see
+[`validate_username`](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs)&#39;s
+own reserved-lead-character check) -- e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
+This is purely a shorter, friendlier alias for `/post/{postId}[@{host}]` or
+`/event/{postId}[@{host}]` (whichever the id turns out to belong to) -- it renders exactly that
+same content in place, without redirecting the address bar away from the short URL. `#` is
+deliberately excluded from the reserved set: URL fragments never reach the server, so they
+can&#39;t be used for this.
 
-##### `/event/{eventInstanceId}[@{host}]`: Event
-An individual [`EventInstance`](#jonline-EventInstance).
+##### `/event/{postId}[@{host}]`: Event
+An individual [`Event`](#jonline-Event), looked up by its own `post.id` or any of its [`EventInstance`](#jonline-EventInstance)s&#39; `post.id`s.
 
 ##### `/event_ai`: AI Event Importer
 Tamagui-only, for now -- an AI-assisted bulk [`Event`](#jonline-Event) importer. Elm doesn&#39;t have this page yet.
