@@ -11,7 +11,6 @@ module UI.CustomNav exposing
     , defaultPathFor
     , effectiveTabs
     , homeConfig
-    , homeTarget
     , homeTargetKindFromText
     , iconView
     , navLinkView
@@ -44,7 +43,7 @@ import Gen.Route as Route exposing (Route)
 import Html exposing (Html, a, img, span, text)
 import Html.Attributes exposing (alt, attribute, href, src, title)
 import Proto.Jonline exposing (CustomHomePage, CustomNavigationTab, CustomNavigationTabSet)
-import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Proto.Jonline.CustomHomePage.Target as ProtoHomeTarget
 import Proto.Jonline.CustomNavigationTab.Icon as ProtoIcon
 import Proto.Jonline.CustomNavigationTab.Target as ProtoTarget
@@ -303,15 +302,6 @@ toProtoHomeConfig config =
             }
 
 
-{-| `(homeConfig maybeSet).target` -- for the many callers that only ever cared about `home`'s
-`target` and predate `HomePageConfig`'s other fields (`Components.Pages.PostsPage.customNavPostIds`;
-`Pages.Home_` itself now reads the full `homeConfig` instead, see its own doc).
--}
-homeTarget : Maybe CustomNavigationTabSet -> CustomTabTarget
-homeTarget maybeSet =
-    (homeConfig maybeSet).target
-
-
 {-| The four tabs Jonline shows today (`Events`/`Posts`/`People`/`About`, see `UI.eventsLink`/etc.)
 recast as `CustomTab`s -- both `effectiveTabs`' fallback for an unset `CustomNavigationTabSet.tabs`,
 and `SettingsTab`'s starting point for a freshly-opened editor. Each one's `path` is just
@@ -504,7 +494,7 @@ targetKindFromText text =
 
 {-| Every `TargetKind` `SettingsTab.homeTargetSelect` offers -- unlike `selectableTargetKinds`,
 `KindTab HOMETAB` _is_ included here (it's `home`'s own default, "no override" choice, see
-`homeTarget`'s own doc), and only `EVENTSTAB`/`POSTSTAB` join it among the predefined tabs --
+`homeConfig`'s own doc), and only `EVENTSTAB`/`POSTSTAB` join it among the predefined tabs --
 `home`'s own proto doc doesn't extend to People/About/Profile.
 -}
 selectableHomeTargetKinds : List TargetKind
