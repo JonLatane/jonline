@@ -20,6 +20,12 @@ COPY backend/target/release/convert_media_sizes__server_release /opt/convert_med
 # once it's been run against every deployed namespace's Messages.
 COPY backend/target/release/repair_email_messages__server_release /opt/repair_email_messages
 
+# TODO(2026-09-04): one-off repair for the EventSyncSource -> SyncSource rename's fallout (see
+# fix_duplicate_synced_events.rs's own doc comment) -- delete this binary, this COPY line, and its
+# entry in server_ci_cd.yml's "Rename Rust binaries for Dockerfiles" step once it's been run
+# against every deployed namespace that's ever had a SyncSource.
+COPY backend/target/release/fix_duplicate_synced_events__server_release /opt/fix_duplicate_synced_events
+
 # Runs all the above background job binaries on a loop -- see backend/background_jobs.sh. Lives
 # alongside them in /opt, unsuffixed, so its "./binary_name" resolution step finds them directly
 # (same layout as the Homebrew macOS package). Used by the jonline-jobs Deployment in
