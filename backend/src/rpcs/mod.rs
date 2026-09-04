@@ -34,5 +34,8 @@ pub use event_sync_sources::*;
 pub mod sync_destinations;
 pub use sync_destinations::*;
 
+pub mod ai_model_providers;
+pub use ai_model_providers::*;
+
 mod federation;
 pub use federation::*;

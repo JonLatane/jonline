@@ -9,43 +9,48 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::event_instances;
 
-use super::event_permissions::validate_event_edit_permission;
+use super::event_permissions::{event_post_id, validate_event_edit_permission};
 
-/// Deletes every `EventInstance` currently on the event whose `id` isn't present in `instances`
-/// -- their own `Post`s are left behind, not cascade-deleted. Refreshes `event_instance_count` for
-/// `current_user` and for any other user who owned a deleted instance's Post (e.g. an admin
-/// deleting instances on someone else's event).
+/// Deletes every `EventInstance` currently on the event whose `post.id` isn't present in
+/// `instances` -- their own `Post`s are left behind, not cascade-deleted. Refreshes
+/// `event_instance_count` for `current_user` and for any other user who owned a deleted instance's
+/// Post (e.g. an admin deleting instances on someone else's event).
 ///
 /// Callers orchestrating this alongside `create_new_event_instances` (like `update_event`) must
-/// pass `instances` with any newly-created entries' ids already resolved (that function's return
-/// value) -- an id-less entry here can't be matched to anything, so it wouldn't protect a
-/// just-created instance from being swept up as "not present in `instances`".
+/// pass `instances` with any newly-created entries' `post.id`s already resolved (that function's
+/// return value) -- an entry with no (or unparseable) `post.id` here can't be matched to anything,
+/// so it wouldn't protect a just-created instance from being swept up as "not present in
+/// `instances`".
 pub(super) fn delete_removed_event_instances_impl(
     event: &models::Event,
     instances: &[EventInstance],
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    let existing_instance_data = models::get_event_instances(event.id, &Some(current_user), conn)?;
+    let existing_instance_data =
+        models::get_event_instances(event.post_id, &Some(current_user), conn)?;
     let kept_ids: HashSet<i64> = instances
         .iter()
-        .filter_map(|i| i.id.to_db_id().ok())
+        .filter_map(|i| i.post.as_ref())
+        .filter_map(|p| p.id.to_db_id().ok())
         .collect();
 
     let removed_instance_ids: Vec<i64> = existing_instance_data
         .iter()
-        .filter(|(instance, _, _)| !kept_ids.contains(&instance.id))
-        .map(|(instance, _, _)| instance.id)
+        .filter(|(instance, _, _)| !kept_ids.contains(&instance.post_id))
+        .map(|(instance, _, _)| instance.post_id)
         .collect();
     // Instances owned by users other than `current_user` (e.g. an admin editing someone else's
     // event) that are about to be deleted -- their `event_instance_count` needs refreshing too.
     let removed_instance_owner_ids: Vec<i64> = existing_instance_data
         .iter()
-        .filter(|(instance, _, _)| removed_instance_ids.contains(&instance.id))
+        .filter(|(instance, _, _)| removed_instance_ids.contains(&instance.post_id))
         .filter_map(|(_, post, _)| post.user_id)
         .collect();
 
-    diesel::delete(event_instances::table.filter(event_instances::id.eq_any(removed_instance_ids)))
+    diesel::delete(
+        event_instances::table.filter(event_instances::post_id.eq_any(removed_instance_ids)),
+    )
         .execute(conn)
         .map_err(|e| {
             log::error!("Failed to delete event instances: {:?}", e);
@@ -69,7 +74,7 @@ pub fn delete_removed_event_instances(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
-    let event_id = request.id.to_db_id_or_err("id")?;
+    let event_id = event_post_id(&request)?;
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
@@ -77,7 +82,7 @@ pub fn delete_removed_event_instances(
 
     Ok(super::get_events(
         GetEventsRequest {
-            event_id: Some(event_id.to_proto_id()),
+            post_id: Some(event_id.to_proto_id()),
             ..Default::default()
         },
         &Some(current_user),

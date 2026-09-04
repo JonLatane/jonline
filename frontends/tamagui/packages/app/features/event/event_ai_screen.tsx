@@ -3,7 +3,7 @@ import * as webllm from "@mlc-ai/web-llm";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
-import { FederatedEvent, useServerTheme } from 'app/store';
+import { FederatedEvent, federatedEntity, identifyEvent, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useBigCalendar } from "app/hooks/configuration_hooks";
@@ -201,11 +201,10 @@ ${aiText}
       }
     }
   }, [aiResult]);
-  const resultEvents: FederatedEvent[] = aiResultEvents?.map((event, index) => ({
-    serverHost: server?.host ?? 'no-host',
-    ...Event.create({
-      id: `ai-event-${index}`,
+  const resultEvents: FederatedEvent[] = aiResultEvents?.map((event, index) => federatedEntity(
+    identifyEvent(Event.create({
       post: {
+        id: `ai-event-${index}`,
         title: event.title,
         content: event.content,
         author: Author.create(account?.user ?? {}),
@@ -219,8 +218,9 @@ ${aiText}
             : undefined
         }
       ],
-    })
-  })) ?? [];
+    })),
+    server?.host ?? 'no-host'
+  )) ?? [];
   useEffect(() => {
     if (resultEvents.length > 0) {
       setAiMode('previewEvents');

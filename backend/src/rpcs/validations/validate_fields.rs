@@ -73,11 +73,30 @@ lazy_static! {
         .cloned()
         .collect();
     static ref CUSTOM_TAB_PATH_RE: Regex = Regex::new(r"^[a-z_]+$").unwrap();
+    // Reserves every leading character a short Post/Event URL could start with (see
+    // `jonline.proto`'s `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
+    // doc) so a username/custom tab path can never collide with one -- `UsernameOrCustomTab_.elm`
+    // (Elm SPA) checks a path segment against this same set to decide whether to look it up as a
+    // username/custom tab at all, or try it as a Post/Event id instead. (`#` is deliberately
+    // excluded: URL fragments never reach the server, so it can't collide with a username/custom
+    // tab path here in the first place, and isn't used for short URLs.)
+    static ref RESERVED_LEAD_CHAR_RE: Regex = Regex::new(r"^[-._~:/?\[\]@!$&'()*+,;%=]").unwrap();
+}
+
+fn validate_no_reserved_lead_char(value: &str, entity_name: &str) -> Result<(), Status> {
+    if RESERVED_LEAD_CHAR_RE.is_match(value) {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            format!("{}_starts_with_reserved_character", entity_name),
+        ));
+    }
+    Ok(())
 }
 
 pub fn validate_username(value: &str) -> Result<(), Status> {
     validate_length(&value, "username", 1, 47)?;
     validate_all_word_chars(&value, "username")?;
+    validate_no_reserved_lead_char(&value, "username")?;
     validate_reserved_values(&value, "username", &RESERVED_PATHS)
 }
 
@@ -96,7 +115,10 @@ pub fn validate_custom_tab_path(path: &str, is_profile: bool) -> Result<(), Stat
             "custom_tab_path_must_match_[a-z_]",
         ));
     }
-    Ok(())
+    // `CUSTOM_TAB_PATH_RE` (`^[a-z_]+$`) already excludes every reserved lead character except
+    // `_` -- checked anyway, for the same reason `validate_username` is: staying obviously in
+    // sync with the actual reserved set, not relying on that regex's specific alphabet forever.
+    validate_no_reserved_lead_char(path, "custom_tab_path")
 }
 
 pub fn validate_password(value: &str) -> Result<(), Status> {
@@ -113,5 +135,54 @@ pub fn validate_phone(value: &Option<String>) -> Result<(), Status> {
     match value {
         Some(value) => validate_length(&value, "phone", 1, 128),
         None => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const RESERVED_LEAD_CHARS: &str = "-._~:/?[]@!$&'()*+,;%=";
+
+    #[test]
+    fn username_rejects_every_reserved_lead_character() {
+        for c in RESERVED_LEAD_CHARS.chars() {
+            let value = format!("{c}shortlink");
+            assert!(
+                validate_username(&value).is_err(),
+                "expected username starting with {c:?} to be rejected, got Ok"
+            );
+        }
+    }
+
+    #[test]
+    fn custom_tab_path_rejects_every_reserved_lead_character() {
+        for c in RESERVED_LEAD_CHARS.chars() {
+            let value = format!("{c}shortlink");
+            assert!(
+                validate_custom_tab_path(&value, false).is_err(),
+                "expected custom_tab_path starting with {c:?} to be rejected, got Ok"
+            );
+        }
+    }
+
+    #[test]
+    fn hash_is_not_a_reserved_lead_character() {
+        // Deliberately excluded from the reserved-lead-character set -- URL fragments never
+        // reach the server, so `#` can't collide with a username/custom_tab_path here (and isn't
+        // used for short URLs at all). (`#...` is still rejected by `validate_username` overall,
+        // same as any other non-word character -- just not by `validate_no_reserved_lead_char`.)
+        assert!(!RESERVED_LEAD_CHAR_RE.is_match("#notreserved"));
+    }
+
+    #[test]
+    fn reserved_lead_characters_are_still_fine_mid_string() {
+        assert!(validate_username("a-b.c_d").is_ok());
+    }
+
+    #[test]
+    fn ordinary_usernames_and_custom_tab_paths_are_unaffected() {
+        assert!(validate_username("jon_latane99").is_ok());
+        assert!(validate_custom_tab_path("weddings", false).is_ok());
     }
 }

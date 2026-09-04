@@ -40,7 +40,7 @@ pub fn delete_group_post(
         && post.visibility.to_proto_visibility().unwrap() == Visibility::Limited
     {
         let instance_post_ids = events::table
-            .inner_join(event_instances::table.on(events::id.eq(event_instances::event_id)))
+            .inner_join(event_instances::table.on(events::post_id.eq(event_instances::event_id)))
             .filter(events::post_id.eq(post_id))
             .filter(event_instances::post_id.is_not_null())
             .select(event_instances::post_id.assume_not_null())

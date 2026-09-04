@@ -49,6 +49,33 @@ pub fn get_event_sync_sources_for_user(
         })
 }
 
+/// Batched variant of `get_event_sync_sources_for_user` -- every EventSyncSource owned by any of
+/// `user_ids`, paired with each owner's `Author`. Used by `get_users.rs`'s
+/// `attach_advanced_admin_data` to fill in `User.event_sync_sources` for many users in one query
+/// rather than one per user.
+pub fn get_event_sync_sources_for_users(
+    user_ids: &[i64],
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<(EventSyncSource, Author)>, Status> {
+    if user_ids.is_empty() {
+        return Ok(vec![]);
+    }
+    event_sync_sources::table
+        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
+        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(event_sync_sources::user_id.eq_any(user_ids))
+        .order(event_sync_sources::created_at.desc())
+        .load::<(EventSyncSource, Author)>(conn)
+        .map_err(|e| {
+            log::error!(
+                "Failed to load event sync sources for user_ids={:?}: {:?}",
+                user_ids,
+                e
+            );
+            Status::new(Code::Internal, "failed_to_load_event_sync_sources")
+        })
+}
+
 pub fn get_event_sync_sources_by_ids(
     ids: Vec<i64>,
     conn: &mut PgPooledConnection,
@@ -86,7 +113,7 @@ pub fn get_event(
 ) -> Result<Event, Status> {
     events::table
         .select(events::all_columns)
-        .filter(events::id.eq(event_id))
+        .filter(events::post_id.eq(event_id))
         .first::<Event>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
 }
@@ -98,7 +125,7 @@ pub fn get_event_instance(
 ) -> Result<EventInstance, Status> {
     event_instances::table
         .select(EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::id.eq(event_instance_id))
+        .filter(event_instances::post_id.eq(event_instance_id))
         .first::<EventInstance>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
 }
@@ -170,7 +197,8 @@ pub fn get_event_attendances(
 ) -> Result<Vec<EventAttendance>, Status> {
     event_attendances::table
         .inner_join(
-            event_instances::table.on(event_attendances::event_instance_id.eq(event_instances::id)),
+            event_instances::table
+                .on(event_attendances::event_instance_id.eq(event_instances::post_id)),
         )
         .left_join(posts::table.on(event_instances::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))

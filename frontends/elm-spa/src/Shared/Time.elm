@@ -26,14 +26,14 @@ render in the viewer's own local time rather than the server's UTC.
 `now` is captured once via `Time.now` in `Shared.init` (mirrors
 `browserTimeZone.zone`'s own `getBrowserZone` capture exactly, including the
 `Time.millisToPosix 0` placeholder until it resolves) -- the single app-wide
-"now" every page that used to capture its own (`Pages.Event.EventId_`'s
+"now" every page that used to capture its own (`Pages.Event.PostId_`'s
 date-picker strip categorizing `EventInstance`s as upcoming/past,
 `Components.Events.eventCard`/`instanceWhenText`'s "is this date in the
 viewer's current year" check) reads instead, rather than each independently
 re-running `Task.perform ... Time.now`. Deliberately _not_ kept live via a
 `Time.every` tick -- every current use only needs "roughly what day/year is
 it" for the length of a single page view, not a ticking clock, the same
-tolerance `Pages.Event.EventId_.Model.now`'s own doc already accepted before
+tolerance `Pages.Event.PostId_.Model.now`'s own doc already accepted before
 this moved here. `Components.Pages.EventsPage.Model.endsAfter`/
 `Components.Pages.PostsPage.Model.publishedBefore` are deliberately
 untouched by this -- those are live request cursors (polled and
@@ -676,7 +676,7 @@ posixFromDateTimeLocalInput zone raw =
             Nothing
 
 
-{-| How far apart `Pages.Event.EventId_`'s "Add More" recurrence menu spaces
+{-| How far apart `Pages.Event.PostId_`'s "Add More" recurrence menu spaces
 each newly-created `EventInstance` from the one before it -- `Daily`/`Weekly`
 step by a fixed number of days (`1`/`7`), `Monthly` steps the calendar month
 itself (clamping the day-of-month down when the target month is shorter,

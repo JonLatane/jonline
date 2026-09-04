@@ -59,6 +59,10 @@ type Msg
     | CustomTabRemoveImageClicked String
     | CustomTabHomeTargetKindChanged String
     | CustomTabHomePostIdChanged String
+    | CustomTabHomePinnedPostIdsChanged String
+    | CustomTabHomeShowEventsStripToggled
+    | CustomTabHomeEventsStripToRowToggled
+    | CustomTabHomeEventsStripCalendarDisplayModeChanged String
     | MoveCustomTabLeftClicked String
     | MoveCustomTabRightClicked String
     | GotPreMoveCustomTabPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
@@ -77,17 +81,23 @@ entries need a synthetic key for `UI.Flip`'s animation `Dict`s/DOM ids/list iden
 `applySharedMsg`, mirroring `ThemeTab.LogoEdit`'s own `Shared.MyMediaPanel` integration).
 
 The `home` slot rides along as its own `home` field, not part of `pending` -- it's not a
-`CustomTabEntry` at all (no icon/title/path/reorder), just a plain `UI.CustomNav.CustomTabTarget`
-(reused directly rather than a bespoke type -- `home`'s own proto doc restriction to
+`CustomTabEntry` at all (no icon/title/path/reorder), just a plain `UI.CustomNav.HomePageConfig`
+(reused directly rather than a bespoke type -- `home.target`'s own proto doc restriction to
 `HOME_TAB`/`EVENTS_TAB`/`POSTS_TAB`/a `post_id` is enforced entirely by `homeTargetSelect` only ever
-offering `UI.CustomNav.selectableHomeTargetKinds`, never by the type itself). It saves/cancels in
-the same round-trip as `pending` (`CustomTabsSaveClicked`/`applyCustomTabs`, `CustomTabsCancelClicked`)
-since both live under the same "Navigation Tabs" section/Edit button.
+offering `UI.CustomNav.selectableHomeTargetKinds`, never by the type itself). `pinnedPostIdsText` is
+`home.pinnedPostIds`' own raw `<input>` text (comma-separated, parsed at save -- see
+`applyCustomTabs`), kept separate from `home` itself for the same reason `CustomTabEntry.title`
+stays raw text rather than living pre-parsed on `home`: reformatting it back from the parsed list on
+every keystroke (e.g. collapsing a trailing ", " while still typing the next id) would fight the
+admin's own typing. It saves/cancels in the same round-trip as `pending`
+(`CustomTabsSaveClicked`/`applyCustomTabs`, `CustomTabsCancelClicked`) since both live under the
+same "Navigation Tabs" section/Edit button.
 
 -}
 type alias CustomTabsEdit =
     { pending : List CustomTabEntry
-    , home : CustomNav.CustomTabTarget
+    , home : CustomNav.HomePageConfig
+    , pinnedPostIdsText : String
     , nextEntryId : Int
     , editingIconFor : Maybe String
     , status : AccountsPanel.FormStatus
@@ -154,7 +164,8 @@ update shared targetHost maybeServer msg model =
                         | customTabsEdit =
                             Just
                                 { pending = entries
-                                , home = CustomNav.homeTarget config.customTabs
+                                , home = CustomNav.homeConfig config.customTabs
+                                , pinnedPostIdsText = String.join ", " (CustomNav.homeConfig config.customTabs).pinnedPostIds
                                 , nextEntryId = List.length entries
                                 , editingIconFor = Nothing
                                 , status = AccountsPanel.Idle
@@ -419,28 +430,64 @@ update shared targetHost maybeServer msg model =
                 | customTabsEdit =
                     model.customTabsEdit
                         |> Maybe.map
-                            (\edit ->
-                                case CustomNav.homeTargetKindFromText text of
-                                    Just (CustomNav.KindTab navTab) ->
-                                        { edit | home = CustomNav.TargetTab navTab }
+                            (mapHome
+                                (\home ->
+                                    case CustomNav.homeTargetKindFromText text of
+                                        Just (CustomNav.KindTab navTab) ->
+                                            { home | target = CustomNav.TargetTab navTab }
 
-                                    Just CustomNav.KindPost ->
-                                        case edit.home of
-                                            CustomNav.TargetPost _ ->
-                                                edit
+                                        Just CustomNav.KindPost ->
+                                            case home.target of
+                                                CustomNav.TargetPost _ ->
+                                                    home
 
-                                            _ ->
-                                                { edit | home = CustomNav.TargetPost "" }
+                                                _ ->
+                                                    { home | target = CustomNav.TargetPost "" }
 
-                                    _ ->
-                                        edit
+                                        _ ->
+                                            home
+                                )
                             )
               }
             , Effect.none
             )
 
         CustomTabHomePostIdChanged text ->
-            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (\edit -> { edit | home = CustomNav.TargetPost text }) }
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapHome (\home -> { home | target = CustomNav.TargetPost text })) }
+            , Effect.none
+            )
+
+        CustomTabHomePinnedPostIdsChanged text ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (\edit -> { edit | pinnedPostIdsText = text }) }
+            , Effect.none
+            )
+
+        CustomTabHomeShowEventsStripToggled ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapHome (\home -> { home | showEventsStrip = not home.showEventsStrip })) }
+            , Effect.none
+            )
+
+        CustomTabHomeEventsStripToRowToggled ->
+            ( { model | customTabsEdit = model.customTabsEdit |> Maybe.map (mapHome (\home -> { home | defaultEventsStripToRow = not home.defaultEventsStripToRow })) }
+            , Effect.none
+            )
+
+        CustomTabHomeEventsStripCalendarDisplayModeChanged text ->
+            ( { model
+                | customTabsEdit =
+                    model.customTabsEdit
+                        |> Maybe.map
+                            (mapHome
+                                (\home ->
+                                    case CustomNav.calendarDisplayModeFromText text of
+                                        Just mode ->
+                                            { home | defaultEventsStripCalendarDisplayMode = mode }
+
+                                        Nothing ->
+                                            home
+                                )
+                            )
+              }
             , Effect.none
             )
 
@@ -510,6 +557,14 @@ mapPendingEntry entryId fn edit =
     }
 
 
+{-| Updates `edit.home` -- every `Home`-slot field Msg's shared plumbing, mirroring `mapPendingEntry`'s
+identical role for `edit.pending`.
+-}
+mapHome : (CustomNav.HomePageConfig -> CustomNav.HomePageConfig) -> CustomTabsEdit -> CustomTabsEdit
+mapHome fn edit =
+    { edit | home = fn edit.home }
+
+
 {-| Empty (after trimming) `<input>` text round-trips to `Nothing` -- `applyCustomTabs`' own entry
 `title` fields represent "unset" this way, mirroring `SettingsTab.optionalString`'s identical
 convention for its own editors' alias fields.
@@ -530,14 +585,16 @@ optionalString text =
 
 {-| `CustomTabsSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
 every other editor's transform is -- overlays `edit.pending` (in the edit's own order) onto a
-freshly re-fetched `ServerConfiguration`'s `customTabs.tabs`, and `edit.home` onto `customTabs.home`
-(via `UI.CustomNav.toProtoHome`, which is what actually enforces the allowed-targets restriction,
-see that function's own doc). Each tab entry's blank `title` round-trips to `Nothing` (see
-`optionalString`); `path` is sent as-is -- the backend's `validate_configuration` is the actual
-authority on whether it's a valid `[a-z_]+` slug (see `CustomTabEntry`'s own doc), surfaced back
-through `GotCustomTabsSaveResult`'s `Err` branch same as any other rejected save. A blank
-`edit.home`'s `TargetPost ""` (an admin who's switched Home to "Custom Post" but hasn't typed an id
-yet) round-trips through unvalidated too, same light-touch style.
+freshly re-fetched `ServerConfiguration`'s `customTabs.tabs`, and `edit.home`/`edit.pinnedPostIdsText`
+onto `customTabs.home` (via `UI.CustomNav.toProtoHomeConfig`, which is what actually enforces the
+allowed-targets restriction, see that function's own doc). Each tab entry's blank `title` round-trips
+to `Nothing` (see `optionalString`); `path` is sent as-is -- the backend's `validate_configuration` is
+the actual authority on whether it's a valid `[a-z_]+` slug (see `CustomTabEntry`'s own doc), surfaced
+back through `GotCustomTabsSaveResult`'s `Err` branch same as any other rejected save. A blank
+`edit.home.target`'s `TargetPost ""` (an admin who's switched Home to "Custom Post" but hasn't typed
+an id yet) round-trips through unvalidated too, same light-touch style -- as does an empty entry in
+`pinnedPostIdsText` (a trailing/doubled comma), silently dropped by `parsePinnedPostIds` rather than
+saved as a blank id.
 -}
 applyCustomTabs : CustomTabsEdit -> ServerConfiguration -> ServerConfiguration
 applyCustomTabs edit config =
@@ -546,23 +603,40 @@ applyCustomTabs edit config =
         existing =
             Maybe.withDefault defaultCustomNavigationTabSet config.customTabs
 
-        toTabWithPath : CustomTabEntry -> Proto.Jonline.CustomNavigationTabWithPath
-        toTabWithPath entry =
-            let
-                tab : CustomNav.CustomTab
-                tab =
-                    { target = entry.target, icon = entry.icon, title = optionalString entry.title, path = entry.path }
-            in
-            { customTab = Just (CustomNav.toProtoTab tab), path = entry.path }
+        toProtoCustomTab : CustomTabEntry -> Proto.Jonline.CustomNavigationTab
+        toProtoCustomTab entry =
+            CustomNav.toProtoTab
+                { target = entry.target, icon = entry.icon, title = optionalString entry.title, path = entry.path }
+
+        home : CustomNav.HomePageConfig
+        home =
+            edit.home |> withPinnedPostIds (parsePinnedPostIds edit.pinnedPostIdsText)
+
+        withPinnedPostIds : List String -> CustomNav.HomePageConfig -> CustomNav.HomePageConfig
+        withPinnedPostIds pinnedPostIds homeConfig =
+            { homeConfig | pinnedPostIds = pinnedPostIds }
     in
     { config
         | customTabs =
             Just
                 { existing
-                    | tabs = edit.pending |> List.map toTabWithPath
-                    , home = CustomNav.toProtoHome edit.home
+                    | tabs = edit.pending |> List.map toProtoCustomTab
+                    , home = CustomNav.toProtoHomeConfig home
                 }
     }
+
+
+{-| `edit.pinnedPostIdsText`'s parse, at save time -- comma-separated (not also whitespace-separated
+like `ExternalCDNConfig.media_ipv4_allowlist`'s own CSV convention, since a Post id -- unlike an IP
+range -- isn't guaranteed never to contain a space), trimmed, and blank entries (an empty string, or
+one that's all whitespace -- e.g. a trailing/doubled comma) dropped.
+-}
+parsePinnedPostIds : String -> List String
+parsePinnedPostIds text =
+    text
+        |> String.split ","
+        |> List.map String.trim
+        |> List.filter (not << String.isEmpty)
 
 
 {-| The DOM `id` a custom-tab chip is rendered with while `customTabsEdit` is active -- the
@@ -840,8 +914,12 @@ customTabTargetSelect entry =
 `customTabsEdit` is active (`customTabsEditorView`'s own use). No reorder arrows (`home` always
 sits first, isn't part of `edit.pending`), no icon editor (its look stays fixed, see
 `homeTabChip`'s own doc), no Title/Path `<input>` or remove button (`home` isn't a `CustomTabEntry`
-and can't be removed) -- just the server logo up top and `homeTargetSelect` (plus a conditional
-Post-id `<input>`, when `edit.home` is a `CustomNav.TargetPost`) below, mirroring
+and can't be removed) -- just the server logo up top, then `homeTargetSelect` (plus a conditional
+Post-id `<input>`, when `edit.home.target` is a `CustomNav.TargetPost`), a Pinned Posts `<input>`
+(meaningful for every target, so always shown -- see `CustomHomePage.pinned_post_ids`' own proto
+doc), and, only when `edit.home.target` is a `CustomNav.TargetPost` (the only target the "Show
+Events strip" toggle actually does anything for -- see `CustomHomePage.show_events_strip`'s own
+proto doc), the events-strip toggle and its own conditional row/calendar-mode controls. Mirrors
 `customTabEditChip`'s own bottom row.
 -}
 homeEditChip : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
@@ -851,8 +929,8 @@ homeEditChip server edit =
             [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
         , div [ classes [ "server-chip-bottom", "background-color-nav", "custom-tab-chip-edit-fields" ] ]
             (List.concat
-                [ [ homeTargetSelect edit.home ]
-                , case edit.home of
+                [ [ homeTargetSelect edit.home.target ]
+                , case edit.home.target of
                     CustomNav.TargetPost postId ->
                         [ input
                             [ Html.Attributes.class "custom-tab-post-id-input"
@@ -865,9 +943,50 @@ homeEditChip server edit =
 
                     _ ->
                         []
+                , [ input
+                        [ Html.Attributes.class "custom-tab-pinned-post-ids-input"
+                        , placeholder "Pinned post IDs (comma-separated)"
+                        , value edit.pinnedPostIdsText
+                        , onInput CustomTabHomePinnedPostIdsChanged
+                        ]
+                        []
+                  ]
+                , case edit.home.target of
+                    CustomNav.TargetPost _ ->
+                        homeEventsStripFields edit.home
+
+                    _ ->
+                        []
                 ]
             )
         ]
+
+
+{-| The "Show Events strip"/row-vs-calendar/calendar-granularity controls -- only ever shown by
+`homeEditChip` when `edit.home.target` is a `CustomNav.TargetPost` (see that function's own doc for
+why every other target leaves `show_events_strip` alone rather than offering a control for it).
+-}
+homeEventsStripFields : CustomNav.HomePageConfig -> List (Html Msg)
+homeEventsStripFields home =
+    Common.settingsRow "Show Events strip above Post" (Common.flagSwitch home.showEventsStrip CustomTabHomeShowEventsStripToggled)
+        :: (if home.showEventsStrip then
+                [ Common.settingsRow "Default Events strip to row layout" (Common.flagSwitch home.defaultEventsStripToRow CustomTabHomeEventsStripToRowToggled)
+                , select [ onInput CustomTabHomeEventsStripCalendarDisplayModeChanged ]
+                    (CustomNav.allCalendarDisplayModes
+                        |> List.map
+                            (\mode ->
+                                option
+                                    [ value (CustomNav.calendarDisplayModeText mode)
+                                    , selected (home.defaultEventsStripCalendarDisplayMode == mode)
+                                    ]
+                                    [ text (CustomNav.calendarDisplayModeText mode) ]
+                            )
+                    )
+                ]
+
+            else
+                []
+           )
 
 
 {-| The "type" `<select>` for the `Home` slot -- `UI.CustomNav.selectableHomeTargetKinds` (Home

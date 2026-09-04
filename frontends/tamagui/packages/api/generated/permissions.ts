@@ -123,6 +123,11 @@ export enum Permission {
   READ_PERSONAL_MESSAGES = 50,
   READ_ALL_SYSTEM_MESSAGES = 51,
   /**
+   * CREATE_AI_MODEL_PROVIDERS - Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see
+   * `ai_model_providers.proto`) and grant/revoke other users' access to them.
+   */
+  CREATE_AI_MODEL_PROVIDERS = 60,
+  /**
    * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and
    * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
    * since this is the most likely area to keep growing as new platforms are added.
@@ -314,6 +319,9 @@ export function permissionFromJSON(object: any): Permission {
     case 51:
     case "READ_ALL_SYSTEM_MESSAGES":
       return Permission.READ_ALL_SYSTEM_MESSAGES;
+    case 60:
+    case "CREATE_AI_MODEL_PROVIDERS":
+      return Permission.CREATE_AI_MODEL_PROVIDERS;
     case 1000:
     case "SYNC_EVENTS_TO_FACEBOOK":
       return Permission.SYNC_EVENTS_TO_FACEBOOK;
@@ -441,6 +449,8 @@ export function permissionToJSON(object: Permission): string {
       return "READ_PERSONAL_MESSAGES";
     case Permission.READ_ALL_SYSTEM_MESSAGES:
       return "READ_ALL_SYSTEM_MESSAGES";
+    case Permission.CREATE_AI_MODEL_PROVIDERS:
+      return "CREATE_AI_MODEL_PROVIDERS";
     case Permission.SYNC_EVENTS_TO_FACEBOOK:
       return "SYNC_EVENTS_TO_FACEBOOK";
     case Permission.SYNC_POSTS_TO_FACEBOOK:

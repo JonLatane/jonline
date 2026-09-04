@@ -6,6 +6,8 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 
+use super::event_permissions::event_post_id;
+
 /// Updates only the `Event`'s top-level details (`info`) and those of its own `Post` -- not any
 /// `EventInstance`s or their `Post`s. Ownership/permission checks are enforced by `update_post`
 /// (self-update, or `Admin`/`ModeratePosts`/`ModerateEvents`) on the event's own `Post`.
@@ -55,12 +57,12 @@ pub fn update_event_details(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
-    let event_id = request.id.to_db_id_or_err("id")?;
+    let event_id = event_post_id(&request)?;
     update_event_details_impl(event_id, &request, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {
-            event_id: Some(event_id.to_proto_id()),
+            post_id: Some(event_id.to_proto_id()),
             ..Default::default()
         },
         &Some(current_user),

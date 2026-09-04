@@ -96,6 +96,10 @@ enum Permission {
   READ_PERSONAL_MESSAGES = 50;
   READ_ALL_SYSTEM_MESSAGES = 51;
 
+  // Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see
+  // `ai_model_providers.proto`) and grant/revoke other users' access to them.
+  CREATE_AI_MODEL_PROVIDERS = 60;
+
   // Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and
   // syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
   // since this is the most likely area to keep growing as new platforms are added.

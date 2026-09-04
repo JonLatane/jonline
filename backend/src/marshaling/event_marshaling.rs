@@ -145,7 +145,7 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
             marshalable_event
                 .2
                 .iter()
-                .map(|MarshalableEventInstance(instance, _)| instance.id)
+                .map(|MarshalableEventInstance(instance, _)| instance.post_id)
         })
         .collect();
     let instance_sync_lookup = load_event_instance_sync_lookup(event_instance_ids, conn);
@@ -189,7 +189,6 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         );
         // self.to_proto(username, None)
         Event {
-            id: event.id.to_proto_id(),
             post: Some(post.to_proto(media_lookup, None)),
             instances: instances
                 .iter()
@@ -229,11 +228,10 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             event_instance.location.map(|c| c.to_proto_location())
         };
         let sync_destinations = instance_sync_lookup
-            .and_then(|lookup| lookup.get(&event_instance.id))
+            .and_then(|lookup| lookup.get(&event_instance.post_id))
             .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
             .unwrap_or_default();
         EventInstance {
-            id: event_instance.id.to_proto_id(),
             event_id: event_instance.event_id.to_proto_id(),
             post: Some(marshalable_post.to_proto(media_lookup, None)),
             starts_at: Some(event_instance.starts_at.to_proto()),

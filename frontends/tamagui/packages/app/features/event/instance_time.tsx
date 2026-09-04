@@ -1,7 +1,7 @@
-import { FederatedEvent, federateId, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedEventInstance, federateId, useServerTheme } from "app/store";
 import React from "react";
 
-import { EventInstance, Group } from "@jonline/api";
+import { Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
 import { useGroupContext } from "app/contexts/group_context";
 import { useAppSelector, useFederatedAccountOrServer, useCurrentServer } from "app/hooks";
@@ -12,13 +12,13 @@ import { ThemedStar } from "../post/star_button";
 
 interface Props {
   event: FederatedEvent;
-  instance: EventInstance;
+  instance: IdentifiedEventInstance;
   linkToInstance?: boolean;
   highlight?: boolean;
   noAutoScroll?: boolean;
 }
 
-export const useInstanceLink = (event: FederatedEvent, instance: EventInstance, group?: Group) => {
+export const useInstanceLink = (event: FederatedEvent, instance: IdentifiedEventInstance, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
   const showServerInfo = server?.host !== useCurrentServer()?.host;
   const detailsLinkId = showServerInfo

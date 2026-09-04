@@ -129,6 +129,9 @@ fieldNumbersPermission n_ =
         READALLSYSTEMMESSAGES ->
             51
 
+        CREATEAIMODELPROVIDERS ->
+            60
+
         SYNCEVENTSTOFACEBOOK ->
             1000
 
@@ -301,6 +304,9 @@ encodePermission value =
             READALLSYSTEMMESSAGES ->
                 51
 
+            CREATEAIMODELPROVIDERS ->
+                60
+
             SYNCEVENTSTOFACEBOOK ->
                 1000
 
@@ -467,6 +473,9 @@ decodePermission =
                     51 ->
                         READALLSYSTEMMESSAGES
 
+                    60 ->
+                        CREATEAIMODELPROVIDERS
+
                     1000 ->
                         SYNCEVENTSTOFACEBOOK
 
@@ -559,6 +568,7 @@ type Permission
     | MODERATEMEDIA
     | READPERSONALMESSAGES
     | READALLSYSTEMMESSAGES
+    | CREATEAIMODELPROVIDERS
     | SYNCEVENTSTOFACEBOOK
     | SYNCPOSTSTOFACEBOOK
     | SYNCEVENTSTOINSTAGRAM

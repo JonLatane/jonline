@@ -25,14 +25,13 @@ module Components.Events exposing
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
--- used by `Pages.Event.EventId_` (a single-instance detail view: building a
-`GetEvents` request scoped to a single `EventInstance` via
-`Shared.MaybeAccountRequest`, parsing/building the `/event/:eventId` route's
-`id`/`id@host` segment, an `EventInstance.id` despite the route/field being
-named "eventId" -- see that module's own doc) and by
-`Components.Pages.EventsPage` (a multi-`Event` listing: `fetchEvents`/
-`eventInstancePairs`/`eventCard`), plus the `Post`/timing rendering helpers
-both share.
+-- used by `Pages.Event.PostId_` (a single-instance detail view: building a
+`GetEvents` request scoped to a single `EventInstance`'s own `Post` id via
+`Shared.MaybeAccountRequest`, parsing/building the `/event/:postId` route's
+`id`/`id@host` segment, which is genuinely an `EventInstance`'s own `Post`
+id -- see that module's own doc) and by `Components.Pages.EventsPage` (a
+multi-`Event` listing: `fetchEvents`/`eventInstancePairs`/`eventCard`), plus
+the `Post`/timing rendering helpers both share.
 -}
 
 import Components.Authors as Authors
@@ -45,7 +44,7 @@ import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
-import Proto.Jonline exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultPost, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.EventSyncSource.Configuration as SyncSourceConfiguration
 import Proto.Jonline.Jonline as Jonline
@@ -58,10 +57,11 @@ import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Fetches the `Event` (with all its `EventInstance`s -- see
-`GetEventsResponse`'s own doc: a request scoped to one `event_instance_id`
-gets every instance of that instance's parent `Event` back, not just the one
-asked for) containing `eventInstanceId`, from `maybeAccountServer`'s server,
-authenticated as its account if any, anonymous otherwise -- same
+`GetEventsResponse`'s own doc: a request scoped to one `post_id` matching an
+`EventInstance`'s own `Post` id gets every instance of that instance's parent
+`Event` back, not just the one asked for) containing the `EventInstance`
+whose own `Post` id is `eventInstancePostId`, from `maybeAccountServer`'s
+server, authenticated as its account if any, anonymous otherwise -- same
 auth/refresh handling as `Components.Posts.fetchPost`.
 -}
 fetchEvent :
@@ -69,36 +69,37 @@ fetchEvent :
     -> AccountsPanel.MaybeAccountServer
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
-fetchEvent accountsPanelModel maybeAccountServer eventInstanceId =
+fetchEvent accountsPanelModel maybeAccountServer eventInstancePostId =
     performWithOptionalAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getEvents { defaultGetEventsRequest | eventInstanceId = Just eventInstanceId }
+            Grpc.new Jonline.getEvents { defaultGetEventsRequest | postId = Just eventInstancePostId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
 
 
-{-| Deletes `eventId` (the `Event`'s own id, not an `EventInstance`'s)
-outright (`DeleteEvent`, owner-or-Admin gated server-side, see
+{-| Deletes the `Event` whose own `Post` id is `eventPostId` outright
+(`DeleteEvent`, owner-or-Admin gated server-side, see
 `backend/src/rpcs/events/delete_event.rs`) -- nothing to overlay onto a fresh
-copy first, so this just sends the id straight through, mirroring
-`Components.Posts.deletePost`. Used by `Pages.Event.EventId_`'s own Delete
-button, via `Shared.ConfirmEventDelete`.
+copy first, so this just sends the id straight through (wrapped in a bare
+`post`, since an `Event`'s identity now lives there -- see this module's own
+top-of-file doc), mirroring `Components.Posts.deletePost`. Used by
+`Pages.Event.PostId_`'s own Delete button, via `Shared.ConfirmEventDelete`.
 -}
 deleteEvent :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
-deleteEvent accountsPanelModel maybeAccountServer eventId =
+deleteEvent accountsPanelModel maybeAccountServer eventPostId =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteEvent { defaultEvent | id = eventId }
+            Grpc.new Jonline.deleteEvent { defaultEvent | post = Just { defaultPost | id = eventPostId } }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -109,7 +110,7 @@ deleteEvent accountsPanelModel maybeAccountServer eventId =
 owner-or-Admin gated server-side, see
 `backend/src/rpcs/events/sync_event_instance.rs`) -- mirrors `deleteEvent`'s
 shape exactly. The returned `EventInstance` carries a freshly updated `syncDestinations`, but
-callers here just reuse their own existing full refetch (`Pages.Event.EventId_.refetch`/
+callers here just reuse their own existing full refetch (`Pages.Event.PostId_.refetch`/
 `Components.Pages.EventsPage.refetchServers`) rather than patching it in by hand.
 -}
 syncEventInstance :
@@ -160,17 +161,19 @@ deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventIn
 
 
 {-| Updates, in place, every `EventInstance` in `event.instances` that's
-already on the event (matched by id) -- any other instance in `event.instances`
-is silently ignored rather than created (`UpdateEventInstances`, owner-or-
-`MODERATEEVENTS`/`MODERATEPOSTS`/`ADMIN` gated server-side, see
-`backend/src/rpcs/events/update_event_instances.rs`). Used by
-`Pages.Event.EventId_`'s "Edit Time"/"Edit Location" saves, each sending just
-`event.id` plus a single-element `instances` list built from the
-currently-loaded `EventInstance` with only the field(s) being edited
-overridden -- carrying the rest of that `EventInstance` (notably its own
-`post`) along unchanged matters here: the backend treats an update entry with
-no `post` as an explicit request to reset that instance's own Post to
-`PRIVATE` (see that file's own doc comment), not "leave visibility alone".
+already on the event (matched by its own `post.id`) -- any other instance in
+`event.instances` is silently ignored rather than created
+(`UpdateEventInstances`, owner-or-`MODERATEEVENTS`/`MODERATEPOSTS`/`ADMIN`
+gated server-side, see `backend/src/rpcs/events/update_event_instances.rs`).
+Used by `Pages.Event.PostId_`'s "Edit Time"/"Edit Location" saves, each
+sending the whole currently-loaded `Event` (its own `post`/`info`/
+`eventSyncSource` identify it, since it has no id of its own anymore) plus a
+single-element `instances` list built from the currently-loaded
+`EventInstance` with only the field(s) being edited overridden -- carrying
+the rest of that `EventInstance` (notably its own `post`) along unchanged
+matters here: the backend treats an update entry with no `post` as an
+explicit request to reset that instance's own Post to `PRIVATE` (see that
+file's own doc comment), not "leave visibility alone".
 -}
 updateEventInstances :
     AccountsPanel.Model
@@ -195,7 +198,7 @@ its own to match against, every entry sent here ends up created
 (`CreateNewEventInstances`, same owner-or-moderator gating as
 `updateEventInstances`, see
 `backend/src/rpcs/events/create_new_event_instances.rs`). Used by
-`Pages.Event.EventId_`'s "Add More" recurrence menu, which builds
+`Pages.Event.PostId_`'s "Add More" recurrence menu, which builds
 `event.instances` as a batch of new `EventInstance`s (see
 `buildRecurringInstances`) all in one call, rather than one RPC per instance.
 -}
@@ -353,7 +356,7 @@ per matching `EventInstance` row**, with `instances` holding just that one
 instance (see `events.proto`'s own doc comment on `GetEventsResponse`: "the
 response will carry duplicate `Event`s with the same ID" -- one entry per
 instance in the requested time frame). `Components.Pages.EventsPage` centers
-its whole listing on the `EventInstance`, same as `Pages.Event.EventId_`'s own
+its whole listing on the `EventInstance`, same as `Pages.Event.PostId_`'s own
 detail view, so this is written generically (flat-mapping every `Event`'s
 `instances`, however many there are) rather than assuming exactly one.
 -}
@@ -381,34 +384,42 @@ parseEventRouteId mainFrontendHost rawEventId =
             ( rawEventId, mainFrontendHost )
 
 
-{-| Finds the `EventInstance` (of `event.instances`) with the given id --
-`Pages.Event.EventId_` uses this to pick out, from the full `Event` a
-`GetEvents` response carries, the one specific instance the page's own route
-was asking for.
+{-| Finds the `EventInstance` (of `event.instances`) whose own `Post` id
+matches the given id -- `Pages.Event.PostId_` uses this to pick out, from the
+full `Event` a `GetEvents` response carries, the one specific instance the
+page's own route was asking for.
 -}
 findInstance : String -> Event -> Maybe EventInstance
-findInstance instanceId event =
-    event.instances |> List.filter (\instance -> instance.id == instanceId) |> List.head
+findInstance instancePostId event =
+    event.instances
+        |> List.filter (\instance -> (instance.post |> Maybe.map .id) == Just instancePostId)
+        |> List.head
 
 
 {-| The href for `instance`, as seen from `viewingServerHost` -- mirrors
-`Components.Posts.postHref`, just keyed on an `EventInstance.id` (the route
-segment, despite `Gen.Route`/`Gen.Params` naming it "eventId") rather than a
-`Post.id`. Used by `Pages.Event.EventId_`'s date-picker strip to link between
-sibling `EventInstance`s of the same `Event`.
+`Components.Posts.postHref`, just keyed on an `EventInstance`'s own `Post`
+id (the route segment, matching `Gen.Route`/`Gen.Params`'s own "postId"
+naming) rather than the `Event`'s. Used by `Pages.Event.PostId_`'s
+date-picker strip to link between sibling `EventInstance`s of the same
+`Event`. Renders an empty (self) link if `instance.post` is somehow unset --
+shouldn't happen in practice, same as `eventCard`'s own handling.
 -}
 eventInstanceHref : String -> String -> String -> EventInstance -> String
 eventInstanceHref basePath viewingServerHost eventServerHost instance =
     let
+        instancePostId : String
+        instancePostId =
+            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+
         routeId : String
         routeId =
             if eventServerHost == viewingServerHost then
-                instance.id
+                instancePostId
 
             else
-                instance.id ++ "@" ++ eventServerHost
+                instancePostId ++ "@" ++ eventServerHost
     in
-    basePath ++ Gen.Route.toHref (Gen.Route.Event__EventId_ { eventId = routeId })
+    basePath ++ Gen.Route.toHref (Gen.Route.Event__PostId_ { postId = routeId })
 
 
 
@@ -419,7 +430,7 @@ eventInstanceHref basePath viewingServerHost eventServerHost instance =
 if set (an instance stays current until it actually ends), falling back to
 `startsAt` (at least one of the two should always be set), `Nothing` only if
 neither is. Used both for filtering/sorting an `Event`'s instances by
-recency (see `Pages.Event.EventId_`'s `InstanceHistoryDisplay`) and, via
+recency (see `Pages.Event.PostId_`'s `InstanceHistoryDisplay`) and, via
 `instanceDateText`, for display.
 -}
 instanceEndsOrStartsAt : EventInstance -> Maybe Time.Posix
@@ -451,7 +462,7 @@ instanceStartsOrEndsAt instance =
 
 {-| A human-friendly "when" label for `instance`, e.g. "August 1, 6-7PM",
 "June 1, 10PM - June 8, 3AM", or "December 31, 2025, 9PM - January 1, 2AM" --
-used identically by `eventCard`'s own "when" line, `Pages.Event.EventId_`'s
+used identically by `eventCard`'s own "when" line, `Pages.Event.PostId_`'s
 detail view (the currently-viewed instance's own when line), and that same
 page's date-picker strip chips (see `instanceHistoryView`), so every place an
 `EventInstance`'s date/time shows reads the same way. `time.now` supplies
@@ -484,7 +495,7 @@ instanceWhenText time instance =
 
 
 {-| Like `instanceWhenText`, for a date-picker strip chip (see
-`Pages.Event.EventId_.instanceChipView`) offering `instance` as an
+`Pages.Event.PostId_.instanceChipView`) offering `instance` as an
 alternative to `currentInstance` (the one the page is currently showing).
 Drops the time-of-day entirely -- e.g. "March 7" rather than "March 7,
 6-7PM" -- whenever `instance` starts and ends at the same time-of-day (in
@@ -549,7 +560,7 @@ locationText location =
 {-| `post` itself, unless it has nothing an `EventInstance`'s own override
 `Post` would actually add over the parent `Event`'s -- no title, link,
 content, or media, just the empty shell every `EventInstance` carries whether
-or not its creator actually filled one in. `Pages.Event.EventId_.eventDetailView`
+or not its creator actually filled one in. `Pages.Event.PostId_.eventDetailView`
 uses this to skip its own secondary post section entirely for one of these;
 `eventCard` uses it the same way, to skip an instance-specific note line.
 -}
@@ -584,7 +595,7 @@ meaningfulPost post =
 `Event` is re-synced from that feed on every run of the backend's
 `sync_event_sync_sources` job, so any local edit to its title/link/content
 would just be clobbered the next time that happens. Used by
-`Pages.Event.EventId_` to hide those fields' own edit buttons for a synced
+`Pages.Event.PostId_` to hide those fields' own edit buttons for a synced
 `Event`.
 -}
 hasIcsSyncSource : Event -> Bool
@@ -600,7 +611,7 @@ hasIcsSyncSource event =
 {-| One small-text, clipped-not-wrapped line crediting the source `event` was
 synced from (e.g. an ICS feed) -- see `Components.Pages.UserProfilePage`'s
 "Event Sync Sources" section. Renders nothing for a normal, non-synced event.
-Shared by `Pages.Event.EventId_`'s detail view and `eventCard` (gated on
+Shared by `Pages.Event.PostId_`'s detail view and `eventCard` (gated on
 `showSyncSource`).
 -}
 eventSyncSourceView : Event -> Html msg
@@ -643,7 +654,7 @@ eventSyncDestinationsView availableSyncDestinations isPushing pushError onPush o
 
 {-| A compact, read-only card for one `(Event, EventInstance)` pair --
 `Components.Pages.EventsPage`'s per-item rendering, centered on `instance`
-(its own start/end/location) the same way `Pages.Event.EventId_`'s detail view
+(its own start/end/location) the same way `Pages.Event.PostId_`'s detail view
 is, but titled/linked/media'd off `event.post` (the `Event`'s own name/link/
 media -- the "primary" `Post`, same primacy `eventDetailView` gives it),
 mirroring `Components.Posts.postCard`'s stretched-link-overlay card shape.

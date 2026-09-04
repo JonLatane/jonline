@@ -385,6 +385,23 @@
   color: var(--muted);
 }
 
+/* Shared "Refresh" button/error row -- see UserProfilePage.elm's `refreshRowView`, used by both
+   the Event Sync Sources and AI Model Providers sections. */
+.profile-section-refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-section-refresh {
+  align-self: flex-start;
+}
+
+.profile-section-refresh-error {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
 /* Shared.EventSyncSourcesPanel, embedded on UserProfilePage below permissions. */
 
 .event-sync-sources-section {
@@ -554,6 +571,154 @@
 
 .sync-destination-connect-cancel {
   align-self: flex-start;
+}
+
+/* Components.AIModelProviders, embedded on UserProfilePage below Sync Destinations. */
+
+.ai-model-providers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.ai-model-providers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ai-model-providers-message {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.ai-model-provider-row-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ai-model-provider-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem;
+}
+
+.ai-model-provider-name {
+  font-weight: 600;
+}
+
+.ai-model-provider-name.ai-model-provider-row input,
+input.ai-model-provider-name,
+input.ai-model-provider-api-key {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  font-weight: normal;
+}
+
+/* The add-row's own credentials-variant picker (`aiModelProviderAddRowView`) -- sits before the
+   name/API key inputs it decides the placeholder text of. */
+select.ai-model-provider-add-type {
+  flex: 0 1 7rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.ai-model-provider-type,
+.ai-model-provider-key-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.ai-model-provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.ai-model-provider-add {
+  margin-left: auto;
+}
+
+.ai-model-provider-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.ai-model-provider-grants {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0 0 0.3rem 1.5rem;
+  padding: 0.3rem 0 0.3rem 0.6rem;
+  border-left: 2px solid var(--border);
+}
+
+.ai-model-provider-grant-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.ai-model-provider-grant-provider-name {
+  font-weight: 600;
+}
+
+.ai-model-provider-grant-models,
+.ai-model-provider-grant-tokens {
+  color: var(--muted);
+}
+
+.ai-model-provider-grant-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.ai-model-provider-grant-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+input.ai-model-provider-grant-user-id,
+input.ai-model-provider-grant-tokens,
+input.ai-model-provider-grant-models {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+input.ai-model-provider-grant-tokens {
+  width: 6rem;
+}
+
+input.ai-model-provider-grant-models {
+  flex: 1 1 12rem;
+  min-width: 8rem;
 }
 
 .profile-delete-section {

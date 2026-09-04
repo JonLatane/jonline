@@ -14,14 +14,14 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'events.pbenum.dart';
-import 'google/protobuf/timestamp.pb.dart' as $11;
-import 'location.pb.dart' as $15;
+import 'google/protobuf/timestamp.pb.dart' as $12;
+import 'location.pb.dart' as $16;
 import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $13;
+import 'permissions.pbenum.dart' as $14;
 import 'posts.pb.dart' as $8;
 import 'sync.pb.dart' as $10;
 import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $12;
+import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'events.pbenum.dart';
 
@@ -33,17 +33,15 @@ export 'events.pbenum.dart';
 ///  Valid GetEventsRequest formats:
 ///  - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 ///  - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-///  - `{event_id:}`                                    (TODO: get single event including preview data)
+///  - `{post_id:}`                                     (get a single event, by its own Post ID or one of its EventInstances' Post IDs)
 ///  - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
 ///                                                     (TODO: get events/events needing moderation for a group)
 ///  - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
 ///  - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest({
-    $core.String? eventId,
     $core.String? authorUserId,
     $core.String? groupId,
-    $core.String? eventInstanceId,
     TimeFilter? timeFilter,
     $core.String? attendeeId,
     $core.Iterable<AttendanceStatus>? attendanceStatuses,
@@ -54,17 +52,11 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? anonymousAttendeeAuthToken,
   }) {
     final $result = create();
-    if (eventId != null) {
-      $result.eventId = eventId;
-    }
     if (authorUserId != null) {
       $result.authorUserId = authorUserId;
     }
     if (groupId != null) {
       $result.groupId = groupId;
-    }
-    if (eventInstanceId != null) {
-      $result.eventInstanceId = eventInstanceId;
     }
     if (timeFilter != null) {
       $result.timeFilter = timeFilter;
@@ -97,10 +89,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'eventId')
     ..aOS(2, _omitFieldNames ? '' : 'authorUserId')
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
-    ..aOS(4, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
     ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
     ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
@@ -133,101 +123,81 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   static GetEventsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
   static GetEventsRequest? _defaultInstance;
 
-  /// Returns the single event with the given ID.
-  @$pb.TagNumber(1)
-  $core.String get eventId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set eventId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasEventId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearEventId() => clearField(1);
-
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
-  $core.String get authorUserId => $_getSZ(1);
+  $core.String get authorUserId => $_getSZ(0);
   @$pb.TagNumber(2)
-  set authorUserId($core.String v) { $_setString(1, v); }
+  set authorUserId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(2)
-  $core.bool hasAuthorUserId() => $_has(1);
+  $core.bool hasAuthorUserId() => $_has(0);
   @$pb.TagNumber(2)
   void clearAuthorUserId() => clearField(2);
 
   /// Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association's for the Event's internal [`Post`](#jonline-Post)).
   @$pb.TagNumber(3)
-  $core.String get groupId => $_getSZ(2);
+  $core.String get groupId => $_getSZ(1);
   @$pb.TagNumber(3)
-  set groupId($core.String v) { $_setString(2, v); }
+  set groupId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(3)
-  $core.bool hasGroupId() => $_has(2);
+  $core.bool hasGroupId() => $_has(1);
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
-  /// Limits results to those with the given event instance ID.
-  @$pb.TagNumber(4)
-  $core.String get eventInstanceId => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set eventInstanceId($core.String v) { $_setString(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasEventInstanceId() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearEventInstanceId() => clearField(4);
-
   /// Filters returned [`EventInstance`](#jonline-EventInstance)s by time.
   @$pb.TagNumber(5)
-  TimeFilter get timeFilter => $_getN(4);
+  TimeFilter get timeFilter => $_getN(2);
   @$pb.TagNumber(5)
   set timeFilter(TimeFilter v) { setField(5, v); }
   @$pb.TagNumber(5)
-  $core.bool hasTimeFilter() => $_has(4);
+  $core.bool hasTimeFilter() => $_has(2);
   @$pb.TagNumber(5)
   void clearTimeFilter() => clearField(5);
   @$pb.TagNumber(5)
-  TimeFilter ensureTimeFilter() => $_ensure(4);
+  TimeFilter ensureTimeFilter() => $_ensure(2);
 
   /// If set, only returns events that the given user is attending. If `attendance_statuses` is also set,
   /// returns events where that user's status is one of the given statuses.
   @$pb.TagNumber(6)
-  $core.String get attendeeId => $_getSZ(5);
+  $core.String get attendeeId => $_getSZ(3);
   @$pb.TagNumber(6)
-  set attendeeId($core.String v) { $_setString(5, v); }
+  set attendeeId($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(6)
-  $core.bool hasAttendeeId() => $_has(5);
+  $core.bool hasAttendeeId() => $_has(3);
   @$pb.TagNumber(6)
   void clearAttendeeId() => clearField(6);
 
   /// If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   /// only returns events where the given user's status matches one of the given statuses.
   @$pb.TagNumber(7)
-  $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
+  $core.List<AttendanceStatus> get attendanceStatuses => $_getList(4);
 
   /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#jonline-PostContext) of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
-  $core.String get postId => $_getSZ(7);
+  $core.String get postId => $_getSZ(5);
   @$pb.TagNumber(8)
-  set postId($core.String v) { $_setString(7, v); }
+  set postId($core.String v) { $_setString(5, v); }
   @$pb.TagNumber(8)
-  $core.bool hasPostId() => $_has(7);
+  $core.bool hasPostId() => $_has(5);
   @$pb.TagNumber(8)
   void clearPostId() => clearField(8);
 
   /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
-  EventListingType get listingType => $_getN(8);
+  EventListingType get listingType => $_getN(6);
   @$pb.TagNumber(10)
   set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(8);
+  $core.bool hasListingType() => $_has(6);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 
   /// Search text for full-text search.
   @$pb.TagNumber(11)
-  $core.String get searchText => $_getSZ(9);
+  $core.String get searchText => $_getSZ(7);
   @$pb.TagNumber(11)
-  set searchText($core.String v) { $_setString(9, v); }
+  set searchText($core.String v) { $_setString(7, v); }
   @$pb.TagNumber(11)
-  $core.bool hasSearchText() => $_has(9);
+  $core.bool hasSearchText() => $_has(7);
   @$pb.TagNumber(11)
   void clearSearchText() => clearField(11);
 
@@ -235,7 +205,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   /// Event per matching EventInstance (see GetEventsResponse's own doc), not
   /// the requested EventInstance's whole parent Event's full instance list.
   @$pb.TagNumber(12)
-  $core.List<$core.String> get eventInstancePostIds => $_getList(10);
+  $core.List<$core.String> get eventInstancePostIds => $_getList(8);
 
   /// Auth token proving ownership of an anonymous RSVP, mirroring
   /// `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
@@ -244,11 +214,11 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   /// `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
   /// does automatically.
   @$pb.TagNumber(13)
-  $core.String get anonymousAttendeeAuthToken => $_getSZ(11);
+  $core.String get anonymousAttendeeAuthToken => $_getSZ(9);
   @$pb.TagNumber(13)
-  set anonymousAttendeeAuthToken($core.String v) { $_setString(11, v); }
+  set anonymousAttendeeAuthToken($core.String v) { $_setString(9, v); }
   @$pb.TagNumber(13)
-  $core.bool hasAnonymousAttendeeAuthToken() => $_has(11);
+  $core.bool hasAnonymousAttendeeAuthToken() => $_has(9);
   @$pb.TagNumber(13)
   void clearAnonymousAttendeeAuthToken() => clearField(13);
 }
@@ -257,10 +227,10 @@ class GetEventsRequest extends $pb.GeneratedMessage {
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
-    $11.Timestamp? startsAfter,
-    $11.Timestamp? endsAfter,
-    $11.Timestamp? startsBefore,
-    $11.Timestamp? endsBefore,
+    $12.Timestamp? startsAfter,
+    $12.Timestamp? endsAfter,
+    $12.Timestamp? startsBefore,
+    $12.Timestamp? endsBefore,
   }) {
     final $result = create();
     if (startsAfter != null) {
@@ -282,10 +252,10 @@ class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<$11.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $11.Timestamp.create)
+    ..aOM<$12.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -312,51 +282,51 @@ class TimeFilter extends $pb.GeneratedMessage {
 
   /// Filter to events that start after the given time.
   @$pb.TagNumber(1)
-  $11.Timestamp get startsAfter => $_getN(0);
+  $12.Timestamp get startsAfter => $_getN(0);
   @$pb.TagNumber(1)
-  set startsAfter($11.Timestamp v) { setField(1, v); }
+  set startsAfter($12.Timestamp v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasStartsAfter() => $_has(0);
   @$pb.TagNumber(1)
   void clearStartsAfter() => clearField(1);
   @$pb.TagNumber(1)
-  $11.Timestamp ensureStartsAfter() => $_ensure(0);
+  $12.Timestamp ensureStartsAfter() => $_ensure(0);
 
   /// Filter to events that end after the given time.
   @$pb.TagNumber(2)
-  $11.Timestamp get endsAfter => $_getN(1);
+  $12.Timestamp get endsAfter => $_getN(1);
   @$pb.TagNumber(2)
-  set endsAfter($11.Timestamp v) { setField(2, v); }
+  set endsAfter($12.Timestamp v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasEndsAfter() => $_has(1);
   @$pb.TagNumber(2)
   void clearEndsAfter() => clearField(2);
   @$pb.TagNumber(2)
-  $11.Timestamp ensureEndsAfter() => $_ensure(1);
+  $12.Timestamp ensureEndsAfter() => $_ensure(1);
 
   /// Filter to events that start before the given time.
   @$pb.TagNumber(3)
-  $11.Timestamp get startsBefore => $_getN(2);
+  $12.Timestamp get startsBefore => $_getN(2);
   @$pb.TagNumber(3)
-  set startsBefore($11.Timestamp v) { setField(3, v); }
+  set startsBefore($12.Timestamp v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasStartsBefore() => $_has(2);
   @$pb.TagNumber(3)
   void clearStartsBefore() => clearField(3);
   @$pb.TagNumber(3)
-  $11.Timestamp ensureStartsBefore() => $_ensure(2);
+  $12.Timestamp ensureStartsBefore() => $_ensure(2);
 
   /// Filter to events that end before the given time.
   @$pb.TagNumber(4)
-  $11.Timestamp get endsBefore => $_getN(3);
+  $12.Timestamp get endsBefore => $_getN(3);
   @$pb.TagNumber(4)
-  set endsBefore($11.Timestamp v) { setField(4, v); }
+  set endsBefore($12.Timestamp v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasEndsBefore() => $_has(3);
   @$pb.TagNumber(4)
   void clearEndsBefore() => clearField(4);
   @$pb.TagNumber(4)
-  $11.Timestamp ensureEndsBefore() => $_ensure(3);
+  $12.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
 ///  A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
@@ -420,16 +390,12 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 ///  (Eventually, Jonline Events should also support ticketing.)
 class Event extends $pb.GeneratedMessage {
   factory Event({
-    $core.String? id,
     $8.Post? post,
     EventInfo? info,
     $core.Iterable<EventInstance>? instances,
     $10.EventSyncSource? eventSyncSource,
   }) {
     final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
     if (post != null) {
       $result.post = post;
     }
@@ -449,7 +415,6 @@ class Event extends $pb.GeneratedMessage {
   factory Event.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
     ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
@@ -478,56 +443,47 @@ class Event extends $pb.GeneratedMessage {
   static Event getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
   static Event? _defaultInstance;
 
-  /// Unique ID for the event generated by the Jonline BE.
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
   /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`.
+  /// An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
   @$pb.TagNumber(2)
-  $8.Post get post => $_getN(1);
+  $8.Post get post => $_getN(0);
   @$pb.TagNumber(2)
   set post($8.Post v) { setField(2, v); }
   @$pb.TagNumber(2)
-  $core.bool hasPost() => $_has(1);
+  $core.bool hasPost() => $_has(0);
   @$pb.TagNumber(2)
   void clearPost() => clearField(2);
   @$pb.TagNumber(2)
-  $8.Post ensurePost() => $_ensure(1);
+  $8.Post ensurePost() => $_ensure(0);
 
   /// Event configuration like whether to allow (anonymous) RSVPs, etc.
   @$pb.TagNumber(3)
-  EventInfo get info => $_getN(2);
+  EventInfo get info => $_getN(1);
   @$pb.TagNumber(3)
   set info(EventInfo v) { setField(3, v); }
   @$pb.TagNumber(3)
-  $core.bool hasInfo() => $_has(2);
+  $core.bool hasInfo() => $_has(1);
   @$pb.TagNumber(3)
   void clearInfo() => clearField(3);
   @$pb.TagNumber(3)
-  EventInfo ensureInfo() => $_ensure(2);
+  EventInfo ensureInfo() => $_ensure(1);
 
   /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   @$pb.TagNumber(4)
-  $core.List<EventInstance> get instances => $_getList(3);
+  $core.List<EventInstance> get instances => $_getList(2);
 
   /// If the event was synced from a source (meaning only its media should not be editable),
   /// this is the source it was synced from.
   @$pb.TagNumber(5)
-  $10.EventSyncSource get eventSyncSource => $_getN(4);
+  $10.EventSyncSource get eventSyncSource => $_getN(3);
   @$pb.TagNumber(5)
   set eventSyncSource($10.EventSyncSource v) { setField(5, v); }
   @$pb.TagNumber(5)
-  $core.bool hasEventSyncSource() => $_has(4);
+  $core.bool hasEventSyncSource() => $_has(3);
   @$pb.TagNumber(5)
   void clearEventSyncSource() => clearField(5);
   @$pb.TagNumber(5)
-  $10.EventSyncSource ensureEventSyncSource() => $_ensure(4);
+  $10.EventSyncSource ensureEventSyncSource() => $_ensure(3);
 }
 
 /// Syncs (cross-posts) a single EventInstance to one SyncDestination.
@@ -673,7 +629,7 @@ class EventInfo extends $pb.GeneratedMessage {
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
     $core.bool? hideLocationUntilRsvpApproved,
-    $12.Moderation? defaultRsvpModeration,
+    $13.Moderation? defaultRsvpModeration,
   }) {
     final $result = create();
     if (allowsRsvps != null) {
@@ -702,7 +658,7 @@ class EventInfo extends $pb.GeneratedMessage {
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
-    ..e<$12.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
+    ..e<$13.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..hasRequiredFields = false
   ;
 
@@ -773,9 +729,9 @@ class EventInfo extends $pb.GeneratedMessage {
   /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
-  $12.Moderation get defaultRsvpModeration => $_getN(4);
+  $13.Moderation get defaultRsvpModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set defaultRsvpModeration($12.Moderation v) { setField(5, v); }
+  set defaultRsvpModeration($13.Moderation v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasDefaultRsvpModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -787,23 +743,19 @@ class EventInfo extends $pb.GeneratedMessage {
 /// `EventInstance` in addition to the parent [`Event`](#jonline-Event).
 class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
-    $core.String? id,
     $core.String? eventId,
     $8.Post? post,
     EventInstanceInfo? info,
-    $11.Timestamp? startsAt,
-    $11.Timestamp? endsAt,
-    $15.Location? location,
+    $12.Timestamp? startsAt,
+    $12.Timestamp? endsAt,
+    $16.Location? location,
     $core.String? eventSyncSourceInstanceId,
-    $11.Timestamp? syncMissingSince,
+    $12.Timestamp? syncMissingSince,
     EventAttendances? attendances,
     EventAttendance? currentUserAttendance,
     $core.Iterable<$10.SyncDestinationStatus>? syncDestinations,
   }) {
     final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
     if (eventId != null) {
       $result.eventId = eventId;
     }
@@ -844,15 +796,14 @@ class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
     ..aOM<$8.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
-    ..aOM<$11.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $11.Timestamp.create)
-    ..aOM<$15.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $15.Location.create)
+    ..aOM<$12.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $12.Timestamp.create)
+    ..aOM<$16.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $16.Location.create)
     ..aOS(8, _omitFieldNames ? '' : 'eventSyncSourceInstanceId')
-    ..aOM<$11.Timestamp>(9, _omitFieldNames ? '' : 'syncMissingSince', subBuilder: $11.Timestamp.create)
+    ..aOM<$12.Timestamp>(9, _omitFieldNames ? '' : 'syncMissingSince', subBuilder: $12.Timestamp.create)
     ..aOM<EventAttendances>(10, _omitFieldNames ? '' : 'attendances', subBuilder: EventAttendances.create)
     ..aOM<EventAttendance>(11, _omitFieldNames ? '' : 'currentUserAttendance', subBuilder: EventAttendance.create)
     ..pc<$10.SyncDestinationStatus>(12, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestinationStatus.create)
@@ -880,136 +831,127 @@ class EventInstance extends $pb.GeneratedMessage {
   static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
   static EventInstance? _defaultInstance;
 
-  /// Unique ID for the event instance generated by the Jonline BE.
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  /// ID of the parent [`Event`](#jonline-Event).
+  /// ID of the parent [`Event`](#jonline-Event) (i.e. the parent `Event.post.id`).
   @$pb.TagNumber(2)
-  $core.String get eventId => $_getSZ(1);
+  $core.String get eventId => $_getSZ(0);
   @$pb.TagNumber(2)
-  set eventId($core.String v) { $_setString(1, v); }
+  set eventId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(2)
-  $core.bool hasEventId() => $_has(1);
+  $core.bool hasEventId() => $_has(0);
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
   /// Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`.
+  /// An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
   @$pb.TagNumber(3)
-  $8.Post get post => $_getN(2);
+  $8.Post get post => $_getN(1);
   @$pb.TagNumber(3)
   set post($8.Post v) { setField(3, v); }
   @$pb.TagNumber(3)
-  $core.bool hasPost() => $_has(2);
+  $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(3)
   void clearPost() => clearField(3);
   @$pb.TagNumber(3)
-  $8.Post ensurePost() => $_ensure(2);
+  $8.Post ensurePost() => $_ensure(1);
 
   /// Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event).
   @$pb.TagNumber(4)
-  EventInstanceInfo get info => $_getN(3);
+  EventInstanceInfo get info => $_getN(2);
   @$pb.TagNumber(4)
   set info(EventInstanceInfo v) { setField(4, v); }
   @$pb.TagNumber(4)
-  $core.bool hasInfo() => $_has(3);
+  $core.bool hasInfo() => $_has(2);
   @$pb.TagNumber(4)
   void clearInfo() => clearField(4);
   @$pb.TagNumber(4)
-  EventInstanceInfo ensureInfo() => $_ensure(3);
+  EventInstanceInfo ensureInfo() => $_ensure(2);
 
   /// The time the event starts (UTC/Timestamp format).
   @$pb.TagNumber(5)
-  $11.Timestamp get startsAt => $_getN(4);
+  $12.Timestamp get startsAt => $_getN(3);
   @$pb.TagNumber(5)
-  set startsAt($11.Timestamp v) { setField(5, v); }
+  set startsAt($12.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
-  $core.bool hasStartsAt() => $_has(4);
+  $core.bool hasStartsAt() => $_has(3);
   @$pb.TagNumber(5)
   void clearStartsAt() => clearField(5);
   @$pb.TagNumber(5)
-  $11.Timestamp ensureStartsAt() => $_ensure(4);
+  $12.Timestamp ensureStartsAt() => $_ensure(3);
 
   /// The time the event ends (UTC/Timestamp format).
   @$pb.TagNumber(6)
-  $11.Timestamp get endsAt => $_getN(5);
+  $12.Timestamp get endsAt => $_getN(4);
   @$pb.TagNumber(6)
-  set endsAt($11.Timestamp v) { setField(6, v); }
+  set endsAt($12.Timestamp v) { setField(6, v); }
   @$pb.TagNumber(6)
-  $core.bool hasEndsAt() => $_has(5);
+  $core.bool hasEndsAt() => $_has(4);
   @$pb.TagNumber(6)
   void clearEndsAt() => clearField(6);
   @$pb.TagNumber(6)
-  $11.Timestamp ensureEndsAt() => $_ensure(5);
+  $12.Timestamp ensureEndsAt() => $_ensure(4);
 
   /// The location of the event.
   @$pb.TagNumber(7)
-  $15.Location get location => $_getN(6);
+  $16.Location get location => $_getN(5);
   @$pb.TagNumber(7)
-  set location($15.Location v) { setField(7, v); }
+  set location($16.Location v) { setField(7, v); }
   @$pb.TagNumber(7)
-  $core.bool hasLocation() => $_has(6);
+  $core.bool hasLocation() => $_has(5);
   @$pb.TagNumber(7)
   void clearLocation() => clearField(7);
   @$pb.TagNumber(7)
-  $15.Location ensureLocation() => $_ensure(6);
+  $16.Location ensureLocation() => $_ensure(5);
 
   /// The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from an [`EventSyncSource`](#jonline-EventSyncSource).
   @$pb.TagNumber(8)
-  $core.String get eventSyncSourceInstanceId => $_getSZ(7);
+  $core.String get eventSyncSourceInstanceId => $_getSZ(6);
   @$pb.TagNumber(8)
-  set eventSyncSourceInstanceId($core.String v) { $_setString(7, v); }
+  set eventSyncSourceInstanceId($core.String v) { $_setString(6, v); }
   @$pb.TagNumber(8)
-  $core.bool hasEventSyncSourceInstanceId() => $_has(7);
+  $core.bool hasEventSyncSourceInstanceId() => $_has(6);
   @$pb.TagNumber(8)
   void clearEventSyncSourceInstanceId() => clearField(8);
 
   /// The time since this event "disappeared" from the sync source.
   /// It is up to the owner whether this means it should be deleted.
   @$pb.TagNumber(9)
-  $11.Timestamp get syncMissingSince => $_getN(8);
+  $12.Timestamp get syncMissingSince => $_getN(7);
   @$pb.TagNumber(9)
-  set syncMissingSince($11.Timestamp v) { setField(9, v); }
+  set syncMissingSince($12.Timestamp v) { setField(9, v); }
   @$pb.TagNumber(9)
-  $core.bool hasSyncMissingSince() => $_has(8);
+  $core.bool hasSyncMissingSince() => $_has(7);
   @$pb.TagNumber(9)
   void clearSyncMissingSince() => clearField(9);
   @$pb.TagNumber(9)
-  $11.Timestamp ensureSyncMissingSince() => $_ensure(8);
+  $12.Timestamp ensureSyncMissingSince() => $_ensure(7);
 
   /// RSVP + invite data for this instance.
   @$pb.TagNumber(10)
-  EventAttendances get attendances => $_getN(9);
+  EventAttendances get attendances => $_getN(8);
   @$pb.TagNumber(10)
   set attendances(EventAttendances v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasAttendances() => $_has(9);
+  $core.bool hasAttendances() => $_has(8);
   @$pb.TagNumber(10)
   void clearAttendances() => clearField(10);
   @$pb.TagNumber(10)
-  EventAttendances ensureAttendances() => $_ensure(9);
+  EventAttendances ensureAttendances() => $_ensure(8);
 
   /// If the request was made by a logged-in user, this is the current user's attendance for this instance.
   @$pb.TagNumber(11)
-  EventAttendance get currentUserAttendance => $_getN(10);
+  EventAttendance get currentUserAttendance => $_getN(9);
   @$pb.TagNumber(11)
   set currentUserAttendance(EventAttendance v) { setField(11, v); }
   @$pb.TagNumber(11)
-  $core.bool hasCurrentUserAttendance() => $_has(10);
+  $core.bool hasCurrentUserAttendance() => $_has(9);
   @$pb.TagNumber(11)
   void clearCurrentUserAttendance() => clearField(11);
   @$pb.TagNumber(11)
-  EventAttendance ensureCurrentUserAttendance() => $_ensure(10);
+  EventAttendance ensureCurrentUserAttendance() => $_ensure(9);
 
   /// SyncDestinations this instance has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(12)
-  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(11);
+  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(10);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -1313,7 +1255,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
-    $15.Location? hiddenLocation,
+    $16.Location? hiddenLocation,
   }) {
     final $result = create();
     if (attendances != null) {
@@ -1330,7 +1272,7 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
-    ..aOM<$15.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $15.Location.create)
+    ..aOM<$16.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $16.Location.create)
     ..hasRequiredFields = false
   ;
 
@@ -1361,15 +1303,15 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   /// When `hide_location_until_rsvp_approved` is set, the location of the event.
   @$pb.TagNumber(2)
-  $15.Location get hiddenLocation => $_getN(1);
+  $16.Location get hiddenLocation => $_getN(1);
   @$pb.TagNumber(2)
-  set hiddenLocation($15.Location v) { setField(2, v); }
+  set hiddenLocation($16.Location v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasHiddenLocation() => $_has(1);
   @$pb.TagNumber(2)
   void clearHiddenLocation() => clearField(2);
   @$pb.TagNumber(2)
-  $15.Location ensureHiddenLocation() => $_ensure(1);
+  $16.Location ensureHiddenLocation() => $_ensure(1);
 }
 
 enum EventAttendance_Attendee {
@@ -1393,9 +1335,9 @@ class EventAttendance extends $pb.GeneratedMessage {
     $core.String? invitingUserId,
     $core.String? privateNote,
     $core.String? publicNote,
-    $12.Moderation? moderation,
-    $11.Timestamp? createdAt,
-    $11.Timestamp? updatedAt,
+    $13.Moderation? moderation,
+    $12.Timestamp? createdAt,
+    $12.Timestamp? updatedAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -1456,9 +1398,9 @@ class EventAttendance extends $pb.GeneratedMessage {
     ..aOS(7, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(8, _omitFieldNames ? '' : 'privateNote')
     ..aOS(9, _omitFieldNames ? '' : 'publicNote')
-    ..e<$12.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $12.Moderation.MODERATION_UNKNOWN, valueOf: $12.Moderation.valueOf, enumValues: $12.Moderation.values)
-    ..aOM<$11.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $11.Timestamp.create)
-    ..aOM<$11.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $11.Timestamp.create)
+    ..e<$13.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
+    ..aOM<$12.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
+    ..aOM<$12.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -1582,9 +1524,9 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   /// Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable).
   @$pb.TagNumber(10)
-  $12.Moderation get moderation => $_getN(9);
+  $13.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
-  set moderation($12.Moderation v) { setField(10, v); }
+  set moderation($13.Moderation v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(10)
@@ -1592,27 +1534,27 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   /// The time the attendance was created.
   @$pb.TagNumber(11)
-  $11.Timestamp get createdAt => $_getN(10);
+  $12.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(11)
-  set createdAt($11.Timestamp v) { setField(11, v); }
+  set createdAt($12.Timestamp v) { setField(11, v); }
   @$pb.TagNumber(11)
   $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(11)
   void clearCreatedAt() => clearField(11);
   @$pb.TagNumber(11)
-  $11.Timestamp ensureCreatedAt() => $_ensure(10);
+  $12.Timestamp ensureCreatedAt() => $_ensure(10);
 
   /// The time the attendance was last updated.
   @$pb.TagNumber(12)
-  $11.Timestamp get updatedAt => $_getN(11);
+  $12.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(12)
-  set updatedAt($11.Timestamp v) { setField(12, v); }
+  set updatedAt($12.Timestamp v) { setField(12, v); }
   @$pb.TagNumber(12)
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(12)
   void clearUpdatedAt() => clearField(12);
   @$pb.TagNumber(12)
-  $11.Timestamp ensureUpdatedAt() => $_ensure(11);
+  $12.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
 ///  An anonymous internet user who has RSVP'd to an [`EventInstance`](#jonline-EventInstance).
@@ -1704,7 +1646,7 @@ class UserAttendee extends $pb.GeneratedMessage {
     $core.String? username,
     $5.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$13.Permission>? permissions,
+    $core.Iterable<$14.Permission>? permissions,
   }) {
     final $result = create();
     if (userId != null) {
@@ -1733,7 +1675,7 @@ class UserAttendee extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$13.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $13.Permission.valueOf, enumValues: $13.Permission.values, defaultEnumValue: $13.Permission.PERMISSION_UNKNOWN)
+    ..pc<$14.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
@@ -1800,7 +1742,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   void clearRealName() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.List<$13.Permission> get permissions => $_getList(4);
+  $core.List<$14.Permission> get permissions => $_getList(4);
 }
 
 

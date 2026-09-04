@@ -45,3 +45,6 @@ pub use sync_marshaling::*;
 
 mod event_marshaling;
 pub use event_marshaling::*;
+
+mod ai_model_provider_marshaling;
+pub use ai_model_provider_marshaling::*;

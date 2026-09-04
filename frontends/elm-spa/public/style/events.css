@@ -103,10 +103,12 @@
 
 /* `Components.Posts.mediaEditButton`'s own row, directly below the primary
    (`Event`) `postSection`'s media -- see `Pages.Event.EventId_.eventDetailView`
-   -- same treatment as `Components.Posts`' own `.post-detail-media-edit-row`. */
+   -- same treatment as `Components.Posts`' own `.post-detail-media-edit-row`,
+   including its `gap` for `generateMediaButton` sharing the row alongside it. */
 .event-post-media-edit-row {
   display: flex;
   justify-content: flex-start;
+  gap: 0.4rem;
   margin-top: 0.3rem;
 }
 
@@ -701,7 +703,7 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  z-index: 34;
+  z-index: 35;
   width: 95vw;
   max-width: 900px;
   max-height: calc(100vh - 4rem);

@@ -26,11 +26,12 @@
      see create_new_panel.css) -- opening this from a Post's Edit/Reply
      button, or from `CreateNewPanel`'s own Edit button, should win over that
      composer rather than getting buried behind it. Still below
-     `.my-media-panel` (31, see my_media_panel.css) and `.media-viewer-panel`
-     (32, see media_viewer_panel.css) -- the My Media panel and a fullscreen
-     image/video both reasonably win over this editor -- and below `.modal`'s
-     own 33/34 (a Cancel/Confirm dialog opened *from* this panel, if one's
-     ever added, should still win). */
+     `.media-generator-panel` (31, see media_generator_panel.css),
+     `.my-media-panel` (32, see my_media_panel.css) and `.media-viewer-panel`
+     (33, see media_viewer_panel.css) -- the Media Generator/My Media panels
+     and a fullscreen image/video all reasonably win over this editor -- and
+     below `.modal`'s own 34/35 (a Cancel/Confirm dialog opened *from* this
+     panel, if one's ever added, should still win). */
   z-index: 30;
 }
 

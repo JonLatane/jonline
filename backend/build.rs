@@ -26,5 +26,15 @@ fn main() {
         .compile_protos(&[proto_file], &["../protos"])
         .unwrap_or_else(|e| panic!("protobuf compile error: {}", e));
 
-    println!("cargo:rerun-if-changed={}", proto_file);
+    // `jonline.proto` imports nearly every other file under `../protos` (sync.proto,
+    // permissions.proto, ai_model_providers.proto, etc), but Cargo only reruns this script for
+    // paths explicitly named here -- watching just `proto_file` meant editing an *imported* .proto
+    // alone left the generated code stale until something else (e.g. `make rebuild_protos`) forced
+    // a full recompile. Watch every .proto file in the directory instead.
+    for entry in fs::read_dir("../protos").expect("failed to read ../protos") {
+        let path = entry.expect("failed to read ../protos entry").path();
+        if path.extension().and_then(|ext| ext.to_str()) == Some("proto") {
+            println!("cargo:rerun-if-changed={}", path.display());
+        }
+    }
 }

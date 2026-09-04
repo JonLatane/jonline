@@ -1,8 +1,9 @@
 module Shared.UserPreferences exposing (Model, Msg(..), init, update)
 
 {-| Small, app-wide user preferences that aren't tied to any one page's own
-URL/local state -- currently just `prefersCalendar` (see its own doc), a
-single JSON object persisted to its own localStorage key (`Ports.persistUserPreferences`).
+URL/local state -- `prefersCalendar`, `postsBefore`, `eventsAfter` (see each
+field's own doc), all one JSON object persisted to its own localStorage key
+(`Ports.persistUserPreferences`).
 
 Mirrors `Shared.StarredPanel`'s persist-to-localStorage half exactly, minus
 the `BroadcastChannel` live cross-tab push -- see `Ports.persistUserPreferences`'s
@@ -14,6 +15,7 @@ load, not pushed into ones already open.
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
+import Time
 
 
 type alias Model =
@@ -25,11 +27,34 @@ type alias Model =
     -- `Components.Pages.UserProfilePage`'s and `Pages.UsernameOrCustomTab_.Events`/
     -- `Pages.User.UserId_.Events`'s, which never write it) to decide their
     -- own initial mode -- see `EventsPage.defaultMode`.
-    { prefersCalendar : Bool }
+    { prefersCalendar : Bool
+
+    -- The last cutoff the user actually typed into `Components.Pages.PostsPage`'s
+    -- own "Posts Before..." tab (`Model.publishedBefore`) -- set only by
+    -- `PostsPage.PublishedBeforeDebounceElapsed`, never by a `?published_before=`
+    -- query param on load (that's a one-off view into someone else's/an old
+    -- link's cutoff, not something that should silently overwrite this).
+    -- Read back by `PostsPage.init` as `publishedBefore`'s own default absent
+    -- such a query param, so a fresh `/`/`/posts` starts wherever the user
+    -- last left it instead of `Nothing` (itself seeded to "now" via `GotNow`).
+    , postsBefore : Maybe Time.Posix
+
+    -- Same idea as `postsBefore`, for `Components.Pages.EventsPage`'s
+    -- "Events After..." tab (`Model.endsAfter`) -- set only by
+    -- `EventsPage.EndsAfterDebounceElapsed`. Read back by `EventsPage`'s own
+    -- `TabChanged EventsAfterDate` handler (not `init`: unlike `postsBefore`,
+    -- `endsAfter` is kept live at "now" while `UpcomingEvents` is active, so
+    -- there's nothing meaningful to seed until the user actually switches to
+    -- `EventsAfterDate`) as that switch's starting cutoff instead of
+    -- wherever `UpcomingEvents`' live clock last left `endsAfter`.
+    , eventsAfter : Maybe Time.Posix
+    }
 
 
 type Msg
     = SetPrefersCalendar Bool
+    | SetPostsBefore (Maybe Time.Posix)
+    | SetEventsAfter (Maybe Time.Posix)
 
 
 {-| `flags` is the raw, persisted JSON object (see `Ports.persistUserPreferences`)
@@ -41,7 +66,16 @@ init flags =
     { prefersCalendar =
         Decode.decodeValue (Decode.field "prefersCalendar" Decode.bool) flags
             |> Result.withDefault True
+    , postsBefore = decodePosixField "postsBefore" flags
+    , eventsAfter = decodePosixField "eventsAfter" flags
     }
+
+
+decodePosixField : String -> Decode.Value -> Maybe Time.Posix
+decodePosixField field flags =
+    Decode.decodeValue (Decode.field field Decode.int) flags
+        |> Result.map Time.millisToPosix
+        |> Result.toMaybe
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -55,6 +89,22 @@ update msg model =
             in
             ( newModel, persistCmd newModel )
 
+        SetPostsBefore postsBefore ->
+            let
+                newModel : Model
+                newModel =
+                    { model | postsBefore = postsBefore }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetEventsAfter eventsAfter ->
+            let
+                newModel : Model
+                newModel =
+                    { model | eventsAfter = eventsAfter }
+            in
+            ( newModel, persistCmd newModel )
+
 
 persistCmd : Model -> Cmd Msg
 persistCmd model =
@@ -63,4 +113,18 @@ persistCmd model =
 
 encode : Model -> Encode.Value
 encode model =
-    Encode.object [ ( "prefersCalendar", Encode.bool model.prefersCalendar ) ]
+    Encode.object
+        [ ( "prefersCalendar", Encode.bool model.prefersCalendar )
+        , ( "postsBefore", encodePosixField model.postsBefore )
+        , ( "eventsAfter", encodePosixField model.eventsAfter )
+        ]
+
+
+encodePosixField : Maybe Time.Posix -> Encode.Value
+encodePosixField maybePosix =
+    case maybePosix of
+        Just posix ->
+            Encode.int (Time.posixToMillis posix)
+
+        Nothing ->
+            Encode.null

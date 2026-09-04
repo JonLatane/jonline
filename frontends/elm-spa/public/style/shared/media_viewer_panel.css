@@ -6,7 +6,7 @@
    Unlike the Accounts/Starred/Markdown panels, this one doesn't share
    `UI.elm`'s `sharedBackdrop` for its dimming/click-to-close -- that backdrop
    sits at z-index 10 (see nav.css), well below both `.navbar` (28) and this
-   panel's own 32 (below), so it couldn't reach up that far even if it wanted
+   panel's own 33 (below), so it couldn't reach up that far even if it wanted
    to. It doesn't need to, though: its own box already spans the whole viewport
    (`inset: 0`, unlike those smaller, anchored dropdowns), so it just *is*
    its own backdrop -- its own `background`/`backdrop-filter` below supply the
@@ -72,12 +72,13 @@
      composer/editor left open behind it. Also above `.navbar` (28, see
      nav.css) and, with it, the Accounts/Starred panels (its
      descendants, forming one stacking context at *its* z-index, not their
-     own lower ones), and above `.my-media-panel` (31, see
+     own lower ones), and above `.media-generator-panel` (31, see
+     media_generator_panel.css)/`.my-media-panel` (32, see
      my_media_panel.css) too -- a fullscreen lightbox opened from a post
      should stay on top even if one of those is then opened over it, rather
      than getting buried behind a small dropdown or a media browser. Still
-     below `.modal`'s own 33/34 (a Cancel/Confirm dialog should always win). */
-  z-index: 32;
+     below `.modal`'s own 34/35 (a Cancel/Confirm dialog should always win). */
+  z-index: 33;
 
   /* Fullscreen fade in/out reads better than the base rule's slide-up
      `translateY` (built for a small dropdown/bottom-sheet, not a full-page

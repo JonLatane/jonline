@@ -465,6 +465,49 @@ impl Jonline for JonlineService {
         authenticated_rpc!(self, rpcs::delete_event_instance_sync_destination, request)
     }
 
+    async fn get_ai_model_providers(
+        &self,
+        request: Request<User>,
+    ) -> Result<Response<GetAiModelProvidersResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_ai_model_providers, request)
+    }
+    async fn create_ai_model_provider(
+        &self,
+        request: Request<AiModelProvider>,
+    ) -> Result<Response<AiModelProvider>, Status> {
+        authenticated_rpc!(self, rpcs::create_ai_model_provider, request)
+    }
+    async fn update_ai_model_provider(
+        &self,
+        request: Request<AiModelProvider>,
+    ) -> Result<Response<AiModelProvider>, Status> {
+        authenticated_rpc!(self, rpcs::update_ai_model_provider, request)
+    }
+    async fn delete_ai_model_provider(
+        &self,
+        request: Request<DeleteAiModelProviderRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::delete_ai_model_provider, request)
+    }
+    async fn grant_ai_model_provider(
+        &self,
+        request: Request<GrantAiModelProviderRequest>,
+    ) -> Result<Response<AiModelProviderGrant>, Status> {
+        authenticated_rpc!(self, rpcs::grant_ai_model_provider, request)
+    }
+    async fn revoke_ai_model_provider(
+        &self,
+        request: Request<RevokeAiModelProviderRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::revoke_ai_model_provider, request)
+    }
+    async fn generate_media(
+        &self,
+        request: Request<GenerateMediaRequest>,
+    ) -> Result<Response<Media>, Status> {
+        authenticated_bucket_rpc!(self, rpcs::generate_media, request)
+    }
+
     async fn upsert_event_attendance(
         &self,
         request: Request<EventAttendance>,

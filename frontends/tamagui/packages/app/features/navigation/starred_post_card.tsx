@@ -1,11 +1,11 @@
-import { EventInstance, Post, PostContext } from "@jonline/api";
+import { Post, PostContext } from "@jonline/api";
 import { AnimatePresence, Button, Paragraph, Spinner, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { createSelector } from "@reduxjs/toolkit";
 import { ChevronDown, ChevronUp, MessagesSquare } from "@tamagui/lucide-icons";
 import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";
-import { FederatedEvent, FederatedPost, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedPost, IdentifiedEventInstance, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, useServerTheme } from "app/store";
 import React, { createRef, useEffect, useState } from "react";
 import EventCard from "../event/event_card";
 import { PostCard, scrollToCommentsBottom, scrollToCommentsTop } from "../post";
@@ -103,7 +103,7 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
     ? parseFederatedId(eventInstanceId!).id
     : undefined;
   // const { id: serverEventInstanceId } = parseFederatedId(eventInstanceId!);
-  const targetInstance: EventInstance | undefined = event?.instances?.find(i => i.id === serverEventInstanceId);
+  const targetInstance: IdentifiedEventInstance | undefined = event?.instances?.find(i => i.id === serverEventInstanceId);
   const eventWithSingleInstance: FederatedEvent | undefined = event && targetInstance
     ? {
       ...event,

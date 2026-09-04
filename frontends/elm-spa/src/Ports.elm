@@ -112,7 +112,7 @@ silently fails to take effect at all on an element with `scroll-behavior:
 smooth` set, even though the `Task` itself reports success. A plain
 port-triggered assignment runs as a normal JS callback, not wrapped in
 `requestAnimationFrame`, and doesn't have this problem. See
-`Pages.Event.EventId_.scrollToInstance`, the only current caller.
+`Pages.Event.PostId_.scrollToInstance`, the only current caller.
 -}
 port scrollElementLeft : Encode.Value -> Cmd msg
 

@@ -12,7 +12,7 @@
    backdrop/open-closed transition.
 
    z-index 90/91 is deliberately above every other overlay in this app
-   (navbar 28, panels 20-32, modals 33/34) -- a popover is the most
+   (navbar 28, panels 20-33, modals 34/35) -- a popover is the most
    "transient, on top of everything" kind of overlay there is, so it should
    never end up tucked behind an already-open panel or modal. */
 

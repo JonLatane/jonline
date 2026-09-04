@@ -105,9 +105,9 @@
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [CustomHomePage](#jonline-CustomHomePage)
     - [CustomNavigationTab](#jonline-CustomNavigationTab)
     - [CustomNavigationTabSet](#jonline-CustomNavigationTabSet)
-    - [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath)
     - [EventSettings](#jonline-EventSettings)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
@@ -148,6 +148,22 @@
     - [ThreadsAccount](#jonline-ThreadsAccount)
     - [XTwitterAccount](#jonline-XTwitterAccount)
   
+- [ai_model_providers.proto](#ai_model_providers-proto)
+    - [AIModelProvider](#jonline-AIModelProvider)
+    - [AIModelProviderGrant](#jonline-AIModelProviderGrant)
+    - [AnthropicCredentials](#jonline-AnthropicCredentials)
+    - [AvailableAIModel](#jonline-AvailableAIModel)
+    - [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest)
+    - [DigitalOceanCredentials](#jonline-DigitalOceanCredentials)
+    - [GeminiCredentials](#jonline-GeminiCredentials)
+    - [GenerateMediaRequest](#jonline-GenerateMediaRequest)
+    - [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse)
+    - [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest)
+    - [OpenAICredentials](#jonline-OpenAICredentials)
+    - [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest)
+  
+    - [AIModelCapability](#jonline-AIModelCapability)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -178,7 +194,7 @@ Jonline is designed to be easy to run and deploy yourself with a [2 minute setup
 [images](https://hub.docker.com/r/jonlatane/jonline/tags) on [DockerHub](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags) and deployment to your K8s clusters available via
 a simple but powerful `Makefile`-based design language.
 
-#### Ports &amp; Protocols
+### Ports &amp; Protocols
 Jonline servers interact across several ports:
 * [gRPC (27707)](#grpc-api) - The main Jonline gRPC API. This is the primary port for all Jonline clients. It may or may not be TLS-enabled (443).
      * Clients are expected to negotiate the gRPC host via the [`backend_host` HTTP endpoint (see below)](#http-based-client-host-negotiation-for-external-cdns) on port 80/443.
@@ -189,20 +205,20 @@ Jonline servers interact across several ports:
      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 
-#### API Design Notes
-##### Moderation and Visibility
+### API Design Notes
+#### Moderation and Visibility
 Jonline APIs are designed to support [`Moderation`](#jonline-Moderation) and [`Visibility`](#jonline-Visibility) controls at the level of individual entities. However, to keep things
 DRY, moderation and visibility controls are only implemented for [`User`](#jonline-User)s, [`Media`](#jonline-Media), [`Group`](#jonline-Group)s, and [`Post`](#jonline-Post)s.
 
 [`Event`](#jonline-Event)s and future [`Post`](#jonline-Post)-like types simply use the same implementation as their contained [`Post`](#jonline-Post)s. The intent here is to maximize
 both shared code and implementation robustness.
 
-##### Composition Over Inheritance
+#### Composition Over Inheritance
 Jonline&#39;s APIs are designed using composition over inheritance. For instance, an [`Event`](#jonline-Event) contains
 a [`Post`](#jonline-Post) rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
 through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
 
-##### Predictable Atomicity
+#### Predictable Atomicity
 The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
 For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
 
@@ -220,12 +236,12 @@ This should prove a robust pattern for any future entities intended to be sharea
 moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
 approach to predictable atomicity.
 
-#### Core Types
+### Core Types
 Jonline&#39;s data model centers around a handful of top-level types, most of which carry their own
 [`Visibility`](#jonline-Visibility) and [`Moderation`](#jonline-Moderation) state and can be organized into
 [`Group`](#jonline-Group)s.
 
-##### ServerConfiguration
+#### ServerConfiguration
 Jonline incorporates server configuration, including fairly deep customization of the end-user UI/UX, as perhaps its *most* primitive type.
 [`ServerConfiguration`](#jonline-ServerConfiguration) is unlike most of the highly-normalized, minimalist types in the Jonline protocol,
 and is more like a document than a row in a database. (That said, every [`ServerConfiguration`](#jonline-ServerConfiguration) change *is* a row in a database, meaning
@@ -234,52 +250,131 @@ reverting broken configurations is easy.)
 Any client using the Jonline protocol is basically expected to follow a flow of &#34;get service version, then [`ServerConfiguration`](#jonline-ServerConfiguration),
 then worry about auth, then finally about retrieving anything else.&#34;
 
-##### User
+##### Server Info and Theme
+[`ServerInfo`](#jonline-ServerInfo) (`server_info`) carries the server&#39;s public-facing identity: `name`,
+`short_name`, `description`, `privacy_policy` and `media_policy` text shown during account creation and on the
+`/about` page, a multi-size [`ServerLogo`](#jonline-ServerLogo) (separate light/dark, square/wide media IDs), a
+[`ServerColors`](#jonline-ServerColors) scheme (primary/navigation accents plus author/admin/moderator name
+colors), and `web_user_interface` choosing which UI a browser is served (React/Tamagui by default, or the Elm
+SPA/Flutter Web alternatives).
+
+##### Custom Tabs
+[`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet) (`custom_tabs`) lets a server admin override the Elm
+UI&#39;s default navigation. `home` (a [`CustomHomePage`](#jonline-CustomHomePage)) replaces `/` itself -- a
+predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
+above it; `tabs` (repeated [`CustomNavigationTab`](#jonline-CustomNavigationTab)) replaces the
+`EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to its own custom URL (`path`). Each
+`CustomNavigationTab` targets either a predefined [`NavigationTab`](#jonline-NavigationTab), a Post ID, or
+(path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. `path` is
+fully live -- the Elm SPA actually routes it (`Pages.UsernameOrCustomTab_`), not just previews it -- except for
+the built-in `/events`, `/posts`, `/people`, and `/about` paths themselves, which stay reserved for their own
+matching predefined tab and can&#39;t be remapped elsewhere.
+
+##### Anonymous, Default, and Basic User Permission Sets
+Three [`Permission`](#jonline-Permission) lists set the server&#39;s baseline access, each enforced independently of
+any per-User/per-Group grants: `anonymous_user_permissions` (what a logged-out visitor may do -- only the
+`VIEW_*` permissions are valid here), `default_user_permissions` (what every new account starts with), and
+`basic_user_permissions` (the superset a user holding `GRANT_BASIC_PERMISSIONS` may hand out to others). Granting
+`GLOBAL_PUBLIC` as a feature&#39;s `default_visibility` (see `people_settings`/`group_settings`/`post_settings`/
+`event_settings` below) requires the matching `PUBLISH_*_GLOBALLY` permission to actually be present in
+`default_user_permissions`.
+
+##### Federation Settings
+[`FederationInfo`](#jonline-FederationInfo) (`federation_info`) is where all federation and social-sync
+credentials live.
+
+###### Other Jonline servers
+`servers` (repeated [`FederatedServer`](#jonline-FederatedServer)) recommends other Jonline hosts to clients,
+each optionally `configured_by_default` (client should enable/configure it automatically) and/or
+`pinned_by_default` (client should pin its Events/Posts alongside the &#34;main&#34; server&#39;s).
+
+###### Facebook and X (Twitter) API keys
+`facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
+this server&#39;s Facebook App, enabling users to connect Facebook Page and Instagram Business
+[`SyncDestination`](#jonline-SyncDestination)s (see [Synchronization](#synchronization) below);
+`x_twitter_auth_config` (an [`XTwitterAuthConfig`](#jonline-XTwitterAuthConfig), `client_id`/`client_secret`)
+does the same for X (Twitter) -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. Both
+`*_secret` fields are write-only/never serialized back to clients; admins rotate them directly in the database&#39;s
+JSONB column.
+
+##### Web Push Configuration
+[`WebPushConfig`](#jonline-WebPushConfig) (`web_push_config`) holds the server&#39;s VAPID keypair for Web Push
+notifications: `public_vapid_key` is served to clients so they can subscribe, while `private_vapid_key` signs
+outgoing pushes and is *never* serialized to clients -- like the federation secrets above, admins set/rotate it
+directly in the database.
+
+##### CDN Configuration
+[`ExternalCDNConfig`](#jonline-ExternalCDNConfig) (`external_cdn_config`) enables running Jonline behind a CDN
+(e.g. Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34;): when set, the unsecured HTTP server (port 80) stops redirecting to
+HTTPS and instead serves the Tamagui Web client directly, with `frontend_host`/`backend_host` telling the web
+client which domains to use instead of `window.location.hostname` (Tamagui web only, for now). `secure_media`
+plus its `media_ipv4_allowlist`/`media_ipv6_allowlist` are a (TODO, not yet enforced) way to restrict media
+downloads on the unsecured server to the CDN&#39;s own IP ranges; `cdn_grpc` is a further (TODO) mode that would move
+the gRPC server itself onto port 443 to ride along Cloudflare&#39;s gRPC support.
+
+#### User
 A [`User`](#jonline-User) is a Jonline account: username, real name, bio, avatar, contact methods, and
 [`Permission`](#jonline-Permission)s, plus counts (followers, posts, events, etc.) and federation info (see
 [Federated Profiles](#federated-profiles) above). A lighter-weight [`Author`](#jonline-Author) (just ID, username,
 avatar, real name, permissions) is embedded on [`Post`](#jonline-Post)s, [`Message`](#jonline-Message)s, and similar
 content types instead of a full [`User`](#jonline-User), to keep those payloads small.
 
-- **Follows**: A [`Follow`](#jonline-Follow) is one [`User`](#jonline-User) following another, optionally subject to the target&#39;s moderation
+##### Follows
+A [`Follow`](#jonline-Follow) is one [`User`](#jonline-User) following another, optionally subject to the target&#39;s moderation
 (i.e. approval). Mutual follows make two users &#34;friends.&#34; Follows also drive the `FOLLOWING_POSTS`/`FOLLOWING_EVENTS`
 listing types and `LIMITED`-visibility content.
 
-- **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
+##### Memberships
+A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
 in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
-//
-- **SyncDestinations**: A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
+
+##### SyncDestinations
+A [`User`](#jonline-User) can also own many [`SyncDestination`](#jonline-SyncDestination)s -
 external targets to push [`EventInstance`](#jonline-EventInstance)s and [`Post`](#jonline-Post)s out to, e.g. a connected Facebook Page (configured via
 [`FacebookPage`](#jonline-FacebookPage)). See the Event and Post sections below for how these attach.
 
-- **EventSyncSources**: A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
+##### EventSyncSources
+A [`User`](#jonline-User) can own many [`EventSyncSource`](#jonline-EventSyncSource)s - external calendars to
 pull [`Event`](#jonline-Event)s in from, e.g. an iCal subscription. See the Event section below for how these attach to [`Event`](#jonline-Event)s.
 
-##### Media
+##### AIModelProviders
+A [`User`](#jonline-User) can also own many [`AIModelProvider`](#jonline-AIModelProvider)s -
+connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
+them via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
+AIModelProvider section below. Which models are actually available, and what each can do
+([`AIModelCapability`](#jonline-AIModelCapability)), is a hand-maintained catalog (no provider exposes a stable
+&#34;list models&#34; API to build this from at request time) - see
+[`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/jonline/blob/main/backend/src/logic/ai_model_catalog.rs)
+on GitHub for the actual source of truth.
+
+#### Media
 [`Media`](#jonline-Media) represents an uploaded (or server-generated) photo or video. Unlike other types, Media
 content itself is *not* served over gRPC - it&#39;s uploaded/downloaded via plain HTTP (`POST`/`GET /media`) - while
 its metadata (content type, name, visibility, moderation) is managed like any other Jonline type. Other messages
 (like `User.avatar`, `Group.avatar`, and `Post.media`) reference Media via the lightweight [`MediaReference`](#jonline-MediaReference) type.
 
-##### Post
+#### Post
 [`Post`](#jonline-Post) is Jonline&#39;s fundamental content/building-block type: it&#39;s what actually carries a
 title/link/content body, visibility, and moderation, and is reused (via [`PostContext`](#jonline-PostContext)) as the backing data for
 replies, [`Event`](#jonline-Event)s, and [`EventInstance`](#jonline-EventInstance)s alike. Posts can be replied to (threaded via
 `reply_to_post_id`), cross-posted to [`Group`](#jonline-Group)s ([`GroupPost`](#jonline-GroupPost)), and shared directly with users ([`UserPost`](#jonline-UserPost)).
 
-- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
+##### GroupPosts
+A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 moderation status and who shared it, separately from the Post&#39;s own (author-set) visibility/moderation.
 
-- **UserPosts**: A [`UserPost`](#jonline-UserPost) is a &#34;direct share&#34; of a [`Post`](#jonline-Post) to a [`User`](#jonline-User) (see also `DIRECT`
+##### UserPosts
+A [`UserPost`](#jonline-UserPost) is a &#34;direct share&#34; of a [`Post`](#jonline-Post) to a [`User`](#jonline-User) (see also `DIRECT`
 [`Visibility`](#jonline-Visibility)). Currently unused/unimplemented.
 
-- **SyncDestinations**: A [`Post`](#jonline-Post) may also be synced (cross-posted) out to a user-owned
+##### SyncDestinations
+A [`Post`](#jonline-Post) may also be synced (cross-posted) out to a user-owned
 [`SyncDestination`](#jonline-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
 [`EventInstance`](#jonline-EventInstance)s use (see below) - each Post may push to several destinations at once, tracked via the
 repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)).
 
-##### Event
+#### Event
 An [`Event`](#jonline-Event) is a wrapper for *at least two* [`Post`](#jonline-Post)s. It always has its own top-level [`Post`](#jonline-Post)
 (`PostContext.EVENT`, holding the event&#39;s overall title/description) *and* it must have at least one
 [`EventInstance`](#jonline-EventInstance) (see below), each of which in turn must have its own [`Post`](#jonline-Post)
@@ -287,7 +382,8 @@ An [`Event`](#jonline-Event) is a wrapper for *at least two* [`Post`](#jonline-P
 title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
 instances back one Post per instance beyond that.
 
-- **EventInstances**: An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an [`Event`](#jonline-Event) -
+##### EventInstances
+An [`EventInstance`](#jonline-EventInstance) is the actual time-boxed occurrence of an [`Event`](#jonline-Event) -
 it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#jonline-Location) that the parent [`Event`](#jonline-Event) itself does not have.
 An [`Event`](#jonline-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#jonline-Event) must have at least one.
 
@@ -308,18 +404,20 @@ An [`Event`](#jonline-Event) with zero instances is meaningless (no time or plac
     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#jonline-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
 
-##### Group
+#### Group
 A [`Group`](#jonline-Group) organizes [`User`](#jonline-User)s, [`Post`](#jonline-Post)s, and [`Event`](#jonline-Event)s together under shared visibility, moderation,
 and permission defaults.
 
-- **Memberships**: A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
+##### Memberships
+A [`Membership`](#jonline-Membership) is a [`User`](#jonline-User)&#39;s membership (or pending join request/invitation)
 in a [`Group`](#jonline-Group), tracking the user&#39;s [`Permission`](#jonline-Permission)s within the group plus separate group-side and user-side [`Moderation`](#jonline-Moderation)
 (for join-approval flows). Returned as part of [`User`](#jonline-User)/[`Group`](#jonline-Group) payloads, and via [`Member`](#jonline-Member) when listing a Group&#39;s members.
 
-- **GroupPosts**: A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
+##### GroupPosts
+A [`GroupPost`](#jonline-GroupPost) is the cross-posting of a [`Post`](#jonline-Post) into a [`Group`](#jonline-Group), carrying the group-specific
 moderation status and who shared it, separately from the Post&#39;s own (author-set) visibility/moderation.
 
-##### Message
+#### Message
 [`Message`](#jonline-Message) is Jonline&#39;s &#34;low trust&#34; messaging/email system, meant to let strangers on a server
 make first contact (e.g. via email, with no account required) before moving to a more trusted channel. Admins have
 open access to all Messages on a server.
@@ -328,10 +426,11 @@ Email support in Messages comes from the [Stalwart integration](#post-email-stal
 a Stalwart server to be running and configured to forward emails to the Jonline server. Jonline provides tooling
 to do this automatically, but it is completely optional.
 
-- **MessagingGroup**: A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
+##### MessagingGroup
+A [`MessagingGroup`](#jonline-MessagingGroup) is the set of participants in a Message conversation. Every [`Message`](#jonline-Message)
 belongs to one; if a client wasn&#39;t a visible recipient (e.g. they were BCC&#39;ed), the [`Message`](#jonline-Message) they receive omits it.
 
-#### Authentication
+### Authentication
 Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s (both [`ExpirableToken`s](#jonline-ExpirableToken)).
 Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 `authorization` header (no `Bearer ` prefix).
@@ -347,7 +446,7 @@ then use the `refresh_token` to call the [`AccessToken`](#grpc-api-AccessToken) 
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
-##### Federated Authentication
+#### Federated Authentication
 tl;dr: Lets you sign in to the `jon@bullcity.social` user on `jonline.io`, without ever entering your `bullcity.social`
 credentials on `jonline.io`.
 
@@ -381,19 +480,19 @@ and a fresh one generated in its place, so it can&#39;t be reused for a second t
 
 See the two HTTP-level routes below for the exact URL/crypto shape.
 
-#### Federation
+### Federation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
 &#34;nice to have&#34; features require it, so it is not used.
 
-##### Federated Servers
+#### Federated Servers
 Jonline servers can recommend other servers to clients with the `federation_info` field (a [`FederationInfo` message](#jonline-FederationInfo)) in [`ServerConfiguration`](#jonline-ServerConfiguration).
 Clients can use this information to discover other servers, or users can add new servers manually.
 Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
 allow CORS to be configured in a &#34;strict&#34; mode, so someone else&#39;s Jonline server cannot be used to access your server&#39;s data
 unless you explicitly allow it.
 
-##### Federated Profiles
+#### Federated Profiles
 Jonline users can federate with users on any other Jonline server. This works by two-way verification:
 For example, Jon has the user [`jonline.io/jon`](https://jonline.io/jon), [`oakcity.social/jon`](https://oakcity.social/jon),
 and [`bullcity.social/jon`](https://bullcity.social/jon) associated with one another. 
@@ -405,21 +504,21 @@ isn&#39;t linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.soci
 
 Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
 
-##### Federated Browsing
+#### Federated Browsing
 Jonline&#39;s protocols and UI are designed to work together to present a seamless UX for content from many types of communities. Users can add/remove servers
 in a way that gives them control, transparency and trust. Meanwhile, server owners get extreme customization and useful integrations with social media
 platforms.
 
-##### Federated Messaging
+#### Federated Messaging
 Jonline&#39;s Elm Messaging UI is generally a multi-server federated messenger. The main limitation is that it can only receive push notifications
 from one server. (This could be changed with VAPID key sharing, but is part of the VAPID protocol.)
 
-#### Synchronization
+### Synchronization
 While Federation is a first-class feature of Jonline, it also supports synchronization with other
 fediverse platforms as well as other less-open platforms. All API keys for external services are stored
 in [`ServerConfiguration`](#jonline-ServerConfiguration)&#39;s `federation_info`.
 
-##### SyncDestination
+#### SyncDestination
 A [`SyncDestination`](#jonline-SyncDestination) is a user-owned external target to push [`EventInstance`](#jonline-EventInstance)s and
 [`Post`](#jonline-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it&#39;s
 each [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post) (not, say, the parent [`Event`](#jonline-Event)) that syncs out, and each may push to several
@@ -439,14 +538,14 @@ step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
 [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
 way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
 
-###### Facebook
+##### Facebook
 `configuration.facebook_page` (a [`FacebookPage`](#jonline-FacebookPage)) is a connected Facebook Page.
 Connecting one requires a short-lived user access token from client-side Facebook Login
 (`FacebookPage.short_lived_user_access_token`), which the server exchanges for a long-lived Page access token; the
 short-lived token is write-only and never populated back in responses. Gated on `SYNC_EVENTS_TO_FACEBOOK`/
 `SYNC_POSTS_TO_FACEBOOK`.
 
-###### Instagram
+##### Instagram
 `configuration.instagram_account` (an [`InstagramAccount`](#jonline-InstagramAccount)) is a connected Instagram
 Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
 connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
@@ -455,20 +554,20 @@ the token for the chosen Page&#39;s access token, then looks up that Page&#39;s 
 [`Post`](#jonline-Post)/[`EventInstance`](#jonline-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
 `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
 
-###### Mastodon
+##### Mastodon
 `configuration.mastodon_account` (a [`MastodonAccount`](#jonline-MastodonAccount)) is a connected Mastodon
 account, on any instance the user names (`instance_host`) -- there&#39;s no single app to register the way
 Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
 (`MastodonAccount.access_token`, generated on the user&#39;s own instance under Preferences &gt; Development) rather than
 an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
 
-###### Bluesky
+##### Bluesky
 `configuration.bluesky_account` (a [`BlueskyAccount`](#jonline-BlueskyAccount)) is a connected Bluesky (AT
 Protocol) account. Connecting one is a user-supplied &#34;App Password&#34; (`BlueskyAccount.app_password`, generated at
 Settings &gt; App Passwords -- not the account&#39;s main password) rather than an OAuth popup. Gated on
 `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
 
-###### X (Twitter)
+##### X (Twitter)
 `configuration.x_twitter_account` (an [`XTwitterAccount`](#jonline-XTwitterAccount)) is a connected X account. Requires this
 server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
 sets one, every RPC touching an [`XTwitterAccount`](#jonline-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
@@ -478,7 +577,7 @@ the code for a short-lived access token (2 hour expiry) plus a refresh token, tr
 each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`&#39;s own doc).
 Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
 
-###### Threads
+##### Threads
 `configuration.threads_account` (a [`ThreadsAccount`](#jonline-ThreadsAccount)) is a connected Threads account.
 Threads API is a product added to this server&#39;s *existing* Facebook App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)) rather than a
 separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
@@ -488,7 +587,7 @@ short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant
 implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
 text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 
-##### EventSyncSource
+#### EventSyncSource
 An [`EventSyncSource`](#jonline-EventSyncSource) mirrors [`SyncDestination`](#jonline-SyncDestination), but for pulling [`Event`](#jonline-Event)s in rather than
 pushing content out -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though the
 `oneof` leaves room for other source types. Unlike [`SyncDestination`](#jonline-SyncDestination), this is a 1:(0 or 1) relationship: it&#39;s the
@@ -501,9 +600,34 @@ Sources are managed via [`GetEventSyncSources`](#grpc-api-GetEventSyncSources), 
 (requires `SYNCHRONIZE_EVENTS`, or Admin), [`UpdateEventSyncSource`](#grpc-api-UpdateEventSyncSource), and
 [`DeleteEventSyncSource`](#grpc-api-DeleteEventSyncSource).
 
-#### HTTP Endpoints
-##### Internal HTTP server (27705)
-###### `POST /email`: Stalwart Email Integration
+#### AIModelProvider
+An [`AIModelProvider`](#jonline-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource), but rather than pushing/pulling
+content, it&#39;s metered *access* an owner can share out to other users of this server. Only the `gemini_credentials`
+variant (a [`GeminiCredentials`](#jonline-GeminiCredentials)) is currently creatable; `openai_credentials`/
+`anthropic_credentials` are defined for forward compatibility only. As with [`SyncDestination`](#jonline-SyncDestination)&#39;s
+platform credentials, the actual API key is write-only -- accepted on
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) but
+never populated back in a response.
+
+Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+-- each gated self-or-Admin, the same shape as [`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs.
+
+##### AIModelProviderGrants
+A provider&#39;s owner may share metered access to it with other users via
+[`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
+`(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+its owner may hand out access to it.
+
+### HTTP Endpoints
+#### Internal HTTP server (27705)
+##### `POST /email`: Stalwart Email Integration
 Delivery endpoint called by the [Stalwart](https://stalw.art) mail server (see
 [`deploys/email`](https://github.com/JonLatane/jonline/tree/main/deploys/email)&#39;s
 [README](https://github.com/JonLatane/jonline/blob/main/deploys/email/README.md) for setup/architecture) once it
@@ -548,14 +672,14 @@ the response *body*, not just the status code, so this has to be the exact shape
 status; combined with the `MtaHook`&#39;s `tempFailOnError: true`, that surfaces to the sending client as a
 `451` temp-fail rather than anything indicating the real cause.
 
-##### External HTTP servers (80, 8000, 443)
+#### External HTTP servers (80, 8000, 443)
 Note that, if the TLS server on port 443 starts up successfully, the server on port 80
 will simply redirect to HTTPS.
 
 The server on port 8000 will always serve up unsecured HTTP. It is up to server admins to block this
 port if they find that necessary.
 
-###### `GET /backend_host`: HTTP-based client host negotiation (for external CDNs)
+##### `GET /backend_host`: HTTP-based client host negotiation (for external CDNs)
 When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 to connect to `jonline.io` via gRPC on 27707/443, the client
 is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
@@ -565,7 +689,7 @@ to `jonline.io.itsj.online` on port 27707/443 instead. To users, the server shou
 be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
 `jonline.io`.
 
-###### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
+##### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
 Half [web UI path](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in), half
 endpoint: it&#39;s an Elm SPA page (`Pages.Auth.To.Key_`, served like any other SPA route -- under the `/elm` base
 path when the Elm frontend isn&#39;t the one mounted at `/`) rather than a backend/gRPC handler, but it consumes
@@ -589,7 +713,7 @@ keypair per encryption, shared secret via ECDH &#43; HKDF-SHA256, output `epheme
 part base64url) and the browser is redirected to
 `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
 
-###### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
+##### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
 Likewise a [web
 UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in)/endpoint hybrid: the Elm
 SPA page (`Pages.Auth.From.EncodedAccount_`) that closes the loop from
@@ -612,11 +736,11 @@ more information about external CDN setup. Developers may wish to review the [Re
 and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
 client implementations of this negotiation.
 
-###### `GET /robots.txt`: Robots
+##### `GET /robots.txt`: Robots
 Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Always
 allows all crawling (`User-agent: * / Allow: /`) and points crawlers at `https://{host}/sitemap.xml`.
 
-###### `GET /sitemap.xml`: Sitemap
+##### `GET /sitemap.xml`: Sitemap
 Generated on the fly (not a static file) from the request&#39;s `Host` header, publicly cacheable for 1 hour. Lists a
 fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_jonline`,
 `/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
@@ -626,7 +750,7 @@ request&#39;s `Host`. It also enumerates individual pages: every [`Post`](#jonli
 [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
 It does not (yet) enumerate individual [`User`](#jonline-User) pages.
 
-###### `GET /favicon.ico`: ICO Favicon
+##### `GET /favicon.ico`: ICO Favicon
 Serves the server&#39;s configured logo (`ServerConfiguration.server_info.logo.square_media_id`, a [`Media`](#jonline-Media)
 reference) as an `.ico`, publicly cacheable for 12 hours (`must-revalidate`), converting on the fly if the
 stored rendition is a `.png`. If no logo is configured, falls back to the bundled Tamagui frontend&#39;s default
@@ -634,10 +758,10 @@ favicon instead. Whichever converted rendition of the logo is served, it&#39;s p
 Medium, then Small, then Large, then the original upload if none of those conversions exist (favicons are small,
 so there&#39;s no reason to prefer a bigger one).
 
-###### `GET /favicon.png`: PNG Favicon
+##### `GET /favicon.png`: PNG Favicon
 As `GET /favicon.ico` above, but serves (and if necessary converts to) `.png` instead.
 
-###### `POST /media`: Upload Media
+##### `POST /media`: Upload Media
 See the [Media](#jonline-Media) section for the [`Media`](#jonline-Media) type itself; this is how its bytes actually get in
 (an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
 `Authorization` header or a `jonline_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
@@ -648,7 +772,7 @@ at a path namespaced by uploader and request host (`user/{user_id}@{host}-{usern
 a default `video_preview_time_ms`) and its ID returned as plain text -- there&#39;s no separate &#34;confirm&#34; step, and
 no image/video conversion happens synchronously on this request (see the background media-conversion job).
 
-###### `GET /media/{id}?size={original|small|medium|large}`: Download Media
+##### `GET /media/{id}?size={original|small|medium|large}`: Download Media
 (An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
 -- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`&#39;s
 implementation), so a [`Media`](#jonline-Media) ID is currently a bearer capability. `size` (default `medium`) selects a converted
@@ -656,17 +780,17 @@ rendition, falling back to the original upload if that conversion doesn&#39;t ex
 rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
 from that cache. Cacheable for 12 hours (`must-revalidate`).
 
-###### `GET /calendar.ics`: Server Calendar
+##### `GET /calendar.ics`: Server Calendar
 Jonline events support iCalendar/RFC5545; only public events are included. &#34;Subscribe&#34; to a Jonline server at,
 for instance, `https://jonline.io/calendar.ics` to get a calendar of all public events on the server. In the
 Tamagui/React frontend, links to these endpoints are provided in the Upcoming Events section of the home page,
 the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
 
-###### `GET /calendar.ics?user_id={id}`: User Calendar
+##### `GET /calendar.ics?user_id={id}`: User Calendar
 &#34;Subscribe&#34; to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
 calendar of all public events for that user.
 
-#### Web UI paths
+### Web UI paths
 Jonline serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.
 
 Tamagui and Elm share one page structure (below) and are always *both* reachable, explicitly, at `/tamagui/*`
@@ -690,70 +814,81 @@ directory](https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa/src/
 dynamic path segment; `[@{host}]` marks where a [federated](#federated-profiles) `{username}@{host}`-style
 suffix is accepted for that segment):
 
-##### `/`: Home
+#### `/`: Home
 The community&#39;s latest activity.
 
-##### `/posts`: Posts
+#### `/posts`: Posts
 The Posts listing.
 
-###### `/post/{postId}[@{host}]`: Post
+##### `/post/{postId}[@{host}]`: Post
 An individual [`Post`](#jonline-Post) -- including [`Event`](#jonline-Event)/[`EventInstance`](#jonline-EventInstance) posts and replies, which are [`Post`](#jonline-Post)s
 themselves (see [Post](#post) above).
 
-##### `/events`: Events
+#### `/events`: Events
 The Events listing.
 
-###### `/event/{eventInstanceId}[@{host}]`: Event
-An individual [`EventInstance`](#jonline-EventInstance).
+#### `/[-._~:/?[]@!$&amp;&#39;()*&#43;,;%=]{postId}`: Short Post/Event URLs
+A [`Post`](#jonline-Post) or [`Event`](#jonline-Event)/[`EventInstance`](#jonline-EventInstance), reached at its own `post.id` prefixed
+with any single character a username/custom tab path could never legally start with (see
+[`validate_username`](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs)&#39;s
+own reserved-lead-character check) -- e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
+This is purely a shorter, friendlier alias for `/post/{postId}[@{host}]` or
+`/event/{postId}[@{host}]` (whichever the id turns out to belong to) -- it renders exactly that
+same content in place, without redirecting the address bar away from the short URL. `#` is
+deliberately excluded from the reserved set: URL fragments never reach the server, so they
+can&#39;t be used for this.
 
-###### `/event_ai`: AI Event Importer
+##### `/event/{postId}[@{host}]`: Event
+An individual [`Event`](#jonline-Event), looked up by its own `post.id` or any of its [`EventInstance`](#jonline-EventInstance)s&#39; `post.id`s.
+
+##### `/event_ai`: AI Event Importer
 Tamagui-only, for now -- an AI-assisted bulk [`Event`](#jonline-Event) importer. Elm doesn&#39;t have this page yet.
 
-##### `/people`: People
+#### `/people`: People
 The People listing.
 
-###### `/people/follow_requests`: Follow Requests
+##### `/people/follow_requests`: Follow Requests
 The current user&#39;s pending [`Follow`](#jonline-Follow) requests.
 
-###### `/user/{userId}`: Profile
+##### `/user/{userId}`: Profile
 A [`User`](#jonline-User) profile looked up by (stable) user ID.
 
-##### `/{custom_tab_or_username}`: User pages by username, or a custom tab
+#### `/{custom_tab_or_username}`: User pages by username, or a custom tab
 The same [`User`](#jonline-User) profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
 looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
 since a username can change. This single path segment is also the server&#39;s last-resort catch-all, resolved in
 order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
 wins outright; then, if none matched, an admin-configured custom tab path (see
-[`CustomNavigationTabWithPath`](#jonline-CustomNavigationTabWithPath)) -- e.g. a band mounting their Events
+[`CustomNavigationTab`](#jonline-CustomNavigationTab).path) -- e.g. a band mounting their Events
 listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
 set of reserved names can never be reached this way, only via `/user/{userId}`.
 
-###### `/{username}/posts`: Posts
-###### `/{username}/friends`: Friends
-###### `/{username}/followers`: Followers
-###### `/{username}/following`: Following
+##### `/{username}/posts`: Posts
+##### `/{username}/friends`: Friends
+##### `/{username}/followers`: Followers
+##### `/{username}/following`: Following
 
-##### `/g/{shortname}`: Groups
+#### `/g/{shortname}`: Groups
 A [`Group`](#jonline-Group)&#39;s pages. Tamagui-only for now -- the Elm frontend doesn&#39;t have Group pages yet.
 
-###### `/g/{shortname}`: Home
-###### `/g/{shortname}/posts`: Posts
-###### `/g/{shortname}/p/{postId}[@{host}]`: Post
+##### `/g/{shortname}`: Home
+##### `/g/{shortname}/posts`: Posts
+##### `/g/{shortname}/p/{postId}[@{host}]`: Post
 An individual [`Post`](#jonline-Post) cross-posted into the group.
 
-###### `/g/{shortname}/events`: Events
-###### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
-###### `/g/{shortname}/members`: Members
-###### `/g/{shortname}/m/{username}`: Member
+##### `/g/{shortname}/events`: Events
+##### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
+##### `/g/{shortname}/members`: Members
+##### `/g/{shortname}/m/{username}`: Member
 An individual [`Member`](#jonline-Member)&#39;s details.
 
-##### `/server/{serverIdentifier}`: Server
+#### `/server/{serverIdentifier}`: Server
 Information about a (possibly federated) Jonline server.
 
-##### `/about`, `/about_jonline`: About
+#### `/about`, `/about_jonline`: About
 This server&#39;s own About page, and a general &#34;what is Jonline&#34; page.
 
-##### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
+#### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
 **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
 purely to drive the [Federated Authentication](#federated-authentication) flow. Since they&#39;re consumed like
 ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
@@ -824,6 +959,13 @@ and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federa
 | DeleteSyncDestination | [DeleteSyncDestinationRequest](#jonline-DeleteSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncDestination. *Authenticated* (owner, or Admin). |
 | SyncEventInstance | [SyncEventInstanceRequest](#jonline-SyncEventInstanceRequest) | [EventInstance](#jonline-EventInstance) | Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
 | DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#jonline-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| GetAIModelProviders | [User](#jonline-User) | [GetAIModelProvidersResponse](#jonline-GetAIModelProvidersResponse) | Gets a user&#39;s AIModelProviders. *Authenticated* (self, or Admin for any user). |
+| CreateAIModelProvider | [AIModelProvider](#jonline-AIModelProvider) | [AIModelProvider](#jonline-AIModelProvider) | Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). |
+| UpdateAIModelProvider | [AIModelProvider](#jonline-AIModelProvider) | [AIModelProvider](#jonline-AIModelProvider) | Updates an AIModelProvider&#39;s name, provider, or credentials. *Authenticated* (owner, or Admin for any user&#39;s). |
+| DeleteAIModelProvider | [DeleteAIModelProviderRequest](#jonline-DeleteAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). |
+| GrantAIModelProvider | [GrantAIModelProviderRequest](#jonline-GrantAIModelProviderRequest) | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
+| RevokeAIModelProvider | [RevokeAIModelProviderRequest](#jonline-RevokeAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
+| GenerateMedia | [GenerateMediaRequest](#jonline-GenerateMediaRequest) | [Media](#jonline-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AvailableAIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access to that Post/Event. A grantee (never the provider&#39;s own owner) spends real AIModelProviderGrant.tokens_remaining on every call -- the provider&#39;s own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request&#39;s input cost alone, whichever catches an insufficient balance first. |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -1180,6 +1322,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
+| CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
@@ -1352,7 +1495,9 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc.. |
 | has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
 | federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
-| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Only ever populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type and via [`GetCurrentUser`](#grpc-api-GetCurrentUser). |
+| sync_destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type. |
+| event_sync_sources | [EventSyncSource](#jonline-EventSyncSource) | repeated | The target user&#39;s own [`EventSyncSource`](#jonline-EventSyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) -- e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `event_sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -2273,8 +2418,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the event generated by the Jonline BE. |
-| post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`. |
+| post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` -- there is no separate surrogate ID. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
 | event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
@@ -2359,9 +2503,8 @@ a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the event instance generated by the Jonline BE. |
-| event_id | [string](#string) |  | ID of the parent [`Event`](#jonline-Event). |
-| post | [Post](#jonline-Post) |  | Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`. |
+| event_id | [string](#string) |  | ID of the parent [`Event`](#jonline-Event) (i.e. the parent `Event.post.id`). |
+| post | [Post](#jonline-Post) |  | Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`. An `EventInstance`&#39;s ID *is* its `post.id` -- there is no separate surrogate ID. |
 | info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  | Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event). |
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
@@ -2444,7 +2587,7 @@ These structured EventInstances are ordered by start time unless otherwise speci
 Valid GetEventsRequest formats:
 - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-- `{event_id:}`                                    (TODO: get single event including preview data)
+- `{post_id:}`                                     (get a single event, by its own Post ID or one of its EventInstances&#39; Post IDs)
 - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
                                                    (TODO: get events/events needing moderation for a group)
 - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
@@ -2453,10 +2596,8 @@ Valid GetEventsRequest formats:
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_id | [string](#string) | optional | Returns the single event with the given ID. |
 | author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
 | group_id | [string](#string) | optional | Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association&#39;s for the Event&#39;s internal [`Post`](#jonline-Post)). |
-| event_instance_id | [string](#string) | optional | Limits results to those with the given event instance ID. |
 | time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned [`EventInstance`](#jonline-EventInstance)s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
@@ -2606,20 +2747,43 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="jonline-CustomHomePage"></a>
+
+### CustomHomePage
+Overrides the app&#39;s default `/` page (the combined Events&#43;Posts feed). Unlike a regular
+`CustomNavigationTab`, this has no `path` (it&#39;s always `/`) and no `icon`/`title` (the server&#39;s
+own name/logo are always shown for the Home tab in the nav, regardless of what it links to).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tab | [NavigationTab](#jonline-NavigationTab) |  | What `/` renders. Only `HOME_TAB` (the default, combined Events&#43;Posts feed), `EVENTS_TAB`, or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`. |
+| post_id | [string](#string) |  | Renders a specific Post at `/` instead (e.g. for a custom business site&#39;s landing page). |
+| pinned_post_ids | [string](#string) | repeated | Posts pinned to the top of the home page, above its normal content. Loaded the same way `StarredPanel` loads its own starred posts (i.e., conditionally fetching each pinned post&#39;s backing Event alongside it, for posts that are actually about an Event). |
+| show_events_strip | [bool](#bool) |  | Shows the Events strip (the same horizontal upcoming-events row the default `HOME_TAB` always shows above its Posts feed) above `target`&#39;s own content. Only meaningful when `target` is `post_id` (pins an Events strip above that single Post); has no effect when `target` is unset/`HOME_TAB` (the strip is already shown) or `POSTS_TAB` (equivalent to just leaving `target` unset). |
+| default_events_strip_to_row | [bool](#bool) |  | Whenever an Events strip is shown above other content -- `show_events_strip` is set, or `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its row/list layout instead of a calendar. Unset defaults to the calendar layout. |
+| default_events_strip_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | Whenever an Events strip is shown above other content (see `default_events_strip_to_row`&#39;s own doc) and defaults to the calendar layout (`default_events_strip_to_row` is unset), which granularity it opens to. Defaults to `CALENDAR_DISPLAY_WEEK`. |
+
+
+
+
+
+
 <a name="jonline-CustomNavigationTab"></a>
 
 ### CustomNavigationTab
-Either one of the app&#39;s predefined tabs, or a Post
+Either one of the app&#39;s predefined tabs, a Post, or a user profile -- reachable at `path`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | tab | [NavigationTab](#jonline-NavigationTab) |  | Links to one of the app&#39;s predefined tabs/pages. |
 | post_id | [string](#string) |  | Links to a specific Post (e.g. for a custom business site&#39;s page). |
-| is_profile | [bool](#bool) |  | Only relevant for a CustomNavigationTabWithPath. Indicates the custom tab is for an actual user profile. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
+| is_profile | [bool](#bool) |  | Indicates the custom tab is for an actual user profile -- `path` is that user&#39;s username. Ultimately this isn&#39;t very &#34;custom&#34; in terms of the URL scheme, just it being a navigation tab. |
 | emoji_icon | [string](#string) |  | Emoji shown as the tab&#39;s icon (e.g. &#34;🎪&#34;). |
 | icon_media_id | [string](#string) |  | Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab&#39;s icon. |
 | title | [string](#string) | optional | Title shown for the tab. Defaults to the predefined tab&#39;s/Post&#39;s title if unset. |
+| path | [string](#string) |  | The path this tab is reachable at, e.g. `gigs` for a band&#39;s `/gigs` link to the Events page, or `weddings` for a Post about wedding offerings. Must be distinct across every entry in `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved -- each may only be used to (redundantly) point back at its own matching predefined tab, never remapped to a different tab or a Post. `/` itself is never reachable this way -- it&#39;s overridden via `CustomNavigationTabSet.home` instead. |
 
 
 
@@ -2629,31 +2793,13 @@ Either one of the app&#39;s predefined tabs, or a Post
 <a name="jonline-CustomNavigationTabSet"></a>
 
 ### CustomNavigationTabSet
-If set, should override the default tab set for the Elm navigation on a Jonline instance.
+If set, overrides the default tab set for the Elm navigation on a Jonline instance.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| home | [CustomNavigationTab](#jonline-CustomNavigationTab) | optional | Overrides the default `HOME_TAB` entry. If unset, the default Home tab is used. Its `target` is limited to the `HOME_TAB`, `EVENTS_TAB`, or `POSTS_TAB` tab, or a custom `post_id`. |
-| tabs | [CustomNavigationTabWithPath](#jonline-CustomNavigationTabWithPath) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts/`, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
-
-
-
-
-
-
-<a name="jonline-CustomNavigationTabWithPath"></a>
-
-### CustomNavigationTabWithPath
-A custom navigation tab with an associated path.
-Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable.
-`/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| custom_tab | [CustomNavigationTab](#jonline-CustomNavigationTab) |  | The tab to show at this path. |
-| path | [string](#string) |  | e.g. link `/gigs` or `/shows` for a band to the &#34;Events&#34; page. Or, /weddings to a Post about wedding offerings for a custom business site. Note: existing `/events`, `/posts/``, `/people`, and `/about` paths are not modifiable. `/` is modified via [`CustomNavigationTabSet`](#jonline-CustomNavigationTabSet).home instead. |
+| home | [CustomHomePage](#jonline-CustomHomePage) | optional | Overrides the default `/` page. If unset, the default combined Events&#43;Posts feed is used. |
+| tabs | [CustomNavigationTab](#jonline-CustomNavigationTab) | repeated | Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely. Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path&#39;s own doc. `/` itself is overridden via `home` above instead. |
 
 
 
@@ -3191,12 +3337,12 @@ dropped (Facebook Pages can&#39;t attach both to a single feed post).
 <a name="jonline-GetSyncDestinationsResponse"></a>
 
 ### GetSyncDestinationsResponse
-
+Response to a request for the current user&#39;s [`SyncDestination`](#jonline-SyncDestination)s.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| destinations | [SyncDestination](#jonline-SyncDestination) | repeated |  |
+| destinations | [SyncDestination](#jonline-SyncDestination) | repeated | The current user&#39;s SyncDestinations. |
 
 
 
@@ -3366,6 +3512,300 @@ not yet built; a video attachment is silently skipped.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="ai_model_providers-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## ai_model_providers.proto
+
+
+
+<a name="jonline-AIModelProvider"></a>
+
+### AIModelProvider
+An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
+[`SyncDestination`](#jonline-SyncDestination)/[`EventSyncSource`](#jonline-EventSyncSource) (also user-owned integrations
+with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
+those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
+other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+
+Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
+[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user&#39;s), and
+[`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
+[`SyncDestination`](#jonline-SyncDestination)&#39;s RPCs. Access to a provider is granted/revoked to other users via
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
+unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
+record itself (rename it, rotate its key, delete it), but handing out access to *someone else&#39;s* API budget is a
+call only its owner should be able to make.
+
+[`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials)/
+[`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials) all have a working connection flow (Gemini&#39;s
+Interactions API, OpenAI&#39;s Images API, DigitalOcean&#39;s Serverless Inference API -- the last of which is also
+OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
+[`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
+accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn&#39;t offer image generation).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the AIModelProvider. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
+| name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic -- has no effect on behavior. |
+| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via its Interactions API. |
+| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT Image models). |
+| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
+| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A DigitalOcean Gradient AI Platform / Serverless Inference connection (see `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean&#39;s Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
+| grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
+
+
+
+
+
+
+<a name="jonline-AIModelProviderGrant"></a>
+
+### AIModelProviderGrant
+A grant of metered access to someone else&#39;s [`AIModelProvider`](#jonline-AIModelProvider), created/reset via
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
+[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
+`(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
+add to it.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ai_model_provider_id | [string](#string) |  | The ID of the [`AIModelProvider`](#jonline-AIModelProvider) this grant is for. |
+| ai_model_grantee | [Author](#jonline-Author) |  | The user this access was granted to. |
+| model_names | [string](#string) | repeated | The model name (that will be used to call the provider) that the grantee is allowed to use by this grant. If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here. Allows granters to set per-model (or per-model-group) token budgets, e.g. &#34;gpt-4&#34; vs &#34;gpt-3.5-turbo&#34;. |
+| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia) stops working for the grantee entirely, until the owner grants more via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again. |
+| overage | [uint64](#uint64) |  | How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call&#39;s actual token usage overshot `tokens_remaining` the moment it hit 0 -- effectively a &#34;negative `tokens_remaining`&#34; (which, being `uint64`, can&#39;t represent a negative value directly), recorded here instead as a positive debt for the owner&#39;s own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call (any prior debt is cleared, not carried forward) -- see that RPC&#39;s own doc. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the grant was first created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the grant was last updated (i.e. last reset by another [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call). |
+
+
+
+
+
+
+<a name="jonline-AnthropicCredentials"></a>
+
+### AnthropicCredentials
+Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| anthropic_api_key | [string](#string) | optional | The Anthropic API key. Never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+
+
+
+
+
+
+<a name="jonline-AvailableAIModel"></a>
+
+### AvailableAIModel
+One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
+they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
+granted them (`grant` set). Only ever defined relative to a user -- see
+[`User.available_ai_models`](#jonline-User)/[`GetAIModelProvidersResponse.available_ai_models`](#jonline-GetAIModelProvidersResponse).
+One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
+provider supports (see the server&#39;s own model catalog per provider type); a grantee gets one row
+per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
+every model the provider supports if that list is empty.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
+| capabilities | [AIModelCapability](#jonline-AIModelCapability) | repeated | What this model can actually do -- from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it&#39;s empty) doesn&#39;t need its own hardcoded list of model names. |
+| grant | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access -- no grant needed). |
+| provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
+
+
+
+
+
+
+<a name="jonline-DeleteAIModelProviderRequest"></a>
+
+### DeleteAIModelProviderRequest
+Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider | [AIModelProvider](#jonline-AIModelProvider) |  | The provider to be deleted. |
+
+
+
+
+
+
+<a name="jonline-DigitalOceanCredentials"></a>
+
+### DigitalOceanCredentials
+Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via
+`https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
+and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| digitalocean_api_key | [string](#string) | optional | The DigitalOcean Serverless Inference API token. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+
+
+
+
+
+
+<a name="jonline-GeminiCredentials"></a>
+
+### GeminiCredentials
+Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+[`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Used for image generation/editing via Gemini&#39;s Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+e.g. to generate/edit Event posters from an Event&#39;s own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| gemini_api_key | [string](#string) | optional | The Gemini API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- **never populated in responses**, the same write-only convention as e.g. [`MastodonAccount.access_token`](#jonline-MastodonAccount) in `sync.proto`. |
+
+
+
+
+
+
+<a name="jonline-GenerateMediaRequest"></a>
+
+### GenerateMediaRequest
+Request to generate (or edit) an image via one of the current user&#39;s
+[`AvailableAIModel`](#jonline-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by the current user, and -- if
+`target` is set -- prepended as the *first* item in that Post&#39;s (or Event&#39;s own Post&#39;s) `media` list.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| model | [AvailableAIModel](#jonline-AvailableAIModel) |  | Which of the current user&#39;s `AvailableAIModel`s to generate with -- `model.model_name` selects the actual model, `model.provider.id` identifies whose `AIModelProvider` (the current user&#39;s own, or one they&#39;ve been granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field sent here (e.g. a spoofed `grant`) is ignored in favor of the caller&#39;s real access, re-derived from `provider.id` and the current user. |
+| user_prompt | [string](#string) |  | The user-editable prompt describing what to generate, e.g. &#34;Please generate a square headline poster for the following event.&#34; Combined server-side with `target`&#39;s own formatted content (title/description/date-time range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to the model, so the user never has to paste that context in by hand. |
+| media_ids | [string](#string) | repeated | Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/ reference-based generation (e.g. a target Post/Event&#39;s own current photos), in the order given here. Leave empty for plain text-to-image generation instead -- `model` must have the matching capability either way (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see [`AIModelCapability`](#jonline-AIModelCapability)&#39;s own doc). Every id must be owned by the current user (or the current user must be an Admin). |
+| post_id | [string](#string) |  | Attach to (and use the content of) this Post. Caller must be its author, or an Admin. |
+| event_instance_id | [string](#string) |  | Attach to (and use the content of) this EventInstance&#39;s parent Event&#39;s own Post -- named by EventInstance, not Event, since that&#39;s what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event&#39;s own Post&#39;s author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin. |
+
+
+
+
+
+
+<a name="jonline-GetAIModelProvidersResponse"></a>
+
+### GetAIModelProvidersResponse
+Response to a request for a user&#39;s [`AIModelProvider`](#jonline-AIModelProvider)s.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| providers | [AIModelProvider](#jonline-AIModelProvider) | repeated | The requested user&#39;s own AIModelProviders (those they own) -- exactly the distinct `provider`s in `available_ai_models` whose `owner` is the requested user, each with its own `grants` populated (who else can use it). A convenience duplicate of data already in `available_ai_models`, so callers managing a user&#39;s own providers (rename/rekey/delete/grant/ revoke) don&#39;t have to de-duplicate that list themselves. |
+| available_ai_models | [AvailableAIModel](#jonline-AvailableAIModel) | repeated | Every model the requested user may currently call -- their own providers&#39; models, plus any models granted to them on other users&#39; providers. See [`AvailableAIModel`](#jonline-AvailableAIModel)&#39;s own doc. |
+
+
+
+
+
+
+<a name="jonline-GrantAIModelProviderRequest"></a>
+
+### GrantAIModelProviderRequest
+Request to grant (or reset) another user&#39;s metered access to one of the current user&#39;s
+[`AIModelProvider`](#jonline-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  | The user to grant access to. |
+| ai_model_provider_id | [string](#string) |  | The AIModelProvider to grant access to. Must be owned by the caller. |
+| tokens | [uint64](#uint64) |  | The number of tokens the grantee may spend. Calling this RPC again for the same (`ai_model_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value. |
+| model_names | [string](#string) | repeated | The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#jonline-AIModelProviderGrant) -- if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as `tokens`. |
+
+
+
+
+
+
+<a name="jonline-OpenAICredentials"></a>
+
+### OpenAICredentials
+Credentials for an OpenAI API connection, accepted by
+[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+Used for image generation/editing via OpenAI&#39;s Images API (`platform.openai.com/docs/guides/image-generation`,
+the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+[`GenerateMedia`](#grpc-api-GenerateMedia).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| openai_api_key | [string](#string) | optional | The OpenAI API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)). |
+
+
+
+
+
+
+<a name="jonline-RevokeAIModelProviderRequest"></a>
+
+### RevokeAIModelProviderRequest
+Request to revoke another user&#39;s access to one of the current user&#39;s
+[`AIModelProvider`](#jonline-AIModelProvider)s, the reverse of
+[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  | The user whose access should be revoked. |
+| ai_model_provider_id | [string](#string) |  | The AIModelProvider to revoke access to. Must be owned by the caller. |
+
+
+
+
+
+ 
+
+
+<a name="jonline-AIModelCapability"></a>
+
+### AIModelCapability
+What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
+(e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)&#39;s &#34;Generate Media…&#34; buttons/panel only offer
+models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
+without the gated feature needing its own hardcoded list of model names to check against. A
+model may carry more than one -- e.g. an image-editing model can also usually do plain
+text-to-image generation.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AI_MODEL_CAPABILITY_UNKNOWN | 0 | The model&#39;s capabilities are unknown (e.g. the server doesn&#39;t know what this provider supports). |
+| AI_MODEL_CAPABILITY_TEXT_GENERATION | 1 | The model can generate new text from a prompt. |
+| AI_MODEL_CAPABILITY_IMAGE_GENERATION | 2 | The model can generate a new image from a text prompt alone -- what [`GenerateMedia`](#grpc-api-GenerateMedia) requires when `GenerateMediaRequest.media_ids` is empty (no reference images to edit with). |
+| AI_MODEL_CAPABILITY_IMAGE_EDITING | 3 | The model can edit an existing image, given a text prompt and one or more reference images -- what [`GenerateMedia`](#grpc-api-GenerateMedia) requires instead, whenever `GenerateMediaRequest.media_ids` is non-empty. Not every model with `AI_MODEL_CAPABILITY_IMAGE_GENERATION` also has this -- some (e.g. the cheaper/faster `gemini-3.1-flash-lite-image` tier) only support plain generation. |
+
 
  
 

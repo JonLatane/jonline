@@ -5,6 +5,7 @@ import {
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import { AccountOrServer, getCredentialClient, parseFederatedId } from "app/store";
+import { IdentifiedGetEventsResponse, identifyGetEventsResponse } from "./event_actions";
 
 export const defaultGroupListingType = GroupListingType.ALL_GROUPS;
 
@@ -75,13 +76,13 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
 );
 
 export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number, filter?: TimeFilter };
-export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
+export const loadGroupEventsPage: AsyncThunk<IdentifiedGetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<IdentifiedGetEventsResponse, LoadGroupEventsPage>(
   "groups/loadEventsPage",
   async (request) => {
     const { groupId, filter } = request;
     const client = await getCredentialClient(request);
     const result = await client.getEvents({ groupId, listingType: EventListingType.GROUP_EVENTS, timeFilter: filter }, client.credential);
-    return result;
+    return identifyGetEventsResponse(result);
   }
 );
 

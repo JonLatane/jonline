@@ -1,26 +1,25 @@
---- a/schema.rs	2026-08-07 08:22:37
-+++ b/schema.rs	2026-08-07 08:24:03
-@@ -4,10 +4,6 @@
-     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+--- a/schema.rs
++++ b/schema.rs
+@@ -9,9 +9,6 @@
      #[diesel(postgres_type(name = "recipient_type"))]
      pub struct RecipientType;
--
+ 
 -    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
 -    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
 -    pub struct Tsvector;
  }
  
  diesel::table! {
-@@ -29,7 +25,7 @@
+@@ -68,7 +65,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
  
-     event_instances (id) {
-         id -> Int8,
-@@ -42,7 +38,7 @@
+     event_instances (post_id) {
+         event_id -> Int8,
+@@ -80,7 +77,7 @@
          created_at -> Timestamp,
          updated_at -> Nullable<Timestamp>,
          event_sync_source_instance_id -> Nullable<Varchar>,
@@ -29,7 +28,7 @@
          user_id -> Nullable<Int8>,
          sync_missing_since -> Nullable<Timestamp>,
      }
-@@ -199,7 +195,7 @@
+@@ -245,7 +242,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
@@ -38,7 +37,7 @@
  
      messages (id) {
          id -> Int8,
-@@ -210,7 +206,7 @@
+@@ -256,7 +253,7 @@
          email_message_id -> Nullable<Varchar>,
          email_minio_path -> Nullable<Varchar>,
          created_at -> Timestamp,
@@ -47,25 +46,25 @@
          messaging_group_id -> Int8,
      }
  }
-@@ -225,7 +221,7 @@
+@@ -282,7 +279,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
+     use super::sql_types::PostMediaLayout;
  
      posts (id) {
-         id -> Int8,
-@@ -249,7 +245,7 @@
+@@ -307,7 +304,7 @@
          published_at -> Nullable<Timestamp>,
          last_activity_at -> Timestamp,
          unauthenticated_star_count -> Int8,
 -        search_text -> Tsvector,
 +        search_text -> TsVector,
          sort_published_at -> Timestamp,
+         post_media_layout -> PostMediaLayout,
      }
- }
-@@ -336,7 +332,7 @@
+@@ -399,7 +396,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
@@ -74,7 +73,7 @@
  
      users (id) {
          id -> Int8,
-@@ -359,7 +355,7 @@
+@@ -422,7 +419,7 @@
          response_count -> Int4,
          created_at -> Timestamp,
          updated_at -> Timestamp,

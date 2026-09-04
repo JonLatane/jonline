@@ -190,13 +190,13 @@ fn delete_cascades_events_posts_media_and_sync_config() {
 
         // The Event (and its Instance) were removed via DeleteEvent.
         let remaining_events: i64 = events::table
-            .filter(events::id.eq(event.id))
+            .filter(events::post_id.eq(event.post_id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_events, 0);
         let remaining_instances: i64 = event_instances::table
-            .filter(event_instances::id.eq(instance.id))
+            .filter(event_instances::post_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();

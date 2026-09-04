@@ -15,6 +15,7 @@ import 'dart:core' as $core;
 import 'package:grpc/service_api.dart' as $grpc;
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'ai_model_providers.pb.dart' as $11;
 import 'authentication.pb.dart' as $3;
 import 'events.pb.dart' as $9;
 import 'federation.pb.dart' as $1;
@@ -267,6 +268,34 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeleteEventInstanceSyncDestination',
       ($9.DeleteEventInstanceSyncDestinationRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$getAIModelProviders = $grpc.ClientMethod<$4.User, $11.GetAIModelProvidersResponse>(
+      '/jonline.Jonline/GetAIModelProviders',
+      ($4.User value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.GetAIModelProvidersResponse.fromBuffer(value));
+  static final _$createAIModelProvider = $grpc.ClientMethod<$11.AIModelProvider, $11.AIModelProvider>(
+      '/jonline.Jonline/CreateAIModelProvider',
+      ($11.AIModelProvider value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value));
+  static final _$updateAIModelProvider = $grpc.ClientMethod<$11.AIModelProvider, $11.AIModelProvider>(
+      '/jonline.Jonline/UpdateAIModelProvider',
+      ($11.AIModelProvider value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value));
+  static final _$deleteAIModelProvider = $grpc.ClientMethod<$11.DeleteAIModelProviderRequest, $0.Empty>(
+      '/jonline.Jonline/DeleteAIModelProvider',
+      ($11.DeleteAIModelProviderRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$grantAIModelProvider = $grpc.ClientMethod<$11.GrantAIModelProviderRequest, $11.AIModelProviderGrant>(
+      '/jonline.Jonline/GrantAIModelProvider',
+      ($11.GrantAIModelProviderRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIModelProviderGrant.fromBuffer(value));
+  static final _$revokeAIModelProvider = $grpc.ClientMethod<$11.RevokeAIModelProviderRequest, $0.Empty>(
+      '/jonline.Jonline/RevokeAIModelProvider',
+      ($11.RevokeAIModelProviderRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$generateMedia = $grpc.ClientMethod<$11.GenerateMediaRequest, $5.Media>(
+      '/jonline.Jonline/GenerateMedia',
+      ($11.GenerateMediaRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $5.Media.fromBuffer(value));
   static final _$getEventAttendances = $grpc.ClientMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
       '/jonline.Jonline/GetEventAttendances',
       ($9.GetEventAttendancesRequest value) => value.writeToBuffer(),
@@ -540,6 +569,34 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$0.Empty> deleteEventInstanceSyncDestination($9.DeleteEventInstanceSyncDestinationRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteEventInstanceSyncDestination, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$11.GetAIModelProvidersResponse> getAIModelProviders($4.User request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getAIModelProviders, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$11.AIModelProvider> createAIModelProvider($11.AIModelProvider request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$11.AIModelProvider> updateAIModelProvider($11.AIModelProvider request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteAIModelProvider($11.DeleteAIModelProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$11.AIModelProviderGrant> grantAIModelProvider($11.GrantAIModelProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$grantAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> revokeAIModelProvider($11.RevokeAIModelProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$revokeAIModelProvider, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Media> generateMedia($11.GenerateMediaRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$generateMedia, request, options: options);
   }
 
   $grpc.ResponseFuture<$9.EventAttendances> getEventAttendances($9.GetEventAttendancesRequest request, {$grpc.CallOptions? options}) {
@@ -993,6 +1050,55 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $9.DeleteEventInstanceSyncDestinationRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.User, $11.GetAIModelProvidersResponse>(
+        'GetAIModelProviders',
+        getAIModelProviders_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.User.fromBuffer(value),
+        ($11.GetAIModelProvidersResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.AIModelProvider, $11.AIModelProvider>(
+        'CreateAIModelProvider',
+        createAIModelProvider_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value),
+        ($11.AIModelProvider value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.AIModelProvider, $11.AIModelProvider>(
+        'UpdateAIModelProvider',
+        updateAIModelProvider_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value),
+        ($11.AIModelProvider value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.DeleteAIModelProviderRequest, $0.Empty>(
+        'DeleteAIModelProvider',
+        deleteAIModelProvider_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.DeleteAIModelProviderRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.GrantAIModelProviderRequest, $11.AIModelProviderGrant>(
+        'GrantAIModelProvider',
+        grantAIModelProvider_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.GrantAIModelProviderRequest.fromBuffer(value),
+        ($11.AIModelProviderGrant value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.RevokeAIModelProviderRequest, $0.Empty>(
+        'RevokeAIModelProvider',
+        revokeAIModelProvider_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.RevokeAIModelProviderRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.GenerateMediaRequest, $5.Media>(
+        'GenerateMedia',
+        generateMedia_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $11.GenerateMediaRequest.fromBuffer(value),
+        ($5.Media value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.GetEventAttendancesRequest, $9.EventAttendances>(
         'GetEventAttendances',
         getEventAttendances_Pre,
@@ -1287,6 +1393,34 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteEventInstanceSyncDestination(call, await request);
   }
 
+  $async.Future<$11.GetAIModelProvidersResponse> getAIModelProviders_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
+    return getAIModelProviders(call, await request);
+  }
+
+  $async.Future<$11.AIModelProvider> createAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIModelProvider> request) async {
+    return createAIModelProvider(call, await request);
+  }
+
+  $async.Future<$11.AIModelProvider> updateAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIModelProvider> request) async {
+    return updateAIModelProvider(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.DeleteAIModelProviderRequest> request) async {
+    return deleteAIModelProvider(call, await request);
+  }
+
+  $async.Future<$11.AIModelProviderGrant> grantAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.GrantAIModelProviderRequest> request) async {
+    return grantAIModelProvider(call, await request);
+  }
+
+  $async.Future<$0.Empty> revokeAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.RevokeAIModelProviderRequest> request) async {
+    return revokeAIModelProvider(call, await request);
+  }
+
+  $async.Future<$5.Media> generateMedia_Pre($grpc.ServiceCall call, $async.Future<$11.GenerateMediaRequest> request) async {
+    return generateMedia(call, await request);
+  }
+
   $async.Future<$9.EventAttendances> getEventAttendances_Pre($grpc.ServiceCall call, $async.Future<$9.GetEventAttendancesRequest> request) async {
     return getEventAttendances(call, await request);
   }
@@ -1378,6 +1512,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$0.Empty> deleteSyncDestination($grpc.ServiceCall call, $10.DeleteSyncDestinationRequest request);
   $async.Future<$9.EventInstance> syncEventInstance($grpc.ServiceCall call, $9.SyncEventInstanceRequest request);
   $async.Future<$0.Empty> deleteEventInstanceSyncDestination($grpc.ServiceCall call, $9.DeleteEventInstanceSyncDestinationRequest request);
+  $async.Future<$11.GetAIModelProvidersResponse> getAIModelProviders($grpc.ServiceCall call, $4.User request);
+  $async.Future<$11.AIModelProvider> createAIModelProvider($grpc.ServiceCall call, $11.AIModelProvider request);
+  $async.Future<$11.AIModelProvider> updateAIModelProvider($grpc.ServiceCall call, $11.AIModelProvider request);
+  $async.Future<$0.Empty> deleteAIModelProvider($grpc.ServiceCall call, $11.DeleteAIModelProviderRequest request);
+  $async.Future<$11.AIModelProviderGrant> grantAIModelProvider($grpc.ServiceCall call, $11.GrantAIModelProviderRequest request);
+  $async.Future<$0.Empty> revokeAIModelProvider($grpc.ServiceCall call, $11.RevokeAIModelProviderRequest request);
+  $async.Future<$5.Media> generateMedia($grpc.ServiceCall call, $11.GenerateMediaRequest request);
   $async.Future<$9.EventAttendances> getEventAttendances($grpc.ServiceCall call, $9.GetEventAttendancesRequest request);
   $async.Future<$9.EventAttendance> upsertEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);
   $async.Future<$0.Empty> deleteEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);

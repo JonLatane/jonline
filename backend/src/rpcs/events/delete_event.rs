@@ -3,12 +3,13 @@ use tonic::{Code, Status};
 
 use crate::{
     db_connection::PgPooledConnection,
-    marshaling::ToDbId,
     models::{self, get_event},
     protos::*,
     rpcs::validate_permission,
     schema::{events, posts},
 };
+
+use super::event_permissions::event_post_id;
 
 pub fn delete_event(
     request: Event,
@@ -18,7 +19,7 @@ pub fn delete_event(
     let admin = validate_permission(&Some(current_user), Permission::Admin).is_ok();
     // let moderator = validate_permission(&Some(current_user), Permission::ModerateEvents).is_ok();
 
-    let event = get_event(request.id.to_db_id_or_err("id")?, &Some(current_user), conn)?;
+    let event = get_event(event_post_id(&request)?, &Some(current_user), conn)?;
     let event_post = posts::table
         .select(models::POST_COLUMNS)
         .filter(posts::id.eq(event.post_id))
@@ -36,7 +37,7 @@ pub fn delete_event(
     let transaction_result: Result<(), diesel::result::Error> = conn
         .transaction::<(), diesel::result::Error, _>(|conn| {
             diesel::delete(events::table)
-                .filter(events::id.eq(event.id))
+                .filter(events::post_id.eq(event.post_id))
                 .execute(conn)?;
 
             if let Some(owner_id) = event_owner_id {

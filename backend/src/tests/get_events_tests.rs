@@ -21,7 +21,11 @@ use crate::schema::posts;
 use crate::tests::factories::*;
 
 fn ids(response: &GetEventsResponse) -> Vec<String> {
-    response.events.iter().map(|e| e.id.clone()).collect()
+    response
+        .events
+        .iter()
+        .map(|e| e.post.as_ref().unwrap().id.clone())
+        .collect()
 }
 
 fn ago(seconds: u64) -> SystemTime {
@@ -78,14 +82,14 @@ mod get_by_event_id {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_id: Some(event.id.to_proto_id()),
+                    post_id: Some(event.post_id.to_proto_id()),
                     ..Default::default()
                 },
                 &None,
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             assert_eq!(response.events[0].instances.len(), 1);
             Ok(())
         });
@@ -97,7 +101,7 @@ mod get_by_event_id {
         conn.test_transaction::<_, Status, _>(|conn| {
             let result = get_events(
                 GetEventsRequest {
-                    event_id: Some(999_999_999i64.to_proto_id()),
+                    post_id: Some(999_999_999i64.to_proto_id()),
                     ..Default::default()
                 },
                 &None,
@@ -117,7 +121,7 @@ mod get_by_event_id {
         conn.test_transaction::<_, Status, _>(|conn| {
             let result = get_events(
                 GetEventsRequest {
-                    event_id: Some("not-valid-base58!!".to_string()),
+                    post_id: Some("not-valid-base58!!".to_string()),
                     ..Default::default()
                 },
                 &None,
@@ -126,7 +130,11 @@ mod get_by_event_id {
 
             let err = result.unwrap_err();
             assert_eq!(err.code(), Code::InvalidArgument);
-            assert_eq!(err.message(), "post_id_invalid");
+            // `post_id` now covers what the old, separate `event_id` field used to (see
+            // `not_found_for_nonexistent_id`'s own comment) -- it decodes via the standard
+            // `to_db_id_or_err("post_id")` convention (`"invalid_id:{field}"`), not the bespoke
+            // `"post_id_invalid"` message `get_event_by_id`'s direct `event_id` path used to emit.
+            assert_eq!(err.message(), "invalid_id:post_id");
             Ok(())
         });
     }
@@ -171,7 +179,7 @@ mod get_by_event_id {
             for event in [&private_container_event, &private_instance_event] {
                 let hidden = get_events(
                     GetEventsRequest {
-                        event_id: Some(event.id.to_proto_id()),
+                        post_id: Some(event.post_id.to_proto_id()),
                         ..Default::default()
                     },
                     &Some(&stranger),
@@ -181,13 +189,13 @@ mod get_by_event_id {
 
                 let visible_to_author = get_events(
                     GetEventsRequest {
-                        event_id: Some(event.id.to_proto_id()),
+                        post_id: Some(event.post_id.to_proto_id()),
                         ..Default::default()
                     },
                     &Some(&author),
                     conn,
                 )?;
-                assert_eq!(ids(&visible_to_author), vec![event.id.to_proto_id()]);
+                assert_eq!(ids(&visible_to_author), vec![event.post_id.to_proto_id()]);
             }
             Ok(())
         });
@@ -217,14 +225,14 @@ mod get_by_instance_id {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_id: Some(instance.id.to_proto_id()),
+                    post_id: Some(instance.post_id.to_proto_id()),
                     ..Default::default()
                 },
                 &None,
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -235,7 +243,7 @@ mod get_by_instance_id {
         conn.test_transaction::<_, Status, _>(|conn| {
             let result = get_events(
                 GetEventsRequest {
-                    event_instance_id: Some(999_999_999i64.to_proto_id()),
+                    post_id: Some(999_999_999i64.to_proto_id()),
                     ..Default::default()
                 },
                 &None,
@@ -244,7 +252,10 @@ mod get_by_instance_id {
 
             let err = result.unwrap_err();
             assert_eq!(err.code(), Code::NotFound);
-            assert_eq!(err.message(), "event_instance_not_found");
+            // Same message as `get_by_event_id::not_found_for_nonexistent_id` -- `post_id` no
+            // longer distinguishes an Event's own post from one of its EventInstances' posts, so
+            // there's no way (or need) to tell the two "not found" cases apart in the response.
+            assert_eq!(err.message(), "event_not_found");
             Ok(())
         });
     }
@@ -285,7 +296,7 @@ mod get_by_post_id {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -322,7 +333,7 @@ mod get_by_post_id {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -390,7 +401,7 @@ mod get_by_instance_post_ids {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             assert_eq!(response.events[0].instances.len(), 1);
             Ok(())
         });
@@ -487,7 +498,7 @@ mod get_by_instance_post_ids {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             assert_eq!(response.events[0].instances.len(), 1);
             assert_eq!(
                 response.events[0].instances[0]
@@ -554,7 +565,7 @@ mod get_by_instance_post_ids {
 
             let mut returned_ids = ids(&response);
             returned_ids.sort();
-            let mut expected_ids = vec![event1.id.to_proto_id(), event2.id.to_proto_id()];
+            let mut expected_ids = vec![event1.post_id.to_proto_id(), event2.post_id.to_proto_id()];
             expected_ids.sort();
             assert_eq!(returned_ids, expected_ids);
             Ok(())
@@ -649,7 +660,7 @@ mod get_by_instance_post_ids {
                 &Some(&author),
                 conn,
             )?;
-            assert_eq!(ids(&visible_to_author), vec![public_event.id.to_proto_id()]);
+            assert_eq!(ids(&visible_to_author), vec![public_event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -721,7 +732,7 @@ mod get_user_events {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![event1.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event1.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -764,7 +775,7 @@ mod get_user_events {
                 &None,
                 conn,
             )?;
-            assert_eq!(ids(&anon_response), vec![public_event.id.to_proto_id()]);
+            assert_eq!(ids(&anon_response), vec![public_event.post_id.to_proto_id()]);
 
             let self_response = get_events(
                 GetEventsRequest {
@@ -777,8 +788,8 @@ mod get_user_events {
             let mut self_ids = ids(&self_response);
             self_ids.sort();
             let mut expected = vec![
-                public_event.id.to_proto_id(),
-                private_event.id.to_proto_id(),
+                public_event.post_id.to_proto_id(),
+                private_event.post_id.to_proto_id(),
             ];
             expected.sort();
             assert_eq!(self_ids, expected);
@@ -910,7 +921,7 @@ mod get_group_events {
                 conn,
             )?;
 
-            assert_eq!(ids(&response), vec![approved_event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![approved_event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -959,7 +970,7 @@ mod default_listing {
 
             assert_eq!(
                 ids(&response),
-                vec![sooner_event.id.to_proto_id(), later_event.id.to_proto_id()]
+                vec![sooner_event.post_id.to_proto_id(), later_event.post_id.to_proto_id()]
             );
             Ok(())
         });
@@ -1018,8 +1029,8 @@ mod default_listing {
             )?;
 
             let response_ids = ids(&response);
-            assert!(response_ids.contains(&future_event.id.to_proto_id()));
-            assert!(!response_ids.contains(&past_event.id.to_proto_id()));
+            assert!(response_ids.contains(&future_event.post_id.to_proto_id()));
+            assert!(!response_ids.contains(&past_event.post_id.to_proto_id()));
             Ok(())
         });
     }
@@ -1047,7 +1058,7 @@ mod default_listing {
             );
 
             let visible = get_events(GetEventsRequest::default(), &Some(&follower), conn)?;
-            assert_eq!(ids(&visible), vec![limited_event.id.to_proto_id()]);
+            assert_eq!(ids(&visible), vec![limited_event.post_id.to_proto_id()]);
 
             let hidden = get_events(GetEventsRequest::default(), &Some(&stranger), conn)?;
             assert!(ids(&hidden).is_empty());
@@ -1126,7 +1137,7 @@ mod text_search {
             );
 
             let response = search(conn, Some("xylophones"), None, None, &None)?;
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1153,7 +1164,7 @@ mod text_search {
             );
 
             let response = search(conn, Some("farmers"), None, None, &None)?;
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1177,7 +1188,7 @@ mod text_search {
             );
 
             let response = search(conn, Some("zzyzxevtauthor"), None, None, &None)?;
-            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1222,7 +1233,7 @@ mod text_search {
                 None,
                 &None,
             )?;
-            assert_eq!(ids(&response), vec![event1.id.to_proto_id()]);
+            assert_eq!(ids(&response), vec![event1.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1276,7 +1287,7 @@ mod text_search {
                 }),
                 &None,
             )?;
-            assert_eq!(ids(&included), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&included), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1327,7 +1338,7 @@ mod text_search {
 
             assert_eq!(
                 ids(&response),
-                vec![title_match.id.to_proto_id(), content_match.id.to_proto_id()]
+                vec![title_match.post_id.to_proto_id(), content_match.post_id.to_proto_id()]
             );
             Ok(())
         });
@@ -1365,7 +1376,7 @@ mod text_search {
                 .execute(conn)
                 .expect("failed to update test instance post title");
             let via_instance_edit = search(conn, Some("wobbledoo"), None, None, &None)?;
-            assert_eq!(ids(&via_instance_edit), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&via_instance_edit), vec![event.post_id.to_proto_id()]);
 
             // Editing the parent Event's own Post.
             diesel::update(posts::table.filter(posts::id.eq(event.post_id)))
@@ -1373,7 +1384,7 @@ mod text_search {
                 .execute(conn)
                 .expect("failed to update test event post title");
             let via_event_edit = search(conn, Some("fizzbuzz"), None, None, &None)?;
-            assert_eq!(ids(&via_event_edit), vec![event.id.to_proto_id()]);
+            assert_eq!(ids(&via_event_edit), vec![event.post_id.to_proto_id()]);
             Ok(())
         });
     }
