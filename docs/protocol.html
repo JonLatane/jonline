@@ -621,15 +621,17 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>s (see <a href="#synchronization">Synchronization</a> below);
       <code>x_twitter_auth_config</code> (an <a href="#jonline-XTwitterAuthConfig"><code>XTwitterAuthConfig</code></a>, <code>client_id</code>/<code>client_secret</code>)
       does the same for X (Twitter) -- until set, X SyncDestinations fail with <code>x_twitter_app_not_configured</code>. Both
-      <code>*_secret</code> fields are write-only/never serialized back to clients; admins rotate them directly in the database's
-      JSONB column.
+      <code>*_secret</code> fields are write-only/never serialized back to clients; admins set/rotate them via
+      <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> (i.e. the same admin UI form that manages the rest of
+      <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>) -- the secret is simply never echoed back in
+      subsequent <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> responses.
     </p>
     <h5 id="web-push-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-push-configuration"><span class="octicon octicon-link"></span></a>Web Push Configuration</h5>
     <p>
       <a href="#jonline-WebPushConfig"><code>WebPushConfig</code></a> (<code>web_push_config</code>) holds the server's VAPID keypair for Web Push
       notifications: <code>public_vapid_key</code> is served to clients so they can subscribe, while <code>private_vapid_key</code> signs
       outgoing pushes and is <em>never</em> serialized to clients -- like the federation secrets above, admins set/rotate it
-      directly in the database.
+      via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>, not by editing the database directly.
     </p>
     <h5 id="cdn-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#cdn-configuration"><span class="octicon octicon-link"></span></a>CDN Configuration</h5>
     <p>
@@ -822,8 +824,8 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       Elm-only feature (<code>frontends/elm-spa</code>) letting a user sign in to one Jonline server using an account they already
       have (or are willing to create) on a <em>different</em> Jonline server, without either backend ever seeing a plaintext
       token that isn't its own. It's pure browser-to-browser: two Elm SPA page routes
-      (<a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to/...</code></a> and
-      <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from/...</code></a>) exchange
+      (<a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to/...</code></a> and
+      <a href="#authfromencrypted_account-receiving-side"><code>/auth/from/...</code></a>) exchange
       an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
       the <a href="#grpc-api-Login"><code>Login</code></a> RPC itself.
     </p>
@@ -860,7 +862,10 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
         and a fresh one generated in its place, so it can't be reused for a second transfer.
       </li>
     </ol>
-    <p>See the two HTTP-level routes below for the exact URL/crypto shape.</p>
+    <p>
+      See the two <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">Web UI</a> page
+      routes below for the exact URL/crypto shape.
+    </p>
     <h3 id="federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federation"><span class="octicon octicon-link"></span></a>Federation</h3>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -1112,66 +1117,6 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       be <code>jonline.io</code>. The client can trust <code>jonline.io/backend_host</code> to always point to the correct backend host for
       <code>jonline.io</code>.
     </p>
-    <h5 id="get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><span class="octicon octicon-link"></span></a><code>GET /auth/to/{public_key}@{requesting_host}</code>: Federated Sign-In (sending side)</h5>
-    <p>
-      Half <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web UI path</a>, half
-      endpoint: it's an Elm SPA page (<code>Pages.Auth.To.Key_</code>, served like any other SPA route -- under the <code>/elm</code> base
-      path when the Elm frontend isn't the one mounted at <code>/</code>) rather than a backend/gRPC handler, but it consumes
-      structured input straight from the URL and "responds" with a redirect carrying an encrypted payload, so it's
-      documented here as an endpoint too. Handled entirely in-browser; reached only via the cross-origin redirect from
-      step 2 above (built by the <em>requesting</em> origin's Accounts panel), never linked to directly.
-    </p>
-    <ul>
-      <li>
-        <strong>Path params</strong>: <code>{public_key}</code> is the requesting origin's ECDH (P-256) public key, raw-exported and
-        base64url-encoded; <code>{requesting_host}</code> is that origin's own hostname. The two are joined with a literal <code>@</code>
-        (chosen because <code>@</code> never appears in the base64url/dot-joined ciphertext the
-        <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from</code></a> route below expects, so the
-        split is unambiguous).
-      </li>
-      <li>
-        <strong>Query params</strong>: <code>start_path</code> -- the app-relative path the user was on when they clicked "Sign in via ...", so
-        they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
-        <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>/auth/from</code></a> redirect.
-      </li>
-      <li>
-        <strong>Behavior</strong>: shows a sign-in form for <em>this</em> server (or a "currently signed in as ..." badge, if already
-        authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
-        calls the <a href="#grpc-api-Login"><code>Login</code></a> RPC (always a fresh login, never reusing stored tokens) to mint a transfer
-        account; if the checkbox is checked, a second independent <a href="#grpc-api-Login"><code>Login</code></a> call also signs the browser
-        into this server locally. The transfer account is then AES-GCM-encrypted to <code>{public_key}</code> (fresh ephemeral ECDH
-        keypair per encryption, shared secret via ECDH + HKDF-SHA256, output <code>ephemeral_public_key.iv.ciphertext</code>, each
-        part base64url) and the browser is redirected to
-        <code>https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}</code>.
-      </li>
-    </ul>
-    <h5 id="get-authfromencrypted_account-federated-sign-in-receiving-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><span class="octicon octicon-link"></span></a><code>GET /auth/from/{encrypted_account}</code>: Federated Sign-In (receiving side)</h5>
-    <p>
-      Likewise a <a href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in">web
-UI</a>/endpoint hybrid: the Elm
-      SPA page (<code>Pages.Auth.From.EncodedAccount_</code>) that closes the loop from
-      <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a> above, taking its ciphertext
-      as input and "responding" by adding the decrypted account. Reached only via that redirect.
-    </p>
-    <ul>
-      <li>
-        <strong>Path params</strong>: <code>{encrypted_account}</code> is the <code>ephemeral_public_key.iv.ciphertext</code> blob produced by
-        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a>.
-      </li>
-      <li>
-        <strong>Query params</strong>: <code>start_path</code>, passed through unchanged from
-        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a>.
-      </li>
-      <li>
-        <strong>Behavior</strong>: decrypts <code>{encrypted_account}</code> using the private key this origin generated when it built the
-        <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>/auth/to</code></a> link (same ECDH +
-        HKDF-SHA256 + AES-GCM derivation, in reverse), yielding the transfer account (including its
-        <code>refresh_token</code>/<code>access_token</code>). If <code>start_path</code> is present, the account is added straight to the local Accounts
-        panel and the browser navigates to it; otherwise a confirmation screen (avatar, name, server, Confirm/Cancel) is
-        shown first. Either way, once the flow completes (confirmed or cancelled), the one-time private key is discarded
-        and a fresh keypair generated, so it's single-use per completed/cancelled transfer.
-      </li>
-    </ul>
     <p>
       This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about?section=cdn">https://jonline.io/about?section=cdn</a> for
       more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116">React/Tamagui</a>
@@ -1329,13 +1274,64 @@ directory</a> is (<code>{name}</code> denotes a
     <p>This server's own About page, and a general "what is Jonline" page.</p>
     <h4 id="authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code> and <code>/auth/from/{encrypted_account}</code>: Federated Sign-In</h4>
     <p>
-      <strong>Elm-only</strong> -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
-      purely to drive the <a href="#federated-authentication">Federated Authentication</a> flow. Since they're consumed like
-      ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
-      alongside the rest of the <a href="#external-http-servers-80-8000-443">HTTP Endpoints</a> above -- see
-      <a href="#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side"><code>GET /auth/to/{public_key}@{requesting_host}</code></a>
-      and <a href="#get-authfromencrypted_account-federated-sign-in-receiving-side"><code>GET /auth/from/{encrypted_account}</code></a>.
+      <strong>Elm-only</strong> -- unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
+      SPA pages (served like any other SPA route -- under the <code>/elm</code> base path when the Elm frontend isn't the one
+      mounted at <code>/</code>) rather than backend/gRPC handlers, driving the
+      <a href="#federated-authentication">Federated Authentication</a> flow entirely in-browser via a pair of full-page redirects
+      carrying encrypted payloads.
     </p>
+    <h5 id="authtopublic_keyrequesting_host-sending-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-sending-side"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code>: sending side</h5>
+    <p>
+      <code>Pages.Auth.To.Key_</code>. Reached only via the cross-origin redirect from step 2 above (built by the <em>requesting</em>
+      origin's Accounts panel), never linked to directly.
+    </p>
+    <ul>
+      <li>
+        <strong>Path params</strong>: <code>{public_key}</code> is the requesting origin's ECDH (P-256) public key, raw-exported and
+        base64url-encoded; <code>{requesting_host}</code> is that origin's own hostname. The two are joined with a literal <code>@</code>
+        (chosen because <code>@</code> never appears in the base64url/dot-joined ciphertext the
+        <a href="#authfromencrypted_account-receiving-side"><code>/auth/from</code></a> page below expects, so the split is unambiguous).
+      </li>
+      <li>
+        <strong>Query params</strong>: <code>start_path</code> -- the app-relative path the user was on when they clicked "Sign in via ...", so
+        they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
+        <a href="#authfromencrypted_account-receiving-side"><code>/auth/from</code></a> redirect.
+      </li>
+      <li>
+        <strong>Behavior</strong>: shows a sign-in form for <em>this</em> server (or a "currently signed in as ..." badge, if already
+        authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
+        calls the <a href="#grpc-api-Login"><code>Login</code></a> RPC (always a fresh login, never reusing stored tokens) to mint a transfer
+        account; if the checkbox is checked, a second independent <a href="#grpc-api-Login"><code>Login</code></a> call also signs the browser
+        into this server locally. The transfer account is then AES-GCM-encrypted to <code>{public_key}</code> (fresh ephemeral ECDH
+        keypair per encryption, shared secret via ECDH + HKDF-SHA256, output <code>ephemeral_public_key.iv.ciphertext</code>, each
+        part base64url) and the browser is redirected to
+        <code>https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}</code>.
+      </li>
+    </ul>
+    <h5 id="authfromencrypted_account-receiving-side"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authfromencrypted_account-receiving-side"><span class="octicon octicon-link"></span></a><code>/auth/from/{encrypted_account}</code>: receiving side</h5>
+    <p>
+      <code>Pages.Auth.From.EncodedAccount_</code>, closing the loop from
+      <a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to</code></a> above. Reached only via that redirect.
+    </p>
+    <ul>
+      <li>
+        <strong>Path params</strong>: <code>{encrypted_account}</code> is the <code>ephemeral_public_key.iv.ciphertext</code> blob produced by
+        <a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to</code></a>.
+      </li>
+      <li>
+        <strong>Query params</strong>: <code>start_path</code>, passed through unchanged from
+        <a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to</code></a>.
+      </li>
+      <li>
+        <strong>Behavior</strong>: decrypts <code>{encrypted_account}</code> using the private key this origin generated when it built the
+        <a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to</code></a> link (same ECDH + HKDF-SHA256 + AES-GCM derivation,
+        in reverse), yielding the transfer account (including its <code>refresh_token</code>/<code>access_token</code>). If <code>start_path</code> is
+        present, the account is added straight to the local Accounts panel and the browser navigates to it; otherwise a
+        confirmation screen (avatar, name, server, Confirm/Cancel) is shown first. Either way, once the flow completes
+        (confirmed or cancelled), the one-time private key is discarded and a fresh keypair generated, so it's
+        single-use per completed/cancelled transfer.
+      </li>
+    </ul>
     <h3 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h3>
     <table>
       <thead>

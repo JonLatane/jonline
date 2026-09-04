@@ -120,14 +120,16 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  [`SyncDestination`](#jonline-SyncDestination)s (see [Synchronization](#synchronization) below);
  `x_twitter_auth_config` (an [`XTwitterAuthConfig`](#jonline-XTwitterAuthConfig), `client_id`/`client_secret`)
  does the same for X (Twitter) -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. Both
- `*_secret` fields are write-only/never serialized back to clients; admins rotate them directly in the database's
- JSONB column.
+ `*_secret` fields are write-only/never serialized back to clients; admins set/rotate them via
+ [`ConfigureServer`](#grpc-api-ConfigureServer) (i.e. the same admin UI form that manages the rest of
+ [`ServerConfiguration`](#jonline-ServerConfiguration)) -- the secret is simply never echoed back in
+ subsequent [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) responses.
 
  ##### Web Push Configuration
  [`WebPushConfig`](#jonline-WebPushConfig) (`web_push_config`) holds the server's VAPID keypair for Web Push
  notifications: `public_vapid_key` is served to clients so they can subscribe, while `private_vapid_key` signs
  outgoing pushes and is *never* serialized to clients -- like the federation secrets above, admins set/rotate it
- directly in the database.
+ via [`ConfigureServer`](#grpc-api-ConfigureServer), not by editing the database directly.
 
  ##### CDN Configuration
  [`ExternalCDNConfig`](#jonline-ExternalCDNConfig) (`external_cdn_config`) enables running Jonline behind a CDN
@@ -279,8 +281,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  Elm-only feature (`frontends/elm-spa`) letting a user sign in to one Jonline server using an account they already
  have (or are willing to create) on a *different* Jonline server, without either backend ever seeing a plaintext
  token that isn't its own. It's pure browser-to-browser: two Elm SPA page routes
- ([`/auth/to/...`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) and
- [`/auth/from/...`](#get-authfromencrypted_account-federated-sign-in-receiving-side)) exchange
+ ([`/auth/to/...`](#authtopublic_keyrequesting_host-sending-side) and
+ [`/auth/from/...`](#authfromencrypted_account-receiving-side)) exchange
  an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
  the [`Login`](#grpc-api-Login) RPC itself.
 
@@ -304,7 +306,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  before adding the account to its Accounts panel. Either way, the one-time keypair generated in step 2 is discarded
  and a fresh one generated in its place, so it can't be reused for a second transfer.
 
- See the two HTTP-level routes below for the exact URL/crypto shape.
+ See the two [Web UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in) page
+ routes below for the exact URL/crypto shape.
 
  ### Federation
  Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -515,48 +518,6 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
  `jonline.io`.
 
- ##### `GET /auth/to/{public_key}@{requesting_host}`: Federated Sign-In (sending side)
- Half [web UI path](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in), half
- endpoint: it's an Elm SPA page (`Pages.Auth.To.Key_`, served like any other SPA route -- under the `/elm` base
- path when the Elm frontend isn't the one mounted at `/`) rather than a backend/gRPC handler, but it consumes
- structured input straight from the URL and "responds" with a redirect carrying an encrypted payload, so it's
- documented here as an endpoint too. Handled entirely in-browser; reached only via the cross-origin redirect from
- step 2 above (built by the *requesting* origin's Accounts panel), never linked to directly.
- * **Path params**: `{public_key}` is the requesting origin's ECDH (P-256) public key, raw-exported and
- base64url-encoded; `{requesting_host}` is that origin's own hostname. The two are joined with a literal `@`
- (chosen because `@` never appears in the base64url/dot-joined ciphertext the
- [`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) route below expects, so the
- split is unambiguous).
- * **Query params**: `start_path` -- the app-relative path the user was on when they clicked "Sign in via ...", so
- they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
- [`/auth/from`](#get-authfromencrypted_account-federated-sign-in-receiving-side) redirect.
- * **Behavior**: shows a sign-in form for *this* server (or a "currently signed in as ..." badge, if already
- authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
- calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint a transfer
- account; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
- into this server locally. The transfer account is then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH
- keypair per encryption, shared secret via ECDH + HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each
- part base64url) and the browser is redirected to
- `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
-
- ##### `GET /auth/from/{encrypted_account}`: Federated Sign-In (receiving side)
- Likewise a [web
- UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in)/endpoint hybrid: the Elm
- SPA page (`Pages.Auth.From.EncodedAccount_`) that closes the loop from
- [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) above, taking its ciphertext
- as input and "responding" by adding the decrypted account. Reached only via that redirect.
- * **Path params**: `{encrypted_account}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
- [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
- * **Query params**: `start_path`, passed through unchanged from
- [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side).
- * **Behavior**: decrypts `{encrypted_account}` using the private key this origin generated when it built the
- [`/auth/to`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side) link (same ECDH +
- HKDF-SHA256 + AES-GCM derivation, in reverse), yielding the transfer account (including its
- `refresh_token`/`access_token`). If `start_path` is present, the account is added straight to the local Accounts
- panel and the browser navigates to it; otherwise a confirmation screen (avatar, name, server, Confirm/Cancel) is
- shown first. Either way, once the flow completes (confirmed or cancelled), the one-time private key is discarded
- and a fresh keypair generated, so it's single-use per completed/cancelled transfer.
-
  This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
  more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116) 
  and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
@@ -715,12 +676,45 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  This server's own About page, and a general "what is Jonline" page.
 
  #### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
- **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent; they exist
- purely to drive the [Federated Authentication](#federated-authentication) flow. Since they're consumed like
- ordinary request/response endpoints rather than browsed pages, their full parameter/crypto details are documented
- alongside the rest of the [HTTP Endpoints](#external-http-servers-80-8000-443) above -- see
- [`GET /auth/to/{public_key}@{requesting_host}`](#get-authtopublic_keyrequesting_host-federated-sign-in-sending-side)
- and [`GET /auth/from/{encrypted_account}`](#get-authfromencrypted_account-federated-sign-in-receiving-side).
+ **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
+ SPA pages (served like any other SPA route -- under the `/elm` base path when the Elm frontend isn't the one
+ mounted at `/`) rather than backend/gRPC handlers, driving the
+ [Federated Authentication](#federated-authentication) flow entirely in-browser via a pair of full-page redirects
+ carrying encrypted payloads.
+
+ ##### `/auth/to/{public_key}@{requesting_host}`: sending side
+ `Pages.Auth.To.Key_`. Reached only via the cross-origin redirect from step 2 above (built by the *requesting*
+ origin's Accounts panel), never linked to directly.
+ * **Path params**: `{public_key}` is the requesting origin's ECDH (P-256) public key, raw-exported and
+ base64url-encoded; `{requesting_host}` is that origin's own hostname. The two are joined with a literal `@`
+ (chosen because `@` never appears in the base64url/dot-joined ciphertext the
+ [`/auth/from`](#authfromencrypted_account-receiving-side) page below expects, so the split is unambiguous).
+ * **Query params**: `start_path` -- the app-relative path the user was on when they clicked "Sign in via ...", so
+ they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
+ [`/auth/from`](#authfromencrypted_account-receiving-side) redirect.
+ * **Behavior**: shows a sign-in form for *this* server (or a "currently signed in as ..." badge, if already
+ authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
+ calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint a transfer
+ account; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
+ into this server locally. The transfer account is then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH
+ keypair per encryption, shared secret via ECDH + HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each
+ part base64url) and the browser is redirected to
+ `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
+
+ ##### `/auth/from/{encrypted_account}`: receiving side
+ `Pages.Auth.From.EncodedAccount_`, closing the loop from
+ [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) above. Reached only via that redirect.
+ * **Path params**: `{encrypted_account}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
+ [`/auth/to`](#authtopublic_keyrequesting_host-sending-side).
+ * **Query params**: `start_path`, passed through unchanged from
+ [`/auth/to`](#authtopublic_keyrequesting_host-sending-side).
+ * **Behavior**: decrypts `{encrypted_account}` using the private key this origin generated when it built the
+ [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) link (same ECDH + HKDF-SHA256 + AES-GCM derivation,
+ in reverse), yielding the transfer account (including its `refresh_token`/`access_token`). If `start_path` is
+ present, the account is added straight to the local Accounts panel and the browser navigates to it; otherwise a
+ confirmation screen (avatar, name, server, Confirm/Cancel) is shown first. Either way, once the flow completes
+ (confirmed or cancelled), the one-time private key is discarded and a fresh keypair generated, so it's
+ single-use per completed/cancelled transfer.
 
  ### gRPC API
 
