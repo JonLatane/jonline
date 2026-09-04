@@ -1,6 +1,7 @@
 module Shared.AccountsPanel exposing
     ( AcceptedCreateAccount
     , Account
+    , AccountAuthTokens
     , AccountForm
     , AddServerForm
     , Branding
@@ -15,8 +16,8 @@ module Shared.AccountsPanel exposing
     , ServerLogoSize(..)
     , Tab(..)
     , Token
+    , accountAuthTokensDecoder
     , accountAvatarUrl
-    , accountDecoder
     , accountId
     , accountRowDomId
     , brandingFor
@@ -30,7 +31,7 @@ module Shared.AccountsPanel exposing
     , enabledAccountForServer
     , enabledAccounts
     , enabledServers
-    , encodeAccount
+    , encodeAccountAuthTokens
     , grpcErrorToString
     , hasAdminAccount
     , init
@@ -46,6 +47,7 @@ module Shared.AccountsPanel exposing
     , performWithAccountServer
     , performWithOptionalAccountServer
     , recommendedFederatedServers
+    , resolveFederatedAccountTokens
     , serverChipDomId
     , serverForHost
     , serverHasAccounts
@@ -78,6 +80,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
+import Process
 import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, EventSyncSource, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
@@ -301,6 +304,16 @@ type alias Model =
     -- correctly restores the notification toggle's "on" state once the relevant server actually
     -- finishes reconnecting, rather than only working by lucky timing.
     , pendingPushSubscriptionCheck : Maybe PushSubscriptionCheck
+
+    -- The account `FederatedAccountReceived` most recently landed -- either side of the
+    -- cross-server SSO hand-off (`Pages.Auth.From.EncryptedAccountAuthTokens_` auto-adding a
+    -- transferred account, or `Pages.Auth.To.Key_`'s own "sign back in here" second login), both of
+    -- which land the new account with no form submission of their own to react to. `UI.layout`
+    -- renders it as a brief "Signed in as ..." notice (reusing `avatarOrPlaceholder`/`displayName`,
+    -- same as `UI.accountRow`) so the user has *some* confirmation the hand-off actually worked, even
+    -- though it's landed them on a page they didn't navigate to by hand. Cleared by
+    -- `DismissFederatedSignInNotice`, fired either by clicking it or a few seconds after it appears.
+    , federatedSignInNotice : Maybe Account
     }
 
 
@@ -380,6 +393,7 @@ type Msg
     | PushSubscriptionCheckReceived Decode.Value
     | GotPushSubscriptionStatusResult String (Result Grpc.Error ( Account, GetPushSubscriptionStatusResponse ))
     | PushSubscriptionChangeReceived Decode.Value
+    | DismissFederatedSignInNotice
     | NoOp
 
 
@@ -420,6 +434,19 @@ type alias Account =
     , syncDestinations : List SyncDestination
     , eventSyncSources : List EventSyncSource
     , availableAiModels : List AvailableAIModel
+    }
+
+
+{-| The payload that actually crosses the wire in the cross-server SSO hand-off (see
+`Shared.FederatedAuth`/`Pages.Auth.To.Key_`/`Pages.Auth.From.EncryptedAccountAuthTokens_`): just enough
+to let the receiving origin authenticate as this account itself, via `resolveFederatedAccountTokens`
+below -- everything else an `Account` needs (`userId`, `username`, `permissions`, etc.) is hydrated
+straight from the receiving side's own `GetCurrentUser` call rather than trusted from this payload.
+-}
+type alias AccountAuthTokens =
+    { server : String
+    , refreshToken : Token
+    , accessToken : Token
     }
 
 
@@ -1390,6 +1417,7 @@ init req flags =
       , notificationErrors = Dict.empty
       , pendingNotificationAccountId = Nothing
       , pendingPushSubscriptionCheck = Nothing
+      , federatedSignInNotice = Nothing
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1773,10 +1801,12 @@ sendUpdate req msg model =
 
         FederatedAccountReceived account ->
             -- Same upsert as `GotAuthResult`, but the account arrived already
-            -- signed-in (via `Pages.Auth.From.EncodedAccount_`'s SSO hand-off)
-            -- rather than through this form's own `LoginClicked` -- always
-            -- enabled once accepted, regardless of what `enabled` it carried
-            -- across the wire.
+            -- signed-in (via `Pages.Auth.From.EncryptedAccountAuthTokens_`'s SSO hand-off, or
+            -- `Pages.Auth.To.Key_`'s own "sign back in here" second login) rather than through this
+            -- form's own `LoginClicked` -- always enabled once accepted, regardless of what `enabled`
+            -- it carried across the wire. Either way there's no form submission of its own for the
+            -- user to have watched settle, so `federatedSignInNotice` surfaces a brief confirmation
+            -- (see its own doc) that something just happened.
             let
                 enabledAccount : Account
                 enabledAccount =
@@ -1789,6 +1819,7 @@ sendUpdate req msg model =
                             upsertAccount enabledAccount model.accounts
                                 |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
                         , servers = enableServerFor enabledAccount.server model.servers
+                        , federatedSignInNotice = Just enabledAccount
                     }
 
                 -- The account's server may not be known (or may be known but
@@ -1817,7 +1848,13 @@ sendUpdate req msg model =
                             negotiateServerConfig (isSecure req) enabledAccount.server
                                 |> Task.attempt (GotReconnectResult enabledAccount.server True False)
             in
-            ( newModel, Cmd.batch [ persist newModel, refreshCmd ] )
+            ( newModel
+            , Cmd.batch
+                [ persist newModel
+                , refreshCmd
+                , Process.sleep federatedSignInNoticeDuration |> Task.perform (\_ -> DismissFederatedSignInNotice)
+                ]
+            )
 
         AccessTokenResponseReceived account accessTokenResponse ->
             let
@@ -3032,6 +3069,9 @@ sendUpdate req msg model =
                 Err _ ->
                     ( model, Cmd.none )
 
+        DismissFederatedSignInNotice ->
+            ( { model | federatedSignInNotice = Nothing }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -3679,6 +3719,43 @@ refreshPermissionsForServer server accounts =
         |> Task.perform GotServerPermissionsRefresh
 
 
+{-| How long `federatedSignInNotice` stays up before `DismissFederatedSignInNotice` auto-fires --
+see that field's own doc.
+-}
+federatedSignInNoticeDuration : Float
+federatedSignInNoticeDuration =
+    5000
+
+
+{-| The network step behind `Pages.Auth.From.EncryptedAccountAuthTokens_`'s auto-accept: resolves
+`tokens.server`'s connection (reusing an already-connected one if this browser already knows it,
+otherwise negotiating fresh -- see `negotiateServerConfig`), then calls `GetCurrentUser` with
+`tokens.accessToken` to hydrate everything else. The page uses the resulting `User` to build a full
+`Account` itself (`tokens.server`/`tokens.refreshToken`/`tokens.accessToken` plus `user`'s fields) and
+hand it to `FederatedAccountReceived`, same as any other freshly-signed-in account -- which, for a
+server this browser didn't already have connected, means `negotiateServerConfig` effectively runs
+twice (once here, once inside that handler's own reconnect). Not worth optimizing away: it only
+happens in the background, after this page has already redirected the user onward.
+-}
+resolveFederatedAccountTokens : Request.With params -> List Server -> AccountAuthTokens -> Task Grpc.Error User
+resolveFederatedAccountTokens req servers tokens =
+    let
+        getCurrentUser : Connection -> Task Grpc.Error User
+        getCurrentUser connection =
+            Grpc.new Jonline.getCurrentUser {}
+                |> Grpc.setHost (connectionUrl connection)
+                |> withAccessToken (Just tokens.accessToken.token)
+                |> Grpc.toTask
+    in
+    case servers |> List.filter (\s -> s.frontendHost == tokens.server && s.connected /= Nothing) |> List.head |> Maybe.andThen connectionOf of
+        Just connection ->
+            getCurrentUser connection
+
+        Nothing ->
+            negotiateServerConfig (isSecure req) tokens.server
+                |> Task.andThen (\( connection, _ ) -> getCurrentUser connection)
+
+
 {-| Sets which frontend (`/`, `/flutter`, or `/elm`) `server` serves at its
 root, via `ConfigureServer`, authenticated as `account` (refreshing its access
 token first if needed -- see `Shared.MaybeAccountRequest`). Only ever invoked
@@ -4284,6 +4361,18 @@ encodeAccount account =
         ]
 
 
+{-| The cross-server SSO hand-off's wire format (see `AccountAuthTokens`'s own doc) -- deliberately
+just these three fields, unlike `encodeAccount`'s full persisted shape.
+-}
+encodeAccountAuthTokens : AccountAuthTokens -> Encode.Value
+encodeAccountAuthTokens tokens =
+    Encode.object
+        [ ( "server", Encode.string tokens.server )
+        , ( "refreshToken", encodeToken tokens.refreshToken )
+        , ( "accessToken", encodeToken tokens.accessToken )
+        ]
+
+
 encodeToken : Token -> Encode.Value
 encodeToken token =
     Encode.object
@@ -4419,6 +4508,16 @@ accountDecoder =
         )
         realNameDecoder
         needsPasswordDecoder
+
+
+{-| Decodes `encodeAccountAuthTokens`'s wire format -- see `AccountAuthTokens`'s own doc.
+-}
+accountAuthTokensDecoder : Decoder AccountAuthTokens
+accountAuthTokensDecoder =
+    Decode.map3 AccountAuthTokens
+        (Decode.field "server" Decode.string)
+        (Decode.field "refreshToken" tokenDecoder)
+        (Decode.field "accessToken" tokenDecoder)
 
 
 {-| Defaults to "" if the key is missing entirely (older persisted state),

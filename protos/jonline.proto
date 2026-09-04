@@ -288,9 +288,10 @@ import "server_configuration.proto";
 // have (or are willing to create) on a *different* Jonline server, without either backend ever seeing a plaintext
 // token that isn't its own. It's pure browser-to-browser: two Elm SPA page routes
 // ([`/auth/to/...`](#authtopublic_keyrequesting_host-sending-side) and
-// [`/auth/from/...`](#authfromencrypted_account-receiving-side)) exchange
-// an encrypted account payload via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
-// the [`Login`](#grpc-api-Login) RPC itself.
+// [`/auth/from/...`](#authfromencrypted_account_auth_tokens-receiving-side)) exchange
+// an encrypted pair of tokens via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
+// the [`Login`](#grpc-api-Login) RPC itself (plus [`GetCurrentUser`](#grpc-api-GetCurrentUser) on the receiving side,
+// to hydrate everything else -- see step 6).
 //
 // 1. Say a user is on `jonline.io`, adding a new account, and enters `bullcity.social` as the server. Since that
 // isn't the current host, the Accounts panel offers a "Sign in via bullcity.social" button instead of (or alongside)
@@ -304,16 +305,19 @@ import "server_configuration.proto";
 // `bullcity.social` itself. If "Sign back in here" is checked, a **second**, independent [`Login`](#grpc-api-Login)
 // call also runs, so `bullcity.social` gets its own local session too, and the two servers never end up sharing a
 // token pair. (Hence "1-2 refresh tokens.")
-// 5. The transfer account (server, user ID, username, both tokens, avatar, permissions, etc.) is JSON-encoded and
-// encrypted to `jonline.io`'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below), then the
-// browser is redirected back to `jonline.io` at `/auth/from/{ciphertext}`.
-// 6. `jonline.io` decrypts the payload with the private key it generated in step 2, then either silently accepts it
-// (if it knows where to send the user back to) or shows a confirmation screen (avatar/name/server, Confirm/Cancel)
-// before adding the account to its Accounts panel. Either way, the one-time keypair generated in step 2 is discarded
-// and a fresh one generated in its place, so it can't be reused for a second transfer.
+// 5. Only `bullcity.social`'s hostname and that fresh `refresh_token`/`access_token` pair are JSON-encoded and
+// encrypted to `jonline.io`'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below) -- nothing else
+// about the account travels in the payload. The browser is then redirected back to `jonline.io` at
+// `/auth/from/{ciphertext}`.
+// 6. `jonline.io` decrypts the payload with the private key it generated in step 2, calls
+// [`GetCurrentUser`](#grpc-api-GetCurrentUser) against `bullcity.social` with the decrypted `access_token` to hydrate
+// the rest of the account (user ID, username, avatar, permissions, etc. straight from `bullcity.social` itself
+// rather than trusting a client-supplied copy of them), then adds it to its Accounts panel and navigates the user
+// onward -- no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
+// generated in its place, so it can't be reused for a second transfer.
 //
-// See the two [Web UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account-federated-sign-in) page
-// routes below for the exact URL/crypto shape.
+// See the two [Web UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account_auth_tokens-receiving-side)
+// page routes below for the exact URL/crypto shape.
 //
 // ### Federation
 // Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
@@ -681,12 +685,12 @@ import "server_configuration.proto";
 // #### `/about`, `/about_jonline`: About
 // This server's own About page, and a general "what is Jonline" page.
 //
-// #### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account}`: Federated Sign-In
+// #### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account_auth_tokens}`: Federated Sign-In
 // **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
 // SPA pages (served like any other SPA route -- under the `/elm` base path when the Elm frontend isn't the one
 // mounted at `/`) rather than backend/gRPC handlers, driving the
 // [Federated Authentication](#federated-authentication) flow entirely in-browser via a pair of full-page redirects
-// carrying encrypted payloads.
+// carrying an encrypted payload.
 //
 // ##### `/auth/to/{public_key}@{requesting_host}`: sending side
 // `Pages.Auth.To.Key_`. Reached only via the cross-origin redirect from step 2 above (built by the *requesting*
@@ -694,33 +698,37 @@ import "server_configuration.proto";
 // * **Path params**: `{public_key}` is the requesting origin's ECDH (P-256) public key, raw-exported and
 // base64url-encoded; `{requesting_host}` is that origin's own hostname. The two are joined with a literal `@`
 // (chosen because `@` never appears in the base64url/dot-joined ciphertext the
-// [`/auth/from`](#authfromencrypted_account-receiving-side) page below expects, so the split is unambiguous).
+// [`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) page below expects, so the split is
+// unambiguous).
 // * **Query params**: `start_path` -- the app-relative path the user was on when they clicked "Sign in via ...", so
 // they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
-// [`/auth/from`](#authfromencrypted_account-receiving-side) redirect.
+// [`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) redirect.
 // * **Behavior**: shows a sign-in form for *this* server (or a "currently signed in as ..." badge, if already
 // authenticated here), plus a "Sign back in here"/"Also sign in here" checkbox (checked by default). Submitting
-// calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint a transfer
-// account; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
-// into this server locally. The transfer account is then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH
-// keypair per encryption, shared secret via ECDH + HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each
-// part base64url) and the browser is redirected to
-// `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
+// calls the [`Login`](#grpc-api-Login) RPC (always a fresh login, never reusing stored tokens) to mint the transfer
+// tokens; if the checkbox is checked, a second independent [`Login`](#grpc-api-Login) call also signs the browser
+// into this server locally. `{requesting_host}`'s hostname plus that fresh `refresh_token`/`access_token` pair are
+// then AES-GCM-encrypted to `{public_key}` (fresh ephemeral ECDH keypair per encryption, shared secret via
+// ECDH + HKDF-SHA256, output `ephemeral_public_key.iv.ciphertext`, each part base64url) and the browser is
+// redirected to `https://{requesting_host}/auth/from/{ciphertext}?start_path={start_path}`.
 //
-// ##### `/auth/from/{encrypted_account}`: receiving side
-// `Pages.Auth.From.EncodedAccount_`, closing the loop from
+// ##### `/auth/from/{encrypted_account_auth_tokens}`: receiving side
+// `Pages.Auth.From.EncryptedAccountAuthTokens_`, closing the loop from
 // [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) above. Reached only via that redirect.
-// * **Path params**: `{encrypted_account}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
+// * **Path params**: `{encrypted_account_auth_tokens}` is the `ephemeral_public_key.iv.ciphertext` blob produced by
 // [`/auth/to`](#authtopublic_keyrequesting_host-sending-side).
 // * **Query params**: `start_path`, passed through unchanged from
-// [`/auth/to`](#authtopublic_keyrequesting_host-sending-side).
-// * **Behavior**: decrypts `{encrypted_account}` using the private key this origin generated when it built the
-// [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) link (same ECDH + HKDF-SHA256 + AES-GCM derivation,
-// in reverse), yielding the transfer account (including its `refresh_token`/`access_token`). If `start_path` is
-// present, the account is added straight to the local Accounts panel and the browser navigates to it; otherwise a
-// confirmation screen (avatar, name, server, Confirm/Cancel) is shown first. Either way, once the flow completes
-// (confirmed or cancelled), the one-time private key is discarded and a fresh keypair generated, so it's
-// single-use per completed/cancelled transfer.
+// [`/auth/to`](#authtopublic_keyrequesting_host-sending-side); defaults to `/` if missing.
+// * **Behavior**: decrypts `{encrypted_account_auth_tokens}` using the private key this origin generated when it
+// built the [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) link (same ECDH + HKDF-SHA256 + AES-GCM
+// derivation, in reverse), yielding `bullcity.social`'s hostname and its `refresh_token`/`access_token`. Calls
+// [`GetCurrentUser`](#grpc-api-GetCurrentUser) against that server with the decrypted `access_token` to hydrate the
+// rest of the account, then adds it straight to the local Accounts panel and navigates to `start_path` -- no
+// confirmation step (decryption succeeding is itself the authenticity check: the ciphertext is AEAD-encrypted to
+// this origin's own one-time private key, so a forged or replayed payload just fails to decrypt rather than
+// producing a wrong-but-valid account). If either step fails (bad decrypt, or the `GetCurrentUser` call itself),
+// an error is shown instead. Either way, once the flow completes (added, or failed), the one-time private key is
+// discarded and a fresh keypair generated, so it's single-use per completed/failed transfer.
 //
 // ### gRPC API
 service Jonline {

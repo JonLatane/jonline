@@ -64,8 +64,35 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (mediaGeneratorPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
+    , Html.map toMsg (federatedSignInNoticeView shared)
     , div [ classes [ "container", hostnameToCSSClass shared.accounts.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
+
+
+{-| A brief "Signed in as ..." toast for `AccountsPanel.Model.federatedSignInNotice` -- see that
+field's own doc. Reuses `avatarOrPlaceholder`/`AccountsPanel.displayName`, the same building blocks
+`accountRow` itself uses, so it reads as the same account identity the Accounts Panel would show.
+Dismissible early by clicking it; otherwise `AccountsPanel.federatedSignInNoticeDuration` clears it on
+its own.
+-}
+federatedSignInNoticeView : Shared.Model -> Html Shared.Msg
+federatedSignInNoticeView shared =
+    case shared.accounts.federatedSignInNotice of
+        Nothing ->
+            text ""
+
+        Just account ->
+            div
+                [ classes [ "federated-sign-in-notice", hostnameToCSSClass account.server, "background-color-primary" ]
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.DismissFederatedSignInNotice)
+                ]
+                [ avatarOrPlaceholder shared.accounts.servers account
+                , div [ class "federated-sign-in-notice-text" ]
+                    [ div [ class "federated-sign-in-notice-title" ] [ text "Signed in as" ]
+                    , div [ class "federated-sign-in-notice-name" ] [ text (AccountsPanel.displayName account) ]
+                    , div [ class "federated-sign-in-notice-server" ] [ text account.server ]
+                    ]
+                ]
 
 
 {-| A tall, empty spacer at the bottom of `main_`'s content -- shown (see

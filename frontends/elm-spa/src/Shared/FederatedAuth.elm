@@ -15,10 +15,11 @@ module Shared.FederatedAuth exposing
     )
 
 {-| SSO-style cross-server account hand-off: lets one origin's SPA (e.g.
-`bullcity.social`) receive an already-signed-in `Shared.AccountsPanel.Account`
-from a different origin's SPA (e.g. `jonline.io`) without ever typing that
-origin's password into `bullcity.social`. See `Pages.Auth.To.Key_` (the
-sending side) and `Pages.Auth.From.EncodedAccount_` (the receiving side).
+`bullcity.social`) hand a different origin's SPA (e.g. `jonline.io`) a fresh
+`Shared.AccountsPanel.AccountAuthTokens` for an already-signed-in account,
+without ever typing that origin's password into `bullcity.social`. See
+`Pages.Auth.To.Key_` (the sending side) and
+`Pages.Auth.From.EncryptedAccountAuthTokens_` (the receiving side).
 
 This origin's ECDH (P-256) keypair -- generated and persisted here -- is
 what a request gets encrypted to; the actual keygen/encrypt/decrypt (ECIES-
@@ -27,10 +28,10 @@ happens in JS behind `Ports`, via the browser's WebCrypto `SubtleCrypto` API
 -- Elm has no crypto/bigint support of its own. `PublicKey`/`PrivateKey` here
 are just opaque, already base64url-encoded strings handed back from JS.
 
-The keypair is single-use: `Pages.Auth.From.EncodedAccount_` calls `discard`
-once its flow reaches a terminal state (account accepted or declined), so a
-used private key doesn't linger in localStorage, and a fresh keypair is
-always ready for the next attempt.
+The keypair is single-use: `Pages.Auth.From.EncryptedAccountAuthTokens_` calls
+`discard` once its flow reaches a terminal state (account added), so a used
+private key doesn't linger in localStorage, and a fresh keypair is always
+ready for the next attempt.
 
 -}
 
