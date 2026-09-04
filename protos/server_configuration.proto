@@ -224,7 +224,7 @@ message EventSettings {
   //
   // For a band site (where you want to show your "true calendar"), this is best set to `true`.
   // For a site where you have lots of event postings, it's best set to `false`.
-  bool show_long_and_already_started_events_by_default = 9;
+  bool show_started_or_long_events_by_default = 9;
 }
 
 // The Events Calendar's default UI granularity.

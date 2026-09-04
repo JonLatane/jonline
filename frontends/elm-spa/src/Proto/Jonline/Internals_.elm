@@ -1538,6 +1538,7 @@ fieldNumbersProto__Jonline__EventSettings :
     , enableReplies : Int
     , calendarLookbackDays : Int
     , defaultCalendarDisplayMode : Int
+    , showStartedOrLongEventsByDefault : Int
     }
 fieldNumbersProto__Jonline__EventSettings =
     { visible = 1
@@ -1548,6 +1549,7 @@ fieldNumbersProto__Jonline__EventSettings =
     , enableReplies = 6
     , calendarLookbackDays = 7
     , defaultCalendarDisplayMode = 8
+    , showStartedOrLongEventsByDefault = 9
     }
 
 
@@ -1564,6 +1566,7 @@ defaultProto__Jonline__EventSettings =
     , enableReplies = Nothing
     , calendarLookbackDays = Nothing
     , defaultCalendarDisplayMode = Proto.Jonline.CalendarDisplayMode.defaultCalendarDisplayMode
+    , showStartedOrLongEventsByDefault = False
     }
 
 
@@ -1591,6 +1594,7 @@ decodeProto__Jonline__EventSettings =
             8
             Proto.Jonline.CalendarDisplayMode.decodeCalendarDisplayMode
             (\a r -> { r | defaultCalendarDisplayMode = a })
+        , Protobuf.Decode.optional 9 Protobuf.Decode.bool (\a r -> { r | showStartedOrLongEventsByDefault = a })
         ]
 
 
@@ -1608,6 +1612,7 @@ encodeProto__Jonline__EventSettings value =
         , ( 6, (Maybe.map Protobuf.Encode.bool >> Maybe.withDefault Protobuf.Encode.none) value.enableReplies )
         , ( 7, (Maybe.map Protobuf.Encode.uint32 >> Maybe.withDefault Protobuf.Encode.none) value.calendarLookbackDays )
         , ( 8, Proto.Jonline.CalendarDisplayMode.encodeCalendarDisplayMode value.defaultCalendarDisplayMode )
+        , ( 9, Protobuf.Encode.bool value.showStartedOrLongEventsByDefault )
         ]
 
 
@@ -1623,6 +1628,7 @@ type alias Proto__Jonline__EventSettings =
     , enableReplies : Maybe Bool
     , calendarLookbackDays : Maybe Int
     , defaultCalendarDisplayMode : Proto.Jonline.CalendarDisplayMode.CalendarDisplayMode
+    , showStartedOrLongEventsByDefault : Bool
     }
 
 

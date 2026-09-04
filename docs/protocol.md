@@ -2822,6 +2822,9 @@ Specific settings for Events.
 | enable_replies | [bool](#bool) | optional | Works the same as for Posts. |
 | calendar_lookback_days | [uint32](#uint32) | optional | How far to look back for the &#34;Upcoming Events&#34; tab in the server&#39;s UI. Defaults to `14`. Servers with fewer events may want to set to a higher value. |
 | default_calendar_display_mode | [CalendarDisplayMode](#jonline-CalendarDisplayMode) |  | What the Events Calendar&#39;s default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`. Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, or with more to `CALENDAR_DISPLAY_DAY`. |
+| show_started_or_long_events_by_default | [bool](#bool) |  | Affects the Elm UI &#34;▽&#34; button on EventsPages (embedded or no). When this is false, that filter defaults to &#34;on.&#34; When true, that filter defaults to &#34;off.&#34;
+
+For a band site (where you want to show your &#34;true calendar&#34;), this is best set to `true`. For a site where you have lots of event postings, it&#39;s best set to `false`. |
 
 
 

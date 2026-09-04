@@ -5799,8 +5799,15 @@ directory</a> is (<code>{name}</code> denotes a
           <td></td>
           <td>What the Events Calendar's default UI mode will be. Defaults to <code>CALENDAR_DISPLAY_WEEK</code>. Servers with fewer events may want to set <code>CALENDAR_DISPLAY_MONTH</code>, or with more to <code>CALENDAR_DISPLAY_DAY</code>.</td>
         </tr>
+        <tr>
+          <td>show_started_or_long_events_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Affects the Elm UI "▽" button on EventsPages (embedded or no). When this is false, that filter defaults to "on." When true, that filter defaults to "off."</td>
+        </tr>
       </tbody>
     </table>
+    <p>For a band site (where you want to show your "true calendar"), this is best set to <code>true</code>. For a site where you have lots of event postings, it's best set to <code>false</code>. |</p>
     <p><a name="jonline-ExternalCDNConfig"></a></p>
     <h3 id="externalcdnconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#externalcdnconfig"><span class="octicon octicon-link"></span></a>ExternalCDNConfig</h3>
     <p>

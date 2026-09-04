@@ -157,16 +157,17 @@ type alias Model =
     -- `eventAnimations`) would otherwise fight the real owner for it.
     , embeddedPage : Bool
 
-    -- Whether `searchRowView`'s box also searches a *paired* `PostsPage` feed shown alongside this
-    -- one (`Pages.Home_`'s `Feed`, `Components.Pages.UserProfilePage`'s combined view) -- `True`
-    -- there reads the placeholder "Search posts and events…" instead of plain "Search events…".
-    -- Independent of `embeddedPage` itself (which governs layout/`tabsView`/`modeButtonsView`, see
-    -- that field's own doc): `Pages.Home_.HomePostWithEvents` (a fixed Post with an Events strip
-    -- above it) wants `embeddedPage`'s compact layout without this being `True` -- its search box
-    -- has no paired Posts feed to search, just the one fixed Post, so it should read plain "Search
-    -- events…" same as any standalone copy. `False` everywhere except `Feed`'s/`UserProfilePage`'s
+    -- A modifier of `embeddedPage`, not an independent flag (see `searchRowView`'s own
+    -- `embeddedPage && embeddingPageSearchesPosts` check) -- whether an embedded copy's search box
+    -- also searches a *paired* `PostsPage` feed shown alongside it (`Pages.Home_`'s `Feed`,
+    -- `Components.Pages.UserProfilePage`'s combined view), reading the placeholder "Search posts and
+    -- events…" instead of plain "Search events…" when it does. `Pages.Home_.HomePostWithEvents` (a
+    -- fixed Post with an Events strip above it) is the first `embeddedPage = True` copy with no such
+    -- paired feed -- just the one fixed Post -- hence needing this as its own field rather than
+    -- reusing `embeddedPage` alone the way `searchRowView` used to. Meaningless (never read on its
+    -- own) whenever `embeddedPage` is `False`; `False` everywhere except `Feed`'s/`UserProfilePage`'s
     -- own two copies.
-    , combinedPostsSearch : Bool
+    , embeddingPageSearchesPosts : Bool
 
     -- Whether switching `mode` into/out of `Calendar` (see `DisplayModeChanged`)
     -- writes `Shared.UserPreferences.prefersCalendar` -- `True` only for
@@ -231,8 +232,10 @@ type alias Model =
     , copyLinkGeneration : Int
 
     -- Whether `syncAnimations` should hide `UpcomingEvents`-tab instances
-    -- that have already started (see `hiddenAsStarted`) -- defaults to `True`
-    -- (`init`), and has no effect on `EventsAfterDate`. Means something
+    -- that have already started (see `hiddenAsStarted`) -- defaults (`init`)
+    -- to `not (showStartedOrLongEventsByDefault shared)`, i.e. `True` unless
+    -- `mainFrontendHost`'s own `EventSettings.show_started_or_long_events_by_default`
+    -- is set, and has no effect on `EventsAfterDate`. Means something
     -- different while `model.mode == Calendar`, though: there, it instead
     -- hides instances spanning more than `longEventThresholdHours` (see
     -- `hiddenAsLong`) -- a multi-day event is exactly what makes `Calendar`'s
@@ -243,7 +246,7 @@ type alias Model =
     -- for it to hide, in whichever sense currently applies (see
     -- `anyStartedEvents`/`view`) -- nothing to filter, nothing to show a
     -- toggle for.
-    , hideStartedUpcomingOrLongEvents : Bool
+    , hideStartedOrLongEvents : Bool
 
     -- Whether `eventCardView` shows each card's `Events.eventSyncSourceView`/
     -- `Events.eventSyncDestinationsView` -- both default to `False` (`init`),
@@ -594,8 +597,8 @@ is far lower value than the standalone `/events`-like pages this actually
 matters for).
 
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> ( Model, Effect Msg )
-init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> Bool -> Bool -> Maybe (List SyncDestination) -> Maybe CalendarDisplayMode -> Bool -> ( Model, Effect Msg )
+init shared author navKey path query fragment embeddedPage syncsCalendarPreference availableSyncDestinations calendarDisplayModeOverride embeddingPageSearchesPosts =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -645,10 +648,11 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , exportPopoverOpen = False
                 , copyLinkCopied = False
                 , copyLinkGeneration = 0
-                , hideStartedUpcomingOrLongEvents = True
+                , hideStartedOrLongEvents = not (showStartedOrLongEventsByDefault shared)
                 , showSyncSources = False
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
+                , embeddingPageSearchesPosts = embeddingPageSearchesPosts
                 , calendarDisplayModeOverride = calendarDisplayModeOverride
                 , pushStatuses = Dict.empty
                 }
@@ -1094,7 +1098,7 @@ updateInner shared msg model =
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
         HideStartedEventsToggled ->
-            ( { model | hideStartedUpcomingOrLongEvents = not model.hideStartedUpcomingOrLongEvents } |> syncAnimations, Effect.none )
+            ( { model | hideStartedOrLongEvents = not model.hideStartedOrLongEvents } |> syncAnimations, Effect.none )
 
         ShowSyncSourcesChanged showSyncSources ->
             ( { model | showSyncSources = showSyncSources }, Effect.none )
@@ -1803,7 +1807,7 @@ instead, a genuinely different filter, not this one extended to cover
 -}
 hiddenAsStarted : Model -> EventInstance -> Bool
 hiddenAsStarted model instance =
-    model.hideStartedUpcomingOrLongEvents && instanceHasStarted model instance
+    model.hideStartedOrLongEvents && instanceHasStarted model instance
 
 
 {-| Whether `instance` should be treated as absent from `syncAnimations`' own
@@ -2108,7 +2112,7 @@ hides anything outside `Calendar` mode.
 -}
 hiddenAsLong : Model -> EventInstance -> Bool
 hiddenAsLong model instance =
-    model.hideStartedUpcomingOrLongEvents && model.mode == Calendar && instanceIsLong instance
+    model.hideStartedOrLongEvents && model.mode == Calendar && instanceIsLong instance
 
 
 {-| Every `(host, Event, EventInstance)` `Calendar` mode should plot -- reads
@@ -2222,6 +2226,21 @@ calendarDisplayMode shared =
         |> Maybe.withDefault CalendarDisplayMode.defaultCalendarDisplayMode
 
 
+{-| `shared.accounts`' main server's `event_settings.show_started_or_long_events_by_default` --
+mirrors `calendarDisplayMode`'s own `serverForHost .. mainFrontendHost |> Maybe.map configurationOf`
+lookup and, like that field, isn't `optional` in the proto, so this falls back to `False` (the
+proto3 default for an unset `bool`) rather than a locally-defined constant. `init` reads this as
+`hideStartedOrLongEvents`'s initial value, inverted -- see that field's own doc.
+-}
+showStartedOrLongEventsByDefault : Shared.Model -> Bool
+showStartedOrLongEventsByDefault shared =
+    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map AccountsPanel.configurationOf
+        |> Maybe.andThen .eventSettings
+        |> Maybe.map .showStartedOrLongEventsByDefault
+        |> Maybe.withDefault False
+
+
 {-| `calendarDisplayMode`'s value, as the FullCalendar `initialView` string
 `public/index.html`'s `renderCalendar` subscriber passes straight to
 `FullCalendar.Calendar`'s own `initialView` option -- names match that same
@@ -2263,7 +2282,7 @@ calendarRenderEffect shared oldModel newModel =
     if
         newModel.mode
             == Calendar
-            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.hideStartedUpcomingOrLongEvents /= newModel.hideStartedUpcomingOrLongEvents)
+            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.hideStartedOrLongEvents /= newModel.hideStartedOrLongEvents)
     then
         Ports.renderCalendar
             (Encode.object
@@ -2658,7 +2677,7 @@ hideStartedOrLongButtonView model =
         button
             [ classes
                 ("filter-icon-button"
-                    :: (if model.hideStartedUpcomingOrLongEvents then
+                    :: (if model.hideStartedOrLongEvents then
                             [ "background-color-primary" ]
 
                         else
@@ -2668,13 +2687,13 @@ hideStartedOrLongButtonView model =
             , onClick HideStartedEventsToggled
             , title
                 (if model.mode == Calendar then
-                    if model.hideStartedUpcomingOrLongEvents then
+                    if model.hideStartedOrLongEvents then
                         "Showing events that are under " ++ String.fromInt longEventThresholdHours ++ " hours"
 
                     else
                         "Hide events that are " ++ String.fromInt longEventThresholdHours ++ "+ hours"
 
-                 else if model.hideStartedUpcomingOrLongEvents then
+                 else if model.hideStartedOrLongEvents then
                     "Showing only events that haven't started"
 
                  else
@@ -2778,7 +2797,7 @@ searchRowView model =
             [ type_ "text"
             , class "filter-search-input"
             , placeholder <|
-                if model.embeddedPage then
+                if model.embeddedPage && model.embeddingPageSearchesPosts then
                     "Search posts and events..."
 
                 else

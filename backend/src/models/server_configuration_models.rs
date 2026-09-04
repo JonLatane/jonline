@@ -165,6 +165,7 @@ Your media policy should describe who has ownership of uploaded media, anything 
             enable_replies: Some(true),
             calendar_lookback_days: None,
             default_calendar_display_mode: CalendarDisplayMode::CalendarDisplayWeek as i32,
+            show_started_or_long_events_by_default: false,
         })
         .unwrap(),
         external_cdn_config: None,

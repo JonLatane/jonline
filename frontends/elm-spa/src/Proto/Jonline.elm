@@ -648,6 +648,7 @@ fieldNumbersEventSettings :
     , enableReplies : Int
     , calendarLookbackDays : Int
     , defaultCalendarDisplayMode : Int
+    , showStartedOrLongEventsByDefault : Int
     }
 fieldNumbersEventSettings =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__EventSettings
@@ -709,6 +710,16 @@ encodeEventSettings =
  What the Events Calendar's default UI mode will be. Defaults to `CALENDAR_DISPLAY_WEEK`.
  Servers with fewer events may want to set `CALENDAR_DISPLAY_MONTH`, 
  or with more to `CALENDAR_DISPLAY_DAY`.
+
+
+### showStartedOrLongEventsByDefault
+
+ Affects the Elm UI "▽" button on EventsPages (embedded or no).
+ When this is false, that filter defaults to "on." When true, that filter
+ defaults to "off."
+
+ For a band site (where you want to show your "true calendar"), this is best set to `true`.
+ For a site where you have lots of event postings, it's best set to `false`.
 
 
 -}

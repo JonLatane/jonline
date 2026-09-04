@@ -12,11 +12,13 @@ the way `Pages.UsernameOrCustomTab_.EmbeddedPost` renders a regular custom tab's
 `post_id` target also has `show_events_strip` set, `HomePostWithEvents` instead pairs that same Post
 with an `EventsPage` strip above it (mirroring `Feed`'s own Events-strip-above-feed shape, just over
 a single fixed Post instead of `PostsPage`'s own listing) -- its own `EventsPage` copy passes
-`embeddedPage = False` (unlike `Feed`'s), so its search box reads "Search events…" rather than
-"Search posts and events…": there's no Posts search happening alongside it, just the one fixed Post.
-`home`'s `default_events_strip_to_row`/`default_events_strip_calendar_display_mode` govern this
-strip's own initial layout/calendar-granularity defaults exactly the same way they govern `Feed`'s
-own strip -- see `withEventsStripDisplayOverride`/`eventsStripCalendarDisplayModeOverride`.
+`embeddedPage = True` (same as `Feed`'s, for the same compact, non-interactive "Upcoming Events"
+heading/layout -- see `EventsPage.tabsView`'s own doc) but `embeddingPageSearchesPosts = False`
+(unlike `Feed`'s), so its search box reads "Search events…" rather than "Search posts and events…":
+there's no Posts search happening alongside it, just the one fixed Post. `home`'s
+`default_events_strip_to_row`/`default_events_strip_calendar_display_mode` govern this strip's own
+initial layout/calendar-granularity defaults exactly the same way they govern `Feed`'s own strip --
+see `withEventsStripDisplayOverride`/`eventsStripCalendarDisplayModeOverride`.
 
 `Feed` is a thin wrapper around `Components.Pages.EventsPage`/`Components.Pages.PostsPage`, which do
 all the actual work -- mirrors `Pages.User.UserId_`/`Pages.UsernameOrCustomTab_.Posts`' own use of
@@ -38,12 +40,15 @@ above, which keeps each from independently asserting its own
 directly. See `setBreadcrumbsHost` for why: two embedded copies each
 asserting a root of their own turned out to fight a third, actually-different
 root on `Components.Pages.UserProfilePage` (which embeds the same two
-modules), a continuous flicker during animation. `HomeEvents`/`HomePosts`/`HomePost`
-all instead leave breadcrumbs alone entirely: the former two pass
-`embeddedPage = False` (own their own root the same as `Pages.Events`/`Pages.Posts`
-do), and `PostPage.init`/`.update` (the latter) own their own breadcrumb root
-already, the same as `Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.EmbeddedPost`
--- so `setBreadcrumbsHost` only ever fires for `Feed` (see `setBreadcrumbsEffect`).
+modules), a continuous flicker during animation. `HomeEvents`/`HomePosts`/`HomePost`/`HomePostWithEvents`
+all instead leave breadcrumbs alone entirely: `HomeEvents`/`HomePosts` pass `embeddedPage = False`
+(own their own root the same as `Pages.Events`/`Pages.Posts` do); `PostPage.init`/`.update` (`HomePost`,
+and `HomePostWithEvents`' own `.post`) own their own breadcrumb root already, the same as
+`Pages.Post.PostId_`/`Pages.UsernameOrCustomTab_.EmbeddedPost` -- so `HomePostWithEvents`' own
+`.events` copy passes `embeddedPage = True` precisely so it *doesn't* also assert a root of its own
+alongside `.post`'s (the same flicker this whole scheme exists to avoid, just between two halves of
+one `Model` instead of two top-level pages). `setBreadcrumbsHost` only ever fires for `Feed` (see
+`setBreadcrumbsEffect`).
 
 There's only one visible search box in `Feed` (`EventsPage`'s -- `PostsPage.view`
 is called with `showSearchRow = False`, hiding its own box and POST/REPLY
@@ -164,6 +169,7 @@ initFeed shared req =
                 True
                 Nothing
                 (eventsStripCalendarDisplayModeOverride home)
+                True
     in
     ( Feed { posts = postsModel, events = eventsModel }
     , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared, Effect.fromShared Shared.UncollapseHome ]
@@ -184,7 +190,7 @@ initForTarget : Shared.Model -> Request.With Params -> CustomNav.HomePageConfig 
 initForTarget shared req home =
     case home.target of
         CustomNav.TargetTab EVENTSTAB ->
-            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing
+            EventsPage.init shared Nothing req.key req.url.path req.query req.url.fragment False True Nothing Nothing False
                 |> Tuple.mapFirst HomeEvents
                 |> Tuple.mapSecond (Effect.map HomeEventsMsg)
                 |> Just
@@ -205,10 +211,11 @@ initForTarget shared req home =
                             req.url.path
                             (withEventsStripDisplayOverride home req.query)
                             req.url.fragment
-                            False
+                            True
                             False
                             Nothing
                             (eventsStripCalendarDisplayModeOverride home)
+                            False
 
                     ( postModel, postEffect ) =
                         PostPage.init shared (AccountsPanel.isSecure req) postId req.key

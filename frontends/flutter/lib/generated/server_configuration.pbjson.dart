@@ -257,6 +257,7 @@ const EventSettings$json = {
     {'1': 'enable_replies', '3': 6, '4': 1, '5': 8, '9': 2, '10': 'enableReplies', '17': true},
     {'1': 'calendar_lookback_days', '3': 7, '4': 1, '5': 13, '9': 3, '10': 'calendarLookbackDays', '17': true},
     {'1': 'default_calendar_display_mode', '3': 8, '4': 1, '5': 14, '6': '.jonline.CalendarDisplayMode', '10': 'defaultCalendarDisplayMode'},
+    {'1': 'show_started_or_long_events_by_default', '3': 9, '4': 1, '5': 8, '10': 'showStartedOrLongEventsByDefault'},
   ],
   '8': [
     {'1': '_alias_singular'},
@@ -276,8 +277,10 @@ final $typed_data.Uint8List eventSettingsDescriptor = $convert.base64Decode(
     'VzGAYgASgISAJSDWVuYWJsZVJlcGxpZXOIAQESOQoWY2FsZW5kYXJfbG9va2JhY2tfZGF5cxgH'
     'IAEoDUgDUhRjYWxlbmRhckxvb2tiYWNrRGF5c4gBARJfCh1kZWZhdWx0X2NhbGVuZGFyX2Rpc3'
     'BsYXlfbW9kZRgIIAEoDjIcLmpvbmxpbmUuQ2FsZW5kYXJEaXNwbGF5TW9kZVIaZGVmYXVsdENh'
-    'bGVuZGFyRGlzcGxheU1vZGVCEQoPX2FsaWFzX3Npbmd1bGFyQg8KDV9hbGlhc19wbHVyYWxCEQ'
-    'oPX2VuYWJsZV9yZXBsaWVzQhkKF19jYWxlbmRhcl9sb29rYmFja19kYXlz');
+    'bGVuZGFyRGlzcGxheU1vZGUSUAomc2hvd19zdGFydGVkX29yX2xvbmdfZXZlbnRzX2J5X2RlZm'
+    'F1bHQYCSABKAhSIHNob3dTdGFydGVkT3JMb25nRXZlbnRzQnlEZWZhdWx0QhEKD19hbGlhc19z'
+    'aW5ndWxhckIPCg1fYWxpYXNfcGx1cmFsQhEKD19lbmFibGVfcmVwbGllc0IZChdfY2FsZW5kYX'
+    'JfbG9va2JhY2tfZGF5cw==');
 
 @$core.Deprecated('Use serverInfoDescriptor instead')
 const ServerInfo$json = {
