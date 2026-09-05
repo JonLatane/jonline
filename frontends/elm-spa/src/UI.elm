@@ -12,7 +12,7 @@ import Html.Attributes exposing (alt, attribute, checked, class, classList, disa
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer)
+import Proto.Jonline exposing (FederatedServer, MastodonServer)
 import Proto.Jonline.SyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
@@ -1026,6 +1026,7 @@ accountsAndServersTab shared currentRoute =
         [ serversStrip shared
         , unreachableServersWarning shared
         , recommendedServersStrip shared
+        , mastodonServersStrip shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1429,6 +1430,103 @@ recommendedServerChip shared federatedServer =
             ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
             [ text "+ Add" ]
+        ]
+
+
+{-| Mirrors `recommendedServersStrip`, against `AccountsPanel.connectableMastodonServers` instead --
+Mastodon instances `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
+aren't already connected (`AccountsPanel.mastodonAccounts`), plus a read-only row per account that
+already is. Unlike the recommended-servers strip, this one never collapses behind a "N
+instances..." toggle -- there's no expectation of there being many, the way there can be many
+federated Jonline servers.
+-}
+mastodonServersStrip : Shared.Model -> Html Shared.Msg
+mastodonServersStrip shared =
+    let
+        connectable : List MastodonServer
+        connectable =
+            AccountsPanel.connectableMastodonServers shared.accounts
+
+        connected : List AccountsPanel.MastodonAccount
+        connected =
+            shared.accounts.mastodonAccounts
+    in
+    if List.isEmpty connectable && List.isEmpty connected then
+        text ""
+
+    else
+        div [ class "recommended-servers-section" ]
+            [ div [ class "panel-divider" ] []
+            , div [ class "recommended-servers-strip" ]
+                (List.map connectedMastodonAccountChip connected
+                    ++ List.map (mastodonServerChip shared) connectable
+                )
+            ]
+
+
+{-| One not-yet-connected Mastodon instance -- mirrors `recommendedServerChip`'s look (logo-less
+top/bottom split, tinted by `hostnameToCSSClass`) but its bottom row is either an alert (no `appId`
+configured, per `MastodonServer.appId`'s own doc on that being admin-optional) or a real "Connect"
+button that opens the OAuth popup (`AccountsPanel.MastodonConnectClicked`) -- never automatically,
+only on this explicit click. Disabled (and shows "Connecting…") while
+`AccountsPanel.mastodonConnectPopupOpen` names this same instance, so a slow/stuck popup can't be
+double-triggered.
+-}
+mastodonServerChip : Shared.Model -> MastodonServer -> Html Shared.Msg
+mastodonServerChip shared mastodonServer =
+    let
+        domain : String
+        domain =
+            mastodonServer.domain
+
+        connecting : Bool
+        connecting =
+            shared.accounts.mastodonConnectPopupOpen == Just domain
+
+        hasAppId : Bool
+        hasAppId =
+            not (String.isEmpty mastodonServer.appId)
+    in
+    button
+        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( hostnameToCSSClass domain, True ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.MastodonConnectClicked domain))
+        , disabled (not hasAppId || connecting)
+        , title
+            (if hasAppId then
+                "Connect " ++ domain
+
+             else
+                domain ++ " hasn't been configured for Mastodon sign-in by this server's admin yet."
+            )
+        ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass domain, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass domain, "background-color-nav" ] ]
+            [ text
+                (if not hasAppId then
+                    "⚠️ Not configured"
+
+                 else if connecting then
+                    "Connecting…"
+
+                 else
+                    "+ Connect"
+                )
+            ]
+        ]
+
+
+{-| One already-connected Mastodon account -- read-only for now (no remove/disconnect button yet,
+same first-pass scope as `AccountsPanel.mastodonAccounts` itself not being persisted -- see that
+field's own doc), just enough to confirm the connection actually happened.
+-}
+connectedMastodonAccountChip : AccountsPanel.MastodonAccount -> Html Shared.Msg
+connectedMastodonAccountChip mastodonAccount =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass mastodonAccount.instanceHost ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ mastodonAccount.username) ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-nav" ] ]
+            [ text mastodonAccount.instanceHost ]
         ]
 
 

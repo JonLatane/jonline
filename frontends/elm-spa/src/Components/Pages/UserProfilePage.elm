@@ -2127,7 +2127,7 @@ updateInner shared msg model =
             case facebookAppId shared model.resolver.targetHost of
                 Just appId ->
                     ( setSyncDestinationsThreads ThreadsConnectPopupOpen model
-                    , Ports.facebookLoginPopup { provider = "threads", appId = appId } |> Effect.fromCmd
+                    , Ports.facebookLoginPopup { provider = "threads", appId = appId, instanceHost = "" } |> Effect.fromCmd
                     )
 
                 Nothing ->
@@ -2205,7 +2205,7 @@ updateInner shared msg model =
             case xTwitterAppId shared model.resolver.targetHost of
                 Just clientId ->
                     ( setSyncDestinationsXTwitter XTwitterConnectPopupOpen model
-                    , Ports.facebookLoginPopup { provider = "x_twitter", appId = clientId } |> Effect.fromCmd
+                    , Ports.facebookLoginPopup { provider = "x_twitter", appId = clientId, instanceHost = "" } |> Effect.fromCmd
                     )
 
                 Nothing ->
@@ -3143,7 +3143,7 @@ startFacebookLogin shared model platform =
     case facebookAppId shared model.resolver.targetHost of
         Just appId ->
             ( setSyncDestinationsLogin (FacebookLoginPopupOpen platform) model
-            , Ports.facebookLoginPopup { provider = "facebook", appId = appId } |> Effect.fromCmd
+            , Ports.facebookLoginPopup { provider = "facebook", appId = appId, instanceHost = "" } |> Effect.fromCmd
             )
 
         Nothing ->

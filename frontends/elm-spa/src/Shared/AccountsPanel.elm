@@ -7,6 +7,7 @@ module Shared.AccountsPanel exposing
     , Branding
     , Connection
     , FormStatus(..)
+    , MastodonAccount
     , MaybeAccountServer
     , Model
     , Msg(..)
@@ -24,6 +25,7 @@ module Shared.AccountsPanel exposing
     , brandingOf
     , configurationOf
     , connectToServer
+    , connectableMastodonServers
     , connectionOf
     , connectionUrl
     , createAccountModalBodyId
@@ -81,7 +83,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -314,6 +316,23 @@ type alias Model =
     -- though it's landed them on a page they didn't navigate to by hand. Cleared by
     -- `DismissFederatedSignInNotice`, fired either by clicking it or a few seconds after it appears.
     , federatedSignInNotice : Maybe Account
+
+    -- Mastodon accounts connected via `UI.mastodonServerChip`'s "Connect" button (see
+    -- `MastodonConnectClicked`) -- each one's `accessToken` came straight out of an OAuth popup Elm
+    -- never touched directly (see `Ports.facebookLoginPopup`'s `"mastodon"` provider), fetched for
+    -- the sole purpose of a future `GetPosts` translation layer, not used for anything yet.
+    -- Session-only for now (not persisted, unlike `accounts`/`servers`) -- reconnecting after every
+    -- reload is an accepted first-pass limitation until that translation layer lands and there's an
+    -- actual reason to keep these around across reloads.
+    , mastodonAccounts : List MastodonAccount
+
+    -- The instance host `MastodonConnectClicked` most recently opened a popup for, until that
+    -- popup's `Ports.facebookLoginResult` (`GotMastodonLoginResult`) settles -- `Nothing` the rest
+    -- of the time. Since only one such popup can meaningfully be open at once (mirrors
+    -- `Components.Pages.UserProfilePage`'s own single-popup-at-a-time flows), this alone is enough
+    -- to both disable every "Connect" button while one's in flight and know which `MastodonServer`
+    -- the eventual result belongs to.
+    , mastodonConnectPopupOpen : Maybe String
     }
 
 
@@ -394,6 +413,9 @@ type Msg
     | GotPushSubscriptionStatusResult String (Result Grpc.Error ( Account, GetPushSubscriptionStatusResponse ))
     | PushSubscriptionChangeReceived Decode.Value
     | DismissFederatedSignInNotice
+    | MastodonConnectClicked String
+    | GotMastodonLoginResult Decode.Value
+    | GotMastodonVerifyCredentialsResult String String (Result Http.Error String)
     | NoOp
 
 
@@ -447,6 +469,21 @@ type alias AccountAuthTokens =
     { server : String
     , refreshToken : Token
     , accessToken : Token
+    }
+
+
+{-| A Mastodon account connected via `UI.mastodonServerChip`'s "Connect" button (see
+`MastodonConnectClicked`/`GotMastodonLoginResult`) -- `accessToken` came out of an OAuth popup Elm
+never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: dynamic app
+registration, PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
+between the browser and `instanceHost` itself), and `username` is fetched once, right after, via
+`GET /api/v1/accounts/verify_credentials` (see `verifyMastodonCredentialsTask`) -- just enough to
+display the connection, not a full `Account`, since a Mastodon account isn't a Jonline one.
+-}
+type alias MastodonAccount =
+    { instanceHost : String
+    , accessToken : String
+    , username : String
     }
 
 
@@ -1418,6 +1455,8 @@ init req flags =
       , pendingNotificationAccountId = Nothing
       , pendingPushSubscriptionCheck = Nothing
       , federatedSignInNotice = Nothing
+      , mastodonAccounts = []
+      , mastodonConnectPopupOpen = Nothing
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1437,6 +1476,7 @@ subscriptions model =
         , Ports.pushSubscribed PushSubscriptionPortReceived
         , Ports.pushSubscriptionChecked PushSubscriptionCheckReceived
         , Ports.pushSubscriptionChangeReceived PushSubscriptionChangeReceived
+        , Ports.facebookLoginResult GotMastodonLoginResult
         ]
 
 
@@ -3072,6 +3112,41 @@ sendUpdate req msg model =
         DismissFederatedSignInNotice ->
             ( { model | federatedSignInNotice = Nothing }, Cmd.none )
 
+        MastodonConnectClicked instanceHost ->
+            ( { model | mastodonConnectPopupOpen = Just instanceHost }
+            , Ports.facebookLoginPopup { provider = "mastodon", appId = "", instanceHost = instanceHost }
+            )
+
+        GotMastodonLoginResult value ->
+            case model.mastodonConnectPopupOpen of
+                Nothing ->
+                    -- Not our popup (see `Ports.facebookLoginResult`'s own doc on this port fanning
+                    -- out to every subscriber) -- unreachable in practice, since nothing else in
+                    -- this module ever sets `mastodonConnectPopupOpen`, but harmless either way.
+                    ( model, Cmd.none )
+
+                Just instanceHost ->
+                    case mastodonLoginResultDecoder value of
+                        Ok accessToken ->
+                            ( model
+                            , Task.attempt (GotMastodonVerifyCredentialsResult instanceHost accessToken)
+                                (verifyMastodonCredentialsTask instanceHost accessToken)
+                            )
+
+                        Err _ ->
+                            ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
+
+        GotMastodonVerifyCredentialsResult instanceHost accessToken (Ok username) ->
+            ( { model
+                | mastodonConnectPopupOpen = Nothing
+                , mastodonAccounts = { instanceHost = instanceHost, accessToken = accessToken, username = username } :: model.mastodonAccounts
+              }
+            , Cmd.none
+            )
+
+        GotMastodonVerifyCredentialsResult _ _ (Err _) ->
+            ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -3166,6 +3241,23 @@ recommendedFederatedServers model =
         |> Maybe.map .servers
         |> Maybe.withDefault []
         |> List.filter (\fs -> not (isKnownServer model fs.host))
+
+
+{-| Mirrors `recommendedFederatedServers` exactly (same `mainFrontendHost`-config sourcing), against
+`federationInfo.mastodonServers` instead of `.servers` -- the Mastodon instances `UI.mastodonServerChip`
+shows for connecting, minus any already in `model.mastodonAccounts`. Unlike `FederatedServer`s, a
+`MastodonServer` still shows here (with `UI.mastodonServerChip`'s alert-icon treatment) even with a
+blank `appId` -- there's no admin-configuration UI for the user themselves to fall back to, so
+hiding it entirely would just look like the instance was never offered at all.
+-}
+connectableMastodonServers : Model -> List MastodonServer
+connectableMastodonServers model =
+    serverForHost model.servers model.mainFrontendHost
+        |> Maybe.map configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .mastodonServers
+        |> Maybe.withDefault []
+        |> List.filter (\ms -> not (List.any (\a -> a.instanceHost == ms.domain) model.mastodonAccounts))
 
 
 {-| Whether `frontendHost` (trimmed) is this app's own "home" server --
@@ -4112,6 +4204,71 @@ discoverBackendHost pageIsSecure frontendHost =
             [ True, False ]
         )
         |> Task.onError (\_ -> Task.succeed frontendHost)
+
+
+{-| Decodes a `facebookLoginResult` payload (`{ ok : Bool, value : String }`, see that port's own
+doc) for the `"mastodon"` provider specifically -- `Ok accessToken` on success, `Err message`
+otherwise (including the "cancelled" case, same as every other provider's use of this port).
+Mirrors `Components.Pages.UserProfilePage.facebookLoginResultDecoder` exactly; kept as its own copy
+here rather than exposed cross-module, since the two are otherwise unrelated (one page's Facebook/
+Threads/X connect flows, this module's Mastodon one).
+-}
+mastodonLoginResultDecoder : Decode.Value -> Result String String
+mastodonLoginResultDecoder value =
+    case
+        Decode.decodeValue
+            (Decode.map2 Tuple.pair (Decode.field "ok" Decode.bool) (Decode.field "value" Decode.string))
+            value
+    of
+        Ok ( True, token ) ->
+            Ok token
+
+        Ok ( False, err ) ->
+            Err err
+
+        Err err ->
+            Err (Decode.errorToString err)
+
+
+{-| `GET /api/v1/accounts/verify_credentials` against `instanceHost`, authenticated with the
+freshly-minted `accessToken` -- the one Mastodon call `GotMastodonLoginResult` needs before it can
+actually add a `MastodonAccount`, since the OAuth result alone is just a bare token with no
+identity attached yet. Decodes just `username`, all a `MastodonAccount` needs to display the
+connection.
+-}
+verifyMastodonCredentialsTask : String -> String -> Task Http.Error String
+verifyMastodonCredentialsTask instanceHost accessToken =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/verify_credentials"
+        , body = Http.emptyBody
+        , resolver =
+            Http.stringResolver
+                (\response ->
+                    case response of
+                        Http.GoodStatus_ _ body ->
+                            case Decode.decodeString (Decode.field "username" Decode.string) body of
+                                Ok username ->
+                                    Ok username
+
+                                Err err ->
+                                    Err (Http.BadBody (Decode.errorToString err))
+
+                        Http.BadStatus_ metadata _ ->
+                            Err (Http.BadStatus metadata.statusCode)
+
+                        Http.NetworkError_ ->
+                            Err Http.NetworkError
+
+                        Http.Timeout_ ->
+                            Err Http.Timeout
+
+                        Http.BadUrl_ url ->
+                            Err (Http.BadUrl url)
+                )
+        , timeout = Just 10000
+        }
 
 
 connectionUrl : Connection -> String
