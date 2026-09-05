@@ -337,6 +337,22 @@ type alias Model =
     -- the eventual result belongs to.
     , mastodonConnectPopupOpen : Maybe String
 
+    -- Mastodon instances the user just wants to browse the public timeline of -- no OAuth, no
+    -- admin-registered app, no account at all (see `Shared.Federation.Mastodon.fetchPosts`'s own
+    -- doc: it's a plain unauthenticated `GET`), the same "just add a host" affordance
+    -- `AddServerClicked`'s server strip already offers for real Jonline servers. Deliberately a
+    -- bare `List String` (not a richer record the way `Server`/`MastodonAccount` are) -- there's
+    -- no connection state, account identity, or credential to track here at all, just a host to
+    -- fetch. Session-only, same as `mastodonAccounts`/`blueskyAccounts` -- see those fields' own
+    -- doc on that being an accepted first-pass limitation.
+    , browsedMastodonInstances : List String
+
+    -- `UI.mastodonBrowseSection`'s "add an instance to browse" `<input>` value -- mirrors
+    -- `AddServerForm`'s own text-input-plus-button shape, just without needing a whole record
+    -- (`hostInput` there also tracks in-flight validation status, which this has none of -- adding
+    -- a browsed instance is instant, synchronous, and can't fail, unlike adding a real server).
+    , browseMastodonInstanceInput : String
+
     -- Bluesky accounts connected via `UI.blueskyConnectSection`'s form (see
     -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- same session-only, not-yet-wired-into-
     -- anything first-pass scope as `mastodonAccounts`, see that field's own doc.
@@ -434,6 +450,9 @@ type Msg
     | BlueskyAppPasswordChanged String
     | BlueskyConnectClicked
     | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
+    | BrowseMastodonInstanceInputChanged String
+    | BrowseMastodonInstanceClicked
+    | RemoveBrowsedMastodonInstanceClicked String
     | NoOp
 
 
@@ -1503,6 +1522,8 @@ init req flags =
       , federatedSignInNotice = Nothing
       , mastodonAccounts = []
       , mastodonConnectPopupOpen = Nothing
+      , browsedMastodonInstances = []
+      , browseMastodonInstanceInput = ""
       , blueskyAccounts = []
       , blueskyConnectForm = Nothing
       }
@@ -3224,6 +3245,29 @@ sendUpdate req msg model =
             ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | status = Errored (blueskyErrorMessage err) }) }
             , Cmd.none
             )
+
+        BrowseMastodonInstanceInputChanged text ->
+            ( { model | browseMastodonInstanceInput = text }, Cmd.none )
+
+        BrowseMastodonInstanceClicked ->
+            let
+                host : String
+                host =
+                    String.trim model.browseMastodonInstanceInput
+            in
+            if String.isEmpty host || List.member host model.browsedMastodonInstances then
+                ( model, Cmd.none )
+
+            else
+                ( { model
+                    | browsedMastodonInstances = host :: model.browsedMastodonInstances
+                    , browseMastodonInstanceInput = ""
+                  }
+                , Cmd.none
+                )
+
+        RemoveBrowsedMastodonInstanceClicked host ->
+            ( { model | browsedMastodonInstances = List.filter ((/=) host) model.browsedMastodonInstances }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )

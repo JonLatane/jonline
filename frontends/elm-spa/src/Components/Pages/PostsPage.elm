@@ -926,15 +926,29 @@ fetchFederatedPosts shared model =
 
     else
         Effect.batch
-            (List.map fetchMastodonAccount shared.accounts.mastodonAccounts
+            (List.map fetchMastodonInstance (mastodonHostsToFetch shared)
                 ++ List.map fetchBlueskyAccount shared.accounts.blueskyAccounts
             )
 
 
-fetchMastodonAccount : AccountsPanel.MastodonAccount -> Effect Msg
-fetchMastodonAccount account =
-    Mastodon.fetchPosts account.instanceHost
-        |> Task.attempt (GotFederatedPosts ("mastodon:" ++ account.instanceHost))
+{-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
+(`mastodonAccounts`) and instances just being browsed anonymously (`browsedMastodonInstances`, see
+`UI.mastodonBrowseSection`) -- deduplicated, since `Mastodon.fetchPosts` hits the exact same
+unauthenticated public-timeline endpoint either way (see that function's own doc: it never actually
+uses a `MastodonAccount`'s `accessToken`) -- there's nothing a connected account's fetch gets that a
+browsed one doesn't, so fetching the same host twice would just be a wasted request.
+-}
+mastodonHostsToFetch : Shared.Model -> List String
+mastodonHostsToFetch shared =
+    (List.map .instanceHost shared.accounts.mastodonAccounts ++ shared.accounts.browsedMastodonInstances)
+        |> Set.fromList
+        |> Set.toList
+
+
+fetchMastodonInstance : String -> Effect Msg
+fetchMastodonInstance instanceHost =
+    Mastodon.fetchPosts instanceHost
+        |> Task.attempt (GotFederatedPosts ("mastodon:" ++ instanceHost))
         |> Effect.fromCmd
 
 

@@ -1027,6 +1027,7 @@ accountsAndServersTab shared currentRoute =
         , unreachableServersWarning shared
         , recommendedServersStrip shared
         , mastodonServersStrip shared
+        , mastodonBrowseSection shared
         , blueskyConnectSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
@@ -1528,6 +1529,66 @@ connectedMastodonAccountChip mastodonAccount =
             [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ mastodonAccount.username) ] ] ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-nav" ] ]
             [ text mastodonAccount.instanceHost ]
+        ]
+
+
+{-| A user-added "just browse this instance's public timeline" affordance -- no OAuth, no
+`MastodonServer` admin config needed at all, since `Shared.Federation.Mastodon.fetchPosts` is a
+plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonServersStrip`'s
+"Connect" chips, which exist to authenticate as a specific account, this is closer to
+`serversStrip`'s own "type a host, add it" shape for real Jonline servers, just without any of the
+connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
+time, a bad/unreachable host just silently fails to load posts the same way any other federated
+fetch failure does (see `Components.Pages.PostsPage.GotFederatedPosts`'s own doc).
+-}
+mastodonBrowseSection : Shared.Model -> Html Shared.Msg
+mastodonBrowseSection shared =
+    div [ class "recommended-servers-section" ]
+        [ div [ class "panel-divider" ] []
+        , if List.isEmpty shared.accounts.browsedMastodonInstances then
+            text ""
+
+          else
+            div [ class "recommended-servers-strip" ] (List.map browsedMastodonInstanceChip shared.accounts.browsedMastodonInstances)
+        , div [ class "server-details-federation-add" ]
+            [ input
+                [ type_ "text"
+                , attribute "autocapitalize" "none"
+                , attribute "autocorrect" "off"
+                , spellcheck False
+                , placeholder "mastodon.social"
+                , value shared.accounts.browseMastodonInstanceInput
+                , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+                ]
+                []
+            , button
+                [ class "server-details-rename-button"
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked)
+                , disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput))
+                ]
+                [ text "+ Browse Instance" ]
+            ]
+        ]
+
+
+{-| One instance being browsed (see `mastodonBrowseSection`) -- a bare host with a remove button,
+no avatar/branding (there's no `Server`/`MastodonAccount` behind it, just a string) and no "Connect"
+affordance either, unlike `mastodonServerChip` -- browsing and connecting are independent actions,
+so a browsed instance doesn't invite upgrading itself into a connected account here.
+-}
+browsedMastodonInstanceChip : String -> Html Shared.Msg
+browsedMastodonInstanceChip host =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass host ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
+            [ button
+                [ class "remove-btn"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked host))
+                , title ("Stop browsing " ++ host)
+                ]
+                [ text "╳" ]
+            ]
         ]
 
 
