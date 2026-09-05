@@ -1,11 +1,14 @@
 .NOTPARALLEL:
 # .DEFAULT_GOAL := default
 # default: protos docs graphs
-.PHONY: server stop_background_servers build review review_fix gen setup_proto_build protos
+.PHONY: server stop_background_servers build review review_fix gen setup_proto_build protos elm_test
 
 run: server
 
-test: review
+test: review elm_test
+
+elm_test:
+	npx elm-test
 
 server:
 	npx elm-spa server
