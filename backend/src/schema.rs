@@ -76,10 +76,12 @@ diesel::table! {
         location -> Nullable<Jsonb>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
-        sync_source_instance_id -> Nullable<Varchar>,
         search_text -> TsVector,
         user_id -> Nullable<Int8>,
         sync_missing_since -> Nullable<Timestamp>,
+        sync_source_id -> Nullable<Int8>,
+        sync_source_uid -> Nullable<Varchar>,
+        sync_source_recurrence_anchor -> Nullable<Timestamp>,
     }
 }
 
@@ -434,6 +436,7 @@ diesel::joinable!(event_instance_sync_destinations -> event_instances (event_ins
 diesel::joinable!(event_instance_sync_destinations -> sync_destinations (sync_destination_id));
 diesel::joinable!(event_instances -> events (event_id));
 diesel::joinable!(event_instances -> posts (post_id));
+diesel::joinable!(event_instances -> sync_sources (sync_source_id));
 diesel::joinable!(events -> posts (post_id));
 diesel::joinable!(events -> sync_sources (sync_source_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));

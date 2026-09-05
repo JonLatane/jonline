@@ -32,7 +32,7 @@ use jonline::{db_connection, init_bin_logging, init_crypto};
 ///    `events.info`, so future syncs match existing rows correctly again.
 /// 2. Finds duplicate Events (same UID, multiple `events` rows) created by that bug and collapses
 ///    each group down to its oldest ("keeper") Event -- matching up each duplicate's
-///    EventInstance(s) to the keeper's by `sync_source_instance_id` and, for every relation a real
+///    EventInstance(s) to the keeper's by `sync_source_recurrence_anchor` and, for every relation a real
 ///    user (not the iCal sync itself, which never touches Media and only ever updates instance
 ///    times/text) could have created against the *newer* duplicate in the meantime -- Media,
 ///    replies, RSVPs (`event_attendances`), cross-posts (`group_posts`/`user_posts`), and sync-out
@@ -142,9 +142,9 @@ fn collapse_duplicate_event(
         .select(EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::event_id.eq(keeper_event_id))
         .load(conn)?;
-    let mut keeper_by_instance_id: HashMap<String, i64> = keeper_instances
+    let mut keeper_by_anchor: HashMap<std::time::SystemTime, i64> = keeper_instances
         .into_iter()
-        .filter_map(|i| i.sync_source_instance_id.map(|id| (id, i.post_id)))
+        .filter_map(|i| i.sync_source_recurrence_anchor.map(|anchor| (anchor, i.post_id)))
         .collect();
 
     let duplicate_instances: Vec<EventInstance> = event_instances::table
@@ -153,10 +153,10 @@ fn collapse_duplicate_event(
         .load(conn)?;
 
     for duplicate_instance in duplicate_instances {
-        let Some(instance_id) = &duplicate_instance.sync_source_instance_id else {
+        let Some(anchor) = duplicate_instance.sync_source_recurrence_anchor else {
             continue;
         };
-        match keeper_by_instance_id.get(instance_id) {
+        match keeper_by_anchor.get(&anchor) {
             Some(&keeper_instance_post_id) => {
                 reassign_instance_relations(
                     conn,
@@ -176,11 +176,11 @@ fn collapse_duplicate_event(
                 // No matching keeper instance -- adopt this occurrence into the keeper Event
                 // rather than lose it.
                 log::warn!(
-                    "Duplicate Event {}'s instance {} (sync_source_instance_id {}) has no \
+                    "Duplicate Event {}'s instance {} (sync_source_recurrence_anchor {:?}) has no \
                      matching keeper instance under Event {}; adopting it instead of deleting.",
                     duplicate_event_id,
                     duplicate_instance.post_id,
-                    instance_id,
+                    anchor,
                     keeper_event_id,
                 );
                 diesel::update(
@@ -188,7 +188,7 @@ fn collapse_duplicate_event(
                 )
                 .set(event_instances::event_id.eq(keeper_event_id))
                 .execute(conn)?;
-                keeper_by_instance_id.insert(instance_id.clone(), duplicate_instance.post_id);
+                keeper_by_anchor.insert(anchor, duplicate_instance.post_id);
             }
         }
     }

@@ -3,9 +3,16 @@
 //!
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
 //! one `Event`, and each occurrence maps to one `EventInstance`, keyed by
-//! `sync_source_instance_id = "{uid}|{occurrence_start_rfc3339}"` so re-syncing finds and
-//! updates the same rows rather than duplicating them. A `VEVENT` with a `RECURRENCE-ID`
-//! overrides that one occurrence's time/text (a moved or edited single instance of a series).
+//! `(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)` -- real, indexed columns
+//! (and a hard DB unique constraint) rather than an app-level JSON key or a hand-built/parsed
+//! string, so re-syncing finds and updates the same rows rather than duplicating them, and a bug
+//! that breaks that matching fails loudly (a constraint violation) instead of silently creating
+//! duplicates -- see 2026-09-04's duplicate-events incident, which is exactly what motivated this.
+//! A `VEVENT` with a `RECURRENCE-ID` overrides that one occurrence's time/text (a moved or edited
+//! single instance of a series); `sync_source_recurrence_anchor` is that occurrence's stable
+//! identity within the series (its own start time for a plain expansion, or its *original*
+//! scheduled time for one that's since moved -- deliberately different from that row's own
+//! `starts_at` once moved, which is what lets it still be found as "the same one" next sync).
 //!
 //! Only occurrences ending within the last year through ~1 year out are created/updated.
 //! Existing rows older than that are never touched, even if they'd otherwise be pruned for no
@@ -92,7 +99,8 @@ fn ics_subscription_url(source: &models::SyncSource) -> Result<&str, Status> {
 }
 
 struct Occurrence {
-    instance_id: String,
+    /// This occurrence's stable identity within its series -- see the module doc comment.
+    recurrence_anchor: DateTime<Utc>,
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
     location: Option<String>,
@@ -135,39 +143,38 @@ pub fn sync_source_text(
     let window_start_db: SystemTime = window_start.into();
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
-        let existing_events: Vec<models::Event> = events::table
-            .filter(events::sync_source_id.eq(source.id))
-            .load::<models::Event>(conn)?;
-        let mut existing_by_uid: HashMap<String, models::Event> = existing_events
+        // Every currently-existing synced instance's series UID -> parent Event id, via real,
+        // indexed columns (see the module doc comment) instead of an app-level JSON key. Multiple
+        // instances of a recurring series share the same `event_id`, so a plain overwrite while
+        // building this map is correct.
+        let existing_event_ids_by_uid: HashMap<String, i64> = event_instances::table
+            .select((event_instances::sync_source_uid, event_instances::event_id))
+            .filter(event_instances::sync_source_id.eq(source.id))
+            .load::<(Option<String>, i64)>(conn)?
             .into_iter()
-            .filter_map(|e| {
-                let uid = e
-                    .info
-                    .get("sync_source_uid")
-                    .and_then(|v| v.as_str())
-                    .map(str::to_string)?;
-                Some((uid, e))
-            })
+            .filter_map(|(uid, event_id)| uid.map(|uid| (uid, event_id)))
             .collect();
 
+        let mut seen_uids: HashSet<String> = HashSet::new();
+
         for group in &event_groups {
-            let db_event = match existing_by_uid.remove(&group.uid) {
-                Some(existing) => {
-                    sync_post_text(
-                        conn,
-                        existing.post_id,
-                        &group.title,
-                        &group.content,
-                        &group.link,
-                    )?;
-                    existing
+            seen_uids.insert(group.uid.clone());
+
+            let event_id = match existing_event_ids_by_uid.get(&group.uid) {
+                Some(&event_id) => {
+                    sync_post_text(conn, event_id, &group.title, &group.content, &group.link)?;
+                    event_id
                 }
-                None => create_event_for_group(conn, source.id, owner_user_id, &moderation, group)?,
+                None => {
+                    create_event_for_group(conn, source.id, owner_user_id, &moderation, group)?
+                        .post_id
+                }
             };
 
             reconcile_instances(
                 conn,
-                db_event.post_id,
+                event_id,
+                source.id,
                 owner_user_id,
                 &moderation,
                 group,
@@ -180,7 +187,12 @@ pub fn sync_source_text(
         // instances the same way `reconcile_instances` does for a group with zero occurrences
         // (subject to the same missing-grace-period before an instance is actually deleted),
         // then delete the event itself (cascades its instances/attendances) once nothing's left.
-        for (_, stale_event) in existing_by_uid {
+        let stale_event_ids: HashSet<i64> = existing_event_ids_by_uid
+            .iter()
+            .filter(|(uid, _)| !seen_uids.contains(*uid))
+            .map(|(_, &event_id)| event_id)
+            .collect();
+        for event_id in stale_event_ids {
             let empty_group = EventGroup {
                 uid: String::new(),
                 title: None,
@@ -190,7 +202,8 @@ pub fn sync_source_text(
             };
             reconcile_instances(
                 conn,
-                stale_event.post_id,
+                event_id,
+                source.id,
                 owner_user_id,
                 &moderation,
                 &empty_group,
@@ -199,12 +212,11 @@ pub fn sync_source_text(
             )?;
 
             let remaining: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(stale_event.post_id))
+                .filter(event_instances::event_id.eq(event_id))
                 .count()
                 .get_result(conn)?;
             if remaining == 0 {
-                diesel::delete(events::table.filter(events::post_id.eq(stale_event.post_id)))
-                    .execute(conn)?;
+                diesel::delete(events::table.filter(events::post_id.eq(event_id))).execute(conn)?;
             }
         }
 
@@ -213,8 +225,7 @@ pub fn sync_source_text(
             .count()
             .get_result(conn)?;
         let event_instance_count: i64 = event_instances::table
-            .inner_join(events::table)
-            .filter(events::sync_source_id.eq(source.id))
+            .filter(event_instances::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
 
@@ -275,7 +286,7 @@ fn create_event_for_group(
     insert_into(events::table)
         .values(&models::NewEvent {
             post_id: post.id,
-            info: json!({ "sync_source_uid": group.uid }),
+            info: json!({}),
             sync_source_id: Some(source_id),
         })
         .get_result::<models::Event>(conn)
@@ -322,10 +333,11 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
 /// An in-window instance that's missing isn't deleted immediately: the first sync that misses it
 /// stamps `sync_missing_since` and leaves it alone, and only a sync that *still* misses it after
 /// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An instance that
-/// reappears (matched by `sync_source_instance_id`) has its `sync_missing_since` cleared.
+/// reappears (matched by `sync_source_recurrence_anchor`) has its `sync_missing_since` cleared.
 fn reconcile_instances(
     conn: &mut PgPooledConnection,
     event_id: i64,
+    source_id: i64,
     owner_user_id: i64,
     moderation: &str,
     group: &EventGroup,
@@ -336,17 +348,18 @@ fn reconcile_instances(
         .select(models::EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::event_id.eq(event_id))
         .load::<models::EventInstance>(conn)?;
-    let mut existing_by_instance_id: HashMap<String, models::EventInstance> = existing_instances
+    let mut existing_by_anchor: HashMap<SystemTime, models::EventInstance> = existing_instances
         .into_iter()
-        .filter_map(|i| i.sync_source_instance_id.clone().map(|id| (id, i)))
+        .filter_map(|i| i.sync_source_recurrence_anchor.map(|anchor| (anchor, i)))
         .collect();
 
     for occ in &group.occurrences {
         let starts_at_db: SystemTime = occ.starts_at.into();
         let ends_at_db: SystemTime = occ.ends_at.into();
+        let anchor_db: SystemTime = occ.recurrence_anchor.into();
         let loc_json = location_json(&occ.location);
 
-        match existing_by_instance_id.remove(&occ.instance_id) {
+        match existing_by_anchor.remove(&anchor_db) {
             Some(existing_instance) => {
                 if existing_instance.starts_at != starts_at_db
                     || existing_instance.ends_at != ends_at_db
@@ -407,7 +420,9 @@ fn reconcile_instances(
                         starts_at: starts_at_db,
                         ends_at: ends_at_db,
                         location: loc_json,
-                        sync_source_instance_id: Some(occ.instance_id.clone()),
+                        sync_source_id: Some(source_id),
+                        sync_source_uid: Some(group.uid.clone()),
+                        sync_source_recurrence_anchor: Some(anchor_db),
                     })
                     .execute(conn)?;
             }
@@ -417,7 +432,7 @@ fn reconcile_instances(
     let now_db: SystemTime = now.into();
     let mut newly_missing_ids: Vec<i64> = vec![];
     let mut expired_ids: Vec<i64> = vec![];
-    for missing in existing_by_instance_id
+    for missing in existing_by_anchor
         .values()
         .filter(|i| i.ends_at >= window_start_db)
     {
@@ -532,14 +547,7 @@ fn group_vevents(
                 continue;
             }
             let override_event = overrides.get(&occ_start).copied();
-            occurrences.push(build_occurrence(
-                &uid,
-                occ_start,
-                occ_end,
-                master,
-                override_event,
-                duration,
-            ));
+            occurrences.push(build_occurrence(occ_start, occ_end, master, override_event));
         }
 
         // Override VEVENTs whose RECURRENCE-ID falls outside the plain RRULE expansion (e.g. an
@@ -555,15 +563,8 @@ fn group_vevents(
                 continue;
             }
             occurrences.push(
-                build_occurrence(
-                    &uid,
-                    *recurrence_id,
-                    ends_at,
-                    master,
-                    Some(override_event),
-                    duration,
-                )
-                .with_start(starts_at),
+                build_occurrence(*recurrence_id, ends_at, master, Some(override_event))
+                    .with_start(starts_at),
             );
         }
 
@@ -583,17 +584,15 @@ fn group_vevents(
 }
 
 fn build_occurrence(
-    uid: &str,
-    instance_key: DateTime<Utc>,
+    recurrence_anchor: DateTime<Utc>,
     ends_at: DateTime<Utc>,
     master: &icalendar::Event,
     override_event: Option<&icalendar::Event>,
-    _duration: Duration,
 ) -> Occurrence {
     let source_event = override_event.unwrap_or(master);
     Occurrence {
-        instance_id: format!("{}|{}", uid, instance_key.to_rfc3339()),
-        starts_at: instance_key,
+        recurrence_anchor,
+        starts_at: recurrence_anchor,
         ends_at,
         location: source_event.property_value("LOCATION").map(str::to_string),
         title: override_event

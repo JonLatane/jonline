@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::mem::transmute;
 
+use chrono::{DateTime, Utc};
+
 use super::{
     load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost,
     ToProtoSyncDestinationStatus, ToProtoTime,
@@ -241,7 +243,16 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
                 ..Default::default()
             }),
             location,
-            sync_source_instance_id: event_instance.sync_source_instance_id,
+            sync_source_instance_id: match (
+                event_instance.sync_source_uid,
+                event_instance.sync_source_recurrence_anchor,
+            ) {
+                (Some(uid), Some(anchor)) => {
+                    let anchor: DateTime<Utc> = anchor.into();
+                    Some(format!("{}|{}", uid, anchor.to_rfc3339()))
+                }
+                _ => None,
+            },
             sync_destinations,
             ..Default::default()
         }

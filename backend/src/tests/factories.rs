@@ -535,7 +535,9 @@ pub fn create_event_instance(
             starts_at: opts.starts_at,
             ends_at: opts.ends_at,
             location: opts.location,
-            sync_source_instance_id: None,
+            sync_source_id: None,
+            sync_source_uid: None,
+            sync_source_recurrence_anchor: None,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)

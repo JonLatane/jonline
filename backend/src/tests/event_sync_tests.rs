@@ -31,12 +31,19 @@ fn synced_event(
     source_id: i64,
     uid: &str,
 ) -> Option<models::Event> {
-    events::table
-        .filter(events::sync_source_id.eq(source_id))
-        .load::<models::Event>(conn)
-        .unwrap()
-        .into_iter()
-        .find(|e| e.info.get("sync_source_uid").and_then(|v| v.as_str()) == Some(uid))
+    let event_id: Option<i64> = event_instances::table
+        .select(event_instances::event_id)
+        .filter(event_instances::sync_source_id.eq(source_id))
+        .filter(event_instances::sync_source_uid.eq(uid))
+        .first(conn)
+        .optional()
+        .unwrap();
+    event_id.map(|id| {
+        events::table
+            .filter(events::post_id.eq(id))
+            .first::<models::Event>(conn)
+            .unwrap()
+    })
 }
 
 fn post_of(conn: &mut crate::db_connection::PgPooledConnection, post_id: i64) -> models::Post {
@@ -71,7 +78,120 @@ fn single_vevent_creates_event_and_instance() {
 
         let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
-        assert!(instances[0].sync_source_instance_id.is_some());
+        assert!(instances[0].sync_source_uid.is_some());
+        assert!(instances[0].sync_source_recurrence_anchor.is_some());
+
+        Ok(())
+    });
+}
+
+/// Regression test for the 2026-09-04 duplicate-events incident: re-syncing the exact same feed
+/// twice in a row (e.g. two runs of the background job before anything upstream changes) must
+/// match every existing Event/EventInstance by `(sync_source_id, sync_source_uid,
+/// sync_source_recurrence_anchor)` rather than silently creating a second copy of everything.
+#[test]
+fn resyncing_the_same_feed_twice_creates_no_duplicates() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_reresync_owner");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = Utc::now() + Duration::days(1);
+        let end = start + Duration::hours(1);
+        let ics = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:reresync-1\r\nDTSTART:{}\r\nDTEND:{}\r\nSUMMARY:Reresync Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format(ICS_FORMAT),
+            end.format(ICS_FORMAT)
+        );
+
+        sync_source_text(&source, &ics, conn).expect("first sync should succeed");
+        sync_source_text(&source, &ics, conn).expect("second sync of the same feed should succeed");
+
+        let matching_events: Vec<models::Event> = events::table
+            .filter(events::sync_source_id.eq(source.id))
+            .load(conn)
+            .unwrap();
+        assert_eq!(
+            matching_events.len(),
+            1,
+            "expected exactly one Event after syncing the same feed twice"
+        );
+
+        let instances = instances_for(conn, matching_events[0].post_id);
+        assert_eq!(
+            instances.len(),
+            1,
+            "expected exactly one EventInstance after syncing the same feed twice"
+        );
+
+        Ok(())
+    });
+}
+
+/// Direct proof that the DB itself, not just application-level matching, rejects a duplicate
+/// occurrence: this is what actually would have stopped the 2026-09-04 incident (a loud
+/// constraint-violation error instead of 19 silently-created duplicate Events).
+#[test]
+fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_dbconstraint_owner");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = Utc::now() + Duration::days(1);
+        let end = start + Duration::hours(1);
+        let ics = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:dbconstraint-1\r\nDTSTART:{}\r\nDTEND:{}\r\nSUMMARY:DB Constraint Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format(ICS_FORMAT),
+            end.format(ICS_FORMAT)
+        );
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
+
+        let event = synced_event(conn, source.id, "dbconstraint-1").expect("event should exist");
+        let existing_instance = &instances_for(conn, event.post_id)[0];
+
+        let duplicate_post: models::Post = diesel::insert_into(posts::table)
+            .values(&models::NewPost {
+                user_id: Some(user.id),
+                parent_post_id: None,
+                title: None,
+                link: None,
+                content: None,
+                visibility: "GLOBAL_PUBLIC".to_string(),
+                embed_link: false,
+                context: "EVENT_INSTANCE".to_string(),
+                moderation: "UNMODERATED".to_string(),
+                media: vec![],
+            })
+            .returning(models::POST_COLUMNS)
+            .get_result(conn)
+            .unwrap();
+
+        let insert_result = diesel::insert_into(event_instances::table)
+            .values(&models::NewEventInstance {
+                event_id: event.post_id,
+                post_id: duplicate_post.id,
+                info: serde_json::json!({}),
+                starts_at: existing_instance.starts_at,
+                ends_at: existing_instance.ends_at,
+                location: None,
+                sync_source_id: existing_instance.sync_source_id,
+                sync_source_uid: existing_instance.sync_source_uid.clone(),
+                sync_source_recurrence_anchor: existing_instance.sync_source_recurrence_anchor,
+            })
+            .execute(conn);
+
+        assert!(
+            matches!(
+                insert_result,
+                Err(diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    _
+                ))
+            ),
+            "expected a unique constraint violation, got {:?}",
+            insert_result
+        );
 
         Ok(())
     });

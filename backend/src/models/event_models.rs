@@ -37,13 +37,28 @@ pub struct EventInstance {
     pub location: Option<serde_json::Value>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub sync_source_instance_id: Option<String>,
     /// When this synced instance first stopped appearing in its `SyncSource`'s feed --
     /// `None` while it's present (or for instances never touched by sync). Gives it a grace
     /// period before `event_sync::reconcile_instances` actually deletes it, so a transient/partial
     /// upstream response can't permanently orphan the Post backing the instance's comment
     /// thread/media.
     pub sync_missing_since: Option<SystemTime>,
+    /// Denormalized from the parent `Event.sync_source_id` (see migration 2026-09-05) -- lets a
+    /// duplicate occurrence be rejected by a hard DB unique constraint on `(sync_source_id,
+    /// sync_source_uid, sync_source_recurrence_anchor)` rather than relying solely on
+    /// application-level matching (see `logic::sync_sources::event_sync`'s module doc comment for
+    /// why that matters).
+    pub sync_source_id: Option<i64>,
+    /// The bare iCal `UID` for this occurrence's series, so "does a sibling instance already
+    /// exist for this series" is a plain indexed lookup instead of the old (pre-2026-09-05)
+    /// `events.info->>'sync_source_uid'` JSON-key scan.
+    pub sync_source_uid: Option<String>,
+    /// This occurrence's stable identity within its series: its own `starts_at` for a plain
+    /// `RRULE` expansion, or its *original* scheduled time (iCal's `RECURRENCE-ID`) for one
+    /// that's since been rescheduled/edited -- deliberately different from `starts_at` once
+    /// moved, since matching on the anchor (not the current `starts_at`) is what lets a moved
+    /// occurrence still be found as "the same one" on the next sync instead of looking new.
+    pub sync_source_recurrence_anchor: Option<SystemTime>,
 }
 
 /// Explicit column list for `event_instances`, excluding:
@@ -63,8 +78,10 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::location,
     event_instances::created_at,
     event_instances::updated_at,
-    event_instances::sync_source_instance_id,
     event_instances::sync_missing_since,
+    event_instances::sync_source_id,
+    event_instances::sync_source_uid,
+    event_instances::sync_source_recurrence_anchor,
 ) = (
     event_instances::event_id,
     event_instances::post_id,
@@ -74,8 +91,10 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::location,
     event_instances::created_at,
     event_instances::updated_at,
-    event_instances::sync_source_instance_id,
     event_instances::sync_missing_since,
+    event_instances::sync_source_id,
+    event_instances::sync_source_uid,
+    event_instances::sync_source_recurrence_anchor,
 );
 
 #[derive(Debug, Insertable)]
@@ -87,7 +106,9 @@ pub struct NewEventInstance {
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
     pub location: Option<serde_json::Value>,
-    pub sync_source_instance_id: Option<String>,
+    pub sync_source_id: Option<i64>,
+    pub sync_source_uid: Option<String>,
+    pub sync_source_recurrence_anchor: Option<SystemTime>,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
