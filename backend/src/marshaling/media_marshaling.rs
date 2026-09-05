@@ -90,6 +90,7 @@ impl ToProtoMedia for models::Media {
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
             metadata: Some(self.metadata().to_proto()),
+            url: None,
         }
     }
 }
@@ -107,6 +108,7 @@ impl ToProtoMediaReference for models::MediaReference {
             generated: self.generated,
             aspect_ratio: self.aspect_ratio,
             metadata: Some(self.metadata().to_proto()),
+            url: None,
         }
     }
 }

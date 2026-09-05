@@ -13,8 +13,8 @@ pub use moderation_logic::*;
 mod visibility_logic;
 pub use visibility_logic::*;
 
-mod event_sync;
-pub use event_sync::*;
+mod sync_sources;
+pub use sync_sources::*;
 
 mod facebook_sync;
 pub use facebook_sync::*;

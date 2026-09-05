@@ -122,6 +122,7 @@ Your media policy should describe who has ownership of uploaded media, anything 
             ],
             facebook_auth_config: None,
             x_twitter_auth_config: None,
+            mastodon_servers: vec![],
          }).unwrap(),
         anonymous_user_permissions: vec![
             Permission::ViewUsers,

@@ -5873,7 +5873,12 @@ encodeFederationInfo =
  register an app against -- every instance is its own separate OAuth authority, so an admin has
  to register an app on each instance individually before users on it can connect. If a user's
  instance isn't listed here, clients should surface a "not configured" alert rather than
- attempting to open an OAuth popup with no app to authorize against.
+ attempting to open an OAuth popup with no app to authorize against. (A client could instead
+ dynamically self-register a throwaway app with the instance directly, via Mastodon's own
+ `POST /api/v1/apps`, and skip this entirely -- Mastodon itself supports that. But that's a
+ client-side choice the Jonline protocol doesn't get involved in either way: this field only
+ covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently
+ across every client on this server rather than each one self-registering its own.)
 
 
 -}

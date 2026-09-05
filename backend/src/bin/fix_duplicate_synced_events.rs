@@ -16,7 +16,7 @@ use jonline::{db_connection, init_bin_logging, init_crypto};
 ///
 /// Repairs fallout from the `EventSyncSource` -> `SyncSource` rename (2026-09-04): the rename
 /// mechanically renamed the JSON key `events.info.event_sync_source_uid` to `sync_source_uid` in
-/// the *code* (`logic::event_sync`'s uid lookup), but pre-existing `events.info` rows already had
+/// the *code* (`logic::sync_sources::event_sync`'s uid lookup), but pre-existing `events.info` rows already had
 /// the old key persisted as data. That made `sync_source_text`'s `existing_by_uid` map silently
 /// drop every pre-existing synced Event when built (`.get("sync_source_uid")` returned `None` for
 /// all of them, so `filter_map` excluded them entirely), so the very next sync treated every
