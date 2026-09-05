@@ -1,24 +1,26 @@
 module Shared.Federation.Mastodon exposing
     ( Status
     , decoder
+    , fetchPosts
     , toPost
     )
 
 {-| Translates Mastodon's REST API into Jonline's `Post` shape, entirely client-side -- see
 `Ports.facebookLoginPopup`'s `"mastodon"` provider doc and `Shared.AccountsPanel.MastodonAccount`'s
-own doc for the connection side this feeds off of. Scope for now: `decoder`/`toPost` are complete
-and tested (see `Federation.MastodonTests`), but nothing yet actually fetches
-`GET /api/v1/timelines/public` from a real page and feeds the result through them -- that's the
-next piece, not this one.
+own doc for the connection side this feeds off of. `fetchPosts` is not yet actually called from any
+real page -- see `Components.Pages.PostsPage.fetchFederatedPosts`'s own doc for why that's still a
+separate, deliberate next step rather than bundled in here.
 -}
 
+import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
 import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
-import Shared.Federation.Common exposing (nonEmpty)
+import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
+import Task exposing (Task)
 import Time
 
 
@@ -78,6 +80,25 @@ toPost instanceHost status =
         , createdAt = Just (posixToTimestamp status.createdAt)
         , lastActivityAt = Just (posixToTimestamp status.createdAt)
     }
+
+
+{-| `GET /api/v1/timelines/public?local=true&limit=20` -- the local (this-instance-only) public
+timeline, unauthenticated, already translated via `toPost`. `local=true` rather than the federated
+(whole-known-network) timeline, since connecting one instance shouldn't implicitly pull in every
+server it happens to federate with too -- mirrors Jonline's own `ALL_ACCESSIBLE_POSTS` being scoped
+to *this* server's own posts, not every server it's federated with either.
+-}
+fetchPosts : String -> Task Http.Error (List Post)
+fetchPosts instanceHost =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/timelines/public?local=true&limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map (toPost instanceHost))
 
 
 toAuthor : String -> Status -> Author

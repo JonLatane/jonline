@@ -36,6 +36,7 @@ import Html exposing (Html, a, button, div, h2, input, option, p, select, text)
 import Html.Attributes exposing (class, href, placeholder, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
+import Http
 import Json.Decode as Decode
 import Process
 import Proto.Jonline exposing (Post, SyncDestination, User)
@@ -46,6 +47,8 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
+import Shared.Federation.Bluesky as Bluesky
+import Shared.Federation.Mastodon as Mastodon
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
@@ -129,6 +132,12 @@ type alias Model =
     -- `Posts.postCard`. Mirrors `Components.Pages.EventsPage.Model.pushStatuses`
     -- exactly.
     , pushStatuses : Dict String SubmitStatus
+
+    -- Translated posts from every connected Mastodon/Bluesky account (see
+    -- `Shared.Federation.Mastodon`/`Bluesky`), keyed by a synthetic host that can never collide
+    -- with a real `AccountsPanel.Server.frontendHost` -- see `fetchFederatedPosts`'s own doc for
+    -- how/when this gets populated, and `syncAnimations`' own doc for how it's merged in.
+    , federatedPosts : Dict String (List Post)
     }
 
 
@@ -184,6 +193,9 @@ type Msg
       -- exactly.
     | PushPostToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- One connected Mastodon/Bluesky account's `fetchFederatedPosts` task settling -- `String` is
+      -- the same synthetic host key it was fired with (see that function's own doc).
+    | GotFederatedPosts String (Result Http.Error (List Post))
 
 
 type ServerPosts
@@ -291,6 +303,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
                 , pushStatuses = Dict.empty
+                , federatedPosts = Dict.empty
                 }
     in
     -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
@@ -315,6 +328,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
     ( fetchedModel
     , Effect.batch
         [ fetchEffect
+        , fetchFederatedPosts shared fetchedModel
         , Effect.fromShared Shared.CloseAllPanels
         , setBreadcrumbsRoot shared fetchedModel
         , Task.perform GotNow Time.now |> Effect.fromCmd
@@ -425,6 +439,18 @@ updateInner shared msg model =
                 |> syncAnimations
             , Effect.none
             )
+
+        GotFederatedPosts host (Ok posts) ->
+            ( { model | federatedPosts = Dict.insert host posts model.federatedPosts } |> syncAnimations
+            , Effect.none
+            )
+
+        GotFederatedPosts _ (Err _) ->
+            -- No `Failed`-style state to record (unlike `GotServerPosts`) -- there's no retry
+            -- button or alert-worthy UI for one federated account's feed failing to load, so this
+            -- is silently, permanently empty for the rest of this page's lifetime (until the next
+            -- full (re)visit re-triggers `fetchFederatedPosts`).
+            ( model, Effect.none )
 
         Poll ->
             fetchNewServers shared model
@@ -875,6 +901,50 @@ fetchNewServers shared model =
     refetchServers shared model serversToFetch
 
 
+{-| Fetches translated posts for every connected Mastodon/Bluesky account (see
+`Shared.Federation.Mastodon`/`Bluesky`), storing them in `model.federatedPosts` keyed by a synthetic
+host (`"mastodon:" ++ instanceHost` / `"bluesky:" ++ handle`) that can never collide with a real
+`AccountsPanel.Server.frontendHost` -- `AccountsPanel.serverForHost`/`enabledAccountForServer` (see
+`postCardView`) naturally return `Nothing` for these, which is exactly what already lets a federated
+post render through the ordinary `Posts.postCard` with reply/star/sync-destination actions
+gracefully disabled, no special-casing needed there.
+
+Only called (from `init`) when this page is the plain, unscoped "Posts" feed (`model.author ==
+Nothing`, `not model.embeddedPage`) -- the same condition `recentPostsTabsView` uses to decide
+whether to show its own tabs -- since a federated fetch supports none of the author-scoping, text
+search, or `PostsBeforeDate` cutoff filtering a real `GetPosts` request does, so showing federated
+posts anywhere those apply would be misleading (`syncAnimations` also re-checks `model.context`
+before including any, since that dimension *can* still apply). Fetched once, at page load -- unlike
+`refetchServers`, never re-fetched on tab/search/cutoff changes (none of which would change the
+result anyway), and a newly-connected account only starts showing up the next time this page is
+(re)visited, not live while it's already open.
+-}
+fetchFederatedPosts : Shared.Model -> Model -> Effect Msg
+fetchFederatedPosts shared model =
+    if model.author /= Nothing || model.embeddedPage then
+        Effect.none
+
+    else
+        Effect.batch
+            (List.map fetchMastodonAccount shared.accounts.mastodonAccounts
+                ++ List.map fetchBlueskyAccount shared.accounts.blueskyAccounts
+            )
+
+
+fetchMastodonAccount : AccountsPanel.MastodonAccount -> Effect Msg
+fetchMastodonAccount account =
+    Mastodon.fetchPosts account.instanceHost
+        |> Task.attempt (GotFederatedPosts ("mastodon:" ++ account.instanceHost))
+        |> Effect.fromCmd
+
+
+fetchBlueskyAccount : AccountsPanel.BlueskyAccount -> Effect Msg
+fetchBlueskyAccount account =
+    Bluesky.fetchPosts account.accessToken
+        |> Task.attempt (GotFederatedPosts ("bluesky:" ++ account.handle))
+        |> Effect.fromCmd
+
+
 {-| Re-fetches every relevant server (unconditionally -- unlike
 `fetchNewServers`, a changed search has to override every already-Loaded
 feed, not just servers whose acting account changed) and persists the new
@@ -1091,11 +1161,13 @@ postAnimationKey host post =
 
 
 {-| Reconciles `postAnimations` with the posts currently `Loaded` in
-`postsByServer`: starts a fade-in for newly-seen posts, a fade-out for posts
+`postsByServer` (plus, via `federatedPostsList`, `model.federatedPosts` -- see
+`fetchFederatedPosts`'s own doc on why that one's gated/filtered differently): starts a fade-in for
+newly-seen posts, a fade-out for posts
 that dropped out (rather than deleting them outright), and un-interrupts a
 still-fading-out post that reappeared. Safe/cheap to call after every
-`postsByServer` change, so `update` just calls it unconditionally wherever
-that dict might have changed. `RemovePost` is what actually drops a gone
+`postsByServer`/`federatedPosts` change, so `update` just calls it unconditionally wherever
+either might have changed. `RemovePost` is what actually drops a gone
 post's animation entry once its fade-out finishes. See `UI.Flip.syncAnimations`
 for the shared reconciliation logic this hands its own `PostAnimation` shape
 to (mirrored by `Components.Pages.UsersPage.syncAnimations`).
@@ -1103,9 +1175,24 @@ to (mirrored by `Components.Pages.UsersPage.syncAnimations`).
 syncAnimations : Model -> Model
 syncAnimations model =
     let
+        -- Unlike `postsByServer` (already scoped/filtered server-side to this exact request), a
+        -- federated fetch has no notion of `model.context` at all -- it's just whatever mix of
+        -- POST/REPLY the account's own feed happened to contain -- so this is the one place that
+        -- still has to filter by hand.
+        federatedPostsList : List ( String, ( String, Post ) )
+        federatedPostsList =
+            model.federatedPosts
+                |> Dict.toList
+                |> List.concatMap
+                    (\( host, posts ) ->
+                        posts
+                            |> List.filter (\post -> post.context == model.context)
+                            |> List.map (\post -> ( postAnimationKey host post, ( host, post ) ))
+                    )
+
         currentPosts : Dict String ( String, Post )
         currentPosts =
-            model.postsByServer
+            (model.postsByServer
                 |> Dict.toList
                 |> List.concatMap
                     (\( host, feed ) ->
@@ -1116,6 +1203,8 @@ syncAnimations model =
                             _ ->
                                 []
                     )
+            )
+                ++ federatedPostsList
                 |> Dict.fromList
     in
     { model

@@ -94,6 +94,7 @@ import Set
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Conversions exposing (timestampToPosix)
+import Shared.Federation.Common exposing (jsonResolver)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
@@ -4323,42 +4324,6 @@ verifyMastodonCredentialsTask instanceHost accessToken =
         , resolver = jsonResolver (Decode.field "username" Decode.string) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }
-
-
-{-| Builds an `Http.task`'s `resolver` for a JSON API: decodes `decoder` out of a `GoodStatus_`
-body (`Http.BadBody` on a decode failure), maps `NetworkError_`/`Timeout_`/`BadUrl_` onto their own
-`Http.Error` constructors, and hands a `BadStatus_`'s metadata/body to `onBadStatus` to build
-whatever `Http.Error` is most useful for that specific API's own error shape -- e.g.
-`verifyMastodonCredentialsTask`'s just uses the bare status code, while `createBlueskySessionTask`'s
-tries to pull a human-readable `message` out of the body first (see `blueskyErrorBody`). Shared by
-both so the `GoodStatus_`/`NetworkError_`/`Timeout_`/`BadUrl_` boilerplate isn't duplicated between
-them.
--}
-jsonResolver : Decode.Decoder a -> (Http.Metadata -> String -> Http.Error) -> Http.Resolver Http.Error a
-jsonResolver decoder onBadStatus =
-    Http.stringResolver
-        (\response ->
-            case response of
-                Http.GoodStatus_ _ body ->
-                    case Decode.decodeString decoder body of
-                        Ok value ->
-                            Ok value
-
-                        Err err ->
-                            Err (Http.BadBody (Decode.errorToString err))
-
-                Http.BadStatus_ metadata body ->
-                    Err (onBadStatus metadata body)
-
-                Http.NetworkError_ ->
-                    Err Http.NetworkError
-
-                Http.Timeout_ ->
-                    Err Http.Timeout
-
-                Http.BadUrl_ url ->
-                    Err (Http.BadUrl url)
-        )
 
 
 {-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password

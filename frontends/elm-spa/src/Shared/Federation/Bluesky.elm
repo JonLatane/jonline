@@ -1,27 +1,28 @@
 module Shared.Federation.Bluesky exposing
     ( FeedPost
     , decoder
+    , fetchPosts
     , toPost
     )
 
 {-| Translates Bluesky's (AT Protocol) API into Jonline's `Post` shape, entirely client-side -- see
-`Shared.AccountsPanel.BlueskyAccount`'s own doc for the connection side this feeds off of. Scope for
-now: `decoder`/`toPost` are complete and tested (see `Federation.BlueskyTests`), but nothing yet
-actually fetches `GET /xrpc/app.bsky.feed.getTimeline` from a real page and feeds the result through
-them -- that's the next piece, not this one. Unlike Mastodon, there's no meaningful *unauthenticated*
-equivalent to build first: a bare "public timeline" isn't a concept AT Proto's federated network has
-(every PDS only ever serves its own users' own posts/feeds, not a "local instance timeline" the way a
-Mastodon server does), so a connected account's own timeline will be the natural starting point once
-that next piece exists.
+`Shared.AccountsPanel.BlueskyAccount`'s own doc for the connection side this feeds off of. Unlike
+Mastodon, there's no meaningful *unauthenticated* equivalent: a bare "public timeline" isn't a
+concept AT Proto's federated network has (every PDS only ever serves its own users' own posts/feeds,
+not a "local instance timeline" the way a Mastodon server does), so `fetchPosts` is a connected
+account's own home timeline. See `Components.Pages.PostsPage.fetchFederatedPosts`'s own doc for how
+that gets wired into a real page.
 -}
 
+import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
 import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
-import Shared.Federation.Common exposing (nonEmpty)
+import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
+import Task exposing (Task)
 import Time
 
 
@@ -80,6 +81,24 @@ toPost feedPost =
         , createdAt = Just (posixToTimestamp feedPost.createdAt)
         , lastActivityAt = Just (posixToTimestamp feedPost.createdAt)
     }
+
+
+{-| `GET /xrpc/app.bsky.feed.getTimeline` against `bsky.social` (see `BlueskyAccount`'s own doc on
+that fixed-PDS limitation), authenticated with `accessToken`, already translated via `toPost` -- the
+connected account's own algorithmic home timeline (reverse-chronological-following, by default), the
+AT Protocol equivalent of `ALL_ACCESSIBLE_POSTS`.
+-}
+fetchPosts : String -> Task Http.Error (List Post)
+fetchPosts accessToken =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map toPost)
 
 
 {-| `at://{did}/app.bsky.feed.post/{rkey}` -> `https://bsky.app/profile/{handle}/post/{rkey}` --
