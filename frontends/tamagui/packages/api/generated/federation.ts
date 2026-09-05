@@ -33,7 +33,18 @@ export interface FederationInfo {
    * `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#jonline-XTwitterAccount)
    * SyncDestinations always fail with `x_twitter_app_not_configured`.
    */
-  xTwitterAuthConfig?: XTwitterAuthConfig | undefined;
+  xTwitterAuthConfig?:
+    | XTwitterAuthConfig
+    | undefined;
+  /**
+   * Mastodon instances this server has a registered OAuth app on, letting users connect/read their
+   * own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to
+   * register an app against -- every instance is its own separate OAuth authority, so an admin has
+   * to register an app on each instance individually before users on it can connect. If a user's
+   * instance isn't listed here, clients should surface a "not configured" alert rather than
+   * attempting to open an OAuth popup with no app to authorize against.
+   */
+  mastodonServers: MastodonServer[];
 }
 
 /** A server that this server will federate with. */
@@ -83,6 +94,33 @@ export interface XTwitterAuthConfig {
    * Admins: Edit this in the database's JSONB column directly.
    */
   clientSecret: string;
+}
+
+/** A Mastodon instance this server has a registered OAuth app on. See `FederationInfo.mastodon_servers`. */
+export interface MastodonServer {
+  /** The Mastodon instance's hostname, e.g. "mastodon.social". */
+  domain: string;
+  /**
+   * The registered app's Client ID for this instance. Safe to serialize to clients -- used
+   * directly to build the instance's `/oauth/authorize` URL, the same way `FacebookAuthConfig.app_id`/
+   * `XTwitterAuthConfig.client_id` are.
+   */
+  appId: string;
+  /**
+   * The registered app's Client Secret for this instance. *Never serialized to the client.*
+   * Admins: Edit this in the database's JSONB column directly. Used server-side to exchange an
+   * authorization code for an access token once a user completes the OAuth popup.
+   */
+  appSecret: string;
+  /** Indicates to UI clients that they should enable/configure the indicated instance by default. */
+  configuredByDefault?:
+    | boolean
+    | undefined;
+  /**
+   * Indicates to UI clients that they should pin the indicated instance by default
+   * (showing its Posts alongside the "main" server).
+   */
+  pinnedByDefault?: boolean | undefined;
 }
 
 function createBaseGetServiceVersionResponse(): GetServiceVersionResponse {
@@ -144,7 +182,7 @@ export const GetServiceVersionResponse: MessageFns<GetServiceVersionResponse> = 
 };
 
 function createBaseFederationInfo(): FederationInfo {
-  return { servers: [], facebookAuthConfig: undefined, xTwitterAuthConfig: undefined };
+  return { servers: [], facebookAuthConfig: undefined, xTwitterAuthConfig: undefined, mastodonServers: [] };
 }
 
 export const FederationInfo: MessageFns<FederationInfo> = {
@@ -157,6 +195,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     }
     if (message.xTwitterAuthConfig !== undefined) {
       XTwitterAuthConfig.encode(message.xTwitterAuthConfig, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.mastodonServers) {
+      MastodonServer.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -192,6 +233,14 @@ export const FederationInfo: MessageFns<FederationInfo> = {
           message.xTwitterAuthConfig = XTwitterAuthConfig.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.mastodonServers.push(MastodonServer.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -212,6 +261,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       xTwitterAuthConfig: isSet(object.xTwitterAuthConfig)
         ? XTwitterAuthConfig.fromJSON(object.xTwitterAuthConfig)
         : undefined,
+      mastodonServers: globalThis.Array.isArray(object?.mastodonServers)
+        ? object.mastodonServers.map((e: any) => MastodonServer.fromJSON(e))
+        : [],
     };
   },
 
@@ -225,6 +277,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     }
     if (message.xTwitterAuthConfig !== undefined) {
       obj.xTwitterAuthConfig = XTwitterAuthConfig.toJSON(message.xTwitterAuthConfig);
+    }
+    if (message.mastodonServers?.length) {
+      obj.mastodonServers = message.mastodonServers.map((e) => MastodonServer.toJSON(e));
     }
     return obj;
   },
@@ -241,6 +296,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     message.xTwitterAuthConfig = (object.xTwitterAuthConfig !== undefined && object.xTwitterAuthConfig !== null)
       ? XTwitterAuthConfig.fromPartial(object.xTwitterAuthConfig)
       : undefined;
+    message.mastodonServers = object.mastodonServers?.map((e) => MastodonServer.fromPartial(e)) || [];
     return message;
   },
 };
@@ -563,6 +619,132 @@ export const XTwitterAuthConfig: MessageFns<XTwitterAuthConfig> = {
     const message = createBaseXTwitterAuthConfig();
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
+    return message;
+  },
+};
+
+function createBaseMastodonServer(): MastodonServer {
+  return { domain: "", appId: "", appSecret: "", configuredByDefault: undefined, pinnedByDefault: undefined };
+}
+
+export const MastodonServer: MessageFns<MastodonServer> = {
+  encode(message: MastodonServer, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.domain !== "") {
+      writer.uint32(10).string(message.domain);
+    }
+    if (message.appId !== "") {
+      writer.uint32(18).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(26).string(message.appSecret);
+    }
+    if (message.configuredByDefault !== undefined) {
+      writer.uint32(32).bool(message.configuredByDefault);
+    }
+    if (message.pinnedByDefault !== undefined) {
+      writer.uint32(40).bool(message.pinnedByDefault);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MastodonServer {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMastodonServer();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.domain = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.configuredByDefault = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.pinnedByDefault = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MastodonServer {
+    return {
+      domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+      configuredByDefault: isSet(object.configuredByDefault)
+        ? globalThis.Boolean(object.configuredByDefault)
+        : undefined,
+      pinnedByDefault: isSet(object.pinnedByDefault) ? globalThis.Boolean(object.pinnedByDefault) : undefined,
+    };
+  },
+
+  toJSON(message: MastodonServer): unknown {
+    const obj: any = {};
+    if (message.domain !== "") {
+      obj.domain = message.domain;
+    }
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    if (message.configuredByDefault !== undefined) {
+      obj.configuredByDefault = message.configuredByDefault;
+    }
+    if (message.pinnedByDefault !== undefined) {
+      obj.pinnedByDefault = message.pinnedByDefault;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MastodonServer>, I>>(base?: I): MastodonServer {
+    return MastodonServer.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MastodonServer>, I>>(object: I): MastodonServer {
+    const message = createBaseMastodonServer();
+    message.domain = object.domain ?? "";
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
+    message.configuredByDefault = object.configuredByDefault ?? undefined;
+    message.pinnedByDefault = object.pinnedByDefault ?? undefined;
     return message;
   },
 };

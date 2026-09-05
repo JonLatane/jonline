@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Connecting to Facebook…</title>
+  <title>Connecting…</title>
   <style>
     body {
       display: flex;
@@ -33,10 +33,11 @@
     // This page is only ever loaded inside the popup window `facebookLoginPopup` opens (see
     // index.html) -- for the `"facebook"` provider, Facebook's OAuth dialog redirects the popup
     // here with `response_type=token`, putting the token in the URL *hash* fragment (which never
-    // touches any server); for the `"threads"`/`"x_twitter"` providers, their OAuth dialogs use
-    // `response_type=code` instead, putting an authorization code in the URL *query* string (same
-    // param name, `code`, for both -- X's `code_verifier` never appears here at all, since index.html
-    // already holds onto it locally and reattaches it once this page's `postMessage` arrives). We
+    // touches any server); every other provider (`"threads"`, `"x_twitter"`, `"mastodon"`, ...)
+    // uses `response_type=code` instead, putting an authorization code in the URL *query* string
+    // (same param name, `code`, for all of them -- any provider-specific extra like X's
+    // `code_verifier` never appears here at all, since index.html already holds onto it locally
+    // and reattaches it once this page's `postMessage` arrives). We
     // hand back whichever is present to the window that opened us via `postMessage` (under the
     // same `accessToken` message field either way -- see `Ports.facebookLoginResult`'s own doc,
     // the Elm side treats it as just "the short-lived credential" regardless of flavor), then
@@ -62,7 +63,7 @@
       }
 
       window.opener.postMessage(
-        { source: "jonline-facebook-login", accessToken: accessToken, error: error },
+        { source: "jonline-oauth-login", accessToken: accessToken, error: error },
         window.location.origin
       );
       window.close();

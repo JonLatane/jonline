@@ -21,7 +21,9 @@ export const protobufPackage = "jonline";
 /**
  * A Jonline `Media` message represents a single media item, such as a photo or video.
  * Media data is deliberately *not accessible from the gRPC API*. Instead, the client
- * should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+ * should fetch media from `http[s]://my.jonline.instance/media/{id}`, unless `url` is set,
+ * in which case that URL should be used instead (used for media Jonline doesn't store
+ * locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
  *
  * Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
  * along with an "Authorization" header (your access token) and a "Content-Type" header.
@@ -76,7 +78,15 @@ export interface Media {
   aspectRatio?: number | undefined;
   createdAt: string | undefined;
   updatedAt: string | undefined;
-  metadata: MediaMetadata | undefined;
+  metadata:
+    | MediaMetadata
+    | undefined;
+  /**
+   * An external URL to fetch the media from, in lieu of `/media/{id}`. Used for representing
+   * media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky)
+   * that Jonline does not store locally. If unset, clients fall back to `/media/{id}`.
+   */
+  url?: string | undefined;
 }
 
 /**
@@ -112,7 +122,14 @@ export interface MediaReference {
     | MediaMetadata
     | undefined;
   /** Width divided by height. See `Media.aspect_ratio`. */
-  aspectRatio?: number | undefined;
+  aspectRatio?:
+    | number
+    | undefined;
+  /**
+   * An external URL to fetch the media from, in lieu of `/media/{id}`. See `Media.url`.
+   * If unset, clients fall back to `/media/{id}`.
+   */
+  url?: string | undefined;
 }
 
 /**
@@ -154,6 +171,7 @@ function createBaseMedia(): Media {
     createdAt: undefined,
     updatedAt: undefined,
     metadata: undefined,
+    url: undefined,
   };
 }
 
@@ -197,6 +215,9 @@ export const Media: MessageFns<Media> = {
     }
     if (message.metadata !== undefined) {
       MediaMetadata.encode(message.metadata, writer.uint32(138).fork()).join();
+    }
+    if (message.url !== undefined) {
+      writer.uint32(146).string(message.url);
     }
     return writer;
   },
@@ -312,6 +333,14 @@ export const Media: MessageFns<Media> = {
           message.metadata = MediaMetadata.decode(reader, reader.uint32());
           continue;
         }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -336,6 +365,7 @@ export const Media: MessageFns<Media> = {
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
       metadata: isSet(object.metadata) ? MediaMetadata.fromJSON(object.metadata) : undefined,
+      url: isSet(object.url) ? globalThis.String(object.url) : undefined,
     };
   },
 
@@ -380,6 +410,9 @@ export const Media: MessageFns<Media> = {
     if (message.metadata !== undefined) {
       obj.metadata = MediaMetadata.toJSON(message.metadata);
     }
+    if (message.url !== undefined) {
+      obj.url = message.url;
+    }
     return obj;
   },
 
@@ -403,6 +436,7 @@ export const Media: MessageFns<Media> = {
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? MediaMetadata.fromPartial(object.metadata)
       : undefined;
+    message.url = object.url ?? undefined;
     return message;
   },
 };
@@ -468,7 +502,15 @@ export const MediaMetadata: MessageFns<MediaMetadata> = {
 };
 
 function createBaseMediaReference(): MediaReference {
-  return { contentType: "", id: "", name: undefined, generated: false, metadata: undefined, aspectRatio: undefined };
+  return {
+    contentType: "",
+    id: "",
+    name: undefined,
+    generated: false,
+    metadata: undefined,
+    aspectRatio: undefined,
+    url: undefined,
+  };
 }
 
 export const MediaReference: MessageFns<MediaReference> = {
@@ -490,6 +532,9 @@ export const MediaReference: MessageFns<MediaReference> = {
     }
     if (message.aspectRatio !== undefined) {
       writer.uint32(85).float(message.aspectRatio);
+    }
+    if (message.url !== undefined) {
+      writer.uint32(90).string(message.url);
     }
     return writer;
   },
@@ -549,6 +594,14 @@ export const MediaReference: MessageFns<MediaReference> = {
           message.aspectRatio = reader.float();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -566,6 +619,7 @@ export const MediaReference: MessageFns<MediaReference> = {
       generated: isSet(object.generated) ? globalThis.Boolean(object.generated) : false,
       metadata: isSet(object.metadata) ? MediaMetadata.fromJSON(object.metadata) : undefined,
       aspectRatio: isSet(object.aspectRatio) ? globalThis.Number(object.aspectRatio) : undefined,
+      url: isSet(object.url) ? globalThis.String(object.url) : undefined,
     };
   },
 
@@ -589,6 +643,9 @@ export const MediaReference: MessageFns<MediaReference> = {
     if (message.aspectRatio !== undefined) {
       obj.aspectRatio = message.aspectRatio;
     }
+    if (message.url !== undefined) {
+      obj.url = message.url;
+    }
     return obj;
   },
 
@@ -605,6 +662,7 @@ export const MediaReference: MessageFns<MediaReference> = {
       ? MediaMetadata.fromPartial(object.metadata)
       : undefined;
     message.aspectRatio = object.aspectRatio ?? undefined;
+    message.url = object.url ?? undefined;
     return message;
   },
 };

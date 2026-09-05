@@ -1005,7 +1005,7 @@ ifNonEmpty s =
 -}
 toMediaReference : Media -> MediaReference
 toMediaReference media =
-    { contentType = media.contentType, id = media.id, name = media.name, generated = media.generated, metadata = media.metadata, aspectRatio = media.aspectRatio }
+    { contentType = media.contentType, id = media.id, name = media.name, generated = media.generated, metadata = media.metadata, aspectRatio = media.aspectRatio, url = media.url }
 
 
 {-| Every item Browse mode's grid is currently actually showing, converted to

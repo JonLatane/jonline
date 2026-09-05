@@ -23,7 +23,7 @@ import Html.Attributes exposing (class, disabled, id, placeholder, title, value)
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer, ServerConfiguration)
+import Proto.Jonline exposing (FederatedServer, MastodonServer, ServerConfiguration)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task
@@ -37,6 +37,7 @@ import UI.Flip
 
 type alias Model =
     { federationEdit : Maybe FederationEdit
+    , mastodonServersEdit : Maybe MastodonServersEdit
     , facebookAppIdEdit : Maybe TextFieldEdit
     , facebookAppSecretEdit : Maybe TextFieldEdit
     , xTwitterClientIdEdit : Maybe TextFieldEdit
@@ -64,6 +65,26 @@ type Msg
     | FederatedServerMoveSettled String
     | AnimateFederatedServerFlip Animation.Msg
     | AnimateFederatedServerMove Animation.Msg
+    | MastodonServersEditClicked
+    | MastodonServersCancelClicked
+    | MastodonServersSaveClicked
+    | GotMastodonServersSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | MastodonServerDomainInputChanged String
+    | MastodonServerAddClicked
+    | MastodonServerRemoveClicked String
+    | MastodonServerRemoved String
+    | MastodonServerConfiguredByDefaultToggled String
+    | MastodonServerPinnedByDefaultToggled String
+    | MoveMastodonServerLeftClicked String
+    | MoveMastodonServerRightClicked String
+    | GotPreMoveMastodonServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | MastodonServerMoveSettled String
+    | AnimateMastodonServerFlip Animation.Msg
+    | AnimateMastodonServerMove Animation.Msg
+    | MastodonAppIdChanged String String
+    | MastodonAppSecretEditClicked String
+    | MastodonAppSecretChanged String String
+    | MastodonAppSecretCancelClicked String
     | FacebookAppIdEditClicked
     | FacebookAppIdChanged String
     | FacebookAppIdCancelClicked
@@ -118,6 +139,38 @@ type alias FederationEdit =
     }
 
 
+{-| Live only while the Federation tab's `MastodonServer` list is being edited by an admin --
+mirrors `FederationEdit` exactly (`pending`/`domainInput`/`status`/`itemAnimations`/`moveAnimations`
+all play the same role, just keyed by `domain` instead of `host`), except each `pending` entry is a
+`MastodonServerEdit` rather than a bare `MastodonServer` (see that type's own doc), and there's no
+`addStatus`: unlike `FederatedServerAddClicked`, adding an instance here never round-trips to a
+server (there's no live Jonline server to probe -- see `MastodonServerAddClicked`), so it's always
+synchronous.
+-}
+type alias MastodonServersEdit =
+    { pending : List MastodonServerEdit
+    , domainInput : String
+    , status : AccountsPanel.FormStatus
+    , itemAnimations : Dict String (UI.Flip.State Msg)
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
+    }
+
+
+{-| One in-progress `MastodonServer` edit -- `server.appSecret` is always blank here (the server
+never sends the real secret back, same as `FacebookAuthConfig.appSecret`/`TextFieldEdit`'s own doc),
+and is only overwritten on save if `pendingAppSecret` is non-blank (see `toSavedMastodonServer`) --
+the same "blank means leave it alone" convention as every other write-only field on this page, just
+tracked per-instance here instead of app-wide. `appSecretEditing` gates whether that field's `<input>`
+is shown at all, mirroring the singleton `facebookAppSecretRow`'s Edit-button gating -- starts `True`
+for a freshly-added entry (`MastodonServerAddClicked`), since there's no existing secret to hide yet.
+-}
+type alias MastodonServerEdit =
+    { server : MastodonServer
+    , pendingAppSecret : String
+    , appSecretEditing : Bool
+    }
+
+
 {-| Live only while one of this tab's simple "Edit" -> text field -> Save rows (Facebook App
 ID/Secret, see `facebookAuthConfigSection`; Web Push public/private VAPID key, see
 `webPushConfigSection`) is being edited by an admin -- `pending` is the in-progress `<input>` value.
@@ -137,6 +190,7 @@ type alias TextFieldEdit =
 init : Model
 init =
     { federationEdit = Nothing
+    , mastodonServersEdit = Nothing
     , facebookAppIdEdit = Nothing
     , facebookAppSecretEdit = Nothing
     , xTwitterClientIdEdit = Nothing
@@ -148,15 +202,26 @@ init =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model.federationEdit of
-        Just edit ->
-            Sub.batch
-                [ UI.Flip.subscription AnimateFederatedServerFlip (Dict.values edit.itemAnimations)
-                , UI.Flip.moveSubscription AnimateFederatedServerMove (Dict.values edit.moveAnimations)
-                ]
+    Sub.batch
+        [ case model.federationEdit of
+            Just edit ->
+                Sub.batch
+                    [ UI.Flip.subscription AnimateFederatedServerFlip (Dict.values edit.itemAnimations)
+                    , UI.Flip.moveSubscription AnimateFederatedServerMove (Dict.values edit.moveAnimations)
+                    ]
 
-        Nothing ->
-            Sub.none
+            Nothing ->
+                Sub.none
+        , case model.mastodonServersEdit of
+            Just edit ->
+                Sub.batch
+                    [ UI.Flip.subscription AnimateMastodonServerFlip (Dict.values edit.itemAnimations)
+                    , UI.Flip.moveSubscription AnimateMastodonServerMove (Dict.values edit.moveAnimations)
+                    ]
+
+            Nothing ->
+                Sub.none
+        ]
 
 
 
@@ -402,6 +467,266 @@ update shared targetHost isSecure maybeServer msg model =
 
                 Nothing ->
                     ( model, Effect.none )
+
+        MastodonServersEditClicked ->
+            case maybeServer of
+                Just server ->
+                    let
+                        savedServers : List MastodonServer
+                        savedServers =
+                            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
+                    in
+                    ( { model
+                        | mastodonServersEdit =
+                            Just
+                                { pending = savedServers |> List.map (\mastodonServer -> { server = mastodonServer, pendingAppSecret = "", appSecretEditing = False })
+                                , domainInput = ""
+                                , status = AccountsPanel.Idle
+                                , itemAnimations = savedServers |> List.map (\mastodonServer -> ( mastodonServer.domain, UI.Flip.restingState )) |> Dict.fromList
+                                , moveAnimations = Dict.empty
+                                }
+                      }
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        MastodonServersCancelClicked ->
+            ( { model | mastodonServersEdit = Nothing }, Effect.none )
+
+        MastodonServersSaveClicked ->
+            case ( model.mastodonServersEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | mastodonServersEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyMastodonServers (List.map toSavedMastodonServer edit.pending))
+                        |> Task.attempt GotMastodonServersSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotMastodonServersSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | mastodonServersEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotMastodonServersSaveResult (Err err) ->
+            ( { model | mastodonServersEdit = model.mastodonServersEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        MastodonServerDomainInputChanged text ->
+            ( { model | mastodonServersEdit = model.mastodonServersEdit |> Maybe.map (\edit -> { edit | domainInput = text }) }, Effect.none )
+
+        -- Unlike `FederatedServerAddClicked`, this never round-trips to a server -- a Mastodon
+        -- instance isn't a Jonline server, so there's nothing to probe/connect to, and a freshly-typed
+        -- domain is just inserted straight into `pending`, synchronously.
+        MastodonServerAddClicked ->
+            case model.mastodonServersEdit of
+                Just edit ->
+                    let
+                        domain : String
+                        domain =
+                            String.trim edit.domainInput
+                    in
+                    if String.isEmpty domain || List.any (\mastodonServerEdit -> mastodonServerEdit.server.domain == domain) edit.pending then
+                        ( model, Effect.none )
+
+                    else
+                        ( { model
+                            | mastodonServersEdit =
+                                Just
+                                    { edit
+                                        | pending =
+                                            { server = { domain = domain, appId = "", appSecret = "", configuredByDefault = Just False, pinnedByDefault = Just False }
+                                            , pendingAppSecret = ""
+                                            , appSecretEditing = True
+                                            }
+                                                :: edit.pending
+                                        , domainInput = ""
+                                        , itemAnimations = Dict.insert domain UI.Flip.enter edit.itemAnimations
+                                    }
+                          }
+                        , Effect.none
+                        )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        MastodonServerRemoveClicked domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    currentState : UI.Flip.State Msg
+                                    currentState =
+                                        Dict.get domain edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+                                in
+                                { edit | itemAnimations = Dict.insert domain (UI.Flip.remove (MastodonServerRemoved domain) currentState) edit.itemAnimations }
+                            )
+              }
+            , Effect.none
+            )
+
+        MastodonServerRemoved domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = List.filter (\mastodonServerEdit -> mastodonServerEdit.server.domain /= domain) edit.pending
+                                    , itemAnimations = Dict.remove domain edit.itemAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        MastodonServerConfiguredByDefaultToggled domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map (mapPendingMastodonDomain domain (\mastodonServer -> { mastodonServer | configuredByDefault = Just (not (Maybe.withDefault False mastodonServer.configuredByDefault)) }))
+              }
+            , Effect.none
+            )
+
+        MastodonServerPinnedByDefaultToggled domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map (mapPendingMastodonDomain domain (\mastodonServer -> { mastodonServer | pinnedByDefault = Just (not (Maybe.withDefault False mastodonServer.pinnedByDefault)) }))
+              }
+            , Effect.none
+            )
+
+        MoveMastodonServerLeftClicked domain ->
+            ( model
+            , model.mastodonServersEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder (.server >> .domain) mastodonServerChipDomId GotPreMoveMastodonServerPositions -1 domain edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        MoveMastodonServerRightClicked domain ->
+            ( model
+            , model.mastodonServersEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder (.server >> .domain) mastodonServerChipDomId GotPreMoveMastodonServerPositions 1 domain edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        GotPreMoveMastodonServerPositions domain _ offset (Err _) ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit |> Maybe.map (\edit -> { edit | pending = UI.Flip.moveListItemBy (.server >> .domain) offset domain edit.pending })
+              }
+            , Effect.none
+            )
+
+        GotPreMoveMastodonServerPositions domain neighborDomain offset (Ok ( chipEl, neighborEl )) ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = UI.Flip.moveListItemBy (.server >> .domain) offset domain edit.pending
+                                    , moveAnimations = UI.Flip.applyReorder UI.Flip.Horizontal MastodonServerMoveSettled domain neighborDomain chipEl neighborEl edit.moveAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        MastodonServerMoveSettled domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit
+                        |> Maybe.map (\edit -> { edit | moveAnimations = Dict.update domain (Maybe.map (\state -> { state | moving = False })) edit.moveAnimations })
+              }
+            , Effect.none
+            )
+
+        AnimateMastodonServerFlip animMsg ->
+            case model.mastodonServersEdit of
+                Just edit ->
+                    let
+                        step : String -> UI.Flip.State Msg -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.State Msg), List (Cmd Msg) )
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.animate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.itemAnimations
+                    in
+                    ( { model | mastodonServersEdit = Just { edit | itemAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        AnimateMastodonServerMove animMsg ->
+            case model.mastodonServersEdit of
+                Just edit ->
+                    let
+                        step : String -> UI.Flip.MoveState Msg -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) ) -> ( Dict String (UI.Flip.MoveState Msg), List (Cmd Msg) )
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.moveAnimate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.moveAnimations
+                    in
+                    ( { model | mastodonServersEdit = Just { edit | moveAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        MastodonAppIdChanged domain text ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit |> Maybe.map (mapPendingMastodonDomain domain (\mastodonServer -> { mastodonServer | appId = text }))
+              }
+            , Effect.none
+            )
+
+        MastodonAppSecretEditClicked domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit |> Maybe.map (mapPendingMastodonEdit domain (\edit -> { edit | appSecretEditing = True }))
+              }
+            , Effect.none
+            )
+
+        MastodonAppSecretChanged domain text ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit |> Maybe.map (mapPendingMastodonEdit domain (\edit -> { edit | pendingAppSecret = text }))
+              }
+            , Effect.none
+            )
+
+        MastodonAppSecretCancelClicked domain ->
+            ( { model
+                | mastodonServersEdit =
+                    model.mastodonServersEdit |> Maybe.map (mapPendingMastodonEdit domain (\edit -> { edit | appSecretEditing = False, pendingAppSecret = "" }))
+              }
+            , Effect.none
+            )
 
         FacebookAppIdEditClicked ->
             case maybeServer of
@@ -649,7 +974,7 @@ update shared targetHost isSecure maybeServer msg model =
 {-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way
 every other editor's transform is -- overlays `servers` (the edit's `pending` list, in its edit's
 own order) onto a freshly re-fetched `ServerConfiguration`'s `federationInfo`, leaving
-`facebookAuthConfig`/`xTwitterAuthConfig` (and every other field) untouched.
+`facebookAuthConfig`/`xTwitterAuthConfig`/`mastodonServers` (and every other field) untouched.
 -}
 applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
 applyFederatedServers servers config =
@@ -659,8 +984,41 @@ applyFederatedServers servers config =
                 { servers = servers
                 , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
                 , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
+                , mastodonServers = config.federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
                 }
     }
+
+
+{-| `MastodonServersSaveClicked`'s transform -- mirrors `applyFederatedServers` exactly, just
+against `federationInfo.mastodonServers` instead of `.servers`, leaving every other field (including
+`servers` itself) untouched.
+-}
+applyMastodonServers : List MastodonServer -> ServerConfiguration -> ServerConfiguration
+applyMastodonServers mastodonServers config =
+    { config
+        | federationInfo =
+            Just
+                { servers = config.federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+                , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
+                , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
+                , mastodonServers = mastodonServers
+                }
+    }
+
+
+{-| `MastodonServersSaveClicked`'s per-item projection from a `MastodonServerEdit` to the plain
+`MastodonServer` the RPC actually sends -- overlays `pendingAppSecret` onto `appSecret` (blank if
+never touched, same "leave it alone" meaning `applyFacebookAppSecret`'s blank does), ignoring
+`appSecretEditing` (whether the field happened to be visible doesn't matter, only what's in it).
+-}
+toSavedMastodonServer : MastodonServerEdit -> MastodonServer
+toSavedMastodonServer mastodonServerEdit =
+    let
+        server : MastodonServer
+        server =
+            mastodonServerEdit.server
+    in
+    { server | appSecret = mastodonServerEdit.pendingAppSecret }
 
 
 {-| `FacebookAppIdSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same
@@ -675,7 +1033,7 @@ applyFacebookAppId appId config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
     in
     { config
         | federationInfo =
@@ -692,7 +1050,7 @@ applyFacebookAppSecret appSecret config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
 
         existingAppId : String
         existingAppId =
@@ -713,7 +1071,7 @@ applyXTwitterClientId clientId config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
     in
     { config
         | federationInfo =
@@ -729,7 +1087,7 @@ applyXTwitterClientSecret clientSecret config =
     let
         federationInfo : Proto.Jonline.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing } config.federationInfo
+            Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
 
         existingClientId : String
         existingClientId =
@@ -797,6 +1155,56 @@ federatedServerChipDomId host =
     "federated-server-chip-" ++ host
 
 
+{-| Updates the one `pending` entry's `MastodonServer` matching `domain`, if any --
+`MastodonServerConfiguredByDefaultToggled`/`MastodonServerPinnedByDefaultToggled`/`MastodonAppIdChanged`'s
+shared plumbing, mirroring `mapPendingHost`.
+-}
+mapPendingMastodonDomain : String -> (MastodonServer -> MastodonServer) -> MastodonServersEdit -> MastodonServersEdit
+mapPendingMastodonDomain domain fn edit =
+    { edit
+        | pending =
+            edit.pending
+                |> List.map
+                    (\mastodonServerEdit ->
+                        if mastodonServerEdit.server.domain == domain then
+                            { mastodonServerEdit | server = fn mastodonServerEdit.server }
+
+                        else
+                            mastodonServerEdit
+                    )
+    }
+
+
+{-| Updates the one `pending` entry's `MastodonServerEdit` wrapper matching `domain`, if any --
+`MastodonAppSecretEditClicked`/`MastodonAppSecretChanged`/`MastodonAppSecretCancelClicked`'s shared
+plumbing (the `appSecretEditing`/`pendingAppSecret` fields live on the wrapper, not the inner
+`MastodonServer` -- see `MastodonServerEdit`'s own doc), otherwise identical to `mapPendingMastodonDomain`.
+-}
+mapPendingMastodonEdit : String -> (MastodonServerEdit -> MastodonServerEdit) -> MastodonServersEdit -> MastodonServersEdit
+mapPendingMastodonEdit domain fn edit =
+    { edit
+        | pending =
+            edit.pending
+                |> List.map
+                    (\mastodonServerEdit ->
+                        if mastodonServerEdit.server.domain == domain then
+                            fn mastodonServerEdit
+
+                        else
+                            mastodonServerEdit
+                    )
+    }
+
+
+{-| The DOM `id` a Mastodon-server chip is rendered with while `mastodonServersEdit` is active --
+mirrors `federatedServerChipDomId` exactly, just its own id scheme (never collides, but kept
+separate on principle the same way that one is from `AccountsPanel.serverChipDomId`).
+-}
+mastodonServerChipDomId : String -> String
+mastodonServerChipDomId domain =
+    "mastodon-server-chip-" ++ domain
+
+
 {-| The `AccountsPanel.Server` to show a federated host's name/logo off of -- the real,
 already-known one if `host` happens to also be a known `Server` (e.g. also added to Accounts &
 Servers), otherwise a synthetic unconnected record whose `AccountsPanel.brandingOf` falls back to
@@ -838,10 +1246,274 @@ view shared server maybeAdminAccount model =
 
             _ ->
                 text ""
+        , mastodonServersSection server model maybeAdminAccount
         , facebookAuthConfigSection server model maybeAdminAccount
         , xTwitterAuthConfigSection server model maybeAdminAccount
         , webPushConfigSection server model maybeAdminAccount
         ]
+
+
+{-| A `FederatedServer`-style chip strip (add/remove/reorder via `UI.Flip`, mirrors
+`federationEditorView`/`federatedServerEditChip` exactly), except each chip also edits that
+instance's App ID (plain) and App Secret (write-only) inline -- see `MastodonServerEdit`'s own doc
+for why the secret needs its own bit of edit-mode state per chip, unlike `FederatedServer`'s two
+plain boolean toggles. Unlike `FederatedServer` chips, there's no `AccountsPanel.serverNameAndLogo`
+branding to show -- a Mastodon instance is never also a known Jonline `Server`.
+-}
+mastodonServersSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+mastodonServersSection server model maybeAdminAccount =
+    div [ class "server-details-facebook-auth" ]
+        [ h3 [ class "section-title" ] [ text "Mastodon Servers" ]
+        , case model.mastodonServersEdit of
+            Just edit ->
+                mastodonServersEditorView edit
+
+            Nothing ->
+                let
+                    savedServers : List MastodonServer
+                    savedServers =
+                        (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
+                in
+                mastodonServersDisplayView savedServers
+        , case ( model.mastodonServersEdit, maybeAdminAccount ) of
+            ( Nothing, Just _ ) ->
+                button [ class "server-details-rename-button", onClick MastodonServersEditClicked ] [ text "Edit Mastodon Servers" ]
+
+            _ ->
+                text ""
+        ]
+
+
+mastodonServersDisplayView : List MastodonServer -> Html Msg
+mastodonServersDisplayView mastodonServers =
+    if List.isEmpty mastodonServers then
+        p [] [ text "No Mastodon instances are configured." ]
+
+    else
+        div [ class "federated-servers-strip" ] (List.map mastodonServerDisplayChip mastodonServers)
+
+
+{-| One `MastodonServer`, read-only -- mirrors `federatedServerDisplayChip`, just showing whether an
+App ID is configured (never the secret) instead of a Jonline server's logo/name.
+-}
+mastodonServerDisplayChip : MastodonServer -> Html Msg
+mastodonServerDisplayChip mastodonServer =
+    let
+        configuredByDefault : Bool
+        configuredByDefault =
+            Maybe.withDefault False mastodonServer.configuredByDefault
+
+        pinnedByDefault : Bool
+        pinnedByDefault =
+            Maybe.withDefault False mastodonServer.pinnedByDefault
+    in
+    div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass mastodonServer.domain ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text mastodonServer.domain ] ]
+            , div [ class "server-chip-host-row" ]
+                [ text
+                    (if String.isEmpty mastodonServer.appId then
+                        "App ID not set"
+
+                     else
+                        "App ID: " ++ mastodonServer.appId
+                    )
+                ]
+            ]
+        , div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
+            [ if configuredByDefault then
+                span [ class "federated-server-flag-badge" ] [ text "Added by Default" ]
+
+              else
+                text ""
+            , if pinnedByDefault then
+                span [ class "federated-server-flag-badge" ] [ text "Enabled by Default" ]
+
+              else
+                text ""
+            , if not configuredByDefault && not pinnedByDefault then
+                span [ class "federated-server-flag-none" ] [ text "—" ]
+
+              else
+                text ""
+            ]
+        ]
+
+
+{-| The chip strip, the "type a domain, add it" row, and the Save/Cancel actions -- mirrors
+`federationEditorView` exactly, minus the "Checking…" submitting state on Add (see
+`MastodonServerAddClicked`'s own doc: there's nothing to check).
+-}
+mastodonServersEditorView : MastodonServersEdit -> Html Msg
+mastodonServersEditorView edit =
+    div [ class "server-details-federation-edit" ]
+        [ Html.Keyed.node "div"
+            [ classes [ "federated-servers-strip", "flip-animated-row" ] ]
+            (List.indexedMap
+                (\index mastodonServerEdit -> ( mastodonServerEdit.server.domain, mastodonServerEditChipFlip edit (List.length edit.pending) index mastodonServerEdit ))
+                edit.pending
+            )
+        , div [ class "server-details-federation-add" ]
+            [ input
+                [ class "server-details-federation-add-input"
+                , value edit.domainInput
+                , onInput MastodonServerDomainInputChanged
+                , placeholder "mastodon.social"
+                ]
+                []
+            , button
+                [ class "server-details-rename-button"
+                , onClick MastodonServerAddClicked
+                , disabled (String.isEmpty (String.trim edit.domainInput))
+                ]
+                [ text "Add Instance" ]
+            ]
+        , div [ class "server-details-permissions-actions" ]
+            [ Common.editSaveButton MastodonServersSaveClicked edit.status
+            , Common.editCancelButton MastodonServersCancelClicked edit.status
+            ]
+        , Common.editErrorView edit.status
+        ]
+
+
+{-| Wraps `mastodonServerEditChip` in the same fading/scaling/collapsing outer `div` as
+`federatedServerEditChipFlip` -- see that function's own doc.
+-}
+mastodonServerEditChipFlip : MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
+mastodonServerEditChipFlip edit count index mastodonServerEdit =
+    let
+        domain : String
+        domain =
+            mastodonServerEdit.server.domain
+
+        flipState : UI.Flip.State Msg
+        flipState =
+            Dict.get domain edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving : Bool
+        isMoving =
+            Dict.get domain edit.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
+
+        pointerEventsAttr : List (Html.Attribute Msg)
+        pointerEventsAttr =
+            if flipState.removing then
+                [ Html.Attributes.style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
+        [ div pointerEventsAttr [ mastodonServerEditChip edit count index mastodonServerEdit ] ]
+
+
+{-| One Mastodon instance's editor chip -- mirrors `federatedServerEditChip`'s reorder arrows/domain
+header/remove button exactly, plus inline App ID/App Secret fields (see `mastodonAppIdField`/
+`mastodonAppSecretField`) in place of `FederatedServer`'s two plain boolean toggles... which this
+still also has, since `MastodonServer` carries the same `configuredByDefault`/`pinnedByDefault` pair.
+-}
+mastodonServerEditChip : MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
+mastodonServerEditChip edit count index mastodonServerEdit =
+    let
+        mastodonServer : MastodonServer
+        mastodonServer =
+            mastodonServerEdit.server
+
+        domain : String
+        domain =
+            mastodonServer.domain
+
+        moveAttrs : List (Html.Attribute Msg)
+        moveAttrs =
+            edit.moveAnimations |> Dict.get domain |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
+
+        stopClick : Msg -> Html.Attribute Msg
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
+        showBackward : Bool
+        showBackward =
+            index > 0
+
+        showForward : Bool
+        showForward =
+            index < count - 1
+
+        reorderPair : { backward : Html Msg, forward : Html Msg }
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = stopClick (MoveMastodonServerLeftClicked domain)
+                , moveForward = stopClick (MoveMastodonServerRightClicked domain)
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
+                }
+    in
+    div
+        (id (mastodonServerChipDomId domain)
+            :: classes [ "server-chip", "federated-server-chip", "federated-server-chip-edit", hostnameToCSSClass domain ]
+            :: moveAttrs
+        )
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ div [ class "server-chip-logo-row" ]
+                [ div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
+                , div [ class "server-chip-host" ] [ text domain ]
+                , div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
+                ]
+            ]
+        , div [ classes [ "server-chip-bottom", "federated-server-flags-edit", "background-color-nav" ] ]
+            [ mastodonAppIdField domain mastodonServer.appId
+            , mastodonAppSecretField domain mastodonServerEdit
+            , federatedServerFlagToggle "Added by Default" (Maybe.withDefault False mastodonServer.configuredByDefault) (MastodonServerConfiguredByDefaultToggled domain)
+            , federatedServerFlagToggle "Enabled by Default" (Maybe.withDefault False mastodonServer.pinnedByDefault) (MastodonServerPinnedByDefaultToggled domain)
+            , div [ class "federated-server-chip-remove" ]
+                [ button
+                    [ class "remove-btn"
+                    , onClick (MastodonServerRemoveClicked domain)
+                    , title ("Remove " ++ domain)
+                    ]
+                    [ text "╳" ]
+                ]
+            ]
+        ]
+
+
+mastodonAppIdField : String -> String -> Html Msg
+mastodonAppIdField domain appId =
+    div [ class "server-details-color-row" ]
+        [ span [ class "server-details-color-label" ] [ text "App ID" ]
+        , input
+            [ class "server-details-rename-input"
+            , value appId
+            , onInput (MastodonAppIdChanged domain)
+            ]
+            []
+        ]
+
+
+{-| Unlike `mastodonAppIdField`, there's no "current value" to show when not editing -- mirrors
+`facebookAppSecretRow`'s own doc exactly, just per-instance (see `MastodonServerEdit.appSecretEditing`).
+-}
+mastodonAppSecretField : String -> MastodonServerEdit -> Html Msg
+mastodonAppSecretField domain mastodonServerEdit =
+    if mastodonServerEdit.appSecretEditing then
+        div [ class "server-details-color-row server-details-color-row-edit" ]
+            [ span [ class "server-details-color-label" ] [ text "App Secret" ]
+            , input
+                [ Html.Attributes.type_ "password"
+                , class "server-details-rename-input"
+                , placeholder "New App Secret"
+                , value mastodonServerEdit.pendingAppSecret
+                , onInput (MastodonAppSecretChanged domain)
+                ]
+                []
+            , button [ class "server-details-rename-button", onClick (MastodonAppSecretCancelClicked domain) ] [ text "Cancel" ]
+            ]
+
+    else
+        div [ class "server-details-color-row" ]
+            [ span [ class "server-details-color-label" ] [ text "App Secret" ]
+            , span [ class "server-details-color-hex" ] [ text "Never shown" ]
+            , button [ class "server-details-rename-button", onClick (MastodonAppSecretEditClicked domain) ] [ text "Edit" ]
+            ]
 
 
 facebookAuthConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg

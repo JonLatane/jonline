@@ -410,6 +410,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
           <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
           <li><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></li>
+          <li><a href="#jonline-MastodonServer">MastodonServer</a></li>
           <li><a href="#jonline-XTwitterAuthConfig">XTwitterAuthConfig</a></li>
         </ul>
       </li>
@@ -3140,7 +3141,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       A Jonline <code>Media</code> message represents a single media item, such as a photo or video.
       Media data is deliberately <em>not accessible from the gRPC API</em>. Instead, the client
-      should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>.
+      should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>, unless <code>url</code> is set,
+      in which case that URL should be used instead (used for media Jonline doesn't store
+      locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
     </p>
     <p>
       Media items may be created with a HTTP POST to <code>http[s]://my.jonline.instance/media</code>
@@ -3257,6 +3260,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td></td>
           <td></td>
         </tr>
+        <tr>
+          <td>url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An external URL to fetch the media from, in lieu of <code>/media/{id}</code>. Used for representing media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky) that Jonline does not store locally. If unset, clients fall back to <code>/media/{id}</code>.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-MediaMetadata"></a></p>
@@ -3335,6 +3344,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#float">float</a></td>
           <td>optional</td>
           <td>Width divided by height. See <code>Media.aspect_ratio</code>.</td>
+        </tr>
+        <tr>
+          <td>url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An external URL to fetch the media from, in lieu of <code>/media/{id}</code>. See <code>Media.url</code>. If unset, clients fall back to <code>/media/{id}</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -6600,6 +6615,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances -- an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship <code>facebook_auth_config</code> has to individual Facebook Pages. Until set, <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code>.</td>
         </tr>
+        <tr>
+          <td>mastodon_servers</td>
+          <td><a href="#jonline-MastodonServer">MastodonServer</a></td>
+          <td>repeated</td>
+          <td>Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against -- every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user's instance isn't listed here, clients should surface a "not configured" alert rather than attempting to open an OAuth popup with no app to authorize against.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetServiceVersionResponse"></a></p>
@@ -6620,6 +6641,51 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MastodonServer"></a></p>
+    <h3 id="mastodonserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonserver"><span class="octicon octicon-link"></span></a>MastodonServer</h3>
+    <p>A Mastodon instance this server has a registered OAuth app on. See <code>FederationInfo.mastodon_servers</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>domain</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Mastodon instance's hostname, e.g. "mastodon.social".</td>
+        </tr>
+        <tr>
+          <td>app_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The registered app's Client ID for this instance. Safe to serialize to clients -- used directly to build the instance's <code>/oauth/authorize</code> URL, the same way <code>FacebookAuthConfig.app_id</code>/ <code>XTwitterAuthConfig.client_id</code> are.</td>
+        </tr>
+        <tr>
+          <td>app_secret</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The registered app's Client Secret for this instance. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly. Used server-side to exchange an authorization code for an access token once a user completes the OAuth popup.</td>
+        </tr>
+        <tr>
+          <td>configured_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Indicates to UI clients that they should enable/configure the indicated instance by default.</td>
+        </tr>
+        <tr>
+          <td>pinned_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server).</td>
         </tr>
       </tbody>
     </table>

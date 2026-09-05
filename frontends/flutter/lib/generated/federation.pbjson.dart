@@ -32,6 +32,7 @@ const FederationInfo$json = {
     {'1': 'servers', '3': 1, '4': 3, '5': 11, '6': '.jonline.FederatedServer', '10': 'servers'},
     {'1': 'facebook_auth_config', '3': 2, '4': 1, '5': 11, '6': '.jonline.FacebookAuthConfig', '9': 0, '10': 'facebookAuthConfig', '17': true},
     {'1': 'x_twitter_auth_config', '3': 3, '4': 1, '5': 11, '6': '.jonline.XTwitterAuthConfig', '9': 1, '10': 'xTwitterAuthConfig', '17': true},
+    {'1': 'mastodon_servers', '3': 4, '4': 3, '5': 11, '6': '.jonline.MastodonServer', '10': 'mastodonServers'},
   ],
   '8': [
     {'1': '_facebook_auth_config'},
@@ -45,8 +46,9 @@ final $typed_data.Uint8List federationInfoDescriptor = $convert.base64Decode(
     'J2ZXJSB3NlcnZlcnMSUgoUZmFjZWJvb2tfYXV0aF9jb25maWcYAiABKAsyGy5qb25saW5lLkZh'
     'Y2Vib29rQXV0aENvbmZpZ0gAUhJmYWNlYm9va0F1dGhDb25maWeIAQESUwoVeF90d2l0dGVyX2'
     'F1dGhfY29uZmlnGAMgASgLMhsuam9ubGluZS5YVHdpdHRlckF1dGhDb25maWdIAVISeFR3aXR0'
-    'ZXJBdXRoQ29uZmlniAEBQhcKFV9mYWNlYm9va19hdXRoX2NvbmZpZ0IYChZfeF90d2l0dGVyX2'
-    'F1dGhfY29uZmln');
+    'ZXJBdXRoQ29uZmlniAEBEkIKEG1hc3RvZG9uX3NlcnZlcnMYBCADKAsyFy5qb25saW5lLk1hc3'
+    'RvZG9uU2VydmVyUg9tYXN0b2RvblNlcnZlcnNCFwoVX2ZhY2Vib29rX2F1dGhfY29uZmlnQhgK'
+    'Fl94X3R3aXR0ZXJfYXV0aF9jb25maWc=');
 
 @$core.Deprecated('Use federatedServerDescriptor instead')
 const FederatedServer$json = {
@@ -110,4 +112,28 @@ const XTwitterAuthConfig$json = {
 final $typed_data.Uint8List xTwitterAuthConfigDescriptor = $convert.base64Decode(
     'ChJYVHdpdHRlckF1dGhDb25maWcSGwoJY2xpZW50X2lkGAEgASgJUghjbGllbnRJZBIjCg1jbG'
     'llbnRfc2VjcmV0GAIgASgJUgxjbGllbnRTZWNyZXQ=');
+
+@$core.Deprecated('Use mastodonServerDescriptor instead')
+const MastodonServer$json = {
+  '1': 'MastodonServer',
+  '2': [
+    {'1': 'domain', '3': 1, '4': 1, '5': 9, '10': 'domain'},
+    {'1': 'app_id', '3': 2, '4': 1, '5': 9, '10': 'appId'},
+    {'1': 'app_secret', '3': 3, '4': 1, '5': 9, '10': 'appSecret'},
+    {'1': 'configured_by_default', '3': 4, '4': 1, '5': 8, '9': 0, '10': 'configuredByDefault', '17': true},
+    {'1': 'pinned_by_default', '3': 5, '4': 1, '5': 8, '9': 1, '10': 'pinnedByDefault', '17': true},
+  ],
+  '8': [
+    {'1': '_configured_by_default'},
+    {'1': '_pinned_by_default'},
+  ],
+};
+
+/// Descriptor for `MastodonServer`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List mastodonServerDescriptor = $convert.base64Decode(
+    'Cg5NYXN0b2RvblNlcnZlchIWCgZkb21haW4YASABKAlSBmRvbWFpbhIVCgZhcHBfaWQYAiABKA'
+    'lSBWFwcElkEh0KCmFwcF9zZWNyZXQYAyABKAlSCWFwcFNlY3JldBI3ChVjb25maWd1cmVkX2J5'
+    'X2RlZmF1bHQYBCABKAhIAFITY29uZmlndXJlZEJ5RGVmYXVsdIgBARIvChFwaW5uZWRfYnlfZG'
+    'VmYXVsdBgFIAEoCEgBUg9waW5uZWRCeURlZmF1bHSIAQFCGAoWX2NvbmZpZ3VyZWRfYnlfZGVm'
+    'YXVsdEIUChJfcGlubmVkX2J5X2RlZmF1bHQ=');
 

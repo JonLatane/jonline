@@ -336,7 +336,7 @@
     // runtime), which is what makes browsers -- especially mobile Safari -- reliably allow the
     // popup at all. Loading a third-party SDK first would introduce an async gap between the
     // click and the popup call, and popups opened after that gap get silently blocked on some
-    // browsers. `redirectUri` points at our own tiny static `facebook-callback.html` (same
+    // browsers. `redirectUri` points at our own tiny static `oauth-callback.html` (same
     // origin, no server round-trip) rather than Facebook's SDK-hosted proxy page -- shared by both
     // providers below, since it's the same static page either way.
     //
@@ -367,7 +367,7 @@
     }
 
     app.ports.facebookLoginPopup.subscribe(function (payload) {
-      var redirectUri = window.location.origin + jonlineBasePath + "/facebook-callback.html";
+      var redirectUri = window.location.origin + jonlineBasePath + "/oauth-callback.html";
       var width = 600, height = 700;
       var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
       var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
@@ -404,7 +404,7 @@
 
       var popup = window.open(
         dialogUrl,
-        "jonline-facebook-login",
+        "jonline-oauth-login",
         "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
       );
 
@@ -427,7 +427,7 @@
 
       function onMessage(e) {
         if (e.origin !== window.location.origin) { return; }
-        if (!e.data || e.data.source !== "jonline-facebook-login") { return; }
+        if (!e.data || e.data.source !== "jonline-oauth-login") { return; }
         settled = true;
         window.removeEventListener("message", onMessage);
         clearInterval(poll);

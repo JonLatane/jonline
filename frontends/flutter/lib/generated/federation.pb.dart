@@ -72,6 +72,7 @@ class FederationInfo extends $pb.GeneratedMessage {
     $core.Iterable<FederatedServer>? servers,
     FacebookAuthConfig? facebookAuthConfig,
     XTwitterAuthConfig? xTwitterAuthConfig,
+    $core.Iterable<MastodonServer>? mastodonServers,
   }) {
     final $result = create();
     if (servers != null) {
@@ -83,6 +84,9 @@ class FederationInfo extends $pb.GeneratedMessage {
     if (xTwitterAuthConfig != null) {
       $result.xTwitterAuthConfig = xTwitterAuthConfig;
     }
+    if (mastodonServers != null) {
+      $result.mastodonServers.addAll(mastodonServers);
+    }
     return $result;
   }
   FederationInfo._() : super();
@@ -93,6 +97,7 @@ class FederationInfo extends $pb.GeneratedMessage {
     ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
     ..aOM<FacebookAuthConfig>(2, _omitFieldNames ? '' : 'facebookAuthConfig', subBuilder: FacebookAuthConfig.create)
     ..aOM<XTwitterAuthConfig>(3, _omitFieldNames ? '' : 'xTwitterAuthConfig', subBuilder: XTwitterAuthConfig.create)
+    ..pc<MastodonServer>(4, _omitFieldNames ? '' : 'mastodonServers', $pb.PbFieldType.PM, subBuilder: MastodonServer.create)
     ..hasRequiredFields = false
   ;
 
@@ -148,6 +153,15 @@ class FederationInfo extends $pb.GeneratedMessage {
   void clearXTwitterAuthConfig() => clearField(3);
   @$pb.TagNumber(3)
   XTwitterAuthConfig ensureXTwitterAuthConfig() => $_ensure(2);
+
+  /// Mastodon instances this server has a registered OAuth app on, letting users connect/read their
+  /// own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to
+  /// register an app against -- every instance is its own separate OAuth authority, so an admin has
+  /// to register an app on each instance individually before users on it can connect. If a user's
+  /// instance isn't listed here, clients should surface a "not configured" alert rather than
+  /// attempting to open an OAuth popup with no app to authorize against.
+  @$pb.TagNumber(4)
+  $core.List<MastodonServer> get mastodonServers => $_getList(3);
 }
 
 /// A server that this server will federate with.
@@ -436,6 +450,123 @@ class XTwitterAuthConfig extends $pb.GeneratedMessage {
   $core.bool hasClientSecret() => $_has(1);
   @$pb.TagNumber(2)
   void clearClientSecret() => clearField(2);
+}
+
+/// A Mastodon instance this server has a registered OAuth app on. See `FederationInfo.mastodon_servers`.
+class MastodonServer extends $pb.GeneratedMessage {
+  factory MastodonServer({
+    $core.String? domain,
+    $core.String? appId,
+    $core.String? appSecret,
+    $core.bool? configuredByDefault,
+    $core.bool? pinnedByDefault,
+  }) {
+    final $result = create();
+    if (domain != null) {
+      $result.domain = domain;
+    }
+    if (appId != null) {
+      $result.appId = appId;
+    }
+    if (appSecret != null) {
+      $result.appSecret = appSecret;
+    }
+    if (configuredByDefault != null) {
+      $result.configuredByDefault = configuredByDefault;
+    }
+    if (pinnedByDefault != null) {
+      $result.pinnedByDefault = pinnedByDefault;
+    }
+    return $result;
+  }
+  MastodonServer._() : super();
+  factory MastodonServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory MastodonServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'domain')
+    ..aOS(2, _omitFieldNames ? '' : 'appId')
+    ..aOS(3, _omitFieldNames ? '' : 'appSecret')
+    ..aOB(4, _omitFieldNames ? '' : 'configuredByDefault')
+    ..aOB(5, _omitFieldNames ? '' : 'pinnedByDefault')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  MastodonServer clone() => MastodonServer()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  MastodonServer copyWith(void Function(MastodonServer) updates) => super.copyWith((message) => updates(message as MastodonServer)) as MastodonServer;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static MastodonServer create() => MastodonServer._();
+  MastodonServer createEmptyInstance() => create();
+  static $pb.PbList<MastodonServer> createRepeated() => $pb.PbList<MastodonServer>();
+  @$core.pragma('dart2js:noInline')
+  static MastodonServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MastodonServer>(create);
+  static MastodonServer? _defaultInstance;
+
+  /// The Mastodon instance's hostname, e.g. "mastodon.social".
+  @$pb.TagNumber(1)
+  $core.String get domain => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set domain($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasDomain() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDomain() => clearField(1);
+
+  /// The registered app's Client ID for this instance. Safe to serialize to clients -- used
+  /// directly to build the instance's `/oauth/authorize` URL, the same way `FacebookAuthConfig.app_id`/
+  /// `XTwitterAuthConfig.client_id` are.
+  @$pb.TagNumber(2)
+  $core.String get appId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set appId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasAppId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAppId() => clearField(2);
+
+  /// The registered app's Client Secret for this instance. *Never serialized to the client.*
+  /// Admins: Edit this in the database's JSONB column directly. Used server-side to exchange an
+  /// authorization code for an access token once a user completes the OAuth popup.
+  @$pb.TagNumber(3)
+  $core.String get appSecret => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set appSecret($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAppSecret() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAppSecret() => clearField(3);
+
+  /// Indicates to UI clients that they should enable/configure the indicated instance by default.
+  @$pb.TagNumber(4)
+  $core.bool get configuredByDefault => $_getBF(3);
+  @$pb.TagNumber(4)
+  set configuredByDefault($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasConfiguredByDefault() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearConfiguredByDefault() => clearField(4);
+
+  /// Indicates to UI clients that they should pin the indicated instance by default
+  /// (showing its Posts alongside the "main" server).
+  @$pb.TagNumber(5)
+  $core.bool get pinnedByDefault => $_getBF(4);
+  @$pb.TagNumber(5)
+  set pinnedByDefault($core.bool v) { $_setBool(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasPinnedByDefault() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPinnedByDefault() => clearField(5);
 }
 
 

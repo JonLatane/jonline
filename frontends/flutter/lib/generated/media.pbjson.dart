@@ -30,12 +30,14 @@ const Media$json = {
     {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'updatedAt'},
     {'1': 'metadata', '3': 17, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
+    {'1': 'url', '3': 18, '4': 1, '5': 9, '9': 4, '10': 'url', '17': true},
   ],
   '8': [
     {'1': '_user_id'},
     {'1': '_name'},
     {'1': '_description'},
     {'1': '_aspect_ratio'},
+    {'1': '_url'},
   ],
 };
 
@@ -50,8 +52,9 @@ final $typed_data.Uint8List mediaDescriptor = $convert.base64Decode(
     'bxgKIAEoAkgDUgthc3BlY3RSYXRpb4gBARI5CgpjcmVhdGVkX2F0GA8gASgLMhouZ29vZ2xlLn'
     'Byb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0EjkKCnVwZGF0ZWRfYXQYECABKAsyGi5nb29n'
     'bGUucHJvdG9idWYuVGltZXN0YW1wUgl1cGRhdGVkQXQSMgoIbWV0YWRhdGEYESABKAsyFi5qb2'
-    '5saW5lLk1lZGlhTWV0YWRhdGFSCG1ldGFkYXRhQgoKCF91c2VyX2lkQgcKBV9uYW1lQg4KDF9k'
-    'ZXNjcmlwdGlvbkIPCg1fYXNwZWN0X3JhdGlv');
+    '5saW5lLk1lZGlhTWV0YWRhdGFSCG1ldGFkYXRhEhUKA3VybBgSIAEoCUgEUgN1cmyIAQFCCgoI'
+    'X3VzZXJfaWRCBwoFX25hbWVCDgoMX2Rlc2NyaXB0aW9uQg8KDV9hc3BlY3RfcmF0aW9CBgoEX3'
+    'VybA==');
 
 @$core.Deprecated('Use mediaMetadataDescriptor instead')
 const MediaMetadata$json = {
@@ -79,10 +82,12 @@ const MediaReference$json = {
     {'1': 'generated', '3': 4, '4': 1, '5': 8, '10': 'generated'},
     {'1': 'metadata', '3': 5, '4': 1, '5': 11, '6': '.jonline.MediaMetadata', '10': 'metadata'},
     {'1': 'aspect_ratio', '3': 10, '4': 1, '5': 2, '9': 1, '10': 'aspectRatio', '17': true},
+    {'1': 'url', '3': 11, '4': 1, '5': 9, '9': 2, '10': 'url', '17': true},
   ],
   '8': [
     {'1': '_name'},
     {'1': '_aspect_ratio'},
+    {'1': '_url'},
   ],
 };
 
@@ -91,8 +96,8 @@ final $typed_data.Uint8List mediaReferenceDescriptor = $convert.base64Decode(
     'Cg5NZWRpYVJlZmVyZW5jZRIhCgxjb250ZW50X3R5cGUYASABKAlSC2NvbnRlbnRUeXBlEg4KAm'
     'lkGAIgASgJUgJpZBIXCgRuYW1lGAMgASgJSABSBG5hbWWIAQESHAoJZ2VuZXJhdGVkGAQgASgI'
     'UglnZW5lcmF0ZWQSMgoIbWV0YWRhdGEYBSABKAsyFi5qb25saW5lLk1lZGlhTWV0YWRhdGFSCG'
-    '1ldGFkYXRhEiYKDGFzcGVjdF9yYXRpbxgKIAEoAkgBUgthc3BlY3RSYXRpb4gBAUIHCgVfbmFt'
-    'ZUIPCg1fYXNwZWN0X3JhdGlv');
+    '1ldGFkYXRhEiYKDGFzcGVjdF9yYXRpbxgKIAEoAkgBUgthc3BlY3RSYXRpb4gBARIVCgN1cmwY'
+    'CyABKAlIAlIDdXJsiAEBQgcKBV9uYW1lQg8KDV9hc3BlY3RfcmF0aW9CBgoEX3VybA==');
 
 @$core.Deprecated('Use getMediaRequestDescriptor instead')
 const GetMediaRequest$json = {

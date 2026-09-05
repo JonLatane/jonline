@@ -18,7 +18,9 @@ import 'visibility_moderation.pbenum.dart' as $13;
 
 ///  A Jonline `Media` message represents a single media item, such as a photo or video.
 ///  Media data is deliberately *not accessible from the gRPC API*. Instead, the client
-///  should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+///  should fetch media from `http[s]://my.jonline.instance/media/{id}`, unless `url` is set,
+///  in which case that URL should be used instead (used for media Jonline doesn't store
+///  locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
 ///
 ///  Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
 ///  along with an "Authorization" header (your access token) and a "Content-Type" header.
@@ -52,6 +54,7 @@ class Media extends $pb.GeneratedMessage {
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
     MediaMetadata? metadata,
+    $core.String? url,
   }) {
     final $result = create();
     if (id != null) {
@@ -93,6 +96,9 @@ class Media extends $pb.GeneratedMessage {
     if (metadata != null) {
       $result.metadata = metadata;
     }
+    if (url != null) {
+      $result.url = url;
+    }
     return $result;
   }
   Media._() : super();
@@ -113,6 +119,7 @@ class Media extends $pb.GeneratedMessage {
     ..aOM<$12.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..aOM<MediaMetadata>(17, _omitFieldNames ? '' : 'metadata', subBuilder: MediaMetadata.create)
+    ..aOS(18, _omitFieldNames ? '' : 'url')
     ..hasRequiredFields = false
   ;
 
@@ -271,6 +278,18 @@ class Media extends $pb.GeneratedMessage {
   void clearMetadata() => clearField(17);
   @$pb.TagNumber(17)
   MediaMetadata ensureMetadata() => $_ensure(12);
+
+  /// An external URL to fetch the media from, in lieu of `/media/{id}`. Used for representing
+  /// media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky)
+  /// that Jonline does not store locally. If unset, clients fall back to `/media/{id}`.
+  @$pb.TagNumber(18)
+  $core.String get url => $_getSZ(13);
+  @$pb.TagNumber(18)
+  set url($core.String v) { $_setString(13, v); }
+  @$pb.TagNumber(18)
+  $core.bool hasUrl() => $_has(13);
+  @$pb.TagNumber(18)
+  void clearUrl() => clearField(18);
 }
 
 /// Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
@@ -339,6 +358,7 @@ class MediaReference extends $pb.GeneratedMessage {
     $core.bool? generated,
     MediaMetadata? metadata,
     $core.double? aspectRatio,
+    $core.String? url,
   }) {
     final $result = create();
     if (contentType != null) {
@@ -359,6 +379,9 @@ class MediaReference extends $pb.GeneratedMessage {
     if (aspectRatio != null) {
       $result.aspectRatio = aspectRatio;
     }
+    if (url != null) {
+      $result.url = url;
+    }
     return $result;
   }
   MediaReference._() : super();
@@ -372,6 +395,7 @@ class MediaReference extends $pb.GeneratedMessage {
     ..aOB(4, _omitFieldNames ? '' : 'generated')
     ..aOM<MediaMetadata>(5, _omitFieldNames ? '' : 'metadata', subBuilder: MediaMetadata.create)
     ..a<$core.double>(10, _omitFieldNames ? '' : 'aspectRatio', $pb.PbFieldType.OF)
+    ..aOS(11, _omitFieldNames ? '' : 'url')
     ..hasRequiredFields = false
   ;
 
@@ -456,6 +480,17 @@ class MediaReference extends $pb.GeneratedMessage {
   $core.bool hasAspectRatio() => $_has(5);
   @$pb.TagNumber(10)
   void clearAspectRatio() => clearField(10);
+
+  /// An external URL to fetch the media from, in lieu of `/media/{id}`. See `Media.url`.
+  /// If unset, clients fall back to `/media/{id}`.
+  @$pb.TagNumber(11)
+  $core.String get url => $_getSZ(6);
+  @$pb.TagNumber(11)
+  set url($core.String v) { $_setString(6, v); }
+  @$pb.TagNumber(11)
+  $core.bool hasUrl() => $_has(6);
+  @$pb.TagNumber(11)
+  void clearUrl() => clearField(11);
 }
 
 /// Valid GetMediaRequest formats:

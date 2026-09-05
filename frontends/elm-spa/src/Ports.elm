@@ -233,7 +233,7 @@ the same value for all three, but X requires its own separately-registered app, 
 `XTwitterAuthConfig.clientId` instead (see `Components.Pages.UserProfilePage`'s
 `facebookAppId`/`xTwitterAppId`) -- either way it's just interpreted against a different OAuth
 dialog per `provider`. Deliberately hand-rolled (a plain `window.open` at the provider's own OAuth
-dialog URL, with our own tiny static `facebook-callback.html` as the `redirect_uri`) rather than
+dialog URL, with our own tiny static `oauth-callback.html` as the `redirect_uri`) rather than
 loading Facebook's JS SDK -- see `public/index.html`'s subscription for why: the popup has to open
 synchronously inside the click that requested it to reliably avoid being blocked (especially on
 mobile Safari), and loading a third-party SDK first would introduce an async gap that breaks that.
