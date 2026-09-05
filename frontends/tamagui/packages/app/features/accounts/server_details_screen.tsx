@@ -244,7 +244,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       recommendedServerHosts: federatedServers?.map(s => s.host) ?? [],
     },
     federationInfo: {
+      ...serverConfiguration?.federationInfo,
       servers: federatedServers ?? [],
+      mastodonServers: serverConfiguration?.federationInfo?.mastodonServers ?? [],
     },
     defaultUserPermissions: defaultPermissions,
     anonymousUserPermissions: anonymousPermissions,
