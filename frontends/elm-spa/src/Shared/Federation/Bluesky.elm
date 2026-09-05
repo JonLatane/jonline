@@ -21,6 +21,7 @@ import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReferenc
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
+import Shared.Federation.Common exposing (nonEmpty)
 import Time
 
 
@@ -51,15 +52,6 @@ decoder =
         (Decode.at [ "post", "author", "handle" ] Decode.string)
         (Decode.maybe (Decode.at [ "post", "author", "displayName" ] Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
         (Decode.maybe (Decode.at [ "post", "author", "avatar" ] Decode.string))
-
-
-nonEmpty : String -> Maybe String
-nonEmpty s =
-    if String.isEmpty s then
-        Nothing
-
-    else
-        Just s
 
 
 {-| A `FeedPost`'s translation into a Jonline `Post` -- `id` is namespaced (`"bluesky:" ++

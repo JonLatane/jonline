@@ -18,6 +18,7 @@ import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReferenc
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
+import Shared.Federation.Common exposing (nonEmpty)
 import Time
 
 
@@ -48,15 +49,6 @@ decoder =
         (Decode.at [ "account", "username" ] Decode.string)
         (Decode.at [ "account", "display_name" ] Decode.string |> Decode.map nonEmpty)
         (Decode.at [ "account", "avatar" ] Decode.string |> Decode.map nonEmpty)
-
-
-nonEmpty : String -> Maybe String
-nonEmpty s =
-    if String.isEmpty s then
-        Nothing
-
-    else
-        Just s
 
 
 {-| A `Status`'s translation into a Jonline `Post` -- `id` is namespaced
