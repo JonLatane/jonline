@@ -1027,6 +1027,7 @@ accountsAndServersTab shared currentRoute =
         , unreachableServersWarning shared
         , recommendedServersStrip shared
         , mastodonServersStrip shared
+        , blueskyConnectSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1527,6 +1528,116 @@ connectedMastodonAccountChip mastodonAccount =
             [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ mastodonAccount.username) ] ] ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-nav" ] ]
             [ text mastodonAccount.instanceHost ]
+        ]
+
+
+{-| Bluesky connection UI -- mirrors `mastodonServersStrip`'s general shape (a chip per already-
+connected account), but the "connect" side is a plain inline handle/App Password form
+(`AccountsPanel.BlueskyConnectForm`) rather than a chip/button that opens a popup -- see
+`AccountsPanel.BlueskyAccount`'s own doc on why Bluesky's login has no OAuth popup at all. Always
+shown (unlike `mastodonServersStrip`, which hides entirely when there's nothing to connect to) --
+there's no admin-configuration gate the way `FederationInfo.mastodonServers` is, so there's always
+at least the "Connect Bluesky Account" button to show.
+-}
+blueskyConnectSection : Shared.Model -> Html Shared.Msg
+blueskyConnectSection shared =
+    let
+        connected : List AccountsPanel.BlueskyAccount
+        connected =
+            shared.accounts.blueskyAccounts
+    in
+    div [ class "recommended-servers-section" ]
+        (div [ class "panel-divider" ] []
+            :: (if List.isEmpty connected then
+                    []
+
+                else
+                    [ div [ class "recommended-servers-strip" ] (List.map connectedBlueskyAccountChip connected) ]
+               )
+            ++ [ case shared.accounts.blueskyConnectForm of
+                    Just form ->
+                        blueskyConnectFormView form
+
+                    Nothing ->
+                        button
+                            [ class "server-details-rename-button", onClick (Shared.AccountsPanelMsg AccountsPanel.ShowBlueskyConnectFormClicked) ]
+                            [ text "+ Connect Bluesky Account" ]
+               ]
+        )
+
+
+{-| One already-connected Bluesky account -- read-only for now, same first-pass scope as
+`connectedMastodonAccountChip`. Always tinted/keyed as "bsky.social" (rather than each account's own
+host, the way Mastodon chips are) since every account here was, for now, necessarily connected
+through that one PDS -- see `AccountsPanel.BlueskyAccount`'s own doc on that limitation.
+-}
+connectedBlueskyAccountChip : AccountsPanel.BlueskyAccount -> Html Shared.Msg
+connectedBlueskyAccountChip blueskyAccount =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass "bsky.social" ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass "bsky.social", "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass "bsky.social", "background-color-nav" ] ]
+            [ text "bsky.social" ]
+        ]
+
+
+{-| The handle/App Password inputs plus Connect/Cancel buttons, shown once
+`AccountsPanel.ShowBlueskyConnectFormClicked` expands the form -- a real `<form>` (not a `button`
+`onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form uses
+(see its own doc), so Enter submits it and password managers recognize it as a login form worth
+offering to fill.
+-}
+blueskyConnectFormView : AccountsPanel.BlueskyConnectForm -> Html Shared.Msg
+blueskyConnectFormView form =
+    let
+        submitting : Bool
+        submitting =
+            form.status == AccountsPanel.Submitting
+    in
+    Html.form
+        [ class "server-details-federation-add", onSubmit (Shared.AccountsPanelMsg AccountsPanel.BlueskyConnectClicked) ]
+        [ input
+            [ type_ "text"
+            , name "username"
+            , attribute "autocomplete" "username"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
+            , placeholder "handle.bsky.social"
+            , value form.handle
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BlueskyHandleChanged)
+            , disabled submitting
+            ]
+            []
+        , input
+            [ type_ "password"
+            , name "current-password"
+            , attribute "autocomplete" "current-password"
+            , placeholder "App Password"
+            , value form.appPassword
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BlueskyAppPasswordChanged)
+            , disabled submitting
+            ]
+            []
+        , button
+            [ disabled (submitting || String.isEmpty form.handle || String.isEmpty form.appPassword) ]
+            [ text
+                (if submitting then
+                    "Connecting…"
+
+                 else
+                    "Connect"
+                )
+            ]
+        , button
+            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideBlueskyConnectFormClicked), disabled submitting ]
+            [ text "Cancel" ]
+        , case form.status of
+            AccountsPanel.Errored err ->
+                div [ class "auth-error" ] [ text err ]
+
+            _ ->
+                text ""
         ]
 
 

@@ -5,6 +5,8 @@ module Shared.AccountsPanel exposing
     , AccountForm
     , AddServerForm
     , Branding
+    , BlueskyAccount
+    , BlueskyConnectForm
     , Connection
     , FormStatus(..)
     , MastodonAccount
@@ -333,6 +335,15 @@ type alias Model =
     -- to both disable every "Connect" button while one's in flight and know which `MastodonServer`
     -- the eventual result belongs to.
     , mastodonConnectPopupOpen : Maybe String
+
+    -- Bluesky accounts connected via `UI.blueskyConnectSection`'s form (see
+    -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- same session-only, not-yet-wired-into-
+    -- anything first-pass scope as `mastodonAccounts`, see that field's own doc.
+    , blueskyAccounts : List BlueskyAccount
+
+    -- `Just` while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded -- see
+    -- `BlueskyConnectForm`'s own doc.
+    , blueskyConnectForm : Maybe BlueskyConnectForm
     }
 
 
@@ -416,6 +427,12 @@ type Msg
     | MastodonConnectClicked String
     | GotMastodonLoginResult Decode.Value
     | GotMastodonVerifyCredentialsResult String String (Result Http.Error String)
+    | ShowBlueskyConnectFormClicked
+    | HideBlueskyConnectFormClicked
+    | BlueskyHandleChanged String
+    | BlueskyAppPasswordChanged String
+    | BlueskyConnectClicked
+    | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
     | NoOp
 
 
@@ -484,6 +501,34 @@ type alias MastodonAccount =
     { instanceHost : String
     , accessToken : String
     , username : String
+    }
+
+
+{-| A Bluesky (AT Protocol) account connected via `UI.blueskyConnectSection`'s form -- unlike
+Mastodon, there's no OAuth popup at all: `com.atproto.server.createSession` (see
+`createBlueskySessionTask`) takes a handle and App Password directly, the same "plain form" shape
+`Pages.Auth.To.Key_` already uses for Jonline's own Login RPC (and is itself the identity check --
+the session response already carries `handle`, so there's no separate verify-credentials round trip
+the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
+directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
+doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
+are hosted there by default, so this covers the common case.
+-}
+type alias BlueskyAccount =
+    { handle : String
+    , accessToken : String
+    }
+
+
+{-| Live only while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded --
+`Nothing` the rest of the time (collapsed behind that button, mirroring `addAccountFormExpanded`'s
+own show/hide convention). Cleared back to `Nothing` on a successful `GotBlueskyConnectResult`, same
+as `newAccountType` clearing on a successful `GotAuthResult`.
+-}
+type alias BlueskyConnectForm =
+    { handle : String
+    , appPassword : String
+    , status : FormStatus
     }
 
 
@@ -1457,6 +1502,8 @@ init req flags =
       , federatedSignInNotice = Nothing
       , mastodonAccounts = []
       , mastodonConnectPopupOpen = Nothing
+      , blueskyAccounts = []
+      , blueskyConnectForm = Nothing
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -3147,6 +3194,36 @@ sendUpdate req msg model =
         GotMastodonVerifyCredentialsResult _ _ (Err _) ->
             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
+        ShowBlueskyConnectFormClicked ->
+            ( { model | blueskyConnectForm = Just { handle = "", appPassword = "", status = Idle } }, Cmd.none )
+
+        HideBlueskyConnectFormClicked ->
+            ( { model | blueskyConnectForm = Nothing }, Cmd.none )
+
+        BlueskyHandleChanged handle ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | handle = handle }) }, Cmd.none )
+
+        BlueskyAppPasswordChanged appPassword ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | appPassword = appPassword }) }, Cmd.none )
+
+        BlueskyConnectClicked ->
+            case model.blueskyConnectForm of
+                Just form ->
+                    ( { model | blueskyConnectForm = Just { form | status = Submitting } }
+                    , Task.attempt GotBlueskyConnectResult (createBlueskySessionTask form.handle form.appPassword)
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        GotBlueskyConnectResult (Ok account) ->
+            ( { model | blueskyConnectForm = Nothing, blueskyAccounts = account :: model.blueskyAccounts }, Cmd.none )
+
+        GotBlueskyConnectResult (Err err) ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | status = Errored (blueskyErrorMessage err) }) }
+            , Cmd.none
+            )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -4269,6 +4346,93 @@ verifyMastodonCredentialsTask instanceHost accessToken =
                 )
         , timeout = Just 10000
         }
+
+
+{-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
+directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
+`bsky.social`-only limitation). Decodes just `handle`/`accessJwt`, all a `BlueskyAccount` needs.
+-}
+createBlueskySessionTask : String -> String -> Task Http.Error BlueskyAccount
+createBlueskySessionTask handle appPassword =
+    Http.task
+        { method = "POST"
+        , headers = []
+        , url = "https://bsky.social/xrpc/com.atproto.server.createSession"
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "identifier", Encode.string handle )
+                    , ( "password", Encode.string appPassword )
+                    ]
+                )
+        , resolver =
+            Http.stringResolver
+                (\response ->
+                    case response of
+                        Http.GoodStatus_ _ body ->
+                            case Decode.decodeString blueskySessionDecoder body of
+                                Ok account ->
+                                    Ok account
+
+                                Err err ->
+                                    Err (Http.BadBody (Decode.errorToString err))
+
+                        Http.BadStatus_ metadata body ->
+                            Err (Http.BadBody (blueskyErrorBody body |> Maybe.withDefault ("HTTP " ++ String.fromInt metadata.statusCode)))
+
+                        Http.NetworkError_ ->
+                            Err Http.NetworkError
+
+                        Http.Timeout_ ->
+                            Err Http.Timeout
+
+                        Http.BadUrl_ url ->
+                            Err (Http.BadUrl url)
+                )
+        , timeout = Just 10000
+        }
+
+
+blueskySessionDecoder : Decode.Decoder BlueskyAccount
+blueskySessionDecoder =
+    Decode.map2 BlueskyAccount
+        (Decode.field "handle" Decode.string)
+        (Decode.field "accessJwt" Decode.string)
+
+
+{-| `com.atproto.server.createSession`'s error responses are `{ error : String, message : String }`
+(e.g. `{"error":"AuthenticationRequired","message":"Invalid identifier or password"}`) -- extracts
+`message` when present, so `BlueskyConnectForm.status`'s `Errored` shows something more useful than
+a bare status code.
+-}
+blueskyErrorBody : String -> Maybe String
+blueskyErrorBody body =
+    Decode.decodeString (Decode.field "message" Decode.string) body |> Result.toMaybe
+
+
+{-| `GotBlueskyConnectResult`'s error-to-display-string projection -- `Http.BadBody` here always
+carries `createBlueskySessionTask`'s own already-human-readable message (either the server's own
+`message`, or a bare status code fallback -- see `blueskyErrorBody`), so it's shown as-is; every
+other `Http.Error` variant gets a generic message, same as this codebase's `grpcErrorToString`
+doesn't try to describe network/timeout errors in detail either.
+-}
+blueskyErrorMessage : Http.Error -> String
+blueskyErrorMessage err =
+    case err of
+        Http.BadBody message ->
+            message
+
+        Http.BadUrl _ ->
+            "Couldn't connect to Bluesky."
+
+        Http.Timeout ->
+            "Bluesky didn't respond in time."
+
+        Http.NetworkError ->
+            "Couldn't reach Bluesky."
+
+        Http.BadStatus code ->
+            "Bluesky returned an error (" ++ String.fromInt code ++ ")."
 
 
 connectionUrl : Connection -> String
