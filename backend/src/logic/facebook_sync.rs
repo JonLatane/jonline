@@ -4,7 +4,7 @@
 //! For `EventInstance`s, this creates a Page **post** formatted to read like an event
 //! announcement (title, date/time range -- in the event location's local timezone if
 //! `logic::resolve_timezone` can geocode it, else UTC -- location, description, and a link back
-//! to the event on this Jonline server), not a real Facebook **Event** object -- the Graph API's
+//! to the event on this Rellm server), not a real Facebook **Event** object -- the Graph API's
 //! `event` node has been creation/update/delete-locked for third-party apps since v3.3 (2018),
 //! restricted to approved Facebook Marketing Partners. See `docs/facebook_and_x_twitter_federation.md` for the
 //! full rundown of why and what this does instead. `Post`s are simpler -- just title/content and
@@ -64,7 +64,7 @@ pub fn server_facebook_app_credentials(
 /// Exchanges a short-lived user access token (from client-side Facebook Login) for `page_id`'s
 /// long-lived Page access token: extends the user token, then looks up the Page's own token from
 /// `/me/accounts` (which only lists Pages the user administers). `app_id`/`app_secret` are this
-/// Jonline server's own Facebook App credentials -- see the module doc.
+/// Rellm server's own Facebook App credentials -- see the module doc.
 pub fn connect_facebook_page(
     app_id: &str,
     app_secret: &str,
@@ -583,7 +583,7 @@ fn graph_request(
             // Facebook's top-level `error.code` is a documented, stable field (unlike
             // `error_subcode`, which isn't) -- 190 is always an invalid/expired OAuth token, 368
             // is Facebook's "confirm your identity" checkpoint (surfaced to the Page admin via
-            // the Facebook app/website, not something Jonline can resolve on the caller's
+            // the Facebook app/website, not something Rellm can resolve on the caller's
             // behalf). Both get their own message so the frontend can tell the user what to
             // actually do instead of a generic "something went wrong".
             let message = match error.get("code").and_then(|c| c.as_i64()) {

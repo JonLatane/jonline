@@ -19,7 +19,7 @@ export default class Document extends NextDocument {
     const styles = [
       getStyleElement(),
       <style key="tamagui-css" dangerouslySetInnerHTML={{ __html: Tamagui.getCSS() }} />,
-      <style key='jonline-css' dangerouslySetInnerHTML={{
+      <style key='rellm-css' dangerouslySetInnerHTML={{
         __html: `
         .blur {
           backdrop-filter: blur(3px);

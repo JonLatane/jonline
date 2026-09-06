@@ -1,5 +1,5 @@
-import { TimeFilter } from "@jonline/api";
-import { toProtoISOString } from "@jonline/ui/src";
+import { TimeFilter } from "@rellm/api";
+import { toProtoISOString } from "@rellm/ui/src";
 import { setUpcomingEventsTimeFilter } from "app/store";
 import moment from "moment";
 import { useAppDispatch, useAppSelector } from "./store_hooks";

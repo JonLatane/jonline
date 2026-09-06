@@ -1,5 +1,5 @@
-import { Group, Moderation, Permission, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation, useToastController } from '@jonline/ui';
+import { Group, Moderation, Permission, Visibility } from '@rellm/api';
+import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation, useToastController } from '@rellm/ui';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';

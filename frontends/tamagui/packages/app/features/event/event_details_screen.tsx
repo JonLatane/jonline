@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@rellm/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';

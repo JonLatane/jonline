@@ -1,33 +1,33 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: jonline-minio
+  name: rellm-minio
   labels:
-    app: jonline-minio
+    app: rellm-minio
 spec:
   clusterIP: None
   ports:
     - port: 9000
       protocol: TCP
   selector:
-    app: jonline-minio
+    app: rellm-minio
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: jonline-minio
+  name: rellm-minio
   labels:
-    app: jonline-minio
+    app: rellm-minio
 spec:
-  serviceName: jonline-minio
+  serviceName: rellm-minio
   replicas: 1
   selector:
     matchLabels:
-      app: jonline-minio
+      app: rellm-minio
   template:
     metadata:
       labels:
-        app: jonline-minio
+        app: rellm-minio
     spec:
       volumes:
       - name: storage

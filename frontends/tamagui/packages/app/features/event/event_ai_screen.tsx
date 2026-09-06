@@ -1,8 +1,8 @@
-import { Author, Event, Location, Permission } from '@jonline/api';
+import { Author, Event, Location, Permission } from '@rellm/api';
 import * as webllm from "@mlc-ai/web-llm";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, useDebounceValue, useMedia, useToastController } from '@rellm/ui';
 import { FederatedEvent, federatedEntity, identifyEvent, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 

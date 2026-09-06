@@ -1,5 +1,5 @@
-import { Event } from '@jonline/api';
-import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
+import { Event } from '@rellm/api';
+import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@rellm/ui';
 import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
 import { CalendarImplementation, identifyEvent, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
@@ -351,7 +351,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                           : undefined}
                         <Paragraph size='$1' o={app.allowServerSelection ? 0.7 : 0.3}>
                           For testing purposes.
-                          Allows you to use {location.hostname} as though you were browsing from a different Jonline server (i.e., with the same theme/default groups as {location.hostname === 'jonline.io' ? 'bullcity.social' : 'jonline.io'}).
+                          Allows you to use {location.hostname} as though you were browsing from a different Rellm server (i.e., with the same theme/default groups as {location.hostname === 'jonline.io' ? 'bullcity.social' : 'jonline.io'}).
                         </Paragraph>
                         <Paragraph size='$1' o={app.allowServerSelection ? 0.7 : 0.3}>
                           After enabling this toggle, from the Accounts Sheet (behind/above this Settings Sheet),{' '}

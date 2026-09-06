@@ -55,7 +55,7 @@ async fn sitemap(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<R
         format!("https://{}/events", domain),
         format!("https://{}/people", domain),
         format!("https://{}/about", domain),
-        format!("https://{}/about_jonline", domain),
+        format!("https://{}/about_rellm", domain),
         format!("https://{}/flutter", domain),
         format!("https://{}/tamagui", domain),
         format!("https://{}/elm", domain),
@@ -134,7 +134,7 @@ async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse
         .server_info
         .map(|i| i.name)
         .flatten()
-        .unwrap_or("Jonline".to_string());
+        .unwrap_or("Rellm".to_string());
     let server_short_name = configuration
         .clone()
         .server_info

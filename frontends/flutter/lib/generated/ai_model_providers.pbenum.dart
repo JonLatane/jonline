@@ -13,7 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-/// What an [`AvailableAIModel`](#jonline-AvailableAIModel) can actually do -- drives feature gating
+/// What an [`AvailableAIModel`](#rellm-AvailableAIModel) can actually do -- drives feature gating
 /// (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
 /// models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
 /// without the gated feature needing its own hardcoded list of model names to check against. A

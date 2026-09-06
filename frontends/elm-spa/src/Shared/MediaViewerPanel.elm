@@ -27,7 +27,7 @@ import Html.Events exposing (on, onClick, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Process
-import Proto.Jonline exposing (MediaReference, Post)
+import Proto.Rellm exposing (MediaReference, Post)
 import Shared.AccountsPanel as AccountsPanel
 import Task
 import UI.Classes exposing (classes, openClosedClass)

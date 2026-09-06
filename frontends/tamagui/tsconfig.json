@@ -4,8 +4,8 @@
     "noUncheckedIndexedAccess": true,
     "paths": {
       "app/*": ["./packages/app/*"],
-      "@jonline/ui/*": ["./packages/ui/*"],
-      "@jonline/api/*": ["./packages/api/*"],
+      "@rellm/ui/*": ["./packages/ui/*"],
+      "@rellm/api/*": ["./packages/api/*"],
       "react": [ "./node_modules/@types/react" ]
     }
   },

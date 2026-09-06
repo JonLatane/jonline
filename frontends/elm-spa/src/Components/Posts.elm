@@ -33,7 +33,7 @@ module Components.Posts exposing
     , visibilityText
     )
 
-{-| Shared building blocks for displaying `Proto.Jonline.Post`s -- the compact
+{-| Shared building blocks for displaying `Proto.Rellm.Post`s -- the compact
 `postCard` used in the Home page's recent-posts feed, the fuller `postDetail`
 used by the Post page, and the fetch/link helpers both (and any future
 Post-related page) need: building a `GetPosts` request against a specific
@@ -52,14 +52,14 @@ import Grpc
 import Html exposing (Html, a, button, div, h1, option, select, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, selected, style, target, title, value)
 import Html.Events
-import Proto.Jonline exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Moderation exposing (Moderation(..))
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.PostListingType exposing (PostListingType(..))
-import Proto.Jonline.PostMediaLayout exposing (PostMediaLayout(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Moderation exposing (Moderation(..))
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.PostListingType exposing (PostListingType(..))
+import Proto.Rellm.PostMediaLayout exposing (PostMediaLayout(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
 import Shared.Time as SharedTime
@@ -86,7 +86,7 @@ fetchPost accountsPanelModel maybeAccountServer postId =
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
+            Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -131,7 +131,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
         trimmedSearchText =
             String.trim searchText
 
-        baseRequest : Proto.Jonline.GetPostsRequest
+        baseRequest : Proto.Rellm.GetPostsRequest
         baseRequest =
             if String.isEmpty trimmedSearchText then
                 { defaultGetPostsRequest | authorUserId = authorUserId, context = Just context }
@@ -144,7 +144,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
                     , context = Just context
                 }
 
-        request : Proto.Jonline.GetPostsRequest
+        request : Proto.Rellm.GetPostsRequest
         request =
             { baseRequest
                 | publishedOrCreatedBefore = Maybe.map posixToTimestamp publishedOrCreatedBefore
@@ -154,7 +154,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts request
+            Grpc.new Rellm.getPosts request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -178,7 +178,7 @@ fetchReplies accountsPanelModel maybeAccountServer replyDepth postId =
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
+            Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -218,7 +218,7 @@ fetchAncestorsHelp server maybeToken post =
             Task.succeed []
 
         Just parentId ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just parentId }
+            Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just parentId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -253,7 +253,7 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
+            Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -261,7 +261,7 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
                     (\response ->
                         case List.head response.posts of
                             Just freshPost ->
-                                Grpc.new Jonline.updatePost (updateFn freshPost)
+                                Grpc.new Rellm.updatePost (updateFn freshPost)
                                     |> Grpc.setHost (AccountsPanel.serverUrl server)
                                     |> withAccessToken (Just token)
                                     |> Grpc.toTask
@@ -288,7 +288,7 @@ deletePost accountsPanelModel maybeAccountServer postId =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deletePost { defaultPost | id = postId }
+            Grpc.new Rellm.deletePost { defaultPost | id = postId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -312,7 +312,7 @@ syncPost accountsPanelModel maybeAccountServer postId syncDestinationId =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.syncPost
+            Grpc.new Rellm.syncPost
                 { postId = postId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
@@ -339,7 +339,7 @@ deletePostSyncDestination accountsPanelModel maybeAccountServer postId syncDesti
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deletePostSyncDestination
+            Grpc.new Rellm.deletePostSyncDestination
                 { postId = postId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)

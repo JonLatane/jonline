@@ -1,6 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
+import 'package:rellm/rellm_state.dart';
 
 import '../../db.dart';
 
@@ -16,7 +16,7 @@ class EventDetailsPage extends StatefulWidget {
   EventDetailsPageState createState() => EventDetailsPageState();
 }
 
-class EventDetailsPageState extends JonlineState<EventDetailsPage> {
+class EventDetailsPageState extends RellmState<EventDetailsPage> {
   int counter = 1;
 
   @override

@@ -1,4 +1,4 @@
-import { Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@jonline/ui';
+import { Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@rellm/ui';
 import { AlertCircle, AlertTriangle, ArrowDownUp, AtSign, ChevronLeft, ChevronRight, Info, Plus, Router, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
@@ -23,7 +23,7 @@ export type AccountsSheetProps = {
   // Indicate to the AccountsSheet that we're
   // viewing server configuration for a server,
   // and should only show accounts for that server.
-  // onlyShowServer?: JonlineServer;
+  // onlyShowServer?: RellmServer;
   selectedGroup?: FederatedGroup;
   primaryEntity?: FederatedEntity<any>;
 }

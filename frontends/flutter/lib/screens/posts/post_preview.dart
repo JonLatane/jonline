@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/jonline_operations.dart';
-import 'package:jonline/models/server_errors.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/rellm_account.dart';
+import 'package:rellm/models/rellm_operations.dart';
+import 'package:rellm/models/server_errors.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,12 +20,12 @@ import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
 import '../../generated/users.pb.dart';
 import '../../jonotifier.dart';
-import '../../models/jonline_clients.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_clients.dart';
+import '../../models/rellm_server.dart';
 import '../../models/settings.dart';
 import '../media/media_image.dart';
 
-// import 'package:jonline/db.dart';
+// import 'package:rellm/db.dart';
 // final previewStorage = GetStorage('preview');
 
 class PostPreview extends StatefulWidget {
@@ -56,7 +56,7 @@ class PostPreview extends StatefulWidget {
   PostPreviewState createState() => PostPreviewState();
 }
 
-class PostPreviewState extends JonlineBaseState<PostPreview> {
+class PostPreviewState extends RellmBaseState<PostPreview> {
   static final log = Logger('PostPreviewState');
   Post get post => widget.post;
   GroupPost? get currentGroupPost {
@@ -131,7 +131,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     setState(() => loadingGroupPosts = true);
     try {
       log.fine("Loading group posts for ${post.id}");
-      final groupPosts = await JonlineOperations.getGroupPosts(
+      final groupPosts = await RellmOperations.getGroupPosts(
           GetGroupPostsRequest()..postId = post.id,
           showMessage: (e) => log.info(e));
       if (!mounted) return;
@@ -617,7 +617,7 @@ class PostPreviewGroupChooser extends StatefulWidget {
 }
 
 class _PostPreviewGroupChooserState
-    extends JonlineState<PostPreviewGroupChooser> {
+    extends RellmState<PostPreviewGroupChooser> {
   bool posting = false;
 
   @override
@@ -763,13 +763,13 @@ class _PostPreviewGroupChooserState
                             setState(() => posting = true);
                             Navigator.pop(context);
                             try {
-                              final client = await JonlineClients
+                              final client = await RellmClients
                                   .getSelectedOrDefaultClient();
                               await client!.createGroupPost(
                                   GroupPost()
                                     ..groupId = appState.selectedGroup.value!.id
                                     ..postId = widget.post.id,
-                                  options: JonlineAccount.selectedAccount!
+                                  options: RellmAccount.selectedAccount!
                                       .authenticatedCallOptions);
                             } catch (e) {
                               // showSnackBar("Error loading group posts.");
@@ -853,7 +853,7 @@ class _PostPreviewGroupChooserState
                             : darkTheme.textTheme.titleLarge,
                       ),
                       Text(
-                        "${JonlineServer.selectedServer.server}/",
+                        "${RellmServer.selectedServer.server}/",
                         style: darkTheme.textTheme.bodySmall,
                       ),
                     ],
@@ -874,7 +874,7 @@ class _PostPreviewGroupChooserState
                         style: darkTheme.textTheme.titleLarge,
                       ),
                       // Text(
-                      //   "${JonlineServer.selectedServer.server}/",
+                      //   "${RellmServer.selectedServer.server}/",
                       //   style: darkTheme.textTheme.bodySmall,
                       // ),
                     ],
@@ -895,7 +895,7 @@ class _PostPreviewGroupChooserState
                             : darkTheme.textTheme.titleLarge,
                       ),
                       Text(
-                        "${JonlineServer.selectedServer.server}/",
+                        "${RellmServer.selectedServer.server}/",
                         style: darkTheme.textTheme.bodySmall,
                       ),
                     ],
@@ -931,11 +931,11 @@ class _PostPreviewGroupChooserState
               if (selected) {
                 appState.selectedGroup.value = null;
                 showSnackBar(
-                    "Viewing all groups on ${JonlineServer.selectedServer.server}.");
+                    "Viewing all groups on ${RellmServer.selectedServer.server}.");
               } else {
                 appState.selectedGroup.value = g;
                 showSnackBar(
-                    "Viewing ${g.name} on ${JonlineServer.selectedServer.server}.");
+                    "Viewing ${g.name} on ${RellmServer.selectedServer.server}.");
               }
             },
             child: Padding(
@@ -952,7 +952,7 @@ class _PostPreviewGroupChooserState
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                              "${JonlineServer.selectedServer.server}/g/${g.id}",
+                              "${RellmServer.selectedServer.server}/g/${g.id}",
                               textAlign: TextAlign.left,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

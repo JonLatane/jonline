@@ -1,29 +1,29 @@
 import 'dart:convert';
 
-import 'package:jonline/models/jonline_server.dart';
+import 'package:rellm/models/rellm_server.dart';
 import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app_state.dart';
 import '../generated/authentication.pb.dart';
-import '../generated/jonline.pbgrpc.dart';
+import '../generated/rellm.pbgrpc.dart';
 import '../generated/permissions.pbenum.dart';
 import '../generated/users.pb.dart';
-import 'jonline_clients.dart';
+import 'rellm_clients.dart';
 import 'server_errors.dart';
 import 'storage.dart';
 
 const uuid = Uuid();
 
-/// Local storage for the user's account on a given Jonline instance.
+/// Local storage for the user's account on a given Rellm instance.
 /// Constructors are private; factory methods [loginToAccount] and [createAccount]
 /// should be used instead.
-class JonlineAccount {
-  static final log = Logger('JonlineAccount');
+class RellmAccount {
+  static final log = Logger('RellmAccount');
   static bool get loggedIn => _selectedAccount != null;
-  static JonlineAccount? _selectedAccount;
-  static JonlineAccount? get selectedAccount => _selectedAccount;
-  static set selectedAccount(JonlineAccount? account) {
+  static RellmAccount? _selectedAccount;
+  static RellmAccount? get selectedAccount => _selectedAccount;
+  static set selectedAccount(RellmAccount? account) {
     _selectedAccount = account;
     if (account != null) {
       appStorage.setString('selected_account', account.id);
@@ -37,7 +37,7 @@ class JonlineAccount {
 
   // static const String _selectedServer = defaultServer;
 
-  static Future<JonlineAccount?> loginToAccount(String server, String username,
+  static Future<RellmAccount?> loginToAccount(String server, String username,
       String password, Function(String) showMessage,
       {bool allowInsecure = false, bool selectAccount = true}) async {
     return _authAccount(
@@ -51,7 +51,7 @@ class JonlineAccount {
         showMessage,
         allowInsecure: allowInsecure,
         selectAccount: selectAccount);
-    // JonlineClient? client = await JonlineClients.createAndTestClient(server,
+    // RellmClient? client = await RellmClients.createAndTestClient(server,
     //     showMessage: showMessage, allowInsecure: allowInsecure);
     // if (client == null) return null;
     // await communicationDelay;
@@ -70,21 +70,21 @@ class JonlineAccount {
     // await communicationDelay;
     // showMessage("Logged in to $server as $username!");
 
-    // final account = JonlineAccount._fromAuth(server,
+    // final account = RellmAccount._fromAuth(server,
     //     authResponse.refreshToken.token, authResponse.accessToken.token, username,
     //     allowInsecure: allowInsecure);
     // await account.saveNew(atBeginning: selectAccount);
     // if (selectAccount) {
-    //   JonlineAccount.selectedAccount = account;
-    //   JonlineServer.selectedServer =
-    //       (await JonlineServer.servers).firstWhere((s) => s.server == server);
-    //   await JonlineServer.selectedServer.updateConfiguration();
-    //   await JonlineServer.selectedServer.save();
+    //   RellmAccount.selectedAccount = account;
+    //   RellmServer.selectedServer =
+    //       (await RellmServer.servers).firstWhere((s) => s.server == server);
+    //   await RellmServer.selectedServer.updateConfiguration();
+    //   await RellmServer.selectedServer.save();
     // }
     // return account;
   }
 
-  static Future<JonlineAccount?> createAccount(String server, String username,
+  static Future<RellmAccount?> createAccount(String server, String username,
       String password, Function(String) showMessage,
       {bool allowInsecure = false, bool selectAccount = true}) async {
     return _authAccount(
@@ -100,8 +100,8 @@ class JonlineAccount {
         selectAccount: selectAccount);
   }
 
-  static Future<JonlineAccount?> _authAccount(
-      Future<RefreshTokenResponse> Function(JonlineClient) authenticator,
+  static Future<RellmAccount?> _authAccount(
+      Future<RefreshTokenResponse> Function(RellmClient) authenticator,
       List<String> verbs,
       String server,
       String username,
@@ -109,7 +109,7 @@ class JonlineAccount {
       Function(String) showMessage,
       {bool allowInsecure = false,
       bool selectAccount = true}) async {
-    JonlineClient? client = await JonlineClients.createAndTestClient(server,
+    RellmClient? client = await RellmClients.createAndTestClient(server,
         showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
     if (selectAccount) {
@@ -131,16 +131,16 @@ class JonlineAccount {
     await communicationDelay;
     showMessage("${verbs[2]} $username on $server!");
 
-    final account = JonlineAccount._fromAuth(
+    final account = RellmAccount._fromAuth(
         server, authResponse.refreshToken.token, authResponse.accessToken.token,
         allowInsecure: allowInsecure);
     await account.saveNew(atBeginning: selectAccount);
     if (selectAccount) {
-      JonlineAccount.selectedAccount = account;
-      JonlineServer.selectedServer =
-          (await JonlineServer.servers).firstWhere((s) => s.server == server);
-      await JonlineServer.selectedServer.updateConfiguration();
-      await JonlineServer.selectedServer.save();
+      RellmAccount.selectedAccount = account;
+      RellmServer.selectedServer =
+          (await RellmServer.servers).firstWhere((s) => s.server == server);
+      await RellmServer.selectedServer.updateConfiguration();
+      await RellmServer.selectedServer.save();
     }
     return account;
   }
@@ -158,7 +158,7 @@ class JonlineAccount {
   List<Permission> get permissions => user?.permissions ?? [];
 
   /// Used by [loginToAccount] and [createAccount] when creating a new account.
-  JonlineAccount._fromAuth(
+  RellmAccount._fromAuth(
       this.server, this.authorizationToken, this.accessToken,
       {this.allowInsecure = false})
       : id = uuid.v4(),
@@ -167,7 +167,7 @@ class JonlineAccount {
         accessTokenExpiresAt = 0; //permissions = [];
 
   /// Used by [accounts] to load data.
-  JonlineAccount._fromJson(Map<String, dynamic> json)
+  RellmAccount._fromJson(Map<String, dynamic> json)
       : id = json['id'],
         // username = json['username'] ?? '',
         // userId = json['userId'] ?? '',
@@ -212,7 +212,7 @@ class JonlineAccount {
       };
 
   Future<void> save() async {
-    List<JonlineAccount> jsonArray = await accounts;
+    List<RellmAccount> jsonArray = await accounts;
     final index = jsonArray.indexWhere((element) => element.id == id);
     if (index == -1) {
       jsonArray.add(this);
@@ -223,29 +223,29 @@ class JonlineAccount {
   }
 
   Future<void> saveNew({bool atBeginning = true}) async {
-    List<JonlineAccount> jsonArray = await accounts;
+    List<RellmAccount> jsonArray = await accounts;
     jsonArray.insert(atBeginning ? 0 : jsonArray.length, this);
     await updateAccountList(jsonArray);
   }
 
   Future<void> delete() async {
-    List<JonlineAccount> jsonArray = await accounts;
+    List<RellmAccount> jsonArray = await accounts;
     jsonArray.removeWhere((e) => e.id == id);
     await updateAccountList(jsonArray);
   }
 
-  static Future<bool?> updateAccountList(List<JonlineAccount> accounts) async {
+  static Future<bool?> updateAccountList(List<RellmAccount> accounts) async {
     if (!accounts.any((a) => a.id == selectedAccount?.id)) {
       appStorage.remove('selected_account');
       selectedAccount = null;
     }
     return appStorage.setStringList(
-        'jonline_accounts', accounts.map((e) => jsonEncode(e)).toList());
+        'rellm_accounts', accounts.map((e) => jsonEncode(e)).toList());
   }
 
-  static Future<List<JonlineAccount>> get accounts async {
+  static Future<List<RellmAccount>> get accounts async {
     List<String> jsonArrayString =
-        appStorage.getStringList('jonline_accounts') ?? [];
+        appStorage.getStringList('rellm_accounts') ?? [];
     final accountsJson = jsonArrayString
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
         .toList();
@@ -253,7 +253,7 @@ class JonlineAccount {
     final accounts = accountsJson
         .map((e) {
           try {
-            return JonlineAccount._fromJson(e);
+            return RellmAccount._fromJson(e);
           } catch (e) {
             // print(e);
             return null;
@@ -261,7 +261,7 @@ class JonlineAccount {
         })
         .where((e) => e != null)
         .toList()
-        .cast<JonlineAccount>();
+        .cast<RellmAccount>();
 
     if (selectedAccount != null) {
       selectedAccount = accounts.firstWhere((a) => a.id == selectedAccount?.id,

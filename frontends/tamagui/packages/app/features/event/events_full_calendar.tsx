@@ -10,8 +10,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 // import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { ColorMeta, FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@rellm/ui';
+import { ColorMeta, FederatedEvent, RellmServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { ChevronLeft, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
@@ -52,7 +52,7 @@ const selectServerColors = (
 ): Selector<Dictionary<ColorMeta>> =>
   createSelector(
     [(state: RootState) => selectAllServers(state.servers).reduce(
-      (result, server: JonlineServer) => {
+      (result, server: RellmServer) => {
         if (server.serverConfiguration?.serverInfo?.colors?.primary) {
           result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary);
 

@@ -1,5 +1,5 @@
-import { UserListingType } from "@jonline/api";
-import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
+import { UserListingType } from "@rellm/api";
+import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@rellm/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
 import { useMediaContext } from "app/contexts";
 import { useCurrentServer, useLocalConfiguration, usePinnedAccountsAndServers } from "app/hooks";

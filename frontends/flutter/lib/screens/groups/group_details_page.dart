@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/screens/groups/group_preview.dart';
-import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/enum_conversions.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/rellm_clients.dart';
+import 'package:rellm/screens/groups/group_preview.dart';
+import 'package:rellm/utils/colors.dart';
+import 'package:rellm/utils/enum_conversions.dart';
 import 'package:logging/logging.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -16,10 +16,10 @@ import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../utils/moderation_accessors.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
-import '../../models/jonline_account.dart';
-import '../../models/jonline_account_operations.dart';
-import '../../models/jonline_operations.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_account_operations.dart';
+import '../../models/rellm_operations.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
@@ -37,11 +37,11 @@ class GroupDetailsPage extends StatefulWidget {
   State<GroupDetailsPage> createState() => _GroupDetailsPageState();
 }
 
-class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
+class _GroupDetailsPageState extends RellmState<GroupDetailsPage> {
   static final log = Logger('_GroupDetailsPageState');
   bool loading = true;
   Group? group;
-  // JonlineAccount? account;
+  // RellmAccount? account;
   // User? userData;
   bool get loaded => group != null;
   TextEditingController groupNameController = TextEditingController();
@@ -90,7 +90,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
   refreshGroupData() async {
     Group? group;
 
-    final groups = (await JonlineOperations.getGroups(
+    final groups = (await RellmOperations.getGroups(
                 request: GetGroupsRequest()..groupId = widget.groupId))
             ?.groups ??
         [];
@@ -109,7 +109,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (JonlineServer.selectedServer.server != widget.server) {
+    if (RellmServer.selectedServer.server != widget.server) {
       context.replaceRoute(const GroupsRoute());
     }
     return Scaffold(
@@ -176,7 +176,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               GroupPreview(
-                server: JonlineServer.selectedServer.server,
+                server: RellmServer.selectedServer.server,
                 group: group!,
                 navigable: false,
                 groupNameController:
@@ -324,7 +324,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                   ),
                   onPressed: () async {
                     try {
-                      final account = JonlineAccount.selectedAccount;
+                      final account = RellmAccount.selectedAccount;
                       await account!.ensureAccessToken();
                       await (await account.getClient())!.updateGroup(group!,
                           options: account.authenticatedCallOptions);

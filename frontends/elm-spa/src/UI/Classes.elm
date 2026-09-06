@@ -55,7 +55,7 @@ escapeCSSClass input =
 
 {-| Escapes a hostname for literal use as one segment of a CSS class
 selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
-separate class selectors (`.jonline.io` means "has both class `jonline` and
+separate class selectors (`.jonline.io` means "has both class `rellm` and
 class `io`", not "has class `jonline.io`").
 -}
 hostnameToCSSClass : String -> String

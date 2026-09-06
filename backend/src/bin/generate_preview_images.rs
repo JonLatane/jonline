@@ -1,6 +1,6 @@
 extern crate anyhow;
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 
 use std::path::PathBuf;
 use std::thread;
@@ -10,13 +10,13 @@ use diesel::*;
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
-use jonline::db_connection::PgPooledConnection;
-use jonline::models;
-use jonline::models::{get_user, Post, POST_COLUMNS};
-use jonline::protos::Visibility;
-use jonline::schema::{media, posts};
-use jonline::{db_connection, init_bin_logging, minio_connection};
-use jonline::{init_crypto, marshaling::*};
+use rellm::db_connection::PgPooledConnection;
+use rellm::models;
+use rellm::models::{get_user, Post, POST_COLUMNS};
+use rellm::protos::Visibility;
+use rellm::schema::{media, posts};
+use rellm::{db_connection, init_bin_logging, minio_connection};
+use rellm::{init_crypto, marshaling::*};
 use s3::Bucket;
 use uuid::Uuid;
 

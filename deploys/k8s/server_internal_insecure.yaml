@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: jonline
+  name: rellm
   labels:
-    app: jonline
+    app: rellm
 spec:
   type: ClusterIP
   # type: ExternalName
-  # externalName: ${JONLINE_HOST}
+  # externalName: ${RELLM_HOST}
   selector:
-    app: jonline
+    app: rellm
   ports:
     - name: grpc
       protocol: TCP
@@ -39,31 +39,31 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jonline
+  name: rellm
   labels:
-    app: jonline
+    app: rellm
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: jonline
+      app: rellm
   template:
     metadata:
       labels:
-        app: jonline
+        app: rellm
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.5.553
-          name: jonline
+        - image: docker.io/jonlatane/rellm:0.5.553
+          name: rellm
           env:
             - name: DATABASE_URL
-              value: postgres://admin:secure_password1@jonline-postgres/jonline
+              value: postgres://admin:secure_password1@rellm-postgres/rellm
             - name: MINIO_ENDPOINT
-              value: http://jonline-minio:9000
+              value: http://rellm-minio:9000
             - name: MINIO_REGION
               value: ""
             - name: MINIO_BUCKET
-              value: jonline
+              value: rellm
             - name: MINIO_ACCESS_KEY
               value: minio
             - name: MINIO_SECRET_KEY
@@ -73,37 +73,37 @@ spec:
             # - name: TLS_KEY
             #   valueFrom:
             #     secretKeyRef:
-            #       name: jonline-generated-tls
+            #       name: rellm-generated-tls
             #       key: tls.key
             #       optional: true
             # - name: TLS_CERT
             #   valueFrom:
             #     secretKeyRef:
-            #       name: jonline-generated-tls
+            #       name: rellm-generated-tls
             #       key: tls.crt
             #       optional: true
             - name: CA_CERT
               valueFrom:
                 configMapKeyRef:
-                  name: jonline-generated-ca
+                  name: rellm-generated-ca
                   key: ca.crt
                   optional: true
           ports:
             - containerPort: 27707
               protocol: TCP
-              name: jonline
+              name: rellm
             - containerPort: 443
               protocol: TCP
-              name: jonline-web-s
+              name: rellm-web-s
             - containerPort: 80
               protocol: TCP
-              name: jonline-web-i1
+              name: rellm-web-i1
             - containerPort: 8000
               protocol: TCP
-              name: jonline-web-i2
+              name: rellm-web-i2
             - containerPort: 27705
               protocol: TCP
-              name: jonline-mail
+              name: rellm-mail
 ---
 # Runs backend/background_jobs.sh (delete_expired_tokens, sync_sources,
 # delete_unowned_media, update_user_counts, convert_media_sizes -- see that file for the
@@ -120,37 +120,37 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jonline-jobs
+  name: rellm-jobs
   labels:
-    app: jonline-jobs
+    app: rellm-jobs
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: jonline-jobs
+      app: rellm-jobs
   template:
     metadata:
       labels:
-        app: jonline-jobs
+        app: rellm-jobs
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.5.553
-          name: jonline-jobs
+        - image: docker.io/jonlatane/rellm:0.5.553
+          name: rellm-jobs
           imagePullPolicy: IfNotPresent
           command:
             - bash
             - /opt/background_jobs.sh
           env:
             - name: DATABASE_URL
-              value: postgres://admin:secure_password1@jonline-postgres/jonline
+              value: postgres://admin:secure_password1@rellm-postgres/rellm
             - name: MINIO_ENDPOINT
-              value: http://jonline-minio:9000
+              value: http://rellm-minio:9000
             - name: MINIO_REGION
               value: ""
             - name: MINIO_BUCKET
-              value: jonline
+              value: rellm
             - name: MINIO_ACCESS_KEY
               value: minio
             - name: MINIO_SECRET_KEY

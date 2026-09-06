@@ -23,8 +23,8 @@ matching doc comment on `getAIModelProviders`.
 -}
 
 import Grpc
-import Proto.Jonline exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
-import Proto.Jonline.Jonline as Jonline
+import Proto.Rellm exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
+import Proto.Rellm.Rellm as Rellm
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions as Conversions
 import Task exposing (Task)
@@ -84,7 +84,7 @@ getSyncSources accountsPanelModel maybeAccountServer targetUserId =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getSyncSources { defaultUser | id = targetUserId }
+            Grpc.new Rellm.getSyncSources { defaultUser | id = targetUserId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -105,7 +105,7 @@ createSyncSource accountsPanelModel maybeAccountServer source =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.createSyncSource source
+            Grpc.new Rellm.createSyncSource source
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -122,7 +122,7 @@ updateSyncSource accountsPanelModel maybeAccountServer source =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.updateSyncSource source
+            Grpc.new Rellm.updateSyncSource source
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -140,7 +140,7 @@ deleteSyncSource accountsPanelModel maybeAccountServer source deleteSyncedEvents
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteSyncSource
+            Grpc.new Rellm.deleteSyncSource
                 { source = Just source, deleteSyncedEvents = deleteSyncedEvents }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)

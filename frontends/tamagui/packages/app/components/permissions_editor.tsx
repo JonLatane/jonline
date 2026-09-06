@@ -1,5 +1,5 @@
-import { Permission, permissionToJSON } from '@jonline/api';
-import { Button, Heading, Paragraph, Select, XStack, YStack } from '@jonline/ui';
+import { Permission, permissionToJSON } from '@rellm/api';
+import { Button, Heading, Paragraph, Select, XStack, YStack } from '@rellm/ui';
 import { Check, ChevronDown, Plus, X as XIcon } from '@tamagui/lucide-icons';
 import { useComponentKey } from 'app/hooks';
 import React from 'react';

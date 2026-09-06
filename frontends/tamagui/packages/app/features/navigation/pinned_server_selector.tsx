@@ -1,13 +1,13 @@
-import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
+import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@rellm/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, PanelTopOpen, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
 import { Selector, useAppDispatch, useAppSelector, useCurrentAccount, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, RootState, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
+import { FederatedPagesStatus, RellmAccount, RellmServer, PinnedServer, RootState, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
-import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
+import RecommendedServer, { useRellmServerInfo } from "../accounts/recommended_server";
 import { ServerNameAndLogo, shortenServerName, splitOnFirstEmoji } from "./server_name_and_logo";
-import { User } from "@jonline/api";
+import { User } from "@rellm/api";
 import { createSelector } from "@reduxjs/toolkit";
 import { AutoAnimatedList } from "../post";
 
@@ -26,9 +26,9 @@ export type PinnedServerSelectorProps = {
 
 
 const selectAvailableServers = (
-  currentServer: JonlineServer | undefined,
+  currentServer: RellmServer | undefined,
   simplified?: boolean
-): Selector<JonlineServer[]> =>
+): Selector<RellmServer[]> =>
   createSelector(
     [(state: RootState) =>
       selectAllServers(state.servers)
@@ -278,7 +278,7 @@ export function PinnedServerSelector({
 
 
 export type PinnableServerProps = {
-  server: JonlineServer;
+  server: RellmServer;
   pinnedServer?: PinnedServer;
   simplified?: boolean;
 };
@@ -295,7 +295,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
   }
 
   // const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
-  const toggleAccountSelect = (account: JonlineAccount) => {
+  const toggleAccountSelect = (account: RellmAccount) => {
     if (accountID(account) === accountID(pinnedAccount)) {
       dispatch(unpinAccount(account));
     } else {
@@ -342,7 +342,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
 
 
 export type ShortAccountSelectorButtonProps = {
-  server: JonlineServer;
+  server: RellmServer;
   pinnedServer?: PinnedServer;
   onPress?: () => void;
 };
@@ -365,9 +365,9 @@ export function ShortAccountSelectorButton({ server, pinnedServer, onPress }: Sh
 }
 
 export type AccountAvatarAndUsernameProps = {
-  account?: JonlineAccount;
+  account?: RellmAccount;
   user?: User;
-  server?: JonlineServer;
+  server?: RellmServer;
   textColor?: string;
 };
 export function AccountAvatarAndUsername({
@@ -384,7 +384,7 @@ export function AccountAvatarAndUsername({
   const accountOrServer = useFederatedAccountOrServer(serverHost);
   const account = specifiedAccount ?? accountOrServer.account;
 
-  const { server } = useJonlineServerInfo(serverHost ?? 'default');
+  const { server } = useRellmServerInfo(serverHost ?? 'default');
   // const pinned = !!pinnedServer?.pinned;
   // const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   // const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);

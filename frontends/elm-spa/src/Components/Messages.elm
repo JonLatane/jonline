@@ -35,10 +35,10 @@ signed-in account that actually has the relevant permission, one
 
 import Dict exposing (Dict)
 import Grpc
-import Proto.Jonline exposing (Author, GetMessagesRequest, GetMessagesResponse, Message, MessageRead, defaultGetMessagesRequest, defaultMarkMessagesReadRequest)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.MessageListingType exposing (MessageListingType(..))
-import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Rellm exposing (Author, GetMessagesRequest, GetMessagesResponse, Message, MessageRead, defaultGetMessagesRequest, defaultMarkMessagesReadRequest)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.MessageListingType exposing (MessageListingType(..))
+import Proto.Rellm.Permission exposing (Permission(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
@@ -219,7 +219,7 @@ fetchMessages accountsPanelModel maybeAccountServer request =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getMessages request
+            Grpc.new Rellm.getMessages request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -470,7 +470,7 @@ markMessagesRead accountsPanelModel maybeAccountServer unread messageIds =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.markMessagesRead { defaultMarkMessagesReadRequest | messageIds = messageIds, unread = unread }
+            Grpc.new Rellm.markMessagesRead { defaultMarkMessagesReadRequest | messageIds = messageIds, unread = unread }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask

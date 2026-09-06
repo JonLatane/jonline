@@ -3,8 +3,8 @@ FROM --platform=linux/amd64 debian:testing-slim
 # This hash is used by the GetServiceVersion RPC.
 COPY deploys/docker/continuous_delivery_hash /opt/continuous_delivery_hash
 
-# Jonline server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
-COPY backend/target/release/jonline__server_release /opt/jonline
+# Rellm server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
+COPY backend/target/release/rellm__server_release /opt/rellm
 
 # Background job binaries
 COPY backend/target/release/disable_cdn_grpc__server_release /opt/disable_cdn_grpc
@@ -28,7 +28,7 @@ COPY backend/target/release/fix_duplicate_synced_events__server_release /opt/fix
 
 # Runs all the above background job binaries on a loop -- see backend/background_jobs.sh. Lives
 # alongside them in /opt, unsuffixed, so its "./binary_name" resolution step finds them directly
-# (same layout as the Homebrew macOS package). Used by the jonline-jobs Deployment in
+# (same layout as the Homebrew macOS package). Used by the rellm-jobs Deployment in
 # deploys/k8s/server_internal.yaml (& co.) instead of one k8s CronJob per job.
 COPY backend/background_jobs.sh /opt/background_jobs.sh
 
@@ -42,10 +42,10 @@ COPY backend/target/release/to_proto_id__server_release /opt/to_proto_id
 # port 9222. See the Dockerfile in backend/docker/preview_generator for setup steps for Brave.
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
-# Flutter web app release (served from the filesystem by Rocket within Jonline)
+# Flutter web app release (served from the filesystem by Rocket within Rellm)
 COPY frontends/flutter/build/web/ /opt/flutter_web
 
-# Tamagui web app release (served from the filesystem by Rocket within Jonline).
+# Tamagui web app release (served from the filesystem by Rocket within Rellm).
 # Built twice (see apps/next/package.json's "build:export"): "out" has no basePath
 # baked in (served at "/"), "out-tamagui" has basePath "/tamagui" baked in (served
 # at "/tamagui") -- Next's router/asset URLs assume a single fixed basePath, so
@@ -53,7 +53,7 @@ COPY frontends/flutter/build/web/ /opt/flutter_web
 COPY frontends/tamagui/apps/next/out/ /opt/tamagui_web
 COPY frontends/tamagui/apps/next/out-tamagui/ /opt/tamagui_web_tamagui
 
-# Elm SPA web app release (served from the filesystem by Rocket within Jonline)
+# Elm SPA web app release (served from the filesystem by Rocket within Rellm)
 COPY frontends/elm-spa/public/ /opt/elm_web
 
 # Generated protocol docs
@@ -68,9 +68,9 @@ RUN apt-get update && apt-get -y install libpq5 curl postgresql-client libc6 ima
 # RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb > libssl1.1.deb
 # RUN dpkg -i libssl1.1.deb
 
-# grpcurl is useful to have on a jonline instance!
+# grpcurl is useful to have on a rellm instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C /opt
 
 EXPOSE 27707 8000 80 443 8001-9000
 
-ENTRYPOINT ["/opt/jonline"]
+ENTRYPOINT ["/opt/rellm"]

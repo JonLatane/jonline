@@ -5,14 +5,14 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:animated_list_plus/animated_list_plus.dart';
 import 'package:animated_list_plus/transitions.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/jonotifier.dart';
-import 'package:jonline/models/settings.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/jonotifier.dart';
+import 'package:rellm/models/settings.dart';
 
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_operations.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_operations.dart';
 import '../../router/router.gr.dart';
 import 'post_preview.dart';
 
@@ -34,14 +34,14 @@ class ThreadedReplies extends StatefulWidget {
   ThreadedRepliesState createState() => ThreadedRepliesState();
 }
 
-class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
+class ThreadedRepliesState extends RellmState<ThreadedReplies> {
   List<ThreadedReply> replies = [];
   LinkedHashSet<ThreadedReply> subRepliesLoaded = LinkedHashSet();
   Set<ThreadedReply> subRepliesLoading = {};
 
   updateReplies() async {
     widget.updatingReplies.value = true;
-    final GetPostsResponse? posts = await JonlineOperations.getPosts(
+    final GetPostsResponse? posts = await RellmOperations.getPosts(
         request: GetPostsRequest()
           ..postId = widget.post.id
           ..replyDepth = 1,
@@ -95,7 +95,7 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
         subRepliesLoaded.add(reply);
       });
     }
-    final GetPostsResponse? posts = await JonlineOperations.getPosts(
+    final GetPostsResponse? posts = await RellmOperations.getPosts(
         request: GetPostsRequest()
           ..postId = reply.post.id
           ..replyDepth = 1,
@@ -148,10 +148,10 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
     });
   }
 
-  bool canReply = JonlineAccount.loggedIn;
+  bool canReply = RellmAccount.loggedIn;
   updateState() {
     setState(() {
-      canReply = JonlineAccount.loggedIn;
+      canReply = RellmAccount.loggedIn;
     });
   }
 

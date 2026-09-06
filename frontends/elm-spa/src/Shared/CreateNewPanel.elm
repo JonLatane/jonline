@@ -13,7 +13,7 @@ draft.
 
 `Model.mode` (switched via the header's "New Post"/"New Event" tabs, see
 `modeTabsView`) picks which RPC `SaveClicked` actually calls
-(`Jonline.createPost` vs `Jonline.createEvent`) and which permission
+(`Rellm.createPost` vs `Rellm.createEvent`) and which permission
 (`CREATEPOSTS` vs `CREATEEVENTS`) gates `postingAsSelector`/`resolve` --
 title/link/media/content are shared by both modes, submitted as-is either as
 the Post itself (`PostMode`) or as the `Event`'s own underlying Post
@@ -51,11 +51,11 @@ import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (MediaReference, defaultEvent, defaultEventInfo, defaultEventInstance, defaultPost)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (MediaReference, defaultEvent, defaultEventInfo, defaultEventInstance, defaultPost)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.MarkdownPanel as MarkdownPanel
@@ -146,8 +146,8 @@ same as everywhere else in this module), needed alongside the Post/Event
 itself since neither carries its own server host.
 -}
 type CreatedItem
-    = CreatedPost String Proto.Jonline.Post
-    | CreatedEvent String Proto.Jonline.Event
+    = CreatedPost String Proto.Rellm.Post
+    | CreatedEvent String Proto.Rellm.Event
 
 
 type alias Resolved =
@@ -559,8 +559,8 @@ nonEmptyTrimmed value =
         Just trimmed
 
 
-{-| `PostMode` calls `Jonline.createPost` exactly as before; `EventMode`
-calls `Jonline.createEvent` with a single `EventInstance` (`startsAt`/
+{-| `PostMode` calls `Rellm.createPost` exactly as before; `EventMode`
+calls `Rellm.createEvent` with a single `EventInstance` (`startsAt`/
 `endsAt`, this panel's own two date fields) and no `Post` of its own -- see
 module doc for why that instance needs no visibility of its own. Both
 branches tag their own RPC's response (the server-populated Post/Event
@@ -576,7 +576,7 @@ saveTask accountsPanelModel resolved model =
         ( Just resolved.account.userId, resolved.server.frontendHost )
         (\server token ->
             let
-                post : Proto.Jonline.Post
+                post : Proto.Rellm.Post
                 post =
                     { defaultPost
                         | title = Just (String.trim model.title)
@@ -588,14 +588,14 @@ saveTask accountsPanelModel resolved model =
             in
             case model.mode of
                 PostMode ->
-                    Grpc.new Jonline.createPost { post | context = POST }
+                    Grpc.new Rellm.createPost { post | context = POST }
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
                         |> Task.map (CreatedPost resolved.server.frontendHost)
 
                 EventMode ->
-                    Grpc.new Jonline.createEvent
+                    Grpc.new Rellm.createEvent
                         { defaultEvent
                             | post = Just { post | context = EVENT }
                             , info = Just defaultEventInfo

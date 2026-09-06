@@ -1,12 +1,12 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 use std::time::{Duration, SystemTime};
 
 use diesel::*;
-use jonline::logic::sync_source;
-use jonline::models::SyncSource;
-use jonline::schema::sync_sources;
-use jonline::{db_connection, init_bin_logging, init_crypto};
+use rellm::logic::sync_source;
+use rellm::models::SyncSource;
+use rellm::schema::sync_sources;
+use rellm::{db_connection, init_bin_logging, init_crypto};
 
 pub fn main() {
     init_crypto();

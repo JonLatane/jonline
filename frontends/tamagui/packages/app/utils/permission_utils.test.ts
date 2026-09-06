@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { Permission } from '@jonline/api';
+import { Permission } from '@rellm/api';
 import { hasAdminPermission, hasPermission } from './permission_utils';
 
 describe('hasPermission', () => {

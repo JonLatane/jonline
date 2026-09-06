@@ -1,6 +1,6 @@
-## Jonline Release Management
+## Rellm Release Management
 
-While `/deploys/Makefile` deals with deployment of Jonline container images to
+While `/deploys/Makefile` deals with deployment of Rellm container images to
 k8s clusters (and elsewhere), `/deploys/releases/Makefile` deals with building
 those images and publishing them to your Container Registry of choice.
 

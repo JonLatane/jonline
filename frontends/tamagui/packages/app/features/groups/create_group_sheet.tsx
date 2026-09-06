@@ -1,9 +1,9 @@
-import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
-import { Button, Heading, Image, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
+import { Group, MediaReference, Moderation, Permission, Visibility } from '@rellm/api';
+import { Button, Heading, Image, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@rellm/ui';
 import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationDispatch, useMediaUrl } from 'app/hooks';
-import { JonlineServer, RootState, actionFailed, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { RellmServer, RootState, actionFailed, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { hasPermission, pending, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -19,7 +19,7 @@ export type CreateGroupSheetProps = {
 
 export const groupVisibilityDescription = (
   v: Visibility,
-  server: JonlineServer | undefined,
+  server: RellmServer | undefined,
 ) => {
   switch (v) {
     case Visibility.PRIVATE:

@@ -1,11 +1,11 @@
-import { Paragraph, Spinner, XStack, YStack, useWindowDimensions } from '@jonline/ui'
+import { Paragraph, Spinner, XStack, YStack, useWindowDimensions } from '@rellm/ui'
 import { useAppSelector, useCurrentServer, useFederatedDispatch } from 'app/hooks'
 import { FederatedGroup, federateId, loadGroupByShortname, parseFederatedId, selectGroupById, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
 // import { set } from 'immer/dist/internal'
-import { useJonlineServerInfo } from '../accounts/recommended_server'
+import { useRellmServerInfo } from '../accounts/recommended_server'
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo'
 
 const { useParam, useUpdateParams } = createParam<{ shortname: string }>()
@@ -96,7 +96,7 @@ export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComp
   const dimensions = useWindowDimensions();
 
 
-  const { existingServer, pendingServer, prototypeServer } = useJonlineServerInfo(serverHost ?? '');
+  const { existingServer, pendingServer, prototypeServer } = useRellmServerInfo(serverHost ?? '');
   const groupServer = existingServer ?? pendingServer ?? prototypeServer;
   //<ServerNameAndLogo server={groupServer} />
   const showVia = groupServer && groupServer.host !== currentServer?.host;

@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:intl/intl.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/screens/media/media_image.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/models/rellm_clients.dart';
+import 'package:rellm/screens/media/media_image.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
 import '../../generated/visibility_moderation.pbenum.dart';
-import '../../jonline_state.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../rellm_state.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../utils/colors.dart';
 
@@ -41,7 +41,7 @@ class PersonPreview extends StatefulWidget {
   State<PersonPreview> createState() => _PersonPreviewState();
 }
 
-class _PersonPreviewState extends JonlineState<PersonPreview> {
+class _PersonPreviewState extends RellmState<PersonPreview> {
   Person get person => widget.person;
   User get user => person.user;
   Membership? get membership => person.membership;
@@ -124,7 +124,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
         child: InkWell(
           onTap: () {
             context.navigateNamedTo(
-                'person/${JonlineServer.selectedServer.server}/${user.id}');
+                'person/${RellmServer.selectedServer.server}/${user.id}');
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -179,7 +179,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                        '${JonlineServer.selectedServer.server}/',
+                                        '${RellmServer.selectedServer.server}/',
                                         style: textTheme.bodySmall?.copyWith(
                                             color: textColor?.withOpacity(0.5)),
                                         maxLines: 1,
@@ -549,13 +549,13 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
 
   follow() async {
     try {
-      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+      final follow = await (await RellmAccount.selectedAccount!.getClient())!
           .createFollow(
               Follow()
-                ..userId = JonlineAccount.selectedAccount!.userId
+                ..userId = RellmAccount.selectedAccount!.userId
                 ..targetUserId = user.id,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.currentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
@@ -563,9 +563,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount += 1;
           });
-          JonlineAccount.selectedAccount?.user?.followingCount += 1;
+          RellmAccount.selectedAccount?.user?.followingCount += 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followingCount += 1;
           });
@@ -583,11 +583,11 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   unfollow() async {
     final follow = user.currentUserFollow;
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+      await (await RellmAccount.selectedAccount!.getClient())!.deleteFollow(
           Follow()
-            ..userId = JonlineAccount.selectedAccount!.userId
+            ..userId = RellmAccount.selectedAccount!.userId
             ..targetUserId = user.id,
-          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+          options: RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.currentUserFollow = Follow();
         if (follow.targetUserModeration.passes) {
@@ -595,9 +595,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount -= 1;
           });
-          JonlineAccount.selectedAccount?.user?.followingCount -= 1;
+          RellmAccount.selectedAccount?.user?.followingCount -= 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followingCount -= 1;
           });
@@ -613,14 +613,14 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
 
   approveFollowRequest() async {
     try {
-      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+      final follow = await (await RellmAccount.selectedAccount!.getClient())!
           .updateFollow(
               Follow()
                 ..userId = user.id
-                ..targetUserId = JonlineAccount.selectedAccount!.userId
+                ..targetUserId = RellmAccount.selectedAccount!.userId
                 ..targetUserModeration = Moderation.APPROVED,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
@@ -629,9 +629,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
             u.followingCount += 1;
             u.targetCurrentUserFollow = follow;
           });
-          JonlineAccount.selectedAccount?.user?.followerCount += 1;
+          RellmAccount.selectedAccount?.user?.followerCount += 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followerCount += 1;
           });
@@ -646,11 +646,11 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
 
   rejectFollowRequest() async {
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+      await (await RellmAccount.selectedAccount!.getClient())!.deleteFollow(
           Follow()
             ..userId = user.id
-            ..targetUserId = JonlineAccount.selectedAccount!.userId,
-          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+            ..targetUserId = RellmAccount.selectedAccount!.userId,
+          options: RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = Follow();
       });
@@ -664,14 +664,14 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   approveMembership() async {
     try {
       final membership =
-          await (await JonlineAccount.selectedAccount!.getClient())!
+          await (await RellmAccount.selectedAccount!.getClient())!
               .updateMembership(
                   Membership()
                     ..userId = user.id
                     ..groupId = this.membership!.groupId
                     ..groupModeration = Moderation.APPROVED,
                   options:
-                      JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                      RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         person.membership = membership;
         if (membership.userModeration.passes &&
@@ -693,13 +693,13 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
 
   rejectMembership() async {
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!
+      await (await RellmAccount.selectedAccount!.getClient())!
           .deleteMembership(
               Membership()
                 ..userId = user.id
                 ..groupId = membership!.groupId,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = Follow();
       });

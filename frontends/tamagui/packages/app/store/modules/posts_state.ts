@@ -1,4 +1,4 @@
-import { Event, Post } from "@jonline/api";
+import { Event, Post } from "@rellm/api";
 import {
   Dictionary,
   EntityAdapter,

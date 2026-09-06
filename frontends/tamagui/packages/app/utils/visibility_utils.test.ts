@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { Visibility } from '@jonline/api/generated/visibility_moderation';
+import { Visibility } from '@rellm/api/generated/visibility_moderation';
 import { publicOrPrivateVisibility, publicVisibility } from './visibility_utils';
 
 describe('publicVisibility', () => {

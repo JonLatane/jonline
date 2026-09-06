@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.jonline.jonline">
+    package="io.rellm.rellm">
    <application
-        android:label="jonline"
+        android:label="rellm"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

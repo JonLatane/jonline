@@ -286,7 +286,7 @@ pub async fn open_named_file(local_filename: &str) -> Result<NamedFile, Status> 
         .map_err(|_| Status::ImATeapot)?)
 }
 
-/// Gets the user from a manual jonline_access_token, auth header, or cookies (in that priority order).
+/// Gets the user from a manual rellm_access_token, auth header, or cookies (in that priority order).
 fn get_media_user(
     manual_authorization: Option<String>,
     auth_header: Option<AuthHeader<'_>>,
@@ -297,7 +297,7 @@ fn get_media_user(
         Some(access_token) => access_token,
         _ => match auth_header {
             Some(auth_header) => auth_header.0.to_string(),
-            _ => match cookies.get("jonline_access_token") {
+            _ => match cookies.get("rellm_access_token") {
                 Some(access_token) => access_token.value().to_string(),
                 _ => return Err(Status::Unauthorized),
             },

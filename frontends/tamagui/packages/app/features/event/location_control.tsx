@@ -1,5 +1,5 @@
-import { Location } from "@jonline/api";
-import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
+import { Location } from "@rellm/api";
+import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, Text, XStack, YStack, useMedia } from "@rellm/ui";
 import { ExternalLink, MapPin, Scroll } from "@tamagui/lucide-icons";
 import { NominatimResult, useNominatim } from "app/hooks/use_nominatim";
 import { useQueryDebounce } from "app/hooks/use_query_debounce";

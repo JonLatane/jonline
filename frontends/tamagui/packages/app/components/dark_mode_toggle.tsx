@@ -1,4 +1,4 @@
-import { Button, Paragraph, XStack, ZStack } from '@jonline/ui';
+import { Button, Paragraph, XStack, ZStack } from '@rellm/ui';
 import { Moon, Sun } from '@tamagui/lucide-icons';
 import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { setDarkMode, setDarkModeAuto, } from 'app/store';

@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { AccountOrServer, JonlineServer, PinnedServer, RootState, accountID, selectAllAccounts, selectAllServers, serverID, unpinAccount } from 'app/store';
+import { AccountOrServer, RellmServer, PinnedServer, RootState, accountID, selectAllAccounts, selectAllServers, serverID, unpinAccount } from 'app/store';
 import { useEffect, useMemo } from 'react';
 import { Selector, useAppDispatch, useAppSelector } from "../store_hooks";
 import { useCurrentAccountOrServer } from './use_current_account_or_server';
@@ -54,7 +54,7 @@ export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; 
 }
 
 const selectPinnedAccountsAndServers = (
-  server: JonlineServer | undefined,
+  server: RellmServer | undefined,
   // pinnedServers: PinnedServer[],
   args?: { includeUnpinned?: boolean; }
 ): Selector<AccountOrServer[]> =>

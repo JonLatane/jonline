@@ -2,7 +2,7 @@ digraph G {
   size = "100,100";
   compound=true;
   subgraph cluster0 {
-    label = "Jonline Rust Backend & Cluster"
+    label = "Rellm Rust Backend & Cluster"
     compound=true;
 
     minio [color=magenta; shape = folder; style=filled; label = <<b>MinIO</b>>;];
@@ -10,7 +10,7 @@ digraph G {
     media -> minio [color=magenta; style = dashed; label = "+minio_path";];
     
     subgraph cluster1 {
-      label = "Jonline gRPC Service";
+      label = "Rellm gRPC Service";
       
       tonic [shape = note;label = <
         <table border="0">
@@ -76,7 +76,7 @@ digraph G {
       unauthenticated_rpc -> get_service_version;
       
       
-      // resolve_dns -> jonlineio_dns [style = dashed;];
+      // resolve_dns -> rellmio_dns [style = dashed;];
       // resolve_dns -> oakcitysocial_dns [style = dashed;];
       // resolve_dns -> bullcitysocial_dns [style = dashed;];
       
@@ -144,7 +144,7 @@ digraph G {
     // unauthenticated_rpc -> oauth_stuff [style=dotted;];
     
     subgraph cluster6 {
-      label = "Jonline HTTP Service";
+      label = "Rellm HTTP Service";
       // node [style = filled; color = white;];
       // style = filled;
       // color = lightgrey;
@@ -187,7 +187,7 @@ digraph G {
           >;];
         tamagui_previews [shape = note;label = <
           <table border="0">
-          <tr><td><b>Jonline Social Media Previews</b></td></tr>
+          <tr><td><b>Rellm Social Media Previews</b></td></tr>
           <tr><td>(i.e., og:image|title|description tag support)</td></tr>
           <tr><td>only support GLOBAL_PUBLIC visibility</td></tr>
           </table>

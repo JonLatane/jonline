@@ -2,8 +2,8 @@ import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById,
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
-import { Post, PostContext, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController, useDebounceValue } from '@jonline/ui';
+import { Post, PostContext, Visibility } from "@rellm/api";
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController, useDebounceValue } from '@rellm/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';

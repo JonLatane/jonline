@@ -35,7 +35,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Event, EventInstance, SyncSource, Media, Post, User)
+import Proto.Rellm exposing (Event, EventInstance, SyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -966,7 +966,7 @@ sharedUpdate req msg model =
                 -- `Pages.Post.PostId_.mediaEditActive` uses for its own,
                 -- page-level `MultiSelect` consumer (see `MyMediaPanel`'s own
                 -- module doc).
-                savedMedia : Maybe (List Proto.Jonline.MediaReference)
+                savedMedia : Maybe (List Proto.Rellm.MediaReference)
                 savedMedia =
                     case subMsg of
                         MyMediaPanel.SaveMediaClicked media ->

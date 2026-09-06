@@ -17,11 +17,11 @@ import Grpc
 import Html exposing (Html, button, div, h3, input, option, p, select, span, text)
 import Html.Attributes exposing (disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (ServerConfiguration, defaultEventSettings, defaultFeatureSettings, defaultMediaSettings, defaultPostSettings)
-import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode(..))
-import Proto.Jonline.Moderation exposing (Moderation(..))
-import Proto.Jonline.Permission exposing (Permission)
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (ServerConfiguration, defaultEventSettings, defaultFeatureSettings, defaultMediaSettings, defaultPostSettings)
+import Proto.Rellm.CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Proto.Rellm.Moderation exposing (Moderation(..))
+import Proto.Rellm.Permission exposing (Permission)
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -628,7 +628,7 @@ currentFeatureSettingsFor set config =
     case set of
         PeopleFeatureSettings ->
             let
-                s : Proto.Jonline.FeatureSettings
+                s : Proto.Rellm.FeatureSettings
                 s =
                     Maybe.withDefault defaultFeatureSettings config.peopleSettings
             in
@@ -636,7 +636,7 @@ currentFeatureSettingsFor set config =
 
         GroupFeatureSettings ->
             let
-                s : Proto.Jonline.FeatureSettings
+                s : Proto.Rellm.FeatureSettings
                 s =
                     Maybe.withDefault defaultFeatureSettings config.groupSettings
             in
@@ -644,7 +644,7 @@ currentFeatureSettingsFor set config =
 
         PostFeatureSettings ->
             let
-                s : Proto.Jonline.PostSettings
+                s : Proto.Rellm.PostSettings
                 s =
                     Maybe.withDefault defaultPostSettings config.postSettings
             in
@@ -652,7 +652,7 @@ currentFeatureSettingsFor set config =
 
         EventFeatureSettings ->
             let
-                s : Proto.Jonline.EventSettings
+                s : Proto.Rellm.EventSettings
                 s =
                     Maybe.withDefault defaultEventSettings config.eventSettings
             in
@@ -660,7 +660,7 @@ currentFeatureSettingsFor set config =
 
         MediaFeatureSettings ->
             let
-                s : Proto.Jonline.MediaSettings
+                s : Proto.Rellm.MediaSettings
                 s =
                     Maybe.withDefault defaultMediaSettings config.mediaSettings
             in
@@ -727,7 +727,7 @@ applyFeatureSettingsFor set edit config =
     case set of
         PeopleFeatureSettings ->
             let
-                updated : Proto.Jonline.FeatureSettings
+                updated : Proto.Rellm.FeatureSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.peopleSettings)
             in
@@ -735,7 +735,7 @@ applyFeatureSettingsFor set edit config =
 
         GroupFeatureSettings ->
             let
-                updated : Proto.Jonline.FeatureSettings
+                updated : Proto.Rellm.FeatureSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultFeatureSettings config.groupSettings)
             in
@@ -743,7 +743,7 @@ applyFeatureSettingsFor set edit config =
 
         PostFeatureSettings ->
             let
-                updated : Proto.Jonline.PostSettings
+                updated : Proto.Rellm.PostSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultPostSettings config.postSettings)
             in
@@ -759,7 +759,7 @@ applyFeatureSettingsFor set edit config =
 
         EventFeatureSettings ->
             let
-                updated : Proto.Jonline.EventSettings
+                updated : Proto.Rellm.EventSettings
                 updated =
                     updatedFeatureSettings edit (Maybe.withDefault defaultEventSettings config.eventSettings)
             in

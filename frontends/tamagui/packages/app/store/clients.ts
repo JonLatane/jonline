@@ -1,37 +1,37 @@
 import { serverID, upsertServer } from "./modules";
 import { store } from "./store";
-import { JonlineServer } from "./types";
+import { RellmServer } from "./types";
 import { createChannel as createGrpcChannel, createClient as createGrpcClient } from 'nice-grpc-web';
-import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
-import { GetServiceVersionResponse, ServerConfiguration } from "@jonline/api";
+import { RellmDefinition, RellmClient } from "@rellm/api/generated/rellm";
+import { GetServiceVersionResponse, ServerConfiguration } from "@rellm/api";
 
-type ConfiguredClient = JonlineServer & {
-  client: JonlineClient;
+type ConfiguredClient = RellmServer & {
+  client: RellmClient;
   // serviceVersion: GetServiceVersionResponse;
   // serverConfiguration: ServerConfiguration
 };
 const clients = new Map<string, ConfiguredClient>();
 const loadingClients = new Set<string>();
 
-export function deleteClient(server: JonlineServer) {
+export function deleteClient(server: RellmServer) {
   const serverId = serverID(server);
   clients.delete(serverId);
   loadingClients.delete(serverId);
 }
 
-export type JonlineClientCreationArgs = {
+export type RellmClientCreationArgs = {
   skipUpsert?: boolean;
-  onServerConfigured?: (server: JonlineServer) => void
+  onServerConfigured?: (server: RellmServer) => void
 };
 
-export function getCachedServerClient(server: JonlineServer): ConfiguredClient | undefined {
+export function getCachedServerClient(server: RellmServer): ConfiguredClient | undefined {
   const serverId = serverID(server);
   return clients.get(serverId);
 }
 
 
 // Creates a client and upserts the server into the store.
-export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
+export async function getServerClient(server: RellmServer, args?: RellmClientCreationArgs): Promise<RellmClient> {
   // if (!server) {
   //   debugger;
   // }
@@ -69,7 +69,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
 }
 
 // Creates a client and upserts the server into the store.
-export async function getConfiguredServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<ConfiguredClient> {
+export async function getConfiguredServerClient(server: RellmServer, args?: RellmClientCreationArgs): Promise<ConfiguredClient> {
   if (!server) {
     console.error("Server is undefined");
     // debugger;
@@ -98,7 +98,7 @@ export async function getConfiguredServerClient(server: JonlineServer, args?: Jo
         if (remainingRetries-- == 0) {
           throw e;
         } else {
-          console.warn(`Failed to load Jonline client for ${serverId}, retrying ${remainingRetries} more times...`, e);
+          console.warn(`Failed to load Rellm client for ${serverId}, retrying ${remainingRetries} more times...`, e);
         }
       } finally {
         loadingClients.delete(serverId);
@@ -112,7 +112,7 @@ export async function getConfiguredServerClient(server: JonlineServer, args?: Jo
   return configuredClient;
 }
 
-async function resolveHostAndCreateClient(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
+async function resolveHostAndCreateClient(server: RellmServer, port: number, args?: RellmClientCreationArgs): Promise<RellmClient | undefined> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
     `${server?.secure ? 'https' : 'http'}://${server?.host}/backend_host`
@@ -127,17 +127,17 @@ async function resolveHostAndCreateClient(server: JonlineServer, port: number, a
 
   // Get the gRPC client
   const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:${port}`;
-  const client = await createJonlineGrpcClient(host, server, args);
+  const client = await createRellmGrpcClient(host, server, args);
 
   return client;
 }
 
-async function createJonlineGrpcClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
+async function createRellmGrpcClient(host: string, server: RellmServer, args?: RellmClientCreationArgs) {
   const serverId = serverID(server);
 
   const channel = createGrpcChannel(host);
-  const client: JonlineClient = createGrpcClient(
-    JonlineDefinition,
+  const client: RellmClient = createGrpcClient(
+    RellmDefinition,
     channel,
   );
 

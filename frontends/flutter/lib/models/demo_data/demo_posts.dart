@@ -1,19 +1,19 @@
 import 'dart:math';
 
-import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:rellm/models/rellm_account_operations.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/posts.pb.dart';
-import '../jonline_account.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_clients.dart';
 import 'demo_groups.dart';
 
 createDemoPosts(
-    JonlineAccount account, Function(String) showSnackBar, AppState appState,
+    RellmAccount account, Function(String) showSnackBar, AppState appState,
     {bool randomOrder = false}) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -28,8 +28,8 @@ createDemoPosts(
 }
 
 Future<List<Post>> generateTopicPosts(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
     Map<DemoGroup, Group> demoGroups,
@@ -258,26 +258,26 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
     [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
     Post()
       ..title =
-          "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter"
-      ..link = "https://hub.docker.com/r/jonlatane/jonline",
+          "Rellm images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter"
+      ..link = "https://hub.docker.com/r/jonlatane/rellm",
   ),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.programming],
       Post()
-        ..title = "Jonline on GitHub"
-        ..link = "https://github.com/jonlatane/jonline"
+        ..title = "Rellm on GitHub"
+        ..link = "https://github.com/jonlatane/rellm"
         ..content =
-            "Jonline is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech."),
+            "Rellm is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech."),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       Post()
-        ..title = "What is Jonline?"
+        ..title = "What is Rellm?"
         ..content = '''Corporate social media sucks. 
-Jonline is a new approach to social media that hopes to keep user data hyper-local - 
+Rellm is a new approach to social media that hopes to keep user data hyper-local - 
 owned by ourselves or others in our physical communities, rather than any single 
 corporation or data source. At its core is a 
-[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline). 
-A Jonline *instance* or community (like the one you're reading this post on - probably 
+[well-documented, performant open-source protocol](https://github.com/JonLatane/rellm/blob/main/docs/protocol.md#rellm). 
+A Rellm *instance* or community (like the one you're reading this post on - probably 
 [jonline.io](https://jonline.io)) 
 is designed for use cases like:
 
@@ -294,12 +294,12 @@ is designed for use cases like:
 
 Instances are designed to be maintainable by a *single person* of reasonable technical 
 knowledge in any of these groups, at the absolute lowest possible cost, on any 
-provider or their own hardware. A Jonline instance is much like a ListServ, 
+provider or their own hardware. A Rellm instance is much like a ListServ, 
 Slack/Discord server, Reddit community, IRC server or PHPBB/vBulletin/Wordpress 
 forum if you're old, or a Facebook group if you're *really* old.
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
-you have to (or really, *get to*) run your own Jonline server. 
+you have to (or really, *get to*) run your own Rellm server. 
 (This is unlike Slack/Discord/Reddit/Facebook, but more like IRC, open-source forums/blogs,
 ListServ, or email.) You can (and should!) sign up here at [jonline.io](https://jonline.io) 
 to post/comment; just remember I'll likely delete all your (and my) data as I continue developing here. 
@@ -308,37 +308,37 @@ So just button-mash a password (your account will stay logged-in/available until
 data is reset) and you can post/comment away in a few seconds! Create lots of 
 accounts and shitpost to your heart's desire!
 
-Jonline is trustworthy, because you can literally look at the 
-[code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
-and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data/demo_posts.dart) 🤯🙃
+Rellm is trustworthy, because you can literally look at the 
+[code where it stores](https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/create_account.rs#L30) 
+and [validates your passwords](https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/login.rs#L30),
+even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/rellm/blob/main/frontends/flutter/lib/models/demo_data/demo_posts.dart) 🤯🙃
 
-If you're familiar with OpenSocial and Mastodon, Jonline is something like them. Notably, Jonline does *not*
-support reactions to posts as they do. In fact, Jonline's protocol, unlike ActivityPub, is designed *not* to support "algorithm"-based sorting.
-On similar hardware, Jonline has a faster web UI than either thanks to Tamagui and NextJS, and a faster BE thanks to Rust.
-[Jonline's Docker images are currently 115MB](https://hub.docker.com/r/jonlatane/jonline/tags),
+If you're familiar with OpenSocial and Mastodon, Rellm is something like them. Notably, Rellm does *not*
+support reactions to posts as they do. In fact, Rellm's protocol, unlike ActivityPub, is designed *not* to support "algorithm"-based sorting.
+On similar hardware, Rellm has a faster web UI than either thanks to Tamagui and NextJS, and a faster BE thanks to Rust.
+[Rellm's Docker images are currently 115MB](https://hub.docker.com/r/jonlatane/rellm/tags),
 while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags),
 and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags).
-Further, Jonline should (hopefully) be easier to deploy, partly by virtue of having such minimal system requirements.
-Finally, Jonline's Discussion/Chat UI feature doesn't have any great
+Further, Rellm should (hopefully) be easier to deploy, partly by virtue of having such minimal system requirements.
+Finally, Rellm's Discussion/Chat UI feature doesn't have any great
 analogues in other open-source social networks.
 
-In terms of features, unlike most other networks, Jonline supports Events and will eventually support
+In terms of features, unlike most other networks, Rellm supports Events and will eventually support
 more independent-monetization features, so admins can make money for hosting their instance. (Planned dev approach is:
 Invoicing/Direct Payments for a foundation, then Ticketed Events, then Products and/or Subscriptions.)
 
 If you feel moderately brave, take a crack at spinning up your own server. 
 Spinning one up locally should take under a minute if you already have Postgres and Docker 
 installed (and can configure a fresh Postgres DB in under 45 seconds 😁) using 
-[the Docker setup instructions on Jonline's DockerHub page](https://hub.docker.com/r/jonlatane/jonline).
+[the Docker setup instructions on Rellm's DockerHub page](https://hub.docker.com/r/jonlatane/rellm).
 Use this to turn any computer into a server, if you are comfortable managing HTTPS certs.
 It should also be easy to deploy to any Kubernetes (K8s) provider using
-[the Kubernetes setup instructions on Jonline's GitHub page](https://github.com/jonlatane/jonline).
+[the Kubernetes setup instructions on Rellm's GitHub page](https://github.com/jonlatane/rellm).
 (For reference, I pay \$15/mo for [DigitalOcean Kubernetes Service](https://m.do.co/c/1eaa3f9e536c) 
 plus \$8/mo per static IP/website).
 
 If you feel *really* brave, and wanna contribute to any part of a cutting-edge Rust/React/Flutter full-stack 
-app, info on that is *also* at https://github.com/jonlatane/jonline.
+app, info on that is *also* at https://github.com/jonlatane/rellm.
 '''),
 ];
 

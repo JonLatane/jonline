@@ -1,7 +1,7 @@
 module Shared.StarredPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, subscriptions, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
-`UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
+`UnstarPost` (see `protos/rellm.proto`) are auth-less, "friendly" counters
 with no per-user state on the server at all (see `Post.unauthenticated_star_count`)
 -- the _only_ record of "did I star this" is this module's `starredPostIds`,
 persisted to localStorage (see `Ports.persistStarredPosts`) keyed by
@@ -43,9 +43,9 @@ import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post, defaultPost)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Rellm exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post, defaultPost)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -315,10 +315,10 @@ sendUpdate accountsPanelModel msg model =
                 rpc : Grpc.Rpc Post Post
                 rpc =
                     if starring then
-                        Jonline.starPost
+                        Rellm.starPost
 
                     else
-                        Jonline.unstarPost
+                        Rellm.unstarPost
 
                 rpcCmd : Cmd Msg
                 rpcCmd =

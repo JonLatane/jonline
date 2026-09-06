@@ -1,24 +1,24 @@
-import { AccessTokenResponse, ExpirableToken } from "@jonline/api";
-import { useDebounceValue } from "@jonline/ui";
+import { AccessTokenResponse, ExpirableToken } from "@rellm/api";
+import { useDebounceValue } from "@rellm/ui";
 import moment from "moment";
 import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
-import { JonlineClientCreationArgs, accountID, accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers, serverID } from ".";
+import { RellmClientCreationArgs, accountID, accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers, serverID } from ".";
 import { store } from "./store";
-import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
+import { AccountOrServer, RellmAccount, RellmCredentialClient } from "./types";
 
 const updatedTokenKey = (accountOrServer: AccountOrServer) => `${accountOrServer.account ? accountID(accountOrServer.account) : ""}@${accountOrServer.server ? serverID(accountOrServer.server) : ""}`;
 const updatedAccessTokens = new Map<string, { accessToken: ExpirableToken, refreshToken: ExpirableToken | undefined }>();
 export function resetAccessTokens() {
   updatedAccessTokens.clear();
 }
-export async function getCredentialClient(accountOrServer: AccountOrServer, args?: JonlineClientCreationArgs): Promise<JonlineCredentialClient> {
+export async function getCredentialClient(accountOrServer: AccountOrServer, args?: RellmClientCreationArgs): Promise<RellmCredentialClient> {
   const { account: account, server } = accountOrServer;
   const client = await getServerClient(server!, args);
   if (!account) {
     return client;
   } else {
-    let updatedAccount: JonlineAccount = { ...account };
+    let updatedAccount: RellmAccount = { ...account };
     const metadata = Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();

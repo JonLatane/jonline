@@ -1,4 +1,4 @@
-import { Button, Paragraph, YStack } from '@jonline/ui'
+import { Button, Paragraph, YStack } from '@rellm/ui'
 import { ChevronLeft } from '@tamagui/lucide-icons'
 import React from 'react'
 import { createParam } from 'solito'

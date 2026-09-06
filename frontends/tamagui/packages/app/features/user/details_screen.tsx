@@ -1,4 +1,4 @@
-import { Button, Paragraph, YStack } from '@jonline/ui'
+import { Button, Paragraph, YStack } from '@rellm/ui'
 import { ChevronLeft } from '@tamagui/lucide-icons'
 import { useCredentialDispatch } from 'app/hooks'
 import React from 'react'

@@ -2,11 +2,11 @@ import {
   createSlice, PayloadAction
 } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
-import { JonlineServer } from "../types";
-import { Group } from "@jonline/api";
+import { RellmServer } from "../types";
+import { Group } from "@rellm/api";
 import { serverID } from './servers_state';
 import { federatedId, federateId, parseFederatedId } from "../federation";
-import { isSafari } from "@jonline/ui";
+import { isSafari } from "@rellm/ui";
 import { store } from "../store";
 // import { Dictionary } from "@fullcalendar/core/internal";
 import { Dictionary } from "@reduxjs/toolkit";

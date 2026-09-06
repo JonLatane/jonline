@@ -16,7 +16,7 @@ pub struct SyncMessage {
     /// how title/content/date-time-range/location get folded into this once, up front, instead of
     /// being reformatted per platform.
     pub text: String,
-    /// Link back to this content (preferring this Jonline server's own frontend URL for it, falling
+    /// Link back to this content (preferring this Rellm server's own frontend URL for it, falling
     /// back to the author's own external `link` -- see the builders below). Also already folded
     /// into `text` (as a bare link for an EventInstance, "View post:" for a Post), since most
     /// platforms (Mastodon, Bluesky)
@@ -34,7 +34,7 @@ pub struct SyncMessage {
 /// One piece of media attached to a `SyncMessage` -- see `SyncMessage.media`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MediaAttachment {
-    /// This Jonline server's own public download URL for the media (`https://{backend_host}/media/{id}`).
+    /// This Rellm server's own public download URL for the media (`https://{backend_host}/media/{id}`).
     pub url: String,
     /// The media's MIME type (e.g. `"image/jpeg"`, `"video/mp4"`), from `models::MediaReference` --
     /// lets callers distinguish images from video without a network round-trip.
@@ -66,7 +66,7 @@ pub struct EventInstanceMessageInput<'a> {
     /// The IANA timezone `location` resolves to, if `logic::resolve_timezone` could geocode it.
     /// `starts_at`/`ends_at` are shown in this zone if set, otherwise in UTC.
     pub timezone: Option<chrono_tz::Tz>,
-    /// Link to this event on this Jonline server's own frontend, if buildable (see
+    /// Link to this event on this Rellm server's own frontend, if buildable (see
     /// `sync_event_instance`'s caller).
     pub event_url: &'a Option<String>,
     /// The underlying Post's attached media.
@@ -122,7 +122,7 @@ pub struct PostMessageInput<'a> {
     /// Arbitrary external link the author set on the `Post` (e.g. an article/ticketing link). Used
     /// only if `post_url` isn't set.
     pub link: &'a Option<String>,
-    /// Link to this `Post` on this Jonline server's own frontend, if buildable (see `sync_post`'s
+    /// Link to this `Post` on this Rellm server's own frontend, if buildable (see `sync_post`'s
     /// caller).
     pub post_url: &'a Option<String>,
     /// The Post's attached media.

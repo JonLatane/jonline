@@ -52,7 +52,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   factory CreateAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'password')
     ..aOM<$4.ContactMethod>(3, _omitFieldNames ? '' : 'email', subBuilder: $4.ContactMethod.create)
@@ -181,7 +181,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   factory LoginRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory LoginRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LoginRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LoginRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'password')
     ..aOM<$12.Timestamp>(3, _omitFieldNames ? '' : 'expiresAt', subBuilder: $12.Timestamp.create)
@@ -264,9 +264,9 @@ class LoginRequest extends $pb.GeneratedMessage {
   void clearUserId() => clearField(5);
 }
 
-///  Request to create a new third-party refresh token. Unlike [`LoginRequest`](#jonline-LoginRequest) or [`CreateAccountRequest`](#jonline-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
+///  Request to create a new third-party refresh token. Unlike [`LoginRequest`](#rellm-LoginRequest) or [`CreateAccountRequest`](#rellm-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
 ///
-///  Generally, this is used to create a refresh token for another Jonline instance,
+///  Generally, this is used to create a refresh token for another Rellm instance,
 ///  e.g., accessing `bullcity.social/jon`'s data from `jonline.io`. On the web side, this is implemented as follows:
 ///
 ///  1. When the `bullcity.social` user wants to login on `jonline.io`, `bullcity.social` will redirect
@@ -274,7 +274,7 @@ class LoginRequest extends $pb.GeneratedMessage {
 ///  2. `jonline.io` will force the user to login if needed on this page.
 ///  3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh + access token for `bullcity.social`.
 ///  4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&token=<Base64RefreshTokenResponse>` with the refresh token POSTed in form data.
-///      * (`<Base64RefreshTokenResponse>` is a base64-encoded [`RefreshTokenResponse`](#jonline-RefreshTokenResponse) message.)
+///      * (`<Base64RefreshTokenResponse>` is a base64-encoded [`RefreshTokenResponse`](#rellm-RefreshTokenResponse) message.)
 ///  6. `bullcity.social` will ensure it can [`GetCurrentUser`](#grpc-api-GetCurrentUser) on `jonline.io` with its new auth token.
 ///  5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
 ///  7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).
@@ -302,7 +302,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   factory CreateThirdPartyRefreshTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateThirdPartyRefreshTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateThirdPartyRefreshTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateThirdPartyRefreshTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $12.Timestamp.create)
     ..aOS(3, _omitFieldNames ? '' : 'userId')
     ..aOS(4, _omitFieldNames ? '' : 'deviceName')
@@ -386,7 +386,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   factory RefreshTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RefreshTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<ExpirableToken>(1, _omitFieldNames ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
     ..aOM<ExpirableToken>(2, _omitFieldNames ? '' : 'accessToken', subBuilder: ExpirableToken.create)
     ..aOM<$4.User>(3, _omitFieldNames ? '' : 'user', subBuilder: $4.User.create)
@@ -471,7 +471,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
   factory ExpirableToken.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ExpirableToken.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExpirableToken', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExpirableToken', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'token')
     ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
@@ -540,7 +540,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   factory AccessTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'refreshToken')
     ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
@@ -609,7 +609,7 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   factory AccessTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<ExpirableToken>(1, _omitFieldNames ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
     ..aOM<ExpirableToken>(2, _omitFieldNames ? '' : 'accessToken', subBuilder: ExpirableToken.create)
     ..hasRequiredFields = false
@@ -682,7 +682,7 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   factory ResetPasswordRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ResetPasswordRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ResetPasswordRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ResetPasswordRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(3, _omitFieldNames ? '' : 'password')
     ..hasRequiredFields = false
@@ -745,7 +745,7 @@ class UserRefreshTokensResponse extends $pb.GeneratedMessage {
   factory UserRefreshTokensResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UserRefreshTokensResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserRefreshTokensResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserRefreshTokensResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<RefreshTokenMetadata>(1, _omitFieldNames ? '' : 'refreshTokens', $pb.PbFieldType.PM, subBuilder: RefreshTokenMetadata.create)
     ..hasRequiredFields = false
   ;
@@ -808,7 +808,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   factory RefreshTokenMetadata.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RefreshTokenMetadata.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..a<$fixnum.Int64>(1, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $12.Timestamp.create)
     ..aOS(3, _omitFieldNames ? '' : 'deviceName')

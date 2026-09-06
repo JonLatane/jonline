@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'generated/permissions.pb.dart';
-import 'models/jonline_account.dart';
+import 'models/rellm_account.dart';
 import 'screens/home_page.dart';
 
-abstract class JonlineState<T extends StatefulWidget>
-    extends JonlineBaseState<T> {
+abstract class RellmState<T extends StatefulWidget>
+    extends RellmBaseState<T> {
   late HomePageState homePage;
 
   @override
@@ -17,15 +17,15 @@ abstract class JonlineState<T extends StatefulWidget>
 }
 
 // ignore: must_be_immutable
-abstract class JonlineStatelessWidget extends StatelessWidget {
+abstract class RellmStatelessWidget extends StatelessWidget {
   late AppState appState;
   late TextTheme textTheme;
   late MediaQueryData mq;
 
   List<Permission> get userPermissions =>
-      JonlineAccount.selectedAccount?.permissions ?? [];
+      RellmAccount.selectedAccount?.permissions ?? [];
 
-  JonlineStatelessWidget({super.key});
+  RellmStatelessWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +39,12 @@ abstract class JonlineStatelessWidget extends StatelessWidget {
   Widget buildWidget(BuildContext context);
 }
 
-abstract class JonlineBaseState<T extends StatefulWidget> extends State<T> {
+abstract class RellmBaseState<T extends StatefulWidget> extends State<T> {
   late AppState appState;
   TextTheme get textTheme => Theme.of(context).textTheme;
   MediaQueryData get mq => MediaQuery.of(context);
   List<Permission> get userPermissions =>
-      JonlineAccount.selectedAccount?.permissions ?? [];
+      RellmAccount.selectedAccount?.permissions ?? [];
 
   @override
   void initState() {

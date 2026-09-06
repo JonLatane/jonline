@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
 import "media.proto";
 import "permissions.proto";

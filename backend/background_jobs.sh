@@ -1,15 +1,15 @@
 #!/bin/bash
 #
-# Runs Jonline's periodic background jobs, each in its own forked loop: sleep
+# Runs Rellm's periodic background jobs, each in its own forked loop: sleep
 # the job's startup delay (if any), run the job's binary, sleep the job's
 # interval, repeat -- forever, one Unix fork per job.
 #
 # Copied verbatim into the Homebrew and Linux release packages, alongside the
-# other binaries (jonline-server, delete_expired_tokens, ...), by the
+# other binaries (rellm-server, delete_expired_tokens, ...), by the
 # create_homebrew_release / create_linux_release jobs in
 # .github/workflows/server_ci_cd.yml. It's invoked by those packages'
-# `jonline jobs` / `jonline server_and_jobs` launcher commands (see
-# docs/linux_jonline.sh and docs/homebrew_jonline.sh) -- don't hand-edit a
+# `rellm jobs` / `rellm server_and_jobs` launcher commands (see
+# docs/rellm_linux.sh and docs/rellm_homebrew.sh) -- don't hand-edit a
 # shipped copy, edit this file instead.
 #
 # To add a job, append a "binary_name startup_delay_seconds interval_seconds"

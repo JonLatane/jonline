@@ -3,7 +3,7 @@ name: run-tamagui
 description: Run or rebuild the local Tamagui/Next.js frontend (frontends/tamagui). Use when the user wants to start the Tamagui dev server or rebuild it standalone.
 ---
 
-Jonline's Tamagui frontend lives in `frontends/tamagui` (Tamagui + Next.js) and is driven through its own `Makefile`.
+Rellm's Tamagui frontend lives in `frontends/tamagui` (Tamagui + Next.js) and is driven through its own `Makefile`.
 
 ## Running the dev server
 

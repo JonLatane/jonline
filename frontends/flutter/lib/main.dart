@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jonline/models/storage.dart';
+import 'package:rellm/models/storage.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 

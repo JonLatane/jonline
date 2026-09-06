@@ -37,8 +37,8 @@ import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Process
-import Proto.Jonline exposing (Author, GetUsersResponse, User, defaultUser)
-import Proto.Jonline.UserListingType exposing (UserListingType(..))
+import Proto.Rellm exposing (Author, GetUsersResponse, User, defaultUser)
+import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Shared.AccountsPanel as AccountsPanel
 import Task
 import UI.Classes exposing (classes, hostnameToCSSClass)

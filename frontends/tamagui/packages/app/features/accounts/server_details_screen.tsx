@@ -1,9 +1,9 @@
-import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType, WebUserInterface } from '@jonline/api';
-import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType, WebUserInterface } from '@rellm/api';
+import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@rellm/ui';
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown, WebUserInterfacePicker } from 'app/components';
 import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
-import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { RellmServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
@@ -61,7 +61,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   //   requestedServerUrlParts,
   //   requestedServerUrlValid,
   // })
-  const requestedServer: JonlineServer | undefined = requestedServerUrlParts
+  const requestedServer: RellmServer | undefined = requestedServerUrlParts
     ? {
       host: requestedServerUrlParts[1]!,
       secure: requestedServerUrlParts[0]! == 'https',
@@ -74,9 +74,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // })
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.config);
-  const savedServer: JonlineServer | undefined = useRootSelector((state: RootState) =>
+  const savedServer: RellmServer | undefined = useRootSelector((state: RootState) =>
     selectServerById(state.servers, requestedServerUrl!));
-  const unsavedServer: JonlineServer | undefined = requestedServer
+  const unsavedServer: RellmServer | undefined = requestedServer
     ? getCachedServerClient(requestedServer)
     : undefined;
   useEffect(() => {
@@ -97,11 +97,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [updateError, setUpdateError] = useState('');
-  const aboutJonlineLink = useLink({ href: '/about_jonline' })
+  const aboutRellmLink = useLink({ href: '/about_rellm' })
 
   const { serviceVersion, serverConfiguration } = server || {};
   const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
-  const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}` });
+  const githubLink = useLink({ href: `https://github.com/JonLatane/rellm/commit/${githubVersion}` });
   const protocolDocsLink = useLink({ href: `http://${server?.host}/docs/protocol` });
   const flutterUiLink = useLink({ href: `http://${server?.host}/flutter#/accounts/server/${server?.host}/configuration` });
 
@@ -390,7 +390,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {section === 'about' ? <>
                     <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
                     <ServerCard server={{ ...server, serverConfiguration: updatedConfiguration }} disableHeightLimit />
-                    <Button {...aboutJonlineLink} size='$4' my='$2' {...themedButtonBackground(navColor, navTextColor)}
+                    <Button {...aboutRellmLink} size='$4' my='$2' {...themedButtonBackground(navColor, navTextColor)}
                       iconAfter={
                         <>
                           <Github color={navTextColor} />
@@ -400,7 +400,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       }>
                       <XStack gap='$3' my='auto'>
                         <Info size='$3' color={navTextColor} />
-                        <Heading size='$2' my='auto' color={navTextColor}>Powered by <Text fontSize='$6' color={navTextColor}>Jonline</Text></Heading>
+                        <Heading size='$2' my='auto' color={navTextColor}>Powered by <Text fontSize='$6' color={navTextColor}>Rellm</Text></Heading>
                       </XStack>
                     </Button>
                     <Button mb='$2' onPress={() => setShowVersionInfo(!showVersionInfo)}>
@@ -607,12 +607,12 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     <Heading size='$9' als='center' mt='$3'>Federation</Heading>
                     <Heading size='$4' mt='$3'>Federated Servers</Heading>
                     <Paragraph size='$1' mb='$3'>
-                      Jonline servers can federate with each other (via a particular pattern I'm dubbing "delightful federation" that means "no server-to-server needed").
+                      Rellm servers can federate with each other (via a particular pattern I'm dubbing "delightful federation" that means "no server-to-server needed").
                       This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI.
-                      Jonline as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
+                      Rellm as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
                       and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '}
-                      and CORS. (Strict CORS is not yet implemented for Jonline's Tonic/gRPC or Rocket/HTTP servers; this would be{' '}
-                      <Anchor ai='center' size='$1' href='https://github.com/JonLatane/jonline/issues/2' color={navAnchorColor}>
+                      and CORS. (Strict CORS is not yet implemented for Rellm's Tonic/gRPC or Rocket/HTTP servers; this would be{' '}
+                      <Anchor ai='center' size='$1' href='https://github.com/JonLatane/rellm/issues/2' color={navAnchorColor}>
                         a good first issue for new GitHub/FOSS contributors
                       </Anchor>.)
                     </Paragraph>
@@ -702,7 +702,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     {isAdmin
                       ? <>
                         <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}
-                          placeholder='Recommend a Jonline host' onChangeText={t => setNewRecommendedHostName(t)} />
+                          placeholder='Recommend a Rellm host' onChangeText={t => setNewRecommendedHostName(t)} />
                         <Button mt='$2' mb='$5'
                           disabled={!isNewRecommendedHostNameValid}
                           o={isNewRecommendedHostNameValid ? 1 : 0.5}
@@ -722,7 +722,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     </Heading>
                     {/* {isAdmin ? <> */}
                     <Paragraph size='$1'>
-                      To improve performance, administrators can put their Jonline server's HTML
+                      To improve performance, administrators can put their Rellm server's HTML
                       and Media behind Cloudflare, using a separate host as the gRPC backend.
                     </Paragraph>
                     <Paragraph size='$1'>
@@ -790,7 +790,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         <Heading size='$3' my='auto'
                           opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>External CDN gRPC Support</Heading>
                         <Paragraph size='$1'
-                          opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>Additional service restart required. Ensure CDN HTTP support is working before enabling CDN gRPC support. <Text fontStyle='italic' fontWeight='900'>In case enabling makes this UI inaccessible, make sure you can shell in</Text> (<Text fontFamily='$mono'>make backend_shell</Text>, using Jonline Makefiles) and run <Text fontFamily='$mono'>./opt/disable_cdn_grpc</Text> to revert this setting.</Paragraph>
+                          opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>Additional service restart required. Ensure CDN HTTP support is working before enabling CDN gRPC support. <Text fontStyle='italic' fontWeight='900'>In case enabling makes this UI inaccessible, make sure you can shell in</Text> (<Text fontFamily='$mono'>make backend_shell</Text>, using Rellm Makefiles) and run <Text fontFamily='$mono'>./opt/disable_cdn_grpc</Text> to revert this setting.</Paragraph>
                       </YStack>
                       <Switch size="$5" margin='auto'
                         defaultChecked={externalCdnConfig?.cdnGrpc}

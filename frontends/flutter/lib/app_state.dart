@@ -4,7 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart';
 
-import '../models/jonline_account_operations.dart';
+import '../models/rellm_account_operations.dart';
 import '../screens/accounts/server_configuration_page.dart';
 import '../screens/login_page.dart';
 import 'db.dart';
@@ -14,9 +14,9 @@ import 'generated/users.pb.dart';
 import 'generated/users.pb.dart' as u;
 import 'jonotifier.dart';
 import 'main.dart';
-import 'models/jonline_account.dart';
-import 'models/jonline_operations.dart';
-import 'models/jonline_server.dart';
+import 'models/rellm_account.dart';
+import 'models/rellm_operations.dart';
+import 'models/rellm_server.dart';
 import 'models/post_cache.dart';
 import 'models/settings.dart';
 import 'my_platform.dart';
@@ -42,10 +42,10 @@ class AppState extends State<MyApp> {
       ValueJonotifier<ServerColors?>(null);
 
   final authService = AuthService();
-  final ValueJonotifier<List<JonlineAccount>> accounts =
-      ValueJonotifier(<JonlineAccount>[]);
-  final ValueJonotifier<List<JonlineServer>> servers =
-      ValueJonotifier(<JonlineServer>[]);
+  final ValueJonotifier<List<RellmAccount>> accounts =
+      ValueJonotifier(<RellmAccount>[]);
+  final ValueJonotifier<List<RellmServer>> servers =
+      ValueJonotifier(<RellmServer>[]);
   final PostCache posts = PostCache();
 
   final ValueJonotifier<List<u.User>> users = ValueJonotifier(<u.User>[]);
@@ -65,7 +65,7 @@ class AppState extends State<MyApp> {
   ValueNotifier<bool> didUpdateUsers = ValueNotifier(false);
   Future<void> updateUsers({Function(String)? showMessage}) async {
     updatingUsers.value = true;
-    final GetUsersResponse? response = await JonlineOperations.getUsers();
+    final GetUsersResponse? response = await RellmOperations.getUsers();
     if (response == null) {
       setState(() {
         errorUpdatingUsers.value = true;
@@ -90,7 +90,7 @@ class AppState extends State<MyApp> {
   ValueNotifier<bool> didUpdateGroups = ValueNotifier(false);
   Future<void> updateGroups({Function(String)? showMessage}) async {
     updatingGroups.value = true;
-    final GetGroupsResponse? response = await JonlineOperations.getGroups();
+    final GetGroupsResponse? response = await RellmOperations.getGroups();
     if (response == null) {
       setState(() {
         errorUpdatingGroups.value = true;
@@ -115,20 +115,20 @@ class AppState extends State<MyApp> {
     // showMessage?.call("Groups updated! 🎉");
   }
 
-  bool get loggedIn => JonlineAccount.loggedIn;
-  JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
-  set selectedAccount(JonlineAccount? account) {
+  bool get loggedIn => RellmAccount.loggedIn;
+  RellmAccount? get selectedAccount => RellmAccount.selectedAccount;
+  set selectedAccount(RellmAccount? account) {
     if (account != null) {
-      Future.sync(() async => JonlineServer.selectedServer =
-          (await JonlineServer.servers).firstWhere(
+      Future.sync(() async => RellmServer.selectedServer =
+          (await RellmServer.servers).firstWhere(
               (s) => s.server == account.server,
-              orElse: () => JonlineServer(account.server)));
+              orElse: () => RellmServer(account.server)));
     }
     if (account != null &&
-        JonlineServer.selectedServer.server != account.server) {
+        RellmServer.selectedServer.server != account.server) {
       selectedGroup.value = null;
     }
-    JonlineAccount.selectedAccount = account;
+    RellmAccount.selectedAccount = account;
     updateAccountList();
     posts.hardReset();
     resetPeople();
@@ -152,12 +152,12 @@ class AppState extends State<MyApp> {
   }
 
   Future<void> updateAccountList() async {
-    accounts.value = await JonlineAccount.accounts;
+    accounts.value = await RellmAccount.accounts;
   }
 
   Future<void> updateAccounts() async {
     List<Future> futures = [];
-    for (JonlineAccount account in accounts.value) {
+    for (RellmAccount account in accounts.value) {
       futures += [account.updateUserData()];
     }
     await Future.wait(futures);
@@ -165,12 +165,12 @@ class AppState extends State<MyApp> {
   }
 
   Future<void> updateServerList() async {
-    servers.value = await JonlineServer.servers;
+    servers.value = await RellmServer.servers;
   }
 
   Future<void> updateServers() async {
     List<Future> futures = [];
-    for (JonlineServer server in servers.value) {
+    for (RellmServer server in servers.value) {
       futures += [server.updateConfiguration(), server.updateServiceVersion()];
     }
     await Future.wait(futures);
@@ -206,8 +206,8 @@ class AppState extends State<MyApp> {
     }
   }
 
-  JonlineAccount? _lastSelectedAccount;
-  JonlineServer _lastSelectedServer = JonlineServer.selectedServer;
+  RellmAccount? _lastSelectedAccount;
+  RellmServer _lastSelectedServer = RellmServer.selectedServer;
   monitorAccountChange() {
     if (_lastSelectedAccount?.id != selectedAccount?.id) {
       selectedAccountChanged();
@@ -216,22 +216,22 @@ class AppState extends State<MyApp> {
   }
 
   monitorServerChange() {
-    if (_lastSelectedServer != JonlineServer.selectedServer) {
+    if (_lastSelectedServer != RellmServer.selectedServer) {
       selectedServerChanged();
     }
-    _lastSelectedServer = JonlineServer.selectedServer;
+    _lastSelectedServer = RellmServer.selectedServer;
   }
 
   updateColorTheme() async {
     ServerConfiguration? configuration =
-        JonlineServer.selectedServer.configuration ??
-            await JonlineServer.selectedServer.updateConfiguration();
+        RellmServer.selectedServer.configuration ??
+            await RellmServer.selectedServer.updateConfiguration();
 
     ServerColors? colors = configuration?.serverInfo.colors;
     colorTheme.value = colors;
   }
 
-  // This is detected using the JS method getJonlineServerHost.
+  // This is detected using the JS method getRellmServerHost.
   String primaryServerHost = "jonline.io";
   final otherServerHosts = ["jonline.io", "bullcity.social", "oakcity.social"];
 
@@ -254,20 +254,20 @@ class AppState extends State<MyApp> {
       if (MyPlatform.isWeb) {
         primaryServerHost =
             document.location?.hostname.split(':')[0] ?? primaryServerHost;
-        //context.ca.callMethod("getJonlineServerHost", []);
-        log.info("getJonlineServerHost", primaryServerHost);
-        final JonlineServer server = JonlineServer(primaryServerHost);
-        final List<JonlineServer> servers = await JonlineServer.servers;
+        //context.ca.callMethod("getRellmServerHost", []);
+        log.info("getRellmServerHost", primaryServerHost);
+        final RellmServer server = RellmServer(primaryServerHost);
+        final List<RellmServer> servers = await RellmServer.servers;
         LoginPage.defaultServer = primaryServerHost;
         if (!servers.contains(server)) {
           await server.saveNew(atBeginning: true);
-          JonlineServer.selectedServer = server;
+          RellmServer.selectedServer = server;
         }
 
         otherServerHosts
             .where((h) => h != primaryServerHost)
             .forEach((h) async {
-          final JonlineServer server = JonlineServer(h);
+          final RellmServer server = RellmServer(h);
           if (!servers.contains(server)) {
             await server.saveNew(atBeginning: false);
           }
@@ -310,11 +310,11 @@ class AppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final currentServer = JonlineServer.selectedServer;
+    final currentServer = RellmServer.selectedServer;
     return MaterialApp.router(
       onGenerateTitle: (context) {
         final baseTitle =
-            currentServer.configuration?.serverInfo.name ?? "Jonline";
+            currentServer.configuration?.serverInfo.name ?? "Rellm";
         String? specificTitle;
         Map.of({
           "posts": "Posts",

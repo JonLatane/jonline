@@ -1,4 +1,4 @@
-import { JonlineServer, RootState, selectCreationServer, selectServerById } from 'app/store';
+import { RellmServer, RootState, selectCreationServer, selectServerById } from 'app/store';
 import { Selector, useAppDispatch, useAppSelector } from "../store_hooks";
 import { usePinnedAccountsAndServers } from './use_pinned_accounts_and_servers';
 import { useCallback } from 'react';
@@ -6,16 +6,16 @@ import { createSelector } from '@reduxjs/toolkit';
 
 
 export type AppCreationServer = {
-  creationServer: JonlineServer | undefined;
-  setCreationServer: (s: JonlineServer | undefined) => {
-    payload: JonlineServer | undefined;
+  creationServer: RellmServer | undefined;
+  setCreationServer: (s: RellmServer | undefined) => {
+    payload: RellmServer | undefined;
     type: "servers/selectCreationServer";
   };
 };
 
 export function useCreationServer(): AppCreationServer {
   const dispatch = useAppDispatch();
-  const setCreationServer = useCallback((s: JonlineServer | undefined) => dispatch(selectCreationServer(s)), []);
+  const setCreationServer = useCallback((s: RellmServer | undefined) => dispatch(selectCreationServer(s)), []);
   return useAppSelector(creationServerSelector(setCreationServer));
 };
 
@@ -27,8 +27,8 @@ export const useCreationAccountOrServer = () => {
 };
 
 const creationServerSelector = (
-  setCreationServer: (s: JonlineServer | undefined) => {
-    payload: JonlineServer | undefined;
+  setCreationServer: (s: RellmServer | undefined) => {
+    payload: RellmServer | undefined;
     type: "servers/selectCreationServer";
   }
 ): Selector<AppCreationServer> =>

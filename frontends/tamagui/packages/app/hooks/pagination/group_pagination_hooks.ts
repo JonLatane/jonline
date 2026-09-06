@@ -1,4 +1,4 @@
-import { GroupListingType } from "@jonline/api";
+import { GroupListingType } from "@rellm/api";
 import { FederatedGroup, RootState, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, getServersMissingGroupsPage, loadGroupsPage, someLoading, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useMemo } from "react";
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';

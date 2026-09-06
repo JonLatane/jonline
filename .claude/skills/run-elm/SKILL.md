@@ -3,7 +3,7 @@ name: run-elm
 description: Run, build, screenshot, or regenerate protos for the local Elm SPA frontend (frontends/elm-spa). Use when the user wants to start the Elm dev server, check an Elm change standalone, or drive/screenshot a page in a headless browser.
 ---
 
-Jonline's Elm frontend lives in `frontends/elm-spa` and is driven through its own `Makefile`. Paths below are relative to the repo root unless noted.
+Rellm's Elm frontend lives in `frontends/elm-spa` and is driven through its own `Makefile`. Paths below are relative to the repo root unless noted.
 
 ## Running the dev server
 
@@ -37,7 +37,7 @@ cd .claude/skills/run-elm && npm install && npx playwright install chromium
 **Usage:** pipe a line-per-command script to it (paths in `screenshot` are relative to your `cwd` when you invoke `node`, so `cd` back to the repo root first, or use absolute paths):
 
 ```
-cd /path/to/jonline
+cd /path/to/rellm
 node .claude/skills/run-elm/driver.mjs <<'EOF'
 nav http://localhost:1234/server/http:localhost
 wait-for text=About

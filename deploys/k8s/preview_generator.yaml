@@ -12,17 +12,17 @@ spec:
         spec:
           containers:
             - name: generate-preview-images
-              image: docker.io/jonlatane/jonline_preview_generator:0.5.553
+              image: docker.io/jonlatane/rellm_preview_generator:0.5.553
               imagePullPolicy: IfNotPresent
               env:
                 - name: DATABASE_URL
-                  value: postgres://admin:secure_password1@jonline-postgres/jonline
+                  value: postgres://admin:secure_password1@rellm-postgres/rellm
                 - name: MINIO_ENDPOINT
-                  value: http://jonline-minio:9000
+                  value: http://rellm-minio:9000
                 - name: MINIO_REGION
                   value: ""
                 - name: MINIO_BUCKET
-                  value: jonline
+                  value: rellm
                 - name: MINIO_ACCESS_KEY
                   value: minio
                 - name: MINIO_SECRET_KEY

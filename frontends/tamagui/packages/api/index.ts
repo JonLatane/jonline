@@ -1,4 +1,4 @@
-// import {DeepPartial, protobufPackage } from './generated/jonline';
+// import {DeepPartial, protobufPackage } from './generated/rellm';
 // import { Exact } from './generated/server_configuration'
 
 export * from './generated/authentication'
@@ -17,12 +17,12 @@ export * from './generated/federation'
 
 export { Empty } from './generated/google/protobuf/empty'
 export { Timestamp } from './generated/google/protobuf/timestamp'
-// export { Jonline, JonlineClientImpl } from './generated/jonline'
+// export { Rellm, RellmClientImpl } from './generated/rellm'
 
 export type { Exact, MessageFns } from './generated/server_configuration'
-export { protobufPackage, JonlineDefinition } from './generated/jonline'
-// export { JonlineClient } from './generated/jonline'
-export type { JonlineClient, JonlineDefinition as JonlineDefinitionType, DeepPartial } from './generated/jonline'
+export { protobufPackage, RellmDefinition } from './generated/rellm'
+// export { RellmClient } from './generated/rellm'
+export type { RellmClient, RellmDefinition as RellmDefinitionType, DeepPartial } from './generated/rellm'
 
 
 // export { DeepPartial, Exact, protobufPackage, GrpcWebImpl }

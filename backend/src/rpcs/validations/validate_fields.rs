@@ -7,7 +7,7 @@ use super::validate_strings::validate_length;
 use tonic::{Code, Status};
 
 lazy_static! {
-    // A "standard" way to represent a federated Jonline user is federatedserver.com/username. But we also want
+    // A "standard" way to represent a federated Rellm user is federatedserver.com/username. But we also want
     // federatedserver.com/events and federatedserver.com/post/asdf123, etc. to be able to point to valid things.
     // Custom nav tab paths share this same top-level namespace, so they're checked against it too.
     static ref RESERVED_PATHS: Vec<&'static str> = vec![
@@ -38,7 +38,7 @@ lazy_static! {
         "s",
         "servers",
         "about",
-        "about_jonline",
+        "about_rellm",
         "u",
         "users",
         "user",
@@ -74,7 +74,7 @@ lazy_static! {
         .collect();
     static ref CUSTOM_TAB_PATH_RE: Regex = Regex::new(r"^[a-z_]+$").unwrap();
     // Reserves every leading character a short Post/Event URL could start with (see
-    // `jonline.proto`'s `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
+    // `rellm.proto`'s `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
     // doc) so a username/custom tab path can never collide with one -- `UsernameOrCustomTab_.elm`
     // (Elm SPA) checks a path segment against this same set to decide whether to look it up as a
     // username/custom tab at all, or try it as a Post/Event id instead. (`#` is deliberately

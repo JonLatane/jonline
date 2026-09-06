@@ -30,17 +30,17 @@ digraph G {
   email_client -> resolve_dns [style = "bold,dashed"; constraint = false;];
   
   
-  jonlineio_dns [shape = note;label = "jonline.io";];
+  rellmio_dns [shape = note;label = "jonline.io";];
   oakcitysocial_dns [shape = note;label = "oakcity.social";];
   bullcitysocial_dns [shape = note;label = "bullcity.social";];
   atoband_dns [shape = note;label = "ato.band";];
   
-  resolve_dns -> jonlineio_dns [style = dotted;];
+  resolve_dns -> rellmio_dns [style = dotted;];
   resolve_dns -> oakcitysocial_dns [style = dotted;];
   resolve_dns -> bullcitysocial_dns [style = dotted;];
   resolve_dns -> atoband_dns [style = dotted;];
   
-  jonlineio_dns -> traefik [style = dotted;];
+  rellmio_dns -> traefik [style = dotted;];
   oakcitysocial_dns -> traefik [style = dotted;];
   bullcitysocial_dns -> traefik [style = dotted;];
   atoband_dns -> traefik [style = dotted;];
@@ -85,12 +85,12 @@ digraph G {
     parse_host -> resolve_namespace [weight = 8;];
     
     
-    jonlineio [shape = note;label = "jonline.io";];
+    rellmio [shape = note;label = "jonline.io";];
     oakcitysocial [shape = note;label = "oakcity.social";];
     bullcitysocial [shape = note;label = "bullcity.social";];
     atoband [shape = note;label = "ato.band";];
     
-    resolve_namespace -> jonlineio [style = dotted;];
+    resolve_namespace -> rellmio [style = dotted;];
     resolve_namespace -> oakcitysocial [style = dotted;];
     resolve_namespace -> bullcitysocial [style = dotted;];
     resolve_namespace -> atoband [style = dotted;];
@@ -103,8 +103,8 @@ digraph G {
     traefik -> smtp_catchall [weight = 8; label = "smtp :25"; style = dashed;];
   }
   
-  subgraph cluster_jonline_email {
-    label = <<b>jonline-email</b>&nbsp;(K8s Namespace)>;
+  subgraph cluster_rellm_email {
+    label = <<b>rellm-email</b>&nbsp;(K8s Namespace)>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
@@ -132,21 +132,21 @@ digraph G {
     parse_domain -> resolve_mta_hook [weight = 8; style = dashed;];
     
     
-    jonlineio_mta [shape = note;label = "jonline.io";];
+    rellmio_mta [shape = note;label = "jonline.io";];
     oakcitysocial_mta [shape = note;label = "oakcity.social";];
     bullcitysocial_mta [shape = note;label = "bullcity.social";];
     atoband_mta [shape = note;label = "ato.band";];
     
-    resolve_mta_hook -> jonlineio_mta [style = "dotted,dashed";];
+    resolve_mta_hook -> rellmio_mta [style = "dotted,dashed";];
     resolve_mta_hook -> oakcitysocial_mta [style = "dotted,dashed";];
     resolve_mta_hook -> bullcitysocial_mta [style = "dotted,dashed";];
     resolve_mta_hook -> atoband_mta [style = "dotted,dashed";];
     // minio0 [shape = cylinder;label = "Minio";];
     // postgres0 [shape = cylinder;label = "Postgres";];
-    // tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    // tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>rellm-tls</b>&nbsp;(K8s Secret)>;];
     
-    // jonline0 -> minio0 [label = <5GB @ <b>50¢/mo</b>>;];
-    // jonline0 -> postgres0 [label = <1GB @ <b>10¢/mo</b>>;];
+    // rellm0 -> minio0 [label = <5GB @ <b>50¢/mo</b>>;];
+    // rellm0 -> postgres0 [label = <1GB @ <b>10¢/mo</b>>;];
   }
 
     }
@@ -156,20 +156,20 @@ digraph G {
       style = filled;
       color = "gray90";
 
-  subgraph cluster_jonline {
-    label = <<b>jonline</b>&nbsp;(K8s Namespace)>;
+  subgraph cluster_rellm {
+    label = <<b>rellm</b>&nbsp;(K8s Namespace)>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline0 [shape = oval;style = filled;color = white;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    rellm0 [shape = oval;style = filled;color = white;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>rellm</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    tls0 [shape = "box";color = ".7 .3 1.0";label = <<b>rellm-tls</b>&nbsp;(K8s Secret)>;];
 
     // VAPID/Facebook config live as JSON columns on the same ServerConfiguration row inside this
     // Postgres (see backend/src/models/server_configuration_models.rs) -- shown once here, not
-    // repeated per-namespace like jonline-tls, since this diagram only tracks one server's
+    // repeated per-namespace like rellm-tls, since this diagram only tracks one server's
     // push/Facebook setup at a time.
-    subgraph cluster_jonline_storage {
+    subgraph cluster_rellm_storage {
       label = <<b>Storage</b>>;
       style = filled;
       color = "#88f5df";
@@ -177,14 +177,14 @@ digraph G {
 
       minio0 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>MinIO</b></td></tr><tr><td>5GB @ <b>50¢/mo</b></td></tr></table>>;color = black;fillcolor = gray80;];
 
-      subgraph cluster_jonline_postgres {
+      subgraph cluster_rellm_postgres {
         label = "";
         style = filled;
         color = lightgrey;
         node [style = filled; color = white;];
 
         postgres0 [shape = cylinder;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>Postgres</b></td></tr><tr><td>1GB @ <b>10&#162;/mo</b></td></tr></table>>;color = black;fillcolor = white;];
-        subgraph cluster_jonline_postgres_server {
+        subgraph cluster_rellm_postgres_server {
           label = <<b>Server Level</b>>;
           style = filled;
           color = white;
@@ -194,7 +194,7 @@ digraph G {
           facebook_configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <<b>Facebook App Configuration</b>>;];
         }
 
-        subgraph cluster_jonline_postgres_user {
+        subgraph cluster_rellm_postgres_user {
           label = <<b>User Level</b>>;
           style = filled;
           color = white;
@@ -207,17 +207,17 @@ digraph G {
         vapid_configuration -> sync_sources [style = invis;];
       }
     }
-    jonline0 -> minio0;
-    jonline0 -> postgres0;
+    rellm0 -> minio0;
+    rellm0 -> postgres0;
 
     vapid_push [shape = parallelogram;label = "VAPID Push";];
-    jonline0 -> vapid_push [weight = 8; style = tapered; penwidth = 6;];
+    rellm0 -> vapid_push [weight = 8; style = tapered; penwidth = 6;];
     vapid_configuration -> vapid_push [style = tapered; penwidth = 6;];
 
     pull_events [shape = parallelogram;label = "Pull Events From Source";];
     push_content [shape = parallelogram;label = "Push Posts/Events To Destination";];
-    jonline0 -> pull_events [weight = 8;];
-    jonline0 -> push_content [weight = 8;];
+    rellm0 -> pull_events [weight = 8;];
+    rellm0 -> push_content [weight = 8;];
     sync_sources -> pull_events [style = bold;];
     sync_destinations -> push_content [style = bold;];
     facebook_configuration -> push_content [style = bold;];
@@ -229,7 +229,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline1 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    rellm1 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>rellm</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
 
     subgraph cluster_oakcitysocial_storage {
       label = <<b>Storage</b>>;
@@ -269,22 +269,22 @@ digraph G {
         vapid_configuration1 -> sync_sources1 [style = invis;];
       }
     }
-    jonline1 -> minio1;
-    jonline1 -> postgres1;
+    rellm1 -> minio1;
+    rellm1 -> postgres1;
 
     vapid_push1 [shape = parallelogram;label = "VAPID Push";];
-    jonline1 -> vapid_push1 [weight = 8; style = tapered; penwidth = 6;];
+    rellm1 -> vapid_push1 [weight = 8; style = tapered; penwidth = 6;];
     vapid_configuration1 -> vapid_push1 [style = tapered; penwidth = 6;];
 
     pull_events1 [shape = parallelogram;label = "Pull Events From Source";];
     push_content1 [shape = parallelogram;label = "Push Posts/Events To Destination";];
-    jonline1 -> pull_events1 [weight = 8;];
-    jonline1 -> push_content1 [weight = 8;];
+    rellm1 -> pull_events1 [weight = 8;];
+    rellm1 -> push_content1 [weight = 8;];
     sync_sources1 -> pull_events1 [style = bold;];
     sync_destinations1 -> push_content1 [style = bold;];
     facebook_configuration1 -> push_content1 [style = bold;];
 
-    tls1 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    tls1 [shape = "box";color = ".7 .3 1.0";label = <<b>rellm-tls</b>&nbsp;(K8s Secret)>;];
   }
   subgraph cluster_bullcitysocial {
     label = <<b>bullcitysocial</b>&nbsp;(K8s Namespace)>;
@@ -292,7 +292,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline2 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    rellm2 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>rellm</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
 
     subgraph cluster_bullcitysocial_storage {
       label = <<b>Storage</b>>;
@@ -332,22 +332,22 @@ digraph G {
         vapid_configuration2 -> sync_sources2 [style = invis;];
       }
     }
-    jonline2 -> minio2;
-    jonline2 -> postgres2;
+    rellm2 -> minio2;
+    rellm2 -> postgres2;
 
     vapid_push2 [shape = parallelogram;label = "VAPID Push";];
-    jonline2 -> vapid_push2 [weight = 8; style = tapered; penwidth = 6;];
+    rellm2 -> vapid_push2 [weight = 8; style = tapered; penwidth = 6;];
     vapid_configuration2 -> vapid_push2 [style = tapered; penwidth = 6;];
 
     pull_events2 [shape = parallelogram;label = "Pull Events From Source";];
     push_content2 [shape = parallelogram;label = "Push Posts/Events To Destination";];
-    jonline2 -> pull_events2 [weight = 8;];
-    jonline2 -> push_content2 [weight = 8;];
+    rellm2 -> pull_events2 [weight = 8;];
+    rellm2 -> push_content2 [weight = 8;];
     sync_sources2 -> pull_events2 [style = bold;];
     sync_destinations2 -> push_content2 [style = bold;];
     facebook_configuration2 -> push_content2 [style = bold;];
 
-    tls2 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    tls2 [shape = "box";color = ".7 .3 1.0";label = <<b>rellm-tls</b>&nbsp;(K8s Secret)>;];
   }
   subgraph cluster_atoband {
     label = <<b>atoband</b>&nbsp;(K8s Namespace)>;
@@ -355,7 +355,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline3 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    rellm3 [shape = oval;style = filled;color = white;group = production_stack;label = <<table border="0" cellborder="0" cellspacing="0"><tr><td><b>rellm</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
 
     subgraph cluster_atoband_storage {
       label = <<b>Storage</b>>;
@@ -395,22 +395,22 @@ digraph G {
         vapid_configuration3 -> sync_sources3 [style = invis;];
       }
     }
-    jonline3 -> minio3;
-    jonline3 -> postgres3;
+    rellm3 -> minio3;
+    rellm3 -> postgres3;
 
     vapid_push3 [shape = parallelogram;label = "VAPID Push";];
-    jonline3 -> vapid_push3 [weight = 8; style = tapered; penwidth = 6;];
+    rellm3 -> vapid_push3 [weight = 8; style = tapered; penwidth = 6;];
     vapid_configuration3 -> vapid_push3 [style = tapered; penwidth = 6;];
 
     pull_events3 [shape = parallelogram;label = "Pull Events From Source";];
     push_content3 [shape = parallelogram;label = "Push Posts/Events To Destination";];
-    jonline3 -> pull_events3 [weight = 8;];
-    jonline3 -> push_content3 [weight = 8;];
+    rellm3 -> pull_events3 [weight = 8;];
+    rellm3 -> push_content3 [weight = 8;];
     sync_sources3 -> pull_events3 [style = bold;];
     sync_destinations3 -> push_content3 [style = bold;];
     facebook_configuration3 -> push_content3 [style = bold;];
 
-    tls3 [shape = "box";color = ".7 .3 1.0";label = <<b>jonline-tls</b>&nbsp;(K8s Secret)>;];
+    tls3 [shape = "box";color = ".7 .3 1.0";label = <<b>rellm-tls</b>&nbsp;(K8s Secret)>;];
   }
 
     }
@@ -426,32 +426,32 @@ digraph G {
   // Once Stalwart's MTA Hook resolves the message's recipient domain to a namespace, it fires a
   // POST straight to that domain's own namespace -- bypassing Traefik entirely, since this is an
   // in-cluster Service-to-Service call, not external traffic.
-  jonlineio_mta -> jonline0 [style = dashed;];
-  oakcitysocial_mta -> jonline1 [style = dashed;];
-  bullcitysocial_mta -> jonline2 [style = dashed;];
-  atoband_mta -> jonline3 [style = dashed;];
+  rellmio_mta -> rellm0 [style = dashed;];
+  oakcitysocial_mta -> rellm1 [style = dashed;];
+  bullcitysocial_mta -> rellm2 [style = dashed;];
+  atoband_mta -> rellm3 [style = dashed;];
 
-  jonlineio -> jonline0;
-  oakcitysocial -> jonline1;
-  bullcitysocial -> jonline2;
-  atoband -> jonline3;
+  rellmio -> rellm0;
+  oakcitysocial -> rellm1;
+  bullcitysocial -> rellm2;
+  atoband -> rellm3;
 
   // Invisible, rank-only edges arrange the four Instances namespaces in a 2x2 grid: row 1 is
-  // jonline/oakcitysocial (same rank, left-to-right in that order via minlen=0), row 2 is
+  // rellm/oakcitysocial (same rank, left-to-right in that order via minlen=0), row 2 is
   // bullcitysocial/atoband (same rank as each other, anchored below row 1's deepest nodes so it
   // starts below row 1's full height instead of overlapping it).
-  jonline0 -> jonline1 [style = invis; weight = 100000; minlen = 0;];
-  jonline2 -> jonline3 [style = invis; weight = 100000; minlen = 0;];
-  pull_events -> jonline2 [style = invis; weight = 100000;];
-  push_content -> jonline2 [style = invis; weight = 100000;];
-  pull_events1 -> jonline2 [style = invis; weight = 100000;];
-  push_content1 -> jonline2 [style = invis; weight = 100000;];
+  rellm0 -> rellm1 [style = invis; weight = 100000; minlen = 0;];
+  rellm2 -> rellm3 [style = invis; weight = 100000; minlen = 0;];
+  pull_events -> rellm2 [style = invis; weight = 100000;];
+  push_content -> rellm2 [style = invis; weight = 100000;];
+  pull_events1 -> rellm2 [style = invis; weight = 100000;];
+  push_content1 -> rellm2 [style = invis; weight = 100000;];
 
-  // Push delivery never touches Traefik -- jonline calls straight out to the subscription
+  // Push delivery never touches Traefik -- rellm calls straight out to the subscription
   // endpoint URL the browser's own push service handed it at subscribe time (see
   // backend/src/web_push/mod.rs), the reverse direction of every other edge in this diagram.
   // That endpoint is chosen by the browser (FCM for Chrome, Mozilla's autopush for Firefox,
-  // etc.), not by jonline -- vapid_push_service stands in for whichever one a given
+  // etc.), not by rellm -- vapid_push_service stands in for whichever one a given
   // subscription actually points at.
   vapid_push -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
   vapid_push1 -> vapid_push_service [constraint = false; style = tapered; penwidth = 6;];
@@ -461,7 +461,7 @@ digraph G {
 
   // SyncSource (an iCal subscription) is pulled *in*; SyncDestination (e.g. a Facebook
   // Page -- used to push out both Posts and EventInstances) is pushed *out* -- see
-  // backend/src/protos/jonline.rs's SyncSource/SyncDestination doc comments. Arrow direction
+  // backend/src/protos/rellm.rs's SyncSource/SyncDestination doc comments. Arrow direction
   // follows the data, same as VAPID push above.
   ical_feeds -> pull_events [constraint = false; style = dotted;];
   ical_feeds -> pull_events1 [constraint = false; style = dotted;];

@@ -1,13 +1,13 @@
-import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation, Paragraph } from '@jonline/ui';
+import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation, Paragraph } from '@rellm/ui';
 import { AlertCircle, ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { colorMeta, useCurrentAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
-import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
+import { RellmServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
 import React, { useState } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
-  server: JonlineServer;
+  server: RellmServer;
   isPreview?: boolean;
   linkToServerInfo?: boolean;
   disableHeightLimit?: boolean;

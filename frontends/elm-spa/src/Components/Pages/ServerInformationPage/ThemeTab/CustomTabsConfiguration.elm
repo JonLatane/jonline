@@ -22,8 +22,8 @@ import Html exposing (Html, button, div, h3, input, option, select, span, text)
 import Html.Attributes exposing (id, placeholder, selected, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Keyed
-import Proto.Jonline exposing (ServerConfiguration, defaultCustomNavigationTabSet)
-import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
+import Proto.Rellm exposing (ServerConfiguration, defaultCustomNavigationTabSet)
+import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -599,11 +599,11 @@ saved as a blank id.
 applyCustomTabs : CustomTabsEdit -> ServerConfiguration -> ServerConfiguration
 applyCustomTabs edit config =
     let
-        existing : Proto.Jonline.CustomNavigationTabSet
+        existing : Proto.Rellm.CustomNavigationTabSet
         existing =
             Maybe.withDefault defaultCustomNavigationTabSet config.customTabs
 
-        toProtoCustomTab : CustomTabEntry -> Proto.Jonline.CustomNavigationTab
+        toProtoCustomTab : CustomTabEntry -> Proto.Rellm.CustomNavigationTab
         toProtoCustomTab entry =
             CustomNav.toProtoTab
                 { target = entry.target, icon = entry.icon, title = optionalString entry.title, path = entry.path }

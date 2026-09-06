@@ -1,18 +1,18 @@
-# Jonline Ingress
+# Rellm Ingress
 
-A single shared [Traefik](https://traefik.io) ingress that lets many Jonline instances (each in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs) share **one** external IP/LoadBalancer instead of one each. On most cloud providers a LoadBalancer/external IP is the most expensive part of running a small Jonline instance, so this is the difference between paying for `N` of them and paying for 1, no matter how many domains you host.
+A single shared [Traefik](https://traefik.io) ingress that lets many Rellm instances (each in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs) share **one** external IP/LoadBalancer instead of one each. On most cloud providers a LoadBalancer/external IP is the most expensive part of running a small Rellm instance, so this is the difference between paying for `N` of them and paying for 1, no matter how many domains you host.
 
 This whole setup is domain-agnostic and cluster-agnostic: nothing you type here ends up in a file this repo tracks in git (same principle as [the Cert-Manager setup](../generated_certs/README.md), which never commits your actual domain either).
 
 ## How it works
 
-Your `jonline` backend already terminates its own TLS (see `create_internal_backend`/`update_internal_backend` in `../Makefile`, and `k8s/server_internal.yaml`) using the Cert-Manager certs set up per [`../generated_certs/README.md`](../generated_certs/README.md). This ingress does **not** re-terminate that TLS. Instead it reads the plaintext SNI hostname out of the TLS handshake's first message (the same mechanism that lets any single IP host multiple HTTPS sites) to decide which namespace's `jonline` Service to forward the still-encrypted bytes to, then gets out of the way. Your certs, your `jonline-generated-tls` secrets, and Cert-Manager's renewal all keep working completely untouched, in their existing per-namespace locations.
+Your `rellm` backend already terminates its own TLS (see `create_internal_backend`/`update_internal_backend` in `../Makefile`, and `k8s/server_internal.yaml`) using the Cert-Manager certs set up per [`../generated_certs/README.md`](../generated_certs/README.md). This ingress does **not** re-terminate that TLS. Instead it reads the plaintext SNI hostname out of the TLS handshake's first message (the same mechanism that lets any single IP host multiple HTTPS sites) to decide which namespace's `rellm` Service to forward the still-encrypted bytes to, then gets out of the way. Your certs, your `rellm-generated-tls` secrets, and Cert-Manager's renewal all keep working completely untouched, in their existing per-namespace locations.
 
 Plain HTTP (ports 80 and 8000) is routed the normal way, by `Host` header.
 
 This controller also carries a plain TCP passthrough entrypoint on port 25 for the shared Stalwart mail server (see [`../email/README.md`](../email/README.md)) -- unlike the ports above, there's nothing to route *between* there (Stalwart is cluster-wide, not per-namespace), so its `IngressRouteTCP` just catches everything with ``HostSNI(`*`)`` and forwards it straight through.
 
-Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/jonline-routes.template.yaml`), right next to its `jonline` Service -- not in some central config. Traefik discovers them across every namespace automatically.
+Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/rellm-routes.template.yaml`), right next to its `rellm` Service -- not in some central config. Traefik discovers them across every namespace automatically.
 
 ## One-time setup: install the shared controller
 
@@ -38,7 +38,7 @@ make remove_ingress
 
 ## Onboarding a domain
 
-Once a namespace already has its own `jonline` backend, Postgres, MinIO and Cert-Manager certs set up (i.e. you've already done the [Basic Deployment](../README.md#basic-deployment) for it) and it's currently using `server_external.yaml` (its own LoadBalancer), you can move it behind the shared ingress:
+Once a namespace already has its own `rellm` backend, Postgres, MinIO and Cert-Manager certs set up (i.e. you've already done the [Basic Deployment](../README.md#basic-deployment) for it) and it's currently using `server_external.yaml` (its own LoadBalancer), you can move it behind the shared ingress:
 
 ```bash
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com make add_ingress_domain

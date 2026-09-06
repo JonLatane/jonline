@@ -1,4 +1,4 @@
-import { Moderation, User, UserListingType } from "@jonline/api";
+import { Moderation, User, UserListingType } from "@rellm/api";
 import { federateId, federatedEntities, getFederated, parseFederatedId } from "../federation";
 import { FederatedUser, UsersState, selectUserById } from "../modules";
 import { AccountOrServer } from "../types";

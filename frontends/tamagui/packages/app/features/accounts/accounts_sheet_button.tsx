@@ -1,4 +1,4 @@
-import { Button, ColorTokens, Image, Paragraph, SizeTokens, Tooltip, XStack, YStack } from '@jonline/ui';
+import { Button, ColorTokens, Image, Paragraph, SizeTokens, Tooltip, XStack, YStack } from '@rellm/ui';
 import { AlertCircle, AlertTriangle, AtSign } from '@tamagui/lucide-icons';
 import { useAccountsSheetContext } from 'app/contexts/accounts_sheet_context';
 import { useCurrentAccount, useFederatedAccountOrServer } from 'app/hooks';
@@ -13,7 +13,7 @@ export type AccountsSheetButtonProps = {
   // Indicate to the AccountsSheet that we're
   // viewing server configuration for a server,
   // and should only show accounts for that server.
-  // onlyShowServer?: JonlineServer;
+  // onlyShowServer?: RellmServer;
   selectedGroup?: FederatedGroup;
   primaryEntity?: FederatedEntity<any>;
 }

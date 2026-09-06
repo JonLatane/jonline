@@ -30,7 +30,7 @@ async fn ical_subscription(
         .server_info
         .map(|i| i.name)
         .flatten()
-        .unwrap_or("Jonline".to_string());
+        .unwrap_or("Rellm".to_string());
     // let server_logo_id = server_configuration
     //     .server_info
     //     .unwrap_or(ServerInfo {
@@ -92,7 +92,7 @@ async fn ical_subscription(
         None => calendar.name(&format!("{server_name} | Event Calendar")),
     };
     // calendar.name(&format!("{server_name} | Events Calendar"));
-    // calendar.description("Events from Jonline");
+    // calendar.description("Events from Rellm");
 
     // Get the frontend domain for event links
     let frontend_domain = configured_frontend_domain(state, host);

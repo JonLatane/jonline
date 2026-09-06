@@ -1,9 +1,9 @@
-import { ExpirableToken, GetServiceVersionResponse, ServerConfiguration, User } from "@jonline/api";
-import { JonlineClient } from "@jonline/api/generated/jonline";
+import { ExpirableToken, GetServiceVersionResponse, ServerConfiguration, User } from "@rellm/api";
+import { RellmClient } from "@rellm/api/generated/rellm";
 import { CallOptions } from "nice-grpc-web";
 import { FederatedUser, accountID, serverID } from "./modules";
 
-export type JonlineServer = {
+export type RellmServer = {
   host: string;
   secure: boolean;
   serviceVersion?: GetServiceVersionResponse;
@@ -12,11 +12,11 @@ export type JonlineServer = {
 }
 
 // The type used to store accounts locally. Keyed by server URL + user ID.
-export type JonlineAccount = {
+export type RellmAccount = {
   user: User;
   refreshToken: ExpirableToken;
   accessToken: ExpirableToken;
-  server: JonlineServer;
+  server: RellmServer;
   lastSynced?: number;
   needsReauthentication?: boolean;
   lastSyncFailed?: boolean;
@@ -25,8 +25,8 @@ export type JonlineAccount = {
 
 // Note that this is inclusive-or. The account, if provided, should always have the same server as the server field.
 export type AccountOrServer = {
-  account?: JonlineAccount;
-  server?: JonlineServer;
+  account?: RellmAccount;
+  server?: RellmServer;
 };
 
 export function accountOrServerId(accountOrServer: AccountOrServer): string {
@@ -39,7 +39,7 @@ export function accountOrServerId(accountOrServer: AccountOrServer): string {
   return 'undefined';
 }
 
-// A Jonline client with an optional credentials field bolted on.
-export type JonlineCredentialClient = JonlineClient & {
+// A Rellm client with an optional credentials field bolted on.
+export type RellmCredentialClient = RellmClient & {
   credential?: CallOptions;
 }

@@ -1,4 +1,4 @@
-import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
+import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@rellm/ui';
 import { RootState, selectAllPosts, useRootSelector } from 'app/store';
 import { useCredentialDispatch, useCurrentServer } from 'app/hooks';
 import React, { useEffect, useState } from 'react';
@@ -9,12 +9,12 @@ import { AppSection } from '../navigation/features_navigation';
 import { setDocumentTitle } from 'app/utils';
 
 const quotes = [
-  'I read about it Jonline',
-  'I saw it Jonline',
-  'Jonline media is ruining young minds',
-  'Let me check Jonline',
+  'I read about it Rellm',
+  'I saw it Rellm',
+  'Rellm media is ruining young minds',
+  'Let me check Rellm',
 ];
-export function AboutJonlineScreen() {
+export function AboutRellmScreen() {
   const [showTechDetails, setShowTechDetails] = useState(false);
   const serversState = useRootSelector((state: RootState) => state.servers);
   const postsState = useRootSelector((state: RootState) => state.posts);
@@ -32,7 +32,7 @@ export function AboutJonlineScreen() {
   // const quote= quotes[Math.floor(Math.random()*quotes.length)];
 
   useEffect(() => {
-    setDocumentTitle(`About Jonline`);
+    setDocumentTitle(`About Rellm`);
   }, [window.location.search]);
 
   return (
@@ -41,10 +41,10 @@ export function AboutJonlineScreen() {
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         <YStack gap="$4" maw={600}>
 
-          <H2 ta="center">About Jonline</H2>
+          <H2 ta="center">About Rellm</H2>
           <H4 ta="center">As in: &ldquo;{quote}&rdquo; 🙃</H4>
           <Paragraph ta="left">
-            Jonline is the federated social network platform built with Rust/gRPC that powers this
+            Rellm is the federated social network platform built with Rust/gRPC that powers this
             web site{isClient ? <>{' ('}<Text color={navColor} fontFamily='$body'>{window.location.host}</Text>{')'}</> : ''}.
             It's designed to let small businesses and communities run their own social network,{' '}
             with minimal cost, effort, and no creepy corporate data mining;{' '}
@@ -53,34 +53,34 @@ export function AboutJonlineScreen() {
           </Paragraph>
           <AboutListItem>
             <XStack flexWrap='wrap' gap='$2'>
-              <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
+              <Anchor color={navColor} href="https://github.com/JonLatane/rellm" target="_blank">
                 <XStack gap='$2'>
                   <YStack my='auto'><Github color={navColor} /></YStack>
-                  <Paragraph color={navColor} my='auto'>GitHub: https://github.com/JonLatane/jonline</Paragraph>
+                  <Paragraph color={navColor} my='auto'>GitHub: https://github.com/JonLatane/rellm</Paragraph>
                 </XStack>
               </Anchor>
               <Paragraph>(released under the AGPLv3)</Paragraph>
             </XStack>
           </AboutListItem>
           <AboutListItem mb='$3'>
-            <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
+            <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/rellm" target="_blank">
               <XStack gap='$2'>
                 <YStack my='auto'><Container color={navColor} /></YStack>
-                <Paragraph color={navColor} my='auto'>DockerHub: https://hub.docker.com/r/jonlatane/jonline</Paragraph>
+                <Paragraph color={navColor} my='auto'>DockerHub: https://hub.docker.com/r/jonlatane/rellm</Paragraph>
               </XStack>
             </Anchor>
           </AboutListItem>
           {showTechDetails
             ? <>
               <Paragraph ta="left">
-                You're reading this from Jonline's{' '}
-                <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
+                You're reading this from Rellm's{' '}
+                <Anchor color={navColor} href="https://github.com/JonLatane/rellm/tree/main/frontends/tamagui" target="_blank">
                   React/Tamagui frontend
                 </Anchor> backed by data from its{' '}
-                <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/backend" target="_blank">
+                <Anchor color={navColor} href="https://github.com/JonLatane/rellm/tree/main/backend" target="_blank">
                   Rust/gRPC backend
                 </Anchor>. It's a work in progress to be sure! 👷🛠️🪲 The original{' '}
-                <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/flutter" target="_blank">
+                <Anchor color={navColor} href="https://github.com/JonLatane/rellm/tree/main/frontends/flutter" target="_blank">
                   Flutter frontend
                 </Anchor> is also available and compatible, with more administrator features for now.
               </Paragraph>
@@ -94,7 +94,7 @@ export function AboutJonlineScreen() {
                   <AboutListHeading>
                     <Anchor color={navColor} href="https://www.rust-lang.org/" target="_blank">
                       Rust
-                    </Anchor> (<Anchor color={navColor} href="https://github.com/JonLatane/jonline/blob/main/backend/Cargo.toml" target="_blank">Cargo.toml</Anchor>)
+                    </Anchor> (<Anchor color={navColor} href="https://github.com/JonLatane/rellm/blob/main/backend/Cargo.toml" target="_blank">Cargo.toml</Anchor>)
                   </AboutListHeading>
                   <AboutListItem>
                     <Anchor color={navColor} href="https://diesel.rs/" target="_blank">
@@ -119,7 +119,7 @@ export function AboutJonlineScreen() {
                   <AboutListHeading>
                     <Anchor color={navColor} href="https://flutter.dev/" target="_blank">
                       Flutter
-                    </Anchor> (<Anchor color={navColor} href="https://dart.dev/" target="_blank">Dart</Anchor>) (<Anchor color={navColor} href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/pubspec.yaml" target="_blank">pubspec.yaml</Anchor>)
+                    </Anchor> (<Anchor color={navColor} href="https://dart.dev/" target="_blank">Dart</Anchor>) (<Anchor color={navColor} href="https://github.com/JonLatane/rellm/blob/main/frontends/flutter/pubspec.yaml" target="_blank">pubspec.yaml</Anchor>)
                   </AboutListHeading>
                   <AboutListItem>
                     <Anchor color={navColor} href="https://pub.dev/packages/provider" target="_blank">

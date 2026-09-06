@@ -1,24 +1,24 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/enum_conversions.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/utils/colors.dart';
+import 'package:rellm/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../generated/visibility_moderation.pbenum.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_account_operations.dart';
-import '../../models/jonline_clients.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_account_operations.dart';
+import '../../models/rellm_clients.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 
-// import 'package:jonline/db.dart';
+// import 'package:rellm/db.dart';
 
 class CreateGroupPage extends StatefulWidget {
   const CreateGroupPage({Key? key}) : super(key: key);
@@ -27,7 +27,7 @@ class CreateGroupPage extends StatefulWidget {
   CreateGroupPageState createState() => CreateGroupPageState();
 }
 
-class CreateGroupPageState extends JonlineState<CreateGroupPage> {
+class CreateGroupPageState extends RellmState<CreateGroupPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final ValueNotifier<bool> enabled = ValueNotifier<bool>(true);
@@ -81,16 +81,16 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
 
   doCreate() async {
     doingCreate = true;
-    if (JonlineAccount.selectedAccount == null) {
+    if (RellmAccount.selectedAccount == null) {
       showSnackBar("No account selected.");
       return;
     }
-    final account = JonlineAccount.selectedAccount!;
+    final account = RellmAccount.selectedAccount!;
 
     // showSnackBar("Updating refresh token...");
     await account.ensureAccessToken(showMessage: showSnackBar);
     // await communicationDelay;
-    final JonlineClient? client =
+    final RellmClient? client =
         await (account.getClient(showMessage: showSnackBar));
     if (client == null) {
       showSnackBar("Account not ready.");
@@ -127,7 +127,7 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
       return;
     }
     context.replaceRoute(GroupDetailsRoute(
-        groupId: group.id, server: JonlineServer.selectedServer.server));
+        groupId: group.id, server: RellmServer.selectedServer.server));
 
     appState.groups.value = [group] + appState.groups.value;
     Future.delayed(const Duration(seconds: 3),
@@ -210,7 +210,7 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
                         Expanded(
                           child: Container(
                             key: Key(
-                                "visibility-control-${(JonlineAccount.selectedAccount)?.id}"),
+                                "visibility-control-${(RellmAccount.selectedAccount)?.id}"),
                             child: MultiSelectChipField<vm.Visibility?>(
                               decoration: const BoxDecoration(),
                               showHeader: false,
@@ -220,7 +220,7 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
                               items: vm.Visibility.values
                                   .where((v) {
                                     final account =
-                                        JonlineAccount.selectedAccount;
+                                        RellmAccount.selectedAccount;
                                     return v !=
                                             vm.Visibility.VISIBILITY_UNKNOWN &&
                                         (account?.permissions.contains(Permission

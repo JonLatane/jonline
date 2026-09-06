@@ -16,7 +16,7 @@ import Components.Authors as Authors
 import Components.Users as Users
 import Html exposing (Html, div, h1, span, text)
 import Html.Attributes exposing (class)
-import Proto.Jonline exposing (User)
+import Proto.Rellm exposing (User)
 import Shared.AccountsPanel as AccountsPanel
 import UI
 

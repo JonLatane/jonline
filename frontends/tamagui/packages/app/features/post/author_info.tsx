@@ -1,8 +1,8 @@
 import { RootState, useRootSelector, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
-import { Author, Permission, Post } from "@jonline/api";
-import { Anchor, DateViewer, Image, Paragraph, PermissionIndicator, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
+import { Author, Permission, Post } from "@rellm/api";
+import { Anchor, DateViewer, Image, Paragraph, PermissionIndicator, Spinner, Text, XStack, YStack, useMedia } from "@rellm/ui";
 import { useProvidedDispatch } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { federateId, federatedIDPair } from "app/store/federation";

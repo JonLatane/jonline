@@ -1,4 +1,4 @@
-import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@rellm/ui';
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, TamaguiMarkdown } from 'app/components';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
@@ -13,8 +13,8 @@ import AccountCard from './account_card';
 import { CreationServerSelector } from './creation_server_selector';
 
 export type AuthSheetProps = {
-  // server?: JonlineServer;
-  // onAccountSelected?: (account: JonlineAccount) => void;
+  // server?: RellmServer;
+  // onAccountSelected?: (account: RellmAccount) => void;
 }
 
 export enum LoginMethod {
@@ -333,9 +333,9 @@ export function AuthSheet({ }: AuthSheetProps) {
                     ? <>
                       <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
                       <TamaguiMarkdown text={`
-${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Rellm](https://github.com/JonLatane/rellm), which is
 released under the AGPL. As a user, using this server means you have a fundamental right to view the source code of this software and anything
-using its data. If you suspect that the operator of this server is not using the official Jonline software, or doing anything proprietary/non-open
+using its data. If you suspect that the operator of this server is not using the official Rellm software, or doing anything proprietary/non-open
 with your data, please contact the [Free Software Foundation](https://www.fsf.org/) to evaluate support options.
                           `} />
                       {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0

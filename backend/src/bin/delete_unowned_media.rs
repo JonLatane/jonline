@@ -1,8 +1,8 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 use diesel::*;
-use jonline::schema::{media, posts};
-use jonline::{db_connection, init_bin_logging, init_crypto, minio_connection};
+use rellm::schema::{media, posts};
+use rellm::{db_connection, init_bin_logging, init_crypto, minio_connection};
 
 #[tokio::main]
 async fn main() {
@@ -17,15 +17,15 @@ async fn main() {
 
     let mut unowned_media = media::table
         .filter(media::user_id.is_null())
-        .load::<jonline::models::Media>(&mut conn)
+        .load::<rellm::models::Media>(&mut conn)
         .expect("Failed to load Unowned Media");
 
     for media in unowned_media.iter_mut() {
         log::info!("Deleting Media: {:?}", media);
         let posts = posts::table
             .filter(posts::media.contains(vec![media.id]))
-            .select(jonline::models::POST_COLUMNS)
-            .load::<jonline::models::Post>(&mut conn)
+            .select(rellm::models::POST_COLUMNS)
+            .load::<rellm::models::Post>(&mut conn)
             .expect("Failed to load Posts with Media");
         for post in posts {
             log::info!("Removing Media {} from Post {}", media.id, post.id);

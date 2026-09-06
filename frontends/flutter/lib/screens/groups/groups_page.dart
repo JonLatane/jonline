@@ -6,15 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animated_list_plus/animated_list_plus.dart';
 import 'package:animated_list_plus/transitions.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/screens/groups/group_preview.dart';
-import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/screens/groups/group_preview.dart';
+import 'package:rellm/utils/colors.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import '../../router/router.gr.dart';
 
 class GroupsScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class GroupsScreen extends StatefulWidget {
   GroupsScreenState createState() => GroupsScreenState();
 }
 
-class GroupsScreenState extends JonlineState<GroupsScreen>
+class GroupsScreenState extends RellmState<GroupsScreen>
     with AutoRouteAwareStateMixin<GroupsScreen> {
   GroupListingType listingType = GroupListingType.ALL_GROUPS;
   Map<GroupListingType, GetGroupsResponse> listingData = {};
@@ -131,7 +131,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (!JonlineAccount.loggedIn) {
+    if (!RellmAccount.loggedIn) {
       listingType = GroupListingType.ALL_GROUPS;
     }
     return Scaffold(
@@ -183,7 +183,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                                                         : "No Groups",
                                                 style: textTheme.titleLarge),
                                             Text(
-                                                JonlineServer
+                                                RellmServer
                                                     .selectedServer.server,
                                                 style: textTheme.bodySmall),
                                             if (!appState
@@ -252,7 +252,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                                   curve: Curves.easeInOut,
                                   animation: animation,
                                   key: Key(
-                                      "groupsPage-group-${JonlineServer.selectedServer.server}-${group.id}"),
+                                      "groupsPage-group-${RellmServer.selectedServer.server}-${group.id}"),
                                   child: Row(
                                     children: [
                                       Expanded(child: buildGroupItem(group)),
@@ -318,7 +318,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
       children: [
         ...GroupListingType.values.map((l) {
           var usable =
-              JonlineAccount.loggedIn || l == GroupListingType.ALL_GROUPS;
+              RellmAccount.loggedIn || l == GroupListingType.ALL_GROUPS;
 
           var textButton = TextButton(
               style: ButtonStyle(
@@ -369,8 +369,8 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
   Widget buildGroupItem(Group group) {
     return GroupPreview(
         key: Key(
-            "groupsPage-group-item-${JonlineServer.selectedServer.server}-${group.id}"),
-        server: JonlineServer.selectedServer.server,
+            "groupsPage-group-item-${RellmServer.selectedServer.server}-${group.id}"),
+        server: RellmServer.selectedServer.server,
         group: group);
   }
 

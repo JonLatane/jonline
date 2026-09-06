@@ -1,7 +1,7 @@
 import { useServerTheme } from "app/store";
 import React, { useMemo } from "react";
 
-import { Anchor, Heading, Paragraph, Text, XStack, YStack, useTheme } from "@jonline/ui";
+import { Anchor, Heading, Paragraph, Text, XStack, YStack, useTheme } from "@rellm/ui";
 import ReactMarkdown, { Components } from 'react-markdown';
 import { useProvidedDispatch } from "app/hooks";
 import SyntaxHighlighter from 'react-syntax-highlighter';

@@ -1,10 +1,10 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 
 use diesel::*;
 
-use jonline::schema::*;
-use jonline::{db_connection, init_bin_logging, init_crypto};
+use rellm::schema::*;
+use rellm::{db_connection, init_bin_logging, init_crypto};
 
 pub fn main() {
     init_crypto();

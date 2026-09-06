@@ -34,7 +34,7 @@ extern crate tokio_stream;
 
 pub mod auth;
 pub mod db_connection;
-pub mod jonline_service;
+pub mod rellm_service;
 pub mod logic;
 pub mod marshaling;
 pub mod minio_connection;
@@ -46,7 +46,7 @@ pub mod servers;
 pub mod web;
 pub mod web_push;
 
-use ::jonline::{env_var, init_crypto, init_service_logging, report_error};
+use ::rellm::{env_var, init_crypto, init_service_logging, report_error};
 use diesel::*;
 use futures::future::join_all;
 use marshaling::ToProtoServerConfiguration;
@@ -70,12 +70,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_connection::migrate_database();
 
     log::info!(
-        "Starting Jonline...
+        "Starting Rellm...
 ┏┳ ┏┓ ┳┓ ┓  ┳ ┳┓ ┏┓
  ┃ ┃┃ ┃┃ ┃  ┃ ┃┃ ┣ 
 ┗┛ ┗┛ ┛┗ ┗┛ ┻ ┛┗ ┗┛
- (Jonline Server)
-A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
+ (Rellm Server)
+A Rust HTTP (80/443/8000) and gRPC (27707) server for Rellm services
 (providing a \"Twitter-like with events\" experience with no feeds and a
 privacy-conscious design), plus an internal-only HTTP mail delivery endpoint
 (27705, see deploys/email) used by a Stalwart mail server.
@@ -90,11 +90,11 @@ The gRPC API supports reflection/self-documentation, and is extremely friendly f
 
 Prompt your favorite AI (tested with Claude) with something like:
 
-  \"I want to test your ability to use a gRPC client for Jonline, a social networking
+  \"I want to test your ability to use a gRPC client for Rellm, a social networking
     protocol with highly documented gRPC APIs. Use the tool grpcurl.
 
-    You can use `grpcurl -plaintext localhost:27707 list jonline.Jonline` to list the 
-    RPCs available for the Jonline service at localhost:27707.
+    You can use `grpcurl -plaintext localhost:27707 list rellm.Rellm` to list the 
+    RPCs available for the Rellm service at localhost:27707.
 
     Take a look at the grpcurl docs for more info - there should be details docs on these APIs.
 
@@ -106,11 +106,11 @@ questions about users, etc.
 
 Supported environment variables (and examples):
 
-    DATABASE_URL=postgres://localhost/jonline_dev
+    DATABASE_URL=postgres://localhost/rellm_dev
 
     MINIO_ENDPOINT=http://localhost:9000
     MINIO_REGION=
-    MINIO_BUCKET=jonline-dev
+    MINIO_BUCKET=rellm-dev
     MINIO_ACCESS_KEY=ROOTNAME
     MINIO_SECRET_KEY=CHANGEME123
 

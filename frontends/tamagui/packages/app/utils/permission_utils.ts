@@ -1,4 +1,4 @@
-import { Permission } from '@jonline/api';
+import { Permission } from '@rellm/api';
 
 export type ContainsPermissions = {
   permissions?: Permission[];

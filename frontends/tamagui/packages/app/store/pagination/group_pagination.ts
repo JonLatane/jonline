@@ -1,4 +1,4 @@
-import { GroupListingType } from "@jonline/api";
+import { GroupListingType } from "@rellm/api";
 import { getFederated } from "../federation";
 import { FederatedGroup, GroupsState, selectGroupById } from "../modules";
 import { AccountOrServer } from "../types";

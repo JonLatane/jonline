@@ -2,8 +2,8 @@ import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
 import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedEventInstance, deleteEvent, federateId, federatedEntity, identifyEventInstance, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Location, Post, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
+import { Event, EventInstance, Location, Post, Visibility } from "@rellm/api";
+import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@rellm/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";

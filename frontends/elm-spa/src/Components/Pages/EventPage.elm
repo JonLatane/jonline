@@ -25,7 +25,7 @@ Mirrors `Components.Pages.PostPage`'s own split from its two callers.
 `postId` (passed to `init`, matching `Components.Pages.PostPage.init`'s own
 `rawPostId` naming) is genuinely the viewed `EventInstance`'s own `Post` id --
 an `EventInstance`'s identity is its own `Post`'s id (see
-`Proto.Jonline.EventInstance`). `GetEventsRequest.post_id` is the only way to
+`Proto.Rellm.EventInstance`). `GetEventsRequest.post_id` is the only way to
 fetch a single Event (see `events.proto`), and looking it up by an
 `EventInstance`'s own Post id returns that instance's whole parent `Event`
 with _every_ one of its instances, not just the one asked for -- which is
@@ -62,10 +62,10 @@ import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEventInstance, defaultLocation)
-import Proto.Jonline.Moderation exposing (Moderation)
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.Visibility exposing (Visibility)
+import Proto.Rellm exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEventInstance, defaultLocation)
+import Proto.Rellm.Moderation exposing (Moderation)
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -162,7 +162,7 @@ type alias Model =
 
 
 type Msg
-    = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
+    = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
     | MediaClicked Post String
       -- The Event's own `Post`'s media-edit button (see `eventDetailView`) --
       -- opens the shared `Shared.MyMediaPanel` chooser in `MultiSelect` mode,

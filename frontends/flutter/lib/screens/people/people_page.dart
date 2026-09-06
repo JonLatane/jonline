@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animated_list_plus/animated_list_plus.dart';
 import 'package:animated_list_plus/transitions.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/rellm_clients.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
@@ -16,9 +16,9 @@ import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pb.dart';
 import '../../generated/users.pb.dart';
 import '../../generated/visibility_moderation.pbenum.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_operations.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_operations.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/colors.dart';
@@ -73,7 +73,7 @@ class PeopleListingResponse {
   });
 }
 
-class PeopleScreenState extends JonlineState<PeopleScreen>
+class PeopleScreenState extends RellmState<PeopleScreen>
     with AutoRouteAwareStateMixin<PeopleScreen> {
   PeopleListingType listingType = PeopleListingType.everyone;
   Map<PeopleListingType, PeopleListingResponse> listingData = {};
@@ -206,7 +206,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           ..groupId = selectedGroup.id
           ..groupModeration = Moderation.PENDING)
         : (GetMembersRequest()..groupId = selectedGroup.id);
-    final GetMembersResponse? response = await JonlineOperations.getMembers(
+    final GetMembersResponse? response = await RellmOperations.getMembers(
       request: request,
     );
     if (response == null) {
@@ -297,7 +297,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
       // resetMembers();
     }
 
-    if (!JonlineAccount.loggedIn) {
+    if (!RellmAccount.loggedIn) {
       listingType =
           viewingGroup ? PeopleListingType.members : PeopleListingType.everyone;
     }
@@ -351,13 +351,13 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                                   curve: Curves.easeInOut,
                                   animation: animation,
                                   key: Key(
-                                      "personPage-person-${JonlineServer.selectedServer.server}-${person.user.id}"),
+                                      "personPage-person-${RellmServer.selectedServer.server}-${person.user.id}"),
                                   child: Row(
                                     children: [
                                       Expanded(
                                           child: PersonPreview(
                                               person: person,
-                                              server: JonlineServer
+                                              server: RellmServer
                                                   .selectedServer.server)),
                                     ],
                                   ));
@@ -383,9 +383,9 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                               final person = userList[index];
                               return PersonPreview(
                                   key: Key(
-                                      "personPage-person-griditem-${JonlineServer.selectedServer.server}-${person.user.id}"),
+                                      "personPage-person-griditem-${RellmServer.selectedServer.server}-${person.user.id}"),
                                   person: person,
-                                  server: JonlineServer.selectedServer.server);
+                                  server: RellmServer.selectedServer.server);
                             },
                           ),
                     IgnorePointer(
@@ -447,7 +447,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                   children: [
                     Text("Loading $people...", style: textTheme.titleLarge),
                     Text(
-                        "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                        "${RellmServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
                         style: textTheme.bodySmall),
                     if (viewingGroup) Text(appState.selectedGroup.value!.name),
                   ],
@@ -482,7 +482,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                                   : "No $people",
                               style: textTheme.titleLarge),
                           Text(
-                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                              "${RellmServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
                               style: textTheme.bodySmall),
                           if (viewingGroup)
                             Text(appState.selectedGroup.value!.name),
@@ -550,7 +550,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
         ...PeopleListingType.values
             // .where((l) => l != UserListingType.FRIENDS)
             .map((l) {
-          bool usable = JonlineAccount.loggedIn ||
+          bool usable = RellmAccount.loggedIn ||
               l == PeopleListingType.everyone ||
               l == PeopleListingType.members;
           usable &= canShowMembershipRequests ||
@@ -610,13 +610,13 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
 
   follow(User user) async {
     try {
-      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+      final follow = await (await RellmAccount.selectedAccount!.getClient())!
           .createFollow(
               Follow()
-                ..userId = JonlineAccount.selectedAccount!.userId
+                ..userId = RellmAccount.selectedAccount!.userId
                 ..targetUserId = user.id,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.currentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
@@ -624,9 +624,9 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount += 1;
           });
-          JonlineAccount.selectedAccount?.user?.followingCount += 1;
+          RellmAccount.selectedAccount?.user?.followingCount += 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followingCount += 1;
           });
@@ -643,11 +643,11 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
   unfollow(User user) async {
     final follow = user.currentUserFollow;
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+      await (await RellmAccount.selectedAccount!.getClient())!.deleteFollow(
           Follow()
-            ..userId = JonlineAccount.selectedAccount!.userId
+            ..userId = RellmAccount.selectedAccount!.userId
             ..targetUserId = user.id,
-          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+          options: RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.currentUserFollow = Follow();
         if (follow.targetUserModeration.passes) {
@@ -655,9 +655,9 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount -= 1;
           });
-          JonlineAccount.selectedAccount?.user?.followingCount -= 1;
+          RellmAccount.selectedAccount?.user?.followingCount -= 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followingCount -= 1;
           });
@@ -672,14 +672,14 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
 
   approve(User user) async {
     try {
-      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+      final follow = await (await RellmAccount.selectedAccount!.getClient())!
           .updateFollow(
               Follow()
                 ..userId = user.id
-                ..targetUserId = JonlineAccount.selectedAccount!.userId
+                ..targetUserId = RellmAccount.selectedAccount!.userId
                 ..targetUserModeration = Moderation.APPROVED,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
@@ -687,9 +687,9 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followingCount += 1;
           });
-          JonlineAccount.selectedAccount?.user?.followerCount += 1;
+          RellmAccount.selectedAccount?.user?.followerCount += 1;
           appState.users.value
-              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .where((u) => u.id == RellmAccount.selectedAccount?.userId)
               .forEach((u) {
             u.followerCount += 1;
           });
@@ -703,11 +703,11 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
 
   reject(User user) async {
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+      await (await RellmAccount.selectedAccount!.getClient())!.deleteFollow(
           Follow()
             ..userId = user.id
-            ..targetUserId = JonlineAccount.selectedAccount!.userId,
-          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+            ..targetUserId = RellmAccount.selectedAccount!.userId,
+          options: RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = Follow();
       });

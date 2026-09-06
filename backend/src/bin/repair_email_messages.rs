@@ -1,11 +1,11 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 
 use diesel::*;
-use jonline::models::{EmailHeaders, Message, MESSAGE_COLUMNS};
-use jonline::schema::messages;
-use jonline::web::email::{collect_addresses, display_address, sanitize_header_value};
-use jonline::{db_connection, init_bin_logging, init_crypto, minio_connection};
+use rellm::models::{EmailHeaders, Message, MESSAGE_COLUMNS};
+use rellm::schema::messages;
+use rellm::web::email::{collect_addresses, display_address, sanitize_header_value};
+use rellm::{db_connection, init_bin_logging, init_crypto, minio_connection};
 
 /// TODO(2026-08-18): temporary, one-off migration. Once this has been run against every deployed
 /// namespace's Messages (bullcitysocial, oakcitysocial, ato-band, jonline.io -- see
@@ -17,7 +17,7 @@ use jonline::{db_connection, init_bin_logging, init_crypto, minio_connection};
 /// Stalwart header value's own trailing CRLF (see `build_raw_message`'s doc comment in
 /// `web/email.rs`). That bug made `mail_parser` treat everything past the *first* header as body
 /// text, so affected rows have `subject: None`, an all-empty `email_headers`, a
-/// `<generated-*@jonline.internal>` fallback `email_message_id`, and a `body_text` that's really
+/// `<generated-*@rellm.internal>` fallback `email_message_id`, and a `body_text` that's really
 /// the raw header block (each header followed by a spurious blank line) followed by the real
 /// body.
 ///

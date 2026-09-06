@@ -1,6 +1,6 @@
-extern crate jonline;
+extern crate rellm;
 
-use jonline::*;
+use rellm::*;
 use std::env::args;
 
 pub fn main() {

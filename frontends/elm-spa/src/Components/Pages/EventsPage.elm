@@ -59,8 +59,8 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf exposing (Timestamp)
-import Proto.Jonline exposing (Event, EventInstance, SyncDestination, User)
-import Proto.Jonline.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Proto.Rellm exposing (Event, EventInstance, SyncDestination, User)
+import Proto.Rellm.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -286,7 +286,7 @@ type alias Model =
 
 
 type Msg
-    = GotServerEvents String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
+    = GotServerEvents String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
     | GotNow Time.Posix
     | Poll
     | Animate Animation.Msg
@@ -2957,7 +2957,7 @@ modeLabel mode =
 currently showing: `model.author`'s own host + that user's id when this is a
 per-user feed, or `shared.accounts.mainFrontendHost` (no `user_id`) for
 the unfiltered feed -- mirrors `UI.elm`'s own `"https://" ++ server.frontendHost`
-convention for linking to a Jonline server's own pages.
+convention for linking to a Rellm server's own pages.
 -}
 icsUrl : Shared.Model -> Model -> String
 icsUrl shared model =

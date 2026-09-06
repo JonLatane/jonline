@@ -1,5 +1,5 @@
-import { Membership, Moderation, Permission } from "@jonline/api";
-import { Card, Heading, Paragraph, Spinner, XStack, YStack, useToastController } from '@jonline/ui';
+import { Membership, Moderation, Permission } from "@rellm/api";
+import { Card, Heading, Paragraph, Spinner, XStack, YStack, useToastController } from '@rellm/ui';
 import { useGroupContext } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedDispatch } from "app/hooks";
 import { FederatedUser, actionFailed, federatedId, updateMembership } from "app/store";

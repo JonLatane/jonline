@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purges Cloudflare's edge cache for a Jonline web deployment -- but only the
+# Purges Cloudflare's edge cache for a Rellm web deployment -- but only the
 # web/Elm/Tamagui/Flutter static assets actually baked into this build, never
 # anything under /media/ (see backend/src/web/media.rs: media is cached for
 # 12h and deliberately meant to survive deploys).

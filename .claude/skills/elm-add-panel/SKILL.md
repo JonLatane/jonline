@@ -3,7 +3,7 @@ name: elm-add-panel
 description: Add a new app-wide "Shared panel" (like Accounts/Starred Posts/Markdown) to the Elm SPA (frontends/elm-spa). Use when asked to add a new global overlay/panel driven from Shared.Model, not page-local state.
 ---
 
-Jonline's Elm SPA has a handful of app-wide overlay panels (Accounts Panel, Starred Posts Panel, Admin Panel, Markdown Panel) that live in `Shared.Model` rather than any one page, so they're available everywhere and survive route changes. There's no central "list of panels" registry — each one is wired by hand into `Shared.elm` and `UI.elm` following the same shape. Add a new one the same way.
+Rellm's Elm SPA has a handful of app-wide overlay panels (Accounts Panel, Starred Posts Panel, Admin Panel, Markdown Panel) that live in `Shared.Model` rather than any one page, so they're available everywhere and survive route changes. There's no central "list of panels" registry — each one is wired by hand into `Shared.elm` and `UI.elm` following the same shape. Add a new one the same way.
 
 ## 1. The panel module itself
 

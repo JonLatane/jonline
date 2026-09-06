@@ -1,5 +1,5 @@
-import { WebUserInterface } from "@jonline/api";
-import { Paragraph, Select, XStack, YStack } from "@jonline/ui";
+import { WebUserInterface } from "@rellm/api";
+import { Paragraph, Select, XStack, YStack } from "@rellm/ui";
 import { Check, ChevronDown } from "@tamagui/lucide-icons";
 import { useCallback } from "react";
 

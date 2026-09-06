@@ -437,10 +437,10 @@ mod custom_tabs_migration_tests {
           "home": null,
           "tabs": [
             {
-              "path": "what_is_jonline",
+              "path": "what_is_rellm",
               "custom_tab": {
                 "icon": { "IconMediaId": "5F6wnF" },
-                "title": "What Is Jonline?",
+                "title": "What Is Rellm?",
                 "target": { "PostId": "4zHQSj" }
               }
             },
@@ -467,8 +467,8 @@ mod custom_tabs_migration_tests {
 
         assert_eq!(migrated.home, None);
         assert_eq!(migrated.tabs.len(), 3);
-        assert_eq!(migrated.tabs[0].path, "what_is_jonline");
-        assert_eq!(migrated.tabs[0].title, Some("What Is Jonline?".to_string()));
+        assert_eq!(migrated.tabs[0].path, "what_is_rellm");
+        assert_eq!(migrated.tabs[0].title, Some("What Is Rellm?".to_string()));
         assert_eq!(
             migrated.tabs[0].target,
             Some(custom_navigation_tab::Target::PostId("4zHQSj".to_string()))

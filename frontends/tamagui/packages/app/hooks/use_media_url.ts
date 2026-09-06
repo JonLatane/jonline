@@ -1,9 +1,9 @@
-import { AccountOrServer, JonlineServer, serverUrl, frontendServerUrl } from 'app/store';
+import { AccountOrServer, RellmServer, serverUrl, frontendServerUrl } from 'app/store';
 import { useCredentialDispatch, useProvidedDispatch } from './credential_dispatch_hooks';
 
-// Accepts either a bare media ID (for local Jonline media, fetched via `/media/{id}`) or a
+// Accepts either a bare media ID (for local Rellm media, fetched via `/media/{id}`) or a
 // `Media`/`MediaReference`-like object, whose `url` (if set) is used directly instead -- used
-// for media Jonline doesn't store locally, e.g. from federated ActivityPub/Mastodon or AT
+// for media Rellm doesn't store locally, e.g. from federated ActivityPub/Mastodon or AT
 // Protocol/Bluesky content.
 type MediaUrlSource = string | { id?: string; url?: string } | undefined;
 

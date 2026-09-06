@@ -1,9 +1,9 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 use std::sync::Arc;
 
 use diesel::*;
-use jonline::{
+use rellm::{
     db_connection, init_bin_logging, init_crypto, marshaling::*, models, protos, rpcs, schema,
 };
 

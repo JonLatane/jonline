@@ -1,4 +1,4 @@
-import { PostListingType } from "@jonline/api";
+import { PostListingType } from "@rellm/api";
 import { federatedId, getFederated } from "../federation";
 import { FederatedGroup, FederatedPost, GroupsState, PostsState, selectPostById } from "../modules";
 import { RootState } from "../store";

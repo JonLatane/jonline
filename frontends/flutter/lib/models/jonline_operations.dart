@@ -1,23 +1,23 @@
-import 'package:jonline/generated/jonline.pbgrpc.dart';
+import 'package:rellm/generated/rellm.pbgrpc.dart';
 
 import '../app_state.dart';
 import '../generated/groups.pb.dart';
 import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
-import 'jonline_account.dart';
-import 'jonline_account_operations.dart';
-import 'jonline_clients.dart';
+import 'rellm_account.dart';
+import 'rellm_account_operations.dart';
+import 'rellm_clients.dart';
 import 'server_errors.dart';
 
-/// Operations based on [JonlineAccount.selectedAccount] and
-/// [JonlineAccount.selectedServer] that are useful whether or not
+/// Operations based on [RellmAccount.selectedAccount] and
+/// [RellmAccount.selectedServer] that are useful whether or not
 /// the user is logged in.
-extension JonlineOperations on JonlineAccount {
+extension RellmOperations on RellmAccount {
   static Future<GetMembersResponse?> getMembers(
       {GetMembersRequest? request, Function(String)? showMessage}) async {
     return performOperation(
         (client) => client.getMembers(request ?? GetMembersRequest(),
-            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+            options: RellmAccount.selectedAccount?.authenticatedCallOptions),
         showMessage: showMessage,
         entityType: "members");
   }
@@ -26,7 +26,7 @@ extension JonlineOperations on JonlineAccount {
       {GetUsersRequest? request, Function(String)? showMessage}) async {
     return performOperation(
         (client) => client.getUsers(request ?? GetUsersRequest(),
-            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+            options: RellmAccount.selectedAccount?.authenticatedCallOptions),
         showMessage: showMessage,
         entityType: "users");
   }
@@ -37,7 +37,7 @@ extension JonlineOperations on JonlineAccount {
   }) async {
     return performOperation(
         (client) => client.getGroups(request ?? GetGroupsRequest(),
-            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+            options: RellmAccount.selectedAccount?.authenticatedCallOptions),
         showMessage: showMessage,
         entityType: "groups");
   }
@@ -48,7 +48,7 @@ extension JonlineOperations on JonlineAccount {
       bool forReplies = false}) async {
     return performOperation(
         (client) => client.getPosts(request ?? GetPostsRequest(),
-            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+            options: RellmAccount.selectedAccount?.authenticatedCallOptions),
         showMessage: showMessage,
         entityType: forReplies ? "replies" : "posts");
   }
@@ -58,19 +58,19 @@ extension JonlineOperations on JonlineAccount {
       {Function(String)? showMessage}) async {
     return performOperation(
         (client) => client.getGroupPosts(request,
-            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+            options: RellmAccount.selectedAccount?.authenticatedCallOptions),
         showMessage: showMessage,
         entityType: "group posts");
   }
 
   static final Map<String, DateTime> _lastErrors = {};
   static Future<Response?> performOperation<Response>(
-      Future<Response?> Function(JonlineClient) operation,
+      Future<Response?> Function(RellmClient) operation,
       {Function(String)? showMessage,
       String? entityType}) async {
-    await JonlineAccount.selectedAccount
+    await RellmAccount.selectedAccount
         ?.ensureAccessToken(showMessage: showMessage);
-    final client = await JonlineClients.getSelectedOrDefaultClient(
+    final client = await RellmClients.getSelectedOrDefaultClient(
         showMessage: showMessage);
     if (client == null) {
       showMessage?.call("Error: No client");

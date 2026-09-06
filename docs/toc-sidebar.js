@@ -5,12 +5,12 @@
 //
 // What it does, in order:
 //   1. Moves every element from <h2 id="table-of-contents"> through (but not
-//      including) the <p><a name="jonline-proto"> marker into a new
+//      including) the <p><a name="rellm-proto"> marker into a new
 //      <nav id="toc-sidebar">, which becomes the sidebar's content.
-//   2. Auto-discovers every real heading (<h1>-<h6>) between the "Jonline"
+//   2. Auto-discovers every real heading (<h1>-<h6>) between the "Rellm"
 //      service heading and the next top-level section (Ports, Authentication,
 //      Federation, HTTP Endpoints, API Design Notes, gRPC API, and all their
-//      sub-headings) and appends them to the "jonline.proto" sub-list,
+//      sub-headings) and appends them to the "rellm.proto" sub-list,
 //      mirroring the headings' own nesting -- since protoc-gen-doc's
 //      generated TOC only includes top-level message/service headings and
 //      would otherwise omit these entirely. Every RPC method from the gRPC
@@ -40,15 +40,15 @@
 // scripts) has loaded.
 (function () {
   var toc = document.getElementById('table-of-contents');
-  var marker = document.querySelector('a[name="jonline-proto"]');
+  var marker = document.querySelector('a[name="rellm-proto"]');
   if (!toc || !marker) return;
 
   var DEFAULT_WIDTH = 300;
   var MIN_WIDTH = 180;
   var MAX_WIDTH = 560;
   var NARROW_BREAKPOINT = 640;
-  var WIDTH_KEY = '_jonline_docs_toc_width_';
-  var COLLAPSED_KEY = '_jonline_docs_toc_collapsed_';
+  var WIDTH_KEY = '_rellm_docs_toc_width_';
+  var COLLAPSED_KEY = '_rellm_docs_toc_collapsed_';
 
   function loadNumber(key, fallback) {
     try {
@@ -83,19 +83,19 @@
     node = next;
   }
 
-  var jonlineLink = sidebar.querySelector('a[href="#jonline-Jonline"]');
-  var jonlineItem = jonlineLink && jonlineLink.closest('li');
-  var jonlineHeading = document.getElementById('jonline');
-  if (jonlineItem && jonlineHeading) {
-    // Walk every real heading between the "Jonline" heading and the next
+  var rellmLink = sidebar.querySelector('a[href="#rellm-Rellm"]');
+  var rellmItem = rellmLink && rellmLink.closest('li');
+  var rellmHeading = document.getElementById('rellm');
+  if (rellmItem && rellmHeading) {
+    // Walk every real heading between the "Rellm" heading and the next
     // top-level (h1/h2) section, mirroring their nesting: each heading is
     // appended as a child of the nearest preceding heading with a shallower
-    // level, or as a sibling of the "Jonline" TOC entry itself if there is
-    // none (e.g. "Ports", and "gRPC API" which is an h3, same as "Jonline").
-    var rootUl = jonlineItem.parentNode;
+    // level, or as a sibling of the "Rellm" TOC entry itself if there is
+    // none (e.g. "Ports", and "gRPC API" which is an h3, same as "Rellm").
+    var rootUl = rellmItem.parentNode;
     var stack = [{ level: 3, ul: rootUl, li: null }];
     var grpcApiItem = null;
-    var node = jonlineHeading.nextElementSibling;
+    var node = rellmHeading.nextElementSibling;
     while (node) {
       var headingMatch = /^H([1-6])$/.exec(node.tagName);
       if (headingMatch) {

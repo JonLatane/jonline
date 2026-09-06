@@ -31,7 +31,7 @@ module UI.CustomNav exposing
 same `CustomNavigationTabSet`.
 
 `CustomTabTarget`/`CustomTabIcon` exist because the generated `oneof` types
-(`Proto.Jonline.CustomNavigationTab.Target.Target`/`...Icon.Icon`) are generic in both branches'
+(`Proto.Rellm.CustomNavigationTab.Target.Target`/`...Icon.Icon`) are generic in both branches'
 payload type (`Target a0 a1`/`Icon a0 a1`) -- fine for the wire format, but awkward to pattern-match
 on directly everywhere this is used. `fromProtoTab`/`toProtoTab` round-trip a `CustomNavigationTab`
 to/from this module's own `CustomTab`, `Nothing` only for a malformed proto value (`target`/`icon`
@@ -42,12 +42,12 @@ hand-edited/future-versioned config).
 import Gen.Route as Route exposing (Route)
 import Html exposing (Html, a, img, span, text)
 import Html.Attributes exposing (alt, attribute, href, src, title)
-import Proto.Jonline exposing (CustomHomePage, CustomNavigationTab, CustomNavigationTabSet)
-import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode(..))
-import Proto.Jonline.CustomHomePage.Target as ProtoHomeTarget
-import Proto.Jonline.CustomNavigationTab.Icon as ProtoIcon
-import Proto.Jonline.CustomNavigationTab.Target as ProtoTarget
-import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
+import Proto.Rellm exposing (CustomHomePage, CustomNavigationTab, CustomNavigationTabSet)
+import Proto.Rellm.CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Proto.Rellm.CustomHomePage.Target as ProtoHomeTarget
+import Proto.Rellm.CustomNavigationTab.Icon as ProtoIcon
+import Proto.Rellm.CustomNavigationTab.Target as ProtoTarget
+import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -302,7 +302,7 @@ toProtoHomeConfig config =
             }
 
 
-{-| The four tabs Jonline shows today (`Events`/`Posts`/`People`/`About`, see `UI.eventsLink`/etc.)
+{-| The four tabs Rellm shows today (`Events`/`Posts`/`People`/`About`, see `UI.eventsLink`/etc.)
 recast as `CustomTab`s -- both `effectiveTabs`' fallback for an unset `CustomNavigationTabSet.tabs`,
 and `SettingsTab`'s starting point for a freshly-opened editor. Each one's `path` is just
 `defaultPathFor`'s own slug for its `target` -- see that function's own doc.

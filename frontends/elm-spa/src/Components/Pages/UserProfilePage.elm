@@ -9,7 +9,7 @@ module Components.Pages.UserProfilePage exposing
     , view
     )
 
-{-| The shared guts of a user profile page: fetching a `Proto.Jonline.User`
+{-| The shared guts of a user profile page: fetching a `Proto.Rellm.User`
 from a specific (possibly not-yet-connected) server, by id or by username, and
 rendering it -- reused by both `Pages.User.UserId_` (`/user/:id[@host]`) and
 `Pages.UsernameOrCustomTab_` (`/:username[@host]`), which differ only in which `Lookup`
@@ -52,14 +52,14 @@ import Json.Decode as Decode
 import Set
 import Ports
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (AIModelProvider, AIModelProviderGrant, SyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
-import Proto.Jonline.AIModelProvider.Provider as AIModelProviderProvider
-import Proto.Jonline.SyncSource.Configuration as Configuration
-import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
-import Proto.Jonline.Moderation exposing (Moderation(..))
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility)
+import Proto.Rellm exposing (AIModelProvider, AIModelProviderGrant, SyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
+import Proto.Rellm.AIModelProvider.Provider as AIModelProviderProvider
+import Proto.Rellm.SyncSource.Configuration as Configuration
+import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
+import Proto.Rellm.Moderation exposing (Moderation(..))
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -121,7 +121,7 @@ type Msg
     | EnableClicked
     | SharedMsg Shared.Msg
     | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
-    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
+    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
     | RealNameEditClicked
     | RealNameInputChanged String
     | RealNameCancelClicked
@@ -173,7 +173,7 @@ type Msg
     | SyncSourceDeleteClicked SyncSource Bool
     | SyncSourcesExpandedToggled
     | SyncSourcesRefreshClicked
-    | GotSyncSourcesRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetSyncSourcesResponse ))
+    | GotSyncSourcesRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetSyncSourcesResponse ))
     | SyncDestinationsExpandedToggled
     | FacebookLoginClicked
     | InstagramLoginClicked
@@ -215,7 +215,7 @@ type Msg
     | GotAIModelProviderDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | AIModelProvidersExpandedToggled
     | AIModelProvidersRefreshClicked
-    | GotAIModelProvidersRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetAIModelProvidersResponse ))
+    | GotAIModelProvidersRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetAIModelProvidersResponse ))
     | AIModelProviderGrantsToggled String
     | AIModelProviderGrantUserIdChanged String String
     | AIModelProviderGrantTokensChanged String String
@@ -2658,7 +2658,7 @@ updateInner shared msg model =
                 form =
                     aiModelProviderGrantFormFor provider.id ap
 
-                request : Proto.Jonline.GrantAIModelProviderRequest
+                request : Proto.Rellm.GrantAIModelProviderRequest
                 request =
                     { userId = form.userId
                     , aiModelProviderId = provider.id
@@ -2715,7 +2715,7 @@ updateInner shared msg model =
                 key =
                     aiModelProviderGrantKey provider.id granteeId
 
-                request : Proto.Jonline.RevokeAIModelProviderRequest
+                request : Proto.Rellm.RevokeAIModelProviderRequest
                 request =
                     { userId = granteeId, aiModelProviderId = provider.id }
             in
@@ -3350,9 +3350,9 @@ xTwitterLoginResultDecoder value =
 
 
 {-| Lists the Facebook Pages the just-logged-in account manages, straight from the Graph API
-(`GET /me/accounts`) -- a plain client-side HTTP call, not routed through the Jonline backend at
+(`GET /me/accounts`) -- a plain client-side HTTP call, not routed through the Rellm backend at
 all, since it's Facebook's own API being asked "which Pages can this token manage," not anything
-Jonline-specific. Only `id`/`name` are read out of each entry (see `FacebookPageOption`'s own doc
+Rellm-specific. Only `id`/`name` are read out of each entry (see `FacebookPageOption`'s own doc
 for why the per-page access token Facebook also returns here isn't used).
 -}
 fetchFacebookPages : String -> Cmd Msg

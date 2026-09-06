@@ -3,31 +3,31 @@ digraph G {
   browser [shape = doublecircle;style = filled;color = ".7 .3 1.0";label = <<b>Web Browser</b>>;];
   resolve_dns [shape=parallelogram label = "DNS Lookup";];
   browser -> resolve_dns [style = bold;];
-  jonlineio [shape=note label = "jonline.io";];
+  rellmio [shape=note label = "jonline.io";];
   oakcitysocial [shape=note label = "oakcity.social";];
   bullcitysocial [shape=note label = "bullcity.social";];
   
-  resolve_dns -> jonlineio [style = dotted;];
+  resolve_dns -> rellmio [style = dotted;];
   resolve_dns -> oakcitysocial [style = dotted;];
   resolve_dns -> bullcitysocial [style = dotted;];
   
   subgraph cluster0 {
-    label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
+    label = <<table><tr><td><b>rellm</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline0 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>];
+    rellm0 [label = <<table><tr><td><b>rellm</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>];
     minio0 [shape=cylinder label = "Minio";];
     postgres0 [shape=cylinder label = "Postgres";];
-    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
+    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>rellm-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
     
-    jonline0 -> minio0 [label=<5GB @ <b>50¢/mo</b>>];
-    jonline0 -> postgres0 [label=<1GB @ <b>10¢/mo</b>>];
-    jonline0 -> tls0;
+    rellm0 -> minio0 [label=<5GB @ <b>50¢/mo</b>>];
+    rellm0 -> postgres0 [label=<1GB @ <b>10¢/mo</b>>];
+    rellm0 -> tls0;
   }
   
-  jonlineio -> jonline0 [label=<<b>$12/mo</b>>];
+  rellmio -> rellm0 [label=<<b>$12/mo</b>>];
   
   subgraph cluster1 {
     label = <<table><tr><td><b>oakcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
@@ -35,16 +35,16 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline1 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
+    rellm1 [label = <<table><tr><td><b>rellm</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
     minio1 [shape=cylinder label = "Minio";];
     postgres1 [shape=cylinder label = "Postgres";];
     
-    jonline1 -> minio1 [label=<5GB @ <b>50¢/mo</b>>];
-    jonline1 -> postgres1 [label=<1GB @ <b>10¢/mo</b>>];
-    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
-    jonline1 -> tls1;
+    rellm1 -> minio1 [label=<5GB @ <b>50¢/mo</b>>];
+    rellm1 -> postgres1 [label=<1GB @ <b>10¢/mo</b>>];
+    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>rellm-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
+    rellm1 -> tls1;
   }
-  oakcitysocial -> jonline1 [label=<<b>$12/mo</b>>];
+  oakcitysocial -> rellm1 [label=<<b>$12/mo</b>>];
   
   subgraph cluster2 {
     label = <<table><tr><td><b>bullcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
@@ -52,23 +52,23 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline2 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
+    rellm2 [label = <<table><tr><td><b>rellm</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
     minio2 [label = "Minio" shape=cylinder];
     postgres2 [label = "Postgres" shape=cylinder];
     
-    jonline2 -> minio2 [label=<5GB @ <b>50¢/mo</b>>];
-    jonline2 -> postgres2 [label=<1GB @ <b>10¢/mo</b>>];
-    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
-    jonline2 -> tls2;
+    rellm2 -> minio2 [label=<5GB @ <b>50¢/mo</b>>];
+    rellm2 -> postgres2 [label=<1GB @ <b>10¢/mo</b>>];
+    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>rellm-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
+    rellm2 -> tls2;
   }
-  bullcitysocial -> jonline2 [label=<<b>$12/mo</b>>];
+  bullcitysocial -> rellm2 [label=<<b>$12/mo</b>>];
   
   // certs -> tls0;
   // certs -> tls1;
   // certs -> tls2;
   // resolve_dns ->  [style=dotted] bullcitysocial;
   // execute -> { make_string; printf}
-  // jonlineio -> make_string;
+  // rellmio -> make_string;
   // edge [color=red];
   // jbl -> printf [style=bold,label="100 times"];
   // make_string [label="make a\nstring"];

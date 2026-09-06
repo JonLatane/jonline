@@ -1,4 +1,4 @@
-import { Event, EventAttendances, EventInstance, EventListingType, TimeFilter } from "@jonline/api";
+import { Event, EventAttendances, EventInstance, EventListingType, TimeFilter } from "@rellm/api";
 import {
   Dictionary,
   EntityAdapter,

@@ -1,7 +1,7 @@
 module Components.Markdown exposing (view)
 
 {-| Renders a Markdown string as sanitized, syntax-highlighted HTML via the
-`<jonline-markdown>` custom element (see `public/markdown.js` and the
+`<rellm-markdown>` custom element (see `public/markdown.js` and the
 libraries it vendors in `public/vendor/`: marked.js parses the Markdown,
 DOMPurify sanitizes the result -- post content comes from other users and
 federated servers, so it's untrusted -- and highlight.js highlights fenced
@@ -26,6 +26,6 @@ import Json.Encode as Encode
 
 view : List (Attribute msg) -> String -> Html msg
 view attrs markdown =
-    node "jonline-markdown"
+    node "rellm-markdown"
         (property "content" (Encode.string markdown) :: attrs)
         []

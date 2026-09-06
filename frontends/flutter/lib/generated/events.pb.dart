@@ -25,8 +25,8 @@ import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'events.pbenum.dart';
 
-///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#jonline-Event)s with the same ID
-///  if that [`Event`](#jonline-Event) has multiple [`EventInstance`](#jonline-EventInstance)s in the time frame the client asked for.
+///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
+///  if that [`Event`](#rellm-Event) has multiple [`EventInstance`](#rellm-EventInstance)s in the time frame the client asked for.
 ///
 ///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 ///
@@ -88,7 +88,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetEventsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(2, _omitFieldNames ? '' : 'authorUserId')
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
@@ -133,7 +133,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAuthorUserId() => clearField(2);
 
-  /// Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association's for the Event's internal [`Post`](#jonline-Post)).
+  /// Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association's for the Event's internal [`Post`](#rellm-Post)).
   @$pb.TagNumber(3)
   $core.String get groupId => $_getSZ(1);
   @$pb.TagNumber(3)
@@ -143,7 +143,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
-  /// Filters returned [`EventInstance`](#jonline-EventInstance)s by time.
+  /// Filters returned [`EventInstance`](#rellm-EventInstance)s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(2);
   @$pb.TagNumber(5)
@@ -171,7 +171,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(4);
 
-  /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#jonline-PostContext) of `EVENT` or `EVENT_INSTANCE`.
+  /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
   $core.String get postId => $_getSZ(5);
   @$pb.TagNumber(8)
@@ -209,7 +209,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
 
   /// Auth token proving ownership of an anonymous RSVP, mirroring
   /// `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
-  /// (possibly still-`PENDING`) [`EventAttendance`](#jonline-EventAttendance) and its `EventInstance.location` (when
+  /// (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `EventInstance.location` (when
   /// `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
   /// `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
   /// does automatically.
@@ -223,7 +223,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearAnonymousAttendeeAuthToken() => clearField(13);
 }
 
-/// Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#jonline-EventInstance).
+/// Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#rellm-EventInstance).
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
@@ -251,7 +251,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory TimeFilter.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<$12.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $12.Timestamp.create)
@@ -329,7 +329,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   $12.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
-///  A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
+///  A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`EventInstance`](#rellm-EventInstance)s.
 ///
 ///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
 ///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -354,7 +354,7 @@ class GetEventsResponse extends $pb.GeneratedMessage {
   factory GetEventsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetEventsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<Event>(1, _omitFieldNames ? '' : 'events', $pb.PbFieldType.PM, subBuilder: Event.create)
     ..hasRequiredFields = false
   ;
@@ -387,7 +387,7 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 ///  An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
 ///  about the `Event`. Actual time data lies in its `EventInstances`.
 ///
-///  (Eventually, Jonline Events should also support ticketing.)
+///  (Eventually, Rellm Events should also support ticketing.)
 class Event extends $pb.GeneratedMessage {
   factory Event({
     $8.Post? post,
@@ -414,7 +414,7 @@ class Event extends $pb.GeneratedMessage {
   factory Event.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Event.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
     ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
@@ -443,7 +443,7 @@ class Event extends $pb.GeneratedMessage {
   static Event getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
   static Event? _defaultInstance;
 
-  /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`.
+  /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`.
   /// An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
   @$pb.TagNumber(2)
   $8.Post get post => $_getN(0);
@@ -505,7 +505,7 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   factory SyncEventInstanceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory SyncEventInstanceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncEventInstanceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncEventInstanceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
     ..hasRequiredFields = false
@@ -573,7 +573,7 @@ class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeleteEventInstanceSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory DeleteEventInstanceSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventInstanceSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventInstanceSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
     ..hasRequiredFields = false
@@ -653,7 +653,7 @@ class EventInfo extends $pb.GeneratedMessage {
   factory EventInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
@@ -714,7 +714,7 @@ class EventInfo extends $pb.GeneratedMessage {
   void clearMaxAttendees() => clearField(3);
 
   /// Hide the location until the user RSVPs (and it's accepted).
-  /// From a system perspective, when this is set, Events will not include the [`Location`](#jonline-Location) until the user has RSVP'd.
+  /// From a system perspective, when this is set, Events will not include the [`Location`](#rellm-Location) until the user has RSVP'd.
   /// Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
   /// user whose attendance is approved (or the event owner).
   @$pb.TagNumber(4)
@@ -738,9 +738,9 @@ class EventInfo extends $pb.GeneratedMessage {
   void clearDefaultRsvpModeration() => clearField(5);
 }
 
-/// The time-based component of an [`Event`](#jonline-Event). Has a `starts_at` and `ends_at` time,
-/// a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and discussion thread) specific to this particular
-/// `EventInstance` in addition to the parent [`Event`](#jonline-Event).
+/// The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
+/// a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
+/// `EventInstance` in addition to the parent [`Event`](#rellm-Event).
 class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
     $core.String? eventId,
@@ -795,7 +795,7 @@ class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInstance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
     ..aOM<$8.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
@@ -831,7 +831,7 @@ class EventInstance extends $pb.GeneratedMessage {
   static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
   static EventInstance? _defaultInstance;
 
-  /// ID of the parent [`Event`](#jonline-Event) (i.e. the parent `Event.post.id`).
+  /// ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`).
   @$pb.TagNumber(2)
   $core.String get eventId => $_getSZ(0);
   @$pb.TagNumber(2)
@@ -841,7 +841,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
-  /// Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`.
+  /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
   /// An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
   @$pb.TagNumber(3)
   $8.Post get post => $_getN(1);
@@ -854,7 +854,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $8.Post ensurePost() => $_ensure(1);
 
-  /// Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event).
+  /// Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
   @$pb.TagNumber(4)
   EventInstanceInfo get info => $_getN(2);
   @$pb.TagNumber(4)
@@ -902,7 +902,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $16.Location ensureLocation() => $_ensure(5);
 
-  /// The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from a [`SyncSource`](#jonline-SyncSource).
+  /// The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource).
   @$pb.TagNumber(8)
   $core.String get syncSourceInstanceId => $_getSZ(6);
   @$pb.TagNumber(8)
@@ -970,7 +970,7 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   factory EventInstanceInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInstanceInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: EventInstanceRsvpInfo.create)
     ..hasRequiredFields = false
   ;
@@ -1009,7 +1009,7 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
 
-/// Consolidated type for RSVP info for an [`EventInstance`](#jonline-EventInstance).
+/// Consolidated type for RSVP info for an [`EventInstance`](#rellm-EventInstance).
 /// Curently, the `optional` counts below are *never* returned by the API.
 class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   factory EventInstanceRsvpInfo({
@@ -1057,7 +1057,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInstanceRsvpInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
@@ -1201,7 +1201,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   factory GetEventAttendancesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetEventAttendancesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventAttendancesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventAttendancesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
     ..hasRequiredFields = false
@@ -1270,7 +1270,7 @@ class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventAttendances.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
     ..aOM<$16.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $16.Location.create)
     ..hasRequiredFields = false
@@ -1320,10 +1320,10 @@ enum EventAttendance_Attendee {
   notSet
 }
 
-/// Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#jonline-EventInstance). Such as:
-/// * A user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
-/// * Invitation status of a user to an [`EventInstance`](#jonline-EventInstance).
-/// * [`ContactMethod`](#jonline-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#jonline-EventInstance).
+/// Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#rellm-EventInstance). Such as:
+/// * A user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+/// * Invitation status of a user to an [`EventInstance`](#rellm-EventInstance).
+/// * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#rellm-EventInstance).
 class EventAttendance extends $pb.GeneratedMessage {
   factory EventAttendance({
     $core.String? id,
@@ -1387,7 +1387,7 @@ class EventAttendance extends $pb.GeneratedMessage {
     4 : EventAttendance_Attendee.anonymousAttendee,
     0 : EventAttendance_Attendee.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [3, 4])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventInstanceId')
@@ -1438,7 +1438,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// ID of the [`EventInstance`](#jonline-EventInstance) the attendance is for.
+  /// ID of the [`EventInstance`](#rellm-EventInstance) the attendance is for.
   @$pb.TagNumber(2)
   $core.String get eventInstanceId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -1482,7 +1482,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearNumberOfGuests() => clearField(5);
 
-  /// The user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
+  /// The user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
@@ -1522,7 +1522,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearPublicNote() => clearField(9);
 
-  /// Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable).
+  /// Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`EventInstance`](#rellm-EventInstance) owner if applicable).
   @$pb.TagNumber(10)
   $13.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
@@ -1557,9 +1557,9 @@ class EventAttendance extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
-///  An anonymous internet user who has RSVP'd to an [`EventInstance`](#jonline-EventInstance).
+///  An anonymous internet user who has RSVP'd to an [`EventInstance`](#rellm-EventInstance).
 ///
-///  (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#jonline-ContactMethod)s should support the `LIMITED` visibility, which will
+///  (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#rellm-ContactMethod)s should support the `LIMITED` visibility, which will
 ///  make them visible to the event creator.
 class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee({
@@ -1583,7 +1583,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AnonymousAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..pc<$4.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $4.ContactMethod.create)
     ..aOS(3, _omitFieldNames ? '' : 'authToken')
@@ -1628,7 +1628,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
   /// upserts, with the same event_instance_id and anonymous_attendee.auth_token,
-  /// will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#jonline-EventAttendance).
+  /// will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance).
   @$pb.TagNumber(3)
   $core.String get authToken => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -1639,7 +1639,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   void clearAuthToken() => clearField(3);
 }
 
-/// Wire-identical to [Author](#jonline-Author), but with a different name to avoid confusion.
+/// Wire-identical to [Author](#rellm-Author), but with a different name to avoid confusion.
 class UserAttendee extends $pb.GeneratedMessage {
   factory UserAttendee({
     $core.String? userId,
@@ -1670,7 +1670,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   factory UserAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UserAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)

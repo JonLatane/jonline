@@ -1,4 +1,4 @@
-import { AccountOrServer, JonlineServer } from "app/store";
+import { AccountOrServer, RellmServer } from "app/store";
 import { pageInitializer } from "app/utils/page_initializer";
 
 export const webPushSupport = pageInitializer(async () => {
@@ -6,10 +6,10 @@ export const webPushSupport = pageInitializer(async () => {
   if ('serviceWorker' in navigator) {
     // debugger;
     navigator.serviceWorker
-      .register('/jonline-service-worker.js', { scope: '/' })
+      .register('/rellm-service-worker.js', { scope: '/' })
       .then(async (registration) => {
         // debugger;
-        console.log('Jonline Web Push /jonline-service-worker.js launched with scope', registration.scope);
+        console.log('Rellm Web Push /rellm-service-worker.js launched with scope', registration.scope);
         // const subscription = registration.pushManager.subscribe({
         //   userVisibleOnly: true,
         //   applicationServerKey,

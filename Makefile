@@ -18,18 +18,18 @@ run_flutter:
 # focus it (or drag its border to resize, or click the status bar to switch windows) instead of
 # needing tmux's own keybindings. Pane titles (shown via `pane-border-status`) label which is which.
 # `automatic-rename off` + `rename-window`/`set-titles-string` keep the window/terminal-tab title a
-# fixed "jonline: run_tmux" -- without it, tmux relabels the window after whatever's currently in the
+# fixed "rellm: run_tmux" -- without it, tmux relabels the window after whatever's currently in the
 # foreground (`make`, then `cargo`/`npx`, etc.), which is how you got a tab just called "make".
-# Kills any previous `jonline` session first so re-running this is always safe.
+# Kills any previous `rellm` session first so re-running this is always safe.
 run_tmux:
-	-tmux kill-session -t jonline 2>/dev/null
-	tmux new-session -d -s jonline \; \
+	-tmux kill-session -t rellm 2>/dev/null
+	tmux new-session -d -s rellm \; \
 		set-option -g mouse on \; \
 		set-option -g pane-border-status top \; \
 		set-option -g automatic-rename off \; \
 		set-option -g set-titles on \; \
-		set-option -g set-titles-string 'jonline: run_tmux' \; \
-		rename-window 'jonline: run_tmux' \; \
+		set-option -g set-titles-string 'rellm: run_tmux' \; \
+		rename-window 'rellm: run_tmux' \; \
 		select-pane -T 'Backend' \; \
 		send-keys '$(MAKE) run_backend' C-m \; \
 		split-window -h \; \
@@ -69,7 +69,7 @@ get_backend_all:
 generate_vapid_push_key_pair:
 	$(MAKE) -C deploys generate_vapid_push_key_pair
 
-# Targets for deploying Jonline to your K8s cluster.
+# Targets for deploying Rellm to your K8s cluster.
 # Internal or external refers to whether the service is exposed to the internet.
 # External is the default, but internal is useful for testing, and could
 # save lots of money if you want to host many servers from a single LoadBalancer/IP.
@@ -96,7 +96,7 @@ get_backend_external_ip:
 monitor_backend_rollout:
 	$(MAKE) -C deploys monitor_backend_rollout
 
-# General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
+# General targets for creating/deleting Postgres/MinIO for Rellm. For more granuar control, use deploys/Makefile directly.
 create_backend_data:
 	$(MAKE) -C deploys create_backend_data
 delete_backend_data:
@@ -105,7 +105,7 @@ update_backend_data:
 	$(MAKE) -C deploys update_backend_data
 
 
-# Manage the shared Traefik ingress (lets many Jonline instances, each in
+# Manage the shared Traefik ingress (lets many Rellm instances, each in
 # their own namespace/domain, share a single LoadBalancer/external IP instead
 # of one each). See deploys/ingress/README.md.
 create_ingress:
@@ -123,7 +123,7 @@ remove_ingress_domain:
 list_ingress_domains:
 	$(MAKE) -C deploys/ingress list_ingress_domains
 
-# Manage the shared Stalwart mail server (lets Jonline instances receive mail at
+# Manage the shared Stalwart mail server (lets Rellm instances receive mail at
 # <username>@yourdomain without each one speaking SMTP itself). See deploys/email/README.md.
 create_email_admin_secret:
 	$(MAKE) -C deploys/email create_email_admin_secret
@@ -179,11 +179,11 @@ lines_of_code:
 docs: documentation html_docs
 
 documentation:
-	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto messages.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto sync.proto ai_model_providers.proto
+	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md rellm.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto messages.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto sync.proto ai_model_providers.proto
 
 html_docs: documentation
 	npm i markdown-to-html-cli -g
-	markdown-to-html --source docs/protocol.md --output docs/protocol.html --github-corners https://github.com/JonLatane/jonline --style 'markdown-style { padding-top: 40px!important; }' --title 'Jonline Protocol Documentation'
+	markdown-to-html --source docs/protocol.md --output docs/protocol.html --github-corners https://github.com/JonLatane/rellm --style 'markdown-style { padding-top: 40px!important; }' --title 'Rellm Protocol Documentation'
 	node -e "const f='docs/protocol.html'; const js=require('fs').readFileSync('docs/toc-sidebar.js','utf8'); \
 		require('fs').writeFileSync(f, require('fs').readFileSync(f,'utf8').replace('</body>', '<script>'+js+'</script></body>'));"
 

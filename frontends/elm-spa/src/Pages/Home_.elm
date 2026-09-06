@@ -74,9 +74,9 @@ import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
 import Html exposing (h3, text)
 import Page
-import Proto.Jonline.CalendarDisplayMode exposing (CalendarDisplayMode)
-import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Rellm.CalendarDisplayMode exposing (CalendarDisplayMode)
+import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel

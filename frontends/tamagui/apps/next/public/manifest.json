@@ -1,6 +1,6 @@
 {
-  "name": "Jonline Example",
-  "short_name": "JonlineExample",
+  "name": "Rellm Example",
+  "short_name": "RellmExample",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#90cdf4",

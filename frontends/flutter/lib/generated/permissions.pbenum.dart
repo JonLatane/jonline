@@ -13,11 +13,11 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-///  Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
-///  (A [`Membership`](#jonline-Membership) is the link between a [`Group`](#jonline-Group) and a [`User`](#jonline-User).)
+///  Rellm Permissions are a set of permissions that can be granted directly to [`User`](#rellm-User)s and [`Membership`](#rellm-Membership)s.
+///  (A [`Membership`](#rellm-Membership) is the link between a [`Group`](#rellm-Group) and a [`User`](#rellm-User).)
 ///
-///  Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
-///  and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
+///  Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#rellm-ServerConfiguration),
+///  and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group), as well as others documented there.
 class Permission extends $pb.ProtobufEnum {
   static const Permission PERMISSION_UNKNOWN = Permission._(0, _omitEnumNames ? '' : 'PERMISSION_UNKNOWN');
   static const Permission VIEW_USERS = Permission._(1, _omitEnumNames ? '' : 'VIEW_USERS');

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
+import 'package:rellm/rellm_state.dart';
 
 import '../../generated/media.pb.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_server.dart';
 
 // [media] may be a bare media ID (fetched via `/media/{id}`) or a `Media`/`MediaReference`,
-// whose `url` (if set) is used directly instead -- used for media Jonline doesn't store
+// whose `url` (if set) is used directly instead -- used for media Rellm doesn't store
 // locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content.
 ImageProvider mediaImageProvider(
   Object media, {
@@ -31,7 +31,7 @@ String mediaImageUrl(
       : media is Media
           ? media.id
           : media as String;
-  final String server = serverOverride ?? JonlineServer.selectedServer.server;
+  final String server = serverOverride ?? RellmServer.selectedServer.server;
 
   // TODO: use auth token
   final protocol = server == 'localhost' ? 'http' : 'https';
@@ -56,7 +56,7 @@ class MediaImage extends StatefulWidget {
   MediaImageState createState() => MediaImageState();
 }
 
-class MediaImageState extends JonlineBaseState<MediaImage> {
+class MediaImageState extends RellmBaseState<MediaImage> {
   @override
   Widget build(BuildContext context) {
     if (widget.media == null) {

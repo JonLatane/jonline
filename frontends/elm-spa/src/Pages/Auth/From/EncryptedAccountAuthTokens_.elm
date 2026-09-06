@@ -26,7 +26,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Page
 import Ports
-import Proto.Jonline exposing (User)
+import Proto.Rellm exposing (User)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel exposing (AccountAuthTokens)

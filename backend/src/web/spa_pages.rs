@@ -19,14 +19,14 @@ use crate::{
 };
 
 use super::{
-    JonlineResponder, JonlineSummary, SpaApp, root_app, spa_prefix, spa_web_path, strip_spa_prefix,
+    RellmResponder, RellmSummary, SpaApp, root_app, spa_prefix, spa_web_path, strip_spa_prefix,
 };
 
 // Pages shared by both SPA frontends: each of these is mounted three times
 // over (see `create_rocket` in `servers/rocket.rs`) -- unprefixed ("/"),
 // "/tamagui", and "/elm" -- so e.g. "/post/x", "/tamagui/post/x", and
 // "/elm/post/x" all resolve to the same handler below and render the same
-// `JonlineSummary`, differing only in which app actually renders the page
+// `RellmSummary`, differing only in which app actually renders the page
 // (see `spa_prefix`/`root_app`). Adding a new page here is enough to wire
 // it up identically for both apps; if an app's own internal (client-side)
 // router doesn't yet understand the path, that's a separate problem.
@@ -35,7 +35,7 @@ lazy_static! {
         posts,
         events,
         about,
-        about_jonline,
+        about_rellm,
         post,
         event,
         user,
@@ -67,7 +67,7 @@ macro_rules! webui {
         pub async fn $name(
             state: &State<RocketState>,
             origin: &Origin<'_>,
-        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+        ) -> CacheResponse<Result<RellmResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
             let server_info = configuration.server_info.unwrap_or_default();
@@ -83,7 +83,7 @@ macro_rules! webui {
         pub async fn $name(
             state: &State<RocketState>,
             origin: &Origin<'_>,
-        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+        ) -> CacheResponse<Result<RellmResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
             let server_info = configuration.server_info.unwrap_or_default();
@@ -100,11 +100,11 @@ macro_rules! webui {
         pub async fn $name(
             state: &State<RocketState>,
             origin: &Origin<'_>,
-        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+        ) -> CacheResponse<Result<RellmResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
             let server_info = configuration.server_info.unwrap_or_default();
-            let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+            let server_name = server_info.name.clone().unwrap_or("Rellm".to_string());
             let server_logo = server_info
                 .logo
                 .clone()
@@ -116,7 +116,7 @@ macro_rules! webui {
             let app = spa_prefix(raw_path).unwrap_or_else(|| root_app(&server_info));
             let is_tamagui_prefixed = spa_prefix(raw_path) == Some(SpaApp::Tamagui);
             let path = strip_spa_prefix(raw_path);
-            let summary: Option<JonlineSummary> =
+            let summary: Option<RellmSummary> =
                 ($summary)(connection, server_name, server_logo, &path);
             spa_web_path(app, $html_path, summary, is_tamagui_prefixed).await
         }
@@ -126,11 +126,11 @@ macro_rules! webui {
         pub async fn $name(
             state: &State<RocketState>,
             origin: &Origin<'_>,
-        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+        ) -> CacheResponse<Result<RellmResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
             let server_info = configuration.server_info.unwrap_or_default();
-            let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+            let server_name = server_info.name.clone().unwrap_or("Rellm".to_string());
             let server_logo = server_info
                 .logo
                 .clone()
@@ -142,7 +142,7 @@ macro_rules! webui {
             let app = spa_prefix(raw_path).unwrap_or_else(|| root_app(&server_info));
             let is_tamagui_prefixed = spa_prefix(raw_path) == Some(SpaApp::Tamagui);
             let path = strip_spa_prefix(raw_path);
-            let summary: Option<JonlineSummary> =
+            let summary: Option<RellmSummary> =
                 ($summary)(connection, server_name, server_logo, &path);
             spa_web_path(app, $html_path, summary, is_tamagui_prefixed).await
         }
@@ -157,9 +157,9 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("Posts | {}", server_name)),
-            description: Some("Posts from a Jonline community".to_string()),
+            description: Some("Posts from a Rellm community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
@@ -172,9 +172,9 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("Events | {}", server_name)),
-            description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
+            description: Some("Searchable, RSVPable Events from a Rellm community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
@@ -187,25 +187,25 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("About Community | {}", server_name)),
-            description: Some("Information a Jonline community".to_string()),
+            description: Some("Information a Rellm community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
 );
 webui!(
-    about_jonline,
-    "/about_jonline",
-    "about_jonline.html",
+    about_rellm,
+    "/about_rellm",
+    "about_rellm.html",
     |_connection: PgPooledConnection,
      _server_name: String,
      _server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
-            title: Some("About Jonline".to_string()),
+        Some(RellmSummary {
+            title: Some("About Rellm".to_string()),
             description: Some(
-                "Information about the Jonline federated social network stack".to_string(),
+                "Information about the Rellm federated social network stack".to_string(),
             ),
             image: None, //server_logo.or(Some("/favicon.png".to_string())),
         })
@@ -272,9 +272,9 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("People | {}", server_name)),
-            description: Some("User listings for a Jonline community".to_string()),
+            description: Some("User listings for a Rellm community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
@@ -288,9 +288,9 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("Messages | {}", server_name)),
-            description: Some("Direct messages and emails on a Jonline community".to_string()),
+            description: Some("Direct messages and emails on a Rellm community".to_string()),
             image: server_logo.or(Some("/favicon.png".to_string())),
         })
     }
@@ -306,7 +306,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -325,7 +325,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Friends | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -344,7 +344,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Followers | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -363,7 +363,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Following | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -382,7 +382,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name_from_user_id(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -401,7 +401,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name_from_user_id(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Friends | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -420,7 +420,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name_from_user_id(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Followers | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -439,7 +439,7 @@ webui!(
      path: &str| {
         let username = username_or_real_name_from_user_id(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Following | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -456,7 +456,7 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("Follow Requests | {}", server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -473,7 +473,7 @@ webui!(
      path: &str| {
         let group_name = group_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -490,7 +490,7 @@ webui!(
      path: &str| {
         let group_name = group_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Posts | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -544,7 +544,7 @@ webui!(
         .map(|r| r.groups.get(0).map(|g| g.name.clone()))
         .flatten()
         .unwrap_or("Group".to_string());
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{}: Events | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -588,7 +588,7 @@ webui!(
      path: &str| {
         let group_name = group_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("Members | {} | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -605,7 +605,7 @@ webui!(
      path: &str| {
         let group_name = group_name(path, &mut connection);
 
-        Some(JonlineSummary {
+        Some(RellmSummary {
             title: Some(format!("{} | Member Details | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.png".to_string())),
@@ -622,9 +622,9 @@ webui!(
      _server_name: String,
      _server_logo: Option<String>,
      _path: &str| {
-        Some(JonlineSummary {
-            title: Some("Jonline AI Event Importer".to_string()),
-            description: Some("AI-powered bulk import of Events for Jonline".to_string()),
+        Some(RellmSummary {
+            title: Some("Rellm AI Event Importer".to_string()),
+            description: Some("AI-powered bulk import of Events for Rellm".to_string()),
             image: None, //server_logo.or(Some("/favicon.png".to_string())),
         })
     }
@@ -706,7 +706,7 @@ fn post_summary(
     server_logo: Option<String>,
     group_name: Option<String>,
     connection: &mut PgPooledConnection,
-) -> Option<JonlineSummary> {
+) -> Option<RellmSummary> {
     let basic_logo = server_logo.or(Some("/favicon.png".to_string()));
     let server_and_group_name = match group_name {
         Some(group_name) => format!("{} | {}", group_name, server_name),
@@ -771,7 +771,7 @@ fn post_summary(
         ),
     };
 
-    Some(JonlineSummary {
+    Some(RellmSummary {
         title: Some(title),
         description,
         image,

@@ -11,7 +11,7 @@ use crate::protos::*;
 use crate::rpcs::get_server_configuration_proto;
 use crate::web::RocketState;
 
-use super::{index_summary, spa_web_path, JonlineResponder, SpaApp};
+use super::{index_summary, spa_web_path, RellmResponder, SpaApp};
 
 lazy_static! {
     pub static ref ELM_PAGES: Vec<Route> = routes![
@@ -61,11 +61,11 @@ async fn elm_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
 #[rocket::get("/elm")]
 pub async fn elm_index(
     state: &State<RocketState>,
-) -> CacheResponse<Result<JonlineResponder, Status>> {
+) -> CacheResponse<Result<RellmResponder, Status>> {
     let mut connection = state.pool.get().unwrap();
     let configuration = get_server_configuration_proto(&mut connection).unwrap();
     let server_info = configuration.server_info.unwrap_or_default();
-    let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+    let server_name = server_info.name.clone().unwrap_or("Rellm".to_string());
     let server_logo = server_info
         .logo
         .clone()
@@ -128,8 +128,8 @@ async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<Named
 
 /// The Facebook OAuth popup's `redirect_uri` target (see `public/index.html`'s
 /// `facebookLoginPopup` port and `public/facebook-callback.html`) -- computed client-side as
-/// `window.location.origin + jonlineBasePath + "/facebook-callback.html"`, so when Elm is served
-/// at root (`jonlineBasePath == ""`) this needs its own root-mounted route the same reason
+/// `window.location.origin + rellmBasePath + "/facebook-callback.html"`, so when Elm is served
+/// at root (`rellmBasePath == ""`) this needs its own root-mounted route the same reason
 /// `elm_root_markdown_js`/etc do: without one, `/facebook-callback.html` falls through to
 /// `spa_file_or_username_or_custom_tab`'s catch-all and gets misinterpreted as a username lookup. (Under
 /// `/elm`, `elm_file`'s own asset fallback already serves it -- no separate route needed there.)
@@ -141,7 +141,7 @@ async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result
 
 /// The service worker script `index.html` registers for Web Push (see `Ports.subscribeToPush`'s
 /// own doc comment) -- same reasoning as `elm_root_facebook_callback` just above: when Elm is
-/// served at root, `jonlineBasePath == ""`, so the browser fetches this at the literal root
+/// served at root, `rellmBasePath == ""`, so the browser fetches this at the literal root
 /// `/service-worker.js`, which would otherwise fall through to `spa_file_or_username_or_custom_tab`'s
 /// catch-all and get served `index.html` -- the wrong content (and MIME type: browsers refuse to
 /// register a service worker whose script doesn't come back as JavaScript). Also load-bearing for

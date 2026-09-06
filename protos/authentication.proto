@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
 import "google/protobuf/timestamp.proto";
 import "users.proto";
@@ -35,9 +35,9 @@ message LoginRequest {
   optional string user_id = 5;
 }
 
-// Request to create a new third-party refresh token. Unlike [`LoginRequest`](#jonline-LoginRequest) or [`CreateAccountRequest`](#jonline-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
+// Request to create a new third-party refresh token. Unlike [`LoginRequest`](#rellm-LoginRequest) or [`CreateAccountRequest`](#rellm-CreateAccountRequest), the user must be logged in to create a third-party refresh token.
 //
-// Generally, this is used to create a refresh token for another Jonline instance,
+// Generally, this is used to create a refresh token for another Rellm instance,
 // e.g., accessing `bullcity.social/jon`'s data from `jonline.io`. On the web side, this is implemented as follows:
 //
 // 1. When the `bullcity.social` user wants to login on `jonline.io`, `bullcity.social` will redirect 
@@ -45,7 +45,7 @@ message LoginRequest {
 // 2. `jonline.io` will force the user to login if needed on this page.
 // 3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh + access token for `bullcity.social`.
 // 4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&token=<Base64RefreshTokenResponse>` with the refresh token POSTed in form data.
-//     * (`<Base64RefreshTokenResponse>` is a base64-encoded [`RefreshTokenResponse`](#jonline-RefreshTokenResponse) message.)
+//     * (`<Base64RefreshTokenResponse>` is a base64-encoded [`RefreshTokenResponse`](#rellm-RefreshTokenResponse) message.)
 // 6. `bullcity.social` will ensure it can [`GetCurrentUser`](#grpc-api-GetCurrentUser) on `jonline.io` with its new auth token.
 // 5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
 // 7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).

@@ -1,10 +1,10 @@
 import { Dictionary, PayloadAction } from "@reduxjs/toolkit";
-import { AccountOrServer, JonlineServer } from "./types";
+import { AccountOrServer, RellmServer } from "./types";
 
 /**
  * Federation support is essentially "bolted onto" the single-server Redux store designs through two mechanisms:
  * 1. The `Federated` type (along with `getFederated` and `setFederated`), which converts an arbitrary value (generally, a status like `'loaded' | 'loading'`) into a value keyed by server host.
- * 2. The `FederatedEntity` type, which converts a Jonline entity (anything with a string id - in our case, eventually  Media, Users, Groups, Posts, Events) 
+ * 2. The `FederatedEntity` type, which converts a Rellm entity (anything with a string id - in our case, eventually  Media, Users, Groups, Posts, Events) 
  *    into a server-specific entity, again keyed by server host. This is used in the Redux/Thunk entity adapters. tl;dr: entity ID "a" becomes "jonline.io-a" or "localhost-a".
  */
 
@@ -26,7 +26,7 @@ export function optionalFederatedIDPair(serverId: string | undefined, server: Ha
 }
 
 /**
- * Fundamental type for Jonline multi-server support. Stores arbitrary data keyed by server host.
+ * Fundamental type for Rellm multi-server support. Stores arbitrary data keyed by server host.
  */
 export type Federated<T> = {
   values: Dictionary<T>,
@@ -36,7 +36,7 @@ export type Federated<T> = {
 export type HasIdFromServer = { id: string };
 
 /**
- * Used to convert Jonline entities to server-specific entities for use in Redux/Thunk entity adapters.
+ * Used to convert Rellm entities to server-specific entities for use in Redux/Thunk entity adapters.
  */
 export type FederatedEntity<T extends HasIdFromServer> = T & {
   serverHost: string;
@@ -44,7 +44,7 @@ export type FederatedEntity<T extends HasIdFromServer> = T & {
 
 export type FederatedAction = PayloadAction<any, any, { arg: AccountOrServer }>;
 
-export type HasServer = FederatedAction | JonlineServer | AccountOrServer | string | undefined;
+export type HasServer = FederatedAction | RellmServer | AccountOrServer | string | undefined;
 
 /**
  * Make an entity server-/federation-aware.
@@ -87,7 +87,7 @@ export function optFederatedId<T extends HasIdFromServer>(entity: FederatedEntit
 
 /**
  * Get the server-aware ID of an entity.
- * @param id Any Jonline ID (i.e. should not contain '-' characters)
+ * @param id Any Rellm ID (i.e. should not contain '-' characters)
  * @returns a server-host-specific entity ID, e.g. "jonline.io-a" or "localhost-a"
  */
 export function federateId(id: string, server: HasServer): string {
@@ -176,14 +176,14 @@ export function serverHost(server: HasServer): string {
   if (typeof server === 'string') {
     return server;
   }
-  const jonlineServer = (server && 'meta' in server)
+  const rellmServer = (server && 'meta' in server)
     ? (server as FederatedAction).meta.arg.server
     : (server && 'server' in server)
-      ? (server as JonlineServer)
-      : server as JonlineServer | undefined;
-  return federationKey(jonlineServer);
+      ? (server as RellmServer)
+      : server as RellmServer | undefined;
+  return federationKey(rellmServer);
 }
 
-function federationKey(server: JonlineServer | undefined): string {
+function federationKey(server: RellmServer | undefined): string {
   return server?.host ?? 'default';
 }

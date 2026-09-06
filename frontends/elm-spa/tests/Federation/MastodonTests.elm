@@ -2,8 +2,8 @@ module Federation.MastodonTests exposing (suite)
 
 import Expect
 import Json.Decode as Decode
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.Federation.Mastodon as Mastodon
 import Support.MastodonFactory as Factory exposing (defaultOverrides)
 import Test exposing (Test, describe, test)
@@ -32,7 +32,7 @@ suite =
                         |> Expect.equal (Ok Nothing)
             ]
         , describe "toPost"
-            [ test "namespaces the id by instance host, never colliding with a real Jonline post id" <|
+            [ test "namespaces the id by instance host, never colliding with a real Rellm post id" <|
                 \_ ->
                     Factory.status Factory.defaultOverrides
                         |> Mastodon.toPost "mastodon.social"
@@ -62,7 +62,7 @@ suite =
                         |> Mastodon.toPost "mastodon.social"
                         |> .content
                         |> Expect.equal (Just "<p>hi <strong>there</strong></p>")
-            , test "carries the author's own avatar as a MediaReference.url, not a Jonline media id" <|
+            , test "carries the author's own avatar as a MediaReference.url, not a Rellm media id" <|
                 \_ ->
                     Factory.status Factory.defaultOverrides
                         |> Mastodon.toPost "mastodon.social"

@@ -1,4 +1,4 @@
-import { JonlineServer } from "app/store";
+import { RellmServer } from "app/store";
 import { createContext, useContext, useState } from "react";
 
 export type GetSet<T> = [T, (v: T) => void];

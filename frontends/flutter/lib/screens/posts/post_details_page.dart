@@ -1,14 +1,14 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/screens/posts/threaded_replies.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/rellm_account.dart';
+import 'package:rellm/screens/posts/threaded_replies.dart';
 
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
 import '../../jonotifier.dart';
-import '../../models/jonline_operations.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_operations.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import 'post_preview.dart';
@@ -27,13 +27,13 @@ class PostDetailsPage extends StatefulWidget {
   PostDetailsPageState createState() => PostDetailsPageState();
 }
 
-class PostDetailsPageState extends JonlineState<PostDetailsPage> {
+class PostDetailsPageState extends RellmState<PostDetailsPage> {
   Jonotifier updateReplies = Jonotifier();
   final ValueNotifier<bool> updatingReplies = ValueNotifier(false);
   Post? subjectPost;
 
   onAccountsChanged() {
-    if (JonlineServer.selectedServer.server != widget.server) {
+    if (RellmServer.selectedServer.server != widget.server) {
       context.replaceRoute(const PostsRoute());
     } else {
       setState(() {});
@@ -55,7 +55,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final post = await JonlineOperations.getPosts(
+          final post = await RellmOperations.getPosts(
               request: GetPostsRequest()..postId = widget.postId,
               showMessage: showSnackBar);
           setState(() {
@@ -83,12 +83,12 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
   }
 
   ScrollController scrollController = ScrollController();
-  bool canReply = JonlineAccount.loggedIn;
+  bool canReply = RellmAccount.loggedIn;
 
   updateState() {
     // print("PostDetailsPage.updateState");
     setState(() {
-      canReply = JonlineAccount.loggedIn;
+      canReply = RellmAccount.loggedIn;
     });
   }
 
@@ -104,7 +104,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
   get q => mq;
   updatePost() async {
     try {
-      final post = await JonlineOperations.getPosts(
+      final post = await RellmOperations.getPosts(
           request: GetPostsRequest()..postId = widget.postId,
           showMessage: showSnackBar);
       setState(() {
@@ -233,7 +233,7 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
               )),
               Expanded(
                   child: TextButton(
-                // key: ValueKey("replyButton-${JonlineAccount.selectedAccount}"),
+                // key: ValueKey("replyButton-${RellmAccount.selectedAccount}"),
                 onPressed: canReply
                     ? () {
                         context.pushRoute(CreateReplyRoute(

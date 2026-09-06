@@ -28,7 +28,7 @@ extern crate tokio_stream;
 
 pub mod auth;
 pub mod db_connection;
-pub mod jonline_service;
+pub mod rellm_service;
 pub mod logic;
 pub mod marshaling;
 pub mod minio_connection;

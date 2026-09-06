@@ -1,4 +1,4 @@
-import { GetPostsRequest, GetPostsResponse, MediaReference, Post, PostListingType } from "@jonline/api";
+import { GetPostsRequest, GetPostsResponse, MediaReference, Post, PostListingType } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk

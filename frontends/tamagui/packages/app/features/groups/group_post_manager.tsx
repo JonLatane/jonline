@@ -2,8 +2,8 @@ import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfigu
 import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, loadPostGroupPosts, loadUser, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useState } from "react";
 
-import { GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue } from '@jonline/ui';
+import { GroupPost, Permission, Post, PostContext } from "@rellm/api";
+import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue } from '@rellm/ui';
 
 
 import { AccountOrServerContextProvider } from 'app/contexts';

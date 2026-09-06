@@ -1,3 +1,3 @@
-import { config } from '@jonline/ui'
+import { config } from '@rellm/ui'
 
 export default config

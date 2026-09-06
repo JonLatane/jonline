@@ -1,4 +1,4 @@
-import { AccountOrServer, FederatedEntity, HasIdFromServer, JonlineServer, getCachedServerClient } from 'app/store';
+import { AccountOrServer, FederatedEntity, HasIdFromServer, RellmServer, getCachedServerClient } from 'app/store';
 import { useCurrentAccountOrServer } from './use_current_account_or_server';
 import { usePinnedAccountsAndServers } from './use_pinned_accounts_and_servers';
 
@@ -13,7 +13,7 @@ export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: F
   const pinnedAccountOrServer = currentAndPinnedServers.find(aos => aos.server?.host === host);
 
   const serverClient = getCachedServerClient({ host, secure: true });
-  const temporaryServer: JonlineServer = serverClient
+  const temporaryServer: RellmServer = serverClient
     ? { ...serverClient, host, secure: true, }
     : { host, secure: true };
 

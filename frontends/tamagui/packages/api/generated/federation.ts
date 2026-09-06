@@ -7,18 +7,18 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
-/** Version information for the Jonline server. */
+/** Version information for the Rellm server. */
 export interface GetServiceVersionResponse {
   /**
-   * The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
+   * The version of the Rellm server. May be suffixed with the GitHub SHA of the commit
    * that generated the binary for the server.
    */
   version: string;
 }
 
-/** The federation configuration for a Jonline server. */
+/** The federation configuration for a Rellm server. */
 export interface FederationInfo {
   /** A list of servers that this server will federate with. */
   servers: FederatedServer[];
@@ -30,7 +30,7 @@ export interface FederationInfo {
    * X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations
    * for their Posts and EventInstances -- an admin registers one X Developer App here, and every
    * user on the server connects their own X account through it via OAuth, the same relationship
-   * `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#jonline-XTwitterAccount)
+   * `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount)
    * SyncDestinations always fail with `x_twitter_app_not_configured`.
    */
   xTwitterAuthConfig?:
@@ -45,7 +45,7 @@ export interface FederationInfo {
    * attempting to open an OAuth popup with no app to authorize against. (A client could instead
    * dynamically self-register a throwaway app with the instance directly, via Mastodon's own
    * `POST /api/v1/apps`, and skip this entirely -- Mastodon itself supports that. But that's a
-   * client-side choice the Jonline protocol doesn't get involved in either way: this field only
+   * client-side choice the Rellm protocol doesn't get involved in either way: this field only
    * covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently
    * across every client on this server rather than each one self-registering its own.)
    */
@@ -68,7 +68,7 @@ export interface FederatedServer {
 }
 
 /**
- * Some user on a Jonline server.
+ * Some user on a Rellm server.
  * Most commonly a different server than the one serving up FederatedAccount data,
  * but users may also federate multiple accounts on the same server.
  */

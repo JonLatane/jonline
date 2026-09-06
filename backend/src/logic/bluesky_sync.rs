@@ -184,7 +184,7 @@ pub fn post_record_at(
     Ok((uri, permalink))
 }
 
-/// Fetches `image.url`'s raw bytes from this Jonline server's own public media endpoint, then
+/// Fetches `image.url`'s raw bytes from this Rellm server's own public media endpoint, then
 /// uploads them to `base_url`'s `com.atproto.repo.uploadBlob` (which takes the raw bytes directly
 /// as the request body, not JSON, unlike every other Bluesky XRPC call here). Returns the
 /// response's opaque `blob` value as-is, to be embedded directly into the post record -- this

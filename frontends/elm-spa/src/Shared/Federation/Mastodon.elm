@@ -5,19 +5,19 @@ module Shared.Federation.Mastodon exposing
     , toPost
     )
 
-{-| Translates Mastodon's REST API into Jonline's `Post` shape, entirely client-side -- see
+{-| Translates Mastodon's REST API into Rellm's `Post` shape, entirely client-side -- see
 `Ports.facebookLoginPopup`'s `"mastodon"` provider doc and `Shared.AccountsPanel.MastodonAccount`'s
 own doc for the connection side this feeds off of. `fetchPosts` is called from
 `Components.Pages.PostsPage.fetchFeedSource`'s `MastodonInstance` case -- see `FeedSource`'s own doc
-for how a Mastodon instance's feed is fetched/stored/animated alongside a real Jonline server's.
+for how a Mastodon instance's feed is fetched/stored/animated alongside a real Rellm server's.
 -}
 
 import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
-import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
@@ -53,14 +53,14 @@ decoder =
         (Decode.at [ "account", "avatar" ] Decode.string |> Decode.map nonEmpty)
 
 
-{-| A `Status`'s translation into a Jonline `Post` -- `id` is namespaced
-(`"mastodon:" ++ instanceHost ++ ":" ++ status.id`) so it can never collide with a real Jonline
+{-| A `Status`'s translation into a Rellm `Post` -- `id` is namespaced
+(`"mastodon:" ++ instanceHost ++ ":" ++ status.id`) so it can never collide with a real Rellm
 post's own id (a plain integer string) wherever the two get keyed together (e.g.
 `Components.Pages.PostsPage.postAnimationKey`). `content` is left as Mastodon's own sanitized HTML
 (Mastodon strips dangerous tags server-side before ever serving it back), not converted to/from
 Markdown. `visibility` is always `GLOBALPUBLIC`: a `Status` fetched off a public timeline endpoint
 is definitionally public. `author.avatar` uses `MediaReference.url` (see that field's own doc in
-`protos/media.proto`) rather than `id`, since this avatar isn't and never will be Jonline-hosted
+`protos/media.proto`) rather than `id`, since this avatar isn't and never will be Rellm-hosted
 media.
 -}
 toPost : String -> Status -> Post
@@ -85,7 +85,7 @@ toPost instanceHost status =
 {-| `GET /api/v1/timelines/public?local=true&limit=20` -- the local (this-instance-only) public
 timeline, unauthenticated, already translated via `toPost`. `local=true` rather than the federated
 (whole-known-network) timeline, since connecting one instance shouldn't implicitly pull in every
-server it happens to federate with too -- mirrors Jonline's own `ALL_ACCESSIBLE_POSTS` being scoped
+server it happens to federate with too -- mirrors Rellm's own `ALL_ACCESSIBLE_POSTS` being scoped
 to *this* server's own posts, not every server it's federated with either.
 -}
 fetchPosts : String -> Task Http.Error (List Post)

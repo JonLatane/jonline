@@ -1,10 +1,10 @@
 FROM --platform=linux/amd64 debian:testing-slim
 
-# The preview generator image only includes the background job binary and a tool to delete images. Other Jonline binaries aren't really useful;
+# The preview generator image only includes the background job binary and a tool to delete images. Other Rellm binaries aren't really useful;
 # the bulk of this image will be the Chrome distro included.
 #
 # Note that its entrypoint is a headless browser, which is necessary for the preview generator to work. A cluster job of some sort must
-# run /opt/generate_preview_images periodically (which is set up automatically in Jonline deployment as a K8s CronJob).
+# run /opt/generate_preview_images periodically (which is set up automatically in Rellm deployment as a K8s CronJob).
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 # RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb > libssl1.1.deb
 # RUN dpkg -i libssl1.1.deb
 
-# grpcurl is useful to have on a jonline instance!
+# grpcurl is useful to have on a rellm instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C /opt
 
 # Install Chrome-related dependencies

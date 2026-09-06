@@ -1,11 +1,11 @@
-# Jonline's Elm Frontend
+# Rellm's Elm Frontend
 
-A new Jonline web frontend built in Elm, living alongside the existing React/Tamagui
+A new Rellm web frontend built in Elm, living alongside the existing React/Tamagui
 and Flutter clients. It's served at `/elm` by the Rust backend, and — once an admin
 picks "Elm" as a server's web UI (see below) — can be served at `/` too.
 
 The goal wasn't "port everything Tamagui does." It was to get a second, independent
-implementation of Jonline's auth model — accounts, servers, tokens, permissions — onto
+implementation of Rellm's auth model — accounts, servers, tokens, permissions — onto
 solid, boring, statically-typed ground, and see how far a much smaller surface area
 could go before it needed to reach for the same complexity the React app has.
 
@@ -15,14 +15,14 @@ could go before it needed to reach for the same complexity the React app has.
 
 **Auth, from the ground up.** Login and Create Account forms, shared across every page
 via elm-spa's `Shared` module, backed by gRPC-Web calls into the same Rust backend and
-`.proto` definitions every other Jonline frontend uses (via
+`.proto` definitions every other Rellm frontend uses (via
 [`protoc-gen-elm`](https://www.npmjs.com/package/protoc-gen-elm) and
 [`anmolitor/elm-grpc`](https://package.elm-lang.org/packages/anmolitor/elm-grpc/latest/)).
 
 **Multi-account, multi-server, for real.** You can be signed into several accounts
 across several servers at once, switch which one's "active," and the app tracks each
 account's own tokens, permissions, and server independently. Adding a server runs it
-through the same connectivity negotiation every Jonline client needs: discover the
+through the same connectivity negotiation every Rellm client needs: discover the
 real backend host behind a CDN (`GET /backend_host`), then try TLS/plaintext and
 27707/443/80/8000 candidates in turn until one actually answers.
 
@@ -83,7 +83,7 @@ connect to that other server on the fly if it isn't already. Comments aren't
 implemented here yet — a full post links out to "View N comments from the
 React app" instead.
 
-**Starring, without accounts.** `StarPost`/`UnstarPost` (see `jonline.proto`)
+**Starring, without accounts.** `StarPost`/`UnstarPost` (see `rellm.proto`)
 are anonymous, friendly counters — the backend keeps no per-user record of who
 starred what. The Elm app fills that gap client-side: which posts you've
 starred is tracked in `localStorage` (`Shared.StarredPostsPanel`), keyed by
@@ -121,7 +121,7 @@ whole time (with 20%+ more performance coming in the next release) — is a
 metric you could choose for success, at least for a tool, "doesn't need updates"
 should make a different sort of sense.
 
-The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simply a matter of emitting CSS classes, say, `.jonline-io.background-color-primary` for a div with `background-color` and `color` set to the `jonline.io` host's primary color and a contrasting text color for it. See below for details.
+The only "creative" thing Rellm's Elm FE does is Emitted Styles. This is simply a matter of emitting CSS classes, say, `.rellm-io.background-color-primary` for a div with `background-color` and `color` set to the `jonline.io` host's primary color and a contrasting text color for it. See below for details.
 
 ## Architecture, briefly
 
@@ -187,7 +187,7 @@ shape end to end.
 Since Elm's `Html.Attributes.style` can't set CSS custom properties, per-server
 theming is done via a `<style>` tag computed fresh from `Shared.Model` on every
 render (see
-[`UI/EmittedStylesheet.elm`](https://github.com/JonLatane/jonline/blob/master/frontends/elm-spa/src/UI/EmittedStylesheet.elm))
+[`UI/EmittedStylesheet.elm`](https://github.com/JonLatane/rellm/blob/master/frontends/elm-spa/src/UI/EmittedStylesheet.elm))
 rather than inline styles. For each known server it emits a handful of
 "utility class" pairs — a class for that server's host plus a class for the
 color you want — so any element can be given that server's colors just by

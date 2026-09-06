@@ -36,7 +36,7 @@ const API_VERSION: &str = "v1.0";
 /// Derives the Threads OAuth popup's `redirect_uri` -- the frontend's popup sends this exact
 /// string to Threads' authorize endpoint (reusing the same `facebook-callback.html` page
 /// Facebook/Instagram's OAuth popup already redirects to, at `window.location.origin +
-/// jonlineBasePath + "/facebook-callback.html"`), and this server's own token-exchange call
+/// rellmBasePath + "/facebook-callback.html"`), and this server's own token-exchange call
 /// (`exchange_code_for_token`) has to send back the identical string -- OAuth requires an exact
 /// match between the authorize and token-exchange calls' `redirect_uri`.
 ///
@@ -44,7 +44,7 @@ const API_VERSION: &str = "v1.0";
 /// (`CreateSyncDestination`/`UpdateSyncDestination` are plain gRPC calls, not web-facing routes),
 /// so this mirrors how `sync_post`/`sync_event_instance` already build `post_url`/`event_url`:
 /// from this server's own configured `external_cdn_config.frontend_host`, assuming the frontend is
-/// served at that domain's root (`jonlineBasePath == ""`) -- the exact same assumption
+/// served at that domain's root (`rellmBasePath == ""`) -- the exact same assumption
 /// `post_url`/`event_url` already make, so this isn't a new limitation. **Judgment call worth
 /// flagging**: a server whose frontend is mounted at a non-root path (e.g. `/elm`) would need a
 /// different `redirect_uri` than this derives, and `ThreadsAccount` has no field for the client to
@@ -63,7 +63,7 @@ pub fn threads_redirect_uri(conn: &mut PgPooledConnection) -> Result<String, Sta
 
 /// Exchanges the OAuth authorization `code` from the Threads login popup for a short-lived access
 /// token, returning `(short_lived_access_token, threads_user_id)`. `app_id`/`app_secret` are this
-/// Jonline server's own Facebook App credentials (see `server_facebook_app_credentials` -- Threads
+/// Rellm server's own Facebook App credentials (see `server_facebook_app_credentials` -- Threads
 /// rides on the same Meta App). `redirect_uri` must be byte-for-byte identical to the one the
 /// popup sent Threads' own authorize endpoint (OAuth requires an exact match between the authorize
 /// and token-exchange calls).
@@ -131,7 +131,7 @@ pub fn exchange_code_for_token_at(
 }
 
 /// Exchanges a short-lived Threads access token for a long-lived one (~60 day expiry -- see the
-/// module doc). `app_secret` is this Jonline server's own Facebook App Secret.
+/// module doc). `app_secret` is this Rellm server's own Facebook App Secret.
 pub fn exchange_long_lived_token(app_secret: &str, short_lived_token: &str) -> Result<String, Status> {
     exchange_long_lived_token_at(DEFAULT_BASE_URL, app_secret, short_lived_token)
 }

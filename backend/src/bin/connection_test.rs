@@ -1,7 +1,7 @@
-extern crate jonline;
+extern crate rellm;
 use std::time::Duration;
 
-use jonline::{protos::jonline_client, *};
+use rellm::{protos::rellm_client, *};
 use tonic::{transport::*, Request};
 
 const PROTOCOL: &str = "https";
@@ -39,7 +39,7 @@ async fn main() {
         .await
         .expect("Failed to establish channel");
 
-    let mut client = jonline_client::JonlineClient::new(channel);
+    let mut client = rellm_client::RellmClient::new(channel);
     client
         .get_service_version(Request::new(()))
         .await

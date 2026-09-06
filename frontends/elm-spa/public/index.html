@@ -19,9 +19,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)">
-  <title>Jonline</title>
+  <title>Rellm</title>
   <meta name="description"
-    content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends.">
+    content="Rellm is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends.">
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/favicon.ico">
   <!-- These placeholders are replaced server-side per-request with page-specific
@@ -29,7 +29,7 @@
        `backend/src/web/spa_web_path.rs`, which does the same replacements for
        Tamagui's static export (see `apps/next/pages/_document.tsx`). The
        marker strings must match exactly between the two templates. -->
-  <meta property="og:title" content="Jonline Social Link" />
+  <meta property="og:title" content="Rellm Social Link" />
   <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
   <meta property="og:image" content="/favicon.png" />
   <link rel="manifest" href="/manifest.json">
@@ -38,45 +38,45 @@
     // `backend/src/web/elm_web.rs`) -- this regex must agree with
     // `Shared.elm`'s `basePathFromPath`, which does the equivalent detection
     // in Elm for routing/link purposes once the app is running.
-    var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/main.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/modal.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/switch.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/flip.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/reordering.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/popover.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/filter_bar.css">');
+    var rellmBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/main.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/modal.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/switch.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/flip.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/reordering.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/popover.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/ui/filter_bar.css">');
 
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/media.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/profiles.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/posts.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/events.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/users.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/servers.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/messages.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/nav.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/accounts_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/starred_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/markdown_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/my_media_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/media_generator_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/create_new_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/media_viewer_panel.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/messaging_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/media.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/profiles.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/posts.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/events.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/users.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/servers.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/messages.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/nav.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/accounts_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/starred_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/markdown_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/my_media_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/media_generator_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/create_new_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/media_viewer_panel.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/shared/messaging_panel.css">');
 
     // Markdown rendering (see `public/markdown.js`) -- vendored rather than
     // CDN-loaded, so the app keeps working offline/behind a firewall.
-    document.write('<script src="' + jonlineBasePath + '/vendor/marked.js"><\/script>');
-    document.write('<script src="' + jonlineBasePath + '/vendor/highlight.min.js"><\/script>');
-    document.write('<script src="' + jonlineBasePath + '/vendor/dompurify.min.js"><\/script>');
-    document.write('<script src="' + jonlineBasePath + '/markdown.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/vendor/marked.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/vendor/highlight.min.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/vendor/dompurify.min.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/markdown.js"><\/script>');
 
     // Calendar rendering (see `Components.Pages.EventsPage`'s `Calendar`
     // display mode) -- vendored rather than CDN-loaded, same reasoning as
     // marked/highlight.js/dompurify above. This is FullCalendar's own
     // "global" bundle, which injects its own CSS at runtime, so no separate
     // stylesheet is needed here.
-    document.write('<script src="' + jonlineBasePath + '/vendor/fullcalendar.min.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/vendor/fullcalendar.min.js"><\/script>');
 
     // Same "auto" resolution `Shared.effectiveDarkMode` does in Elm -- kept in
     // sync with it via the `setTheme` port subscription below, which fires
@@ -85,10 +85,10 @@
     // takes ownership of `<body>`'s contents on init and would wipe out any
     // element written there that Elm doesn't itself know about.
     document.write(
-      '<link id="hljs-theme" rel="stylesheet" data-base-href="' + jonlineBasePath + '/vendor/" href="' +
-      jonlineBasePath + '/vendor/' +
-      (((localStorage.getItem("jonlineThemePreference") || "auto") === "dark" ||
-        ((localStorage.getItem("jonlineThemePreference") || "auto") === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches))
+      '<link id="hljs-theme" rel="stylesheet" data-base-href="' + rellmBasePath + '/vendor/" href="' +
+      rellmBasePath + '/vendor/' +
+      (((localStorage.getItem("rellmThemePreference") || "auto") === "dark" ||
+        ((localStorage.getItem("rellmThemePreference") || "auto") === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches))
         ? "highlight-dark.css" : "highlight-light.css") +
       '">'
     );
@@ -138,18 +138,18 @@
     <img src="/favicon.png" alt="" onload="this.classList.add('loaded');">
   </div>
   <script>
-    document.write('<script src="' + jonlineBasePath + '/dist/elm.js"><\/script>');
+    document.write('<script src="' + rellmBasePath + '/dist/elm.js"><\/script>');
   </script>
   <script>
     var storedState = null;
     try {
-      var raw = localStorage.getItem("jonlineState");
+      var raw = localStorage.getItem("rellmState");
       storedState = raw ? JSON.parse(raw) : null;
     } catch (e) {
-      console.error("Failed to read stored Jonline state", e);
+      console.error("Failed to read stored Rellm state", e);
     }
 
-    var storedThemePreference = localStorage.getItem("jonlineThemePreference") || "auto";
+    var storedThemePreference = localStorage.getItem("rellmThemePreference") || "auto";
     var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     // Short display name for the browser's own local timezone (e.g. "EDT",
@@ -186,7 +186,7 @@
 
     var storedStarredPosts = [];
     try {
-      var rawStarredPosts = localStorage.getItem("jonlineStarredPosts");
+      var rawStarredPosts = localStorage.getItem("rellmStarredPosts");
       storedStarredPosts = rawStarredPosts ? JSON.parse(rawStarredPosts) : [];
     } catch (e) {
       console.error("Failed to read stored starred posts", e);
@@ -194,7 +194,7 @@
 
     var storedFederatedAuthKeyPair = null;
     try {
-      var rawFederatedAuthKeyPair = localStorage.getItem("jonlineFederatedAuthKeyPair");
+      var rawFederatedAuthKeyPair = localStorage.getItem("rellmFederatedAuthKeyPair");
       storedFederatedAuthKeyPair = rawFederatedAuthKeyPair ? JSON.parse(rawFederatedAuthKeyPair) : null;
     } catch (e) {
       console.error("Failed to read stored federated auth keypair", e);
@@ -202,7 +202,7 @@
 
     var storedUserPreferences = null;
     try {
-      var rawUserPreferences = localStorage.getItem("jonlineUserPreferences");
+      var rawUserPreferences = localStorage.getItem("rellmUserPreferences");
       storedUserPreferences = rawUserPreferences ? JSON.parse(rawUserPreferences) : null;
     } catch (e) {
       console.error("Failed to read stored user preferences", e);
@@ -227,7 +227,7 @@
     // channel never receives its own posted messages) without any tab having
     // to poll localStorage. Falls back to a same-tab-only no-op where
     // `BroadcastChannel` doesn't exist (very old browsers).
-    var accountsAndServersChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineAccountsAndServers") : null;
+    var accountsAndServersChannel = window.BroadcastChannel ? new BroadcastChannel("rellmAccountsAndServers") : null;
     if (accountsAndServersChannel) {
       accountsAndServersChannel.onmessage = function (e) {
         app.ports.accountsAndServersUpdated.send(e.data);
@@ -235,14 +235,14 @@
     }
 
     app.ports.persistAccountsAndServers.subscribe(function (state) {
-      localStorage.setItem("jonlineState", JSON.stringify(state));
+      localStorage.setItem("rellmState", JSON.stringify(state));
       if (accountsAndServersChannel) {
         accountsAndServersChannel.postMessage(state);
       }
     });
 
     app.ports.persistThemePreference.subscribe(function (preference) {
-      localStorage.setItem("jonlineThemePreference", preference);
+      localStorage.setItem("rellmThemePreference", preference);
     });
 
     // Unlike `starredPostsChannel`/`accountsAndServersChannel`, no
@@ -250,11 +250,11 @@
     // for why these are only ever read back at a fresh page load, not pushed
     // live into already-open tabs.
     app.ports.persistUserPreferences.subscribe(function (preferences) {
-      localStorage.setItem("jonlineUserPreferences", JSON.stringify(preferences));
+      localStorage.setItem("rellmUserPreferences", JSON.stringify(preferences));
     });
 
     // Same cross-tab sync as `accountsAndServersChannel`, above.
-    var starredPostsChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineStarredPosts") : null;
+    var starredPostsChannel = window.BroadcastChannel ? new BroadcastChannel("rellmStarredPosts") : null;
     if (starredPostsChannel) {
       starredPostsChannel.onmessage = function (e) {
         app.ports.starredPostsUpdated.send(e.data);
@@ -262,7 +262,7 @@
     }
 
     app.ports.persistStarredPosts.subscribe(function (starredPosts) {
-      localStorage.setItem("jonlineStarredPosts", JSON.stringify(starredPosts));
+      localStorage.setItem("rellmStarredPosts", JSON.stringify(starredPosts));
       if (starredPostsChannel) {
         starredPostsChannel.postMessage(starredPosts);
       }
@@ -277,7 +277,7 @@
       } else {
         document.documentElement.setAttribute("data-theme", theme);
       }
-      window.jonlineUpdateCodeTheme(theme === "dark" || (theme === "auto" && darkMediaQuery.matches));
+      window.rellmUpdateCodeTheme(theme === "dark" || (theme === "auto" && darkMediaQuery.matches));
     });
 
     app.ports.setNavBarColor.subscribe(function (color) {
@@ -394,7 +394,7 @@
     // not just to build the authorize URL, so it's returned rather than consumed here.
     function mastodonRegisterApp(instanceHost, redirectUri) {
       var body = new URLSearchParams();
-      body.set("client_name", "Jonline");
+      body.set("client_name", "Rellm");
       body.set("redirect_uris", redirectUri);
       body.set("scopes", "read");
       body.set("website", window.location.origin);
@@ -414,8 +414,8 @@
     // came from the same client that started the authorize request (the standard "public client"
     // OAuth pattern -- there's no confidential secret to protect here in the first place, so
     // nothing is lost by never sending one). Mirrors how `mastodonRegisterApp` never asks the
-    // Jonline server for anything either: this whole flow is between the browser and the Mastodon
-    // instance, no Jonline backend involved.
+    // Rellm server for anything either: this whole flow is between the browser and the Mastodon
+    // instance, no Rellm backend involved.
     function mastodonExchangeCode(instanceHost, clientId, code, codeVerifier, redirectUri) {
       var body = new URLSearchParams();
       body.set("client_id", clientId);
@@ -434,7 +434,7 @@
     }
 
     app.ports.facebookLoginPopup.subscribe(function (payload) {
-      var redirectUri = window.location.origin + jonlineBasePath + "/oauth-callback.html";
+      var redirectUri = window.location.origin + rellmBasePath + "/oauth-callback.html";
       var width = 600, height = 700;
       var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
       var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
@@ -456,7 +456,7 @@
           "&redirect_uri=" + encodeURIComponent(redirectUri) +
           "&response_type=code" +
           "&scope=" + encodeURIComponent("tweet.read tweet.write users.read offline.access") +
-          "&state=jonline" +
+          "&state=rellm" +
           "&code_challenge=" + encodeURIComponent(xTwitterCodeVerifier) +
           "&code_challenge_method=plain";
       } else if (payload.provider === "mastodon") {
@@ -477,7 +477,7 @@
 
       var popup = window.open(
         dialogUrl || "",
-        "jonline-oauth-login",
+        "rellm-oauth-login",
         "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
       );
 
@@ -500,7 +500,7 @@
 
       function onMessage(e) {
         if (e.origin !== window.location.origin) { return; }
-        if (!e.data || e.data.source !== "jonline-oauth-login") { return; }
+        if (!e.data || e.data.source !== "rellm-oauth-login") { return; }
         settled = true;
         window.removeEventListener("message", onMessage);
         clearInterval(poll);
@@ -602,12 +602,12 @@
     // next frame rather than doing it synchronously (see measureElements'
     // own analogous issue for `Components.Pages.EventsPage`'s FLIP
     // measurements).
-    var jonlineCalendars = {};
+    var rellmCalendars = {};
     app.ports.renderCalendar.subscribe(function (payload) {
       requestAnimationFrame(function () {
         var el = document.getElementById(payload.id);
         if (!el) { return; }
-        var existing = jonlineCalendars[payload.id];
+        var existing = rellmCalendars[payload.id];
         if (existing && existing.el === el) {
           existing.calendar.removeAllEventSources();
           existing.calendar.addEventSource(payload.events);
@@ -638,7 +638,7 @@
           }
         });
         calendar.render();
-        jonlineCalendars[payload.id] = { el: el, calendar: calendar };
+        rellmCalendars[payload.id] = { el: el, calendar: calendar };
       });
     });
 
@@ -647,7 +647,7 @@
     // Registered unconditionally -- harmless no-op in browsers without `serviceWorker` support,
     // and a no-op everywhere until a user actually clicks "Enable notifications".
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register(jonlineBasePath + "/service-worker.js").catch(function (e) {
+      navigator.serviceWorker.register(rellmBasePath + "/service-worker.js").catch(function (e) {
         console.error("Failed to register service worker", e);
       });
       // See service-worker.js's own `push` handler doc comment: forwards its
@@ -789,7 +789,7 @@
     // Same cross-tab sync as `accountsAndServersChannel`/`starredPostsChannel` above, but with no
     // `localStorage` write -- `pushSubscriptions` is itself never persisted (see its own doc
     // comment), so there's nothing to write, only to announce to already-open tabs.
-    var pushSubscriptionChannel = window.BroadcastChannel ? new BroadcastChannel("jonlinePushSubscriptions") : null;
+    var pushSubscriptionChannel = window.BroadcastChannel ? new BroadcastChannel("rellmPushSubscriptions") : null;
     if (pushSubscriptionChannel) {
       pushSubscriptionChannel.onmessage = function (e) {
         app.ports.pushSubscriptionChangeReceived.send(e.data);
@@ -805,7 +805,7 @@
     darkMediaQuery.addEventListener("change", function (e) {
       app.ports.systemPrefersDarkChanged.send(e.matches);
       if (currentThemePreference === "auto") {
-        window.jonlineUpdateCodeTheme(e.matches);
+        window.rellmUpdateCodeTheme(e.matches);
       }
     });
 
@@ -901,11 +901,11 @@
     });
 
     app.ports.persistFederatedAuthKeyPair.subscribe(function (keyPair) {
-      localStorage.setItem("jonlineFederatedAuthKeyPair", JSON.stringify(keyPair));
+      localStorage.setItem("rellmFederatedAuthKeyPair", JSON.stringify(keyPair));
     });
 
     app.ports.clearFederatedAuthKeyPair.subscribe(function () {
-      localStorage.removeItem("jonlineFederatedAuthKeyPair");
+      localStorage.removeItem("rellmFederatedAuthKeyPair");
     });
 
     // Encrypts `request.plaintext` to `request.publicKey` (the recipient's

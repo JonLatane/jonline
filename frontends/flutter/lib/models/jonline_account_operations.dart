@@ -3,11 +3,11 @@ import '../generated/authentication.pb.dart';
 import '../generated/google/protobuf/empty.pb.dart';
 // import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
-import 'jonline_account.dart';
-import 'jonline_clients.dart';
+import 'rellm_account.dart';
+import 'rellm_clients.dart';
 import 'server_errors.dart';
 
-extension JonlineAccountOperations on JonlineAccount {
+extension RellmAccountOperations on RellmAccount {
   Future<User?> getUser({Function(String)? showMessage}) async {
     if (!await ensureAccessToken()) return null;
 

@@ -1,9 +1,9 @@
-import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { Group, MediaReference, Permission, Post, Visibility } from '@rellm/api';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from '@rellm/ui';
 import { CalendarPlus, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationAccountOrServer } from 'app/hooks';
-import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, RellmServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { highlightedButtonBackground, themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -43,7 +43,7 @@ export type BaseCreatePostSheetProps = {
 export const postVisibilityDescription = (
   v: Visibility,
   group: Group | undefined,
-  server: JonlineServer | undefined,
+  server: RellmServer | undefined,
   entity: string = 'Post'
 ) => {
   switch (v) {

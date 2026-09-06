@@ -1,4 +1,4 @@
-import { Moderation } from '@jonline/api';
+import { Moderation } from '@rellm/api';
 
 export function passes(moderation: Moderation | undefined): boolean {
   return moderation != undefined && [Moderation.UNMODERATED, Moderation.APPROVED].includes(moderation);

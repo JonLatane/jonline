@@ -20,8 +20,8 @@ import Grpc
 import Html exposing (Html, div, h3, img, input, p, span, text)
 import Html.Attributes exposing (class, disabled, src, style, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (ServerConfiguration, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
-import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
+import Proto.Rellm exposing (ServerConfiguration, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
+import Proto.Rellm.WebUserInterface exposing (WebUserInterface(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -282,11 +282,11 @@ re-fetched `ServerConfiguration`'s `serverInfo.logo.squareMediaId`, leaving ever
 applyLogoChoice : LogoChoice -> ServerConfiguration -> ServerConfiguration
 applyLogoChoice choice config =
     let
-        info : Proto.Jonline.ServerInfo
+        info : Proto.Rellm.ServerInfo
         info =
             Maybe.withDefault defaultServerInfo config.serverInfo
 
-        logo : Proto.Jonline.ServerLogo
+        logo : Proto.Rellm.ServerLogo
         logo =
             Maybe.withDefault defaultServerLogo info.logo
 
@@ -311,7 +311,7 @@ writer `applyColorFor` just below.
 colorArgbFor : ServerColorField -> ServerConfiguration -> Maybe Int
 colorArgbFor field config =
     let
-        colors : Maybe Proto.Jonline.ServerColors
+        colors : Maybe Proto.Rellm.ServerColors
         colors =
             config.serverInfo |> Maybe.andThen .colors
     in
@@ -326,15 +326,15 @@ colorArgbFor field config =
 applyColorFor : ServerColorField -> Int -> ServerConfiguration -> ServerConfiguration
 applyColorFor field argb config =
     let
-        info : Proto.Jonline.ServerInfo
+        info : Proto.Rellm.ServerInfo
         info =
             Maybe.withDefault defaultServerInfo config.serverInfo
 
-        colors : Proto.Jonline.ServerColors
+        colors : Proto.Rellm.ServerColors
         colors =
             Maybe.withDefault defaultServerColors info.colors
 
-        newColors : Proto.Jonline.ServerColors
+        newColors : Proto.Rellm.ServerColors
         newColors =
             case field of
                 PrimaryColor ->
@@ -376,7 +376,7 @@ setColorEditFor field edit model =
 view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
 view shared server maybeAdminAccount model =
     let
-        info : Proto.Jonline.ServerInfo
+        info : Proto.Rellm.ServerInfo
         info =
             AccountsPanel.serverInfoOf server
 
@@ -467,7 +467,7 @@ vibrant -- kept live against whichever of those two is currently being edited (v
 back to the saved value otherwise), so toggling between two colors in the editor updates this
 row immediately rather than only after Save.
 -}
-accentColorPreviewRow : Model -> Proto.Jonline.ServerInfo -> Html Msg
+accentColorPreviewRow : Model -> Proto.Rellm.ServerInfo -> Html Msg
 accentColorPreviewRow model info =
     let
         primaryMeta : ServerTheme.ColorMeta
@@ -501,7 +501,7 @@ header row also carries `UI.themeToggle` (the same 3-way Auto/Light/Dark control
 Accounts Panel's own tab bar) at its far right -- pinned there rather than nested inside the
 clickable `h3` itself, so tapping it doesn't also bubble into `ColorMetaExpandedToggled`.
 -}
-colorMetaSection : Shared.Model -> Model -> Proto.Jonline.ServerInfo -> Html Msg
+colorMetaSection : Shared.Model -> Model -> Proto.Rellm.ServerInfo -> Html Msg
 colorMetaSection shared model info =
     div [ class "server-details-color-meta" ]
         (div [ class "server-details-color-meta-header" ]

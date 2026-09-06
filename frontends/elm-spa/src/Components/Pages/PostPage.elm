@@ -9,7 +9,7 @@ module Components.Pages.PostPage exposing
     , view
     )
 
-{-| The shared guts of a single Post's page: fetching a `Proto.Jonline.Post` (by id, from a specific
+{-| The shared guts of a single Post's page: fetching a `Proto.Rellm.Post` (by id, from a specific
 possibly-not-yet-connected server) and rendering it, including its threaded replies -- reused by
 both `Pages.Post.PostId_` (`/post/:id[@host]`) and `Pages.UsernameOrCustomTab_` (once a custom tab's
 own `path` resolves to a `TargetPost`, see that module's `initEmbedded`), which differ only in
@@ -37,11 +37,11 @@ import Grpc
 import Html exposing (Html, button, div, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (GetSyncDestinationsResponse, Post, SyncDestination)
-import Proto.Jonline.Moderation exposing (Moderation)
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (GetSyncDestinationsResponse, Post, SyncDestination)
+import Proto.Rellm.Moderation exposing (Moderation)
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -119,7 +119,7 @@ type alias Model =
 
 
 type Msg
-    = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
+    = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ))
     | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked

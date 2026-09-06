@@ -1,13 +1,13 @@
-import { useTheme } from '@jonline/ui';
+import { useTheme } from '@rellm/ui';
 
 import { Config } from 'app/store';
-import { JonlineServer } from '../store/types';
+import { RellmServer } from '../store/types';
 import { useCurrentServer } from './account_or_server/use_current_account_or_server';
 import { useLocalConfiguration } from './store_hooks';
 
 export type TamaguiTheme = ReturnType<typeof useTheme>
 export type ServerTheme = {
-  server?: JonlineServer;
+  server?: RellmServer;
 
   primaryColor: string;
   primaryTextColor: string;
@@ -36,7 +36,7 @@ export type ServerTheme = {
   inverse: boolean;
 }
 
-export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
+export function useServerTheme(specificServer?: RellmServer): ServerTheme {
   const currentServer = useCurrentServer();
   const configuration = useLocalConfiguration();
   return getServerTheme(
@@ -46,7 +46,7 @@ export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
 }
 
 function getServerTheme(
-  server: JonlineServer | undefined,
+  server: RellmServer | undefined,
   app: Config
 ): ServerTheme {
   const baseTheme = useTheme();

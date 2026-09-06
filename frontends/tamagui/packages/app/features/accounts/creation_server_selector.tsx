@@ -1,17 +1,17 @@
-import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack, YStack } from '@rellm/ui';
 import { ChevronLeft, ExternalLink, Info, SeparatorVertical } from '@tamagui/lucide-icons';
 import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey, useAppSelector } from 'app/hooks';
-import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
+import { RellmServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
 import { useLink } from 'solito/link';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { Permission } from '@jonline/api';
+import { Permission } from '@rellm/api';
 import { ShortAccountSelectorButton } from '../navigation/pinned_server_selector';
 import { AutoAnimatedList } from '../post';
 
 
 export type CreationServerSelectorProps = {
-  server?: JonlineServer;
+  server?: RellmServer;
   onPressBack?: () => void;
   requiredPermissions?: Permission[];
   showUser?: boolean;
@@ -41,7 +41,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
     ? [mediaQuery.gtXs ? '$2' : 0, mediaQuery.gtXs ? '$4' : '$1']
     : ['$2', '$2'];
   const selectorTopKey = useComponentKey('creation-server-selector-top');
-  const onSelectServer = (otherServer: JonlineServer) => {
+  const onSelectServer = (otherServer: RellmServer) => {
     dispatch(setCreationServer(otherServer));
     setTimeout(() => {
       document.getElementById(selectorTopKey)?.scrollIntoView({ behavior: 'smooth' });
@@ -50,7 +50,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
   // const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
 
-  const serverNameAndLogo = (s: JonlineServer | undefined) => {
+  const serverNameAndLogo = (s: RellmServer | undefined) => {
     const pinnedServer = pinnedServers.find(ps => s && ps.serverId === serverID(s));
     return <YStack>
       {showUser && s

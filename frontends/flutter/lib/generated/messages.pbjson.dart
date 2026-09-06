@@ -35,8 +35,8 @@ const Message$json = {
   '1': 'Message',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'sender', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '9': 0, '10': 'sender', '17': true},
-    {'1': 'messaging_group', '3': 3, '4': 1, '5': 11, '6': '.jonline.MessagingGroup', '9': 1, '10': 'messagingGroup', '17': true},
+    {'1': 'sender', '3': 2, '4': 1, '5': 11, '6': '.rellm.Author', '9': 0, '10': 'sender', '17': true},
+    {'1': 'messaging_group', '3': 3, '4': 1, '5': 11, '6': '.rellm.MessagingGroup', '9': 1, '10': 'messagingGroup', '17': true},
     {'1': 'body_text', '3': 4, '4': 1, '5': 9, '10': 'bodyText'},
     {'1': 'subject', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'subject', '17': true},
     {'1': 'email_message_id', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'emailMessageId', '17': true},
@@ -44,7 +44,7 @@ const Message$json = {
     {'1': 'to', '3': 8, '4': 1, '5': 9, '9': 5, '10': 'to', '17': true},
     {'1': 'cc', '3': 9, '4': 1, '5': 9, '9': 6, '10': 'cc', '17': true},
     {'1': 'bcc', '3': 10, '4': 1, '5': 9, '9': 7, '10': 'bcc', '17': true},
-    {'1': 'current_user_read', '3': 19, '4': 1, '5': 11, '6': '.jonline.MessageRead', '9': 8, '10': 'currentUserRead', '17': true},
+    {'1': 'current_user_read', '3': 19, '4': 1, '5': 11, '6': '.rellm.MessageRead', '9': 8, '10': 'currentUserRead', '17': true},
     {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
   '8': [
@@ -62,17 +62,17 @@ const Message$json = {
 
 /// Descriptor for `Message`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List messageDescriptor = $convert.base64Decode(
-    'CgdNZXNzYWdlEg4KAmlkGAEgASgJUgJpZBIsCgZzZW5kZXIYAiABKAsyDy5qb25saW5lLkF1dG'
-    'hvckgAUgZzZW5kZXKIAQESRQoPbWVzc2FnaW5nX2dyb3VwGAMgASgLMhcuam9ubGluZS5NZXNz'
-    'YWdpbmdHcm91cEgBUg5tZXNzYWdpbmdHcm91cIgBARIbCglib2R5X3RleHQYBCABKAlSCGJvZH'
-    'lUZXh0Eh0KB3N1YmplY3QYBSABKAlIAlIHc3ViamVjdIgBARItChBlbWFpbF9tZXNzYWdlX2lk'
-    'GAYgASgJSANSDmVtYWlsTWVzc2FnZUlkiAEBEhcKBGZyb20YByABKAlIBFIEZnJvbYgBARITCg'
-    'J0bxgIIAEoCUgFUgJ0b4gBARITCgJjYxgJIAEoCUgGUgJjY4gBARIVCgNiY2MYCiABKAlIB1ID'
-    'YmNjiAEBEkUKEWN1cnJlbnRfdXNlcl9yZWFkGBMgASgLMhQuam9ubGluZS5NZXNzYWdlUmVhZE'
-    'gIUg9jdXJyZW50VXNlclJlYWSIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90'
-    'b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdEIJCgdfc2VuZGVyQhIKEF9tZXNzYWdpbmdfZ3JvdX'
-    'BCCgoIX3N1YmplY3RCEwoRX2VtYWlsX21lc3NhZ2VfaWRCBwoFX2Zyb21CBQoDX3RvQgUKA19j'
-    'Y0IGCgRfYmNjQhQKEl9jdXJyZW50X3VzZXJfcmVhZA==');
+    'CgdNZXNzYWdlEg4KAmlkGAEgASgJUgJpZBIqCgZzZW5kZXIYAiABKAsyDS5yZWxsbS5BdXRob3'
+    'JIAFIGc2VuZGVyiAEBEkMKD21lc3NhZ2luZ19ncm91cBgDIAEoCzIVLnJlbGxtLk1lc3NhZ2lu'
+    'Z0dyb3VwSAFSDm1lc3NhZ2luZ0dyb3VwiAEBEhsKCWJvZHlfdGV4dBgEIAEoCVIIYm9keVRleH'
+    'QSHQoHc3ViamVjdBgFIAEoCUgCUgdzdWJqZWN0iAEBEi0KEGVtYWlsX21lc3NhZ2VfaWQYBiAB'
+    'KAlIA1IOZW1haWxNZXNzYWdlSWSIAQESFwoEZnJvbRgHIAEoCUgEUgRmcm9tiAEBEhMKAnRvGA'
+    'ggASgJSAVSAnRviAEBEhMKAmNjGAkgASgJSAZSAmNjiAEBEhUKA2JjYxgKIAEoCUgHUgNiY2OI'
+    'AQESQwoRY3VycmVudF91c2VyX3JlYWQYEyABKAsyEi5yZWxsbS5NZXNzYWdlUmVhZEgIUg9jdX'
+    'JyZW50VXNlclJlYWSIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5U'
+    'aW1lc3RhbXBSCWNyZWF0ZWRBdEIJCgdfc2VuZGVyQhIKEF9tZXNzYWdpbmdfZ3JvdXBCCgoIX3'
+    'N1YmplY3RCEwoRX2VtYWlsX21lc3NhZ2VfaWRCBwoFX2Zyb21CBQoDX3RvQgUKA19jY0IGCgRf'
+    'YmNjQhQKEl9jdXJyZW50X3VzZXJfcmVhZA==');
 
 @$core.Deprecated('Use messageReadDescriptor instead')
 const MessageRead$json = {
@@ -108,14 +108,14 @@ final $typed_data.Uint8List markMessagesReadRequestDescriptor = $convert.base64D
 const MarkMessagesReadResponse$json = {
   '1': 'MarkMessagesReadResponse',
   '2': [
-    {'1': 'message_reads', '3': 1, '4': 3, '5': 11, '6': '.jonline.MessageRead', '10': 'messageReads'},
+    {'1': 'message_reads', '3': 1, '4': 3, '5': 11, '6': '.rellm.MessageRead', '10': 'messageReads'},
   ],
 };
 
 /// Descriptor for `MarkMessagesReadResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List markMessagesReadResponseDescriptor = $convert.base64Decode(
-    'ChhNYXJrTWVzc2FnZXNSZWFkUmVzcG9uc2USOQoNbWVzc2FnZV9yZWFkcxgBIAMoCzIULmpvbm'
-    'xpbmUuTWVzc2FnZVJlYWRSDG1lc3NhZ2VSZWFkcw==');
+    'ChhNYXJrTWVzc2FnZXNSZWFkUmVzcG9uc2USNwoNbWVzc2FnZV9yZWFkcxgBIAMoCzISLnJlbG'
+    'xtLk1lc3NhZ2VSZWFkUgxtZXNzYWdlUmVhZHM=');
 
 @$core.Deprecated('Use sendMessageRequestDescriptor instead')
 const SendMessageRequest$json = {
@@ -142,22 +142,22 @@ const MessagingGroup$json = {
   '1': 'MessagingGroup',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'members', '3': 2, '4': 3, '5': 11, '6': '.jonline.Author', '10': 'members'},
+    {'1': 'members', '3': 2, '4': 3, '5': 11, '6': '.rellm.Author', '10': 'members'},
     {'1': 'created_at', '3': 10, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
 };
 
 /// Descriptor for `MessagingGroup`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List messagingGroupDescriptor = $convert.base64Decode(
-    'Cg5NZXNzYWdpbmdHcm91cBIOCgJpZBgBIAEoCVICaWQSKQoHbWVtYmVycxgCIAMoCzIPLmpvbm'
-    'xpbmUuQXV0aG9yUgdtZW1iZXJzEjkKCmNyZWF0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9i'
-    'dWYuVGltZXN0YW1wUgljcmVhdGVkQXQ=');
+    'Cg5NZXNzYWdpbmdHcm91cBIOCgJpZBgBIAEoCVICaWQSJwoHbWVtYmVycxgCIAMoCzINLnJlbG'
+    'xtLkF1dGhvclIHbWVtYmVycxI5CgpjcmVhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVm'
+    'LlRpbWVzdGFtcFIJY3JlYXRlZEF0');
 
 @$core.Deprecated('Use getMessagesRequestDescriptor instead')
 const GetMessagesRequest$json = {
   '1': 'GetMessagesRequest',
   '2': [
-    {'1': 'listing_type', '3': 1, '4': 1, '5': 14, '6': '.jonline.MessageListingType', '10': 'listingType'},
+    {'1': 'listing_type', '3': 1, '4': 1, '5': 14, '6': '.rellm.MessageListingType', '10': 'listingType'},
     {'1': 'message_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'messageId', '17': true},
     {'1': 'message_group_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'messageGroupId', '17': true},
     {'1': 'search_text', '3': 7, '4': 1, '5': 9, '9': 2, '10': 'searchText', '17': true},
@@ -175,27 +175,27 @@ const GetMessagesRequest$json = {
 
 /// Descriptor for `GetMessagesRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getMessagesRequestDescriptor = $convert.base64Decode(
-    'ChJHZXRNZXNzYWdlc1JlcXVlc3QSPgoMbGlzdGluZ190eXBlGAEgASgOMhsuam9ubGluZS5NZX'
-    'NzYWdlTGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEiIKCm1lc3NhZ2VfaWQYAiABKAlIAFIJbWVz'
-    'c2FnZUlkiAEBEi0KEG1lc3NhZ2VfZ3JvdXBfaWQYAyABKAlIAVIObWVzc2FnZUdyb3VwSWSIAQ'
-    'ESJAoLc2VhcmNoX3RleHQYByABKAlIAlIKc2VhcmNoVGV4dIgBARJACgtzZW50X2JlZm9yZRgI'
-    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIA1IKc2VudEJlZm9yZYgBARIiCgpmcm'
-    '9tX2VtYWlsGAkgASgJSARSCWZyb21FbWFpbIgBAUINCgtfbWVzc2FnZV9pZEITChFfbWVzc2Fn'
-    'ZV9ncm91cF9pZEIOCgxfc2VhcmNoX3RleHRCDgoMX3NlbnRfYmVmb3JlQg0KC19mcm9tX2VtYW'
-    'ls');
+    'ChJHZXRNZXNzYWdlc1JlcXVlc3QSPAoMbGlzdGluZ190eXBlGAEgASgOMhkucmVsbG0uTWVzc2'
+    'FnZUxpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIiCgptZXNzYWdlX2lkGAIgASgJSABSCW1lc3Nh'
+    'Z2VJZIgBARItChBtZXNzYWdlX2dyb3VwX2lkGAMgASgJSAFSDm1lc3NhZ2VHcm91cElkiAEBEi'
+    'QKC3NlYXJjaF90ZXh0GAcgASgJSAJSCnNlYXJjaFRleHSIAQESQAoLc2VudF9iZWZvcmUYCCAB'
+    'KAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSANSCnNlbnRCZWZvcmWIAQESIgoKZnJvbV'
+    '9lbWFpbBgJIAEoCUgEUglmcm9tRW1haWyIAQFCDQoLX21lc3NhZ2VfaWRCEwoRX21lc3NhZ2Vf'
+    'Z3JvdXBfaWRCDgoMX3NlYXJjaF90ZXh0Qg4KDF9zZW50X2JlZm9yZUINCgtfZnJvbV9lbWFpbA'
+    '==');
 
 @$core.Deprecated('Use getMessagesResponseDescriptor instead')
 const GetMessagesResponse$json = {
   '1': 'GetMessagesResponse',
   '2': [
-    {'1': 'messages', '3': 1, '4': 3, '5': 11, '6': '.jonline.Message', '10': 'messages'},
+    {'1': 'messages', '3': 1, '4': 3, '5': 11, '6': '.rellm.Message', '10': 'messages'},
   ],
 };
 
 /// Descriptor for `GetMessagesResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getMessagesResponseDescriptor = $convert.base64Decode(
-    'ChNHZXRNZXNzYWdlc1Jlc3BvbnNlEiwKCG1lc3NhZ2VzGAEgAygLMhAuam9ubGluZS5NZXNzYW'
-    'dlUghtZXNzYWdlcw==');
+    'ChNHZXRNZXNzYWdlc1Jlc3BvbnNlEioKCG1lc3NhZ2VzGAEgAygLMg4ucmVsbG0uTWVzc2FnZV'
+    'IIbWVzc2FnZXM=');
 
 @$core.Deprecated('Use pushSubscriptionDescriptor instead')
 const PushSubscription$json = {

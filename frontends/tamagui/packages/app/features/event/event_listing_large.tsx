@@ -1,6 +1,6 @@
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Heading, XStack, YStack, needsScrollPreservers, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { Heading, XStack, YStack, needsScrollPreservers, standardAnimation, useMedia, useToastController } from '@rellm/ui';
 import { FederatedEvent, federateId, federatedId, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 

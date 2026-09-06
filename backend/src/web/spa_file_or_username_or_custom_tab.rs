@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use jonline_path::create_responder;
+use rellm_path::create_responder;
 
 use rocket::{
     http::{uri::Origin, Status},
@@ -18,8 +18,8 @@ use crate::{
 };
 
 use super::{
-    jonline_path, root_app, spa_prefix, spa_web_path, strip_spa_prefix, JonlineResponder,
-    JonlineSummary, SpaApp,
+    rellm_path, root_app, spa_prefix, spa_web_path, strip_spa_prefix, RellmResponder,
+    RellmSummary, SpaApp,
 };
 
 /// Fallback for arbitrary Tamagui build assets and username/custom-tab shortcut links (e.g.
@@ -43,7 +43,7 @@ pub async fn spa_file_or_username_or_custom_tab(
     file: PathBuf,
     state: &State<RocketState>,
     origin: &Origin<'_>,
-) -> CacheResponse<Result<JonlineResponder, Status>> {
+) -> CacheResponse<Result<RellmResponder, Status>> {
     log::info!("file_or_username_or_custom_tab: {:?}", &file);
     // See spa_web_path.rs: Next bakes a single fixed basePath into a build, so
     // "/" and "/tamagui" are served from two separate exports on disk. This
@@ -63,9 +63,9 @@ pub async fn spa_file_or_username_or_custom_tab(
         file.clone()
     };
     // Namespaced so the two variants (which otherwise share relative filenames)
-    // don't collide in jonline_path's cache.
+    // don't collide in rellm_path's cache.
     let cache_key = format!("{}/{}", opt_dir, relative_file.to_str().unwrap());
-    let result: Result<JonlineResponder, Status> =
+    let result: Result<RellmResponder, Status> =
         match fs::read_to_string(Path::new(&format!("opt/{}/", opt_dir)).join(&relative_file)) {
             Ok(body) => Ok(create_responder(&cache_key, body).await),
             Err(_) => {
@@ -82,7 +82,7 @@ pub async fn spa_file_or_username_or_custom_tab(
                         let server_info = configuration.server_info.unwrap_or_default();
                         let app = spa_prefix(origin.path().as_str())
                             .unwrap_or_else(|| root_app(&server_info));
-                        let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+                        let server_name = server_info.name.clone().unwrap_or("Rellm".to_string());
                         let server_logo = server_info
                             .logo
                             .clone()
@@ -164,24 +164,24 @@ pub async fn spa_file_or_username_or_custom_tab(
                                         NavigationTab::EventsTab => (
                                             "Events".to_string(),
                                             Some(
-                                                "Searchable, RSVPable Events from a Jonline community"
+                                                "Searchable, RSVPable Events from a Rellm community"
                                                     .to_string(),
                                             ),
                                         ),
                                         NavigationTab::PostsTab => (
                                             "Posts".to_string(),
-                                            Some("Posts from a Jonline community".to_string()),
+                                            Some("Posts from a Rellm community".to_string()),
                                         ),
                                         NavigationTab::PeopleTab => (
                                             "People".to_string(),
                                             Some(
-                                                "User listings for a Jonline community"
+                                                "User listings for a Rellm community"
                                                     .to_string(),
                                             ),
                                         ),
                                         NavigationTab::AboutTab => (
                                             "About Community".to_string(),
-                                            Some("Information a Jonline community".to_string()),
+                                            Some("Information a Rellm community".to_string()),
                                         ),
                                     };
                                 let page_title = matched_tab
@@ -240,7 +240,7 @@ pub async fn spa_file_or_username_or_custom_tab(
 
                         let title = Some(format!("{} - {}", page_title, server_name));
 
-                        let summary: Option<JonlineSummary> = Some(JonlineSummary {
+                        let summary: Option<RellmSummary> = Some(RellmSummary {
                             title,
                             description,
                             image: avatar,

@@ -1,31 +1,31 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
-// Visibility in Jonline is a complex topic. There are several different types of visibility, 
-// and each type of entity ([`User`](#jonline-User), [`Media`](#jonline-Media), [`Group`](#jonline-Group), then [`Post`](#jonline-Post)/[`Event`](#jonline-Event)/etc. with common logic)
+// Visibility in Rellm is a complex topic. There are several different types of visibility, 
+// and each type of entity ([`User`](#rellm-User), [`Media`](#rellm-Media), [`Group`](#rellm-Group), then [`Post`](#rellm-Post)/[`Event`](#rellm-Event)/etc. with common logic)
 // has different rules for visibility.
 //
 // From the top down, the rules break down as follows:
 //
 // - Even a `PRIVATE` entity is always visible to the user who owns it.
-//     - For [`Group`](#jonline-Group)s, this means all full members of the [`Group`](#jonline-Group).
-//     - For [`User`](#jonline-User)s, this is confusing and there is a whole [`PrivateUserStrategy`](#jonline-PrivateUserStrategy) thing
-//       in [`ServerConfiguration`](#jonline-ServerConfiguration) for this.
+//     - For [`Group`](#rellm-Group)s, this means all full members of the [`Group`](#rellm-Group).
+//     - For [`User`](#rellm-User)s, this is confusing and there is a whole [`PrivateUserStrategy`](#rellm-PrivateUserStrategy) thing
+//       in [`ServerConfiguration`](#rellm-ServerConfiguration) for this.
 // - A `LIMITED` entity is visible to to the owner(s) and any explicitly associated
-//   [`User`](#jonline-User)s and [`Group`](#jonline-Group)s. Generally, this only applies to [`Post`](#jonline-Post)/[`Event`](#jonline-Event)/etc. entities.
-//   Associations exist via [`UserPost`](#jonline-UserPost)s and [`GroupPost`](#jonline-GroupPost)s.
-//     - This is currently only implemented for [`Group`](#jonline-Group)s and [`GroupPost`](#jonline-GroupPost)s. There are some
-//       choices to be made about how to implement this for [`User`](#jonline-User)s and [`UserPost`](#jonline-UserPost)s, and whether
+//   [`User`](#rellm-User)s and [`Group`](#rellm-Group)s. Generally, this only applies to [`Post`](#rellm-Post)/[`Event`](#rellm-Event)/etc. entities.
+//   Associations exist via [`UserPost`](#rellm-UserPost)s and [`GroupPost`](#rellm-GroupPost)s.
+//     - This is currently only implemented for [`Group`](#rellm-Group)s and [`GroupPost`](#rellm-GroupPost)s. There are some
+//       choices to be made about how to implement this for [`User`](#rellm-User)s and [`UserPost`](#rellm-UserPost)s, and whether
 //       `DIRECT` should be a separate visibility type.
 // - A `SERVER_PUBLIC` entity is visible to all authenticated users.
 // - A `GLOBAL_PUBLIC` entity is visible to the open internet.
 enum Visibility {
-  // A visibility that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)
+  // A visibility that is not known to the protocol. (Likely, the client and server use different versions of the Rellm protocol.)
   VISIBILITY_UNKNOWN = 0;
   // Subject is only visible to the user who owns it.
   PRIVATE = 1;
-  // Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost).
+  // Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#rellm-GroupPost) and [`UserPost`](#rellm-UserPost).
   LIMITED = 2;
   // Subject is visible to all authenticated users.
   SERVER_PUBLIC = 3;
@@ -33,34 +33,34 @@ enum Visibility {
   GLOBAL_PUBLIC = 4;
   // [TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events.
   // For Users, this is the same as LIMITED.
-  // See: [`UserPost`](#jonline-UserPost).
+  // See: [`UserPost`](#rellm-UserPost).
   DIRECT = 5;
 }
 
-// Nearly everything in Jonline has one or more `Moderation`s on it.
+// Nearly everything in Rellm has one or more `Moderation`s on it.
 //
 // From a high level:
 //
-// - A [`User`](#jonline-User) has a `moderation` that determines whether they can log in (and their visibility per their `visibility`).
+// - A [`User`](#rellm-User) has a `moderation` that determines whether they can log in (and their visibility per their `visibility`).
 //   (This is poorly enforced currently! Fix it if you want!)
-//     - This is managed by `people_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
+//     - This is managed by `people_settings.default_moderation` in [`ServerConfiguration`](#rellm-ServerConfiguration).
 //       A default of `UNMODERATED` means that all users can log in. A default of `PENDING`
 //       means that all users must be approved by a moderator/admin before they can log in.
-// - A [`Follow`](#jonline-Follow) has a `target_user_moderation` that determines whether the [`User`](#jonline-User) is following the [`Group`](#jonline-Group).
-//    - It is managed by `default_follow_moderation` in the targeted [`User`](#jonline-User).
-// - A [`Group`](#jonline-Group) has a `moderation` that determines whether the [`Group`](#jonline-Group) is visible to users (per its `visibility`).
-//     - This is managed by `group_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
-// - A [`Membership`](#jonline-Membership) has a `group_moderation` and `user_moderation` that determine whether
-//   the [`Group`](#jonline-Group) admins and/or the invited user has approved the [`Membership`](#jonline-Membership), respectively.
-//     - User invites to [`Group`](#jonline-Group)s (i.e. the `user_moderation`) always start as `PENDING`.
-//       The group side of this is managed by `default_membership_moderation` of the [`Group`](#jonline-Group) in question.
-// - A [`Post`](#jonline-Post) has a `moderation` that determines whether the [`Post`](#jonline-Post) is visible to users (per its `visibility`).
-//     - This is managed by `post_settings.default_moderation` in [`ServerConfiguration`](#jonline-ServerConfiguration).
-// - A [`GroupPost`](#jonline-GroupPost) has a `moderation` that determines whether the admins/mods of the [`Group`](#jonline-Group) has approved the [`Post`](#jonline-Post) (or [`Post`](#jonline-Post)-descended thing like [`Event`](#jonline-Event)s).
-// - [`Event`](#jonline-Event)s and further objects contain a [`Post`](#jonline-Post) and thus inherit its `moderation` and
-//   related [`GroupPost`](#jonline-GroupPost) behavior, for "Group Events."
+// - A [`Follow`](#rellm-Follow) has a `target_user_moderation` that determines whether the [`User`](#rellm-User) is following the [`Group`](#rellm-Group).
+//    - It is managed by `default_follow_moderation` in the targeted [`User`](#rellm-User).
+// - A [`Group`](#rellm-Group) has a `moderation` that determines whether the [`Group`](#rellm-Group) is visible to users (per its `visibility`).
+//     - This is managed by `group_settings.default_moderation` in [`ServerConfiguration`](#rellm-ServerConfiguration).
+// - A [`Membership`](#rellm-Membership) has a `group_moderation` and `user_moderation` that determine whether
+//   the [`Group`](#rellm-Group) admins and/or the invited user has approved the [`Membership`](#rellm-Membership), respectively.
+//     - User invites to [`Group`](#rellm-Group)s (i.e. the `user_moderation`) always start as `PENDING`.
+//       The group side of this is managed by `default_membership_moderation` of the [`Group`](#rellm-Group) in question.
+// - A [`Post`](#rellm-Post) has a `moderation` that determines whether the [`Post`](#rellm-Post) is visible to users (per its `visibility`).
+//     - This is managed by `post_settings.default_moderation` in [`ServerConfiguration`](#rellm-ServerConfiguration).
+// - A [`GroupPost`](#rellm-GroupPost) has a `moderation` that determines whether the admins/mods of the [`Group`](#rellm-Group) has approved the [`Post`](#rellm-Post) (or [`Post`](#rellm-Post)-descended thing like [`Event`](#rellm-Event)s).
+// - [`Event`](#rellm-Event)s and further objects contain a [`Post`](#rellm-Post) and thus inherit its `moderation` and
+//   related [`GroupPost`](#rellm-GroupPost) behavior, for "Group Events."
 enum Moderation {
-  // A moderation that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)
+  // A moderation that is not known to the protocol. (Likely, the client and server use different versions of the Rellm protocol.)
   MODERATION_UNKNOWN = 0;
   // Subject has not been moderated and is visible to all users.
   UNMODERATED = 1;

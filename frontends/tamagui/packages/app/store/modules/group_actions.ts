@@ -1,4 +1,4 @@
-import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@rellm/api";
 
 import {
   AsyncThunk,

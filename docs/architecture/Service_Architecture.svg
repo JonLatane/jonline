@@ -12,12 +12,12 @@
 <g id="clust1" class="cluster">
 <title>cluster0</title>
 <polygon fill="none" stroke="black" points="8,-8 8,-2296.56 4204,-2296.56 4204,-8 8,-8"/>
-<text text-anchor="middle" x="2106" y="-2279.26" font-family="Times,serif" font-size="14.00">Jonline Rust Backend &amp; Cluster</text>
+<text text-anchor="middle" x="2106" y="-2279.26" font-family="Times,serif" font-size="14.00">Rellm Rust Backend &amp; Cluster</text>
 </g>
 <g id="clust2" class="cluster">
 <title>cluster1</title>
 <polygon fill="none" stroke="black" points="2090,-1621 2090,-2264.06 4196,-2264.06 4196,-1621 2090,-1621"/>
-<text text-anchor="middle" x="3143" y="-2246.76" font-family="Times,serif" font-size="14.00">Jonline gRPC Service</text>
+<text text-anchor="middle" x="3143" y="-2246.76" font-family="Times,serif" font-size="14.00">Rellm gRPC Service</text>
 </g>
 <g id="clust3" class="cluster">
 <title>cluster2</title>
@@ -42,7 +42,7 @@
 <g id="clust7" class="cluster">
 <title>cluster6</title>
 <polygon fill="none" stroke="black" points="16,-1621 16,-2264.06 1026,-2264.06 1026,-1621 16,-1621"/>
-<text text-anchor="middle" x="521" y="-2246.76" font-family="Times,serif" font-size="14.00">Jonline HTTP Service</text>
+<text text-anchor="middle" x="521" y="-2246.76" font-family="Times,serif" font-size="14.00">Rellm HTTP Service</text>
 </g>
 <g id="clust8" class="cluster">
 <title>cluster7</title>
@@ -724,7 +724,7 @@
 <polygon fill="none" stroke="black" points="790.12,-1714.5 535.88,-1714.5 535.88,-1637 796.12,-1637 796.12,-1708.5 790.12,-1714.5"/>
 <polyline fill="none" stroke="black" points="790.12,-1714.5 790.12,-1708.5"/>
 <polyline fill="none" stroke="black" points="796.12,-1708.5 790.12,-1708.5"/>
-<text text-anchor="start" x="577.5" y="-1694.2" font-family="Times,serif" font-weight="bold" font-size="14.00">Jonline Social Media Previews</text>
+<text text-anchor="start" x="580.88" y="-1694.2" font-family="Times,serif" font-weight="bold" font-size="14.00">Rellm Social Media Previews</text>
 <text text-anchor="start" x="547.88" y="-1670.7" font-family="Times,serif" font-size="14.00">(i.e., og:image|title|description tag support)</text>
 <text text-anchor="start" x="549.38" y="-1648.2" font-family="Times,serif" font-size="14.00">only support GLOBAL_PUBLIC visibility</text>
 </g>

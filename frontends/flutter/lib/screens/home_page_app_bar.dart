@@ -4,10 +4,10 @@ import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/screens/groups/group_chooser.dart';
+import 'package:rellm/app_state.dart';
+import 'package:rellm/screens/groups/group_chooser.dart';
 
-import '../models/jonline_account.dart';
+import '../models/rellm_account.dart';
 import '../my_platform.dart';
 import '../router/router.gr.dart';
 import '../screens/accounts/account_chooser.dart';
@@ -176,7 +176,7 @@ extension HomePageAppBar on HomePageState {
           // final Object? accountId = context.topRoute.args;
           final String accountId = context.topRoute.pathParams.get('accountId');
           Future.microtask(() async {
-            final account = (await JonlineAccount.accounts).firstWhere(
+            final account = (await RellmAccount.accounts).firstWhere(
               (account) => account.id == accountId,
             );
             setState(() {
@@ -205,7 +205,7 @@ extension HomePageAppBar on HomePageState {
           // final Object? accountId = context.topRoute.args;
           final String accountId = context.topRoute.pathParams.get('accountId');
           Future.microtask(() async {
-            final account = (await JonlineAccount.accounts).firstWhere(
+            final account = (await RellmAccount.accounts).firstWhere(
               (account) => account.id == accountId,
             );
             // setState(() {
@@ -303,7 +303,7 @@ extension HomePageAppBar on HomePageState {
       case GroupsRoute.name:
       case GroupsTab.name:
         bool showSearch = groupsSearch.value;
-        bool showAddButton = !showSearch && JonlineAccount.loggedIn;
+        bool showAddButton = !showSearch && RellmAccount.loggedIn;
         return [
           if (showSearch || showAddButton)
             Tooltip(
@@ -332,7 +332,7 @@ extension HomePageAppBar on HomePageState {
         ];
       case CreateGroupRoute.name:
         return [
-          if (JonlineAccount.loggedIn)
+          if (RellmAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(
@@ -375,7 +375,7 @@ extension HomePageAppBar on HomePageState {
       case PostsRoute.name:
       case PostsTab.name:
         return [
-          if (JonlineAccount.loggedIn)
+          if (RellmAccount.loggedIn)
             TextButton(
               child: const Icon(
                 Icons.add,
@@ -391,7 +391,7 @@ extension HomePageAppBar on HomePageState {
       case EventListRoute.name:
       case EventsTab.name:
         return [
-          if (JonlineAccount.loggedIn)
+          if (RellmAccount.loggedIn)
             const TextButton(
               onPressed: null,
               child: Icon(
@@ -404,7 +404,7 @@ extension HomePageAppBar on HomePageState {
         ];
       case CreatePostRoute.name:
         return [
-          if (JonlineAccount.loggedIn)
+          if (RellmAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(
@@ -441,7 +441,7 @@ extension HomePageAppBar on HomePageState {
       case CreateDeepReplyRoute.name:
       case CreateReplyRoute.name:
         return [
-          if (JonlineAccount.loggedIn)
+          if (RellmAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(

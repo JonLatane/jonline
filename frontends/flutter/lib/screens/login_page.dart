@@ -1,11 +1,11 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
+import 'package:rellm/rellm_state.dart';
 
 import '../app_state.dart';
-import '../models/jonline_account.dart';
-import '../models/jonline_account_operations.dart';
-import '../models/jonline_server.dart';
+import '../models/rellm_account.dart';
+import '../models/rellm_account_operations.dart';
+import '../models/rellm_server.dart';
 import '../router/router.gr.dart';
 
 class LoginPage extends StatefulWidget {
@@ -20,7 +20,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends JonlineBaseState<LoginPage> {
+class _LoginPageState extends RellmBaseState<LoginPage> {
   get defaultServer => LoginPage.defaultServer;
 
   bool doingStuff = false;
@@ -48,7 +48,7 @@ class _LoginPageState extends JonlineBaseState<LoginPage> {
       setState(() {});
     });
     appState.servers.addListener(updateState);
-    final serverValue = "${JonlineServer.selectedServer.server}/";
+    final serverValue = "${RellmServer.selectedServer.server}/";
     if (serverValue != "$defaultServer/") {
       usernameController.value = TextEditingValue(
         text: serverValue,
@@ -79,24 +79,24 @@ class _LoginPageState extends JonlineBaseState<LoginPage> {
   createAccount() async {
     authenticate(
         "create account",
-        JonlineAccount.createAccount(server, username, password, showSnackBar,
+        RellmAccount.createAccount(server, username, password, showSnackBar,
             allowInsecure: allowInsecure));
   }
 
   login() async {
     authenticate(
         "login",
-        JonlineAccount.loginToAccount(server, username, password, showSnackBar,
+        RellmAccount.loginToAccount(server, username, password, showSnackBar,
             allowInsecure: allowInsecure));
   }
 
   addServer() async {
-    await JonlineServer(server).saveNew();
+    await RellmServer(server).saveNew();
     appState.updateServerList();
     showSnackBar("Added server $server");
   }
 
-  authenticate(String action, Future<JonlineAccount?> generator) async {
+  authenticate(String action, Future<RellmAccount?> generator) async {
     setState(() {
       doingStuff = true;
     });
@@ -131,7 +131,7 @@ class _LoginPageState extends JonlineBaseState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     bool showAddServerButton =
-        !appState.servers.value.contains(JonlineServer(server));
+        !appState.servers.value.contains(RellmServer(server));
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add Account/Server"),

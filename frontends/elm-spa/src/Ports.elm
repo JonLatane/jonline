@@ -370,7 +370,7 @@ port unsubscribeFromPush : Encode.Value -> Cmd msg
 
 
 {-| Asks the browser for whatever Web Push subscription (if any) currently exists for this
-origin's service worker -- there's at most one, browser-wide, no matter how many Jonline accounts
+origin's service worker -- there's at most one, browser-wide, no matter how many Rellm accounts
 are signed in (`PushSubscriptionCheckReceived`'s own doc comment covers how that's reconciled back
 to a specific account). Called once at `Shared.AccountsPanel.init`, since `pushSubscriptions` is
 otherwise session-only state -- without this, a page refresh would show every account's

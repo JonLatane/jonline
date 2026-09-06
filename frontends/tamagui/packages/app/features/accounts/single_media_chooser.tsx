@@ -1,8 +1,8 @@
 
-import { Button, Heading, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, XStack, YStack } from '@rellm/ui';
 import { Camera, Trash } from "@tamagui/lucide-icons";
 
-import { standardAnimation } from "@jonline/ui";
+import { standardAnimation } from "@rellm/ui";
 import { MediaRef } from 'app/contexts';
 import { useServerTheme } from "app/store";
 import React from "react";

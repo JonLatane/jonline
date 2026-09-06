@@ -17,7 +17,7 @@ import Grpc
 import Html exposing (Html, button, div, input, span, text)
 import Html.Attributes exposing (class, disabled, placeholder, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (ExternalCDNConfig, ServerConfiguration, defaultExternalCDNConfig)
+import Proto.Rellm exposing (ExternalCDNConfig, ServerConfiguration, defaultExternalCDNConfig)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task

@@ -1,9 +1,9 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 use diesel::*;
-use jonline::logic::update_all_counts;
-use jonline::schema::users;
-use jonline::{db_connection, init_bin_logging, init_crypto};
+use rellm::logic::update_all_counts;
+use rellm::schema::users;
+use rellm::{db_connection, init_bin_logging, init_crypto};
 
 pub fn main() {
     init_crypto();

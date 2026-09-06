@@ -7,14 +7,14 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:animated_list_plus/animated_list_plus.dart';
 import 'package:animated_list_plus/transitions.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/screens/accounts/server_configuration_page.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/screens/accounts/server_configuration_page.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_account_operations.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_account_operations.dart';
+import '../../models/rellm_server.dart';
 import '../../utils/colors.dart';
 import '../../models/settings.dart';
 import '../home_page.dart';
@@ -27,9 +27,9 @@ class AccountsPage extends StatefulWidget {
   AccountsPageState createState() => AccountsPageState();
 }
 
-class AccountsPageState extends JonlineState<AccountsPage> {
-  List<JonlineAccount> get allAccounts => appState.accounts.value;
-  List<JonlineAccount> get accounts {
+class AccountsPageState extends RellmState<AccountsPage> {
+  List<RellmAccount> get allAccounts => appState.accounts.value;
+  List<RellmAccount> get accounts {
     final result = allAccounts;
     if (showServers && uiSelectedServer != null) {
       return result.where((a) => a.server == uiSelectedServer!.server).toList();
@@ -37,8 +37,8 @@ class AccountsPageState extends JonlineState<AccountsPage> {
     return result;
   }
 
-  List<JonlineServer> get servers => appState.servers.value;
-  JonlineServer? uiSelectedServer;
+  List<RellmServer> get servers => appState.servers.value;
+  RellmServer? uiSelectedServer;
   bool get showServers => Settings.showServers;
   set showServers(bool value) {
     Settings.showServers = value;
@@ -361,7 +361,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
     // }
   }
 
-  deleteAccount(JonlineAccount account) {
+  deleteAccount(RellmAccount account) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Really delete ${account.server}/${account.username}?'),
@@ -376,7 +376,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
         )));
   }
 
-  deleteServer(JonlineServer server) {
+  deleteServer(RellmServer server) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Really delete ${server.server}?'),
@@ -391,7 +391,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
         )));
   }
 
-  refreshAccount(JonlineAccount account) async {
+  refreshAccount(RellmAccount account) async {
     if (!await account.ensureAccessToken(showMessage: showSnackBar)) {
       await communicationDelay;
       showSnackBar('Failed to update account details.');
@@ -406,15 +406,15 @@ class AccountsPageState extends JonlineState<AccountsPage> {
     appState.updateAccountList();
   }
 
-  refreshServer(JonlineServer server) async {
+  refreshServer(RellmServer server) async {
     await server.updateConfiguration();
     await appState.updateColorTheme();
     showSnackBar('Server configuration updated.');
   }
 
   void deleteAllAccounts() async {
-    await JonlineAccount.updateAccountList([]);
-    await JonlineServer.updateServerList([]);
+    await RellmAccount.updateAccountList([]);
+    await RellmServer.updateServerList([]);
     appState.updateAccountList();
     appState.updateServerList();
   }
@@ -491,7 +491,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                 PointerDeviceKind.stylus,
               },
             ),
-            child: ImplicitlyAnimatedReorderableList<JonlineAccount>(
+            child: ImplicitlyAnimatedReorderableList<RellmAccount>(
               padding: EdgeInsets.only(
                   top: mq.padding.top + 48, bottom: mq.padding.bottom),
               physics: const AlwaysScrollableScrollPhysics(),
@@ -499,7 +499,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
               areItemsTheSame: (a, b) => a.id == b.id,
               onReorderFinished: (item, from, to, newItems) {
                 if (uiSelectedServer == null) {
-                  JonlineAccount.updateAccountList(newItems);
+                  RellmAccount.updateAccountList(newItems);
                 }
               },
 
@@ -519,7 +519,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
   }
 
   Map<String, Uint8List?> accountAvatars = {};
-  Widget buildAccountItem(JonlineAccount account) {
+  Widget buildAccountItem(RellmAccount account) {
     final backgroundColor = appState.selectedAccount?.id == account.id
         ? appState.navColor
         : Colors.grey[600];
@@ -548,7 +548,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
             onTap: () {
               if (appState.selectedAccount?.id == account.id) {
                 showSnackBar(
-                    "Browsing anonymously on ${JonlineServer.selectedServer.server}.");
+                    "Browsing anonymously on ${RellmServer.selectedServer.server}.");
                 appState.selectedAccount = null;
               } else {
                 showSnackBar(
@@ -783,14 +783,14 @@ class AccountsPageState extends JonlineState<AccountsPage> {
 
   // bool get verticalServerList =>mq.size.width > 600;
   Widget buildServerList() {
-    return ImplicitlyAnimatedReorderableList<JonlineServer>(
+    return ImplicitlyAnimatedReorderableList<RellmServer>(
       physics: const AlwaysScrollableScrollPhysics(),
       scrollDirection: Axis.horizontal,
       // scrollDirection: verticalServerList ? Axis.vertical : Axis.horizontal,
       items: servers,
       areItemsTheSame: (a, b) => a.server == b.server,
       onReorderFinished: (item, from, to, newItems) {
-        JonlineServer.updateServerList(newItems);
+        RellmServer.updateServerList(newItems);
       },
       itemBuilder: (context, animation, server, index) {
         return Reorderable(
@@ -807,10 +807,10 @@ class AccountsPageState extends JonlineState<AccountsPage> {
   }
 
   double get serverItemHeight => 70 + 10 * mq.textScaleFactor;
-  Widget buildServerItem(JonlineServer server) {
-    final selectServer = JonlineServer.selectedServer != server
+  Widget buildServerItem(RellmServer server) {
+    final selectServer = RellmServer.selectedServer != server
         ? () {
-            JonlineServer.selectedServer = server;
+            RellmServer.selectedServer = server;
             if (appState.selectedAccount != null &&
                 appState.selectedAccount!.server != server.server) {
               appState.selectedAccount = null;
@@ -825,7 +825,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
     final backgroundColor = uiSelectedServer == server
         ? Color(server.configuration?.serverInfo.colors.primary ??
             defaultPrimaryColor.value)
-        : JonlineServer.selectedServer == server
+        : RellmServer.selectedServer == server
             ? appState.navColor
             : Colors.black26;
     final textColor = backgroundColor.textColor;
@@ -866,7 +866,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                     }
                     // if (appState.selectedServer?.id == server.id) {
                     //   showSnackBar(
-                    //       "Browsing anonymously on ${JonlineServer.selectedServer}.");
+                    //       "Browsing anonymously on ${RellmServer.selectedServer}.");
                     //   appState.selectedServer = null;
                     // } else {
                     //   showSnackBar(

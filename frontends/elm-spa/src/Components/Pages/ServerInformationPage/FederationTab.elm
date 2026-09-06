@@ -23,7 +23,7 @@ import Html.Attributes exposing (class, disabled, id, placeholder, title, value)
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer, MastodonServer, ServerConfiguration)
+import Proto.Rellm exposing (FederatedServer, MastodonServer, ServerConfiguration)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task
@@ -144,7 +144,7 @@ mirrors `FederationEdit` exactly (`pending`/`domainInput`/`status`/`itemAnimatio
 all play the same role, just keyed by `domain` instead of `host`), except each `pending` entry is a
 `MastodonServerEdit` rather than a bare `MastodonServer` (see that type's own doc), and there's no
 `addStatus`: unlike `FederatedServerAddClicked`, adding an instance here never round-trips to a
-server (there's no live Jonline server to probe -- see `MastodonServerAddClicked`), so it's always
+server (there's no live Rellm server to probe -- see `MastodonServerAddClicked`), so it's always
 synchronous.
 -}
 type alias MastodonServersEdit =
@@ -524,7 +524,7 @@ update shared targetHost isSecure maybeServer msg model =
             ( { model | mastodonServersEdit = model.mastodonServersEdit |> Maybe.map (\edit -> { edit | domainInput = text }) }, Effect.none )
 
         -- Unlike `FederatedServerAddClicked`, this never round-trips to a server -- a Mastodon
-        -- instance isn't a Jonline server, so there's nothing to probe/connect to, and a freshly-typed
+        -- instance isn't a Rellm server, so there's nothing to probe/connect to, and a freshly-typed
         -- domain is just inserted straight into `pending`, synchronously.
         MastodonServerAddClicked ->
             case model.mastodonServersEdit of
@@ -1031,7 +1031,7 @@ so this can never accidentally clobber it.
 applyFacebookAppId : String -> ServerConfiguration -> ServerConfiguration
 applyFacebookAppId appId config =
     let
-        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
     in
@@ -1048,7 +1048,7 @@ instead. Keeps whatever `appId` the freshly re-fetched config already has.
 applyFacebookAppSecret : String -> ServerConfiguration -> ServerConfiguration
 applyFacebookAppSecret appSecret config =
     let
-        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
 
@@ -1069,7 +1069,7 @@ applyFacebookAppSecret appSecret config =
 applyXTwitterClientId : String -> ServerConfiguration -> ServerConfiguration
 applyXTwitterClientId clientId config =
     let
-        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
     in
@@ -1085,7 +1085,7 @@ against `federationInfo.xTwitterAuthConfig` instead.
 applyXTwitterClientSecret : String -> ServerConfiguration -> ServerConfiguration
 applyXTwitterClientSecret clientSecret config =
     let
-        federationInfo : Proto.Jonline.FederationInfo
+        federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
             Maybe.withDefault { servers = [], facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
 
@@ -1258,7 +1258,7 @@ view shared server maybeAdminAccount model =
 instance's App ID (plain) and App Secret (write-only) inline -- see `MastodonServerEdit`'s own doc
 for why the secret needs its own bit of edit-mode state per chip, unlike `FederatedServer`'s two
 plain boolean toggles. Unlike `FederatedServer` chips, there's no `AccountsPanel.serverNameAndLogo`
-branding to show -- a Mastodon instance is never also a known Jonline `Server`.
+branding to show -- a Mastodon instance is never also a known Rellm `Server`.
 -}
 mastodonServersSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
 mastodonServersSection server model maybeAdminAccount =
@@ -1294,7 +1294,7 @@ mastodonServersDisplayView mastodonServers =
 
 
 {-| One `MastodonServer`, read-only -- mirrors `federatedServerDisplayChip`, just showing whether an
-App ID is configured (never the secret) instead of a Jonline server's logo/name.
+App ID is configured (never the secret) instead of a Rellm server's logo/name.
 -}
 mastodonServerDisplayChip : MastodonServer -> Html Msg
 mastodonServerDisplayChip mastodonServer =

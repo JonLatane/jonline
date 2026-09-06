@@ -4,20 +4,20 @@ import 'package:logging/logging.dart';
 
 import '../app_state.dart';
 import '../generated/google/protobuf/empty.pb.dart';
-import '../generated/jonline.pbgrpc.dart';
-import 'jonline_account.dart';
-import 'jonline_channels_native.dart'
-    if (dart.library.html) 'jonline_channels_web.dart';
-import 'jonline_server.dart';
+import '../generated/rellm.pbgrpc.dart';
+import 'rellm_account.dart';
+import 'rellm_channels_native.dart'
+    if (dart.library.html) 'rellm_channels_web.dart';
+import 'rellm_server.dart';
 import 'server_errors.dart';
 import 'package:http/http.dart' as http;
 
-/// Tracks JonlineClient instances for each Jonline server, and provides
-/// extension methods for JonlineAccount to fetch the appropriate client.
-extension JonlineClients on JonlineAccount {
-  static final log = Logger('JonlineClients');
+/// Tracks RellmClient instances for each Rellm server, and provides
+/// extension methods for RellmAccount to fetch the appropriate client.
+extension RellmClients on RellmAccount {
+  static final log = Logger('RellmClients');
 
-  static Future<JonlineClient> _createClient(
+  static Future<RellmClient> _createClient(
       String server, bool secure, int port) async {
     var host = server;
     log.warning("_createClient $server $secure", Exception("hi"));
@@ -40,13 +40,13 @@ extension JonlineClients on JonlineAccount {
         ? const ChannelCredentials.secure()
         : const ChannelCredentials.insecure();
     final ClientChannelBase channel =
-        createJonlineChannel(host, credentials, port);
-    return JonlineClient(channel);
+        createRellmChannel(host, credentials, port);
+    return RellmClient(channel);
   }
 
-  static Future<JonlineClient?> createAndTestClient(String server,
+  static Future<RellmClient?> createAndTestClient(String server,
       {Function(String)? showMessage, bool allowInsecure = false}) async {
-    JonlineClient? client;
+    RellmClient? client;
     // String? serviceVersion;
 
     // We can't actually gracefully handle browser SSL errors, so must
@@ -84,16 +84,16 @@ extension JonlineClients on JonlineAccount {
     return client;
   }
 
-  static Future<JonlineClient?> getSelectedOrDefaultClient(
+  static Future<RellmClient?> getSelectedOrDefaultClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
-    if (JonlineAccount.selectedAccount == null) {
+    if (RellmAccount.selectedAccount == null) {
       return getSelectedServerClient(
           showMessage: showMessage, allowInsecure: allowInsecure);
     }
     return getSelectedAccountClient(showMessage: showMessage);
   }
 
-  static Future<JonlineClient?> getServerClient(JonlineServer server,
+  static Future<RellmClient?> getServerClient(RellmServer server,
       {bool allowInsecure = false, Function(String)? showMessage}) async {
     final clients = allowInsecure ? _insecureClients : _secureClients;
     if (clients.containsKey(server)) {
@@ -110,10 +110,10 @@ extension JonlineClients on JonlineAccount {
     }
   }
 
-  static Future<JonlineClient?> getSelectedAccountClient(
+  static Future<RellmClient?> getSelectedAccountClient(
       {Function(String)? showMessage}) async {
-    if (JonlineAccount.selectedAccount == null) return null;
-    return await JonlineAccount.selectedAccount
+    if (RellmAccount.selectedAccount == null) return null;
+    return await RellmAccount.selectedAccount
         ?.getClient(showMessage: showMessage);
   }
 
@@ -122,11 +122,11 @@ extension JonlineClients on JonlineAccount {
         .contains(server.toLowerCase());
   }
 
-  static Future<JonlineClient?> getSelectedServerClient(
+  static Future<RellmClient?> getSelectedServerClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     // Workaround for anonymous browsing on localhost
-    log.info("getSelectedServerClient", JonlineServer.selectedServer.server);
-    final server = JonlineServer.selectedServer.server;
+    log.info("getSelectedServerClient", RellmServer.selectedServer.server);
+    final server = RellmServer.selectedServer.server;
     final reallyAllowInsecure = allowInsecure || isInsecureAllowed(server);
     final clients = Map.of(_secureClients)
       ..addAll(reallyAllowInsecure ? _insecureClients : {});
@@ -144,8 +144,8 @@ extension JonlineClients on JonlineAccount {
     }
   }
 
-  // Gets a JonlineClient for the server for this account.
-  Future<JonlineClient?> getClient({Function(String)? showMessage}) async {
+  // Gets a RellmClient for the server for this account.
+  Future<RellmClient?> getClient({Function(String)? showMessage}) async {
     final clients = allowInsecure ? _insecureClients : _secureClients;
     if (clients.containsKey(server)) {
       return clients[server];
@@ -166,5 +166,5 @@ extension JonlineClients on JonlineAccount {
       CallOptions(metadata: {'authorization': accessToken});
 }
 
-final Map<String, JonlineClient> _secureClients = {};
-final Map<String, JonlineClient> _insecureClients = {};
+final Map<String, RellmClient> _secureClients = {};
+final Map<String, RellmClient> _insecureClients = {};

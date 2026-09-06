@@ -23,7 +23,7 @@ const IMAGE_EDITING_CAPABILITIES: &[AiModelCapability] =
 const IMAGE_GENERATION_ONLY_CAPABILITIES: &[AiModelCapability] = &[AiModelCapability::ImageGeneration];
 
 /// Gemini API (`ai.google.dev/gemini-api`) image generation/editing models -- the "Nano Banana"
-/// family, Jonline's actual near-term use case (generating/editing Event posters). Ordered
+/// family, Rellm's actual near-term use case (generating/editing Event posters). Ordered
 /// newest/most-capable first. `gemini-2.5-flash-image` is the original ("legacy") model; Google's
 /// own docs now recommend `gemini-3.1-flash-lite-image` for new plain text-to-image work instead.
 /// Only `gemini-3-pro-image` and `gemini-3.1-flash-image` support image *editing* (multi-turn,
