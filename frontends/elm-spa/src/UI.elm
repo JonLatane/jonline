@@ -1538,8 +1538,8 @@ plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonSer
 "Connect" chips, which exist to authenticate as a specific account, this is closer to
 `serversStrip`'s own "type a host, add it" shape for real Jonline servers, just without any of the
 connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
-time, a bad/unreachable host just silently fails to load posts the same way any other federated
-fetch failure does (see `Components.Pages.PostsPage.GotFederatedPosts`'s own doc).
+time, a bad/unreachable host just silently fails to load posts the same way any other feed fetch
+failure does (see `Components.Pages.PostsPage.GotFeedPosts`'s `FeedFailed` doc).
 -}
 mastodonBrowseSection : Shared.Model -> Html Shared.Msg
 mastodonBrowseSection shared =

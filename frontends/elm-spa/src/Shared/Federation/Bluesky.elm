@@ -10,8 +10,8 @@ module Shared.Federation.Bluesky exposing
 Mastodon, there's no meaningful *unauthenticated* equivalent: a bare "public timeline" isn't a
 concept AT Proto's federated network has (every PDS only ever serves its own users' own posts/feeds,
 not a "local instance timeline" the way a Mastodon server does), so `fetchPosts` is a connected
-account's own home timeline. See `Components.Pages.PostsPage.fetchFederatedPosts`'s own doc for how
-that gets wired into a real page.
+account's own home timeline. See `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case
+(and `FeedSource`'s own doc) for how that gets wired into a real page.
 -}
 
 import Http

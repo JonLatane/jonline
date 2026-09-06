@@ -133,11 +133,6 @@ type alias Model =
     -- exactly.
     , pushStatuses : Dict String SubmitStatus
 
-    -- Translated posts from every connected Mastodon/Bluesky account (see
-    -- `Shared.Federation.Mastodon`/`Bluesky`), keyed by a synthetic host that can never collide
-    -- with a real `AccountsPanel.Server.frontendHost` -- see `fetchFederatedPosts`'s own doc for
-    -- how/when this gets populated, and `syncAnimations`' own doc for how it's merged in.
-    , federatedPosts : Dict String (List Post)
     }
 
 
@@ -150,7 +145,7 @@ type SubmitStatus
 
 
 type Msg
-    = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
+    = GotFeedPosts String FeedResult
     | Poll
     | Animate Animation.Msg
     | RemovePost String
@@ -193,9 +188,6 @@ type Msg
       -- exactly.
     | PushPostToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
-      -- One connected Mastodon/Bluesky account's `fetchFederatedPosts` task settling -- `String` is
-      -- the same synthetic host key it was fired with (see that function's own doc).
-    | GotFederatedPosts String (Result Http.Error (List Post))
 
 
 type ServerPosts
@@ -212,6 +204,92 @@ type alias ServerFeed =
     { status : ServerPosts
     , accountId : Maybe String
     }
+
+
+{-| One source `postsByServer` can hold a feed for -- a real Jonline server (federating in the usual
+way, `AccountsPanel.Server`), or a Mastodon instance/Bluesky account translated client-side (see
+`Shared.Federation.Mastodon`/`Bluesky`). Unifies what used to be two entirely separate
+fetch-and-store paths (`postsByServer`/`GotServerPosts`/`fetchNewServers`/`refetchServers` vs.
+`federatedPosts`/`GotFederatedPosts`/`fetchFederatedPosts`) into one, since both are ultimately
+"fetch some posts for a host key, store them under that key, let `syncAnimations` render them" --
+they just reach different APIs, with different capabilities, to do it. See `feedSourceKey`/
+`feedSourceAccountId`/`fetchFeedSource` for where the three cases actually diverge.
+-}
+type FeedSource
+    = JonlineServer AccountsPanel.Server
+    | MastodonInstance String
+    | BlueskyFeed AccountsPanel.BlueskyAccount
+
+
+{-| `postsByServer`'s key for a given `FeedSource` -- a real server's own `frontendHost`, or a
+synthetic `"mastodon:"`/`"bluesky:"`-prefixed key that can never collide with one, mirroring
+`Shared.Federation.Mastodon`/`Bluesky`'s own `Post.id` namespacing for the same reason.
+-}
+feedSourceKey : FeedSource -> String
+feedSourceKey source =
+    case source of
+        JonlineServer server ->
+            server.frontendHost
+
+        MastodonInstance host ->
+            "mastodon:" ++ host
+
+        BlueskyFeed account ->
+            "bluesky:" ++ account.handle
+
+
+{-| The acting credential a `FeedSource`'s feed is fetched with, if any -- a real server's enabled
+account, or always `Nothing` for Mastodon/Bluesky, since neither is ever refetched on a credential
+change the way a Jonline account is (browsing/reading Mastodon needs no sign-in at all; a Bluesky
+account's token doesn't change without a full reconnect, which itself removes and re-adds the
+account under a new key). `Nothing == Nothing` is exactly what makes `fetchNewFeeds` treat an
+already-fetched federated source as unchanged forever -- except a *newly* added instance/account
+(not yet a key in `postsByServer` at all) now gets picked up live by the same `Poll`/`SharedMsg`
+events real servers already use, rather than waiting for a fresh visit to this page the way the old,
+separate `fetchFederatedPosts` (fired once, from `init`, only) did.
+-}
+feedSourceAccountId : Shared.Model -> FeedSource -> Maybe String
+feedSourceAccountId shared source =
+    case source of
+        JonlineServer server ->
+            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map AccountsPanel.accountId
+
+        MastodonInstance _ ->
+            Nothing
+
+        BlueskyFeed _ ->
+            Nothing
+
+
+{-| One `FeedSource`'s fetch settling, normalized across the real-server (`Grpc.Error`/
+`GetPostsResponse`) and Mastodon/Bluesky (`Http.Error`/plain `List Post`) shapes -- neither error
+type's actual content is used anywhere once a fetch fails (see `GotFeedPosts`'s `FeedFailed`
+branch), so there's nothing lost by discarding the distinction.
+-}
+type FeedResult
+    = FeedLoaded (List Post) (Maybe AccountsPanel.Msg)
+    | FeedFailed
+
+
+fromServerResult : Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ) -> FeedResult
+fromServerResult result =
+    case result of
+        Ok ( maybeAccountsPanelMsg, response ) ->
+            FeedLoaded response.posts maybeAccountsPanelMsg
+
+        Err _ ->
+            FeedFailed
+
+
+fromFederatedResult : Result Http.Error (List Post) -> FeedResult
+fromFederatedResult result =
+    case result of
+        Ok posts ->
+            FeedLoaded posts Nothing
+
+        Err _ ->
+            FeedFailed
 
 
 {-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
@@ -287,7 +365,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                     ( RecentPosts, shared.userPreferences.postsBefore )
 
         ( fetchedModel, fetchEffect ) =
-            fetchNewServers shared
+            fetchNewFeeds shared
                 { postsByServer = Dict.empty
                 , postAnimations = Dict.empty
                 , author = author
@@ -303,7 +381,6 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
                 , pushStatuses = Dict.empty
-                , federatedPosts = Dict.empty
                 }
     in
     -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
@@ -328,7 +405,6 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
     ( fetchedModel
     , Effect.batch
         [ fetchEffect
-        , fetchFederatedPosts shared fetchedModel
         , Effect.fromShared Shared.CloseAllPanels
         , setBreadcrumbsRoot shared fetchedModel
         , Task.perform GotNow Time.now |> Effect.fromCmd
@@ -394,7 +470,7 @@ update shared msg model =
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
-        GotServerPosts frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotFeedPosts host (FeedLoaded rawPosts maybeAccountsPanelMsg) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -406,24 +482,25 @@ updateInner shared msg model =
                 -- `customNavPostIds`) are dropped from that server's generic feed -- they've
                 -- already got their own dedicated tab/url (`UI.CustomNav`/
                 -- `Pages.UsernameOrCustomTab_`), so showing them here too would just be clutter.
-                -- `customNavPostIds frontendHost` only ever looks at `frontendHost`'s own
-                -- `customTabs` -- a `CustomNavigationTab.post_id` is always assumed to name a Post
-                -- on that server (see `UI.CustomNav.CustomTabTarget`'s own doc), so it'd be a
-                -- coincidence, not a real match, for some other federated server's own post to
-                -- share that id. Skipped entirely when `Shared.debugShowCustomNavPosts` is set, so
-                -- DebugTab's "Show Posts linked to Custom Tabs" toggle can surface them for
-                -- inspection.
+                -- `customNavPostIds host` only ever looks at `host`'s own `customTabs` -- a
+                -- `CustomNavigationTab.post_id` is always assumed to name a Post on that server (see
+                -- `UI.CustomNav.CustomTabTarget`'s own doc), so it'd be a coincidence, not a real
+                -- match, for some other federated server's (or Mastodon/Bluesky's) own post to share
+                -- that id; a synthetic Mastodon/Bluesky `host` simply has no `customTabs` at all, so
+                -- this is naturally a no-op filter for those. Skipped entirely when
+                -- `Shared.debugShowCustomNavPosts` is set, so DebugTab's "Show Posts linked to
+                -- Custom Tabs" toggle can surface them for inspection.
                 posts : List Post
                 posts =
                     if shared.accounts.debugTab.showCustomNavPosts then
-                        response.posts
+                        rawPosts
 
                     else
-                        response.posts |> List.filter (\post -> not (Set.member post.id (customNavPostIds shared frontendHost)))
+                        rawPosts |> List.filter (\post -> not (Set.member post.id (customNavPostIds shared host)))
             in
             ( { model
                 | postsByServer =
-                    Dict.update frontendHost
+                    Dict.update host
                         (Maybe.map (\feed -> { feed | status = Loaded posts }))
                         model.postsByServer
               }
@@ -431,29 +508,17 @@ updateInner shared msg model =
             , accountEffect
             )
 
-        GotServerPosts frontendHost (Err _) ->
+        GotFeedPosts host FeedFailed ->
             ( { model
                 | postsByServer =
-                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
+                    Dict.update host (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
               }
                 |> syncAnimations
             , Effect.none
             )
 
-        GotFederatedPosts host (Ok posts) ->
-            ( { model | federatedPosts = Dict.insert host posts model.federatedPosts } |> syncAnimations
-            , Effect.none
-            )
-
-        GotFederatedPosts _ (Err _) ->
-            -- No `Failed`-style state to record (unlike `GotServerPosts`) -- there's no retry
-            -- button or alert-worthy UI for one federated account's feed failing to load, so this
-            -- is silently, permanently empty for the rest of this page's lifetime (until the next
-            -- full (re)visit re-triggers `fetchFederatedPosts`).
-            ( model, Effect.none )
-
         Poll ->
-            fetchNewServers shared model
+            fetchNewFeeds shared model
 
         Animate animMsg ->
             let
@@ -478,7 +543,7 @@ updateInner shared msg model =
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
                         Shared.AccountsPanelMsg _ ->
-                            fetchNewServers shared model
+                            fetchNewFeeds shared model
 
                         -- The Delete button on a card's sync destination row
                         -- (`Shared.RequestDelete`/`Shared.ConfirmPostSyncDestinationDelete`, see
@@ -490,7 +555,7 @@ updateInner shared msg model =
                         Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->
                             case AccountsPanel.serverForHost shared.accounts.servers host of
                                 Just server ->
-                                    refetchServers shared model [ server ]
+                                    refetchFeeds shared model [ JonlineServer server ]
 
                                 Nothing ->
                                     ( model, Effect.none )
@@ -542,7 +607,7 @@ updateInner shared msg model =
             else
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchServers shared { model | tab = RecentPosts } (relevantServers shared model)
+                        refetchFeeds shared { model | tab = RecentPosts } (List.map JonlineServer (relevantServers shared model))
                 in
                 ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -555,7 +620,7 @@ updateInner shared msg model =
                     Just _ ->
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchServers shared { model | tab = PostsBeforeDate } (relevantServers shared model)
+                                refetchFeeds shared { model | tab = PostsBeforeDate } (List.map JonlineServer (relevantServers shared model))
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -578,13 +643,13 @@ updateInner shared msg model =
                     if newModel.tab == PostsBeforeDate then
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchServers shared newModel (relevantServers shared newModel)
+                                refetchFeeds shared newModel (List.map JonlineServer (relevantServers shared newModel))
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
                     else
                         -- `RecentPosts` doesn't use `publishedBefore` at all
-                        -- (see `refetchServers`'s own `cutoff`) -- just seed
+                        -- (see `fetchFeedSource`'s own `cutoff`) -- just seed
                         -- it quietly so it's ready the moment the user does
                         -- switch tabs, no fetch/URL change needed yet.
                         ( newModel, Effect.none )
@@ -610,7 +675,7 @@ updateInner shared msg model =
             if generation == model.publishedBeforeInputGeneration then
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchServers shared model (relevantServers shared model)
+                        refetchFeeds shared model (List.map JonlineServer (relevantServers shared model))
                 in
                 ( refetchedModel
                 , Effect.batch
@@ -660,7 +725,7 @@ updateInner shared msg model =
                         ( refetchedModel, refetchEffect ) =
                             case AccountsPanel.serverForHost shared.accounts.servers host of
                                 Just server ->
-                                    refetchServers shared clearedModel [ server ]
+                                    refetchFeeds shared clearedModel [ JonlineServer server ]
 
                                 Nothing ->
                                     ( clearedModel, Effect.none )
@@ -711,7 +776,7 @@ relevantServers shared model =
 
 {-| Every Post id `frontendHost`'s own `ServerConfiguration.customTabs` points a `TargetPost` tab
 at, plus its `home` override's own Post id if it's using one, and every one of its `pinnedPostIds`
-(`UI.CustomNav.homeConfig`) -- what `GotServerPosts` excludes from `frontendHost`'s own feed (see
+(`UI.CustomNav.homeConfig`) -- what `GotFeedPosts` excludes from `frontendHost`'s own feed (see
 its own doc), so a Post already featured via its own custom nav tab/url (or as the custom Home page,
 or pinned to its top) doesn't also clutter the generic listing. Applies to every known server, not
 just `mainFrontendHost` -- each federated server's custom nav tabs only ever point at that same
@@ -757,178 +822,25 @@ customNavPostIds shared frontendHost =
     homePostIds ++ tabPostIds |> Set.fromList
 
 
-{-| Fetches `serversToFetch` using the current `model.searchText`/
-`model.context`, and drops any already-fetched server that's no longer
-`relevantServers` -- shared by `fetchNewServers` (which only passes the
-servers that actually need it, see its own doc comment) and
-`applySearchChange` (which always passes every relevant server, since a
-changed search must re-fetch everything regardless of whether that server's
-acting account also happens to have changed).
-
-A server already `Loaded` under the _same_ acting account keeps showing its
-last-known posts (`status` left untouched) while the re-fetch is in flight,
-rather than being reset to `Loading` first -- `Loading` isn't rendered as its
-own state anywhere in this module, so the only thing resetting it did was
-drop that server out of `syncAnimations`' `currentPosts`, which reads as
-every one of its posts fading out and back in a moment later, even though
-`applySearchChange`'s response usually still contains most of the same posts.
-See `Components.Pages.EventsPage.refetchServers`'s own doc for where this was
-first diagnosed (a periodic full-list flicker there) and ported from. A
-genuinely new server, or one whose acting account just changed (sign-in/out),
-still resets to `Loading` -- its previous posts (fetched under a different or
-no account) are stale/invalid, not just "not yet refreshed," so they should
-disappear rather than linger.
-
-A no-op (nothing touched, no fetch fired) while `model.tab == PostsBeforeDate`
-and `model.publishedBefore` is still `Nothing` -- mirrors
-`Components.Pages.EventsPage.refetchServers`'s own guard on `model.endsAfter`:
-fetching with no real cutoff yet in hand would ask for `RecentPosts`' full
-feed for the brief instant before `GotNow` resolves one, rather than just
-waiting.
-
+{-| Every `FeedSource` this page should ever fetch from -- `relevantServers`' real Jonline servers
+(unconditionally), plus every Mastodon instance being browsed/connected and every connected Bluesky
+account, but only for the plain, unscoped "Posts" feed (`model.author == Nothing`, `not
+model.embeddedPage`) -- the same condition `recentPostsTabsView` uses to decide whether to show its
+own tabs, since neither Mastodon nor Bluesky supports the author-scoping, text search, or
+`PostsBeforeDate` cutoff a real `GetPosts` request does (`fetchFeedSource` doesn't even attempt to
+send those for a `MastodonInstance`/`BlueskyFeed`), so showing them anywhere those apply would be
+misleading.
 -}
-refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
-refetchServers shared model serversToFetch =
-    if model.tab == PostsBeforeDate && model.publishedBefore == Nothing then
-        ( model, Effect.none )
+relevantFeedSources : Shared.Model -> Model -> List FeedSource
+relevantFeedSources shared model =
+    List.map JonlineServer (relevantServers shared model)
+        ++ (if model.author /= Nothing || model.embeddedPage then
+                []
 
-    else
-        let
-            enabledServers : List AccountsPanel.Server
-            enabledServers =
-                relevantServers shared model
-
-            currentAccountId : AccountsPanel.Server -> Maybe String
-            currentAccountId server =
-                AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                    |> Maybe.map AccountsPanel.accountId
-
-            cutoff : Maybe Time.Posix
-            cutoff =
-                if model.tab == PostsBeforeDate then
-                    model.publishedBefore
-
-                else
-                    Nothing
-
-            fetchEffect : AccountsPanel.Server -> Effect Msg
-            fetchEffect server =
-                Posts.fetchPosts
-                    shared.accounts
-                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
-                    , server.frontendHost
-                    )
-                    (model.author |> Maybe.map (Tuple.second >> .id))
-                    model.searchText
-                    model.context
-                    cutoff
-                    |> Task.attempt (GotServerPosts server.frontendHost)
-                    |> Effect.fromCmd
-
-            prunedPostsByServer : Dict String ServerFeed
-            prunedPostsByServer =
-                Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
-
-            markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
-            markServer server dict =
-                let
-                    accountId : Maybe String
-                    accountId =
-                        currentAccountId server
-
-                    statusIfSameAccount : Maybe ServerPosts
-                    statusIfSameAccount =
-                        Dict.get server.frontendHost dict
-                            |> Maybe.andThen
-                                (\feed ->
-                                    if feed.accountId == accountId then
-                                        Just feed.status
-
-                                    else
-                                        Nothing
-                                )
-                in
-                Dict.insert server.frontendHost
-                    { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
-                    dict
-        in
-        ( { model
-            | postsByServer =
-                List.foldl markServer prunedPostsByServer serversToFetch
-          }
-        , Effect.batch (List.map fetchEffect serversToFetch)
-        )
-            |> Tuple.mapFirst syncAnimations
-
-
-{-| Drops posts for servers that are no longer enabled (so disabling a server
-hides its posts entirely), and re-fetches a server whose acting account (the
-first enabled account signed into it, or anonymous) has changed since the
-last fetch -- covering both disabling an account (falls back to anonymous)
-and enabling a different one. Already-fetched-with-the-same-account servers
-are cheap to skip, so this is safe to call as often as it likes.
-
-This is event-driven -- any `AccountsPanel` message passing through `update`'s
-`SharedMsg` branch triggers a call, since that covers server/account
-add/remove/enable/toggle, including reconnecting persisted servers on app
-startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
-messages into whichever page is active). `subscriptions`' poll is just a
-distrustful fallback in case some future state change doesn't route through
-`SharedMsg`, so it can be slow.
-
--}
-fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
-fetchNewServers shared model =
-    let
-        currentAccountId : AccountsPanel.Server -> Maybe String
-        currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
-
-        serversToFetch : List AccountsPanel.Server
-        serversToFetch =
-            relevantServers shared model
-                |> List.filter
-                    (\server ->
-                        case Dict.get server.frontendHost model.postsByServer of
-                            Nothing ->
-                                True
-
-                            Just feed ->
-                                feed.accountId /= currentAccountId server
-                    )
-    in
-    refetchServers shared model serversToFetch
-
-
-{-| Fetches translated posts for every connected Mastodon/Bluesky account (see
-`Shared.Federation.Mastodon`/`Bluesky`), storing them in `model.federatedPosts` keyed by a synthetic
-host (`"mastodon:" ++ instanceHost` / `"bluesky:" ++ handle`) that can never collide with a real
-`AccountsPanel.Server.frontendHost` -- `AccountsPanel.serverForHost`/`enabledAccountForServer` (see
-`postCardView`) naturally return `Nothing` for these, which is exactly what already lets a federated
-post render through the ordinary `Posts.postCard` with reply/star/sync-destination actions
-gracefully disabled, no special-casing needed there.
-
-Only called (from `init`) when this page is the plain, unscoped "Posts" feed (`model.author ==
-Nothing`, `not model.embeddedPage`) -- the same condition `recentPostsTabsView` uses to decide
-whether to show its own tabs -- since a federated fetch supports none of the author-scoping, text
-search, or `PostsBeforeDate` cutoff filtering a real `GetPosts` request does, so showing federated
-posts anywhere those apply would be misleading (`syncAnimations` also re-checks `model.context`
-before including any, since that dimension *can* still apply). Fetched once, at page load -- unlike
-`refetchServers`, never re-fetched on tab/search/cutoff changes (none of which would change the
-result anyway), and a newly-connected account only starts showing up the next time this page is
-(re)visited, not live while it's already open.
--}
-fetchFederatedPosts : Shared.Model -> Model -> Effect Msg
-fetchFederatedPosts shared model =
-    if model.author /= Nothing || model.embeddedPage then
-        Effect.none
-
-    else
-        Effect.batch
-            (List.map fetchMastodonInstance (mastodonHostsToFetch shared)
-                ++ List.map fetchBlueskyAccount shared.accounts.blueskyAccounts
-            )
+            else
+                List.map MastodonInstance (mastodonHostsToFetch shared)
+                    ++ List.map BlueskyFeed shared.accounts.blueskyAccounts
+           )
 
 
 {-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
@@ -945,31 +857,177 @@ mastodonHostsToFetch shared =
         |> Set.toList
 
 
-fetchMastodonInstance : String -> Effect Msg
-fetchMastodonInstance instanceHost =
-    Mastodon.fetchPosts instanceHost
-        |> Task.attempt (GotFederatedPosts ("mastodon:" ++ instanceHost))
-        |> Effect.fromCmd
+{-| Actually fires one `FeedSource`'s fetch -- a real `GetPosts` RPC (author-scoped, search/context/
+cutoff-aware) for a `JonlineServer`, or an unauthenticated/self-authenticated plain `Task.attempt`
+against Mastodon's/Bluesky's own REST API for the other two, translated via
+`Shared.Federation.Mastodon`/`Bluesky`'s own `fetchPosts`. Every case funnels its result through the
+same `GotFeedPosts` `Msg` regardless -- see `fromServerResult`/`fromFederatedResult`.
+-}
+fetchFeedSource : Shared.Model -> Model -> FeedSource -> Effect Msg
+fetchFeedSource shared model source =
+    case source of
+        JonlineServer server ->
+            let
+                cutoff : Maybe Time.Posix
+                cutoff =
+                    if model.tab == PostsBeforeDate then
+                        model.publishedBefore
+
+                    else
+                        Nothing
+            in
+            Posts.fetchPosts
+                shared.accounts
+                ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
+                , server.frontendHost
+                )
+                (model.author |> Maybe.map (Tuple.second >> .id))
+                model.searchText
+                model.context
+                cutoff
+                |> Task.attempt (fromServerResult >> GotFeedPosts server.frontendHost)
+                |> Effect.fromCmd
+
+        MastodonInstance host ->
+            Mastodon.fetchPosts host
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Effect.fromCmd
+
+        BlueskyFeed account ->
+            Bluesky.fetchPosts account.accessToken
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Effect.fromCmd
 
 
-fetchBlueskyAccount : AccountsPanel.BlueskyAccount -> Effect Msg
-fetchBlueskyAccount account =
-    Bluesky.fetchPosts account.accessToken
-        |> Task.attempt (GotFederatedPosts ("bluesky:" ++ account.handle))
-        |> Effect.fromCmd
+{-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for any
+`JonlineServer` among them -- meaningless to a `MastodonInstance`/`BlueskyFeed`, see
+`fetchFeedSource`), and drops any already-fetched source that's no longer `relevantFeedSources` --
+shared by `fetchNewFeeds` (which only passes the sources that actually need it, see its own doc
+comment) and `applySearchChange` (which always passes every relevant *server*, since a changed
+search must re-fetch everything regardless of whether that server's acting account also happens to
+have changed -- Mastodon/Bluesky sources are deliberately never included there, since neither
+supports server-side search at all, so re-fetching them on every keystroke would just be a wasted,
+unfiltered-anyway request).
+
+A source already `Loaded` under the _same_ acting account (see `feedSourceAccountId`) keeps showing
+its last-known posts (`status` left untouched) while the re-fetch is in flight, rather than being
+reset to `Loading` first -- `Loading` isn't rendered as its own state anywhere in this module, so the
+only thing resetting it did was drop that source out of `syncAnimations`' `currentPosts`, which reads
+as every one of its posts fading out and back in a moment later, even though `applySearchChange`'s
+response usually still contains most of the same posts. See
+`Components.Pages.EventsPage.refetchServers`'s own doc for where this was first diagnosed (a periodic
+full-list flicker there) and ported from. A genuinely new source, or a `JonlineServer` whose acting
+account just changed (sign-in/out), still resets to `Loading` -- its previous posts (fetched under a
+different or no account) are stale/invalid, not just "not yet refreshed," so they should disappear
+rather than linger.
+
+A no-op (nothing touched, no fetch fired) while `model.tab == PostsBeforeDate` and
+`model.publishedBefore` is still `Nothing` -- mirrors `Components.Pages.EventsPage.refetchServers`'s
+own guard on `model.endsAfter`: fetching with no real cutoff yet in hand would ask for `RecentPosts`'
+full feed for the brief instant before `GotNow` resolves one, rather than just waiting.
+
+-}
+refetchFeeds : Shared.Model -> Model -> List FeedSource -> ( Model, Effect Msg )
+refetchFeeds shared model sourcesToFetch =
+    if model.tab == PostsBeforeDate && model.publishedBefore == Nothing then
+        ( model, Effect.none )
+
+    else
+        let
+            keptKeys : List String
+            keptKeys =
+                relevantFeedSources shared model |> List.map feedSourceKey
+
+            prunedPostsByServer : Dict String ServerFeed
+            prunedPostsByServer =
+                Dict.filter (\host _ -> List.member host keptKeys) model.postsByServer
+
+            markSource : FeedSource -> Dict String ServerFeed -> Dict String ServerFeed
+            markSource source dict =
+                let
+                    key : String
+                    key =
+                        feedSourceKey source
+
+                    accountId : Maybe String
+                    accountId =
+                        feedSourceAccountId shared source
+
+                    statusIfSameAccount : Maybe ServerPosts
+                    statusIfSameAccount =
+                        Dict.get key dict
+                            |> Maybe.andThen
+                                (\feed ->
+                                    if feed.accountId == accountId then
+                                        Just feed.status
+
+                                    else
+                                        Nothing
+                                )
+                in
+                Dict.insert key
+                    { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
+                    dict
+        in
+        ( { model
+            | postsByServer =
+                List.foldl markSource prunedPostsByServer sourcesToFetch
+          }
+        , Effect.batch (List.map (fetchFeedSource shared model) sourcesToFetch)
+        )
+            |> Tuple.mapFirst syncAnimations
 
 
-{-| Re-fetches every relevant server (unconditionally -- unlike
-`fetchNewServers`, a changed search has to override every already-Loaded
-feed, not just servers whose acting account changed) and persists the new
-`search_text`/`context` to the URL -- the single path `SearchDebounceElapsed`,
-`ContextChanged`, and `ClearSearchClicked` all funnel through.
+{-| Drops posts for sources that are no longer relevant (so disabling a server, or removing a
+browsed Mastodon instance/connected Bluesky account, hides its posts entirely), and re-fetches a
+`JonlineServer` whose acting account (the first enabled account signed into it, or anonymous) has
+changed since the last fetch -- covering both disabling an account (falls back to anonymous) and
+enabling a different one. A `MastodonInstance`/`BlueskyFeed` never has an "acting account" that can
+change this way (see `feedSourceAccountId`), so this only ever re-fetches one of those the first time
+it shows up as a key that isn't in `model.postsByServer` yet -- i.e. once, right after it's
+added/connected, live while this page is already open, rather than waiting for a fresh visit.
+Already-fetched-with-the-same-account sources are cheap to skip, so this is safe to call as often as
+it likes.
+
+This is event-driven -- any `AccountsPanel` message passing through `update`'s `SharedMsg` branch
+triggers a call, since that covers server/account add/remove/enable/toggle and Mastodon/Bluesky
+connect/browse/disconnect alike, including reconnecting persisted servers on app startup
+(`Main.notifyPageOfSharedMsg` forwards those top-level `Shared` messages into whichever page is
+active). `subscriptions`' poll is just a distrustful fallback in case some future state change
+doesn't route through `SharedMsg`, so it can be slow.
+
+-}
+fetchNewFeeds : Shared.Model -> Model -> ( Model, Effect Msg )
+fetchNewFeeds shared model =
+    let
+        sourcesToFetch : List FeedSource
+        sourcesToFetch =
+            relevantFeedSources shared model
+                |> List.filter
+                    (\source ->
+                        case Dict.get (feedSourceKey source) model.postsByServer of
+                            Nothing ->
+                                True
+
+                            Just feed ->
+                                feed.accountId /= feedSourceAccountId shared source
+                    )
+    in
+    refetchFeeds shared model sourcesToFetch
+
+
+{-| Re-fetches every relevant *server* (unconditionally -- unlike `fetchNewFeeds`, a changed search
+has to override every already-Loaded feed, not just servers whose acting account changed) and
+persists the new `search_text`/`context` to the URL -- the single path `SearchDebounceElapsed`,
+`ContextChanged`, and `ClearSearchClicked` all funnel through. Deliberately scoped to
+`relevantServers` rather than `relevantFeedSources` -- see `refetchFeeds`'s own doc on why
+Mastodon/Bluesky sources are never part of a search re-fetch.
 -}
 applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
 applySearchChange shared model =
     let
         ( refetchedModel, refetchEffect ) =
-            refetchServers shared model (relevantServers shared model)
+            refetchFeeds shared model (List.map JonlineServer (relevantServers shared model))
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -1174,51 +1232,39 @@ postAnimationKey host post =
     host ++ "@" ++ post.id
 
 
-{-| Reconciles `postAnimations` with the posts currently `Loaded` in
-`postsByServer` (plus, via `federatedPostsList`, `model.federatedPosts` -- see
-`fetchFederatedPosts`'s own doc on why that one's gated/filtered differently): starts a fade-in for
-newly-seen posts, a fade-out for posts
-that dropped out (rather than deleting them outright), and un-interrupts a
-still-fading-out post that reappeared. Safe/cheap to call after every
-`postsByServer`/`federatedPosts` change, so `update` just calls it unconditionally wherever
-either might have changed. `RemovePost` is what actually drops a gone
-post's animation entry once its fade-out finishes. See `UI.Flip.syncAnimations`
-for the shared reconciliation logic this hands its own `PostAnimation` shape
-to (mirrored by `Components.Pages.UsersPage.syncAnimations`).
+{-| Reconciles `postAnimations` with the posts currently `Loaded` in `postsByServer` (real servers
+and Mastodon/Bluesky feeds alike, now that both live in the same dict -- see `FeedSource`'s own doc):
+starts a fade-in for newly-seen posts, a fade-out for posts that dropped out (rather than deleting
+them outright), and un-interrupts a still-fading-out post that reappeared. Safe/cheap to call after
+every `postsByServer` change, so `update` just calls it unconditionally wherever it might have
+changed. `RemovePost` is what actually drops a gone post's animation entry once its fade-out
+finishes. See `UI.Flip.syncAnimations` for the shared reconciliation logic this hands its own
+`PostAnimation` shape to (mirrored by `Components.Pages.UsersPage.syncAnimations`).
+
+Every `Loaded` list is filtered by `model.context` here regardless of source -- a no-op for a real
+server's response (already scoped/filtered server-side to this exact request), but load-bearing for
+a Mastodon/Bluesky feed, which has no notion of `model.context` at all: it's just whatever mix of
+POST/REPLY the account's own feed happened to contain, so this is the one place that still has to
+filter it by hand.
 -}
 syncAnimations : Model -> Model
 syncAnimations model =
     let
-        -- Unlike `postsByServer` (already scoped/filtered server-side to this exact request), a
-        -- federated fetch has no notion of `model.context` at all -- it's just whatever mix of
-        -- POST/REPLY the account's own feed happened to contain -- so this is the one place that
-        -- still has to filter by hand.
-        federatedPostsList : List ( String, ( String, Post ) )
-        federatedPostsList =
-            model.federatedPosts
-                |> Dict.toList
-                |> List.concatMap
-                    (\( host, posts ) ->
-                        posts
-                            |> List.filter (\post -> post.context == model.context)
-                            |> List.map (\post -> ( postAnimationKey host post, ( host, post ) ))
-                    )
-
         currentPosts : Dict String ( String, Post )
         currentPosts =
-            (model.postsByServer
+            model.postsByServer
                 |> Dict.toList
                 |> List.concatMap
                     (\( host, feed ) ->
                         case feed.status of
                             Loaded posts ->
-                                List.map (\post -> ( postAnimationKey host post, ( host, post ) )) posts
+                                posts
+                                    |> List.filter (\post -> post.context == model.context)
+                                    |> List.map (\post -> ( postAnimationKey host post, ( host, post ) ))
 
                             _ ->
                                 []
                     )
-            )
-                ++ federatedPostsList
                 |> Dict.fromList
     in
     { model
