@@ -6679,13 +6679,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>configured_by_default</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Indicates to UI clients that they should enable/configure the indicated instance by default.</td>
+          <td>Indicates to UI clients that they should browse the indicated instance's public timeline by default (added to it with no OAuth/account needed at all -- see this message's own doc on the difference between browsing and connecting).</td>
         </tr>
         <tr>
           <td>pinned_by_default</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server).</td>
+          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server). Currently has the same effect as <code>configured_by_default</code> -- as of this writing, clients have no "added but not shown" state for a browsed instance the way <code>FederatedServer.pinned_by_default</code>'s <code>Server.enabled</code> does, so there's nothing for this to mean <em>in addition to</em> <code>configured_by_default</code>. Kept as its own field for symmetry with <code>FederatedServer</code>, and in case that changes.</td>
         </tr>
       </tbody>
     </table>

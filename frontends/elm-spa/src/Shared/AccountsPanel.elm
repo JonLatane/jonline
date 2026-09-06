@@ -2080,12 +2080,37 @@ sendUpdate req msg model =
                         server =
                             serverFrom correctedConnection True config
 
+                        -- Mirrors `federatedServerCmds` below, for `FederationInfo.mastodonServers`
+                        -- instead of `.servers` -- but unlike a real `FederatedServer`, browsing a
+                        -- Mastodon instance needs no negotiation/connection at all (see
+                        -- `Shared.Federation.Mastodon.fetchPosts`'s own doc: it's a plain
+                        -- unauthenticated `GET`), so this can just fold straight into `newModel`
+                        -- rather than firing its own `Cmd`s. Both `configuredByDefault` and
+                        -- `pinnedByDefault` trigger the same "add to the browse list" effect here
+                        -- -- unlike `Server.enabled`, `browsedMastodonInstances` has no
+                        -- disabled-but-present state for `pinnedByDefault` to mean "enabled
+                        -- immediately" *as opposed to*, so the two aren't distinguishable yet. If
+                        -- that ever changes, this is the spot to make them diverge.
+                        defaultBrowsedMastodonInstances : List String
+                        defaultBrowsedMastodonInstances =
+                            config.federationInfo
+                                |> Maybe.map .mastodonServers
+                                |> Maybe.withDefault []
+                                |> List.filter
+                                    (\ms ->
+                                        Maybe.withDefault False ms.configuredByDefault || Maybe.withDefault False ms.pinnedByDefault
+                                    )
+                                |> List.map .domain
+
                         newModel : Model
                         newModel =
                             { model
                                 | mainFrontendHost = resolvedFrontend
                                 , servers = upsertServer server model.servers
                                 , browsingHostConfigResolved = True
+                                , browsedMastodonInstances =
+                                    model.browsedMastodonInstances
+                                        ++ List.filter (\domain -> not (List.member domain model.browsedMastodonInstances)) defaultBrowsedMastodonInstances
                             }
 
                         -- The base host may recommend other servers to federate with (see

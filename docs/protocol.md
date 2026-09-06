@@ -3229,8 +3229,8 @@ A Mastodon instance this server has a registered OAuth app on. See `FederationIn
 | domain | [string](#string) |  | The Mastodon instance&#39;s hostname, e.g. &#34;mastodon.social&#34;. |
 | app_id | [string](#string) |  | The registered app&#39;s Client ID for this instance. Safe to serialize to clients -- used directly to build the instance&#39;s `/oauth/authorize` URL, the same way `FacebookAuthConfig.app_id`/ `XTwitterAuthConfig.client_id` are. |
 | app_secret | [string](#string) |  | The registered app&#39;s Client Secret for this instance. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. Used server-side to exchange an authorization code for an access token once a user completes the OAuth popup. |
-| configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should enable/configure the indicated instance by default. |
-| pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the &#34;main&#34; server). |
+| configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should browse the indicated instance&#39;s public timeline by default (added to it with no OAuth/account needed at all -- see this message&#39;s own doc on the difference between browsing and connecting). |
+| pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the &#34;main&#34; server). Currently has the same effect as `configured_by_default` -- as of this writing, clients have no &#34;added but not shown&#34; state for a browsed instance the way `FederatedServer.pinned_by_default`&#39;s `Server.enabled` does, so there&#39;s nothing for this to mean *in addition to* `configured_by_default`. Kept as its own field for symmetry with `FederatedServer`, and in case that changes. |
 
 
 

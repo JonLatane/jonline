@@ -495,3 +495,30 @@ mod custom_tabs_migration_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod federation_info_migration_tests {
+    use crate::protos::*;
+
+    /// Regression test: `federation_info` JSON stored before `mastodon_servers` existed used to
+    /// panic the whole server on startup (`ToProtoServerConfiguration::to_proto`'s
+    /// `serde_json::from_value(...).unwrap()`) with "missing field `mastodon_servers`" -- unlike
+    /// `facebook_auth_config`/`x_twitter_auth_config` (both `optional`, so serde already treats a
+    /// missing key as `None` for free), `mastodon_servers` is a `repeated` field
+    /// (`Vec<MastodonServer>`), which serde treats as a hard error when absent unless told
+    /// otherwise -- see `build.rs`'s `#[serde(default)]` `field_attribute` for this field, added
+    /// specifically to fix this.
+    #[test]
+    fn legacy_federation_info_without_mastodon_servers_deserializes() {
+        let legacy = serde_json::json!({
+            "servers": [],
+            "facebook_auth_config": null,
+            "x_twitter_auth_config": null
+        });
+
+        let federation_info: FederationInfo = serde_json::from_value(legacy)
+            .expect("federation_info predating mastodon_servers should still deserialize");
+
+        assert_eq!(federation_info.mastodon_servers, Vec::new());
+    }
+}

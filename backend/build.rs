@@ -23,6 +23,12 @@ fn main() {
             "EventSettings.show_started_or_long_events_by_default",
             "#[serde(default)]",
         )
+        // Same idea, for `FederationInfo.mastodon_servers` (added alongside `MastodonServer`) --
+        // lets `federation_info` JSON stored before this field existed deserialize instead of
+        // erroring, defaulting to an empty list. Unlike the two above, this one's a `repeated`
+        // field (`Vec<MastodonServer>`), not an `optional` one -- serde already tolerates a
+        // missing `Option` field for free, but a missing `Vec` field is a hard error without this.
+        .field_attribute("FederationInfo.mastodon_servers", "#[serde(default)]")
         // This is specifically for rust-analyzer in VSCode
         // .client_attribute(".", "#![allow(non_snake_case)]")
         .extern_path(".google.protobuf.Any", "::prost_wkt_types::Any")

@@ -117,13 +117,21 @@ export interface MastodonServer {
    * authorization code for an access token once a user completes the OAuth popup.
    */
   appSecret: string;
-  /** Indicates to UI clients that they should enable/configure the indicated instance by default. */
+  /**
+   * Indicates to UI clients that they should browse the indicated instance's public timeline by
+   * default (added to it with no OAuth/account needed at all -- see this message's own doc on the
+   * difference between browsing and connecting).
+   */
   configuredByDefault?:
     | boolean
     | undefined;
   /**
-   * Indicates to UI clients that they should pin the indicated instance by default
-   * (showing its Posts alongside the "main" server).
+   * Indicates to UI clients that they should pin the indicated instance by default (showing its
+   * Posts alongside the "main" server). Currently has the same effect as `configured_by_default`
+   * -- as of this writing, clients have no "added but not shown" state for a browsed instance the
+   * way `FederatedServer.pinned_by_default`'s `Server.enabled` does, so there's nothing for this
+   * to mean *in addition to* `configured_by_default`. Kept as its own field for symmetry with
+   * `FederatedServer`, and in case that changes.
    */
   pinnedByDefault?: boolean | undefined;
 }
