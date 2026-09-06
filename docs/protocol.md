@@ -236,7 +236,7 @@ two.
 ##### BlueSky/AT Protocol
 Unlike Mastodon, AT Protocol has no &#34;local instance timeline&#34; concept at all -- every Personal
 Data Server (PDS) only ever serves its own users&#39; own repos, so there is nothing equivalent to
-browse anonymously. Trans-protocol federation with Bluesky therefore always requires a connected
+browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
 account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
 AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
 call `com.atproto.server.createSession` and then the account&#39;s own
