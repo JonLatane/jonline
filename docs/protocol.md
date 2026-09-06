@@ -206,6 +206,44 @@ Jonline servers interact across several ports:
      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 
+#### Trans-Protocol Federation
+Jonline clients can translate content from other federated protocols into the same
+[`Post`](#jonline-Post)/[`Author`](#jonline-Author) shapes used everywhere else in the app --
+entirely client-side, with no RPCs of their own. The server&#39;s only role is admin configuration:
+[`FederationInfo`](#jonline-FederationInfo) tells clients which instances/apps are safe or
+expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+the same &#34;the client does the merging&#34; pattern as [`FederatedServer`](#jonline-FederatedServer),
+just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It&#39;s also
+one-directional (reading in, not posting out) -- publishing a Jonline [`Post`](#jonline-Post) *to*
+Mastodon or Bluesky is a separate feature, [`SyncDestination`](#jonline-SyncDestination).
+
+##### Mastodon/ActivityPub
+A client can browse any Mastodon instance&#39;s local public timeline
+(`GET /api/v1/timelines/public?local=true`) with zero configuration, since it&#39;s already a public,
+unauthenticated REST endpoint -- no [`MastodonServer`](#jonline-MastodonServer) entry is needed
+just to *read* public posts.
+
+Connecting an actual Mastodon *account* is a heavier flow, since Mastodon has no single central
+OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+server admin registers an app on a given instance ahead of time
+(`FederationInfo.mastodon_servers`, a [`MastodonServer`](#jonline-MastodonServer) carrying that
+instance&#39;s `app_id`/`app_secret`), and only then can a user on that instance complete the OAuth
+popup &#43; PKCE flow to connect their own account. `MastodonServer.configured_by_default`/
+`pinned_by_default` let an admin recommend a given instance be auto-browsed the first time a
+client visits this server -- see those fields&#39; own docs for the current relationship between the
+two.
+
+##### BlueSky/AT Protocol
+Unlike Mastodon, AT Protocol has no &#34;local instance timeline&#34; concept at all -- every Personal
+Data Server (PDS) only ever serves its own users&#39; own repos, so there is nothing equivalent to
+browse anonymously. Trans-protocol federation with Bluesky therefore always requires a connected
+account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
+AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
+call `com.atproto.server.createSession` and then the account&#39;s own
+`app.bsky.feed.getTimeline`. Because there&#39;s no server-side app to register, there is no
+`BlueskyServer` config type mirroring [`MastodonServer`](#jonline-MastodonServer) -- nothing about
+connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
+
 ### API Design Notes
 #### Moderation and Visibility
 Jonline APIs are designed to support [`Moderation`](#jonline-Moderation) and [`Visibility`](#jonline-Visibility) controls at the level of individual entities. However, to keep things

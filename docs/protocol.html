@@ -518,6 +518,48 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
     </ul>
+    <h4 id="trans-protocol-federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#trans-protocol-federation"><span class="octicon octicon-link"></span></a>Trans-Protocol Federation</h4>
+    <p>
+      Jonline clients can translate content from other federated protocols into the same
+      <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-Author"><code>Author</code></a> shapes used everywhere else in the app --
+      entirely client-side, with no RPCs of their own. The server's only role is admin configuration:
+      <a href="#jonline-FederationInfo"><code>FederationInfo</code></a> tells clients which instances/apps are safe or
+      expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+      the same "the client does the merging" pattern as <a href="#jonline-FederatedServer"><code>FederatedServer</code></a>,
+      just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It's also
+      one-directional (reading in, not posting out) -- publishing a Jonline <a href="#jonline-Post"><code>Post</code></a> <em>to</em>
+      Mastodon or Bluesky is a separate feature, <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>.
+    </p>
+    <h5 id="mastodonactivitypub"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub</h5>
+    <p>
+      A client can browse any Mastodon instance's local public timeline
+      (<code>GET /api/v1/timelines/public?local=true</code>) with zero configuration, since it's already a public,
+      unauthenticated REST endpoint -- no <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> entry is needed
+      just to <em>read</em> public posts.
+    </p>
+    <p>
+      Connecting an actual Mastodon <em>account</em> is a heavier flow, since Mastodon has no single central
+      OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+      server admin registers an app on a given instance ahead of time
+      (<code>FederationInfo.mastodon_servers</code>, a <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> carrying that
+      instance's <code>app_id</code>/<code>app_secret</code>), and only then can a user on that instance complete the OAuth
+      popup + PKCE flow to connect their own account. <code>MastodonServer.configured_by_default</code>/
+      <code>pinned_by_default</code> let an admin recommend a given instance be auto-browsed the first time a
+      client visits this server -- see those fields' own docs for the current relationship between the
+      two.
+    </p>
+    <h5 id="blueskyat-protocol"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyat-protocol"><span class="octicon octicon-link"></span></a>BlueSky/AT Protocol</h5>
+    <p>
+      Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all -- every Personal
+      Data Server (PDS) only ever serves its own users' own repos, so there is nothing equivalent to
+      browse anonymously. Trans-protocol federation with Bluesky therefore always requires a connected
+      account: a handle and an <a href="https://bsky.app/settings/app-passwords">App Password</a> (not OAuth --
+      AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
+      call <code>com.atproto.server.createSession</code> and then the account's own
+      <code>app.bsky.feed.getTimeline</code>. Because there's no server-side app to register, there is no
+      <code>BlueskyServer</code> config type mirroring <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> -- nothing about
+      connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
+    </p>
     <h3 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h3>
     <h4 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h4>
     <p>
