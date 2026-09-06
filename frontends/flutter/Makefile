@@ -2,6 +2,11 @@
 
 .PHONY: test
 
+run:
+	fvm flutter run
+
+build: build_web
+
 build_web:
 	fvm flutter build web --web-renderer canvaskit --release --base-href /flutter/
 
