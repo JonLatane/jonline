@@ -877,8 +877,15 @@ jobs:
           echo "$(git --no-pager log -10 --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
           echo "${delimiter}" >> $GITHUB_OUTPUT
       - name: Display Changelog (for debugging the CI/CD process)
+        env:
+          # Piped through an env var (rather than interpolated directly into the script below)
+          # because commit messages routinely contain backticks/`$()`/parens for Markdown code
+          # formatting -- inlining `${{ }}` straight into a run: script splices that text into the
+          # shell source itself, so bash tries to execute every backtick-quoted identifier as a
+          # command substitution. Referencing it as "$CI_CHANGELOG" instead treats it as inert data.
+          CI_CHANGELOG: ${{ steps.changelog.outputs.ci_changelog }}
         run: |
-          echo "The string is: \n${{ steps.changelog.outputs.ci_changelog }}"
+          printf 'The string is: \n%s\n' "$CI_CHANGELOG"
 
       - name: Create release v${{ steps.vars.outputs.full_version }}
         uses: ncipollo/release-action@v1

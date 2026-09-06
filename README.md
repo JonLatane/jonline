@@ -582,7 +582,7 @@ Additionally, the following components are *themselves* documented in `README.md
 
 ### gRPC APIs
 
-The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
+The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos). In particular, [`protos/jonline.proto`](https://github.com/JonLatane/jonline/blob/main/protos/jonline.proto) is, behind this `README.md`, effectively the secondary and more technical/detailed "source of truth" for how everything in this app works. The other `.proto` files are really just "submodules" and "type definitions."
 
 ### Architecture/Deployment Management
 
