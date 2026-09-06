@@ -26,26 +26,27 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### GeminiCredentials
 
- A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
- generating Event posters) via its Interactions API.
+ A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g.
+ generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation).
 
 
 ### OpenaiCredentials
 
- An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
- generation/editing via its Images API (GPT Image models).
+ An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image
+ generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models).
 
 
 ### AnthropicCredentials
 
- An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
+ An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
 
 
 ### DigitaloceanCredentials
 
- A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
- `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
- Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+ A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+ Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+ [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+ has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
  `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
  billing).
 

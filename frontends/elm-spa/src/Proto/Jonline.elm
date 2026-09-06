@@ -5966,7 +5966,8 @@ encodeAnthropicCredentials =
     Proto.Jonline.Internals_.encodeProto__Jonline__AnthropicCredentials
 
 
-{-|  Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+{-|  Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+ forward compatibility only.
 
 
 -}
@@ -6006,11 +6007,13 @@ encodeDigitalOceanCredentials =
     Proto.Jonline.Internals_.encodeProto__Jonline__DigitalOceanCredentials
 
 
-{-|  Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+{-|  Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+ Serverless Inference connection, accepted by
  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via
- `https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
- and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+ Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via its
+ [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+ `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+ see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 -}
@@ -6050,10 +6053,10 @@ encodeOpenAICredentials =
     Proto.Jonline.Internals_.encodeProto__Jonline__OpenAICredentials
 
 
-{-|  Credentials for an OpenAI API connection, accepted by
+{-|  Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- Used for image generation/editing via OpenAI's Images API (`platform.openai.com/docs/guides/image-generation`,
- the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+ Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
+ (the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
  [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
@@ -6094,10 +6097,10 @@ encodeGeminiCredentials =
     Proto.Jonline.Internals_.encodeProto__Jonline__GeminiCredentials
 
 
-{-|  Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+{-|  Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
  [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- Used for image generation/editing via Gemini's Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+ Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
  e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 

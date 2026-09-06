@@ -3677,10 +3677,10 @@ accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropi
 | id | [string](#string) |  | Unique ID for the AIModelProvider. |
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
 | name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic -- has no effect on behavior. |
-| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via its Interactions API. |
-| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT Image models). |
-| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
-| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A DigitalOcean Gradient AI Platform / Serverless Inference connection (see `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean&#39;s Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
+| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g. generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation). |
+| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models). |
+| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
+| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) / Serverless Inference connection, used for image generation (no editing -- DigitalOcean&#39;s [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/) has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
 | grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
@@ -3719,7 +3719,8 @@ add to it.
 <a name="jonline-AnthropicCredentials"></a>
 
 ### AnthropicCredentials
-Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+forward compatibility only.
 
 
 | Field | Type | Label | Description |
@@ -3774,11 +3775,13 @@ Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderG
 <a name="jonline-DigitalOceanCredentials"></a>
 
 ### DigitalOceanCredentials
-Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+Serverless Inference connection, accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via
-`https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
-and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via its
+[Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+`/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 | Field | Type | Label | Description |
@@ -3793,10 +3796,10 @@ and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 <a name="jonline-GeminiCredentials"></a>
 
 ### GeminiCredentials
-Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
 [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image generation/editing via Gemini&#39;s Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+Used for image generation/editing via Gemini&#39;s [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
 e.g. to generate/edit Event posters from an Event&#39;s own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
@@ -3869,10 +3872,10 @@ Request to grant (or reset) another user&#39;s metered access to one of the curr
 <a name="jonline-OpenAICredentials"></a>
 
 ### OpenAICredentials
-Credentials for an OpenAI API connection, accepted by
+Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image generation/editing via OpenAI&#39;s Images API (`platform.openai.com/docs/guides/image-generation`,
-the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+Used for image generation/editing via OpenAI&#39;s [Images API](https://platform.openai.com/docs/guides/image-generation)
+(the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
 [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 

@@ -7442,25 +7442,25 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>gemini_credentials</td>
           <td><a href="#jonline-GeminiCredentials">GeminiCredentials</a></td>
           <td></td>
-          <td>A Google Gemini API connection (see <code>ai.google.dev/gemini-api</code>), used for image generation/editing (e.g. generating Event posters) via its Interactions API.</td>
+          <td>A <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection, used for image generation/editing (e.g. generating Event posters) via its <a href="https://ai.google.dev/gemini-api/docs/image-generation">Interactions API</a>.</td>
         </tr>
         <tr>
           <td>openai_credentials</td>
           <td><a href="#jonline-OpenAICredentials">OpenAICredentials</a></td>
           <td></td>
-          <td>An OpenAI API connection (see <code>platform.openai.com/docs/guides/image-generation</code>), used for image generation/editing via its Images API (GPT Image models).</td>
+          <td>An <a href="https://platform.openai.com/docs/api-reference">OpenAI API</a> connection, used for image generation/editing via its <a href="https://platform.openai.com/docs/guides/image-generation">Images API</a> (GPT Image models).</td>
         </tr>
         <tr>
           <td>anthropic_credentials</td>
           <td><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></td>
           <td></td>
-          <td>An Anthropic API connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
+          <td>An <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
         </tr>
         <tr>
           <td>digitalocean_credentials</td>
           <td><a href="#jonline-DigitalOceanCredentials">DigitalOceanCredentials</a></td>
           <td></td>
-          <td>A DigitalOcean Gradient AI Platform / Serverless Inference connection (see <code>docs.digitalocean.com/products/inference</code>), used for image generation (no editing -- DigitalOcean's Serverless Inference API has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
+          <td>A <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> / Serverless Inference connection, used for image generation (no editing -- DigitalOcean's <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a> has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
         </tr>
         <tr>
           <td>grants</td>
@@ -7548,7 +7548,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     </table>
     <p><a name="jonline-AnthropicCredentials"></a></p>
     <h3 id="anthropiccredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anthropiccredentials"><span class="octicon octicon-link"></span></a>AnthropicCredentials</h3>
-    <p>Credentials for an Anthropic API connection. <em>Not yet creatable</em> -- defined for forward compatibility only.</p>
+    <p>
+      Credentials for an <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- defined for
+      forward compatibility only.
+    </p>
     <table>
       <thead>
         <tr>
@@ -7639,11 +7642,13 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-DigitalOceanCredentials"></a></p>
     <h3 id="digitaloceancredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#digitaloceancredentials"><span class="octicon octicon-link"></span></a>DigitalOceanCredentials</h3>
     <p>
-      Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+      Credentials for a <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> /
+      Serverless Inference connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via
-      <code>https://inference.do-ai.run/v1/images/generations</code>, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
-      and Stable Diffusion models -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
+      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via its
+      <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a>
+      <code>/v1/images/generations</code> endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+      see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
       <thead>
@@ -7666,10 +7671,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-GeminiCredentials"></a></p>
     <h3 id="geminicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geminicredentials"><span class="octicon octicon-link"></span></a>GeminiCredentials</h3>
     <p>
-      Credentials for a Google Gemini API connection (<code>ai.google.dev/gemini-api</code>) -- the only
+      Credentials for a <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection -- the only
       <a href="#jonline-AIModelProvider"><code>AIModelProvider.provider</code></a> variant currently accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image generation/editing via Gemini's Interactions API (<code>ai.google.dev/gemini-api/docs/image-generation</code>),
+      Used for image generation/editing via Gemini's <a href="https://ai.google.dev/gemini-api/docs/image-generation">Interactions API</a>,
       e.g. to generate/edit Event posters from an Event's own content -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
@@ -7812,10 +7817,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-OpenAICredentials"></a></p>
     <h3 id="openaicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#openaicredentials"><span class="octicon octicon-link"></span></a>OpenAICredentials</h3>
     <p>
-      Credentials for an OpenAI API connection, accepted by
+      Credentials for an <a href="https://platform.openai.com/docs/api-reference">OpenAI API</a> connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image generation/editing via OpenAI's Images API (<code>platform.openai.com/docs/guides/image-generation</code>,
-      the GPT Image model family) -- same use case as <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>, see
+      Used for image generation/editing via OpenAI's <a href="https://platform.openai.com/docs/guides/image-generation">Images API</a>
+      (the GPT Image model family) -- same use case as <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>, see
       <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>

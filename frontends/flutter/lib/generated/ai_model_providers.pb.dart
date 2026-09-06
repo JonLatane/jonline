@@ -435,8 +435,8 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearName() => clearField(3);
 
-  /// A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
-  /// generating Event posters) via its Interactions API.
+  /// A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g.
+  /// generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation).
   @$pb.TagNumber(4)
   GeminiCredentials get geminiCredentials => $_getN(3);
   @$pb.TagNumber(4)
@@ -448,8 +448,8 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   GeminiCredentials ensureGeminiCredentials() => $_ensure(3);
 
-  /// An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
-  /// generation/editing via its Images API (GPT Image models).
+  /// An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image
+  /// generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models).
   @$pb.TagNumber(5)
   OpenAICredentials get openaiCredentials => $_getN(4);
   @$pb.TagNumber(5)
@@ -461,7 +461,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   OpenAICredentials ensureOpenaiCredentials() => $_ensure(4);
 
-  /// An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
+  /// An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
   @$pb.TagNumber(6)
   AnthropicCredentials get anthropicCredentials => $_getN(5);
   @$pb.TagNumber(6)
@@ -473,9 +473,10 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   AnthropicCredentials ensureAnthropicCredentials() => $_ensure(5);
 
-  /// A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
-  /// `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
-  /// Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+  /// A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+  /// Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+  /// [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+  /// has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
   /// `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
   /// billing).
   @$pb.TagNumber(7)
@@ -956,10 +957,10 @@ class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
   void clearAiModelProviderId() => clearField(2);
 }
 
-/// Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+/// Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
 /// [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-/// Used for image generation/editing via Gemini's Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+/// Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
 /// e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 class GeminiCredentials extends $pb.GeneratedMessage {
   factory GeminiCredentials({
@@ -1015,10 +1016,10 @@ class GeminiCredentials extends $pb.GeneratedMessage {
   void clearGeminiApiKey() => clearField(1);
 }
 
-/// Credentials for an OpenAI API connection, accepted by
+/// Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-/// Used for image generation/editing via OpenAI's Images API (`platform.openai.com/docs/guides/image-generation`,
-/// the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+/// Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
+/// (the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
 /// [`GenerateMedia`](#grpc-api-GenerateMedia).
 class OpenAICredentials extends $pb.GeneratedMessage {
   factory OpenAICredentials({
@@ -1073,11 +1074,13 @@ class OpenAICredentials extends $pb.GeneratedMessage {
   void clearOpenaiApiKey() => clearField(1);
 }
 
-/// Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+/// Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+/// Serverless Inference connection, accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-/// Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via
-/// `https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
-/// and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+/// Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via its
+/// [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+/// `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+/// see [`GenerateMedia`](#grpc-api-GenerateMedia).
 class DigitalOceanCredentials extends $pb.GeneratedMessage {
   factory DigitalOceanCredentials({
     $core.String? digitaloceanApiKey,
@@ -1131,7 +1134,8 @@ class DigitalOceanCredentials extends $pb.GeneratedMessage {
   void clearDigitaloceanApiKey() => clearField(1);
 }
 
-/// Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+/// Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+/// forward compatibility only.
 class AnthropicCredentials extends $pb.GeneratedMessage {
   factory AnthropicCredentials({
     $core.String? anthropicApiKey,
