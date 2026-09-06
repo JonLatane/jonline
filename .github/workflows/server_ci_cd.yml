@@ -765,13 +765,13 @@ jobs:
       #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
       - name: Delete stray CronJobs (background jobs moved to the rellm-jobs Deployment)
-        run: kubectl delete cronjob --all -n rellm --ignore-not-found=true
+        run: kubectl delete cronjob --all -n jonline --ignore-not-found=true
 
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-        run: kubectl apply -f deploys/k8s/server_internal.yaml -n rellm
+        run: kubectl apply -f deploys/k8s/server_internal.yaml -n jonline
 
       - name: Verify Server deployment
-        run: kubectl rollout status deployment/rellm -n rellm --timeout 3m
+        run: kubectl rollout status deployment/rellm -n jonline --timeout 3m
 
       # Traefik's TLS-passthrough IngressRouteTCP routing (see rellm-https/rellm-grpc)
       # can get wedged pointing at stale backend pod IPs after a rollout replaces pods --
@@ -830,7 +830,7 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n rellm
+        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
 
   create_github_release:
     name: "GitHub: Release"
