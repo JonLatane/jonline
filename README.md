@@ -1,4 +1,4 @@
-# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml) [![gRPC Docs!](https://img.shields.io/badge/gRPC-protocol%20docs-information?labelColor={}&color=blue)](https://jonline.io/docs)
+# Rellm [![Server CI/CD Badge](https://github.com/jonlatane/rellm/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/rellm/actions/workflows/server_ci_cd.yml) [![gRPC Docs!](https://img.shields.io/badge/gRPC-protocol%20docs-information?labelColor={}&color=blue)](https://jonline.io/docs)
 
 [![Jonline.io](https://jonline.io/info_shield?b6713cbc8)](https://jonline.io)
 [![BullCity.social](https://bullcity.social/info_shield?b6713cbc8)](https://bullcity.social)
@@ -8,10 +8,10 @@
 [![Homebrew](https://img.shields.io/badge/macOS-Homebrew-purple?logo=homebrew&logoColor=white)](#macos-install-and-run-via-homebrew) [![Linux](https://img.shields.io/badge/Linux-Self%20Updating%20.tar.bz2-green?logo=linux&logoColor=white)](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher)
 
 
-[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/rellm?label=dockerhub:rellm)](https://hub.docker.com/r/jonlatane/rellm/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/rellm_preview_generator?label=dockerhub:rellm_preview_generator)](https://hub.docker.com/r/jonlatane/rellm_preview_generator/tags)
 
 
-Jonline is an open-source, community-scale social network designed to be capable of "[delightfully federating](#delightful-federation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Elm app, Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
+Rellm is an open-source, community-scale social network designed to be capable of "[delightfully federating](#delightful-federation)" with other Rellm instances/communities, making sharing between local-size instances easy. All web-facing features in Rellm - the Elm app, Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Rellm that *does* use cookies would violate the AGPL if the source weren't provided to users.
 
 Meanwhile, in support of media creators/providers who might want to self-host Jonline for themselves or in a consortium (whether in lieu of or in addition to monolithic social media presence like YouTube or Twitch), Jonline's CORS support does still afford private media holders a basic way to control who can see their content. Further, better Media permission/visibility controls could definitely be added, should, say, video creators or streamers want to migrate to self-hosting using a Jonline instance as their decentralized video platform to charge for premium content.
 
@@ -199,7 +199,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
 | [OakCity.Social  ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc8)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned), ATO.Band (pinned)](https://OakCity.Social/about?tab=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
 | [ATO.Band ![ato.band](https://ato.band/info_shield?b6713cbc8)](https://ato.band/)     | Site for my band, Against The Odds | [BullCity.Social, OakCity.Social](https://ato.band/about?tab=federation), Facebook                      | [About](https://ato.band/about), [Elm UI](https://ato.band/elm/), [Tamagui/React UI](https://ato.band/tamagui/), [Flutter UI](https://ato.band/flutter/), [Protocol Docs](https://ato.band/docs/protocol/)    | Production         |
 
-- [Jonline  ](#jonline--)
+- [Rellm  ](#rellm--)
   - [Packages, Images \& Deployments](#packages-images--deployments)
     - [macOS: Install and Run via Homebrew](#macos-install-and-run-via-homebrew)
       - [2 minute startup with Homebrew](#2-minute-startup-with-homebrew)
