@@ -8,7 +8,9 @@ import "visibility_moderation.proto";
 
 // A Jonline `Media` message represents a single media item, such as a photo or video.
 // Media data is deliberately *not accessible from the gRPC API*. Instead, the client
-// should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+// should fetch media from `http[s]://my.jonline.instance/media/{id}`, unless `url` is set,
+// in which case that URL should be used instead (used for media Jonline doesn't store
+// locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
 //
 // Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
 // along with an "Authorization" header (your access token) and a "Content-Type" header.
@@ -53,6 +55,10 @@ message Media {
   google.protobuf.Timestamp created_at = 15;
   google.protobuf.Timestamp updated_at = 16;
   MediaMetadata metadata = 17;
+  // An external URL to fetch the media from, in lieu of `/media/{id}`. Used for representing
+  // media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky)
+  // that Jonline does not store locally. If unset, clients fall back to `/media/{id}`.
+  optional string url = 18;
 }
 
 // Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
@@ -79,6 +85,9 @@ message MediaReference {
   MediaMetadata metadata = 5;
   // Width divided by height. See `Media.aspect_ratio`.
   optional float aspect_ratio = 10;
+  // An external URL to fetch the media from, in lieu of `/media/{id}`. See `Media.url`.
+  // If unset, clients fall back to `/media/{id}`.
+  optional string url = 11;
 }
 
 // Valid GetMediaRequest formats:

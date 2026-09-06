@@ -131,6 +131,7 @@
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
+    - [MastodonServer](#jonline-MastodonServer)
     - [XTwitterAuthConfig](#jonline-XTwitterAuthConfig)
   
 - [sync.proto](#sync-proto)
@@ -204,6 +205,44 @@ Jonline servers interact across several ports:
      * Port 8000 *always* serves up an unsecured Jonline UI, in case something goes horribly wrong with 80 and 443. It can probably not be exposed in your load balancer/to the web.
      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
+
+#### Cross-Protocol Federation
+Jonline clients can translate content from other federated protocols into the same
+[`Post`](#jonline-Post)/[`Author`](#jonline-Author) shapes used everywhere else in the app --
+entirely client-side, with no RPCs of their own. The server&#39;s only role is admin configuration:
+[`FederationInfo`](#jonline-FederationInfo) tells clients which instances/apps are safe or
+expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+the same &#34;the client does the merging&#34; pattern as [`FederatedServer`](#jonline-FederatedServer),
+just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It&#39;s also
+one-directional (reading in, not posting out) -- publishing a Jonline [`Post`](#jonline-Post) *to*
+Mastodon or Bluesky is a separate feature, [`SyncDestination`](#jonline-SyncDestination).
+
+##### Mastodon/ActivityPub
+A client can browse any Mastodon instance&#39;s local public timeline
+(`GET /api/v1/timelines/public?local=true`) with zero configuration, since it&#39;s already a public,
+unauthenticated REST endpoint -- no [`MastodonServer`](#jonline-MastodonServer) entry is needed
+just to *read* public posts.
+
+Connecting an actual Mastodon *account* is a heavier flow, since Mastodon has no single central
+OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+server admin registers an app on a given instance ahead of time
+(`FederationInfo.mastodon_servers`, a [`MastodonServer`](#jonline-MastodonServer) carrying that
+instance&#39;s `app_id`/`app_secret`), and only then can a user on that instance complete the OAuth
+popup &#43; PKCE flow to connect their own account. `MastodonServer.configured_by_default`/
+`pinned_by_default` let an admin recommend a given instance be auto-browsed the first time a
+client visits this server -- see those fields&#39; own docs for the current relationship between the
+two.
+
+##### BlueSky/AT Protocol
+Unlike Mastodon, AT Protocol has no &#34;local instance timeline&#34; concept at all -- every Personal
+Data Server (PDS) only ever serves its own users&#39; own repos, so there is nothing equivalent to
+browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
+account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
+AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
+call `com.atproto.server.createSession` and then the account&#39;s own
+`app.bsky.feed.getTimeline`. Because there&#39;s no server-side app to register, there is no
+`BlueskyServer` config type mirroring [`MastodonServer`](#jonline-MastodonServer) -- nothing about
+connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
 
 ### API Design Notes
 #### Moderation and Visibility
@@ -287,6 +326,26 @@ credentials live.
 `servers` (repeated [`FederatedServer`](#jonline-FederatedServer)) recommends other Jonline hosts to clients,
 each optionally `configured_by_default` (client should enable/configure it automatically) and/or
 `pinned_by_default` (client should pin its Events/Posts alongside the &#34;main&#34; server&#39;s).
+
+###### Mastodon/ActivityPub servers
+`mastodon_servers` (repeated [`MastodonServer`](#jonline-MastodonServer)) plays a similar role to
+`servers` above, but for Mastodon instances instead of other Jonline servers -- see
+[Cross-Protocol Federation](#cross-protocol-federation) for the client-side feature this backs.
+Unlike a real `FederatedServer`, though, an entry here is *not* required just to browse an
+instance&#39;s public timeline read-only -- that&#39;s already a public, unauthenticated Mastodon REST
+endpoint any client can call directly. It&#39;s only needed to let a user *connect their own*
+Mastodon account (OAuth &#43; PKCE), since Mastodon has no single central OAuth authority the way
+Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
+app (`app_id`/`app_secret`, the latter *never* serialized to the client) on each instance
+individually before its users can connect. `configured_by_default`/`pinned_by_default` mirror
+`FederatedServer`&#39;s own fields, but govern that anonymous browsing instead: whether clients should
+auto-add the instance to their browsed list the first time they visit this server, not whether an
+account gets auto-connected (that always requires the user&#39;s own explicit OAuth consent).
+
+A Mastodon instance functions like a much thinner version of a federated Jonline server in the
+UI: its public posts appear in the same multi-server feed, translated into Jonline&#39;s own
+[`Post`](#jonline-Post) shape, but it has no equivalent of Jonline&#39;s Events, Groups, Media
+library, or People/Follows -- just posts and their authors.
 
 ###### Facebook API Keys
 `facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
@@ -1618,7 +1677,9 @@ Valid GetMediaRequest formats:
 ### Media
 A Jonline `Media` message represents a single media item, such as a photo or video.
 Media data is deliberately *not accessible from the gRPC API*. Instead, the client
-should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+should fetch media from `http[s]://my.jonline.instance/media/{id}`, unless `url` is set,
+in which case that URL should be used instead (used for media Jonline doesn&#39;t store
+locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
 
 Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
 along with an &#34;Authorization&#34; header (your access token) and a &#34;Content-Type&#34; header.
@@ -1654,6 +1715,7 @@ On success, the endpoint will return the media ID in plaintext.
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | metadata | [MediaMetadata](#jonline-MediaMetadata) |  |  |
+| url | [string](#string) | optional | An external URL to fetch the media from, in lieu of `/media/{id}`. Used for representing media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky) that Jonline does not store locally. If unset, clients fall back to `/media/{id}`. |
 
 
 
@@ -1692,6 +1754,7 @@ and the media item&#39;s name (for alt text usage).
 | generated | [bool](#bool) |  | Indicates the media was generated by the server rather than uploaded manually by a user. |
 | metadata | [MediaMetadata](#jonline-MediaMetadata) |  |  |
 | aspect_ratio | [float](#float) | optional | Width divided by height. See `Media.aspect_ratio`. |
+| url | [string](#string) | optional | An external URL to fetch the media from, in lieu of `/media/{id}`. See `Media.url`. If unset, clients fall back to `/media/{id}`. |
 
 
 
@@ -3191,6 +3254,7 @@ The federation configuration for a Jonline server.
 | servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
 | facebook_auth_config | [FacebookAuthConfig](#jonline-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances. |
 | x_twitter_auth_config | [XTwitterAuthConfig](#jonline-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances -- an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#jonline-XTwitterAccount) SyncDestinations always fail with `x_twitter_app_not_configured`. |
+| mastodon_servers | [MastodonServer](#jonline-MastodonServer) | repeated | Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against -- every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user&#39;s instance isn&#39;t listed here, clients should surface a &#34;not configured&#34; alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon&#39;s own `POST /api/v1/apps`, and skip this entirely -- Mastodon itself supports that. But that&#39;s a client-side choice the Jonline protocol doesn&#39;t get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.) |
 
 
 
@@ -3206,6 +3270,25 @@ Version information for the Jonline server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | version | [string](#string) |  | The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server. |
+
+
+
+
+
+
+<a name="jonline-MastodonServer"></a>
+
+### MastodonServer
+A Mastodon instance this server has a registered OAuth app on. See `FederationInfo.mastodon_servers`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| domain | [string](#string) |  | The Mastodon instance&#39;s hostname, e.g. &#34;mastodon.social&#34;. |
+| app_id | [string](#string) |  | The registered app&#39;s Client ID for this instance. Safe to serialize to clients -- used directly to build the instance&#39;s `/oauth/authorize` URL, the same way `FacebookAuthConfig.app_id`/ `XTwitterAuthConfig.client_id` are. |
+| app_secret | [string](#string) |  | The registered app&#39;s Client Secret for this instance. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. Used server-side to exchange an authorization code for an access token once a user completes the OAuth popup. |
+| configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should browse the indicated instance&#39;s public timeline by default (added to it with no OAuth/account needed at all -- see this message&#39;s own doc on the difference between browsing and connecting). |
+| pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the &#34;main&#34; server). Currently has the same effect as `configured_by_default` -- as of this writing, clients have no &#34;added but not shown&#34; state for a browsed instance the way `FederatedServer.pinned_by_default`&#39;s `Server.enabled` does, so there&#39;s nothing for this to mean *in addition to* `configured_by_default`. Kept as its own field for symmetry with `FederatedServer`, and in case that changes. |
 
 
 
@@ -3594,10 +3677,10 @@ accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropi
 | id | [string](#string) |  | Unique ID for the AIModelProvider. |
 | owner | [Author](#jonline-Author) |  | The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
 | name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic -- has no effect on behavior. |
-| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g. generating Event posters) via its Interactions API. |
-| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image generation/editing via its Images API (GPT Image models). |
-| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An Anthropic API connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
-| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A DigitalOcean Gradient AI Platform / Serverless Inference connection (see `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean&#39;s Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
+| gemini_credentials | [GeminiCredentials](#jonline-GeminiCredentials) |  | A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g. generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation). |
+| openai_credentials | [OpenAICredentials](#jonline-OpenAICredentials) |  | An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models). |
+| anthropic_credentials | [AnthropicCredentials](#jonline-AnthropicCredentials) |  | An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn&#39;t offer an image generation API. |
+| digitalocean_credentials | [DigitalOceanCredentials](#jonline-DigitalOceanCredentials) |  | A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) / Serverless Inference connection, used for image generation (no editing -- DigitalOcean&#39;s [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/) has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
 | grants | [AIModelProviderGrant](#jonline-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
@@ -3636,7 +3719,8 @@ add to it.
 <a name="jonline-AnthropicCredentials"></a>
 
 ### AnthropicCredentials
-Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only.
+Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+forward compatibility only.
 
 
 | Field | Type | Label | Description |
@@ -3691,11 +3775,13 @@ Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderG
 <a name="jonline-DigitalOceanCredentials"></a>
 
 ### DigitalOceanCredentials
-Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+Serverless Inference connection, accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via
-`https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
-and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+Used for image *generation only* (no editing -- see `AIModelProvider.provider`&#39;s own doc on this variant) via its
+[Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+`/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 | Field | Type | Label | Description |
@@ -3710,10 +3796,10 @@ and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 <a name="jonline-GeminiCredentials"></a>
 
 ### GeminiCredentials
-Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
 [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image generation/editing via Gemini&#39;s Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+Used for image generation/editing via Gemini&#39;s [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
 e.g. to generate/edit Event posters from an Event&#39;s own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
@@ -3786,10 +3872,10 @@ Request to grant (or reset) another user&#39;s metered access to one of the curr
 <a name="jonline-OpenAICredentials"></a>
 
 ### OpenAICredentials
-Credentials for an OpenAI API connection, accepted by
+Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
 [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image generation/editing via OpenAI&#39;s Images API (`platform.openai.com/docs/guides/image-generation`,
-the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+Used for image generation/editing via OpenAI&#39;s [Images API](https://platform.openai.com/docs/guides/image-generation)
+(the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
 [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 

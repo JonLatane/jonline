@@ -8,6 +8,8 @@ run:
 run_dev_server:
 	yarn web
 
+build: rebuild_fe
+
 test:
 	yarn test
 

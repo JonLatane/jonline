@@ -11,6 +11,41 @@ run_elm:
 	$(MAKE) -C frontends/elm-spa run
 run_tamagui:
 	$(MAKE) -C frontends/tamagui run
+run_flutter:
+	$(MAKE) -C frontends/flutter run
+
+# Backend on the left, Elm on the right, in one tmux session -- `mouse on` lets you click a pane to
+# focus it (or drag its border to resize, or click the status bar to switch windows) instead of
+# needing tmux's own keybindings. Pane titles (shown via `pane-border-status`) label which is which.
+# `automatic-rename off` + `rename-window`/`set-titles-string` keep the window/terminal-tab title a
+# fixed "jonline: run_tmux" -- without it, tmux relabels the window after whatever's currently in the
+# foreground (`make`, then `cargo`/`npx`, etc.), which is how you got a tab just called "make".
+# Kills any previous `jonline` session first so re-running this is always safe.
+run_tmux:
+	-tmux kill-session -t jonline 2>/dev/null
+	tmux new-session -d -s jonline \; \
+		set-option -g mouse on \; \
+		set-option -g pane-border-status top \; \
+		set-option -g automatic-rename off \; \
+		set-option -g set-titles on \; \
+		set-option -g set-titles-string 'jonline: run_tmux' \; \
+		rename-window 'jonline: run_tmux' \; \
+		select-pane -T 'Backend' \; \
+		send-keys '$(MAKE) run_backend' C-m \; \
+		split-window -h \; \
+		select-pane -T 'Elm' \; \
+		send-keys '$(MAKE) run_elm' C-m \; \
+		select-pane -L \; \
+		attach-session
+
+build_backend:
+	$(MAKE) -C backend build
+build_elm:
+	$(MAKE) -C frontends/elm-spa build
+build_tamagui:
+	$(MAKE) -C frontends/tamagui build
+build_flutter:
+	$(MAKE) -C frontends/flutter build
 
 test: default test_backend test_elm test_tamagui test_flutter
 

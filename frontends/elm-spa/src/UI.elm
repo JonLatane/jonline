@@ -12,7 +12,7 @@ import Html.Attributes exposing (alt, attribute, checked, class, classList, disa
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer)
+import Proto.Jonline exposing (FederatedServer, MastodonServer)
 import Proto.Jonline.SyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Set
@@ -1026,6 +1026,9 @@ accountsAndServersTab shared currentRoute =
         [ serversStrip shared
         , unreachableServersWarning shared
         , recommendedServersStrip shared
+        , mastodonServersStrip shared
+        , mastodonBrowseSection shared
+        , blueskyConnectSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1429,6 +1432,273 @@ recommendedServerChip shared federatedServer =
             ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
             [ text "+ Add" ]
+        ]
+
+
+{-| Mirrors `recommendedServersStrip`, against `AccountsPanel.connectableMastodonServers` instead --
+Mastodon instances `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
+aren't already connected (`AccountsPanel.mastodonAccounts`), plus a read-only row per account that
+already is. Unlike the recommended-servers strip, this one never collapses behind a "N
+instances..." toggle -- there's no expectation of there being many, the way there can be many
+federated Jonline servers.
+-}
+mastodonServersStrip : Shared.Model -> Html Shared.Msg
+mastodonServersStrip shared =
+    let
+        connectable : List MastodonServer
+        connectable =
+            AccountsPanel.connectableMastodonServers shared.accounts
+
+        connected : List AccountsPanel.MastodonAccount
+        connected =
+            shared.accounts.mastodonAccounts
+    in
+    if List.isEmpty connectable && List.isEmpty connected then
+        text ""
+
+    else
+        div [ class "recommended-servers-section" ]
+            [ div [ class "panel-divider" ] []
+            , div [ class "recommended-servers-strip" ]
+                (List.map connectedMastodonAccountChip connected
+                    ++ List.map (mastodonServerChip shared) connectable
+                )
+            ]
+
+
+{-| One not-yet-connected Mastodon instance -- mirrors `recommendedServerChip`'s look (logo-less
+top/bottom split, tinted by `hostnameToCSSClass`) but its bottom row is either an alert (no `appId`
+configured, per `MastodonServer.appId`'s own doc on that being admin-optional) or a real "Connect"
+button that opens the OAuth popup (`AccountsPanel.MastodonConnectClicked`) -- never automatically,
+only on this explicit click. Disabled (and shows "Connecting…") while
+`AccountsPanel.mastodonConnectPopupOpen` names this same instance, so a slow/stuck popup can't be
+double-triggered.
+-}
+mastodonServerChip : Shared.Model -> MastodonServer -> Html Shared.Msg
+mastodonServerChip shared mastodonServer =
+    let
+        domain : String
+        domain =
+            mastodonServer.domain
+
+        connecting : Bool
+        connecting =
+            shared.accounts.mastodonConnectPopupOpen == Just domain
+
+        hasAppId : Bool
+        hasAppId =
+            not (String.isEmpty mastodonServer.appId)
+    in
+    button
+        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( hostnameToCSSClass domain, True ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.MastodonConnectClicked domain))
+        , disabled (not hasAppId || connecting)
+        , title
+            (if hasAppId then
+                "Connect " ++ domain
+
+             else
+                domain ++ " hasn't been configured for Mastodon sign-in by this server's admin yet."
+            )
+        ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass domain, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass domain, "background-color-nav" ] ]
+            [ text
+                (if not hasAppId then
+                    "⚠️ Not configured"
+
+                 else if connecting then
+                    "Connecting…"
+
+                 else
+                    "+ Connect"
+                )
+            ]
+        ]
+
+
+{-| One already-connected Mastodon account -- read-only for now (no remove/disconnect button yet,
+same first-pass scope as `AccountsPanel.mastodonAccounts` itself not being persisted -- see that
+field's own doc), just enough to confirm the connection actually happened.
+-}
+connectedMastodonAccountChip : AccountsPanel.MastodonAccount -> Html Shared.Msg
+connectedMastodonAccountChip mastodonAccount =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass mastodonAccount.instanceHost ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ mastodonAccount.username) ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-nav" ] ]
+            [ text mastodonAccount.instanceHost ]
+        ]
+
+
+{-| A user-added "just browse this instance's public timeline" affordance -- no OAuth, no
+`MastodonServer` admin config needed at all, since `Shared.Federation.Mastodon.fetchPosts` is a
+plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonServersStrip`'s
+"Connect" chips, which exist to authenticate as a specific account, this is closer to
+`serversStrip`'s own "type a host, add it" shape for real Jonline servers, just without any of the
+connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
+time, a bad/unreachable host just silently fails to load posts the same way any other feed fetch
+failure does (see `Components.Pages.PostsPage.GotFeedPosts`'s `FeedFailed` doc).
+-}
+mastodonBrowseSection : Shared.Model -> Html Shared.Msg
+mastodonBrowseSection shared =
+    div [ class "recommended-servers-section" ]
+        [ div [ class "panel-divider" ] []
+        , if List.isEmpty shared.accounts.browsedMastodonInstances then
+            text ""
+
+          else
+            div [ class "recommended-servers-strip" ] (List.map browsedMastodonInstanceChip shared.accounts.browsedMastodonInstances)
+        , div [ class "server-details-federation-add" ]
+            [ input
+                [ type_ "text"
+                , attribute "autocapitalize" "none"
+                , attribute "autocorrect" "off"
+                , spellcheck False
+                , placeholder "mastodon.social"
+                , value shared.accounts.browseMastodonInstanceInput
+                , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+                ]
+                []
+            , button
+                [ class "server-details-rename-button"
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked)
+                , disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput))
+                ]
+                [ text "+ Browse Instance" ]
+            ]
+        ]
+
+
+{-| One instance being browsed (see `mastodonBrowseSection`) -- a bare host with a remove button,
+no avatar/branding (there's no `Server`/`MastodonAccount` behind it, just a string) and no "Connect"
+affordance either, unlike `mastodonServerChip` -- browsing and connecting are independent actions,
+so a browsed instance doesn't invite upgrading itself into a connected account here.
+-}
+browsedMastodonInstanceChip : String -> Html Shared.Msg
+browsedMastodonInstanceChip host =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass host ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
+            [ button
+                [ class "remove-btn"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked host))
+                , title ("Stop browsing " ++ host)
+                ]
+                [ text "╳" ]
+            ]
+        ]
+
+
+{-| Bluesky connection UI -- mirrors `mastodonServersStrip`'s general shape (a chip per already-
+connected account), but the "connect" side is a plain inline handle/App Password form
+(`AccountsPanel.BlueskyConnectForm`) rather than a chip/button that opens a popup -- see
+`AccountsPanel.BlueskyAccount`'s own doc on why Bluesky's login has no OAuth popup at all. Always
+shown (unlike `mastodonServersStrip`, which hides entirely when there's nothing to connect to) --
+there's no admin-configuration gate the way `FederationInfo.mastodonServers` is, so there's always
+at least the "Connect Bluesky Account" button to show.
+-}
+blueskyConnectSection : Shared.Model -> Html Shared.Msg
+blueskyConnectSection shared =
+    let
+        connected : List AccountsPanel.BlueskyAccount
+        connected =
+            shared.accounts.blueskyAccounts
+    in
+    div [ class "recommended-servers-section" ]
+        (div [ class "panel-divider" ] []
+            :: (if List.isEmpty connected then
+                    []
+
+                else
+                    [ div [ class "recommended-servers-strip" ] (List.map connectedBlueskyAccountChip connected) ]
+               )
+            ++ [ case shared.accounts.blueskyConnectForm of
+                    Just form ->
+                        blueskyConnectFormView form
+
+                    Nothing ->
+                        button
+                            [ class "server-details-rename-button", onClick (Shared.AccountsPanelMsg AccountsPanel.ShowBlueskyConnectFormClicked) ]
+                            [ text "+ Connect Bluesky Account" ]
+               ]
+        )
+
+
+{-| One already-connected Bluesky account -- read-only for now, same first-pass scope as
+`connectedMastodonAccountChip`. Always tinted/keyed as "bsky.social" (rather than each account's own
+host, the way Mastodon chips are) since every account here was, for now, necessarily connected
+through that one PDS -- see `AccountsPanel.BlueskyAccount`'s own doc on that limitation.
+-}
+connectedBlueskyAccountChip : AccountsPanel.BlueskyAccount -> Html Shared.Msg
+connectedBlueskyAccountChip blueskyAccount =
+    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass "bsky.social" ] ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass "bsky.social", "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass "bsky.social", "background-color-nav" ] ]
+            [ text "bsky.social" ]
+        ]
+
+
+{-| The handle/App Password inputs plus Connect/Cancel buttons, shown once
+`AccountsPanel.ShowBlueskyConnectFormClicked` expands the form -- a real `<form>` (not a `button`
+`onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form uses
+(see its own doc), so Enter submits it and password managers recognize it as a login form worth
+offering to fill.
+-}
+blueskyConnectFormView : AccountsPanel.BlueskyConnectForm -> Html Shared.Msg
+blueskyConnectFormView form =
+    let
+        submitting : Bool
+        submitting =
+            form.status == AccountsPanel.Submitting
+    in
+    Html.form
+        [ class "server-details-federation-add", onSubmit (Shared.AccountsPanelMsg AccountsPanel.BlueskyConnectClicked) ]
+        [ input
+            [ type_ "text"
+            , name "username"
+            , attribute "autocomplete" "username"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
+            , placeholder "handle.bsky.social"
+            , value form.handle
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BlueskyHandleChanged)
+            , disabled submitting
+            ]
+            []
+        , input
+            [ type_ "password"
+            , name "current-password"
+            , attribute "autocomplete" "current-password"
+            , placeholder "App Password"
+            , value form.appPassword
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BlueskyAppPasswordChanged)
+            , disabled submitting
+            ]
+            []
+        , button
+            [ disabled (submitting || String.isEmpty form.handle || String.isEmpty form.appPassword) ]
+            [ text
+                (if submitting then
+                    "Connecting…"
+
+                 else
+                    "Connect"
+                )
+            ]
+        , button
+            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideBlueskyConnectFormClicked), disabled submitting ]
+            [ text "Cancel" ]
+        , case form.status of
+            AccountsPanel.Errored err ->
+                div [ class "auth-error" ] [ text err ]
+
+            _ ->
+                text ""
         ]
 
 

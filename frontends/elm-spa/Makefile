@@ -6,6 +6,7 @@
 run: server
 
 test: review
+	npx elm-test
 
 server:
 	npx elm-spa server

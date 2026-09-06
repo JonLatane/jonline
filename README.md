@@ -212,10 +212,14 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
+      - [Jonline as a protocol vs. Bluesky/AT Protocol](#jonline-as-a-protocol-vs-blueskyat-protocol)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Federation \& Synchronization Features](#federation--synchronization-features)
     - [Inter-Server Federation](#inter-server-federation)
       - [Federated Servers](#federated-servers)
+      - [Cross-Protocol Federation](#cross-protocol-federation)
+        - [Mastodon/ActivityPub](#mastodonactivitypub)
+        - [BlueSky/AT Protocol](#blueskyat-protocol)
       - [Federated Profiles](#federated-profiles)
       - [Federated Browsing](#federated-browsing)
       - [Federated Messaging](#federated-messaging)
@@ -315,9 +319,17 @@ Whereas ActivityPub has a flexible Activity model capable of holding varied meta
 
 In addition to Users, Posts, and Events, which could all be "described" by ActivityPub's specification, Jonline also has Media (designed to leverage external CDNs), Groups, Server Configuration, and moderation/visibility/permission management across everything as a first-class citizen.
 
+Put differently: Jonline's federation *mechanism* is strictly simpler than ActivityPub's (no server-to-server delivery protocol at all -- see [Delightful Federation](#delightful-federation)), while its *object model* covers a meaningful superset of what a typical ActivityPub app implements -- first-class Events (with recurring EventInstances), Groups (with membership/moderation), and Media (as its own visibility-controlled entity), alongside Users/Posts. So it's fair to call Jonline roughly isomorphic to a statically-typed, non-extensible *profile* of ActivityPub's actor/object vocabulary, expanded with a few practical types the base spec leaves to extensions -- but not to ActivityPub's federation protocol itself, which Jonline deliberately doesn't replicate.
+
 The hope is to build more useful business objects - yes, your boring SalesForce/NetSuite/SAP type stuff - into this social protocol. So Jonline Payments, Products, Subscriptions, and who knows what else could, eventually, be gradually implemented atop the Jonline protocol, with all the same clear, concise, documentation, cross-language portability, and other benefits it offers.
 
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
+
+#### Jonline as a protocol vs. Bluesky/AT Protocol
+
+Bluesky's AT Protocol looks architecturally nothing like Jonline (or ActivityPub, for that matter): identity and data live on independent Personal Data Servers (PDSes), which get crawled by Relays into a global firehose, which is then indexed and ranked into feeds by separate AppViews (Bluesky's own app being just one of potentially many). Nothing in Jonline has an equivalent of this data/aggregation/ranking split -- a Jonline server is identity, storage, and API all in one, much closer to a Mastodon instance (or a plain web app) than to a PDS.
+
+Jonline's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky content by simply calling the same public AT Protocol endpoints (`com.atproto.server.createSession`, `app.bsky.feed.getTimeline`) any Bluesky client would, translated client-side into Jonline's `Post` shape -- it doesn't, and doesn't need to, participate in the PDS/Relay/AppView network itself.
 
 ### Why *not* Jonline?
 
@@ -326,13 +338,26 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 - There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
 
 ## Federation & Synchronization Features
+
 ### Inter-Server Federation
 
-Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs, Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some "nice to have" features require it, so it is not used.
+Whereas ActivityPub servers federate by pushing Activities directly to each other's inboxes (authenticated via HTTP Signatures), and Bluesky (AT Protocol) federates via independent Personal Data Servers that get crawled by Relays and re-indexed by AppViews, two Jonline servers never talk to each other at all. A server only ever *recommends* other servers by hostname; it's always the client that calls each recommended server's own client-facing API directly and merges the results -- see [Federated Servers](#federated-servers) below, and [Cross-Protocol Federation](#cross-protocol-federation), which reads Mastodon/Bluesky content into a Jonline client the exact same way. The one place Jonline's own backend does initiate server-to-server calls is [Sync Destinations](#sync-destinations) -- pushing a user's own content *out* to other platforms on their behalf, which needs the server (not a browser tab) to hold onto that user's long-lived credentials for those platforms.
 
 #### Federated Servers
 
 Jonline servers can recommend other servers to clients via the `federation_info` field (a [`FederationInfo` message](https://jonline.io/docs/protocol#jonline-FederationInfo)) in [`ServerConfiguration`](https://jonline.io/docs/protocol#jonline-ServerConfiguration). Clients can use this information to discover other servers, or users can add new servers manually. Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data unless you explicitly allow it.
+
+#### Cross-Protocol Federation
+
+Jonline can also translate content *from* other federated protocols into its own [`Post`](https://jonline.io/docs/protocol#jonline-Post) model, entirely client-side -- no Jonline server ever proxies or bridges this data, it's the same "client does the merging" pattern as [Federated Servers](#federated-servers) above, just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It's also one-directional (reading in, not posting out) -- publishing a Jonline Post *to* Mastodon or Bluesky is instead handled by [Sync Destinations](#sync-destinations).
+
+##### Mastodon/ActivityPub
+
+Any Mastodon instance's local public timeline can be browsed with no account or admin configuration at all, since it's already a public, unauthenticated REST endpoint -- see [Federated Browsing](#federated-browsing). Connecting an actual Mastodon *account* (to eventually post/reply as yourself, or see your own home timeline) is a heavier flow, since a server admin first has to register an OAuth app on that instance (`FederationInfo.mastodon_servers`, a [`MastodonServer`](https://jonline.io/docs/protocol#jonline-MastodonServer)) -- unlike Facebook or X, Mastodon has no single central platform to register one app against for every instance at once.
+
+##### BlueSky/AT Protocol
+
+Unlike Mastodon, AT Protocol has no "local instance timeline" concept a client could browse anonymously -- every Personal Data Server only ever serves its own users' own data. So Bluesky cross-protocol federation always requires a connected account: a handle plus an [App Password](https://bsky.app/settings/app-passwords) (not OAuth -- Bluesky has no per-app registration step the way Mastodon/Facebook/X do), showing that account's own home timeline rather than a public firehose.
 
 #### Federated Profiles
 
@@ -452,7 +477,9 @@ All Media also carries [`Visibility`](https://jonline.io/docs/protocol#jonline-V
 
 ### AI Model Providers
 
-Jonline supports optional, "bring your own key" AI image generation via [`AIModelProvider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) (currently Gemini and OpenAI credentials - see [`AIModelProvider.provider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) for the full oneof). Any user with the `CREATE_AI_MODEL_PROVIDERS` permission can connect their own API key from their profile page, and optionally meter out access to other users on the server via [`AIModelProviderGrant`](https://jonline.io/docs/protocol#jonline-AIModelProviderGrant) - a token budget, optionally scoped to specific models.
+Jonline's AI model, put concisely, is designed to let users *share* AI models providers' API keys, *without* ever actually showing/serializing keys after they're stored, and *with* token limits set by the "owner" of any API key upon their "grant" to anyone else. This means, as a server admin, you can choose to pay for your users to have AI to whatever level you want to, well, literally grant them. As a user, you can also bring your own API keys, and they're as safe as the person with *physical* access to the machine your community is running on (and, of course, you can limit/revoke keys on the provider end).
+
+This "bring your own key (and share if you want)" setup is built atop the [`AIModelProvider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) message (currently Gemini and OpenAI credentials - see [`AIModelProvider.provider`](https://jonline.io/docs/protocol#jonline-AIModelProvider) for the full oneof). Any user with the `CREATE_AI_MODEL_PROVIDERS` permission can connect their own API key from their profile page, and optionally meter out access to other users on the server via [`AIModelProviderGrant`](https://jonline.io/docs/protocol#jonline-AIModelProviderGrant) - a token budget, optionally scoped to specific models.
 
 The one feature currently built atop this is [`GenerateMedia`](https://jonline.io/docs/protocol#grpc-api-GenerateMedia) ("Generate Media…", shown next to "Edit Media…" on a Post's or Event's own page): it sends the target's own formatted content (title/description/date-time/location, reusing the same formatting [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination)s use) plus any selected reference photos to the chosen model, and attaches the result as the first item in that Post's (or Event's own Post's) media.
 
@@ -518,7 +545,7 @@ If you want these features prioritized, or have ideas about how they would fit i
 
 ### Delightful Federation
 
-A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication supported is via [protocol-defined federated servers](https://jonline.io/docs/protocol#federated-servers), allowing, for instance, [jonline.io](https://jonline.io)'s UI to automatcally integrate posts and events from [bullcity.social](https://bullcity.social) and [oakcity.social](https://oakcity.social). (To limit this sort of external access, bullcity.social and oakcity.social admins can always use CORS.)
+A key thing that separates Jonline from Mastodon and other Fediverse projects is that its servers never talk to each other directly at all -- there's no server-to-server delivery protocol. Instead, a server only *recommends* other servers by hostname (a [protocol-defined federated server](https://jonline.io/docs/protocol#federated-servers)), and it's the client -- e.g. your browser, loading [jonline.io](https://jonline.io) -- that calls each recommended server's API directly and merges in its posts and events, such as [bullcity.social](https://bullcity.social)'s and [oakcity.social](https://oakcity.social)'s. That's exactly why CORS is the relevant safeguard here, not server-side access control: bullcity.social and oakcity.social admins can always lock down their own CORS policy to control which other origins (i.e. other Jonline UIs) are allowed to pull their public data this way. [Cross-Protocol Federation](https://jonline.io/docs/protocol#cross-protocol-federation) is this same idea taken one step further: a Jonline client reads Mastodon and BlueSky content directly from those platforms' own public APIs and translates it into the same `Post` shape, again with no Jonline server acting as a bridge or proxy. (The one place a Jonline server *does* itself talk to another server on a user's behalf is [Sync Destinations](https://jonline.io/docs/protocol#sync-destinations) -- pushing that user's own content *out* to Facebook, Mastodon, Bluesky, etc.)
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 

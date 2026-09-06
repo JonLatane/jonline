@@ -535,7 +535,9 @@ pub fn create_event_instance(
             starts_at: opts.starts_at,
             ends_at: opts.ends_at,
             location: opts.location,
-            sync_source_instance_id: None,
+            sync_source_id: None,
+            sync_source_uid: None,
+            sync_source_recurrence_anchor: None,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)
@@ -701,6 +703,7 @@ pub fn configure_facebook_app(conn: &mut PgPooledConnection, app_id: &str, app_s
             app_secret: app_secret.to_string(),
         }),
         x_twitter_auth_config: None,
+        mastodon_servers: vec![],
     })
     .unwrap();
     insert_into(server_configurations::table)
@@ -727,6 +730,7 @@ pub fn configure_facebook_app_and_frontend_host(
             app_secret: app_secret.to_string(),
         }),
         x_twitter_auth_config: None,
+        mastodon_servers: vec![],
     })
     .unwrap();
     new_config.external_cdn_config = Some(
@@ -754,6 +758,7 @@ pub fn configure_x_twitter_app(conn: &mut PgPooledConnection, client_id: &str, c
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
         }),
+        mastodon_servers: vec![],
     })
     .unwrap();
     insert_into(server_configurations::table)
@@ -780,6 +785,7 @@ pub fn configure_x_twitter_app_and_frontend_host(
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
         }),
+        mastodon_servers: vec![],
     })
     .unwrap();
     new_config.external_cdn_config = Some(

@@ -33,7 +33,7 @@ export const MediaRenderer: React.FC<Props> = ({
 
   const ReactPlayerShim = ReactPlayer as any;
 
-  const mediaUrl = useMediaUrl(media.id, { server });
+  const mediaUrl = useMediaUrl(media, { server });
   const [type, subType] = useMemo(() => {
     let [type, subType] = (media?.contentType ?? '').split('/');
     if (forceImage) {

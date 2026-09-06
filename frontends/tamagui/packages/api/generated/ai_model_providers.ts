@@ -205,27 +205,28 @@ export interface AIModelProvider {
    */
   name: string;
   /**
-   * A Google Gemini API connection (see `ai.google.dev/gemini-api`), used for image generation/editing (e.g.
-   * generating Event posters) via its Interactions API.
+   * A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g.
+   * generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation).
    */
   geminiCredentials?:
     | GeminiCredentials
     | undefined;
   /**
-   * An OpenAI API connection (see `platform.openai.com/docs/guides/image-generation`), used for image
-   * generation/editing via its Images API (GPT Image models).
+   * An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image
+   * generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models).
    */
   openaiCredentials?:
     | OpenAICredentials
     | undefined;
-  /** An Anthropic API connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API. */
+  /** An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API. */
   anthropicCredentials?:
     | AnthropicCredentials
     | undefined;
   /**
-   * A DigitalOcean Gradient AI Platform / Serverless Inference connection (see
-   * `docs.digitalocean.com/products/inference`), used for image generation (no editing -- DigitalOcean's
-   * Serverless Inference API has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
+   * A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+   * Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+   * [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+   * has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
    * `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
    * billing).
    */
@@ -352,10 +353,10 @@ export interface RevokeAIModelProviderRequest {
 }
 
 /**
- * Credentials for a Google Gemini API connection (`ai.google.dev/gemini-api`) -- the only
+ * Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
  * [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Used for image generation/editing via Gemini's Interactions API (`ai.google.dev/gemini-api/docs/image-generation`),
+ * Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
  * e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface GeminiCredentials {
@@ -369,10 +370,10 @@ export interface GeminiCredentials {
 }
 
 /**
- * Credentials for an OpenAI API connection, accepted by
+ * Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Used for image generation/editing via OpenAI's Images API (`platform.openai.com/docs/guides/image-generation`,
- * the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+ * Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
+ * (the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
  * [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface OpenAICredentials {
@@ -385,11 +386,13 @@ export interface OpenAICredentials {
 }
 
 /**
- * Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+ * Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
+ * Serverless Inference connection, accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via
- * `https://inference.do-ai.run/v1/images/generations`, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
- * and Stable Diffusion models -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+ * Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via its
+ * [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
+ * `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+ * see [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface DigitalOceanCredentials {
   /**
@@ -400,7 +403,10 @@ export interface DigitalOceanCredentials {
   digitaloceanApiKey?: string | undefined;
 }
 
-/** Credentials for an Anthropic API connection. *Not yet creatable* -- defined for forward compatibility only. */
+/**
+ * Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+ * forward compatibility only.
+ */
 export interface AnthropicCredentials {
   /**
    * The Anthropic API key. Never populated in responses (see

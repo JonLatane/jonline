@@ -5,8 +5,11 @@ module Shared.AccountsPanel exposing
     , AccountForm
     , AddServerForm
     , Branding
+    , BlueskyAccount
+    , BlueskyConnectForm
     , Connection
     , FormStatus(..)
+    , MastodonAccount
     , MaybeAccountServer
     , Model
     , Msg(..)
@@ -24,6 +27,7 @@ module Shared.AccountsPanel exposing
     , brandingOf
     , configurationOf
     , connectToServer
+    , connectableMastodonServers
     , connectionOf
     , connectionUrl
     , createAccountModalBodyId
@@ -81,7 +85,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -90,6 +94,7 @@ import Set
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Conversions exposing (timestampToPosix)
+import Shared.Federation.Common exposing (jsonResolver)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
@@ -314,6 +319,48 @@ type alias Model =
     -- though it's landed them on a page they didn't navigate to by hand. Cleared by
     -- `DismissFederatedSignInNotice`, fired either by clicking it or a few seconds after it appears.
     , federatedSignInNotice : Maybe Account
+
+    -- Mastodon accounts connected via `UI.mastodonServerChip`'s "Connect" button (see
+    -- `MastodonConnectClicked`) -- each one's `accessToken` came straight out of an OAuth popup Elm
+    -- never touched directly (see `Ports.facebookLoginPopup`'s `"mastodon"` provider), fetched for
+    -- the sole purpose of a future `GetPosts` translation layer, not used for anything yet.
+    -- Session-only for now (not persisted, unlike `accounts`/`servers`) -- reconnecting after every
+    -- reload is an accepted first-pass limitation until that translation layer lands and there's an
+    -- actual reason to keep these around across reloads.
+    , mastodonAccounts : List MastodonAccount
+
+    -- The instance host `MastodonConnectClicked` most recently opened a popup for, until that
+    -- popup's `Ports.facebookLoginResult` (`GotMastodonLoginResult`) settles -- `Nothing` the rest
+    -- of the time. Since only one such popup can meaningfully be open at once (mirrors
+    -- `Components.Pages.UserProfilePage`'s own single-popup-at-a-time flows), this alone is enough
+    -- to both disable every "Connect" button while one's in flight and know which `MastodonServer`
+    -- the eventual result belongs to.
+    , mastodonConnectPopupOpen : Maybe String
+
+    -- Mastodon instances the user just wants to browse the public timeline of -- no OAuth, no
+    -- admin-registered app, no account at all (see `Shared.Federation.Mastodon.fetchPosts`'s own
+    -- doc: it's a plain unauthenticated `GET`), the same "just add a host" affordance
+    -- `AddServerClicked`'s server strip already offers for real Jonline servers. Deliberately a
+    -- bare `List String` (not a richer record the way `Server`/`MastodonAccount` are) -- there's
+    -- no connection state, account identity, or credential to track here at all, just a host to
+    -- fetch. Session-only, same as `mastodonAccounts`/`blueskyAccounts` -- see those fields' own
+    -- doc on that being an accepted first-pass limitation.
+    , browsedMastodonInstances : List String
+
+    -- `UI.mastodonBrowseSection`'s "add an instance to browse" `<input>` value -- mirrors
+    -- `AddServerForm`'s own text-input-plus-button shape, just without needing a whole record
+    -- (`hostInput` there also tracks in-flight validation status, which this has none of -- adding
+    -- a browsed instance is instant, synchronous, and can't fail, unlike adding a real server).
+    , browseMastodonInstanceInput : String
+
+    -- Bluesky accounts connected via `UI.blueskyConnectSection`'s form (see
+    -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- same session-only, not-yet-wired-into-
+    -- anything first-pass scope as `mastodonAccounts`, see that field's own doc.
+    , blueskyAccounts : List BlueskyAccount
+
+    -- `Just` while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded -- see
+    -- `BlueskyConnectForm`'s own doc.
+    , blueskyConnectForm : Maybe BlueskyConnectForm
     }
 
 
@@ -394,6 +441,18 @@ type Msg
     | GotPushSubscriptionStatusResult String (Result Grpc.Error ( Account, GetPushSubscriptionStatusResponse ))
     | PushSubscriptionChangeReceived Decode.Value
     | DismissFederatedSignInNotice
+    | MastodonConnectClicked String
+    | GotMastodonLoginResult Decode.Value
+    | GotMastodonVerifyCredentialsResult String String (Result Http.Error String)
+    | ShowBlueskyConnectFormClicked
+    | HideBlueskyConnectFormClicked
+    | BlueskyHandleChanged String
+    | BlueskyAppPasswordChanged String
+    | BlueskyConnectClicked
+    | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
+    | BrowseMastodonInstanceInputChanged String
+    | BrowseMastodonInstanceClicked
+    | RemoveBrowsedMastodonInstanceClicked String
     | NoOp
 
 
@@ -447,6 +506,49 @@ type alias AccountAuthTokens =
     { server : String
     , refreshToken : Token
     , accessToken : Token
+    }
+
+
+{-| A Mastodon account connected via `UI.mastodonServerChip`'s "Connect" button (see
+`MastodonConnectClicked`/`GotMastodonLoginResult`) -- `accessToken` came out of an OAuth popup Elm
+never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: dynamic app
+registration, PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
+between the browser and `instanceHost` itself), and `username` is fetched once, right after, via
+`GET /api/v1/accounts/verify_credentials` (see `verifyMastodonCredentialsTask`) -- just enough to
+display the connection, not a full `Account`, since a Mastodon account isn't a Jonline one.
+-}
+type alias MastodonAccount =
+    { instanceHost : String
+    , accessToken : String
+    , username : String
+    }
+
+
+{-| A Bluesky (AT Protocol) account connected via `UI.blueskyConnectSection`'s form -- unlike
+Mastodon, there's no OAuth popup at all: `com.atproto.server.createSession` (see
+`createBlueskySessionTask`) takes a handle and App Password directly, the same "plain form" shape
+`Pages.Auth.To.Key_` already uses for Jonline's own Login RPC (and is itself the identity check --
+the session response already carries `handle`, so there's no separate verify-credentials round trip
+the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
+directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
+doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
+are hosted there by default, so this covers the common case.
+-}
+type alias BlueskyAccount =
+    { handle : String
+    , accessToken : String
+    }
+
+
+{-| Live only while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded --
+`Nothing` the rest of the time (collapsed behind that button, mirroring `addAccountFormExpanded`'s
+own show/hide convention). Cleared back to `Nothing` on a successful `GotBlueskyConnectResult`, same
+as `newAccountType` clearing on a successful `GotAuthResult`.
+-}
+type alias BlueskyConnectForm =
+    { handle : String
+    , appPassword : String
+    , status : FormStatus
     }
 
 
@@ -1418,6 +1520,12 @@ init req flags =
       , pendingNotificationAccountId = Nothing
       , pendingPushSubscriptionCheck = Nothing
       , federatedSignInNotice = Nothing
+      , mastodonAccounts = []
+      , mastodonConnectPopupOpen = Nothing
+      , browsedMastodonInstances = []
+      , browseMastodonInstanceInput = ""
+      , blueskyAccounts = []
+      , blueskyConnectForm = Nothing
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1437,6 +1545,7 @@ subscriptions model =
         , Ports.pushSubscribed PushSubscriptionPortReceived
         , Ports.pushSubscriptionChecked PushSubscriptionCheckReceived
         , Ports.pushSubscriptionChangeReceived PushSubscriptionChangeReceived
+        , Ports.facebookLoginResult GotMastodonLoginResult
         ]
 
 
@@ -1971,12 +2080,37 @@ sendUpdate req msg model =
                         server =
                             serverFrom correctedConnection True config
 
+                        -- Mirrors `federatedServerCmds` below, for `FederationInfo.mastodonServers`
+                        -- instead of `.servers` -- but unlike a real `FederatedServer`, browsing a
+                        -- Mastodon instance needs no negotiation/connection at all (see
+                        -- `Shared.Federation.Mastodon.fetchPosts`'s own doc: it's a plain
+                        -- unauthenticated `GET`), so this can just fold straight into `newModel`
+                        -- rather than firing its own `Cmd`s. Both `configuredByDefault` and
+                        -- `pinnedByDefault` trigger the same "add to the browse list" effect here
+                        -- -- unlike `Server.enabled`, `browsedMastodonInstances` has no
+                        -- disabled-but-present state for `pinnedByDefault` to mean "enabled
+                        -- immediately" *as opposed to*, so the two aren't distinguishable yet. If
+                        -- that ever changes, this is the spot to make them diverge.
+                        defaultBrowsedMastodonInstances : List String
+                        defaultBrowsedMastodonInstances =
+                            config.federationInfo
+                                |> Maybe.map .mastodonServers
+                                |> Maybe.withDefault []
+                                |> List.filter
+                                    (\ms ->
+                                        Maybe.withDefault False ms.configuredByDefault || Maybe.withDefault False ms.pinnedByDefault
+                                    )
+                                |> List.map .domain
+
                         newModel : Model
                         newModel =
                             { model
                                 | mainFrontendHost = resolvedFrontend
                                 , servers = upsertServer server model.servers
                                 , browsingHostConfigResolved = True
+                                , browsedMastodonInstances =
+                                    model.browsedMastodonInstances
+                                        ++ List.filter (\domain -> not (List.member domain model.browsedMastodonInstances)) defaultBrowsedMastodonInstances
                             }
 
                         -- The base host may recommend other servers to federate with (see
@@ -3072,6 +3206,94 @@ sendUpdate req msg model =
         DismissFederatedSignInNotice ->
             ( { model | federatedSignInNotice = Nothing }, Cmd.none )
 
+        MastodonConnectClicked instanceHost ->
+            ( { model | mastodonConnectPopupOpen = Just instanceHost }
+            , Ports.facebookLoginPopup { provider = "mastodon", appId = "", instanceHost = instanceHost }
+            )
+
+        GotMastodonLoginResult value ->
+            case model.mastodonConnectPopupOpen of
+                Nothing ->
+                    -- Not our popup (see `Ports.facebookLoginResult`'s own doc on this port fanning
+                    -- out to every subscriber) -- unreachable in practice, since nothing else in
+                    -- this module ever sets `mastodonConnectPopupOpen`, but harmless either way.
+                    ( model, Cmd.none )
+
+                Just instanceHost ->
+                    case mastodonLoginResultDecoder value of
+                        Ok accessToken ->
+                            ( model
+                            , Task.attempt (GotMastodonVerifyCredentialsResult instanceHost accessToken)
+                                (verifyMastodonCredentialsTask instanceHost accessToken)
+                            )
+
+                        Err _ ->
+                            ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
+
+        GotMastodonVerifyCredentialsResult instanceHost accessToken (Ok username) ->
+            ( { model
+                | mastodonConnectPopupOpen = Nothing
+                , mastodonAccounts = { instanceHost = instanceHost, accessToken = accessToken, username = username } :: model.mastodonAccounts
+              }
+            , Cmd.none
+            )
+
+        GotMastodonVerifyCredentialsResult _ _ (Err _) ->
+            ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
+
+        ShowBlueskyConnectFormClicked ->
+            ( { model | blueskyConnectForm = Just { handle = "", appPassword = "", status = Idle } }, Cmd.none )
+
+        HideBlueskyConnectFormClicked ->
+            ( { model | blueskyConnectForm = Nothing }, Cmd.none )
+
+        BlueskyHandleChanged handle ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | handle = handle }) }, Cmd.none )
+
+        BlueskyAppPasswordChanged appPassword ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | appPassword = appPassword }) }, Cmd.none )
+
+        BlueskyConnectClicked ->
+            case model.blueskyConnectForm of
+                Just form ->
+                    ( { model | blueskyConnectForm = Just { form | status = Submitting } }
+                    , Task.attempt GotBlueskyConnectResult (createBlueskySessionTask form.handle form.appPassword)
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        GotBlueskyConnectResult (Ok account) ->
+            ( { model | blueskyConnectForm = Nothing, blueskyAccounts = account :: model.blueskyAccounts }, Cmd.none )
+
+        GotBlueskyConnectResult (Err err) ->
+            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | status = Errored (blueskyErrorMessage err) }) }
+            , Cmd.none
+            )
+
+        BrowseMastodonInstanceInputChanged text ->
+            ( { model | browseMastodonInstanceInput = text }, Cmd.none )
+
+        BrowseMastodonInstanceClicked ->
+            let
+                host : String
+                host =
+                    String.trim model.browseMastodonInstanceInput
+            in
+            if String.isEmpty host || List.member host model.browsedMastodonInstances then
+                ( model, Cmd.none )
+
+            else
+                ( { model
+                    | browsedMastodonInstances = host :: model.browsedMastodonInstances
+                    , browseMastodonInstanceInput = ""
+                  }
+                , Cmd.none
+                )
+
+        RemoveBrowsedMastodonInstanceClicked host ->
+            ( { model | browsedMastodonInstances = List.filter ((/=) host) model.browsedMastodonInstances }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -3166,6 +3388,23 @@ recommendedFederatedServers model =
         |> Maybe.map .servers
         |> Maybe.withDefault []
         |> List.filter (\fs -> not (isKnownServer model fs.host))
+
+
+{-| Mirrors `recommendedFederatedServers` exactly (same `mainFrontendHost`-config sourcing), against
+`federationInfo.mastodonServers` instead of `.servers` -- the Mastodon instances `UI.mastodonServerChip`
+shows for connecting, minus any already in `model.mastodonAccounts`. Unlike `FederatedServer`s, a
+`MastodonServer` still shows here (with `UI.mastodonServerChip`'s alert-icon treatment) even with a
+blank `appId` -- there's no admin-configuration UI for the user themselves to fall back to, so
+hiding it entirely would just look like the instance was never offered at all.
+-}
+connectableMastodonServers : Model -> List MastodonServer
+connectableMastodonServers model =
+    serverForHost model.servers model.mainFrontendHost
+        |> Maybe.map configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .mastodonServers
+        |> Maybe.withDefault []
+        |> List.filter (\ms -> not (List.any (\a -> a.instanceHost == ms.domain) model.mastodonAccounts))
 
 
 {-| Whether `frontendHost` (trimmed) is this app's own "home" server --
@@ -4112,6 +4351,114 @@ discoverBackendHost pageIsSecure frontendHost =
             [ True, False ]
         )
         |> Task.onError (\_ -> Task.succeed frontendHost)
+
+
+{-| Decodes a `facebookLoginResult` payload (`{ ok : Bool, value : String }`, see that port's own
+doc) for the `"mastodon"` provider specifically -- `Ok accessToken` on success, `Err message`
+otherwise (including the "cancelled" case, same as every other provider's use of this port).
+Mirrors `Components.Pages.UserProfilePage.facebookLoginResultDecoder` exactly; kept as its own copy
+here rather than exposed cross-module, since the two are otherwise unrelated (one page's Facebook/
+Threads/X connect flows, this module's Mastodon one).
+-}
+mastodonLoginResultDecoder : Decode.Value -> Result String String
+mastodonLoginResultDecoder value =
+    case
+        Decode.decodeValue
+            (Decode.map2 Tuple.pair (Decode.field "ok" Decode.bool) (Decode.field "value" Decode.string))
+            value
+    of
+        Ok ( True, token ) ->
+            Ok token
+
+        Ok ( False, err ) ->
+            Err err
+
+        Err err ->
+            Err (Decode.errorToString err)
+
+
+{-| `GET /api/v1/accounts/verify_credentials` against `instanceHost`, authenticated with the
+freshly-minted `accessToken` -- the one Mastodon call `GotMastodonLoginResult` needs before it can
+actually add a `MastodonAccount`, since the OAuth result alone is just a bare token with no
+identity attached yet. Decodes just `username`, all a `MastodonAccount` needs to display the
+connection.
+-}
+verifyMastodonCredentialsTask : String -> String -> Task Http.Error String
+verifyMastodonCredentialsTask instanceHost accessToken =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/verify_credentials"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "username" Decode.string) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
+directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
+`bsky.social`-only limitation). Decodes just `handle`/`accessJwt`, all a `BlueskyAccount` needs.
+-}
+createBlueskySessionTask : String -> String -> Task Http.Error BlueskyAccount
+createBlueskySessionTask handle appPassword =
+    Http.task
+        { method = "POST"
+        , headers = []
+        , url = "https://bsky.social/xrpc/com.atproto.server.createSession"
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "identifier", Encode.string handle )
+                    , ( "password", Encode.string appPassword )
+                    ]
+                )
+        , resolver =
+            jsonResolver blueskySessionDecoder
+                (\metadata body -> Http.BadBody (blueskyErrorBody body |> Maybe.withDefault ("HTTP " ++ String.fromInt metadata.statusCode)))
+        , timeout = Just 10000
+        }
+
+
+blueskySessionDecoder : Decode.Decoder BlueskyAccount
+blueskySessionDecoder =
+    Decode.map2 BlueskyAccount
+        (Decode.field "handle" Decode.string)
+        (Decode.field "accessJwt" Decode.string)
+
+
+{-| `com.atproto.server.createSession`'s error responses are `{ error : String, message : String }`
+(e.g. `{"error":"AuthenticationRequired","message":"Invalid identifier or password"}`) -- extracts
+`message` when present, so `BlueskyConnectForm.status`'s `Errored` shows something more useful than
+a bare status code.
+-}
+blueskyErrorBody : String -> Maybe String
+blueskyErrorBody body =
+    Decode.decodeString (Decode.field "message" Decode.string) body |> Result.toMaybe
+
+
+{-| `GotBlueskyConnectResult`'s error-to-display-string projection -- `Http.BadBody` here always
+carries `createBlueskySessionTask`'s own already-human-readable message (either the server's own
+`message`, or a bare status code fallback -- see `blueskyErrorBody`), so it's shown as-is; every
+other `Http.Error` variant gets a generic message, same as this codebase's `grpcErrorToString`
+doesn't try to describe network/timeout errors in detail either.
+-}
+blueskyErrorMessage : Http.Error -> String
+blueskyErrorMessage err =
+    case err of
+        Http.BadBody message ->
+            message
+
+        Http.BadUrl _ ->
+            "Couldn't connect to Bluesky."
+
+        Http.Timeout ->
+            "Bluesky didn't respond in time."
+
+        Http.NetworkError ->
+            "Couldn't reach Bluesky."
+
+        Http.BadStatus code ->
+            "Bluesky returned an error (" ++ String.fromInt code ++ ")."
 
 
 connectionUrl : Connection -> String

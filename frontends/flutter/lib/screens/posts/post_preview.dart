@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
+import '../../generated/media.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
 import '../../generated/users.pb.dart';
@@ -79,6 +80,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
           ? post.link
           : 'http://${post.link}';
   String? get previewMediaId => post.media.firstOrNull?.id;
+  MediaReference? get previewMedia => post.media.firstOrNull;
   // String get previewKey => "post-preview-${widget.server}:${post.id}";
   // List<int>? previewImage;
   String? get content => post.content.isEmpty ? null : post.content;
@@ -271,7 +273,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                           padding: const EdgeInsets.only(right: 5.0),
                           child: CircleAvatar(
                             backgroundImage:
-                                mediaImageProvider(author!.avatar.id),
+                                mediaImageProvider(author!.avatar),
                             maxRadius: 10,
                           ),
                         ),
@@ -403,7 +405,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
               child: Row(
                 children: [
                   Expanded(
-                    child: MediaImage(mediaId: previewMediaId!),
+                    child: MediaImage(media: previewMedia!),
                   )
                 ],
               ),

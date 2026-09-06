@@ -410,6 +410,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
           <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
           <li><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></li>
+          <li><a href="#jonline-MastodonServer">MastodonServer</a></li>
           <li><a href="#jonline-XTwitterAuthConfig">XTwitterAuthConfig</a></li>
         </ul>
       </li>
@@ -517,6 +518,48 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
     </ul>
+    <h4 id="cross-protocol-federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#cross-protocol-federation"><span class="octicon octicon-link"></span></a>Cross-Protocol Federation</h4>
+    <p>
+      Jonline clients can translate content from other federated protocols into the same
+      <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-Author"><code>Author</code></a> shapes used everywhere else in the app --
+      entirely client-side, with no RPCs of their own. The server's only role is admin configuration:
+      <a href="#jonline-FederationInfo"><code>FederationInfo</code></a> tells clients which instances/apps are safe or
+      expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+      the same "the client does the merging" pattern as <a href="#jonline-FederatedServer"><code>FederatedServer</code></a>,
+      just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It's also
+      one-directional (reading in, not posting out) -- publishing a Jonline <a href="#jonline-Post"><code>Post</code></a> <em>to</em>
+      Mastodon or Bluesky is a separate feature, <a href="#jonline-SyncDestination"><code>SyncDestination</code></a>.
+    </p>
+    <h5 id="mastodonactivitypub"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub</h5>
+    <p>
+      A client can browse any Mastodon instance's local public timeline
+      (<code>GET /api/v1/timelines/public?local=true</code>) with zero configuration, since it's already a public,
+      unauthenticated REST endpoint -- no <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> entry is needed
+      just to <em>read</em> public posts.
+    </p>
+    <p>
+      Connecting an actual Mastodon <em>account</em> is a heavier flow, since Mastodon has no single central
+      OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+      server admin registers an app on a given instance ahead of time
+      (<code>FederationInfo.mastodon_servers</code>, a <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> carrying that
+      instance's <code>app_id</code>/<code>app_secret</code>), and only then can a user on that instance complete the OAuth
+      popup + PKCE flow to connect their own account. <code>MastodonServer.configured_by_default</code>/
+      <code>pinned_by_default</code> let an admin recommend a given instance be auto-browsed the first time a
+      client visits this server -- see those fields' own docs for the current relationship between the
+      two.
+    </p>
+    <h5 id="blueskyat-protocol"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyat-protocol"><span class="octicon octicon-link"></span></a>BlueSky/AT Protocol</h5>
+    <p>
+      Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all -- every Personal
+      Data Server (PDS) only ever serves its own users' own repos, so there is nothing equivalent to
+      browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
+      account: a handle and an <a href="https://bsky.app/settings/app-passwords">App Password</a> (not OAuth --
+      AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
+      call <code>com.atproto.server.createSession</code> and then the account's own
+      <code>app.bsky.feed.getTimeline</code>. Because there's no server-side app to register, there is no
+      <code>BlueskyServer</code> config type mirroring <a href="#jonline-MastodonServer"><code>MastodonServer</code></a> -- nothing about
+      connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
+    </p>
     <h3 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h3>
     <h4 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h4>
     <p>
@@ -613,6 +656,28 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <code>servers</code> (repeated <a href="#jonline-FederatedServer"><code>FederatedServer</code></a>) recommends other Jonline hosts to clients,
       each optionally <code>configured_by_default</code> (client should enable/configure it automatically) and/or
       <code>pinned_by_default</code> (client should pin its Events/Posts alongside the "main" server's).
+    </p>
+    <h6 id="mastodonactivitypub-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub-servers"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub servers</h6>
+    <p>
+      <code>mastodon_servers</code> (repeated <a href="#jonline-MastodonServer"><code>MastodonServer</code></a>) plays a similar role to
+      <code>servers</code> above, but for Mastodon instances instead of other Jonline servers -- see
+      <a href="#cross-protocol-federation">Cross-Protocol Federation</a> for the client-side feature this backs.
+      Unlike a real <code>FederatedServer</code>, though, an entry here is <em>not</em> required just to browse an
+      instance's public timeline read-only -- that's already a public, unauthenticated Mastodon REST
+      endpoint any client can call directly. It's only needed to let a user <em>connect their own</em>
+      Mastodon account (OAuth + PKCE), since Mastodon has no single central OAuth authority the way
+      Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
+      app (<code>app_id</code>/<code>app_secret</code>, the latter <em>never</em> serialized to the client) on each instance
+      individually before its users can connect. <code>configured_by_default</code>/<code>pinned_by_default</code> mirror
+      <code>FederatedServer</code>'s own fields, but govern that anonymous browsing instead: whether clients should
+      auto-add the instance to their browsed list the first time they visit this server, not whether an
+      account gets auto-connected (that always requires the user's own explicit OAuth consent).
+    </p>
+    <p>
+      A Mastodon instance functions like a much thinner version of a federated Jonline server in the
+      UI: its public posts appear in the same multi-server feed, translated into Jonline's own
+      <a href="#jonline-Post"><code>Post</code></a> shape, but it has no equivalent of Jonline's Events, Groups, Media
+      library, or People/Follows -- just posts and their authors.
     </p>
     <h6 id="facebook-api-keys"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook-api-keys"><span class="octicon octicon-link"></span></a>Facebook API Keys</h6>
     <p>
@@ -3140,7 +3205,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       A Jonline <code>Media</code> message represents a single media item, such as a photo or video.
       Media data is deliberately <em>not accessible from the gRPC API</em>. Instead, the client
-      should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>.
+      should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>, unless <code>url</code> is set,
+      in which case that URL should be used instead (used for media Jonline doesn't store
+      locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
     </p>
     <p>
       Media items may be created with a HTTP POST to <code>http[s]://my.jonline.instance/media</code>
@@ -3257,6 +3324,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td></td>
           <td></td>
         </tr>
+        <tr>
+          <td>url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An external URL to fetch the media from, in lieu of <code>/media/{id}</code>. Used for representing media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky) that Jonline does not store locally. If unset, clients fall back to <code>/media/{id}</code>.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-MediaMetadata"></a></p>
@@ -3335,6 +3408,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#float">float</a></td>
           <td>optional</td>
           <td>Width divided by height. See <code>Media.aspect_ratio</code>.</td>
+        </tr>
+        <tr>
+          <td>url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An external URL to fetch the media from, in lieu of <code>/media/{id}</code>. See <code>Media.url</code>. If unset, clients fall back to <code>/media/{id}</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -6600,6 +6679,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances -- an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship <code>facebook_auth_config</code> has to individual Facebook Pages. Until set, <a href="#jonline-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code>.</td>
         </tr>
+        <tr>
+          <td>mastodon_servers</td>
+          <td><a href="#jonline-MastodonServer">MastodonServer</a></td>
+          <td>repeated</td>
+          <td>Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against -- every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user's instance isn't listed here, clients should surface a "not configured" alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon's own <code>POST /api/v1/apps</code>, and skip this entirely -- Mastodon itself supports that. But that's a client-side choice the Jonline protocol doesn't get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.)</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetServiceVersionResponse"></a></p>
@@ -6620,6 +6705,51 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MastodonServer"></a></p>
+    <h3 id="mastodonserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonserver"><span class="octicon octicon-link"></span></a>MastodonServer</h3>
+    <p>A Mastodon instance this server has a registered OAuth app on. See <code>FederationInfo.mastodon_servers</code>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>domain</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Mastodon instance's hostname, e.g. "mastodon.social".</td>
+        </tr>
+        <tr>
+          <td>app_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The registered app's Client ID for this instance. Safe to serialize to clients -- used directly to build the instance's <code>/oauth/authorize</code> URL, the same way <code>FacebookAuthConfig.app_id</code>/ <code>XTwitterAuthConfig.client_id</code> are.</td>
+        </tr>
+        <tr>
+          <td>app_secret</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The registered app's Client Secret for this instance. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly. Used server-side to exchange an authorization code for an access token once a user completes the OAuth popup.</td>
+        </tr>
+        <tr>
+          <td>configured_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Indicates to UI clients that they should browse the indicated instance's public timeline by default (added to it with no OAuth/account needed at all -- see this message's own doc on the difference between browsing and connecting).</td>
+        </tr>
+        <tr>
+          <td>pinned_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server). Currently has the same effect as <code>configured_by_default</code> -- as of this writing, clients have no "added but not shown" state for a browsed instance the way <code>FederatedServer.pinned_by_default</code>'s <code>Server.enabled</code> does, so there's nothing for this to mean <em>in addition to</em> <code>configured_by_default</code>. Kept as its own field for symmetry with <code>FederatedServer</code>, and in case that changes.</td>
         </tr>
       </tbody>
     </table>
@@ -7312,25 +7442,25 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
           <td>gemini_credentials</td>
           <td><a href="#jonline-GeminiCredentials">GeminiCredentials</a></td>
           <td></td>
-          <td>A Google Gemini API connection (see <code>ai.google.dev/gemini-api</code>), used for image generation/editing (e.g. generating Event posters) via its Interactions API.</td>
+          <td>A <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection, used for image generation/editing (e.g. generating Event posters) via its <a href="https://ai.google.dev/gemini-api/docs/image-generation">Interactions API</a>.</td>
         </tr>
         <tr>
           <td>openai_credentials</td>
           <td><a href="#jonline-OpenAICredentials">OpenAICredentials</a></td>
           <td></td>
-          <td>An OpenAI API connection (see <code>platform.openai.com/docs/guides/image-generation</code>), used for image generation/editing via its Images API (GPT Image models).</td>
+          <td>An <a href="https://platform.openai.com/docs/api-reference">OpenAI API</a> connection, used for image generation/editing via its <a href="https://platform.openai.com/docs/guides/image-generation">Images API</a> (GPT Image models).</td>
         </tr>
         <tr>
           <td>anthropic_credentials</td>
           <td><a href="#jonline-AnthropicCredentials">AnthropicCredentials</a></td>
           <td></td>
-          <td>An Anthropic API connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
+          <td>An <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
         </tr>
         <tr>
           <td>digitalocean_credentials</td>
           <td><a href="#jonline-DigitalOceanCredentials">DigitalOceanCredentials</a></td>
           <td></td>
-          <td>A DigitalOcean Gradient AI Platform / Serverless Inference connection (see <code>docs.digitalocean.com/products/inference</code>), used for image generation (no editing -- DigitalOcean's Serverless Inference API has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
+          <td>A <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> / Serverless Inference connection, used for image generation (no editing -- DigitalOcean's <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a> has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
         </tr>
         <tr>
           <td>grants</td>
@@ -7418,7 +7548,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     </table>
     <p><a name="jonline-AnthropicCredentials"></a></p>
     <h3 id="anthropiccredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anthropiccredentials"><span class="octicon octicon-link"></span></a>AnthropicCredentials</h3>
-    <p>Credentials for an Anthropic API connection. <em>Not yet creatable</em> -- defined for forward compatibility only.</p>
+    <p>
+      Credentials for an <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- defined for
+      forward compatibility only.
+    </p>
     <table>
       <thead>
         <tr>
@@ -7509,11 +7642,13 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-DigitalOceanCredentials"></a></p>
     <h3 id="digitaloceancredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#digitaloceancredentials"><span class="octicon octicon-link"></span></a>DigitalOceanCredentials</h3>
     <p>
-      Credentials for a DigitalOcean Gradient AI Platform / Serverless Inference connection, accepted by
+      Credentials for a <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> /
+      Serverless Inference connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via
-      <code>https://inference.do-ai.run/v1/images/generations</code>, an OpenAI-Images-API-shaped endpoint re-hosting GPT Image
-      and Stable Diffusion models -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
+      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via its
+      <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a>
+      <code>/v1/images/generations</code> endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
+      see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
       <thead>
@@ -7536,10 +7671,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-GeminiCredentials"></a></p>
     <h3 id="geminicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geminicredentials"><span class="octicon octicon-link"></span></a>GeminiCredentials</h3>
     <p>
-      Credentials for a Google Gemini API connection (<code>ai.google.dev/gemini-api</code>) -- the only
+      Credentials for a <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection -- the only
       <a href="#jonline-AIModelProvider"><code>AIModelProvider.provider</code></a> variant currently accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image generation/editing via Gemini's Interactions API (<code>ai.google.dev/gemini-api/docs/image-generation</code>),
+      Used for image generation/editing via Gemini's <a href="https://ai.google.dev/gemini-api/docs/image-generation">Interactions API</a>,
       e.g. to generate/edit Event posters from an Event's own content -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
@@ -7682,10 +7817,10 @@ Instagram account</strong>. Unlike <a href="#jonline-FacebookPage"><code>Faceboo
     <p><a name="jonline-OpenAICredentials"></a></p>
     <h3 id="openaicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#openaicredentials"><span class="octicon octicon-link"></span></a>OpenAICredentials</h3>
     <p>
-      Credentials for an OpenAI API connection, accepted by
+      Credentials for an <a href="https://platform.openai.com/docs/api-reference">OpenAI API</a> connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image generation/editing via OpenAI's Images API (<code>platform.openai.com/docs/guides/image-generation</code>,
-      the GPT Image model family) -- same use case as <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>, see
+      Used for image generation/editing via OpenAI's <a href="https://platform.openai.com/docs/guides/image-generation">Images API</a>
+      (the GPT Image model family) -- same use case as <a href="#jonline-GeminiCredentials"><code>GeminiCredentials</code></a>, see
       <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>

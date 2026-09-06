@@ -64,7 +64,7 @@ export const AuthorInfo = ({
       authorOnPress?.(event);
     }
   }
-  const avatarUrl = useMediaUrl(author?.avatar?.id, accountOrServer);
+  const avatarUrl = useMediaUrl(author?.avatar, accountOrServer);
   const avatarSize = mediaQuery.gtXs
     ? shrink ? 30 : 50
     : shrink ? 18 : 26;

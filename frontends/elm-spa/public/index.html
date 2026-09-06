@@ -336,7 +336,7 @@
     // runtime), which is what makes browsers -- especially mobile Safari -- reliably allow the
     // popup at all. Loading a third-party SDK first would introduce an async gap between the
     // click and the popup call, and popups opened after that gap get silently blocked on some
-    // browsers. `redirectUri` points at our own tiny static `facebook-callback.html` (same
+    // browsers. `redirectUri` points at our own tiny static `oauth-callback.html` (same
     // origin, no server round-trip) rather than Facebook's SDK-hosted proxy page -- shared by both
     // providers below, since it's the same static page either way.
     //
@@ -366,14 +366,83 @@
       return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     }
 
+    // Mastodon's PKCE `code_verifier` uses the stronger `S256` challenge method (unlike X's
+    // `plain`, see `facebookLoginPopup`'s own doc) -- computing it needs `crypto.subtle.digest`,
+    // which only ever returns a Promise, but Mastodon's flow already has to tolerate an async gap
+    // before it has anything to redirect to at all (see `mastodonAuthorizeUrl` below), so there's
+    // no synchronous-`window.open` constraint left to preserve by using the weaker method here.
+    function generateMastodonCodeChallenge() {
+      var bytes = new Uint8Array(48);
+      window.crypto.getRandomValues(bytes);
+      var binary = "";
+      for (var i = 0; i < bytes.length; i++) { binary += String.fromCharCode(bytes[i]); }
+      var codeVerifier = window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      return window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier)).then(function (digest) {
+        var digestBytes = new Uint8Array(digest);
+        var digestBinary = "";
+        for (var i = 0; i < digestBytes.length; i++) { digestBinary += String.fromCharCode(digestBytes[i]); }
+        var codeChallenge = window.btoa(digestBinary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        return { codeVerifier: codeVerifier, codeChallenge: codeChallenge };
+      });
+    }
+
+    // Dynamically self-registers a throwaway OAuth app on `instanceHost` (Mastodon's own
+    // `POST /api/v1/apps` -- no admin involvement needed, unlike `MastodonServer.appId`'s
+    // *optional* admin-pre-registered default). Returns a Promise of `{ clientId }` (or rejects
+    // with an Error) -- there's no synchronous path here at all, since registration itself is a
+    // network call. `clientId` is needed again at token-exchange time (see `mastodonExchangeCode`),
+    // not just to build the authorize URL, so it's returned rather than consumed here.
+    function mastodonRegisterApp(instanceHost, redirectUri) {
+      var body = new URLSearchParams();
+      body.set("client_name", "Jonline");
+      body.set("redirect_uris", redirectUri);
+      body.set("scopes", "read");
+      body.set("website", window.location.origin);
+      return fetch("https://" + instanceHost + "/api/v1/apps", { method: "POST", body: body })
+        .then(function (resp) {
+          if (!resp.ok) { throw new Error("Couldn't register with " + instanceHost + "."); }
+          return resp.json();
+        })
+        .then(function (app) {
+          return { clientId: app.client_id };
+        });
+    }
+
+    // Exchanges an authorization `code` for an access token directly against `instanceHost` --
+    // no `client_secret` at all, since `clientId` was registered fresh for this one login attempt
+    // (see `mastodonRegisterApp`) and the PKCE `codeVerifier` alone is what proves this exchange
+    // came from the same client that started the authorize request (the standard "public client"
+    // OAuth pattern -- there's no confidential secret to protect here in the first place, so
+    // nothing is lost by never sending one). Mirrors how `mastodonRegisterApp` never asks the
+    // Jonline server for anything either: this whole flow is between the browser and the Mastodon
+    // instance, no Jonline backend involved.
+    function mastodonExchangeCode(instanceHost, clientId, code, codeVerifier, redirectUri) {
+      var body = new URLSearchParams();
+      body.set("client_id", clientId);
+      body.set("grant_type", "authorization_code");
+      body.set("code", code);
+      body.set("redirect_uri", redirectUri);
+      body.set("code_verifier", codeVerifier);
+      return fetch("https://" + instanceHost + "/oauth/token", { method: "POST", body: body })
+        .then(function (resp) {
+          if (!resp.ok) { throw new Error("Couldn't finish connecting to " + instanceHost + "."); }
+          return resp.json();
+        })
+        .then(function (token) {
+          return token.access_token;
+        });
+    }
+
     app.ports.facebookLoginPopup.subscribe(function (payload) {
-      var redirectUri = window.location.origin + jonlineBasePath + "/facebook-callback.html";
+      var redirectUri = window.location.origin + jonlineBasePath + "/oauth-callback.html";
       var width = 600, height = 700;
       var left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
       var top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
 
       var dialogUrl;
       var xTwitterCodeVerifier = null;
+      var mastodonCodeVerifier = null;
+      var mastodonClientId = null;
       if (payload.provider === "threads") {
         dialogUrl = "https://threads.net/oauth/authorize" +
           "?client_id=" + encodeURIComponent(payload.appId) +
@@ -390,6 +459,10 @@
           "&state=jonline" +
           "&code_challenge=" + encodeURIComponent(xTwitterCodeVerifier) +
           "&code_challenge_method=plain";
+      } else if (payload.provider === "mastodon") {
+        // Left null here -- there's nothing to redirect to yet (see below); the popup opens blank
+        // and is navigated once registration/PKCE resolve.
+        dialogUrl = null;
       } else {
         dialogUrl = "https://www.facebook.com/v19.0/dialog/oauth" +
           "?client_id=" + encodeURIComponent(payload.appId) +
@@ -403,13 +476,13 @@
       }
 
       var popup = window.open(
-        dialogUrl,
-        "jonline-facebook-login",
+        dialogUrl || "",
+        "jonline-oauth-login",
         "width=" + width + ",height=" + height + ",left=" + left + ",top=" + top
       );
 
       if (!popup) {
-        app.ports.facebookLoginResult.send({ ok: false, value: "Couldn't open the Facebook login popup. Please allow popups for this site." });
+        app.ports.facebookLoginResult.send({ ok: false, value: "Couldn't open the login popup. Please allow popups for this site." });
         return;
       }
 
@@ -427,19 +500,59 @@
 
       function onMessage(e) {
         if (e.origin !== window.location.origin) { return; }
-        if (!e.data || e.data.source !== "jonline-facebook-login") { return; }
+        if (!e.data || e.data.source !== "jonline-oauth-login") { return; }
         settled = true;
         window.removeEventListener("message", onMessage);
         clearInterval(poll);
-        if (e.data.accessToken) {
+        if (!e.data.accessToken) {
+          app.ports.facebookLoginResult.send({ ok: false, value: e.data.error || "Login failed." });
+        } else if (payload.provider === "mastodon") {
+          // Unlike every other provider, `e.data.accessToken` here is still just the
+          // authorization `code` -- Mastodon's flow finishes the token exchange itself (see
+          // `mastodonExchangeCode`'s own doc on why that's safe with no `client_secret`), so Elm
+          // only ever sees a real, usable access token, the same as every other provider's result.
+          mastodonExchangeCode(payload.instanceHost, mastodonClientId, e.data.accessToken, mastodonCodeVerifier, redirectUri)
+            .then(function (accessToken) {
+              app.ports.facebookLoginResult.send({ ok: true, value: accessToken });
+            })
+            .catch(function (err) {
+              app.ports.facebookLoginResult.send({ ok: false, value: err.message || "Couldn't finish connecting." });
+            });
+        } else {
           var result = { ok: true, value: e.data.accessToken };
           if (xTwitterCodeVerifier) { result.codeVerifier = xTwitterCodeVerifier; }
           app.ports.facebookLoginResult.send(result);
-        } else {
-          app.ports.facebookLoginResult.send({ ok: false, value: e.data.error || "Facebook login failed." });
         }
       }
       window.addEventListener("message", onMessage);
+
+      if (payload.provider === "mastodon") {
+        generateMastodonCodeChallenge()
+          .then(function (pkce) {
+            mastodonCodeVerifier = pkce.codeVerifier;
+            return mastodonRegisterApp(payload.instanceHost, redirectUri).then(function (app) {
+              mastodonClientId = app.clientId;
+              return "https://" + payload.instanceHost + "/oauth/authorize" +
+                "?client_id=" + encodeURIComponent(app.clientId) +
+                "&redirect_uri=" + encodeURIComponent(redirectUri) +
+                "&response_type=code" +
+                "&scope=" + encodeURIComponent("read") +
+                "&code_challenge=" + encodeURIComponent(pkce.codeChallenge) +
+                "&code_challenge_method=S256";
+            });
+          })
+          .then(function (authorizeUrl) {
+            if (popup.closed) { return; }
+            popup.location.href = authorizeUrl;
+          })
+          .catch(function (err) {
+            settled = true;
+            window.removeEventListener("message", onMessage);
+            clearInterval(poll);
+            popup.close();
+            app.ports.facebookLoginResult.send({ ok: false, value: err.message || "Couldn't connect to that Mastodon instance." });
+          });
+      }
     });
 
     // See Ports.elm's scrollElementLeft doc comment: Browser.Dom.setViewportOf

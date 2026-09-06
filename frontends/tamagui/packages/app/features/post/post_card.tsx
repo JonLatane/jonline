@@ -260,7 +260,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   // const singleMediaPreview = showScrollableMediaPreviews
   //   ? undefined
   //   : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
-  const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
+  const previewUrl = useMediaUrl(imagePreview, accountOrServer);
 
   const showBackgroundPreview = !!imagePreview;// && hasBeenVisible;
 

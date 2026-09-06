@@ -336,7 +336,7 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                         ? CircleAvatar(
                             key: Key('avatar-${a.id}'),
                             backgroundImage:
-                                mediaImageProvider(a.user!.avatar.id)
+                                mediaImageProvider(a.user!.avatar)
                             // MemoryImage(Uint8List.fromList(a.user!.avatar)),
                             )
                         : const CircleAvatar(

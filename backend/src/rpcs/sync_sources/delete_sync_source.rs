@@ -6,7 +6,7 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::{events, sync_sources};
+use crate::schema::{event_instances, events, sync_sources};
 
 pub fn delete_sync_source(
     request: DeleteSyncSourceRequest,
@@ -41,6 +41,24 @@ pub fn delete_sync_source(
             .map_err(|e| {
                 log::error!(
                     "Failed to detach events synced from source {}: {:?}",
+                    existing.id,
+                    e
+                );
+                Status::new(Code::Internal, "failed_to_detach_synced_events")
+            })?;
+
+        // Must also detach event_instances' own (denormalized) sync_source_id -- it FK-references
+        // sync_sources and would otherwise block deleting the row below.
+        diesel::update(event_instances::table.filter(event_instances::sync_source_id.eq(existing.id)))
+            .set((
+                event_instances::sync_source_id.eq(None::<i64>),
+                event_instances::sync_source_uid.eq(None::<String>),
+                event_instances::sync_source_recurrence_anchor.eq(None::<std::time::SystemTime>),
+            ))
+            .execute(conn)
+            .map_err(|e| {
+                log::error!(
+                    "Failed to detach event instances synced from source {}: {:?}",
                     existing.id,
                     e
                 );

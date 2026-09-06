@@ -32,6 +32,11 @@ fn facebook_auth_request(
             app_id: app_id.to_string(),
             app_secret: app_secret.to_string(),
         }),
+        mastodon_servers: config
+            .federation_info
+            .as_ref()
+            .map(|f| f.mastodon_servers.clone())
+            .unwrap_or_default(),
         x_twitter_auth_config: config.federation_info.and_then(|f| f.x_twitter_auth_config),
     });
     config
@@ -110,6 +115,7 @@ fn setting_facebook_auth_config_to_none_clears_the_stored_secret() {
         clearing_config.federation_info = clearing_config.federation_info.map(|f| FederationInfo {
             servers: f.servers,
             facebook_auth_config: None,
+            mastodon_servers: f.mastodon_servers,
             x_twitter_auth_config: f.x_twitter_auth_config,
         });
         configure_server(clearing_config, &admin, conn).expect("clearing configure should succeed");
@@ -135,6 +141,11 @@ fn x_twitter_auth_request(
             .map(|f| f.servers.clone())
             .unwrap_or_default(),
         facebook_auth_config: config.federation_info.as_ref().and_then(|f| f.facebook_auth_config.clone()),
+        mastodon_servers: config
+            .federation_info
+            .as_ref()
+            .map(|f| f.mastodon_servers.clone())
+            .unwrap_or_default(),
         x_twitter_auth_config: Some(XTwitterAuthConfig {
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
@@ -216,6 +227,7 @@ fn setting_x_twitter_auth_config_to_none_clears_the_stored_secret() {
         clearing_config.federation_info = clearing_config.federation_info.map(|f| FederationInfo {
             servers: f.servers,
             facebook_auth_config: f.facebook_auth_config,
+            mastodon_servers: f.mastodon_servers,
             x_twitter_auth_config: None,
         });
         configure_server(clearing_config, &admin, conn).expect("clearing configure should succeed");

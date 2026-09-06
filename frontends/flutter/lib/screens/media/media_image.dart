@@ -1,19 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:jonline/jonline_state.dart';
 
+import '../../generated/media.pb.dart';
 import '../../models/jonline_server.dart';
 
+// [media] may be a bare media ID (fetched via `/media/{id}`) or a `Media`/`MediaReference`,
+// whose `url` (if set) is used directly instead -- used for media Jonline doesn't store
+// locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content.
 ImageProvider mediaImageProvider(
-  String mediaId, {
+  Object media, {
   String? serverOverride,
 }) {
-  return NetworkImage(mediaImageUrl(mediaId, serverOverride: serverOverride));
+  return NetworkImage(mediaImageUrl(media, serverOverride: serverOverride));
 }
 
 String mediaImageUrl(
-  String mediaId, {
+  Object media, {
   String? serverOverride,
 }) {
+  final String? url = media is MediaReference
+      ? (media.hasUrl() ? media.url : null)
+      : media is Media
+          ? (media.hasUrl() ? media.url : null)
+          : null;
+  if (url != null && url.isNotEmpty) {
+    return url;
+  }
+  final String mediaId = media is MediaReference
+      ? media.id
+      : media is Media
+          ? media.id
+          : media as String;
   final String server = serverOverride ?? JonlineServer.selectedServer.server;
 
   // TODO: use auth token
@@ -22,14 +39,14 @@ String mediaImageUrl(
 }
 
 class MediaImage extends StatefulWidget {
-  final String? mediaId;
+  final Object? media;
   final BoxFit? fit;
   final Alignment? alignment;
   final String? serverOverride;
 
   const MediaImage(
       {Key? key,
-      required this.mediaId,
+      required this.media,
       this.fit,
       this.alignment,
       this.serverOverride})
@@ -42,13 +59,11 @@ class MediaImage extends StatefulWidget {
 class MediaImageState extends JonlineBaseState<MediaImage> {
   @override
   Widget build(BuildContext context) {
-    final String server =
-        widget.serverOverride ?? JonlineServer.selectedServer.server;
-    if (widget.mediaId == null) {
+    if (widget.media == null) {
       return const SizedBox();
     }
-    final protocol = server == 'localhost' ? 'http' : 'https';
-    return Image.network("$protocol://$server/media/${widget.mediaId}",
+    return Image.network(
+        mediaImageUrl(widget.media!, serverOverride: widget.serverOverride),
         fit: widget.fit ?? BoxFit.fitWidth,
         alignment: widget.alignment ?? Alignment.topLeft);
   }
