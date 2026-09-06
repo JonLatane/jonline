@@ -518,7 +518,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </ul>
       </li>
     </ul>
-    <h4 id="trans-protocol-federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#trans-protocol-federation"><span class="octicon octicon-link"></span></a>Trans-Protocol Federation</h4>
+    <h4 id="cross-protocol-federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#cross-protocol-federation"><span class="octicon octicon-link"></span></a>Cross-Protocol Federation</h4>
     <p>
       Jonline clients can translate content from other federated protocols into the same
       <a href="#jonline-Post"><code>Post</code></a>/<a href="#jonline-Author"><code>Author</code></a> shapes used everywhere else in the app --
@@ -656,6 +656,28 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <code>servers</code> (repeated <a href="#jonline-FederatedServer"><code>FederatedServer</code></a>) recommends other Jonline hosts to clients,
       each optionally <code>configured_by_default</code> (client should enable/configure it automatically) and/or
       <code>pinned_by_default</code> (client should pin its Events/Posts alongside the "main" server's).
+    </p>
+    <h6 id="mastodonactivitypub-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub-servers"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub servers</h6>
+    <p>
+      <code>mastodon_servers</code> (repeated <a href="#jonline-MastodonServer"><code>MastodonServer</code></a>) plays a similar role to
+      <code>servers</code> above, but for Mastodon instances instead of other Jonline servers -- see
+      <a href="#cross-protocol-federation">Cross-Protocol Federation</a> for the client-side feature this backs.
+      Unlike a real <code>FederatedServer</code>, though, an entry here is <em>not</em> required just to browse an
+      instance's public timeline read-only -- that's already a public, unauthenticated Mastodon REST
+      endpoint any client can call directly. It's only needed to let a user <em>connect their own</em>
+      Mastodon account (OAuth + PKCE), since Mastodon has no single central OAuth authority the way
+      Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
+      app (<code>app_id</code>/<code>app_secret</code>, the latter <em>never</em> serialized to the client) on each instance
+      individually before its users can connect. <code>configured_by_default</code>/<code>pinned_by_default</code> mirror
+      <code>FederatedServer</code>'s own fields, but govern that anonymous browsing instead: whether clients should
+      auto-add the instance to their browsed list the first time they visit this server, not whether an
+      account gets auto-connected (that always requires the user's own explicit OAuth consent).
+    </p>
+    <p>
+      A Mastodon instance functions like a much thinner version of a federated Jonline server in the
+      UI: its public posts appear in the same multi-server feed, translated into Jonline's own
+      <a href="#jonline-Post"><code>Post</code></a> shape, but it has no equivalent of Jonline's Events, Groups, Media
+      library, or People/Follows -- just posts and their authors.
     </p>
     <h6 id="facebook-api-keys"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook-api-keys"><span class="octicon octicon-link"></span></a>Facebook API Keys</h6>
     <p>

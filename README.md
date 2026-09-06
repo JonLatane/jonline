@@ -217,7 +217,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
   - [Federation \& Synchronization Features](#federation--synchronization-features)
     - [Inter-Server Federation](#inter-server-federation)
       - [Federated Servers](#federated-servers)
-      - [Trans-Protocol Federation](#trans-protocol-federation)
+      - [Cross-Protocol Federation](#cross-protocol-federation)
         - [Mastodon/ActivityPub](#mastodonactivitypub)
         - [BlueSky/AT Protocol](#blueskyat-protocol)
       - [Federated Profiles](#federated-profiles)
@@ -329,7 +329,7 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 
 Bluesky's AT Protocol looks architecturally nothing like Jonline (or ActivityPub, for that matter): identity and data live on independent Personal Data Servers (PDSes), which get crawled by Relays into a global firehose, which is then indexed and ranked into feeds by separate AppViews (Bluesky's own app being just one of potentially many). Nothing in Jonline has an equivalent of this data/aggregation/ranking split -- a Jonline server is identity, storage, and API all in one, much closer to a Mastodon instance (or a plain web app) than to a PDS.
 
-Jonline's [Trans-Protocol Federation](#trans-protocol-federation) reads Bluesky content by simply calling the same public AT Protocol endpoints (`com.atproto.server.createSession`, `app.bsky.feed.getTimeline`) any Bluesky client would, translated client-side into Jonline's `Post` shape -- it doesn't, and doesn't need to, participate in the PDS/Relay/AppView network itself.
+Jonline's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky content by simply calling the same public AT Protocol endpoints (`com.atproto.server.createSession`, `app.bsky.feed.getTimeline`) any Bluesky client would, translated client-side into Jonline's `Post` shape -- it doesn't, and doesn't need to, participate in the PDS/Relay/AppView network itself.
 
 ### Why *not* Jonline?
 
@@ -341,13 +341,13 @@ Jonline's [Trans-Protocol Federation](#trans-protocol-federation) reads Bluesky 
 
 ### Inter-Server Federation
 
-Whereas ActivityPub servers federate by pushing Activities directly to each other's inboxes (authenticated via HTTP Signatures), and Bluesky (AT Protocol) federates via independent Personal Data Servers that get crawled by Relays and re-indexed by AppViews, two Jonline servers never talk to each other at all. A server only ever *recommends* other servers by hostname; it's always the client that calls each recommended server's own client-facing API directly and merges the results -- see [Federated Servers](#federated-servers) below, and [Trans-Protocol Federation](#trans-protocol-federation), which reads Mastodon/Bluesky content into a Jonline client the exact same way. The one place Jonline's own backend does initiate server-to-server calls is [Sync Destinations](#sync-destinations) -- pushing a user's own content *out* to other platforms on their behalf, which needs the server (not a browser tab) to hold onto that user's long-lived credentials for those platforms.
+Whereas ActivityPub servers federate by pushing Activities directly to each other's inboxes (authenticated via HTTP Signatures), and Bluesky (AT Protocol) federates via independent Personal Data Servers that get crawled by Relays and re-indexed by AppViews, two Jonline servers never talk to each other at all. A server only ever *recommends* other servers by hostname; it's always the client that calls each recommended server's own client-facing API directly and merges the results -- see [Federated Servers](#federated-servers) below, and [Cross-Protocol Federation](#cross-protocol-federation), which reads Mastodon/Bluesky content into a Jonline client the exact same way. The one place Jonline's own backend does initiate server-to-server calls is [Sync Destinations](#sync-destinations) -- pushing a user's own content *out* to other platforms on their behalf, which needs the server (not a browser tab) to hold onto that user's long-lived credentials for those platforms.
 
 #### Federated Servers
 
 Jonline servers can recommend other servers to clients via the `federation_info` field (a [`FederationInfo` message](https://jonline.io/docs/protocol#jonline-FederationInfo)) in [`ServerConfiguration`](https://jonline.io/docs/protocol#jonline-ServerConfiguration). Clients can use this information to discover other servers, or users can add new servers manually. Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data unless you explicitly allow it.
 
-#### Trans-Protocol Federation
+#### Cross-Protocol Federation
 
 Jonline can also translate content *from* other federated protocols into its own [`Post`](https://jonline.io/docs/protocol#jonline-Post) model, entirely client-side -- no Jonline server ever proxies or bridges this data, it's the same "client does the merging" pattern as [Federated Servers](#federated-servers) above, just reaching across a protocol boundary instead of a Jonline-to-Jonline one. It's also one-directional (reading in, not posting out) -- publishing a Jonline Post *to* Mastodon or Bluesky is instead handled by [Sync Destinations](#sync-destinations).
 
@@ -357,7 +357,7 @@ Any Mastodon instance's local public timeline can be browsed with no account or 
 
 ##### BlueSky/AT Protocol
 
-Unlike Mastodon, AT Protocol has no "local instance timeline" concept a client could browse anonymously -- every Personal Data Server only ever serves its own users' own data. So Bluesky trans-protocol federation always requires a connected account: a handle plus an [App Password](https://bsky.app/settings/app-passwords) (not OAuth -- Bluesky has no per-app registration step the way Mastodon/Facebook/X do), showing that account's own home timeline rather than a public firehose.
+Unlike Mastodon, AT Protocol has no "local instance timeline" concept a client could browse anonymously -- every Personal Data Server only ever serves its own users' own data. So Bluesky cross-protocol federation always requires a connected account: a handle plus an [App Password](https://bsky.app/settings/app-passwords) (not OAuth -- Bluesky has no per-app registration step the way Mastodon/Facebook/X do), showing that account's own home timeline rather than a public firehose.
 
 #### Federated Profiles
 
@@ -543,7 +543,7 @@ If you want these features prioritized, or have ideas about how they would fit i
 
 ### Delightful Federation
 
-A key thing that separates Jonline from Mastodon and other Fediverse projects is that its servers never talk to each other directly at all -- there's no server-to-server delivery protocol. Instead, a server only *recommends* other servers by hostname (a [protocol-defined federated server](https://jonline.io/docs/protocol#federated-servers)), and it's the client -- e.g. your browser, loading [jonline.io](https://jonline.io) -- that calls each recommended server's API directly and merges in its posts and events, such as [bullcity.social](https://bullcity.social)'s and [oakcity.social](https://oakcity.social)'s. That's exactly why CORS is the relevant safeguard here, not server-side access control: bullcity.social and oakcity.social admins can always lock down their own CORS policy to control which other origins (i.e. other Jonline UIs) are allowed to pull their public data this way. [Trans-Protocol Federation](https://jonline.io/docs/protocol#trans-protocol-federation) is this same idea taken one step further: a Jonline client reads Mastodon and BlueSky content directly from those platforms' own public APIs and translates it into the same `Post` shape, again with no Jonline server acting as a bridge or proxy. (The one place a Jonline server *does* itself talk to another server on a user's behalf is [Sync Destinations](https://jonline.io/docs/protocol#sync-destinations) -- pushing that user's own content *out* to Facebook, Mastodon, Bluesky, etc.)
+A key thing that separates Jonline from Mastodon and other Fediverse projects is that its servers never talk to each other directly at all -- there's no server-to-server delivery protocol. Instead, a server only *recommends* other servers by hostname (a [protocol-defined federated server](https://jonline.io/docs/protocol#federated-servers)), and it's the client -- e.g. your browser, loading [jonline.io](https://jonline.io) -- that calls each recommended server's API directly and merges in its posts and events, such as [bullcity.social](https://bullcity.social)'s and [oakcity.social](https://oakcity.social)'s. That's exactly why CORS is the relevant safeguard here, not server-side access control: bullcity.social and oakcity.social admins can always lock down their own CORS policy to control which other origins (i.e. other Jonline UIs) are allowed to pull their public data this way. [Cross-Protocol Federation](https://jonline.io/docs/protocol#cross-protocol-federation) is this same idea taken one step further: a Jonline client reads Mastodon and BlueSky content directly from those platforms' own public APIs and translates it into the same `Post` shape, again with no Jonline server acting as a bridge or proxy. (The one place a Jonline server *does* itself talk to another server on a user's behalf is [Sync Destinations](https://jonline.io/docs/protocol#sync-destinations) -- pushing that user's own content *out* to Facebook, Mastodon, Bluesky, etc.)
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 

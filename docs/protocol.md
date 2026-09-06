@@ -206,7 +206,7 @@ Jonline servers interact across several ports:
      * Port 27705 is an unsecured HTTP server meant for communication with other non-web facing services on your computer or in your cluster. It should not be exposed to the web.
          * Currently this just has an `/email` endpoint. It is designed for [email/SMTP support via an integration with Stalwart](https://github.com/JonLatane/jonline/tree/main/deploys/email).
 
-#### Trans-Protocol Federation
+#### Cross-Protocol Federation
 Jonline clients can translate content from other federated protocols into the same
 [`Post`](#jonline-Post)/[`Author`](#jonline-Author) shapes used everywhere else in the app --
 entirely client-side, with no RPCs of their own. The server&#39;s only role is admin configuration:
@@ -326,6 +326,26 @@ credentials live.
 `servers` (repeated [`FederatedServer`](#jonline-FederatedServer)) recommends other Jonline hosts to clients,
 each optionally `configured_by_default` (client should enable/configure it automatically) and/or
 `pinned_by_default` (client should pin its Events/Posts alongside the &#34;main&#34; server&#39;s).
+
+###### Mastodon/ActivityPub servers
+`mastodon_servers` (repeated [`MastodonServer`](#jonline-MastodonServer)) plays a similar role to
+`servers` above, but for Mastodon instances instead of other Jonline servers -- see
+[Cross-Protocol Federation](#cross-protocol-federation) for the client-side feature this backs.
+Unlike a real `FederatedServer`, though, an entry here is *not* required just to browse an
+instance&#39;s public timeline read-only -- that&#39;s already a public, unauthenticated Mastodon REST
+endpoint any client can call directly. It&#39;s only needed to let a user *connect their own*
+Mastodon account (OAuth &#43; PKCE), since Mastodon has no single central OAuth authority the way
+Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
+app (`app_id`/`app_secret`, the latter *never* serialized to the client) on each instance
+individually before its users can connect. `configured_by_default`/`pinned_by_default` mirror
+`FederatedServer`&#39;s own fields, but govern that anonymous browsing instead: whether clients should
+auto-add the instance to their browsed list the first time they visit this server, not whether an
+account gets auto-connected (that always requires the user&#39;s own explicit OAuth consent).
+
+A Mastodon instance functions like a much thinner version of a federated Jonline server in the
+UI: its public posts appear in the same multi-server feed, translated into Jonline&#39;s own
+[`Post`](#jonline-Post) shape, but it has no equivalent of Jonline&#39;s Events, Groups, Media
+library, or People/Follows -- just posts and their authors.
 
 ###### Facebook API Keys
 `facebook_auth_config` (a [`FacebookAuthConfig`](#jonline-FacebookAuthConfig), `app_id`/`app_secret`) registers
