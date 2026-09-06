@@ -30,10 +30,10 @@ Rellm's BE uses [Tonic](https://github.com/hyperium/tonic), which uses [Prost](h
 
 ## Build and release management
 Most of the high-level Rellm backend build management lives in `../Makefile`.
-For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.rellm](https://getj.online):
+For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.jonline](https://getj.online):
 
 ```bash
-make release_be_cloud update_external_backend && NAMESPACE=getrellm make update_external_backend && say 'deploy complete'
+make release_be_cloud update_external_backend && NAMESPACE=getjonline make update_external_backend && say 'deploy complete'
 ```
 
 As an end user, once you've set up per the quick setup, you can simply run this to apply updates:
