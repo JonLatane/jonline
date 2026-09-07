@@ -21,7 +21,7 @@ on:
       CLOUDFLARE_TOKEN:
         description: "Cloudflare API token for CD"
         required: true
-      CLOUDFLARE_ZONE_RELLMIO:
+      CLOUDFLARE_ZONE_JONLINEIO:
         description: "Cloudflare Zone ID for Jonline.io"
         required: true
       CLOUDFLARE_ZONE_BULLCITY_SOCIAL:
@@ -798,7 +798,7 @@ jobs:
 
       - name: Purge Cloudflare cache
         env:
-          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_RELLMIO }}
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
         run: .github/workflows/scripts/purge_cloudflare_cache.sh jonline.io
 
