@@ -551,7 +551,7 @@ A key thing that separates Rellm from Mastodon and other Fediverse projects is t
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/rellm/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 
-This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https%3Abullcity.social?tab=federation) - literally nothing but a list of hosts.
+This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https:bullcity.social?tab=federation) - literally nothing but a list of hosts.
 
 ### Protocol Documentation
 

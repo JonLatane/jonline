@@ -224,6 +224,7 @@ delete_backend_postgres_old_data:
 
 # K8s Minio deployment targets (optional if using managed S3/Minio)
 create_backend_minio: deploy_ensure_namespace deploy_ensure_storageclass_retain
+	kubectl create -f k8s/k8s-minio-pvc-$(K8S_PROVIDER).yaml --save-config -n $(NAMESPACE)
 	kubectl create -f k8s/k8s-minio-$(K8S_PROVIDER).yaml --save-config -n $(NAMESPACE)
 
 update_backend_minio:
@@ -232,8 +233,17 @@ update_backend_minio:
 delete_backend_minio:
 	- kubectl delete -f k8s/k8s-minio-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
 
+# Separate from delete_backend_minio since it's rarely wanted: releases the PVC (data itself
+# is safe either way, since the PV's reclaimPolicy is Retain -- see storageclass-retain-*.yaml --
+# but this makes the volume unbound/orphaned from any PVC until manually reclaimed).
+delete_backend_minio_pvc:
+	- kubectl delete -f k8s/k8s-minio-pvc-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
+
 restart_backend_minio:
 	kubectl rollout restart statefulset rellm-minio -n $(NAMESPACE)
+
+wait_backend_minio_ready:
+	kubectl wait --for=condition=ready pod/rellm-minio-0 -n $(NAMESPACE) --timeout=2m
 
 # Useful things
 deploy_ensure_namespace:

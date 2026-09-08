@@ -1,3 +1,6 @@
+# The PVC (minio-pv-claim) lives in the sibling k8s-minio-pvc-$(K8S_PROVIDER).yaml, not
+# here -- see that file for why. create_backend_minio applies both; update_backend_minio
+# only applies this one.
 apiVersion: v1
 kind: Service
 metadata:
@@ -49,17 +52,3 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: "/storage"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    app: minio
-  name: minio-pv-claim
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-  storageClassName: do-block-storage-retain
