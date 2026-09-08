@@ -1,19 +1,19 @@
-import 'package:jonline/models/jonline_account_operations.dart';
-import 'package:jonline/utils/proto_utils.dart';
+import 'package:rellm/models/rellm_account_operations.dart';
+import 'package:rellm/utils/proto_utils.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pb.dart' as vm;
 import '../../generated/visibility_moderation.pbenum.dart';
-import '../jonline_account.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_clients.dart';
 
 createDemoGroups(
-    JonlineAccount account, Function(String) showSnackBar, AppState appState,
+    RellmAccount account, Function(String) showSnackBar, AppState appState,
     {bool randomizePosts = false}) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -25,8 +25,8 @@ createDemoGroups(
 }
 
 Future<Map<DemoGroup, Group>> getExistingDemoGroups(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState) async {
   final existingGroups = await client.getGroups(GetGroupsRequest(),
@@ -43,8 +43,8 @@ Future<Map<DemoGroup, Group>> getExistingDemoGroups(
 }
 
 Future<Map<DemoGroup, Group>> generateDemoGroups(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState) async {
   final existingGroups = await client.getGroups(GetGroupsRequest(),

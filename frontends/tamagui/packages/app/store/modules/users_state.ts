@@ -1,4 +1,4 @@
-import { Follow, User } from "@jonline/api";
+import { Follow, User } from "@rellm/api";
 import {
   Dictionary,
   EntityAdapter,

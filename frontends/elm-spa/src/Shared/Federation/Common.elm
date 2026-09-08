@@ -1,6 +1,6 @@
 module Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 
-{-| Small helpers shared across Jonline's federation-protocol integrations -- currently
+{-| Small helpers shared across Rellm's federation-protocol integrations -- currently
 `Shared.Federation.Mastodon`/`Bluesky`'s own post-fetching, and `Shared.AccountsPanel`'s Mastodon/
 Bluesky account-connection tasks. Not meant to grow into a general-purpose utils module, just a home
 for the bits those would otherwise each duplicate.

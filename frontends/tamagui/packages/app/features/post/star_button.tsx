@@ -1,10 +1,10 @@
-import { FederatedPost, JonlineServer, getCachedServerClient, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
+import { FederatedPost, RellmServer, getCachedServerClient, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
 import React, { useCallback, useEffect } from "react";
 
-import { Button, Paragraph, Spinner, XStack, YStack, ZStack, useDebounceValue, useToastController } from '@jonline/ui';
+import { Button, Paragraph, Spinner, XStack, YStack, ZStack, useDebounceValue, useToastController } from '@rellm/ui';
 import { Star } from "@tamagui/lucide-icons";
 
-import { PostContext } from "@jonline/api";
+import { PostContext } from "@rellm/api";
 import { useAppSelector } from "app/hooks";
 import { federatedId, parseFederatedId } from 'app/store/federation';
 import moment from "moment";
@@ -139,7 +139,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
 
 export type ThemedStarProps = {
   starred: boolean;
-  server?: JonlineServer;
+  server?: RellmServer;
   invertColors?: boolean;
 };
 

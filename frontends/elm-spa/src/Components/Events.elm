@@ -24,7 +24,7 @@ module Components.Events exposing
     , updateEventInstances
     )
 
-{-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
+{-| Shared building blocks for displaying `Proto.Rellm.Event`s/`EventInstance`s
 -- used by `Pages.Event.PostId_` (a single-instance detail view: building a
 `GetEvents` request scoped to a single `EventInstance`'s own `Post` id via
 `Shared.MaybeAccountRequest`, parsing/building the `/event/:postId` route's
@@ -44,10 +44,10 @@ import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
-import Proto.Jonline exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultPost, defaultTimeFilter)
-import Proto.Jonline.EventListingType exposing (EventListingType(..))
-import Proto.Jonline.SyncSource.Configuration as SyncSourceConfiguration
-import Proto.Jonline.Jonline as Jonline
+import Proto.Rellm exposing (Event, EventInstance, GetEventsRequest, GetEventsResponse, Location, Post, SyncDestination, defaultEvent, defaultGetEventsRequest, defaultPost, defaultTimeFilter)
+import Proto.Rellm.EventListingType exposing (EventListingType(..))
+import Proto.Rellm.SyncSource.Configuration as SyncSourceConfiguration
+import Proto.Rellm.Rellm as Rellm
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
 import Shared.Time as SharedTime
@@ -74,7 +74,7 @@ fetchEvent accountsPanelModel maybeAccountServer eventInstancePostId =
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getEvents { defaultGetEventsRequest | postId = Just eventInstancePostId }
+            Grpc.new Rellm.getEvents { defaultGetEventsRequest | postId = Just eventInstancePostId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -99,7 +99,7 @@ deleteEvent accountsPanelModel maybeAccountServer eventPostId =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteEvent { defaultEvent | post = Just { defaultPost | id = eventPostId } }
+            Grpc.new Rellm.deleteEvent { defaultEvent | post = Just { defaultPost | id = eventPostId } }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -124,7 +124,7 @@ syncEventInstance accountsPanelModel maybeAccountServer eventInstanceId syncDest
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.syncEventInstance
+            Grpc.new Rellm.syncEventInstance
                 { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
@@ -151,7 +151,7 @@ deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventIn
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteEventInstanceSyncDestination
+            Grpc.new Rellm.deleteEventInstanceSyncDestination
                 { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
@@ -185,7 +185,7 @@ updateEventInstances accountsPanelModel maybeAccountServer event =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.updateEventInstances event
+            Grpc.new Rellm.updateEventInstances event
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -212,7 +212,7 @@ createNewEventInstances accountsPanelModel maybeAccountServer event =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.createNewEventInstances event
+            Grpc.new Rellm.createNewEventInstances event
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -238,7 +238,7 @@ deleteRemovedEventInstances accountsPanelModel maybeAccountServer event =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteRemovedEventInstances event
+            Grpc.new Rellm.deleteRemovedEventInstances event
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -307,7 +307,7 @@ fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAf
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getEvents request
+            Grpc.new Rellm.getEvents request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -341,7 +341,7 @@ fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer instancePostI
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getEvents { defaultGetEventsRequest | eventInstancePostIds = instancePostIds }
+            Grpc.new Rellm.getEvents { defaultGetEventsRequest | eventInstancePostIds = instancePostIds }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask

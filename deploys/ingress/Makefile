@@ -56,7 +56,7 @@ get_ingress_external_ip:
 # Suppress echoing this so `make get_ingress_external_ip` is easily composable.
 	@kubectl get service traefik -n $(INGRESS_NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
-# Per-domain routes. NAMESPACE is the existing namespace your `jonline`
+# Per-domain routes. NAMESPACE is the existing namespace your `rellm`
 # backend/DB/certs already live in (see ../README.md); DOMAIN is that
 # backend's public hostname. Both are required -- there are no defaults.
 #
@@ -74,24 +74,24 @@ get_ingress_external_ip:
 HOST_MATCH := $(shell printf '%s\n' $(DOMAIN) $(EXTRA_DOMAINS) | sed 's/.*/Host(`&`)/' | paste -sd'~' - | sed 's/~/ || /g')
 SNI_MATCH := $(shell printf '%s\n' $(DOMAIN) $(EXTRA_DOMAINS) | sed 's/.*/HostSNI(`&`)/' | paste -sd'~' - | sed 's/~/ || /g')
 
-k8s/jonline-routes.$(NAMESPACE).generated.yaml: k8s/jonline-routes.template.yaml
+k8s/rellm-routes.$(NAMESPACE).generated.yaml: k8s/rellm-routes.template.yaml
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social.example.com make add_ingress_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social.example.com make add_ingress_domain" && exit 1)
-	cat k8s/jonline-routes.template.yaml | \
+	cat k8s/rellm-routes.template.yaml | \
 	  sed -e 's/$${HOST_MATCH}/$(HOST_MATCH)/g' -e 's/$${SNI_MATCH}/$(SNI_MATCH)/g' \
-	  > k8s/jonline-routes.$(NAMESPACE).generated.yaml
+	  > k8s/rellm-routes.$(NAMESPACE).generated.yaml
 
-add_ingress_domain: k8s/jonline-routes.$(NAMESPACE).generated.yaml
-	kubectl apply -f k8s/jonline-routes.$(NAMESPACE).generated.yaml -n $(NAMESPACE)
+add_ingress_domain: k8s/rellm-routes.$(NAMESPACE).generated.yaml
+	kubectl apply -f k8s/rellm-routes.$(NAMESPACE).generated.yaml -n $(NAMESPACE)
 
-remove_ingress_domain: k8s/jonline-routes.$(NAMESPACE).generated.yaml
-	kubectl delete -f k8s/jonline-routes.$(NAMESPACE).generated.yaml -n $(NAMESPACE)
-	rm k8s/jonline-routes.$(NAMESPACE).generated.yaml
+remove_ingress_domain: k8s/rellm-routes.$(NAMESPACE).generated.yaml
+	kubectl delete -f k8s/rellm-routes.$(NAMESPACE).generated.yaml -n $(NAMESPACE)
+	rm k8s/rellm-routes.$(NAMESPACE).generated.yaml
 
 # Lists every namespace currently wired up to the shared ingress, straight
 # from the cluster (not from local *.generated.yaml files, which are
 # per-machine and gitignored, so they're not a reliable inventory).
 list_ingress_domains:
 	@kubectl get ingressroute -A -o json | \
-	  jq -r '.items[] | select(.metadata.name == "jonline-http") | "\(.metadata.namespace): \(.spec.routes[0].match)"' | \
+	  jq -r '.items[] | select(.metadata.name == "rellm-http") | "\(.metadata.namespace): \(.spec.routes[0].match)"' | \
 	  sed -E 's/Host\(//g; s/\)//g' | tr -d '`'

@@ -9,13 +9,13 @@
 # Run create_email_admin_secret (below) FIRST if you want add_email_domain/etc. to work --
 # Stalwart's Deployment picks up STALWART_RECOVERY_ADMIN from that Secret on first boot only.
 create_email:
-	kubectl create -f k8s/stalwart.yaml --save-config -n jonline-email
+	kubectl create -f k8s/stalwart.yaml --save-config -n rellm-email
 update_email:
-	kubectl apply -f k8s/stalwart.yaml -n jonline-email
+	kubectl apply -f k8s/stalwart.yaml -n rellm-email
 restart_email:
-	kubectl rollout restart deployment stalwart -n jonline-email
+	kubectl rollout restart deployment stalwart -n rellm-email
 remove_email:
-	kubectl delete -f k8s/stalwart.yaml -n jonline-email
+	kubectl delete -f k8s/stalwart.yaml -n rellm-email
 
 # create_email_admin_secret: pre-codes Stalwart's initial admin credentials into a Secret instead
 # of hunting a random one-time password out of `kubectl logs` (see k8s/stalwart.yaml's
@@ -29,8 +29,8 @@ remove_email:
 ADMIN_USER ?= admin
 create_email_admin_secret:
 	@test -n "$(ADMIN_PASSWORD)" || (echo "ADMIN_PASSWORD is required, e.g. ADMIN_USER=admin ADMIN_PASSWORD=correct-horse-battery-staple make create_email_admin_secret" && exit 1)
-	kubectl create namespace jonline-email --dry-run=client -o yaml | kubectl apply -f -
-	kubectl create secret generic stalwart-admin -n jonline-email \
+	kubectl create namespace rellm-email --dry-run=client -o yaml | kubectl apply -f -
+	kubectl create secret generic stalwart-admin -n rellm-email \
 	  --from-literal=credentials="$(ADMIN_USER):$(ADMIN_PASSWORD)" \
 	  --dry-run=client -o yaml | kubectl apply -f -
 
@@ -41,14 +41,14 @@ deploy_email_get_ip:
 	@$(MAKE) -C ../ingress get_ingress_external_ip
 
 deploy_email_restart:
-	kubectl rollout restart deployment stalwart -n jonline-email
+	kubectl rollout restart deployment stalwart -n rellm-email
 deploy_email_monitor_rollout:
-	kubectl rollout status deployment/stalwart -n jonline-email --timeout 2m
+	kubectl rollout status deployment/stalwart -n rellm-email --timeout 2m
 
 # Reaches the setup wizard / admin UI at http://localhost:8080 -- this is *never* exposed
 # publicly (see k8s/stalwart.yaml), so this is the only way in.
 deploy_email_admin_port_forward:
-	kubectl port-forward service/stalwart-admin -n jonline-email 8080:8080
+	kubectl port-forward service/stalwart-admin -n rellm-email 8080:8080
 
 # Dev ergonomics counterpart to the above -- kills any matching port-forward, whether it was
 # started by hand or by add_email_domain's self-managed background one below. No-ops cleanly if
@@ -75,8 +75,8 @@ deploy_email_admin_stop_port_forwarding:
 # background just for the duration of the call and stops it again afterward (only if it started
 # it -- an existing port-forward from another terminal is left running).
 STALWART_ADMIN_URL ?= http://localhost:8080/jmap
-stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n jonline-email -o jsonpath='{.data.credentials}' | base64 -d)
-stalwart_port_forward_pattern = port-forward service/stalwart-admin -n jonline-email
+stalwart_admin_auth = $$(kubectl get secret stalwart-admin -n rellm-email -o jsonpath='{.data.credentials}' | base64 -d)
+stalwart_port_forward_pattern = port-forward service/stalwart-admin -n rellm-email
 
 add_email_domain:
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social make add_email_domain" && exit 1)
@@ -97,7 +97,7 @@ add_email_domain:
 	    exit 1; \
 	  fi; \
 	fi; \
-	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
+	hurl="http://rellm.$(NAMESPACE).svc.cluster.local:27705/email"; \
 	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
 	did="$$(printf '%s\n' "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id' | head -1)"; \
 	hid="$$(printf '%s\n' "$$resp" | jq -r --arg u "$$hurl" '.methodResponses[1][1].list[] | select(.url==$$u) | .id' | head -1)"; \
@@ -135,7 +135,7 @@ remove_email_domain:
 	fi; \
 	resp="$$(jq -n '{using: ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"], methodCalls: [["x:Domain/get", {ids: null}, "c1"], ["x:MtaHook/get", {ids: null}, "c2"], ["x:DkimSignature/get", {ids: null}, "c3"]]}' | curl -sf -u "$(stalwart_admin_auth)" -H 'Content-Type: application/json' --data @- $(STALWART_ADMIN_URL))"; \
 	did="$$(printf '%s\n' "$$resp" | jq -r --arg d "$(DOMAIN)" '.methodResponses[0][1].list[] | select(.name==$$d) | .id')"; \
-	hurl="http://jonline.$(NAMESPACE).svc.cluster.local:27705/email"; \
+	hurl="http://rellm.$(NAMESPACE).svc.cluster.local:27705/email"; \
 	hids="$$(printf '%s\n' "$$resp" | jq -c --arg u "$$hurl" '[.methodResponses[1][1].list[] | select(.url==$$u) | .id]')"; \
 	kids="$$(printf '%s\n' "$$resp" | jq -c --arg did "$$did" '[.methodResponses[2][1].list[] | select(.domainId==$$did) | .id]')"; \
 	rc=0; \

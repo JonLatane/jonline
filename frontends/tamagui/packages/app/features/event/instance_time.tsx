@@ -1,8 +1,8 @@
 import { FederatedEvent, IdentifiedEventInstance, federateId, useServerTheme } from "app/store";
 import React from "react";
 
-import { Group } from "@jonline/api";
-import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
+import { Group } from "@rellm/api";
+import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@rellm/ui";
 import { useGroupContext } from "app/contexts/group_context";
 import { useAppSelector, useFederatedAccountOrServer, useCurrentServer } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";

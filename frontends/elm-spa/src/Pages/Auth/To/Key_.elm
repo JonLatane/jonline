@@ -33,8 +33,8 @@ import Html.Events exposing (onClick, onInput, onSubmit)
 import Json.Encode as Encode
 import Page
 import Ports
-import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse)
-import Proto.Jonline.Jonline as Jonline
+import Proto.Rellm exposing (ExpirableToken, RefreshTokenResponse)
+import Proto.Rellm.Rellm as Rellm
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel exposing (Account, AccountAuthTokens, FormStatus(..), Token)
@@ -289,7 +289,7 @@ loginTask server username password =
             Task.fail Grpc.NetworkError
 
         Just connection ->
-            Grpc.new Jonline.login
+            Grpc.new Rellm.login
                 { username = username
                 , password = password
                 , expiresAt = Nothing

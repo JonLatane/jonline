@@ -1,4 +1,4 @@
-import { Button, Heading, Paragraph, Text, XStack, YStack, useMedia } from '@jonline/ui';
+import { Button, Heading, Paragraph, Text, XStack, YStack, useMedia } from '@rellm/ui';
 import { useCurrentAccountOrServer } from 'app/hooks';
 import { useServerTheme } from 'app/store';
 import { highlightedButtonBackground } from 'app/utils';

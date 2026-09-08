@@ -16,7 +16,7 @@ const disableExtraction =
   boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
 
 console.log(`
-Building the Jonline Tamagui/React Frontend! Real distributions should be served by Rust/Rocket; this Next.js server is for dev only.
+Building the Rellm Tamagui/React Frontend! Real distributions should be served by Rust/Rocket; this Next.js server is for dev only.
 
 You can update this monorepo to the latest Tamagui release by running:
 
@@ -37,7 +37,7 @@ const plugins = [
   // withImages,
   withTamagui({
     config: './tamagui.config.ts',
-    components: ['tamagui', '@jonline/ui'],
+    components: ['tamagui', '@rellm/ui'],
     importsWhitelist: ['constants.js', 'colors.js'],
     outputCSS: process.env.NODE_ENV === 'production' ? './public/tamagui.css' : null,
     logTimings: true,
@@ -58,7 +58,7 @@ const plugins = [
 // module.exports = {
 // }
 
-// Jonline's Rust server serves this app both at "/" and at "/tamagui" (so it
+// Rellm's Rust server serves this app both at "/" and at "/tamagui" (so it
 // works the same whichever prefix another frontend, like Elm, leaves it).
 // Next.js's router/asset URLs assume a single fixed basePath baked in at
 // build time, so we build this app twice -- once per prefix -- and TAMAGUI_BASE_PATH
@@ -95,7 +95,7 @@ module.exports = function () {
     webpack(webpackConfig) {
       return {
         ...webpackConfig,
-        // Comment this out if you'd like to enable minification. Jonline typically
+        // Comment this out if you'd like to enable minification. Rellm typically
         // expects its HTML to come from a CDN which will do this, and leaving it unminified
         // on the server costs only about 300kB difference in first load JS. But it's
         // helpful for debugging, and non-minified JS is also meant to push the open web

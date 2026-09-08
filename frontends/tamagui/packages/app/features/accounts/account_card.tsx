@@ -1,9 +1,9 @@
-import { Permission } from "@jonline/api";
-import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
+import { Permission } from "@rellm/api";
+import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@rellm/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { Selector, colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { useRequestResult } from "app/hooks/use_request_result";
-import { JonlineAccount, RootState, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
+import { RellmAccount, RootState, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useCallback, useMemo, useState } from "react";
 import { TextInput } from "react-native";
@@ -12,12 +12,12 @@ import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { createSelector } from "@reduxjs/toolkit";
 
 interface Props {
-  account: JonlineAccount;
+  account: RellmAccount;
   totalAccounts: number;
-  // onReauthenticate?: (account: JonlineAccount) => void;
+  // onReauthenticate?: (account: RellmAccount) => void;
   onProfileOpen?: () => void;
   onPress?: () => void;
-  // selectedAccount?: JonlineAccount;
+  // selectedAccount?: RellmAccount;
 }
 
 
@@ -30,7 +30,7 @@ const selectAccountIds = (
 
 
 const selectPinned = (
-  account: JonlineAccount
+  account: RellmAccount
 ): Selector<boolean> =>
   createSelector(
     [(state: RootState) => state.accounts.pinnedServers.map(ps => ps.accountId).includes(accountID(account))],

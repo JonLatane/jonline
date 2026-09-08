@@ -1,7 +1,7 @@
 # Facebook and X (Twitter) Sync
 
-Jonline's "Sync Destinations" feature lets a user connect one of their Facebook Pages as a
-[`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination), so calling [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance) or [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) posts the [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance)/[`Post`](https://jonline.io/docs/protocol#jonline-Post) to
+Rellm's "Sync Destinations" feature lets a user connect one of their Facebook Pages as a
+[`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination), so calling [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance) or [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) posts the [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)/[`Post`](https://jonline.io/docs/protocol#rellm-Post) to
 that Page. Implementation: [`backend/src/logic/facebook_sync.rs`](../backend/src/logic/facebook_sync.rs),
 invoked from [`SyncEventInstance`](../backend/src/rpcs/events/sync_event_instance.rs) and
 [`SyncPost`](../backend/src/rpcs/posts/sync_post.rs) alike (both dispatch through the same
@@ -11,12 +11,12 @@ This doc also covers X (Twitter) sync (see "X (Twitter)" below) since the two sh
 now -- unlike Facebook, X sync isn't functional yet, so there isn't much to say about it on its
 own. (Instagram, Mastodon, Bluesky, and Threads sync each have their own quirks worth documenting
 separately if this file grows unwieldy -- for now, see each platform's own message doc comment in
-[`protos/sync.proto`](../protos/sync.proto) and `protos/jonline.proto`'s `##### SyncDestination`
+[`protos/sync.proto`](../protos/sync.proto) and `protos/rellm.proto`'s `##### SyncDestination`
 section for the rest.)
 
 ## It posts to the Page's feed, not a real Facebook Event
 
-Posting an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance) creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
+Posting an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
 read like an event announcement, or attaches its media (see "What's in the post" below) -- it does
 **not** create an actual Facebook **Event** object (the kind users can RSVP to natively on
 Facebook), because the Graph API no longer allows that for ordinary third-party apps:
@@ -26,7 +26,7 @@ Facebook), because the Graph API no longer allows that for ordinary third-party 
   all.
 - Even *reading* Page/User events via the Graph API is restricted to approved **Facebook Marketing
   Partners** -- a vetted-agency program (minimum ad spend/message volume, ongoing compliance
-  review) that isn't a realistic fit for a self-hosted Jonline server.
+  review) that isn't a realistic fit for a self-hosted Rellm server.
 - Real integrations that appear to "create a Facebook Event" (e.g. Eventbrite) don't do it via a
   server-side API call either -- they deep-link the user's own browser into Facebook's native
   "Create Event" UI, pre-filled, and the human finishes it themselves.
@@ -37,14 +37,14 @@ Facebook), because the Graph API no longer allows that for ordinary third-party 
   404s, with stale "pausing onboarding due to COVID-19" copy still up. Not a viable path.
 
 So the Page-post approach here is the best available server-side option, not an oversight. (This
-limitation is specific to *Events* -- a [`Post`](https://jonline.io/docs/protocol#jonline-Post) has no such native-object alternative to begin with,
+limitation is specific to *Events* -- a [`Post`](https://jonline.io/docs/protocol#rellm-Post) has no such native-object alternative to begin with,
 so its Page post is simply the whole feature for Posts.)
 
 ## What's in the post
 
 `logic::sync_message::build_event_instance_message`/`build_post_message` build one
-platform-agnostic `SyncMessage` per sync (shared by every [`SyncDestination`](https://jonline.io/docs/protocol#jonline-SyncDestination) platform, not just
-Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#jonline-Post) (`title`/`content`/`link`) and, for an [`EventInstance`](https://jonline.io/docs/protocol#jonline-EventInstance),
+platform-agnostic `SyncMessage` per sync (shared by every [`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination) platform, not just
+Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#rellm-Post) (`title`/`content`/`link`) and, for an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance),
 also its `starts_at`/`ends_at`/`location`:
 
 1. Title -- for an EventInstance, `rpcs::events::sync_event_instance` combines the parent Event's
@@ -58,7 +58,7 @@ also its `starts_at`/`ends_at`/`location`:
    prefixed with 📍
 4. Content/description -- for an EventInstance, the same combine-with-a-`---`-separator treatment
    as the title (`"{event_content}\n\n---\n\n{instance_content}"`)
-5. The Jonline link (`event_url`/`post_url`), bare (EventInstance) or prefixed `View post:` (Post),
+5. The Rellm link (`event_url`/`post_url`), bare (EventInstance) or prefixed `View post:` (Post),
    if one could be built (see below)
 
 `post_to_facebook_page` (in `facebook_sync.rs`) then decides how to send that `SyncMessage` to the
@@ -66,8 +66,8 @@ Page: text+link only if there's no attached media, one or more unpublished-photo
 by a `/feed` post referencing them (`attached_media[N]`) if there are images, or a dedicated
 `/videos` post if there's a video (video wins if both are present -- the Graph API can't mix photo
 attachments and a video in one Page post). The `link` param (which drives a text-only post's
-link-preview card) prefers the Jonline URL; if that isn't available it falls back to the arbitrary
-external `link` the author/organizer set on the [`Post`](https://jonline.io/docs/protocol#jonline-Post) itself (e.g. an article or ticketing site).
+link-preview card) prefers the Rellm URL; if that isn't available it falls back to the arbitrary
+external `link` the author/organizer set on the [`Post`](https://jonline.io/docs/protocol#rellm-Post) itself (e.g. an article or ticketing site).
 
 ## Local-timezone times via free-text address geocoding
 
@@ -81,7 +81,7 @@ below):
    the same service the Tamagui frontend's location picker already calls client-side
    (`packages/app/hooks/use_nominatim.ts`), just used server-side here too. Its response already
    includes `lat`/`lon`, which the Tamagui picker currently fetches and discards -- only
-   `display_name` gets saved into the [`Location`](https://jonline.io/docs/protocol#jonline-Location).
+   `display_name` gets saved into the [`Location`](https://jonline.io/docs/protocol#rellm-Location).
 2. **lat/lng -> IANA timezone**: the [`tzf-rs`](https://github.com/ringsaturn/tzf-rs) crate, an
    offline polygon-based dataset bundled into the binary -- no second network call, no rate limit,
    actively maintained.
@@ -95,21 +95,21 @@ geocoding match) makes `resolve_timezone` return `None`, and the post just falls
 never a reason to fail the sync itself.
 
 **Possible future work**: since Tamagui's Nominatim call already has `lat`/`lon` in hand at
-location-pick time, persisting those on [`Location`](https://jonline.io/docs/protocol#jonline-Location) (proto + DB + both frontends) would let syncs
+location-pick time, persisting those on [`Location`](https://jonline.io/docs/protocol#rellm-Location) (proto + DB + both frontends) would let syncs
 skip the live geocoding call entirely and use `tzf-rs` directly -- faster, no dependency on
 Nominatim's uptime/policy, and it would also cover Elm-created locations if Elm ever gains its own
 address picker (today Elm's location field is plain free text with no geocoding at all).
 
-## The Jonline link needs CDN/frontend config
+## The Rellm link needs CDN/frontend config
 
 The `event_url`/`post_url` (`https://{frontend_host}/event/{instance_id}` or
 `https://{frontend_host}/post/{post_id}`) is only built when this server has
 `ServerConfiguration.external_cdn_config.frontend_host` configured. Unlike Rocket web routes
 (`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/
 [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) RPCs have no HTTP `Host` header to fall back on, so on servers without `frontend_host`
-set, the post simply omits the Jonline link (falling back to the author's own `Post.link`, if any)
+set, the post simply omits the Rellm link (falling back to the author's own `Post.link`, if any)
 rather than guessing a domain. This is an accepted current limitation, not a bug -- set
-`frontend_host` if you want synced posts to link back to their Jonline page.
+`frontend_host` if you want synced posts to link back to their Rellm page.
 
 ## Connecting a Page (OAuth/token flow)
 
@@ -127,7 +127,7 @@ rather than guessing a domain. This is an accepted current limitation, not a bug
 
 Note this token only has permission to post to the Page's feed -- posting to a user's personal
 timeline isn't possible via the Graph API at all (Facebook deprecated `publish_actions` in 2018).
-(Instagram sync reuses this exact same connect flow and Page token -- see `protos/jonline.proto`'s
+(Instagram sync reuses this exact same connect flow and Page token -- see `protos/rellm.proto`'s
 `##### SyncDestination` doc for how each platform's connect flow differs.)
 
 ## X (Twitter)
@@ -160,7 +160,7 @@ Authentication Configuration" on the Server Information page's Federation tab) o
 user on the server connects their own X account through it via OAuth -- no per-user API keys
 needed. Until an admin sets it, every RPC touching an `XTwitterAccount` destination fails with
 `x_twitter_app_not_configured`. Note X's current API pricing tiers gate meaningful write access
-behind a paid plan -- that's between the server admin and X, not something Jonline's code can work
+behind a paid plan -- that's between the server admin and X, not something Rellm's code can work
 around.
 
 **Known limitation**: only *images* are uploaded (up to 4, downloaded from this server's own media

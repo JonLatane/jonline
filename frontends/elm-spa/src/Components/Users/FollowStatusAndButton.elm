@@ -7,7 +7,7 @@ module Components.Users.FollowStatusAndButton exposing
     )
 
 {-| The follower/following/friends relationship between the signed-in viewer
-and some other `Proto.Jonline.User` -- a status line ("Following," "Wants to
+and some other `Proto.Rellm.User` -- a status line ("Following," "Wants to
 follow you," "Friends," etc.) plus whichever of Follow/Request Follow/Cancel
 Follow Request/Unfollow/Reject Follower/Unreject Follower buttons apply,
 backed by the `CreateFollow`/`UpdateFollow`/`DeleteFollow` RPCs.
@@ -36,8 +36,8 @@ import Grpc
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, disabled)
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Follow, User, defaultFollow)
-import Proto.Jonline.Moderation exposing (Moderation(..))
+import Proto.Rellm exposing (Follow, User, defaultFollow)
+import Proto.Rellm.Moderation exposing (Moderation(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task

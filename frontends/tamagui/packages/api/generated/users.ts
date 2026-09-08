@@ -21,7 +21,7 @@ import {
   visibilityToJSON,
 } from "./visibility_moderation";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 /** Ways of listing users. */
 export enum UserListingType {
@@ -39,9 +39,9 @@ export enum UserListingType {
    * USERS_TEXT_SEARCH - Returns users matching the full-text `search_text` query, scoped the same way
    * `EVERYONE` is. Requires `search_text` parameter.
    *
-   * Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by [`PostListingType`](#jonline-PostListingType)) because
-   * proto3 enum values share a single namespace across the whole `jonline` package (C++ scoping
-   * rules) - [`PostListingType`](#jonline-PostListingType) already claimed `TEXT_SEARCH`.
+   * Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by [`PostListingType`](#rellm-PostListingType)) because
+   * proto3 enum values share a single namespace across the whole `rellm` package (C++ scoping
+   * rules) - [`PostListingType`](#rellm-PostListingType) already claimed `TEXT_SEARCH`.
    */
   USERS_TEXT_SEARCH = 5,
   /** FOLLOWERS_TEXT_SEARCH - Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`. */
@@ -130,8 +130,8 @@ export function userListingTypeToJSON(object: UserListingType): string {
 }
 
 /**
- * Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
- * [`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
+ * Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s,
+ * [`Post`](#rellm-Post)s, [`Event`](#rellm-Event)s, and other objects associated with them.
  */
 export interface User {
   /** Permanent string ID for the user. Will never contain a `@` symbol. */
@@ -148,7 +148,7 @@ export interface User {
   phone?:
     | ContactMethod
     | undefined;
-  /** The user's permissions. See [`Permission`](#jonline-Permission) for details. */
+  /** The user's permissions. See [`Permission`](#rellm-Permission) for details. */
   permissions: Permission[];
   /**
    * The user's avatar. Note that its visibility is managed by the User and thus
@@ -168,7 +168,7 @@ export interface User {
    * users' ability to creep.
    */
   visibility: Visibility;
-  /** The user's moderation status. See [`Moderation`](#jonline-Moderation) for details. */
+  /** The user's moderation status. See [`Moderation`](#rellm-Moderation) for details. */
   moderation: Moderation;
   /** Only PENDING or UNMODERATED are valid. */
   defaultFollowModeration: Moderation;
@@ -192,7 +192,7 @@ export interface User {
   postCount?:
     | number
     | undefined;
-  /** The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made. */
+  /** The number of responses to [`Post`](#rellm-Post)s and [`Event`](#rellm-Event)s this user has made. */
   responseCount?:
     | number
     | undefined;
@@ -219,9 +219,9 @@ export interface User {
     | Follow
     | undefined;
   /**
-   * Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
-   * The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
-   * providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc..
+   * Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s.
+   * The [`Membership`](#rellm-Membership) should match the [`Group`](#rellm-Group) from the originating [`GetMembersRequest`](#rellm-GetMembersRequest),
+   * providing whether the user is a member of that [`Group`](#rellm-Group), has been invited, requested to join, etc..
    */
   currentGroupMembership?:
     | Membership
@@ -244,7 +244,7 @@ export interface User {
    */
   syncDestinations: SyncDestination[];
   /**
-   * The target user's own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for
+   * The target user's own [`SyncSource`](#rellm-SyncSource)s. Unlike `sync_destinations`, also populated for
    * the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
    * single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
    * filled in, batch-loaded in one query rather than per-user. Also populated by
@@ -253,9 +253,9 @@ export interface User {
    */
   syncSources: SyncSource[];
   /**
-   * Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
+   * Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call -- their own
    * providers' models, plus any models granted to them on other users' providers (see
-   * [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources`
+   * [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
    * (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
    * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
    */
@@ -286,7 +286,7 @@ export interface Follow {
 
 /**
  * Model for a user's membership in a group. Memberships are generically
- * included as part of User models when relevant in Jonline, but UIs should use the group_id
+ * included as part of User models when relevant in Rellm, but UIs should use the group_id
  * to reconcile memberships with groups.
  */
 export interface Membership {
@@ -366,7 +366,7 @@ export interface GetUsersRequest {
   listingType: UserListingType;
 }
 
-/** Response to a [`GetUsersRequest`](#jonline-GetUsersRequest). */
+/** Response to a [`GetUsersRequest`](#rellm-GetUsersRequest). */
 export interface GetUsersResponse {
   /** The users matching the request. */
   users: User[];

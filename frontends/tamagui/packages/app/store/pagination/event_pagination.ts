@@ -1,4 +1,4 @@
-import { EventListingType } from "@jonline/api";
+import { EventListingType } from "@rellm/api";
 import { createSelector } from "@reduxjs/toolkit";
 import { defederateId, federatedId, getFederated } from "../federation";
 import { EventsState, FederatedEvent, FederatedGroup, GroupsState, selectEventById } from "../modules";

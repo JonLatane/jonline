@@ -2,7 +2,7 @@ import { Dictionary } from "@reduxjs/toolkit";
 import { Federated, createFederated } from "../federation";
 
 /**
- * Fundamental type for Jonline pagination. Stores IDs of paginated resources like Groups, People, Posts, Events, etc. used in the UI.
+ * Fundamental type for Rellm pagination. Stores IDs of paginated resources like Groups, People, Posts, Events, etc. used in the UI.
  * May be keyed by [Resource]ListingType or groupId.
  * Posts should be loaded from the adapter/slice's entities. An empty page indicates there is no more data to load.
  * Maps either: 

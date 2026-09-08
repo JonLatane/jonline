@@ -19,7 +19,7 @@ import 'messages.pbenum.dart';
 
 export 'messages.pbenum.dart';
 
-/// A Jonline `Message` represents a single message/email sent to one or more recipients
+/// A Rellm `Message` represents a single message/email sent to one or more recipients
 /// (really, "zero or more", as the design incorporates undeliverable messages).
 class Message extends $pb.GeneratedMessage {
   factory Message({
@@ -79,7 +79,7 @@ class Message extends $pb.GeneratedMessage {
   factory Message.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Message.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Message', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Message', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'sender', subBuilder: $15.Author.create)
     ..aOM<MessagingGroup>(3, _omitFieldNames ? '' : 'messagingGroup', subBuilder: MessagingGroup.create)
@@ -277,7 +277,7 @@ class MessageRead extends $pb.GeneratedMessage {
   factory MessageRead.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MessageRead.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessageRead', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessageRead', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'messageId')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..aOM<$12.Timestamp>(20, _omitFieldNames ? '' : 'readAt', subBuilder: $12.Timestamp.create)
@@ -323,7 +323,7 @@ class MessageRead extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => clearField(2);
 
-  /// When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
+  /// When the message was marked read. Always set on a [`MessageRead`](#rellm-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
   /// -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
   /// a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
   @$pb.TagNumber(20)
@@ -359,7 +359,7 @@ class MarkMessagesReadRequest extends $pb.GeneratedMessage {
   factory MarkMessagesReadRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MarkMessagesReadRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MarkMessagesReadRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MarkMessagesReadRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'unread')
     ..pPS(2, _omitFieldNames ? '' : 'messageIds')
     ..hasRequiredFields = false
@@ -405,7 +405,7 @@ class MarkMessagesReadRequest extends $pb.GeneratedMessage {
   $core.List<$core.String> get messageIds => $_getList(1);
 }
 
-/// Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
+/// Response to a [`MarkMessagesReadRequest`](#rellm-MarkMessagesReadRequest) -- one [`MessageRead`](#rellm-MessageRead) per `message_ids` entry, in the
 /// same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
 class MarkMessagesReadResponse extends $pb.GeneratedMessage {
   factory MarkMessagesReadResponse({
@@ -421,7 +421,7 @@ class MarkMessagesReadResponse extends $pb.GeneratedMessage {
   factory MarkMessagesReadResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MarkMessagesReadResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MarkMessagesReadResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MarkMessagesReadResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<MessageRead>(1, _omitFieldNames ? '' : 'messageReads', $pb.PbFieldType.PM, subBuilder: MessageRead.create)
     ..hasRequiredFields = false
   ;
@@ -475,7 +475,7 @@ class SendMessageRequest extends $pb.GeneratedMessage {
   factory SendMessageRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory SendMessageRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SendMessageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SendMessageRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pPS(1, _omitFieldNames ? '' : 'toUserIds')
     ..aOS(2, _omitFieldNames ? '' : 'subject')
     ..aOS(3, _omitFieldNames ? '' : 'bodyText')
@@ -527,7 +527,7 @@ class SendMessageRequest extends $pb.GeneratedMessage {
 
 /// A group of users who are participating in a conversation.
 /// Most servers will probably have a (dynamically created) "empty group" for an email like
-/// `not_a_user@my_jonline_instance.com`.
+/// `not_a_user@my_rellm_instance.com`.
 class MessagingGroup extends $pb.GeneratedMessage {
   factory MessagingGroup({
     $core.String? id,
@@ -550,7 +550,7 @@ class MessagingGroup extends $pb.GeneratedMessage {
   factory MessagingGroup.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MessagingGroup.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessagingGroup', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MessagingGroup', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..pc<$15.Author>(2, _omitFieldNames ? '' : 'members', $pb.PbFieldType.PM, subBuilder: $15.Author.create)
     ..aOM<$12.Timestamp>(10, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
@@ -642,7 +642,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
   factory GetMessagesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMessagesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMessagesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMessagesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..e<MessageListingType>(1, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: MessageListingType.PERSONAL_MESSAGES, valueOf: MessageListingType.valueOf, enumValues: MessageListingType.values)
     ..aOS(2, _omitFieldNames ? '' : 'messageId')
     ..aOS(3, _omitFieldNames ? '' : 'messageGroupId')
@@ -743,7 +743,7 @@ class GetMessagesRequest extends $pb.GeneratedMessage {
   void clearFromEmail() => clearField(9);
 }
 
-/// Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages.
+/// Response to a [`GetMessagesRequest`](#rellm-GetMessagesRequest), containing the requested messages.
 class GetMessagesResponse extends $pb.GeneratedMessage {
   factory GetMessagesResponse({
     $core.Iterable<Message>? messages,
@@ -758,7 +758,7 @@ class GetMessagesResponse extends $pb.GeneratedMessage {
   factory GetMessagesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMessagesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMessagesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMessagesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<Message>(1, _omitFieldNames ? '' : 'messages', $pb.PbFieldType.PM, subBuilder: Message.create)
     ..hasRequiredFields = false
   ;
@@ -817,7 +817,7 @@ class PushSubscription extends $pb.GeneratedMessage {
   factory PushSubscription.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PushSubscription.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PushSubscription', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PushSubscription', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'endpoint')
     ..aOM<$12.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
@@ -903,7 +903,7 @@ class RegisterPushSubscriptionRequest extends $pb.GeneratedMessage {
   factory RegisterPushSubscriptionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RegisterPushSubscriptionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RegisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RegisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'endpoint')
     ..aOS(2, _omitFieldNames ? '' : 'p256dhKey')
     ..aOS(3, _omitFieldNames ? '' : 'authKey')
@@ -979,7 +979,7 @@ class UnregisterPushSubscriptionRequest extends $pb.GeneratedMessage {
   factory UnregisterPushSubscriptionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UnregisterPushSubscriptionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UnregisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UnregisterPushSubscriptionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'endpoint')
     ..hasRequiredFields = false
   ;
@@ -1033,7 +1033,7 @@ class GetPushSubscriptionStatusRequest extends $pb.GeneratedMessage {
   factory GetPushSubscriptionStatusRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPushSubscriptionStatusRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'endpoint')
     ..hasRequiredFields = false
   ;
@@ -1084,7 +1084,7 @@ class GetPushSubscriptionStatusResponse extends $pb.GeneratedMessage {
   factory GetPushSubscriptionStatusResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPushSubscriptionStatusResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPushSubscriptionStatusResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'registered')
     ..hasRequiredFields = false
   ;
@@ -1110,7 +1110,7 @@ class GetPushSubscriptionStatusResponse extends $pb.GeneratedMessage {
   static GetPushSubscriptionStatusResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPushSubscriptionStatusResponse>(create);
   static GetPushSubscriptionStatusResponse? _defaultInstance;
 
-  /// Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`.
+  /// Whether the current user has a [`PushSubscription`](#rellm-PushSubscription) registered for this exact `endpoint`.
   @$pb.TagNumber(1)
   $core.bool get registered => $_getBF(0);
   @$pb.TagNumber(1)

@@ -16,28 +16,28 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'google/protobuf/timestamp.pb.dart' as $12;
 import 'visibility_moderation.pbenum.dart' as $13;
 
-///  A Jonline `Media` message represents a single media item, such as a photo or video.
+///  A Rellm `Media` message represents a single media item, such as a photo or video.
 ///  Media data is deliberately *not accessible from the gRPC API*. Instead, the client
-///  should fetch media from `http[s]://my.jonline.instance/media/{id}`, unless `url` is set,
-///  in which case that URL should be used instead (used for media Jonline doesn't store
+///  should fetch media from `http[s]://my.rellm.instance/media/{id}`, unless `url` is set,
+///  in which case that URL should be used instead (used for media Rellm doesn't store
 ///  locally, e.g. from federated ActivityPub/Mastodon or AT Protocol/Bluesky content).
 ///
-///  Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
+///  Media items may be created with a HTTP POST to `http[s]://my.rellm.instance/media`
 ///  along with an "Authorization" header (your access token) and a "Content-Type" header.
 ///  On success, the endpoint will return the media ID in plaintext.
 ///
 ///  `POST /media` supports the following headers:
 ///  - `Content-Type` - The MIME content type of the media item.
 ///  - `Filename` - An optional title for the media item.
-///  - `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
-///  - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+///  - `Authorization` - Rellm Access Token for the user. Required, but may be supplied in `Cookies`.
+///  - `Cookies` - Standard web cookies. The `rellm_access_token` cookie may be used for authentication.
 ///
 ///  `GET /media/{id}` supports the following:
 ///  - **Headers**:
-///      - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
-///      - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+///      - `Authorization` - Rellm Access Token for the user. May also be supplied in `Cookies` or via query parameter.
+///      - `Cookies` - Standard web cookies. The `rellm_access_token` cookie may be used for authentication.
 ///  - **Query Parameters**:
-///      - `authorization` - Jonline Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
+///      - `authorization` - Rellm Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
 ///  - Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
 class Media extends $pb.GeneratedMessage {
   factory Media({
@@ -105,7 +105,7 @@ class Media extends $pb.GeneratedMessage {
   factory Media.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Media.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Media', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Media', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..aOS(3, _omitFieldNames ? '' : 'contentType')
@@ -281,7 +281,7 @@ class Media extends $pb.GeneratedMessage {
 
   /// An external URL to fetch the media from, in lieu of `/media/{id}`. Used for representing
   /// media owned by other protocols/servers (e.g. ActivityPub/Mastodon, AT Protocol/Bluesky)
-  /// that Jonline does not store locally. If unset, clients fall back to `/media/{id}`.
+  /// that Rellm does not store locally. If unset, clients fall back to `/media/{id}`.
   @$pb.TagNumber(18)
   $core.String get url => $_getSZ(13);
   @$pb.TagNumber(18)
@@ -292,7 +292,7 @@ class Media extends $pb.GeneratedMessage {
   void clearUrl() => clearField(18);
 }
 
-/// Free-form metadata about a [`Media`](#jonline-Media) item that isn't queried/filtered on, so doesn't need its
+/// Free-form metadata about a [`Media`](#rellm-Media) item that isn't queried/filtered on, so doesn't need its
 /// own columns.
 class MediaMetadata extends $pb.GeneratedMessage {
   factory MediaMetadata({
@@ -308,7 +308,7 @@ class MediaMetadata extends $pb.GeneratedMessage {
   factory MediaMetadata.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MediaMetadata.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..a<$core.int>(1, _omitFieldNames ? '' : 'videoPreviewTimeMs', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;
@@ -388,7 +388,7 @@ class MediaReference extends $pb.GeneratedMessage {
   factory MediaReference.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MediaReference.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaReference', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaReference', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'contentType')
     ..aOS(2, _omitFieldNames ? '' : 'id')
     ..aOS(3, _omitFieldNames ? '' : 'name')
@@ -522,7 +522,7 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   factory GetMediaRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMediaRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'mediaId')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..a<$core.int>(11, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
@@ -598,7 +598,7 @@ class GetMediaResponse extends $pb.GeneratedMessage {
   factory GetMediaResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMediaResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<Media>(1, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: Media.create)
     ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
     ..hasRequiredFields = false

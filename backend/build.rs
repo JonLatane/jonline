@@ -1,7 +1,7 @@
 use std::{env, fs, path::PathBuf};
 
 fn main() {
-    let proto_file = "../protos/jonline.proto";
+    let proto_file = "../protos/rellm.proto";
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let _ = fs::create_dir("./target");
     let _ = fs::create_dir("./target/compiled_protos");
@@ -39,7 +39,7 @@ fn main() {
         .compile_protos(&[proto_file], &["../protos"])
         .unwrap_or_else(|e| panic!("protobuf compile error: {}", e));
 
-    // `jonline.proto` imports nearly every other file under `../protos` (sync.proto,
+    // `rellm.proto` imports nearly every other file under `../protos` (sync.proto,
     // permissions.proto, ai_model_providers.proto, etc), but Cargo only reruns this script for
     // paths explicitly named here -- watching just `proto_file` meant editing an *imported* .proto
     // alone left the generated code stale until something else (e.g. `make rebuild_protos`) forced

@@ -1,10 +1,10 @@
-import { GroupListingType, Permission, PostContext } from '@jonline/api';
-import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
+import { GroupListingType, Permission, PostContext } from '@rellm/api';
+import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack, useDebounceValue, useTheme } from '@rellm/ui';
 import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';
 import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering, usePinnedAccountsAndServers } from 'app/hooks';
-import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
+import { FederatedGroup, RellmAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -447,7 +447,7 @@ export function GroupsSheetButton({
 
   const onPress = () => setOpen(true);
 
-  const toggleAccountSelect = (a: JonlineAccount) => {
+  const toggleAccountSelect = (a: RellmAccount) => {
     if (accountID(a) === accountID(account)) {
       dispatch(unpinAccount(a));
     } else {

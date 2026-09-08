@@ -91,7 +91,7 @@ pub fn post_status_at(
         .ok_or_else(not_configured)?;
 
     // Mastodon's media API takes actual file bytes, not a remote URL (unlike Facebook/
-    // Instagram/Threads), so each attachment has to be fetched from Jonline's own public media
+    // Instagram/Threads), so each attachment has to be fetched from Rellm's own public media
     // URL first, then re-uploaded. Individual fetch/upload failures are logged and skipped (a
     // partially-illustrated status is better than none) -- only failing the whole post if every
     // attempted upload failed.
@@ -149,7 +149,7 @@ pub fn post_status_at(
     Ok((id, url))
 }
 
-/// Fetches `media.url`'s raw bytes from this Jonline server's own public media endpoint, then
+/// Fetches `media.url`'s raw bytes from this Rellm server's own public media endpoint, then
 /// re-uploads them to `base_url`'s `/api/v2/media` as `multipart/form-data`. Returns the new media
 /// attachment's ID (to pass as `media_ids[]` on the subsequent `/api/v1/statuses` call). The v2
 /// endpoint may return while Mastodon is still processing the attachment server-side for large

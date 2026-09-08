@@ -1,5 +1,5 @@
 {
-  "name": "@jonline/ui",
+  "name": "@rellm/ui",
   "version": "0.0.1",
   "sideEffects": [
     "*.css"

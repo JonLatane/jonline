@@ -1,5 +1,5 @@
 // import { J } from '@fullcalendar/core/internal-common';
-import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
+import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@rellm/ui';
 import { useAppDispatch } from 'app/hooks';
 import React from 'react';
 

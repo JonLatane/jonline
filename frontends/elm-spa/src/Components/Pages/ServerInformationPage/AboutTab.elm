@@ -19,7 +19,7 @@ import Effect exposing (Effect)
 import Html exposing (Html, button, div, h2, h3, input, p, span, text)
 import Html.Attributes exposing (class, disabled, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (User)
+import Proto.Rellm exposing (User)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MarkdownPanel as MarkdownPanel
@@ -201,7 +201,7 @@ applySharedMsg subMsg model =
 view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> AdminsStatus -> VersionStatus -> Model -> Html Msg
 view shared server maybeAdminAccount adminsStatus versionStatus model =
     let
-        info : Proto.Jonline.ServerInfo
+        info : Proto.Rellm.ServerInfo
         info =
             AccountsPanel.serverInfoOf server
 

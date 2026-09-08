@@ -1,5 +1,5 @@
-import { PostListingType } from '@jonline/api';
-import { Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { PostListingType } from '@rellm/api';
+import { Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@rellm/ui';
 import { usePaginatedRendering } from 'app/hooks';
 import { usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { federatedId, useServerTheme } from 'app/store';

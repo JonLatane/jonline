@@ -1,8 +1,8 @@
 import { useProvidedDispatch } from "app/hooks";
-import { JonlineServer, useServerTheme } from "app/store";
+import { RellmServer, useServerTheme } from "app/store";
 import React, { useMemo } from 'react';
 
-import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
+import { Anchor, Paragraph, Text, YStack, useMedia } from "@rellm/ui";
 import { MediaRef } from "app/contexts";
 import ReactPlayer from 'react-player/lazy';
 import { useMediaUrl } from '../../hooks/use_media_url';
@@ -11,7 +11,7 @@ import { FadeInView } from "../post";
 interface Props {
   media: MediaRef;
   failQuietly?: boolean;
-  serverOverride?: JonlineServer;
+  serverOverride?: RellmServer;
   forceImage?: boolean;
   isVisible?: boolean;
   isPreview?: boolean;

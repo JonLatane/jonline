@@ -17,11 +17,11 @@ import {
   visibilityToJSON,
 } from "./visibility_moderation";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 /** Authentication features that can be enabled/disabled by the server admin. */
 export enum AuthenticationFeature {
-  /** AUTHENTICATION_FEATURE_UNKNOWN - An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) */
+  /** AUTHENTICATION_FEATURE_UNKNOWN - An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Rellm protocol.) */
   AUTHENTICATION_FEATURE_UNKNOWN = 0,
   /** CREATE_ACCOUNT - Users can sign up for an account. */
   CREATE_ACCOUNT = 1,
@@ -214,7 +214,7 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
   }
 }
 
-/** The default navigation tabs in Jonline's Elm UI. */
+/** The default navigation tabs in Rellm's Elm UI. */
 export enum NavigationTab {
   /** HOME_TAB - The home/landing tab. */
   HOME_TAB = 0,
@@ -271,7 +271,7 @@ export function navigationTabToJSON(object: NavigationTab): string {
   }
 }
 
-/** Configuration for a Jonline server instance. */
+/** Configuration for a Rellm server instance. */
 export interface ServerConfiguration {
   /** The name, description, logo, color scheme, etc. of the server. */
   serverInfo?:
@@ -351,7 +351,7 @@ export interface ServerConfiguration {
    * If set, enables External CDN support for the server. This means that the
    * non-secure HTTP server (on port 80) will *not* redirect to the secure server,
    * and instead serve up Tamagui Web/Flutter clients directly. This allows you
-   * to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+   * to point Cloudflare's "CNAME HTTPS Proxy" feature at your Rellm server to serve
    * up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
    * See ExternalCDNConfig for more details on securing this setup.
    */
@@ -370,7 +370,7 @@ export interface ServerConfiguration {
 }
 
 /**
- * Useful for setting your Jonline instance up to run underneath a CDN.
+ * Useful for setting your Rellm instance up to run underneath a CDN.
  * By default, the web client uses `window.location.hostname` to determine the backend server.
  * If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
  */
@@ -408,11 +408,11 @@ export interface ExternalCDNConfig {
     | string
     | undefined;
   /**
-   * (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports).
-   * When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve
+   * (TODO) When implemented, this actually changes the whole Rellm protocol (in terms of ports).
+   * When enabled, Rellm should *not* server a secure site on HTTPS, and instead serve
    * the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to
    * always seek out a secure client on port 443 when this feature is enabled.
-   * This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
+   * This would let Rellm leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
    * (This is a Cloudflare-specific feature requirement.)
    */
   cdnGrpc: boolean;
@@ -606,7 +606,7 @@ export interface ServerInfo {
   recommendedServerHosts: string[];
 }
 
-/** Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media). */
+/** Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media). */
 export interface ServerLogo {
   /** The media ID for the square logo. */
   squareMediaId?:
@@ -624,7 +624,7 @@ export interface ServerLogo {
   wideMediaIdDark?: string | undefined;
 }
 
-/** If set, overrides the default tab set for the Elm navigation on a Jonline instance. */
+/** If set, overrides the default tab set for the Elm navigation on a Rellm instance. */
 export interface CustomNavigationTabSet {
   /** Overrides the default `/` page. If unset, the default combined Events+Posts feed is used. */
   home?:
@@ -633,7 +633,7 @@ export interface CustomNavigationTabSet {
   /**
    * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
    * Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
-   * matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+   * matching predefined tab -- see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
    * `/` itself is overridden via `home` above instead.
    */
   tabs: CustomNavigationTab[];
@@ -705,7 +705,7 @@ export interface CustomNavigationTab {
   emojiIcon?:
     | string
     | undefined;
-  /** Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon. */
+  /** Media ID (see [`Media`](#rellm-Media) APIs) of an image shown as the tab's icon. */
   iconMediaId?:
     | string
     | undefined;

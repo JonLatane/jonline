@@ -1,5 +1,5 @@
-import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
-import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { EventListingType, PostListingType, TimeFilter } from '@rellm/api';
+import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useMedia, useWindowDimensions } from '@rellm/ui';
 import { CalendarArrowDown, Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePinnedAccountsAndServers, usePostPageParam, usePostPages } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
@@ -19,7 +19,7 @@ import { AutoAnimatedList } from '../post';
 import { EventCalendarExporter } from '../event/event_calendar_exporter';
 // import { useSwipeable } from 'react-swipeable';
 
-// import Swipeable from '@jonline/ui/src/swipeable';
+// import Swipeable from '@rellm/ui/src/swipeable';
 import { subscribe } from '../web_push/web_push';
 
 export function HomeScreen() {

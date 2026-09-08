@@ -39,8 +39,8 @@ import Html.Keyed
 import Http
 import Json.Decode as Decode
 import Process
-import Proto.Jonline exposing (Post, SyncDestination, User)
-import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Rellm exposing (Post, SyncDestination, User)
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -206,7 +206,7 @@ type alias ServerFeed =
     }
 
 
-{-| One source `postsByServer` can hold a feed for -- a real Jonline server (federating in the usual
+{-| One source `postsByServer` can hold a feed for -- a real Rellm server (federating in the usual
 way, `AccountsPanel.Server`), or a Mastodon instance/Bluesky account translated client-side (see
 `Shared.Federation.Mastodon`/`Bluesky`). Unifies what used to be two entirely separate
 fetch-and-store paths (`postsByServer`/`GotServerPosts`/`fetchNewServers`/`refetchServers` vs.
@@ -216,7 +216,7 @@ they just reach different APIs, with different capabilities, to do it. See `feed
 `feedSourceAccountId`/`fetchFeedSource` for where the three cases actually diverge.
 -}
 type FeedSource
-    = JonlineServer AccountsPanel.Server
+    = RellmServer AccountsPanel.Server
     | MastodonInstance String
     | BlueskyFeed AccountsPanel.BlueskyAccount
 
@@ -228,7 +228,7 @@ synthetic `"mastodon:"`/`"bluesky:"`-prefixed key that can never collide with on
 feedSourceKey : FeedSource -> String
 feedSourceKey source =
     case source of
-        JonlineServer server ->
+        RellmServer server ->
             server.frontendHost
 
         MastodonInstance host ->
@@ -240,7 +240,7 @@ feedSourceKey source =
 
 {-| The acting credential a `FeedSource`'s feed is fetched with, if any -- a real server's enabled
 account, or always `Nothing` for Mastodon/Bluesky, since neither is ever refetched on a credential
-change the way a Jonline account is (browsing/reading Mastodon needs no sign-in at all; a Bluesky
+change the way a Rellm account is (browsing/reading Mastodon needs no sign-in at all; a Bluesky
 account's token doesn't change without a full reconnect, which itself removes and re-adds the
 account under a new key). `Nothing == Nothing` is exactly what makes `fetchNewFeeds` treat an
 already-fetched federated source as unchanged forever -- except a *newly* added instance/account
@@ -251,7 +251,7 @@ separate `fetchFederatedPosts` (fired once, from `init`, only) did.
 feedSourceAccountId : Shared.Model -> FeedSource -> Maybe String
 feedSourceAccountId shared source =
     case source of
-        JonlineServer server ->
+        RellmServer server ->
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
@@ -272,7 +272,7 @@ type FeedResult
     | FeedFailed
 
 
-fromServerResult : Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ) -> FeedResult
+fromServerResult : Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ) -> FeedResult
 fromServerResult result =
     case result of
         Ok ( maybeAccountsPanelMsg, response ) ->
@@ -555,7 +555,7 @@ updateInner shared msg model =
                         Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->
                             case AccountsPanel.serverForHost shared.accounts.servers host of
                                 Just server ->
-                                    refetchFeeds shared model [ JonlineServer server ]
+                                    refetchFeeds shared model [ RellmServer server ]
 
                                 Nothing ->
                                     ( model, Effect.none )
@@ -607,7 +607,7 @@ updateInner shared msg model =
             else
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchFeeds shared { model | tab = RecentPosts } (List.map JonlineServer (relevantServers shared model))
+                        refetchFeeds shared { model | tab = RecentPosts } (List.map RellmServer (relevantServers shared model))
                 in
                 ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -620,7 +620,7 @@ updateInner shared msg model =
                     Just _ ->
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchFeeds shared { model | tab = PostsBeforeDate } (List.map JonlineServer (relevantServers shared model))
+                                refetchFeeds shared { model | tab = PostsBeforeDate } (List.map RellmServer (relevantServers shared model))
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -643,7 +643,7 @@ updateInner shared msg model =
                     if newModel.tab == PostsBeforeDate then
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchFeeds shared newModel (List.map JonlineServer (relevantServers shared newModel))
+                                refetchFeeds shared newModel (List.map RellmServer (relevantServers shared newModel))
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -675,7 +675,7 @@ updateInner shared msg model =
             if generation == model.publishedBeforeInputGeneration then
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchFeeds shared model (List.map JonlineServer (relevantServers shared model))
+                        refetchFeeds shared model (List.map RellmServer (relevantServers shared model))
                 in
                 ( refetchedModel
                 , Effect.batch
@@ -725,7 +725,7 @@ updateInner shared msg model =
                         ( refetchedModel, refetchEffect ) =
                             case AccountsPanel.serverForHost shared.accounts.servers host of
                                 Just server ->
-                                    refetchFeeds shared clearedModel [ JonlineServer server ]
+                                    refetchFeeds shared clearedModel [ RellmServer server ]
 
                                 Nothing ->
                                     ( clearedModel, Effect.none )
@@ -786,7 +786,7 @@ per-`frontendHost` rather than once for `mainFrontendHost`.
 customNavPostIds : Shared.Model -> String -> Set String
 customNavPostIds shared frontendHost =
     let
-        maybeCustomTabs : Maybe Proto.Jonline.CustomNavigationTabSet
+        maybeCustomTabs : Maybe Proto.Rellm.CustomNavigationTabSet
         maybeCustomTabs =
             AccountsPanel.serverForHost shared.accounts.servers frontendHost
                 |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
@@ -822,7 +822,7 @@ customNavPostIds shared frontendHost =
     homePostIds ++ tabPostIds |> Set.fromList
 
 
-{-| Every `FeedSource` this page should ever fetch from -- `relevantServers`' real Jonline servers
+{-| Every `FeedSource` this page should ever fetch from -- `relevantServers`' real Rellm servers
 (unconditionally), plus every Mastodon instance being browsed/connected and every connected Bluesky
 account, but only for the plain, unscoped "Posts" feed (`model.author == Nothing`, `not
 model.embeddedPage`) -- the same condition `recentPostsTabsView` uses to decide whether to show its
@@ -833,7 +833,7 @@ misleading.
 -}
 relevantFeedSources : Shared.Model -> Model -> List FeedSource
 relevantFeedSources shared model =
-    List.map JonlineServer (relevantServers shared model)
+    List.map RellmServer (relevantServers shared model)
         ++ (if model.author /= Nothing || model.embeddedPage then
                 []
 
@@ -858,7 +858,7 @@ mastodonHostsToFetch shared =
 
 
 {-| Actually fires one `FeedSource`'s fetch -- a real `GetPosts` RPC (author-scoped, search/context/
-cutoff-aware) for a `JonlineServer`, or an unauthenticated/self-authenticated plain `Task.attempt`
+cutoff-aware) for a `RellmServer`, or an unauthenticated/self-authenticated plain `Task.attempt`
 against Mastodon's/Bluesky's own REST API for the other two, translated via
 `Shared.Federation.Mastodon`/`Bluesky`'s own `fetchPosts`. Every case funnels its result through the
 same `GotFeedPosts` `Msg` regardless -- see `fromServerResult`/`fromFederatedResult`.
@@ -866,7 +866,7 @@ same `GotFeedPosts` `Msg` regardless -- see `fromServerResult`/`fromFederatedRes
 fetchFeedSource : Shared.Model -> Model -> FeedSource -> Effect Msg
 fetchFeedSource shared model source =
     case source of
-        JonlineServer server ->
+        RellmServer server ->
             let
                 cutoff : Maybe Time.Posix
                 cutoff =
@@ -900,7 +900,7 @@ fetchFeedSource shared model source =
 
 
 {-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for any
-`JonlineServer` among them -- meaningless to a `MastodonInstance`/`BlueskyFeed`, see
+`RellmServer` among them -- meaningless to a `MastodonInstance`/`BlueskyFeed`, see
 `fetchFeedSource`), and drops any already-fetched source that's no longer `relevantFeedSources` --
 shared by `fetchNewFeeds` (which only passes the sources that actually need it, see its own doc
 comment) and `applySearchChange` (which always passes every relevant *server*, since a changed
@@ -916,7 +916,7 @@ only thing resetting it did was drop that source out of `syncAnimations`' `curre
 as every one of its posts fading out and back in a moment later, even though `applySearchChange`'s
 response usually still contains most of the same posts. See
 `Components.Pages.EventsPage.refetchServers`'s own doc for where this was first diagnosed (a periodic
-full-list flicker there) and ported from. A genuinely new source, or a `JonlineServer` whose acting
+full-list flicker there) and ported from. A genuinely new source, or a `RellmServer` whose acting
 account just changed (sign-in/out), still resets to `Loading` -- its previous posts (fetched under a
 different or no account) are stale/invalid, not just "not yet refreshed," so they should disappear
 rather than linger.
@@ -980,7 +980,7 @@ refetchFeeds shared model sourcesToFetch =
 
 {-| Drops posts for sources that are no longer relevant (so disabling a server, or removing a
 browsed Mastodon instance/connected Bluesky account, hides its posts entirely), and re-fetches a
-`JonlineServer` whose acting account (the first enabled account signed into it, or anonymous) has
+`RellmServer` whose acting account (the first enabled account signed into it, or anonymous) has
 changed since the last fetch -- covering both disabling an account (falls back to anonymous) and
 enabling a different one. A `MastodonInstance`/`BlueskyFeed` never has an "acting account" that can
 change this way (see `feedSourceAccountId`), so this only ever re-fetches one of those the first time
@@ -1027,7 +1027,7 @@ applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
 applySearchChange shared model =
     let
         ( refetchedModel, refetchEffect ) =
-            refetchFeeds shared model (List.map JonlineServer (relevantServers shared model))
+            refetchFeeds shared model (List.map RellmServer (relevantServers shared model))
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -1411,7 +1411,7 @@ postsBeforeLabel context =
 plus a POST/REPLY context chooser, side by side in the generic
 `.filter-controls-row`/`.filter-search-field`/`.filter-controls-trailing`
 (`ui/filter_bar.css`) -- only those two contexts are offered for now
-(`Proto.Jonline.PostContext` has others, e.g. `EVENT`, that don't apply to a
+(`Proto.Rellm.PostContext` has others, e.g. `EVENT`, that don't apply to a
 plain posts feed). The clear ("╳") button, styled like `UI.elm`'s
 `fieldClearButton`/`.field-clear-button` (can't reuse that directly -- it's
 hardcoded to `Shared.Msg`/`AccountsPanel.Msg`, not this module's own `Msg`),

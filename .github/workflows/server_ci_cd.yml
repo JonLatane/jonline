@@ -34,7 +34,7 @@ on:
         description: "Cloudflare Zone ID for Ato Band"
         required: true
       HOMEBREW_TAP_TOKEN:
-        description: "GitHub PAT with contents:write on JonLatane/homebrew-jonline, used to push Formula updates"
+        description: "GitHub PAT with contents:write on JonLatane/homebrew-rellm, used to push Formula updates"
         required: true
 
 jobs:
@@ -69,9 +69,9 @@ jobs:
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: jonline-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          key: rellm-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            jonline-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+            rellm-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
         run: yarn install
@@ -199,9 +199,9 @@ jobs:
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          key: rellm-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+            rellm-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
         if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
@@ -247,9 +247,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.elm
-          key: jonline-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
+          key: rellm-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
           restore-keys: |
-            jonline-elm-build-${{ runner.os }}-
+            rellm-elm-build-${{ runner.os }}-
 
       - run: npm install --global elm elm-spa
 
@@ -294,8 +294,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-github-build
-          shared-key: jonline-build-${{ runner.OS }}-github-build
+          key: rellm-build-${{ runner.OS }}-github-build
+          shared-key: rellm-build-${{ runner.OS }}-github-build
           cache-workspace-crates: true
 
       - working-directory: backend
@@ -345,8 +345,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-arm64-github-build
-          shared-key: jonline-build-${{ runner.OS }}-arm64-github-build
+          key: rellm-build-${{ runner.OS }}-arm64-github-build
+          shared-key: rellm-build-${{ runner.OS }}-arm64-github-build
           cache-workspace-crates: true
 
       - working-directory: backend
@@ -388,8 +388,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-amd64-static-github-build
-          shared-key: jonline-build-${{ runner.OS }}-amd64-static-github-build
+          key: rellm-build-${{ runner.OS }}-amd64-static-github-build
+          shared-key: rellm-build-${{ runner.OS }}-amd64-static-github-build
           cache-workspace-crates: true
 
       # `static_pq` vendors & statically compiles libpq (via pq-sys's "bundled"
@@ -436,8 +436,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-arm64-static-github-build
-          shared-key: jonline-build-${{ runner.OS }}-arm64-static-github-build
+          key: rellm-build-${{ runner.OS }}-arm64-static-github-build
+          shared-key: rellm-build-${{ runner.OS }}-arm64-static-github-build
           cache-workspace-crates: true
 
       - working-directory: backend
@@ -453,14 +453,14 @@ jobs:
     name: Test Rust Binaries
     runs-on: ubuntu-latest
     # Backs the DB-backed specs under backend/src/tests/ (see src/tests/factories.rs), which run
-    # against TEST_DATABASE_URL - a dedicated `jonline_test` DB, analogous to a Rails dev/test
-    # split, kept separate from the `jonline_dev` DB used by a real running server. Migrations are
+    # against TEST_DATABASE_URL - a dedicated `rellm_test` DB, analogous to a Rails dev/test
+    # split, kept separate from the `rellm_dev` DB used by a real running server. Migrations are
     # applied automatically on first test run, so no separate migration step is needed here.
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: jonline_test
+          POSTGRES_DB: rellm_test
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
@@ -470,11 +470,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      TEST_DATABASE_URL: postgres://postgres@localhost:5432/jonline_test
+      TEST_DATABASE_URL: postgres://postgres@localhost:5432/rellm_test
       CARGO_INCREMENTAL: "0"
       MINIO_ENDPOINT: http://localhost:9000
       MINIO_REGION: ""
-      MINIO_BUCKET: jonline-test
+      MINIO_BUCKET: rellm-test
       MINIO_ACCESS_KEY: ROOTNAME
       MINIO_SECRET_KEY: CHANGEME123
     steps:
@@ -497,7 +497,7 @@ jobs:
       # mirrors `backend/Makefile`'s `local_minio_create` target.
       - name: Start MinIO
         run: |
-          docker run -d -p 9000:9000 --name jonline-test-minio \
+          docker run -d -p 9000:9000 --name rellm-test-minio \
             -e "MINIO_ROOT_USER=${MINIO_ACCESS_KEY}" -e "MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}" \
             minio/minio server /data
           for i in $(seq 1 30); do
@@ -508,14 +508,14 @@ jobs:
             sleep 1
           done
           echo "MinIO failed to become healthy in time" >&2
-          docker logs jonline-test-minio
+          docker logs rellm-test-minio
           exit 1
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./backend -> target
-          key: jonline-test-${{ runner.OS }}-github-test
-          shared-key: jonline-test-${{ runner.OS }}-github-test
+          key: rellm-test-${{ runner.OS }}-github-test
+          shared-key: rellm-test-${{ runner.OS }}-github-test
           cache-workspace-crates: true
       - working-directory: backend
         run: cargo test
@@ -553,9 +553,9 @@ jobs:
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          key: rellm-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+            rellm-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
@@ -653,7 +653,7 @@ jobs:
 
       - name: Rename Rust binaries for Dockerfiles
         run: >-
-          mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+          mv backend/target/release/rellm backend/target/release/rellm__server_release &&
           mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
           mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
           mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
@@ -668,11 +668,11 @@ jobs:
           mv backend/target/release/repair_email_messages backend/target/release/repair_email_messages__server_release &&
           mv backend/target/release/fix_duplicate_synced_events backend/target/release/fix_duplicate_synced_events__server_release
 
-      - name: Build and push jonline image
+      - name: Build and push rellm image
         uses: docker/build-push-action@v7
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rellm:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/rellm:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
           context: .
           file: ./deploys/docker/server/Dockerfile
           platforms: linux/amd64,linux/arm64
@@ -710,7 +710,7 @@ jobs:
 
       - name: Rename Rust binaries for Dockerfiles
         run: >-
-          mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+          mv backend/target/release/rellm backend/target/release/rellm__server_release &&
           mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
           mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
           mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
@@ -718,16 +718,16 @@ jobs:
           mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
           mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
-      - name: Build and push jonline_preview_generator image
+      - name: Build and push rellm_preview_generator image
         uses: docker/build-push-action@v7
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rellm_preview_generator:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/rellm_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
           context: .
           file: ./deploys/docker/preview_generator/Dockerfile
           platforms: linux/amd64,linux/arm64
 
-  deploy_jonlineio_server:
+  deploy_rellmio_server:
     name: Deploy Jonline.io Server
     if: github.ref == 'refs/heads/main'
     needs:
@@ -754,7 +754,7 @@ jobs:
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_internal.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
       # If you haven't already integrated with your registry and only want workloads in a particular namespace to be able to pull
       # from your registry, uncomment the next two commands.
@@ -764,16 +764,16 @@ jobs:
       # - name: Reference the secret you just uploaded as an imagePullSecrets
       #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
-      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+      - name: Delete stray CronJobs (background jobs moved to the rellm-jobs Deployment)
         run: kubectl delete cronjob --all -n jonline --ignore-not-found=true
 
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n jonline
 
       - name: Verify Server deployment
-        run: kubectl rollout status deployment/jonline -n jonline --timeout 3m
+        run: kubectl rollout status deployment/rellm -n jonline --timeout 3m
 
-      # Traefik's TLS-passthrough IngressRouteTCP routing (see jonline-https/jonline-grpc)
+      # Traefik's TLS-passthrough IngressRouteTCP routing (see rellm-https/rellm-grpc)
       # can get wedged pointing at stale backend pod IPs after a rollout replaces pods --
       # this refreshes it so jonline.io doesn't silently start 404ing/hanging post-deploy.
       - name: Bounce Traefik to refresh routing
@@ -802,7 +802,7 @@ jobs:
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
         run: .github/workflows/scripts/purge_cloudflare_cache.sh jonline.io
 
-  deploy_jonlineio_preview_generator:
+  deploy_rellmio_preview_generator:
     name: Deploy Jonline.io Preview Generator
     if: github.ref == 'refs/heads/main'
     needs:
@@ -827,7 +827,7 @@ jobs:
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
@@ -838,8 +838,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs:
-      - deploy_jonlineio_server
-      - deploy_jonlineio_preview_generator
+      - deploy_rellmio_server
+      - deploy_rellmio_preview_generator
       - push_server
       - push_preview_generator
       - test_consistency
@@ -894,38 +894,38 @@ jobs:
           tag: "v${{ steps.vars.outputs.full_version }}"
           makeLatest: true
           body: |-
-            # Jonline CI/CD Release
+            # Rellm CI/CD Release
 
             ### `v${{ steps.vars.outputs.full_version }}`
 
-            Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml).
+            Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/rellm/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/rellm/actions/workflows/server_ci_cd.yml).
 
             Images are available on DockerHub:
 
-            - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+            - [DockerHub: Rellm Server (jonlatane/rellm:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/rellm/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
-            - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+            - [DockerHub: Rellm Preview Generator (jonlatane/rellm_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/rellm_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
-            - *In testing/not yet ready for production use:* [DockerHub: JBL (Jonline Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+            - *In testing/not yet ready for production use:* [DockerHub: JBL (Rellm Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/rellm_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
             A macOS (Apple Silicon) build is also available via Homebrew:
 
             ```
-            brew install jonlatane/jonline/jonline
+            brew install jonlatane/rellm/rellm
             ```
 
             A self-updating Linux build (amd64/arm64) is available as a release tarball:
 
             ```
-            curl -s https://api.github.com/repos/jonlatane/jonline/releases/latest \
+            curl -s https://api.github.com/repos/jonlatane/rellm/releases/latest \
               | jq -r '.assets[] | select(.name | test("-linux\\.tar\\.bz2$")) | .browser_download_url' \
-              | xargs curl -L -o jonline.tar.bz2
-            mkdir jonline && tar xjf jonline.tar.bz2 -C jonline && rm jonline.tar.bz2
-            cd jonline
-            ./bin/jonline version
+              | xargs curl -L -o rellm.tar.bz2
+            mkdir rellm && tar xjf rellm.tar.bz2 -C rellm && rm rellm.tar.bz2
+            cd rellm
+            ./bin/rellm version
             ```
 
-            Run `./bin/jonline help` for other commands, including `update` to self-update in place.
+            Run `./bin/rellm help` for other commands, including `update` to self-update in place.
 
             ## Deployments
 
@@ -999,15 +999,15 @@ jobs:
           key: rust-macos-arm64-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
       # Mirrors deploys/docker/server/Dockerfile's /opt layout, but rooted at a
-      # staging dir that becomes /opt/homebrew/etc/jonline on the installed Mac.
-      - name: Assemble /opt/homebrew/etc/jonline package layout
+      # staging dir that becomes /opt/homebrew/etc/rellm on the installed Mac.
+      - name: Assemble /opt/homebrew/etc/rellm package layout
         run: |
           set -euo pipefail
-          PKG=jonline_pkg
+          PKG=rellm_pkg
           rm -rf "$PKG"
           mkdir -p "$PKG"
 
-          for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
+          for bin in rellm disable_cdn_grpc delete_expired_tokens delete_unowned_media \
                      sync_sources update_user_counts convert_media_sizes generate_preview_images delete_preview_images \
                      set_permission to_db_id to_proto_id; do
             cp "backend/target/release/${bin}" "$PKG/${bin}"
@@ -1017,11 +1017,11 @@ jobs:
           cp backend/background_jobs.sh "$PKG/background_jobs.sh"
           chmod +x "$PKG/background_jobs.sh"
 
-          mv "$PKG/jonline" "$PKG/jonline-server"
+          mv "$PKG/rellm" "$PKG/rellm-server"
 
           # backend/src/web/*.rs read frontend/doc assets via CWD-relative
           # "opt/..." paths (mirroring deploys/docker/server/Dockerfile, which
-          # COPYs to /opt/... and runs with CWD "/") -- docs/homebrew_jonline.sh
+          # COPYs to /opt/... and runs with CWD "/") -- docs/rellm_homebrew.sh
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
@@ -1033,43 +1033,43 @@ jobs:
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
           cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
 
-          # Bundled so `jonline deploy <targets...>` (docs/homebrew_jonline.sh) can run these
+          # Bundled so `rellm deploy <targets...>` (docs/rellm_homebrew.sh) can run these
           # Makefile targets against your own K8s cluster -- see deploys/distributables.sh.
           # Checkout is fresh here, so this can't pick up gitignored local state (generated_certs'
           # private keys, deploys/backups' Postgres dumps, etc.) -- only what's actually tracked.
           cp -R deploys/. "$PKG/opt/deploys/"
 
-          # grpcurl is useful to have on a jonline instance (see Dockerfile) --
+          # grpcurl is useful to have on a rellm instance (see Dockerfile) --
           # osx_arm64 build, matching the version pinned there.
           curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_osx_arm64.tar.gz" | tar -xz -C "$PKG" grpcurl
 
-          tar czf "jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" -C "$PKG" .
+          tar czf "rellm-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" -C "$PKG" .
 
       - name: Compute sha256
         id: sha
-        run: echo "sha256=$(sha256sum jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
+        run: echo "sha256=$(sha256sum rellm-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Upload release asset to v${{ steps.vars.outputs.full_version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "v${{ steps.vars.outputs.full_version }}" "jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" --repo jonlatane/jonline --clobber
+        run: gh release upload "v${{ steps.vars.outputs.full_version }}" "rellm-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" --repo jonlatane/rellm --clobber
 
-      - name: Push Formula/jonline.rb to JonLatane/homebrew-jonline
+      - name: Push Formula/rellm.rb to JonLatane/homebrew-rellm
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/JonLatane/homebrew-jonline.git" tap
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/JonLatane/homebrew-rellm.git" tap
 
-          cat > tap/Formula/jonline.rb <<'JONLINE_FORMULA_HEADER_EOF'
+          cat > tap/Formula/rellm.rb <<'RELLM_FORMULA_HEADER_EOF'
           # This file is generated and pushed automatically by the Server CI/CD workflow
-          # (create_homebrew_release job) in https://github.com/jonlatane/jonline on every
+          # (create_homebrew_release job) in https://github.com/jonlatane/rellm on every
           # release to main. Don't hand-edit it -- changes will be overwritten. The launcher
-          # script below is sourced from docs/homebrew_jonline.sh in that repo.
-          class Jonline < Formula
-            desc "Jonline federated social server"
-            homepage "https://github.com/jonlatane/jonline"
-            url "https://github.com/jonlatane/jonline/releases/download/vFULL_VERSION_PLACEHOLDER/jonline-FULL_VERSION_PLACEHOLDER-macos-arm64.tar.gz"
+          # script below is sourced from docs/rellm_homebrew.sh in that repo.
+          class Rellm < Formula
+            desc "Rellm federated social server"
+            homepage "https://github.com/jonlatane/rellm"
+            url "https://github.com/jonlatane/rellm/releases/download/vFULL_VERSION_PLACEHOLDER/rellm-FULL_VERSION_PLACEHOLDER-macos-arm64.tar.gz"
             sha256 "SHA256_PLACEHOLDER"
             version "FULL_VERSION_PLACEHOLDER"
             license "AGPL-3.0-only"
@@ -1078,45 +1078,45 @@ jobs:
             depends_on "libpq"
 
             def install
-              (etc/"jonline").install Dir["*"]
-              (bin/"jonline").write <<~SCRIPT
-          JONLINE_FORMULA_HEADER_EOF
+              (etc/"rellm").install Dir["*"]
+              (bin/"rellm").write <<~SCRIPT
+          RELLM_FORMULA_HEADER_EOF
 
-          # docs/homebrew_jonline.sh is plain, standalone bash aside from the
-          # @@JONLINE_ETC@@ placeholder, which becomes Ruby's `#{etc}` interpolation
+          # docs/rellm_homebrew.sh is plain, standalone bash aside from the
+          # @@RELLM_ETC@@ placeholder, which becomes Ruby's `#{etc}` interpolation
           # here -- Homebrew resolves that to the real install prefix at `brew install`
           # time, so it can't be a fixed value baked in at CI time.
-          sed -e 's/@@JONLINE_ETC@@/#{etc}/' -e 's/^/                /' docs/homebrew_jonline.sh >> tap/Formula/jonline.rb
+          sed -e 's/@@RELLM_ETC@@/#{etc}/' -e 's/^/                /' docs/rellm_homebrew.sh >> tap/Formula/rellm.rb
 
-          cat >> tap/Formula/jonline.rb <<'JONLINE_FORMULA_FOOTER_EOF'
+          cat >> tap/Formula/rellm.rb <<'RELLM_FORMULA_FOOTER_EOF'
               SCRIPT
-              chmod 0755, bin/"jonline"
+              chmod 0755, bin/"rellm"
 
-              # bin/"jonline" implements `completion bash`/`completion zsh` (see
-              # docs/homebrew_jonline.sh) as a positional arg, not a `--shell=`
+              # bin/"rellm" implements `completion bash`/`completion zsh` (see
+              # docs/rellm_homebrew.sh) as a positional arg, not a `--shell=`
               # flag, so shell_parameter_format is left at its nil default --
               # Homebrew's :arg format actually means `--shell=bash`, despite
-              # the name. This runs `jonline completion bash`/`completion zsh`
+              # the name. This runs `rellm completion bash`/`completion zsh`
               # to capture the scripts, which Homebrew installs into the
               # right completions dirs.
-              generate_completions_from_executable(bin/"jonline", "completion", shells: [:bash, :zsh])
+              generate_completions_from_executable(bin/"rellm", "completion", shells: [:bash, :zsh])
             end
 
             test do
-              system "#{bin}/jonline", "version"
+              system "#{bin}/rellm", "version"
             end
           end
-          JONLINE_FORMULA_FOOTER_EOF
+          RELLM_FORMULA_FOOTER_EOF
 
-          sed -i "s|FULL_VERSION_PLACEHOLDER|${{ steps.vars.outputs.full_version }}|g" tap/Formula/jonline.rb
-          sed -i "s|SHA256_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" tap/Formula/jonline.rb
+          sed -i "s|FULL_VERSION_PLACEHOLDER|${{ steps.vars.outputs.full_version }}|g" tap/Formula/rellm.rb
+          sed -i "s|SHA256_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" tap/Formula/rellm.rb
 
           cd tap
-          git -c user.name="Jonline CI" -c user.email="ci@jonline.io" add Formula/jonline.rb
+          git -c user.name="Rellm CI" -c user.email="ci@jonline.io" add Formula/rellm.rb
           if git diff --cached --quiet; then
             echo "No Formula changes to push"
           else
-            git -c user.name="Jonline CI" -c user.email="ci@jonline.io" commit -m "jonline ${{ steps.vars.outputs.full_version }}"
+            git -c user.name="Rellm CI" -c user.email="ci@jonline.io" commit -m "rellm ${{ steps.vars.outputs.full_version }}"
             git push origin main
           fi
 
@@ -1190,19 +1190,19 @@ jobs:
       - name: Assemble Linux release package layout
         run: |
           set -euo pipefail
-          PKG=jonline_linux_pkg
+          PKG=rellm_linux_pkg
           rm -rf "$PKG"
           mkdir -p "$PKG/bin"
 
           for arch in amd64 arm64; do
             src="backend/target/release-${arch}"
-            for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
+            for bin in rellm disable_cdn_grpc delete_expired_tokens delete_unowned_media \
                        sync_sources update_user_counts convert_media_sizes generate_preview_images delete_preview_images \
                        set_permission to_db_id to_proto_id; do
               cp "${src}/${bin}" "$PKG/${bin}-${arch}"
               chmod +x "$PKG/${bin}-${arch}"
             done
-            mv "$PKG/jonline-${arch}" "$PKG/jonline-server-${arch}"
+            mv "$PKG/rellm-${arch}" "$PKG/rellm-server-${arch}"
           done
 
           cp backend/background_jobs.sh "$PKG/background_jobs.sh"
@@ -1212,7 +1212,7 @@ jobs:
 
           # backend/src/web/*.rs read frontend/doc assets via CWD-relative
           # "opt/..." paths (mirroring deploys/docker/server/Dockerfile, which
-          # COPYs to /opt/... and runs with CWD "/") -- docs/linux_jonline.sh
+          # COPYs to /opt/... and runs with CWD "/") -- docs/rellm_linux.sh
           # cd's into this package dir before exec'ing the server, so those
           # assets need to live under an "opt/" subdir here too, not the
           # package root.
@@ -1224,42 +1224,42 @@ jobs:
           cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
           cp -R frontends/flutter/build/web/. "$PKG/opt/flutter_web/"
 
-          # Bundled so `jonline deploy <targets...>` (docs/linux_jonline.sh) can run these
+          # Bundled so `rellm deploy <targets...>` (docs/rellm_linux.sh) can run these
           # Makefile targets against your own K8s cluster -- see deploys/distributables.sh.
           # Checkout is fresh here, so this can't pick up gitignored local state (generated_certs'
           # private keys, deploys/backups' Postgres dumps, etc.) -- only what's actually tracked.
           cp -R deploys/. "$PKG/opt/deploys/"
 
-          # grpcurl is useful to have on a jonline instance (see Dockerfile) --
+          # grpcurl is useful to have on a rellm instance (see Dockerfile) --
           # one per architecture, matching the version pinned there.
           curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C "$PKG" grpcurl
           mv "$PKG/grpcurl" "$PKG/grpcurl-amd64"
           curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_arm64.tar.gz" | tar -xz -C "$PKG" grpcurl
           mv "$PKG/grpcurl" "$PKG/grpcurl-arm64"
 
-          # docs/linux_jonline.sh is plain, standalone bash aside from the
-          # @@JONLINE_PACKAGE_BASE_DIR@@ placeholder -- unlike Homebrew's
-          # @@JONLINE_ETC@@ (Ruby-interpolated at `brew install` time), this
+          # docs/rellm_linux.sh is plain, standalone bash aside from the
+          # @@RELLM_PACKAGE_BASE_DIR@@ placeholder -- unlike Homebrew's
+          # @@RELLM_ETC@@ (Ruby-interpolated at `brew install` time), this
           # tarball can be extracted anywhere, so a concrete default install
           # dir is baked in here at CI time instead. It stays as unexpanded
           # shell syntax so it resolves against whichever user's $HOME
           # actually runs it.
-          sed 's|@@JONLINE_PACKAGE_BASE_DIR@@|$HOME/.jonline-linux|' docs/linux_jonline.sh > "$PKG/bin/jonline"
-          chmod +x "$PKG/bin/jonline"
+          sed 's|@@RELLM_PACKAGE_BASE_DIR@@|$HOME/.rellm-linux|' docs/rellm_linux.sh > "$PKG/bin/rellm"
+          chmod +x "$PKG/bin/rellm"
 
-          tar cjf "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" -C "$PKG" .
+          tar cjf "rellm-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" -C "$PKG" .
 
       - name: Compute sha256
-        run: sha256sum "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" > "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256"
+        run: sha256sum "rellm-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" > "rellm-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256"
 
       - name: Upload release assets to v${{ steps.vars.outputs.full_version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "v${{ steps.vars.outputs.full_version }}" \
-            "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" \
-            "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256" \
-            --repo jonlatane/jonline --clobber
+            "rellm-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" \
+            "rellm-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256" \
+            --repo jonlatane/rellm --clobber
 
   deploy_bullcitysocial:
     name: Deploy Bull City Social
@@ -1287,16 +1287,16 @@ jobs:
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
-      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+      - name: Delete stray CronJobs (background jobs moved to the rellm-jobs Deployment)
         run: kubectl delete cronjob --all -n bullcitysocial --ignore-not-found=true
 
       - name: Deploy to Bull City Social via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n bullcitysocial
 
       - name: Verify Server deployment
-        run: kubectl rollout status deployment/jonline -n bullcitysocial --timeout 3m
+        run: kubectl rollout status deployment/rellm -n bullcitysocial --timeout 3m
 
       - name: Deploy Preview Generator
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
@@ -1348,16 +1348,16 @@ jobs:
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
-      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+      - name: Delete stray CronJobs (background jobs moved to the rellm-jobs Deployment)
         run: kubectl delete cronjob --all -n oakcitysocial --ignore-not-found=true
 
       - name: Deploy to Oak City Social via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n oakcitysocial
 
       - name: Verify Server deployment
-        run: kubectl rollout status deployment/jonline -n oakcitysocial --timeout 3m
+        run: kubectl rollout status deployment/rellm -n oakcitysocial --timeout 3m
 
       - name: Deploy Preview Generator
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial
@@ -1409,16 +1409,16 @@ jobs:
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
-      - name: Delete stray CronJobs (background jobs moved to the jonline-jobs Deployment)
+      - name: Delete stray CronJobs (background jobs moved to the rellm-jobs Deployment)
         run: kubectl delete cronjob --all -n ato-band --ignore-not-found=true
 
       - name: Deploy to Ato Band via DigitalOcean Kubernetes
         run: kubectl apply -f deploys/k8s/server_internal.yaml -n ato-band
 
       - name: Verify Server deployment
-        run: kubectl rollout status deployment/jonline -n ato-band --timeout 3m
+        run: kubectl rollout status deployment/rellm -n ato-band --timeout 3m
 
       - name: Deploy Preview Generator
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n ato-band
@@ -1449,7 +1449,7 @@ jobs:
     # deploy_bullcitysocial, deploy_oakcitysocial, and deploy_ato_band run concurrently,
     # so this waits on all three and bounces Traefik once for the group -- rather than
     # once per namespace -- since any deploy's pod churn can wedge Traefik's
-    # TLS-passthrough routing (see the matching step in deploy_jonlineio_server). Runs
+    # TLS-passthrough routing (see the matching step in deploy_rellmio_server). Runs
     # if any succeeded, since a partial-success deploy still churns pods and can still
     # wedge routing.
     needs:
@@ -1467,7 +1467,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 rellm-be
 
       - name: Bounce Traefik to refresh routing
         run: |

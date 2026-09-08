@@ -1,6 +1,6 @@
 module Components.MediaRenderer exposing (MediaSize(..), SizeConstraint(..), view, viewAutoplay)
 
-{-| Renders a single `Proto.Jonline.MediaReference` -- an image, a video, or
+{-| Renders a single `Proto.Rellm.MediaReference` -- an image, a video, or
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
 download-link fallback for content types the browser can't render inline.
 
@@ -24,7 +24,7 @@ Mirrors the Tamagui app's `media_renderer.tsx`, minus its social embed
 providers (Twitter/Instagram/etc. -- those key off `Post.link`, not
 `MediaReference`, and are handled one level up by the Tamagui
 `PostMediaRenderer`; not ported here) and its `ReactPlayer` dependency for
-video -- a plain HTML5 `<video controls>` covers the same MIME types Jonline
+video -- a plain HTML5 `<video controls>` covers the same MIME types Rellm
 actually serves media as.
 
 `onImageClicked` fires (with `media.id`) only for images -- videos keep their
@@ -42,7 +42,7 @@ import Html exposing (Html, a, div, img, object, text, video)
 import Html.Attributes exposing (alt, attribute, class, controls, href, property, src, style, target, type_)
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
-import Proto.Jonline exposing (MediaReference)
+import Proto.Rellm exposing (MediaReference)
 import Shared.AccountsPanel as AccountsPanel
 
 

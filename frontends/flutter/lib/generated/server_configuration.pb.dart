@@ -20,7 +20,7 @@ import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'server_configuration.pbenum.dart';
 
-/// Configuration for a Jonline server instance.
+/// Configuration for a Rellm server instance.
 class ServerConfiguration extends $pb.GeneratedMessage {
   factory ServerConfiguration({
     ServerInfo? serverInfo,
@@ -91,7 +91,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   factory ServerConfiguration.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerConfiguration.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
     ..aOM<$1.FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: $1.FederationInfo.create)
     ..pc<$14.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
@@ -262,7 +262,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// If set, enables External CDN support for the server. This means that the
   /// non-secure HTTP server (on port 80) will *not* redirect to the secure server,
   /// and instead serve up Tamagui Web/Flutter clients directly. This allows you
-  /// to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+  /// to point Cloudflare's "CNAME HTTPS Proxy" feature at your Rellm server to serve
   /// up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
   /// See ExternalCDNConfig for more details on securing this setup.
   @$pb.TagNumber(90)
@@ -304,7 +304,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   WebPushConfig ensureWebPushConfig() => $_ensure(14);
 }
 
-/// Useful for setting your Jonline instance up to run underneath a CDN.
+/// Useful for setting your Rellm instance up to run underneath a CDN.
 /// By default, the web client uses `window.location.hostname` to determine the backend server.
 /// If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
 class ExternalCDNConfig extends $pb.GeneratedMessage {
@@ -341,7 +341,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   factory ExternalCDNConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ExternalCDNConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'frontendHost')
     ..aOS(2, _omitFieldNames ? '' : 'backendHost')
     ..aOB(3, _omitFieldNames ? '' : 'secureMedia')
@@ -430,11 +430,11 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearMediaIpv6Allowlist() => clearField(5);
 
-  /// (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports).
-  /// When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve
+  /// (TODO) When implemented, this actually changes the whole Rellm protocol (in terms of ports).
+  /// When enabled, Rellm should *not* server a secure site on HTTPS, and instead serve
   /// the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to
   /// always seek out a secure client on port 443 when this feature is enabled.
-  /// This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
+  /// This would let Rellm leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
   /// (This is a Cloudflare-specific feature requirement.)
   @$pb.TagNumber(6)
   $core.bool get cdnGrpc => $_getBF(5);
@@ -469,7 +469,7 @@ class MediaSettings extends $pb.GeneratedMessage {
   factory MediaSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MediaSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
     ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
@@ -567,7 +567,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   factory FeatureSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FeatureSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
     ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
@@ -690,7 +690,7 @@ class PostSettings extends $pb.GeneratedMessage {
   factory PostSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PostSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
     ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
@@ -837,7 +837,7 @@ class EventSettings extends $pb.GeneratedMessage {
   factory EventSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
     ..e<$13.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
     ..e<$13.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
@@ -1026,7 +1026,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   factory ServerInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'shortName')
     ..aOS(3, _omitFieldNames ? '' : 'description')
@@ -1152,7 +1152,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   $core.List<$core.String> get recommendedServerHosts => $_getList(8);
 }
 
-/// Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media).
+/// Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media).
 class ServerLogo extends $pb.GeneratedMessage {
   factory ServerLogo({
     $core.String? squareMediaId,
@@ -1179,7 +1179,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   factory ServerLogo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerLogo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerLogo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerLogo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'squareMediaId', protoName: 'squareMediaId')
     ..aOS(2, _omitFieldNames ? '' : 'squareMediaIdDark', protoName: 'squareMediaIdDark')
     ..aOS(3, _omitFieldNames ? '' : 'wideMediaId', protoName: 'wideMediaId')
@@ -1249,7 +1249,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   void clearWideMediaIdDark() => clearField(4);
 }
 
-/// If set, overrides the default tab set for the Elm navigation on a Jonline instance.
+/// If set, overrides the default tab set for the Elm navigation on a Rellm instance.
 class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet({
     CustomHomePage? home,
@@ -1268,7 +1268,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
   factory CustomNavigationTabSet.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CustomNavigationTabSet.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabSet', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTabSet', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<CustomHomePage>(1, _omitFieldNames ? '' : 'home', subBuilder: CustomHomePage.create)
     ..pc<CustomNavigationTab>(2, _omitFieldNames ? '' : 'tabs', $pb.PbFieldType.PM, subBuilder: CustomNavigationTab.create)
     ..hasRequiredFields = false
@@ -1309,7 +1309,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
 
   /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
   /// Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
-  /// matching predefined tab -- see [`CustomNavigationTab`](#jonline-CustomNavigationTab).path's own doc.
+  /// matching predefined tab -- see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
   /// `/` itself is overridden via `home` above instead.
   @$pb.TagNumber(2)
   $core.List<CustomNavigationTab> get tabs => $_getList(1);
@@ -1363,7 +1363,7 @@ class CustomHomePage extends $pb.GeneratedMessage {
     2 : CustomHomePage_Target.postId,
     0 : CustomHomePage_Target.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomHomePage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomHomePage', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [1, 2])
     ..e<NavigationTab>(1, _omitFieldNames ? '' : 'tab', $pb.PbFieldType.OE, defaultOrMaker: NavigationTab.HOME_TAB, valueOf: NavigationTab.valueOf, enumValues: NavigationTab.values)
     ..aOS(2, _omitFieldNames ? '' : 'postId')
@@ -1527,7 +1527,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
     11 : CustomNavigationTab_Icon.iconMediaId,
     0 : CustomNavigationTab_Icon.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTab', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CustomNavigationTab', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [1, 2, 3])
     ..oo(1, [10, 11])
     ..e<NavigationTab>(1, _omitFieldNames ? '' : 'tab', $pb.PbFieldType.OE, defaultOrMaker: NavigationTab.HOME_TAB, valueOf: NavigationTab.valueOf, enumValues: NavigationTab.values)
@@ -1608,7 +1608,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   void clearEmojiIcon() => clearField(10);
 
-  /// Media ID (see [`Media`](#jonline-Media) APIs) of an image shown as the tab's icon.
+  /// Media ID (see [`Media`](#rellm-Media) APIs) of an image shown as the tab's icon.
   @$pb.TagNumber(11)
   $core.String get iconMediaId => $_getSZ(4);
   @$pb.TagNumber(11)
@@ -1675,7 +1675,7 @@ class ServerColors extends $pb.GeneratedMessage {
   factory ServerColors.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerColors.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerColors', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerColors', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..a<$core.int>(1, _omitFieldNames ? '' : 'primary', $pb.PbFieldType.OU3)
     ..a<$core.int>(2, _omitFieldNames ? '' : 'navigation', $pb.PbFieldType.OU3)
     ..a<$core.int>(3, _omitFieldNames ? '' : 'author', $pb.PbFieldType.OU3)
@@ -1775,7 +1775,7 @@ class WebPushConfig extends $pb.GeneratedMessage {
   factory WebPushConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory WebPushConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'WebPushConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'WebPushConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'publicVapidKey')
     ..aOS(2, _omitFieldNames ? '' : 'privateVapidKey')
     ..hasRequiredFields = false

@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
 import "google/protobuf/timestamp.proto";
 import "authors.proto";
 
-// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
+// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
 // but for pushing content out rather than pulling content in. Originally Event-specific
-// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
-// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
+// (as `EventSyncDestination`), now shared by both [`EventInstance`](#rellm-EventInstance)s (see `events.proto`'s
+// [`SyncEventInstanceRequest`](#rellm-SyncEventInstanceRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
 message SyncDestination {
   // Unique ID for the destination.
   string id = 1;
@@ -21,7 +21,7 @@ message SyncDestination {
   optional google.protobuf.Timestamp updated_at = 5;
 
   // The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  // request time (unlike [`SyncSource`](#jonline-SyncSource)'s `event_count`/`event_instance_count`, which are
+  // request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`event_instance_count`, which are
   // recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   // in bulk on an interval.
   optional uint64 synced_event_instance_count = 6;
@@ -45,7 +45,7 @@ message SyncDestination {
   }
 }
 
-// Response to a request for the current user's [`SyncDestination`](#jonline-SyncDestination)s.
+// Response to a request for the current user's [`SyncDestination`](#rellm-SyncDestination)s.
 message GetSyncDestinationsResponse {
   // The current user's SyncDestinations.
   repeated SyncDestination destinations = 1;
@@ -59,12 +59,12 @@ message DeleteSyncDestinationRequest {
   bool delete_synced_posts = 2;
 }
 
-// A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal profile**. Facebook
+// A Facebook Page connected as a [`SyncDestination`](#rellm-SyncDestination) -- **never a personal profile**. Facebook
 // deprecated the `publish_actions` permission in 2018, which was the only way any third-party app
 // could ever post to a personal timeline; there's no Graph API call today, for any app, that can
 // post anything (feed post, photo, or otherwise) to a personal profile on a user's behalf. A Page
 // is the only kind of Facebook entity a self-hosted server like this can post to at all -- this
-// isn't a Jonline design choice to work around, it's a hard platform restriction. (Unrelated to
+// isn't a Rellm design choice to work around, it's a hard platform restriction. (Unrelated to
 // this: Facebook *Events* specifically are also unreachable, even for Pages -- see
 // `docs/facebook_and_x_twitter_federation.md`'s "It posts to the Page's feed, not a real Facebook
 // Event" for that separate, independent 2018-era lockdown.)
@@ -83,14 +83,14 @@ message FacebookPage {
   optional string short_lived_user_access_token = 3;
 }
 
-// An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal
-// Instagram account**. Unlike [`FacebookPage`](#jonline-FacebookPage)'s restriction (a *deprecated* permission that used to let
+// An Instagram Business/Creator account connected as a [`SyncDestination`](#rellm-SyncDestination) -- **never a personal
+// Instagram account**. Unlike [`FacebookPage`](#rellm-FacebookPage)'s restriction (a *deprecated* permission that used to let
 // apps post to a personal timeline), this one was never possible in the first place: Instagram's
 // Content Publishing API was built from the start only for professional (Business/Creator)
 // accounts, so a personal Instagram account simply has no API surface to post to at all,
 // regardless of what this server does. Posting to Instagram also requires the professional account
 // to be linked to a Facebook Page, so this reuses the same Facebook Login popup and app credentials
-// as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's access token, then looks up
+// as [`FacebookPage`](#rellm-FacebookPage) -- the server exchanges the token for the Page's access token, then looks up
 // that Page's linked Instagram Business account.
 //
 // Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
@@ -104,13 +104,13 @@ message InstagramAccount {
   // The linked Facebook Page's ID, kept for reference/reconnect.
   string page_id = 3;
   // Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
-  // from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a
+  // from client-side Facebook Login (same flow as [`FacebookPage`](#rellm-FacebookPage)), exchanged server-side for a
   // long-lived Page access token, which is also used to post to the linked Instagram account.
   // Never populated in responses.
   optional string short_lived_user_access_token = 4;
 }
 
-// A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
+// A Mastodon account connected as a [`SyncDestination`](#rellm-SyncDestination) via a user-supplied Personal Access Token
 // (generated on the user's own instance, under Preferences > Development), rather than an OAuth
 // popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
 // register ahead of time the way Facebook/Instagram have one.
@@ -128,7 +128,7 @@ message MastodonAccount {
   optional string access_token = 3;
 }
 
-// A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
+// A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#rellm-SyncDestination) via an "App Password"
 // (generated at Settings > App Passwords -- not the account's main password), rather than an
 // OAuth popup.
 //
@@ -147,11 +147,11 @@ message BlueskyAccount {
   optional string app_password = 3;
 }
 
-// An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination), via an OAuth 2.0 Authorization Code +
+// An X (Twitter) account connected as a [`SyncDestination`](#rellm-SyncDestination), via an OAuth 2.0 Authorization Code +
 // PKCE flow at x.com. Requires this server to have a registered X Developer App configured (see
 // `FederationInfo.x_twitter_auth_config`) -- every RPC touching an `XTwitterAccount` destination
 // fails with `x_twitter_app_not_configured` until an admin sets one, mirroring
-// [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`. Unlike Facebook/Instagram/Threads (which reuse one
+// [`FacebookAuthConfig`](#rellm-FacebookAuthConfig)/`facebook_app_not_configured`. Unlike Facebook/Instagram/Threads (which reuse one
 // Meta App), an admin registers this app once and every user on the server connects their own X
 // account through it -- no per-user API keys needed.
 //
@@ -177,19 +177,19 @@ message XTwitterAccount {
 }
 
 // A connected Threads account -- **a genuinely personal account works fine here**, unlike
-// [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount): the Threads API (a separate product from Instagram's,
+// [`FacebookPage`](#rellm-FacebookPage)/[`InstagramAccount`](#rellm-InstagramAccount): the Threads API (a separate product from Instagram's,
 // launched 2024) has no Page-linkage or Business/Creator-account requirement at all -- Threads
 // OAuth directly authorizes whatever single Threads account the user logs in with, personal or
-// not. It's still a product added to this server's existing Meta App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig))
+// not. It's still a product added to this server's existing Meta App (see [`FacebookAuthConfig`](#rellm-FacebookAuthConfig))
 // rather than a separately-registered app, so no separate auth config is needed. Unlike
-// [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code` OAuth flow at
+// [`FacebookPage`](#rellm-FacebookPage)/[`InstagramAccount`](#rellm-InstagramAccount), connecting one is a `response_type=code` OAuth flow at
 // threads.net (not facebook.com) with no "choose a Page" step -- the code is exchanged server-side
 // for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
 // `grant_type=th_refresh_token` -- not yet implemented; a connected destination will need
 // reconnecting after ~60 days until a refresh job exists).
 //
 // Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
-// posted -- no carousel/multi-image support yet. Unlike [`InstagramAccount`](#jonline-InstagramAccount), a text-only post
+// posted -- no carousel/multi-image support yet. Unlike [`InstagramAccount`](#rellm-InstagramAccount), a text-only post
 // (no media at all) is valid.
 message ThreadsAccount {
   // The account's Threads user ID, used for all posting calls.
@@ -201,8 +201,8 @@ message ThreadsAccount {
   optional string authorization_code = 3;
 }
 
-// The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
-// one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+// The status of a single piece of content's (an [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post)) sync (cross-post) to
+// one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
 // `Post.sync_destinations` can reuse it.
 message SyncDestinationStatus {
   // The SyncDestination this status is for.

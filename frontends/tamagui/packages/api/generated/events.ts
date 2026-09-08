@@ -15,7 +15,7 @@ import { SyncDestinationStatus, SyncSource } from "./sync";
 import { ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 /**
  * The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
@@ -173,8 +173,8 @@ export function attendanceStatusToJSON(object: AttendanceStatus): string {
 }
 
 /**
- * Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#jonline-Event)s with the same ID
- * if that [`Event`](#jonline-Event) has multiple [`EventInstance`](#jonline-EventInstance)s in the time frame the client asked for.
+ * Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
+ * if that [`Event`](#rellm-Event) has multiple [`EventInstance`](#rellm-EventInstance)s in the time frame the client asked for.
  *
  * These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
  *
@@ -192,11 +192,11 @@ export interface GetEventsRequest {
   authorUserId?:
     | string
     | undefined;
-  /** Limits results to those in the given group ID (via [`GroupPost`](#jonline-GroupPost) association's for the Event's internal [`Post`](#jonline-Post)). */
+  /** Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association's for the Event's internal [`Post`](#rellm-Post)). */
   groupId?:
     | string
     | undefined;
-  /** Filters returned [`EventInstance`](#jonline-EventInstance)s by time. */
+  /** Filters returned [`EventInstance`](#rellm-EventInstance)s by time. */
   timeFilter?:
     | TimeFilter
     | undefined;
@@ -212,7 +212,7 @@ export interface GetEventsRequest {
    * only returns events where the given user's status matches one of the given statuses.
    */
   attendanceStatuses: AttendanceStatus[];
-  /** Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#jonline-PostContext) of `EVENT` or `EVENT_INSTANCE`. */
+  /** Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `EVENT_INSTANCE`. */
   postId?:
     | string
     | undefined;
@@ -231,7 +231,7 @@ export interface GetEventsRequest {
   /**
    * Auth token proving ownership of an anonymous RSVP, mirroring
    * `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
-   * (possibly still-`PENDING`) [`EventAttendance`](#jonline-EventAttendance) and its `EventInstance.location` (when
+   * (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `EventInstance.location` (when
    * `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
    * `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
    * does automatically.
@@ -240,7 +240,7 @@ export interface GetEventsRequest {
 }
 
 /**
- * Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#jonline-EventInstance).
+ * Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#rellm-EventInstance).
  * API currently only supports `ends_after`.
  */
 export interface TimeFilter {
@@ -261,7 +261,7 @@ export interface TimeFilter {
 }
 
 /**
- * A list of [`Event`](#jonline-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#jonline-GetEventsRequest)) set of their [`EventInstance`](#jonline-EventInstance)s.
+ * A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`EventInstance`](#rellm-EventInstance)s.
  *
  * Note that `GetEventsResponse` may often include duplicate Events with the same ID.
  * I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -281,11 +281,11 @@ export interface GetEventsResponse {
  * An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
  * about the `Event`. Actual time data lies in its `EventInstances`.
  *
- * (Eventually, Jonline Events should also support ticketing.)
+ * (Eventually, Rellm Events should also support ticketing.)
  */
 export interface Event {
   /**
-   * The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#jonline-PostContext) should be `EVENT`.
+   * The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`.
    * An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
    */
   post:
@@ -342,7 +342,7 @@ export interface EventInfo {
     | undefined;
   /**
    * Hide the location until the user RSVPs (and it's accepted).
-   * From a system perspective, when this is set, Events will not include the [`Location`](#jonline-Location) until the user has RSVP'd.
+   * From a system perspective, when this is set, Events will not include the [`Location`](#rellm-Location) until the user has RSVP'd.
    * Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
    * user whose attendance is approved (or the event owner).
    */
@@ -357,21 +357,21 @@ export interface EventInfo {
 }
 
 /**
- * The time-based component of an [`Event`](#jonline-Event). Has a `starts_at` and `ends_at` time,
- * a [`Location`](#jonline-Location), and an optional [`Post`](#jonline-Post) (and discussion thread) specific to this particular
- * `EventInstance` in addition to the parent [`Event`](#jonline-Event).
+ * The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
+ * a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
+ * `EventInstance` in addition to the parent [`Event`](#rellm-Event).
  */
 export interface EventInstance {
-  /** ID of the parent [`Event`](#jonline-Event) (i.e. the parent `Event.post.id`). */
+  /** ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). */
   eventId: string;
   /**
-   * Optional [`Post`](#jonline-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#jonline-PostContext) should be `EVENT_INSTANCE`.
+   * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
    * An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
    */
   post:
     | Post
     | undefined;
-  /** Additional configuration for this instance of this [`EventInstance`](#jonline-EventInstance) beyond the [`EventInfo`](#jonline-EventInfo) in its parent [`Event`](#jonline-Event). */
+  /** Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). */
   info:
     | EventInstanceInfo
     | undefined;
@@ -387,7 +387,7 @@ export interface EventInstance {
   location?:
     | Location
     | undefined;
-  /** The "iCal ID" (or external ID) of this instance, if its [`Event`](#jonline-Event) was synced from a [`SyncSource`](#jonline-SyncSource). */
+  /** The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource). */
   syncSourceInstanceId?:
     | string
     | undefined;
@@ -420,7 +420,7 @@ export interface EventInstanceInfo {
 }
 
 /**
- * Consolidated type for RSVP info for an [`EventInstance`](#jonline-EventInstance).
+ * Consolidated type for RSVP info for an [`EventInstance`](#rellm-EventInstance).
  * Curently, the `optional` counts below are *never* returned by the API.
  */
 export interface EventInstanceRsvpInfo {
@@ -481,15 +481,15 @@ export interface EventAttendances {
 }
 
 /**
- * Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#jonline-EventInstance). Such as:
- * * A user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
- * * Invitation status of a user to an [`EventInstance`](#jonline-EventInstance).
- * * [`ContactMethod`](#jonline-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#jonline-EventInstance).
+ * Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#rellm-EventInstance). Such as:
+ * * A user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+ * * Invitation status of a user to an [`EventInstance`](#rellm-EventInstance).
+ * * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#rellm-EventInstance).
  */
 export interface EventAttendance {
   /** Unique server-generated ID for the attendance. */
   id: string;
-  /** ID of the [`EventInstance`](#jonline-EventInstance) the attendance is for. */
+  /** ID of the [`EventInstance`](#rellm-EventInstance) the attendance is for. */
   eventInstanceId: string;
   /** If the attendance is non-anonymous, core data about the user. */
   userAttendee?:
@@ -501,7 +501,7 @@ export interface EventAttendance {
     | undefined;
   /** Number of guests including the RSVPing user. (Minimum 1). */
   numberOfGuests: number;
-  /** The user's RSVP to an [`EventInstance`](#jonline-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) */
+  /** The user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) */
   status: AttendanceStatus;
   /** User who invited the attendee. (Not yet used.) */
   invitingUserId?:
@@ -511,7 +511,7 @@ export interface EventAttendance {
   privateNote: string;
   /** Private note for the event owner. */
   publicNote: string;
-  /** Moderation status for the attendance. Moderated by the [`Event`](#jonline-Event) owner (or [`EventInstance`](#jonline-EventInstance) owner if applicable). */
+  /** Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`EventInstance`](#rellm-EventInstance) owner if applicable). */
   moderation: Moderation;
   /** The time the attendance was created. */
   createdAt:
@@ -522,9 +522,9 @@ export interface EventAttendance {
 }
 
 /**
- * An anonymous internet user who has RSVP'd to an [`EventInstance`](#jonline-EventInstance).
+ * An anonymous internet user who has RSVP'd to an [`EventInstance`](#rellm-EventInstance).
  *
- * (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#jonline-ContactMethod)s should support the `LIMITED` visibility, which will
+ * (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#rellm-ContactMethod)s should support the `LIMITED` visibility, which will
  * make them visible to the event creator.
  */
 export interface AnonymousAttendee {
@@ -536,12 +536,12 @@ export interface AnonymousAttendee {
    * Used to allow anonymous users to RSVP to an event. Generated by the server
    * when an event attendance is upserted for the first time. Subsequent attendance
    * upserts, with the same event_instance_id and anonymous_attendee.auth_token,
-   * will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#jonline-EventAttendance).
+   * will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance).
    */
   authToken?: string | undefined;
 }
 
-/** Wire-identical to [Author](#jonline-Author), but with a different name to avoid confusion. */
+/** Wire-identical to [Author](#rellm-Author), but with a different name to avoid confusion. */
 export interface UserAttendee {
   /** The user ID of the attendee. */
   userId: string;

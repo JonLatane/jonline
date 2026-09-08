@@ -1,8 +1,8 @@
 pub mod rocket_state;
 pub use rocket_state::*;
 
-pub mod jonline_path;
-pub use jonline_path::*;
+pub mod rellm_path;
+pub use rellm_path::*;
 
 // This module contains Rocket routes and handlers for the web interface.
 

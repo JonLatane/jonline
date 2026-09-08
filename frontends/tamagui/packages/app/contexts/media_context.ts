@@ -1,5 +1,5 @@
-import { Media, MediaReference } from "@jonline/api";
-import { useDebounceValue } from "@jonline/ui";
+import { Media, MediaReference } from "@rellm/api";
+import { useDebounceValue } from "@rellm/ui";
 
 import { useCreationServer } from "app/hooks";
 import { createContext, useContext, useEffect, useState } from "react";

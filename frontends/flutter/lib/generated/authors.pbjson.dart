@@ -19,9 +19,9 @@ const Author$json = {
   '2': [
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
-    {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
+    {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.rellm.MediaReference', '9': 1, '10': 'avatar', '17': true},
     {'1': 'real_name', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'realName', '17': true},
-    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
+    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.rellm.Permission', '10': 'permissions'},
   ],
   '8': [
     {'1': '_username'},
@@ -33,8 +33,8 @@ const Author$json = {
 /// Descriptor for `Author`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List authorDescriptor = $convert.base64Decode(
     'CgZBdXRob3ISFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEh8KCHVzZXJuYW1lGAIgASgJSABSCH'
-    'VzZXJuYW1liAEBEjQKBmF2YXRhchgDIAEoCzIXLmpvbmxpbmUuTWVkaWFSZWZlcmVuY2VIAVIG'
-    'YXZhdGFyiAEBEiAKCXJlYWxfbmFtZRgEIAEoCUgCUghyZWFsTmFtZYgBARI1CgtwZXJtaXNzaW'
-    '9ucxgFIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnNCCwoJX3VzZXJuYW1l'
-    'QgkKB19hdmF0YXJCDAoKX3JlYWxfbmFtZQ==');
+    'VzZXJuYW1liAEBEjIKBmF2YXRhchgDIAEoCzIVLnJlbGxtLk1lZGlhUmVmZXJlbmNlSAFSBmF2'
+    'YXRhcogBARIgCglyZWFsX25hbWUYBCABKAlIAlIIcmVhbE5hbWWIAQESMwoLcGVybWlzc2lvbn'
+    'MYBSADKA4yES5yZWxsbS5QZXJtaXNzaW9uUgtwZXJtaXNzaW9uc0ILCglfdXNlcm5hbWVCCQoH'
+    'X2F2YXRhckIMCgpfcmVhbF9uYW1l');
 

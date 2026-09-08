@@ -1,4 +1,4 @@
-import { Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, TimeFilter, User, UserListingType } from "@jonline/api";
+import { Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, TimeFilter, User, UserListingType } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk

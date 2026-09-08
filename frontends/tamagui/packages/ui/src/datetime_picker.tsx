@@ -6,7 +6,7 @@ import './css/native-datetime-picker-patches.css';
 
 import moment from 'moment';
 
-import { Label, Text, XStack, isSafari } from '@jonline/ui';
+import { Label, Text, XStack, isSafari } from '@rellm/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
 import { useComponentKey, useLocalConfiguration } from 'app/hooks';

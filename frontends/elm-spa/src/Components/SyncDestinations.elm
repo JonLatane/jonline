@@ -29,9 +29,9 @@ import Grpc
 import Html exposing (Html, a, b, button, div, span, text)
 import Html.Attributes exposing (class, disabled, href, rel, target, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (GetSyncDestinationsResponse, SyncDestination, SyncDestinationStatus, defaultUser)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.SyncDestination.Configuration as DestinationConfiguration
+import Proto.Rellm exposing (GetSyncDestinationsResponse, SyncDestination, SyncDestinationStatus, defaultUser)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 
@@ -51,7 +51,7 @@ getSyncDestinations accountsPanelModel maybeAccountServer targetUserId =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getSyncDestinations { defaultUser | id = targetUserId }
+            Grpc.new Rellm.getSyncDestinations { defaultUser | id = targetUserId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -72,7 +72,7 @@ createSyncDestination accountsPanelModel maybeAccountServer destination =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.createSyncDestination destination
+            Grpc.new Rellm.createSyncDestination destination
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -93,7 +93,7 @@ deleteSyncDestination accountsPanelModel maybeAccountServer destination =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteSyncDestination
+            Grpc.new Rellm.deleteSyncDestination
                 { destination = Just destination, deleteSyncedPosts = False }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)

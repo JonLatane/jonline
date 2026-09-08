@@ -2,15 +2,15 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
-import 'package:jonline/jonline_state.dart';
+import 'package:rellm/rellm_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import '../media/media_image.dart';
 
-// import 'package:jonline/db.dart';
+// import 'package:rellm/db.dart';
 
 class AccountChooser extends StatefulWidget {
   const AccountChooser({
@@ -21,7 +21,7 @@ class AccountChooser extends StatefulWidget {
   AccountChooserState createState() => AccountChooserState();
 }
 
-class AccountChooserState extends JonlineState<AccountChooser> {
+class AccountChooserState extends RellmState<AccountChooser> {
   int currentServerIndex = 0;
   List<String> servers = ['', ''];
   String get currentServer => servers[currentServerIndex];
@@ -56,8 +56,8 @@ class AccountChooserState extends JonlineState<AccountChooser> {
 
   @override
   Widget build(BuildContext context) {
-    if ("${JonlineServer.selectedServer.server}/" != currentServer) {
-      currentServer = "${JonlineServer.selectedServer.server}/";
+    if ("${RellmServer.selectedServer.server}/" != currentServer) {
+      currentServer = "${RellmServer.selectedServer.server}/";
     }
     if ((appState.selectedAccount?.username ?? noOne) != currentUsername) {
       currentUsername = appState.selectedAccount?.username ?? noOne;
@@ -95,7 +95,7 @@ class AccountChooserState extends JonlineState<AccountChooser> {
               Center(
                   child: AnimatedOpacity(
                 duration: animationDuration,
-                opacity: JonlineAccount.selectedAccount?.permissions
+                opacity: RellmAccount.selectedAccount?.permissions
                             .contains(Permission.ADMIN) ??
                         false
                     ? 0.5
@@ -105,7 +105,7 @@ class AccountChooserState extends JonlineState<AccountChooser> {
               Center(
                   child: AnimatedOpacity(
                 duration: animationDuration,
-                opacity: JonlineAccount.selectedAccount?.permissions
+                opacity: RellmAccount.selectedAccount?.permissions
                             .contains(Permission.RUN_BOTS) ??
                         false
                     ? 0.5
@@ -121,7 +121,7 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                       ...servers.map(
                         (name) => AnimatedOpacity(
                           opacity:
-                              "${JonlineServer.selectedServer.server}/" == name
+                              "${RellmServer.selectedServer.server}/" == name
                                   ? 1
                                   : 0,
                           duration: animationDuration,
@@ -159,11 +159,11 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                       )
                     ],
                   ),
-                  // Text('${JonlineServer.selectedServer.server}/',
+                  // Text('${RellmServer.selectedServer.server}/',
                   //     maxLines: 1,
                   //     overflow: TextOverflow.ellipsis,
                   //     style: textTheme.bodySmall),
-                  // Text(JonlineAccount.selectedAccount?.username ?? noOne,
+                  // Text(RellmAccount.selectedAccount?.username ?? noOne,
                   //     maxLines: 1,
                   //     overflow: TextOverflow.ellipsis,
                   //     style: textTheme.titleSmall),
@@ -183,13 +183,13 @@ Future<Object> showAccountsMenu(
   ThemeData theme = Theme.of(context);
   TextTheme textTheme = theme.textTheme;
   ThemeData darkTheme = theme;
-  final accounts = await JonlineAccount.accounts;
-  final servers = await JonlineServer.servers;
+  final accounts = await RellmAccount.accounts;
+  final servers = await RellmServer.servers;
 
   final accountsHere =
-      accounts.where((a) => a.server == JonlineServer.selectedServer.server);
+      accounts.where((a) => a.server == RellmServer.selectedServer.server);
   final accountsElsewhere =
-      accounts.where((a) => a.server != JonlineServer.selectedServer.server);
+      accounts.where((a) => a.server != RellmServer.selectedServer.server);
   return showMenu(
       context: context,
       position: position,
@@ -228,7 +228,7 @@ Future<Object> showAccountsMenu(
                         : darkTheme.textTheme.titleLarge,
                   ),
                   Text(
-                    "${JonlineServer.selectedServer.server}/",
+                    "${RellmServer.selectedServer.server}/",
                     style: darkTheme.textTheme.bodySmall,
                   ),
                 ],
@@ -290,10 +290,10 @@ Future<Object> showAccountsMenu(
       ]);
 }
 
-Widget _accountItem(JonlineAccount a, BuildContext context) {
+Widget _accountItem(RellmAccount a, BuildContext context) {
   ThemeData darkTheme = Theme.of(context);
   ThemeData lightTheme = ThemeData.light();
-  bool selected = a.id == JonlineAccount.selectedAccount?.id;
+  bool selected = a.id == RellmAccount.selectedAccount?.id;
   ThemeData theme = selected ? lightTheme : darkTheme;
   TextTheme textTheme = theme.textTheme;
   return Theme(
@@ -313,7 +313,7 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                     content: Text(
-                        "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
+                        "Browsing anonymously on ${RellmServer.selectedServer.server}.")),
               );
             } else {
               appState.selectedAccount = a;
@@ -383,10 +383,10 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
   );
 }
 
-Widget _serverItem(JonlineServer s, BuildContext context) {
+Widget _serverItem(RellmServer s, BuildContext context) {
   ThemeData darkTheme = Theme.of(context);
   ThemeData lightTheme = ThemeData.light();
-  bool selected = s == JonlineServer.selectedServer;
+  bool selected = s == RellmServer.selectedServer;
   ThemeData theme = selected ? lightTheme : darkTheme;
   TextTheme textTheme = theme.textTheme;
   return Theme(
@@ -400,13 +400,13 @@ Widget _serverItem(JonlineServer s, BuildContext context) {
             Navigator.pop(context);
             AppState appState =
                 context.findRootAncestorStateOfType<AppState>()!;
-            JonlineServer.selectedServer = s;
+            RellmServer.selectedServer = s;
             appState.selectedAccount = null;
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(
-                      "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
+                      "Browsing anonymously on ${RellmServer.selectedServer.server}.")),
             );
           },
           child: Padding(

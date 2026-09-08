@@ -45,8 +45,8 @@ import Html.Keyed
 import Json.Decode as Decode
 import Process
 import Ports
-import Proto.Jonline exposing (Author, Message, defaultMessageRead)
-import Proto.Jonline.MessageListingType exposing (MessageListingType(..))
+import Proto.Rellm exposing (Author, Message, defaultMessageRead)
+import Proto.Rellm.MessageListingType exposing (MessageListingType(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Time as SharedTime
@@ -272,7 +272,7 @@ type alias ExpandedGroup =
 
 
 type Msg
-    = GotServerMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
+    = GotServerMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetMessagesResponse ))
     | Poll
       -- Unconditionally refetches *every* `eligibleEntries` server's outer
       -- listing, unlike `Poll` (via `fetchNewServers`), which only fetches
@@ -297,7 +297,7 @@ type Msg
       -- `Model.fullyExpandedGroups`' own doc on why this is a separate `Set`
       -- from `inlineOpenGroups` rather than, say, a per-group message count.
     | ShowMoreClicked Messages.Conversation
-    | GotGroupMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse ))
+    | GotGroupMessages String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetMessagesResponse ))
       -- Fired once per thread, batching every still-`Messages.isUnread`
       -- message in it into one `MarkMessagesRead` call, right when that
       -- thread finishes loading (`GotGroupMessages`'s own `Ok` branch
@@ -314,7 +314,7 @@ type Msg
       -- (`embeddedPanel == True`) -- for the real two-pane page,
       -- `GotGroupMessages`'s `Ok` branch leaves these messages unread and
       -- schedules `DelayedMarkGroupRead` instead (see `markReadDelayMillis`).
-    | GotMarkReadResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Proto.Jonline.MessageRead ))
+    | GotMarkReadResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Proto.Rellm.MessageRead ))
       -- Fired `markReadDelayMillis` after `GotGroupMessages` opens a thread
       -- in the real two-pane page (`embeddedPanel == False`) with unread
       -- messages in it. Re-derives the still-unread set from `expandedGroups`
@@ -1370,7 +1370,7 @@ fetchExpand accountsPanelModel model conversation =
                         accountServer =
                             ( accountUserId, host )
 
-                        fetchTask : Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetMessagesResponse )
+                        fetchTask : Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetMessagesResponse )
                         fetchTask =
                             case conversation of
                                 Messages.MessagingGroup _ groupId ->
@@ -3057,7 +3057,7 @@ selectedGroupView time accountsPanelModel model selected =
 
 {-| A caution shown at the top of the two-pane detail (`selectedGroupView`,
 inside `.messages-thread-header`) whenever `kind == FromEmail` -- unlike a
-real `MessagingGroup`'s members (each an authenticated Jonline `Author`), a
+real `MessagingGroup`'s members (each an authenticated Rellm `Author`), a
 `FromEmail` group's identity is nothing but an email `From:` header, which
 `GetMessagesRequest.from_email`'s own proto doc already flags as
 unauthenticated: anyone can put any address there. `[]` (nothing rendered)

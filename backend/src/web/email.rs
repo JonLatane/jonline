@@ -102,7 +102,7 @@ pub async fn create_email_message(
     let message_id = parsed
         .message_id()
         .map(|id| id.to_string())
-        .unwrap_or_else(|| format!("<generated-{}@jonline.internal>", Uuid::new_v4()));
+        .unwrap_or_else(|| format!("<generated-{}@rellm.internal>", Uuid::new_v4()));
 
     let mut conn = state.pool.get().map_err(|_| Status::InternalServerError)?;
 
@@ -151,7 +151,7 @@ pub async fn create_email_message(
         // struct's own "useful to render without re-parsing" doc comment, and preserved as-sent
         // even if it fails to parse as a valid date.
         date: parsed.header_raw("Date").map(sanitize_header_value),
-        // `None` (not the synthetic `<generated-*@jonline.internal>` fallback `message_id` above
+        // `None` (not the synthetic `<generated-*@rellm.internal>` fallback `message_id` above
         // falls back to for dedup purposes) when there was no real `Message-Id` header at all --
         // this is meant to reflect what the sender actually sent, not this endpoint's own
         // bookkeeping.

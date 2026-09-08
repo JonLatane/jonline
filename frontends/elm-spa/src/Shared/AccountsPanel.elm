@@ -85,10 +85,10 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
-import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
+import Proto.Rellm exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Permission exposing (Permission(..), fieldNumbersPermission)
+import Proto.Rellm.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Set
 import Shared.AccountsPanel.AdminTab as AdminTab
@@ -340,7 +340,7 @@ type alias Model =
     -- Mastodon instances the user just wants to browse the public timeline of -- no OAuth, no
     -- admin-registered app, no account at all (see `Shared.Federation.Mastodon.fetchPosts`'s own
     -- doc: it's a plain unauthenticated `GET`), the same "just add a host" affordance
-    -- `AddServerClicked`'s server strip already offers for real Jonline servers. Deliberately a
+    -- `AddServerClicked`'s server strip already offers for real Rellm servers. Deliberately a
     -- bare `List String` (not a richer record the way `Server`/`MastodonAccount` are) -- there's
     -- no connection state, account identity, or credential to track here at all, just a host to
     -- fetch. Session-only, same as `mastodonAccounts`/`blueskyAccounts` -- see those fields' own
@@ -485,7 +485,7 @@ type alias Account =
     , needsPassword : Bool
 
     -- The signed-in user's own linked SyncDestinations/SyncSources/AvailableAIModels (see
-    -- `Proto.Jonline.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
+    -- `Proto.Rellm.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
     -- `refreshPermissionsTask` (which now calls `GetUsers { userId = Just account.userId }` rather
     -- than `GetCurrentUser`, since only a self-or-Admin `GetUsers` lookup ever populates these).
     -- Login/CreateAccount (`GotAuthResult`) can't populate them either (same backend restriction),
@@ -515,7 +515,7 @@ never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: 
 registration, PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
 between the browser and `instanceHost` itself), and `username` is fetched once, right after, via
 `GET /api/v1/accounts/verify_credentials` (see `verifyMastodonCredentialsTask`) -- just enough to
-display the connection, not a full `Account`, since a Mastodon account isn't a Jonline one.
+display the connection, not a full `Account`, since a Mastodon account isn't a Rellm one.
 -}
 type alias MastodonAccount =
     { instanceHost : String
@@ -527,7 +527,7 @@ type alias MastodonAccount =
 {-| A Bluesky (AT Protocol) account connected via `UI.blueskyConnectSection`'s form -- unlike
 Mastodon, there's no OAuth popup at all: `com.atproto.server.createSession` (see
 `createBlueskySessionTask`) takes a handle and App Password directly, the same "plain form" shape
-`Pages.Auth.To.Key_` already uses for Jonline's own Login RPC (and is itself the identity check --
+`Pages.Auth.To.Key_` already uses for Rellm's own Login RPC (and is itself the identity check --
 the session response already carries `handle`, so there's no separate verify-credentials round trip
 the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
 directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
@@ -1402,7 +1402,7 @@ init req flags =
         browsingHost =
             req.url.host
 
-        -- The app is very often served up by a Jonline server itself, so whichever
+        -- The app is very often served up by a Rellm server itself, so whichever
         -- host it's being viewed from is worth auto-connecting to, same as any other
         -- server. If it's already a known server, this is a no-op -- the persisted
         -- entry (and its enabled flag) wins, and we already know it's not a
@@ -1615,7 +1615,7 @@ resolvePendingPushSubscriptionCheck model =
                                             connection
                                             account
                                             (\accessToken ->
-                                                Grpc.new Jonline.getPushSubscriptionStatus { endpoint = check.endpoint }
+                                                Grpc.new Rellm.getPushSubscriptionStatus { endpoint = check.endpoint }
                                                     |> Grpc.setHost (connectionUrl connection)
                                                     |> withAccessToken (Just accessToken)
                                                     |> Grpc.toTask
@@ -1715,7 +1715,7 @@ sendUpdate req msg model =
             , resolveHost (isSecure req) model.servers server
                 |> Task.andThen
                     (\( connection, config ) ->
-                        Grpc.new Jonline.login
+                        Grpc.new Rellm.login
                             { username = form.username
                             , password = form.password
                             , expiresAt = Nothing
@@ -1748,7 +1748,7 @@ sendUpdate req msg model =
                             in
                             ( model
                                 |> updateForm (\f -> { f | status = Submitting })
-                            , Grpc.new Jonline.createAccount
+                            , Grpc.new Rellm.createAccount
                                 { username = accepted.username
                                 , password = form.password
                                 , email = Nothing
@@ -3056,7 +3056,7 @@ sendUpdate req msg model =
                             connection
                             account
                             (\accessToken ->
-                                Grpc.new Jonline.unregisterPushSubscription { endpoint = endpoint }
+                                Grpc.new Rellm.unregisterPushSubscription { endpoint = endpoint }
                                     |> Grpc.setHost (connectionUrl connection)
                                     |> withAccessToken (Just accessToken)
                                     |> Grpc.toTask
@@ -3087,7 +3087,7 @@ sendUpdate req msg model =
                                 connection
                                 account
                                 (\accessToken ->
-                                    Grpc.new Jonline.registerPushSubscription
+                                    Grpc.new Rellm.registerPushSubscription
                                         { endpoint = keys.endpoint, p256dhKey = keys.p256dhKey, authKey = keys.authKey }
                                         |> Grpc.setHost (connectionUrl connection)
                                         |> withAccessToken (Just accessToken)
@@ -3843,7 +3843,7 @@ refreshPermissionsTask server account =
                 connection
                 account
                 (\accessToken ->
-                    Grpc.new Jonline.getCurrentUser {}
+                    Grpc.new Rellm.getCurrentUser {}
                         |> Grpc.setHost (connectionUrl connection)
                         |> withAccessToken (Just accessToken)
                         |> Grpc.toTask
@@ -3981,7 +3981,7 @@ resolveFederatedAccountTokens req servers tokens =
     let
         getCurrentUser : Connection -> Task Grpc.Error User
         getCurrentUser connection =
-            Grpc.new Jonline.getCurrentUser {}
+            Grpc.new Rellm.getCurrentUser {}
                 |> Grpc.setHost (connectionUrl connection)
                 |> withAccessToken (Just tokens.accessToken.token)
                 |> Grpc.toTask
@@ -4014,7 +4014,7 @@ setWebUserInterface server account ui =
             let
                 info : ServerInfo
                 info =
-                    Maybe.withDefault Proto.Jonline.defaultServerInfo configuration.serverInfo
+                    Maybe.withDefault Proto.Rellm.defaultServerInfo configuration.serverInfo
 
                 newConfig : ServerConfiguration
                 newConfig =
@@ -4024,7 +4024,7 @@ setWebUserInterface server account ui =
                 connection
                 account
                 (\accessToken ->
-                    Grpc.new Jonline.configureServer newConfig
+                    Grpc.new Rellm.configureServer newConfig
                         |> Grpc.setHost (connectionUrl connection)
                         |> withAccessToken (Just accessToken)
                         |> Grpc.toTask
@@ -4064,7 +4064,7 @@ renameServer server account newName =
                 connection
                 account
                 (\accessToken ->
-                    Grpc.new Jonline.getServerConfiguration {}
+                    Grpc.new Rellm.getServerConfiguration {}
                         |> Grpc.setHost (connectionUrl connection)
                         |> withAccessToken (Just accessToken)
                         |> Grpc.toTask
@@ -4073,13 +4073,13 @@ renameServer server account newName =
                                 let
                                     info : ServerInfo
                                     info =
-                                        Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+                                        Maybe.withDefault Proto.Rellm.defaultServerInfo freshConfig.serverInfo
 
                                     newConfig : ServerConfiguration
                                     newConfig =
                                         { freshConfig | serverInfo = Just { info | name = Just newName } }
                                 in
-                                Grpc.new Jonline.configureServer newConfig
+                                Grpc.new Rellm.configureServer newConfig
                                     |> Grpc.setHost (connectionUrl connection)
                                     |> withAccessToken (Just accessToken)
                                     |> Grpc.toTask
@@ -4109,7 +4109,7 @@ changeServerShortName server account newShortName =
                 connection
                 account
                 (\accessToken ->
-                    Grpc.new Jonline.getServerConfiguration {}
+                    Grpc.new Rellm.getServerConfiguration {}
                         |> Grpc.setHost (connectionUrl connection)
                         |> withAccessToken (Just accessToken)
                         |> Grpc.toTask
@@ -4118,7 +4118,7 @@ changeServerShortName server account newShortName =
                                 let
                                     info : ServerInfo
                                     info =
-                                        Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+                                        Maybe.withDefault Proto.Rellm.defaultServerInfo freshConfig.serverInfo
 
                                     trimmedShortName : Maybe String
                                     trimmedShortName =
@@ -4133,7 +4133,7 @@ changeServerShortName server account newShortName =
                                     newConfig =
                                         { freshConfig | serverInfo = Just { info | shortName = trimmedShortName } }
                                 in
-                                Grpc.new Jonline.configureServer newConfig
+                                Grpc.new Rellm.configureServer newConfig
                                     |> Grpc.setHost (connectionUrl connection)
                                     |> withAccessToken (Just accessToken)
                                     |> Grpc.toTask
@@ -4166,13 +4166,13 @@ updateServerConfig accountsPanelModel maybeAccountServer updateFn =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getServerConfiguration {}
+            Grpc.new Rellm.getServerConfiguration {}
                 |> Grpc.setHost (serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
                     (\freshConfig ->
-                        Grpc.new Jonline.configureServer (updateFn freshConfig)
+                        Grpc.new Rellm.configureServer (updateFn freshConfig)
                             |> Grpc.setHost (serverUrl server)
                             |> withAccessToken (Just token)
                             |> Grpc.toTask
@@ -4279,7 +4279,7 @@ negotiateServerConfig pageIsSecure frontendHost =
                                     connection =
                                         { frontendHost = frontendHost, backendHost = backendHost, port_ = port_, tls = tls }
                                 in
-                                Grpc.new Jonline.getServerConfiguration {}
+                                Grpc.new Rellm.getServerConfiguration {}
                                     |> Grpc.setHost (connectionUrl connection)
                                     |> Grpc.setTimeout 5000
                                     |> Grpc.toTask
@@ -4510,7 +4510,7 @@ serverInfoOf server =
 
 
 {-| A server's raw `ServerConfiguration`, falling back to
-`Proto.Jonline.defaultServerConfiguration` while disconnected (see
+`Proto.Rellm.defaultServerConfiguration` while disconnected (see
 `Server.connected`) -- for callers (e.g. `Components.Pages.ServerInformationPage`)
 that need more of it than `serverInfoOf`'s `ServerInfo` carries.
 -}
@@ -4518,7 +4518,7 @@ configurationOf : Server -> ServerConfiguration
 configurationOf server =
     server.connected
         |> Maybe.map .configuration
-        |> Maybe.withDefault Proto.Jonline.defaultServerConfiguration
+        |> Maybe.withDefault Proto.Rellm.defaultServerConfiguration
 
 
 brandingFromConfig : Connection -> ServerConfiguration -> Branding
@@ -4526,7 +4526,7 @@ brandingFromConfig connection config =
     let
         info : ServerInfo
         info =
-            Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
+            Maybe.withDefault Proto.Rellm.defaultServerInfo config.serverInfo
 
         name : String
         name =
@@ -4582,7 +4582,7 @@ grpcErrorToString err =
                     "The server rejected the request."
 
                 -- Facebook's "confirm your identity" checkpoint (`facebook_sync::graph_request`'s
-                -- own doc) -- there's nothing Jonline can do server-side, only the Page admin,
+                -- own doc) -- there's nothing Rellm can do server-side, only the Page admin,
                 -- via the Facebook app/website.
                 "facebook_identity_verification_required" ->
                     "Facebook needs you to verify your identity before this can be posted. Open the Facebook app or facebook.com, confirm the prompt, then try again."
@@ -5257,7 +5257,7 @@ refreshIfNeeded connection now account =
         Task.succeed ( account, Nothing )
 
     else
-        Grpc.new Jonline.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
+        Grpc.new Rellm.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
             |> Grpc.setHost (connectionUrl connection)
             |> Grpc.toTask
             |> Task.andThen

@@ -1,9 +1,9 @@
 import { useAccountOrServerContext } from 'app/contexts';
-import { AccountOrServer, JonlineServer } from 'app/store';
+import { AccountOrServer, RellmServer } from 'app/store';
 import { useCurrentAccountOrServer } from './use_current_account_or_server';
 
 
-export function useProvidedAccountOrServer(serverOverride?: JonlineServer): AccountOrServer {
+export function useProvidedAccountOrServer(serverOverride?: RellmServer): AccountOrServer {
   const currentAccountOrServer = useCurrentAccountOrServer();
   const accountOrServerContext = useAccountOrServerContext();
   const accountOrServer = accountOrServerContext ?? currentAccountOrServer;

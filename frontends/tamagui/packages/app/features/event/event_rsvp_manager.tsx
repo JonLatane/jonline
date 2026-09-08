@@ -1,8 +1,8 @@
 import { FederatedEvent, IdentifiedEventInstance, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { AttendanceStatus, EventAttendance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, Text, TextArea, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { AttendanceStatus, EventAttendance, Permission } from "@rellm/api";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, Text, TextArea, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia, useToastController } from "@rellm/ui";
 import { createSelector } from "@reduxjs/toolkit";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { useGroupContext } from "app/contexts/group_context";

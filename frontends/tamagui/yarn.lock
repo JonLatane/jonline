@@ -2725,25 +2725,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jonline/api@workspace:packages/api":
-  version: 0.0.0-use.local
-  resolution: "@jonline/api@workspace:packages/api"
-  dependencies:
-    "@tamagui/build": "npm:^1.132.7"
-  languageName: unknown
-  linkType: soft
-
-"@jonline/ui@npm:, @jonline/ui@npm:0.0.1, @jonline/ui@workspace:packages/ui":
-  version: 0.0.0-use.local
-  resolution: "@jonline/ui@workspace:packages/ui"
-  dependencies:
-    "@tamagui/build": "npm:^1.132.7"
-    "@tamagui/toast": "npm:^1.132.7"
-    moment: "npm:^2.30.1"
-    tamagui: "npm:^1.132.7"
-  languageName: unknown
-  linkType: soft
-
 "@jridgewell/gen-mapping@npm:^0.3.2, @jridgewell/gen-mapping@npm:^0.3.5":
   version: 0.3.8
   resolution: "@jridgewell/gen-mapping@npm:0.3.8"
@@ -3724,6 +3705,25 @@ __metadata:
   checksum: 10/11c718270bb378e5b26e172eb84cc549d6f263748b6f330b07ee9c366c6474b013fd410e5b2f65a5742e73b7873a3ac14e06cae4bb01480ba03b423c4fd92583
   languageName: node
   linkType: hard
+
+"@rellm/api@workspace:packages/api":
+  version: 0.0.0-use.local
+  resolution: "@rellm/api@workspace:packages/api"
+  dependencies:
+    "@tamagui/build": "npm:^1.132.7"
+  languageName: unknown
+  linkType: soft
+
+"@rellm/ui@npm:, @rellm/ui@npm:0.0.1, @rellm/ui@workspace:packages/ui":
+  version: 0.0.0-use.local
+  resolution: "@rellm/ui@workspace:packages/ui"
+  dependencies:
+    "@tamagui/build": "npm:^1.132.7"
+    "@tamagui/toast": "npm:^1.132.7"
+    moment: "npm:^2.30.1"
+    tamagui: "npm:^1.132.7"
+  languageName: unknown
+  linkType: soft
 
 "@restart/hooks@npm:^0.4.7":
   version: 0.4.16
@@ -7273,11 +7273,11 @@ __metadata:
     "@fullcalendar/timegrid": "npm:^6.1.15"
     "@improbable-eng/grpc-web": "npm:^0.15.0"
     "@improbable-eng/grpc-web-react-native-transport": "npm:^0.15.0"
-    "@jonline/ui": "npm:"
     "@mlc-ai/web-llm": "npm:^0.2.78"
     "@react-native-async-storage/async-storage": "npm:^1.23.1"
     "@react-navigation/native": "npm:^7.1.8"
     "@reduxjs/toolkit": "npm:^1.9.7"
+    "@rellm/ui": "npm:"
     "@smakss/react-scroll-direction": "npm:^4.1.0"
     "@tamagui/animations-css": "npm:^1.132.7"
     "@tamagui/animations-react-native": "npm:^1.132.7"
@@ -10551,9 +10551,9 @@ __metadata:
     "@babel/runtime": "npm:^7.26.0"
     "@expo/config-plugins": "npm:~10.0.0"
     "@expo/metro-config": "npm:~0.20.0"
-    "@jonline/ui": "npm:0.0.1"
     "@react-navigation/bottom-tabs": "npm:^7.3.12"
     "@react-navigation/native": "npm:^7.1.8"
+    "@rellm/ui": "npm:0.0.1"
     "@tamagui/babel-plugin": "npm:^1.132.7"
     app: "npm:0.0.0"
     babel-plugin-module-resolver: "npm:^5.0.2"
@@ -12908,25 +12908,6 @@ __metadata:
   checksum: 10/c9645d159e187383483673a68a444486177b2ee18d6a404ff33fac79bd069610dd043740c4414ba92b3785a1a4daf1c97aee055be6cdcdf5a8623a8327da3c98
   languageName: node
   linkType: hard
-
-"jonline-tamagui-monorepo@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "jonline-tamagui-monorepo@workspace:."
-  dependencies:
-    "@babel/runtime": "npm:^7.26.0"
-    "@biomejs/biome": "npm:^1.9.3"
-    "@tamagui/cli": "npm:^1.132.7"
-    check-dependency-version-consistency: "npm:^4.1.0"
-    eslint: "npm:^9.3.0"
-    husky: "npm:^9.1.6"
-    prettier: "npm:^3.3.3"
-    ts-proto: "npm:^2.7.5"
-    turbo: "npm:^1.13.4"
-    typescript: "npm:~5.8.3"
-    ultra-runner: "npm:^3.10.5"
-    vitest: "npm:^2.1.1"
-  languageName: unknown
-  linkType: soft
 
 "jose@npm:5.9.6":
   version: 5.9.6
@@ -17062,6 +17043,25 @@ __metadata:
   checksum: 10/f5d6ba58f2a5d5076389090600c243a0ba7072bcf347490a09e4241e2427ccdb260b4e22cea7be4f1fcd3c2bf05908b1e0d0bc9605e3199d4ecf37af1d5681fa
   languageName: node
   linkType: hard
+
+"rellm-tamagui-monorepo@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "rellm-tamagui-monorepo@workspace:."
+  dependencies:
+    "@babel/runtime": "npm:^7.26.0"
+    "@biomejs/biome": "npm:^1.9.3"
+    "@tamagui/cli": "npm:^1.132.7"
+    check-dependency-version-consistency: "npm:^4.1.0"
+    eslint: "npm:^9.3.0"
+    husky: "npm:^9.1.6"
+    prettier: "npm:^3.3.3"
+    ts-proto: "npm:^2.7.5"
+    turbo: "npm:^1.13.4"
+    typescript: "npm:~5.8.3"
+    ultra-runner: "npm:^3.10.5"
+    vitest: "npm:^2.1.1"
+  languageName: unknown
+  linkType: soft
 
 "remark-gfm@npm:^4.0.1":
   version: 4.0.1

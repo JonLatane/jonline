@@ -1,14 +1,14 @@
-import { FederatedAccount } from "@jonline/api";
-import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, standardAnimation, Tooltip, XStack, YStack } from "@jonline/ui";
+import { FederatedAccount } from "@rellm/api";
+import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, standardAnimation, Tooltip, XStack, YStack } from "@rellm/ui";
 import { AlertCircle, CheckCircle, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
-import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, setShowPinnedServers, useServerTheme } from 'app/store';
+import { FederatedUser, RellmAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, setShowPinnedServers, useServerTheme } from 'app/store';
 import { themedButtonBackground } from "app/utils";
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import { useFederatedAccountOrServer } from '../../hooks/account_or_server/use_federated_account_or_server';
 import { federateId } from '../../store/federation';
-import { useJonlineServerInfo } from "../accounts/recommended_server";
+import { useRellmServerInfo } from "../accounts/recommended_server";
 import { AccountAvatarAndUsername } from "../navigation/pinned_server_selector";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { AutoAnimatedList } from "../post";
@@ -119,7 +119,7 @@ const FederatedProfileSelector: React.FC<{
         .then(() => setLoadingUser(false));
     }
   }, [profileUser, loadFailed, loadingUser, profileAccountOrServer.server]);
-  const { server } = useJonlineServerInfo(profile.host);
+  const { server } = useRellmServerInfo(profile.host);
   const { primaryColor, primaryTextColor } = useServerTheme(server);
   const isCurrentServer = useCurrentServer()?.host === profileUser?.serverHost;
 
@@ -182,11 +182,11 @@ const FederatedProfileSelector: React.FC<{
 
 
 const FederatedProfileCreator: React.FC<{
-  user: FederatedUser; account: JonlineAccount
+  user: FederatedUser; account: RellmAccount
 }> = ({ user, account }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(user);
   const currentAccount = accountOrServer.account!;
-  const { server } = useJonlineServerInfo(account.server?.host);
+  const { server } = useRellmServerInfo(account.server?.host);
 
   function federateProfile() {
     dispatch(federateAccounts({

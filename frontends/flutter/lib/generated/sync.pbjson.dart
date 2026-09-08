@@ -18,17 +18,17 @@ const SyncDestination$json = {
   '1': 'SyncDestination',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'owner'},
+    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.rellm.Author', '10': 'owner'},
     {'1': 'created_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
     {'1': 'synced_event_instance_count', '3': 6, '4': 1, '5': 4, '9': 2, '10': 'syncedEventInstanceCount', '17': true},
     {'1': 'synced_post_count', '3': 7, '4': 1, '5': 4, '9': 3, '10': 'syncedPostCount', '17': true},
-    {'1': 'facebook_page', '3': 9, '4': 1, '5': 11, '6': '.jonline.FacebookPage', '9': 0, '10': 'facebookPage'},
-    {'1': 'instagram_account', '3': 10, '4': 1, '5': 11, '6': '.jonline.InstagramAccount', '9': 0, '10': 'instagramAccount'},
-    {'1': 'mastodon_account', '3': 11, '4': 1, '5': 11, '6': '.jonline.MastodonAccount', '9': 0, '10': 'mastodonAccount'},
-    {'1': 'bluesky_account', '3': 12, '4': 1, '5': 11, '6': '.jonline.BlueskyAccount', '9': 0, '10': 'blueskyAccount'},
-    {'1': 'x_twitter_account', '3': 13, '4': 1, '5': 11, '6': '.jonline.XTwitterAccount', '9': 0, '10': 'xTwitterAccount'},
-    {'1': 'threads_account', '3': 14, '4': 1, '5': 11, '6': '.jonline.ThreadsAccount', '9': 0, '10': 'threadsAccount'},
+    {'1': 'facebook_page', '3': 9, '4': 1, '5': 11, '6': '.rellm.FacebookPage', '9': 0, '10': 'facebookPage'},
+    {'1': 'instagram_account', '3': 10, '4': 1, '5': 11, '6': '.rellm.InstagramAccount', '9': 0, '10': 'instagramAccount'},
+    {'1': 'mastodon_account', '3': 11, '4': 1, '5': 11, '6': '.rellm.MastodonAccount', '9': 0, '10': 'mastodonAccount'},
+    {'1': 'bluesky_account', '3': 12, '4': 1, '5': 11, '6': '.rellm.BlueskyAccount', '9': 0, '10': 'blueskyAccount'},
+    {'1': 'x_twitter_account', '3': 13, '4': 1, '5': 11, '6': '.rellm.XTwitterAccount', '9': 0, '10': 'xTwitterAccount'},
+    {'1': 'threads_account', '3': 14, '4': 1, '5': 11, '6': '.rellm.ThreadsAccount', '9': 0, '10': 'threadsAccount'},
   ],
   '8': [
     {'1': 'configuration'},
@@ -40,49 +40,49 @@ const SyncDestination$json = {
 
 /// Descriptor for `SyncDestination`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List syncDestinationDescriptor = $convert.base64Decode(
-    'Cg9TeW5jRGVzdGluYXRpb24SDgoCaWQYASABKAlSAmlkEiUKBW93bmVyGAIgASgLMg8uam9ubG'
-    'luZS5BdXRob3JSBW93bmVyEjkKCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYu'
-    'VGltZXN0YW1wUgljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2'
-    'J1Zi5UaW1lc3RhbXBIAVIJdXBkYXRlZEF0iAEBEkIKG3N5bmNlZF9ldmVudF9pbnN0YW5jZV9j'
-    'b3VudBgGIAEoBEgCUhhzeW5jZWRFdmVudEluc3RhbmNlQ291bnSIAQESLwoRc3luY2VkX3Bvc3'
-    'RfY291bnQYByABKARIA1IPc3luY2VkUG9zdENvdW50iAEBEjwKDWZhY2Vib29rX3BhZ2UYCSAB'
-    'KAsyFS5qb25saW5lLkZhY2Vib29rUGFnZUgAUgxmYWNlYm9va1BhZ2USSAoRaW5zdGFncmFtX2'
-    'FjY291bnQYCiABKAsyGS5qb25saW5lLkluc3RhZ3JhbUFjY291bnRIAFIQaW5zdGFncmFtQWNj'
-    'b3VudBJFChBtYXN0b2Rvbl9hY2NvdW50GAsgASgLMhguam9ubGluZS5NYXN0b2RvbkFjY291bn'
-    'RIAFIPbWFzdG9kb25BY2NvdW50EkIKD2JsdWVza3lfYWNjb3VudBgMIAEoCzIXLmpvbmxpbmUu'
-    'Qmx1ZXNreUFjY291bnRIAFIOYmx1ZXNreUFjY291bnQSRgoReF90d2l0dGVyX2FjY291bnQYDS'
-    'ABKAsyGC5qb25saW5lLlhUd2l0dGVyQWNjb3VudEgAUg94VHdpdHRlckFjY291bnQSQgoPdGhy'
-    'ZWFkc19hY2NvdW50GA4gASgLMhcuam9ubGluZS5UaHJlYWRzQWNjb3VudEgAUg50aHJlYWRzQW'
-    'Njb3VudEIPCg1jb25maWd1cmF0aW9uQg0KC191cGRhdGVkX2F0Qh4KHF9zeW5jZWRfZXZlbnRf'
-    'aW5zdGFuY2VfY291bnRCFAoSX3N5bmNlZF9wb3N0X2NvdW50');
+    'Cg9TeW5jRGVzdGluYXRpb24SDgoCaWQYASABKAlSAmlkEiMKBW93bmVyGAIgASgLMg0ucmVsbG'
+    '0uQXV0aG9yUgVvd25lchI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRp'
+    'bWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idW'
+    'YuVGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJCChtzeW5jZWRfZXZlbnRfaW5zdGFuY2VfY291'
+    'bnQYBiABKARIAlIYc3luY2VkRXZlbnRJbnN0YW5jZUNvdW50iAEBEi8KEXN5bmNlZF9wb3N0X2'
+    'NvdW50GAcgASgESANSD3N5bmNlZFBvc3RDb3VudIgBARI6Cg1mYWNlYm9va19wYWdlGAkgASgL'
+    'MhMucmVsbG0uRmFjZWJvb2tQYWdlSABSDGZhY2Vib29rUGFnZRJGChFpbnN0YWdyYW1fYWNjb3'
+    'VudBgKIAEoCzIXLnJlbGxtLkluc3RhZ3JhbUFjY291bnRIAFIQaW5zdGFncmFtQWNjb3VudBJD'
+    'ChBtYXN0b2Rvbl9hY2NvdW50GAsgASgLMhYucmVsbG0uTWFzdG9kb25BY2NvdW50SABSD21hc3'
+    'RvZG9uQWNjb3VudBJACg9ibHVlc2t5X2FjY291bnQYDCABKAsyFS5yZWxsbS5CbHVlc2t5QWNj'
+    'b3VudEgAUg5ibHVlc2t5QWNjb3VudBJEChF4X3R3aXR0ZXJfYWNjb3VudBgNIAEoCzIWLnJlbG'
+    'xtLlhUd2l0dGVyQWNjb3VudEgAUg94VHdpdHRlckFjY291bnQSQAoPdGhyZWFkc19hY2NvdW50'
+    'GA4gASgLMhUucmVsbG0uVGhyZWFkc0FjY291bnRIAFIOdGhyZWFkc0FjY291bnRCDwoNY29uZm'
+    'lndXJhdGlvbkINCgtfdXBkYXRlZF9hdEIeChxfc3luY2VkX2V2ZW50X2luc3RhbmNlX2NvdW50'
+    'QhQKEl9zeW5jZWRfcG9zdF9jb3VudA==');
 
 @$core.Deprecated('Use getSyncDestinationsResponseDescriptor instead')
 const GetSyncDestinationsResponse$json = {
   '1': 'GetSyncDestinationsResponse',
   '2': [
-    {'1': 'destinations', '3': 1, '4': 3, '5': 11, '6': '.jonline.SyncDestination', '10': 'destinations'},
+    {'1': 'destinations', '3': 1, '4': 3, '5': 11, '6': '.rellm.SyncDestination', '10': 'destinations'},
   ],
 };
 
 /// Descriptor for `GetSyncDestinationsResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getSyncDestinationsResponseDescriptor = $convert.base64Decode(
-    'ChtHZXRTeW5jRGVzdGluYXRpb25zUmVzcG9uc2USPAoMZGVzdGluYXRpb25zGAEgAygLMhguam'
-    '9ubGluZS5TeW5jRGVzdGluYXRpb25SDGRlc3RpbmF0aW9ucw==');
+    'ChtHZXRTeW5jRGVzdGluYXRpb25zUmVzcG9uc2USOgoMZGVzdGluYXRpb25zGAEgAygLMhYucm'
+    'VsbG0uU3luY0Rlc3RpbmF0aW9uUgxkZXN0aW5hdGlvbnM=');
 
 @$core.Deprecated('Use deleteSyncDestinationRequestDescriptor instead')
 const DeleteSyncDestinationRequest$json = {
   '1': 'DeleteSyncDestinationRequest',
   '2': [
-    {'1': 'destination', '3': 1, '4': 1, '5': 11, '6': '.jonline.SyncDestination', '10': 'destination'},
+    {'1': 'destination', '3': 1, '4': 1, '5': 11, '6': '.rellm.SyncDestination', '10': 'destination'},
     {'1': 'delete_synced_posts', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedPosts'},
   ],
 };
 
 /// Descriptor for `DeleteSyncDestinationRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteSyncDestinationRequestDescriptor = $convert.base64Decode(
-    'ChxEZWxldGVTeW5jRGVzdGluYXRpb25SZXF1ZXN0EjoKC2Rlc3RpbmF0aW9uGAEgASgLMhguam'
-    '9ubGluZS5TeW5jRGVzdGluYXRpb25SC2Rlc3RpbmF0aW9uEi4KE2RlbGV0ZV9zeW5jZWRfcG9z'
-    'dHMYAiABKAhSEWRlbGV0ZVN5bmNlZFBvc3Rz');
+    'ChxEZWxldGVTeW5jRGVzdGluYXRpb25SZXF1ZXN0EjgKC2Rlc3RpbmF0aW9uGAEgASgLMhYucm'
+    'VsbG0uU3luY0Rlc3RpbmF0aW9uUgtkZXN0aW5hdGlvbhIuChNkZWxldGVfc3luY2VkX3Bvc3Rz'
+    'GAIgASgIUhFkZWxldGVTeW5jZWRQb3N0cw==');
 
 @$core.Deprecated('Use facebookPageDescriptor instead')
 const FacebookPage$json = {
@@ -240,7 +240,7 @@ const SyncSource$json = {
   '1': 'SyncSource',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'owner'},
+    {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.rellm.Author', '10': 'owner'},
     {'1': 'sync_interval_seconds', '3': 3, '4': 1, '5': 4, '10': 'syncIntervalSeconds'},
     {'1': 'created_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
@@ -259,42 +259,42 @@ const SyncSource$json = {
 
 /// Descriptor for `SyncSource`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List syncSourceDescriptor = $convert.base64Decode(
-    'CgpTeW5jU291cmNlEg4KAmlkGAEgASgJUgJpZBIlCgVvd25lchgCIAEoCzIPLmpvbmxpbmUuQX'
-    'V0aG9yUgVvd25lchIyChVzeW5jX2ludGVydmFsX3NlY29uZHMYAyABKARSE3N5bmNJbnRlcnZh'
-    'bFNlY29uZHMSOQoKY3JlYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbX'
-    'BSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVz'
-    'dGFtcEgBUgl1cGRhdGVkQXSIAQESRQoObGFzdF9zeW5jZWRfYXQYBiABKAsyGi5nb29nbGUucH'
-    'JvdG9idWYuVGltZXN0YW1wSAJSDGxhc3RTeW5jZWRBdIgBARIfCgtldmVudF9jb3VudBgHIAEo'
-    'BFIKZXZlbnRDb3VudBIwChRldmVudF9pbnN0YW5jZV9jb3VudBgIIAEoBFISZXZlbnRJbnN0YW'
-    '5jZUNvdW50Eh0KCnBvc3RfY291bnQYCiABKARSCXBvc3RDb3VudBIyChRpY3Nfc3Vic2NyaXB0'
-    'aW9uX3VybBgJIAEoCUgAUhJpY3NTdWJzY3JpcHRpb25VcmxCDwoNY29uZmlndXJhdGlvbkINCg'
-    'tfdXBkYXRlZF9hdEIRCg9fbGFzdF9zeW5jZWRfYXQ=');
+    'CgpTeW5jU291cmNlEg4KAmlkGAEgASgJUgJpZBIjCgVvd25lchgCIAEoCzINLnJlbGxtLkF1dG'
+    'hvclIFb3duZXISMgoVc3luY19pbnRlcnZhbF9zZWNvbmRzGAMgASgEUhNzeW5jSW50ZXJ2YWxT'
+    'ZWNvbmRzEjkKCmNyZWF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUg'
+    'ljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
+    'bXBIAVIJdXBkYXRlZEF0iAEBEkUKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3'
+    'RvYnVmLlRpbWVzdGFtcEgCUgxsYXN0U3luY2VkQXSIAQESHwoLZXZlbnRfY291bnQYByABKARS'
+    'CmV2ZW50Q291bnQSMAoUZXZlbnRfaW5zdGFuY2VfY291bnQYCCABKARSEmV2ZW50SW5zdGFuY2'
+    'VDb3VudBIdCgpwb3N0X2NvdW50GAogASgEUglwb3N0Q291bnQSMgoUaWNzX3N1YnNjcmlwdGlv'
+    'bl91cmwYCSABKAlIAFISaWNzU3Vic2NyaXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3'
+    'VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2VkX2F0');
 
 @$core.Deprecated('Use getSyncSourcesResponseDescriptor instead')
 const GetSyncSourcesResponse$json = {
   '1': 'GetSyncSourcesResponse',
   '2': [
-    {'1': 'sources', '3': 1, '4': 3, '5': 11, '6': '.jonline.SyncSource', '10': 'sources'},
+    {'1': 'sources', '3': 1, '4': 3, '5': 11, '6': '.rellm.SyncSource', '10': 'sources'},
   ],
 };
 
 /// Descriptor for `GetSyncSourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getSyncSourcesResponseDescriptor = $convert.base64Decode(
-    'ChZHZXRTeW5jU291cmNlc1Jlc3BvbnNlEi0KB3NvdXJjZXMYASADKAsyEy5qb25saW5lLlN5bm'
-    'NTb3VyY2VSB3NvdXJjZXM=');
+    'ChZHZXRTeW5jU291cmNlc1Jlc3BvbnNlEisKB3NvdXJjZXMYASADKAsyES5yZWxsbS5TeW5jU2'
+    '91cmNlUgdzb3VyY2Vz');
 
 @$core.Deprecated('Use deleteSyncSourceRequestDescriptor instead')
 const DeleteSyncSourceRequest$json = {
   '1': 'DeleteSyncSourceRequest',
   '2': [
-    {'1': 'source', '3': 1, '4': 1, '5': 11, '6': '.jonline.SyncSource', '10': 'source'},
+    {'1': 'source', '3': 1, '4': 1, '5': 11, '6': '.rellm.SyncSource', '10': 'source'},
     {'1': 'delete_synced_events', '3': 2, '4': 1, '5': 8, '10': 'deleteSyncedEvents'},
   ],
 };
 
 /// Descriptor for `DeleteSyncSourceRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteSyncSourceRequestDescriptor = $convert.base64Decode(
-    'ChdEZWxldGVTeW5jU291cmNlUmVxdWVzdBIrCgZzb3VyY2UYASABKAsyEy5qb25saW5lLlN5bm'
-    'NTb3VyY2VSBnNvdXJjZRIwChRkZWxldGVfc3luY2VkX2V2ZW50cxgCIAEoCFISZGVsZXRlU3lu'
-    'Y2VkRXZlbnRz');
+    'ChdEZWxldGVTeW5jU291cmNlUmVxdWVzdBIpCgZzb3VyY2UYASABKAsyES5yZWxsbS5TeW5jU2'
+    '91cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhSEmRlbGV0ZVN5bmNl'
+    'ZEV2ZW50cw==');
 

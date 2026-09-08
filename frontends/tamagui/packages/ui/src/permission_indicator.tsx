@@ -1,6 +1,6 @@
 
-import { Permission } from '@jonline/api';
-import { Heading, Tooltip } from "@jonline/ui";
+import { Permission } from '@rellm/api';
+import { Heading, Tooltip } from "@rellm/ui";
 import { Bot, Shield } from '@tamagui/lucide-icons';
 
 export type PermissionIndicatorProps = {

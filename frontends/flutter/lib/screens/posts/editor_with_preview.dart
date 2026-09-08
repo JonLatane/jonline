@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jonline/jonline_state.dart';
+import 'package:rellm/rellm_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/authors.pb.dart';
 import '../../generated/posts.pb.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import 'post_preview.dart';
 
 class EditorWithPreview extends StatefulWidget {
@@ -30,7 +30,7 @@ class EditorWithPreview extends StatefulWidget {
   EditorWithPreviewState createState() => EditorWithPreviewState();
 }
 
-class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
+class EditorWithPreviewState extends RellmState<EditorWithPreview> {
   List<bool> focuses = [false, false, false];
   bool get inlinePreview => mq.size.width > 600;
   bool _showPreview = false;
@@ -215,14 +215,14 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
             child: SingleChildScrollView(
               child: PostPreview(
                   allowScrollingContent: true,
-                  server: JonlineServer.selectedServer.server,
+                  server: RellmServer.selectedServer.server,
                   maxContentHeight: mq.size.height - 200,
                   post: Post()
                     ..title = title!
                     ..content = content!
                     ..link = link!
                     ..author = (Author()
-                      ..username = JonlineAccount.selectedAccount?.username ??
+                      ..username = RellmAccount.selectedAccount?.username ??
                           "jonline.io/jon")),
             ),
           ),
@@ -235,14 +235,14 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
         ),
         PostPreview(
             allowScrollingContent: true,
-            server: JonlineServer.selectedServer.server,
+            server: RellmServer.selectedServer.server,
             maxContentHeight: mq.size.height - 200,
             post: Post()
               ..title = title!
               ..content = content!
               ..link = link!
               ..author = (Author()
-                ..username = JonlineAccount.selectedAccount?.username ??
+                ..username = RellmAccount.selectedAccount?.username ??
                     "jonline.io/jon")),
         const Expanded(
           child: SizedBox(),

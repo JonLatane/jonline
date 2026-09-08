@@ -1,24 +1,24 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
 import "google/protobuf/timestamp.proto";
 import "authors.proto";
 
-// Jonline Message/Email support is "low trust." You should not trust that people are who
-// they say they are, or ever exchange financial or private information with Jonline's
+// Rellm Message/Email support is "low trust." You should not trust that people are who
+// they say they are, or ever exchange financial or private information with Rellm's
 // message/email features.
 //
-// ***Admin users have open access to all Messages on a server, and any UI using Jonline Messages must
+// ***Admin users have open access to all Messages on a server, and any UI using Rellm Messages must
 // make this clear to users.***
 //
-// That said, this "low trust system" is the foundation for all of Jonline's messaging
-// features. It's meant to be *just enough* that strangers can find you on a Jonline instance,
+// That said, this "low trust system" is the foundation for all of Rellm's messaging
+// features. It's meant to be *just enough* that strangers can find you on a Rellm instance,
 // like your posts, and send you a message via email (no account needed). From there, it needs
 // only give you the ability to exchange, say, Signal usernames or personal emails.
 
 
-// A Jonline `Message` represents a single message/email sent to one or more recipients
+// A Rellm `Message` represents a single message/email sent to one or more recipients
 // (really, "zero or more", as the design incorporates undeliverable messages).
 message Message {
   // The ID of the message.
@@ -65,7 +65,7 @@ message Message {
 message MessageRead {
   string message_id = 1;
   string user_id = 2;
-  // When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
+  // When the message was marked read. Always set on a [`MessageRead`](#rellm-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
   // -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
   // a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
   google.protobuf.Timestamp read_at = 20;
@@ -85,7 +85,7 @@ message MarkMessagesReadRequest {
   repeated string message_ids = 2;
 }
 
-// Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
+// Response to a [`MarkMessagesReadRequest`](#rellm-MarkMessagesReadRequest) -- one [`MessageRead`](#rellm-MessageRead) per `message_ids` entry, in the
 // same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
 message MarkMessagesReadResponse {
   repeated MessageRead message_reads = 1;
@@ -101,7 +101,7 @@ message SendMessageRequest {
 
 // A group of users who are participating in a conversation.
 // Most servers will probably have a (dynamically created) "empty group" for an email like
-// `not_a_user@my_jonline_instance.com`.
+// `not_a_user@my_rellm_instance.com`.
 message MessagingGroup {
   // The ID of the messaging group.
   string id = 1;
@@ -141,7 +141,7 @@ message GetMessagesRequest {
   optional string from_email = 9;
 }
 
-// Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages.
+// Response to a [`GetMessagesRequest`](#rellm-GetMessagesRequest), containing the requested messages.
 message GetMessagesResponse {
   // The messages that match the request. May be empty if no messages match.
   // May be shortened to a server-defined limit, dependent on service version,
@@ -192,7 +192,7 @@ message GetPushSubscriptionStatusRequest {
 }
 
 message GetPushSubscriptionStatusResponse {
-  // Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`.
+  // Whether the current user has a [`PushSubscription`](#rellm-PushSubscription) registered for this exact `endpoint`.
   bool registered = 1;
 }
 

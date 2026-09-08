@@ -1,7 +1,7 @@
 # Generated Files live here.
 ## Do not modify.
 
-These are generated TypeScript protos for the Jonline GRPC Web interface.
+These are generated TypeScript protos for the Rellm GRPC Web interface.
 
 To regenerate them, run `yarn protos` from `/frontends/tamagui`.
 

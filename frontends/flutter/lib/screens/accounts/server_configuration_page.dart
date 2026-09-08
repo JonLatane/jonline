@@ -4,28 +4,28 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/demo_data/demo_conversations.dart';
-import 'package:jonline/models/demo_data/demo_events.dart';
-import 'package:jonline/models/demo_data/demo_groups.dart';
-import 'package:jonline/models/demo_data/demo_posts.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
-import 'package:jonline/models/server_errors.dart';
-import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/enum_conversions.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/demo_data/demo_conversations.dart';
+import 'package:rellm/models/demo_data/demo_events.dart';
+import 'package:rellm/models/demo_data/demo_groups.dart';
+import 'package:rellm/models/demo_data/demo_posts.dart';
+import 'package:rellm/models/rellm_account_operations.dart';
+import 'package:rellm/models/server_errors.dart';
+import 'package:rellm/utils/colors.dart';
+import 'package:rellm/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../app_state.dart';
 import '../../generated/server_configuration.pb.dart';
 import '../../generated/google/protobuf/empty.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/demo_data/demo_accounts.dart';
 import '../../models/demo_data/demo_data.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_clients.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_clients.dart';
+import '../../models/rellm_server.dart';
 import '../../utils/proto_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -55,10 +55,10 @@ class AdminPage extends ServerConfigurationPage {
   State<ServerConfigurationPage> createState() => _AdminPageState();
 }
 
-class _AdminPageState extends JonlineState<ServerConfigurationPage> {
-  JonlineAccount? account;
-  JonlineServer? server;
-  JonlineClient? client;
+class _AdminPageState extends RellmState<ServerConfigurationPage> {
+  RellmAccount? account;
+  RellmServer? server;
+  RellmClient? client;
   ServerConfiguration? config;
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
@@ -97,15 +97,15 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
     final account = widget.accountId == null
         ? null
         : this.account ??
-            (await JonlineAccount.accounts)
+            (await RellmAccount.accounts)
                 .firstWhere((a) => a.id == widget.accountId);
 
-    final JonlineServer server = this.server ??
-        (await JonlineServer.servers)
+    final RellmServer server = this.server ??
+        (await RellmServer.servers)
             .firstWhere((a) => a.server == (account?.server ?? widget.server!));
     final client = this.client ??
-        await JonlineClients.getServerClient(server,
-            allowInsecure: JonlineClients.isInsecureAllowed(server.server));
+        await RellmClients.getServerClient(server,
+            allowInsecure: RellmClients.isInsecureAllowed(server.server));
     await server.updateServiceVersion();
     await server.updateConfiguration();
 
@@ -129,7 +129,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
         config = response.jonCopy();
       });
       await server!.save();
-      if (server == JonlineServer.selectedServer) {
+      if (server == RellmServer.selectedServer) {
         appState.colorTheme.value = config!.serverInfo.colors;
       }
       showSnackBar("Configuration Updated 🎉");
@@ -239,7 +239,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
               children: [
                 Expanded(
                     child:
-                        Text("Jonline Version", style: textTheme.labelLarge)),
+                        Text("Rellm Version", style: textTheme.labelLarge)),
                 Text("v${server?.serviceVersion}", style: textTheme.bodySmall),
               ],
             ),
@@ -468,7 +468,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             if (isAdmin)
               Container(
                 key: Key(
-                    "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}-${config?.peopleSettings.defaultVisibility}"),
+                    "visibility-control-${(account ?? RellmAccount.selectedAccount)?.id}-${config?.peopleSettings.defaultVisibility}"),
                 child: MultiSelectChipField<vm.Visibility?>(
                   decoration: const BoxDecoration(),
                   showHeader: false,
@@ -480,7 +480,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                   items: vm.Visibility.values
                       .where((v) {
                         final account =
-                            this.account ?? JonlineAccount.selectedAccount;
+                            this.account ?? RellmAccount.selectedAccount;
                         return v != vm.Visibility.VISIBILITY_UNKNOWN &&
                             (account?.permissions.contains(
                                         Permission.PUBLISH_USERS_GLOBALLY) ==

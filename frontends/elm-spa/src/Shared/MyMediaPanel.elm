@@ -31,7 +31,7 @@ flow -- not wired to anything yet.
 The header's "Add" button doubles as this panel's upload trigger (`AddClicked`
 opens the OS file picker via `File.Select.file`), and the whole panel is also
 a drop target (`view`'s root `on "drop"`) -- both funnel into the same
-`uploadStatus`/`startUpload`. Jonline's media upload isn't a gRPC RPC at all
+`uploadStatus`/`startUpload`. Rellm's media upload isn't a gRPC RPC at all
 (see `protos/media.proto`'s doc comment on `Media`) -- it's a plain
 `POST {backendHost}/media` with the raw file bytes as the body, an
 `Authorization` header, and an optional `Filename` header, returning the new
@@ -57,8 +57,8 @@ import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropaga
 import Html.Keyed
 import Http
 import Json.Decode as Decode
-import Proto.Jonline exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest, defaultMedia)
-import Proto.Jonline.Jonline as Jonline
+import Proto.Rellm exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest, defaultMedia)
+import Proto.Rellm.Rellm as Rellm
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
@@ -893,14 +893,14 @@ fetchTask accountsPanelModel account =
         accountsPanelModel
         ( Just account.userId, account.server )
         (\server token ->
-            Grpc.new Jonline.getMedia { defaultGetMediaRequest | userId = Just account.userId }
+            Grpc.new Rellm.getMedia { defaultGetMediaRequest | userId = Just account.userId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-{-| The `DeleteMedia` RPC (`protos/jonline.proto`) takes a `Media`, but
+{-| The `DeleteMedia` RPC (`protos/rellm.proto`) takes a `Media`, but
 `backend/src/rpcs/media/delete_media.rs` only ever looks at its `id` --
 `defaultMedia` fills in the rest with placeholders nothing on the backend
 reads. Its response is `google.protobuf.Empty`; mapped away to `()` here
@@ -912,7 +912,7 @@ deleteTask accountsPanelModel account media =
         accountsPanelModel
         ( Just account.userId, account.server )
         (\server token ->
-            Grpc.new Jonline.deleteMedia { defaultMedia | id = media.id }
+            Grpc.new Rellm.deleteMedia { defaultMedia | id = media.id }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask

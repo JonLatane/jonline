@@ -1,8 +1,8 @@
 //! Specs for `web_push`'s own DB-backed helpers (`stored_web_push_config`, `stored_frontend_host`)
 //! that need a real `test_conn`/`configure_server` round trip. Lives here (rather than inline in
 //! `web_push/mod.rs`, alongside its module's other, DB-free tests) because `main.rs` independently
-//! redeclares `pub mod web_push;`, so that file is compiled twice -- once under the `jonline` lib
-//! crate root (where `crate::tests` exists) and once under the `jonline` bin crate root (where it
+//! redeclares `pub mod web_push;`, so that file is compiled twice -- once under the `rellm` lib
+//! crate root (where `crate::tests` exists) and once under the `rellm` bin crate root (where it
 //! doesn't) -- and a `crate::tests::factories` reference inside it fails to resolve for the latter.
 //!
 //! `stored_web_push_config_returns_the_unblanked_private_key` is a regression test for a real

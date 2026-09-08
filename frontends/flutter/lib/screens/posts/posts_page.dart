@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animated_list_plus/animated_list_plus.dart';
 import 'package:animated_list_plus/transitions.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/utils/colors.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/utils/colors.dart';
 import 'package:recase/recase.dart';
 // import 'package:smooth/smooth.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import '../../router/router.gr.dart';
 import 'post_preview.dart';
 
@@ -26,7 +26,7 @@ class PostsScreen extends StatefulWidget {
   PostsScreenState createState() => PostsScreenState();
 }
 
-class PostsScreenState extends JonlineState<PostsScreen>
+class PostsScreenState extends RellmState<PostsScreen>
     with AutoRouteAwareStateMixin<PostsScreen> {
   ScrollController listScrollController = ScrollController();
   ScrollController gridScrollController = ScrollController();
@@ -122,7 +122,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
       // resetMembers();
     }
 
-    if (!JonlineAccount.loggedIn) {
+    if (!RellmAccount.loggedIn) {
       listingType = viewingGroup
           ? PostListingType.GROUP_POSTS
           : PostListingType.ALL_ACCESSIBLE_POSTS;
@@ -202,13 +202,13 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 curve: Curves.easeInOut,
                                 animation: animation,
                                 key: Key(
-                                    "post-post-${JonlineServer.selectedServer.server}-${post.id}"),
+                                    "post-post-${RellmServer.selectedServer.server}-${post.id}"),
                                 child: PostPreview(
-                                  server: JonlineServer.selectedServer.server,
+                                  server: RellmServer.selectedServer.server,
                                   onTap: () {
                                     context.pushRoute(PostDetailsRoute(
                                         postId: post.id,
-                                        server: JonlineServer
+                                        server: RellmServer
                                             .selectedServer.server));
                                   },
                                   post: post,
@@ -236,14 +236,14 @@ class PostsScreenState extends JonlineState<PostsScreen>
                               final post = postList[index];
                               return PostPreview(
                                 key: Key(
-                                    "post-post-griditem-${JonlineServer.selectedServer.server}-${post.id}"),
-                                server: JonlineServer.selectedServer.server,
+                                    "post-post-griditem-${RellmServer.selectedServer.server}-${post.id}"),
+                                server: RellmServer.selectedServer.server,
                                 maxContentHeight: 400,
                                 onTap: () {
                                   context.pushRoute(PostDetailsRoute(
                                       postId: post.id,
                                       server:
-                                          JonlineServer.selectedServer.server));
+                                          RellmServer.selectedServer.server));
                                 },
                                 post: post,
                               );
@@ -320,7 +320,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
               children: [
                 Text("Loading Posts...", style: textTheme.titleLarge),
                 Text(
-                    "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                    "${RellmServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
                     style: textTheme.bodySmall),
                 if (viewingGroup) Text(appState.selectedGroup.value!.name),
               ],
@@ -353,7 +353,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                   : "No Posts",
                               style: textTheme.titleLarge),
                           Text(
-                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                              "${RellmServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
                               style: textTheme.bodySmall),
                           if (viewingGroup)
                             Text(appState.selectedGroup.value!.name),
@@ -435,7 +435,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
         ]
             // .where((l) => l != UserListingType.FRIENDS)
             .map((l) {
-          bool usable = JonlineAccount.loggedIn ||
+          bool usable = RellmAccount.loggedIn ||
               l == PostListingType.ALL_ACCESSIBLE_POSTS;
           usable &= canShowGroupPendingModeration ||
               l != PostListingType.GROUP_POSTS_PENDING_MODERATION;

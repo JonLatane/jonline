@@ -1,6 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:auto_route/empty_router_widgets.dart';
-import 'package:jonline/screens/posts/create_reply_page.dart';
+import 'package:rellm/screens/posts/create_reply_page.dart';
 
 import '../../router/auth_guard.dart';
 import '../accounts/user_profile_page.dart';

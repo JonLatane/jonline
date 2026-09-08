@@ -20,10 +20,10 @@ import 'google/protobuf/timestamp.pb.dart' as $12;
 
 export 'ai_model_providers.pbenum.dart';
 
-/// One specific model a user may call right now, and how -- via an [`AIModelProvider`](#jonline-AIModelProvider)
-/// they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) someone else
+/// One specific model a user may call right now, and how -- via an [`AIModelProvider`](#rellm-AIModelProvider)
+/// they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) someone else
 /// granted them (`grant` set). Only ever defined relative to a user -- see
-/// [`User.available_ai_models`](#jonline-User)/[`GetAIModelProvidersResponse.available_ai_models`](#jonline-GetAIModelProvidersResponse).
+/// [`User.available_ai_models`](#rellm-User)/[`GetAIModelProvidersResponse.available_ai_models`](#rellm-GetAIModelProvidersResponse).
 /// One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
 /// provider supports (see the server's own model catalog per provider type); a grantee gets one row
 /// per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
@@ -54,7 +54,7 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   factory AvailableAIModel.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AvailableAIModel.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AvailableAIModel', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AvailableAIModel', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'modelName')
     ..pc<AIModelCapability>(2, _omitFieldNames ? '' : 'capabilities', $pb.PbFieldType.KE, valueOf: AIModelCapability.valueOf, enumValues: AIModelCapability.values, defaultEnumValue: AIModelCapability.AI_MODEL_CAPABILITY_UNKNOWN)
     ..aOM<AIModelProviderGrant>(3, _omitFieldNames ? '' : 'grant', subBuilder: AIModelProviderGrant.create)
@@ -94,7 +94,7 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   void clearModelName() => clearField(1);
 
   /// What this model can actually do -- from the server's own hardcoded catalog for
-  /// `provider.provider`'s variant (see [`AIModelCapability`](#jonline-AIModelCapability)), not
+  /// `provider.provider`'s variant (see [`AIModelCapability`](#rellm-AIModelCapability)), not
   /// anything reported by the provider's API itself. Feature gating keys off this rather than
   /// `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
   /// `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or
@@ -138,8 +138,8 @@ enum GenerateMediaRequest_Target {
 }
 
 /// Request to generate (or edit) an image via one of the current user's
-/// [`AvailableAIModel`](#jonline-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
-/// image is stored as a new [`Media`](#jonline-Media) (`generated = true`) owned by the current user, and -- if
+/// [`AvailableAIModel`](#rellm-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+/// image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and -- if
 /// `target` is set -- prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
 class GenerateMediaRequest extends $pb.GeneratedMessage {
   factory GenerateMediaRequest({
@@ -176,7 +176,7 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
     6 : GenerateMediaRequest_Target.eventInstanceId,
     0 : GenerateMediaRequest_Target.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GenerateMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GenerateMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [5, 6])
     ..aOM<AvailableAIModel>(1, _omitFieldNames ? '' : 'model', subBuilder: AvailableAIModel.create)
     ..aOS(2, _omitFieldNames ? '' : 'userPrompt')
@@ -228,7 +228,7 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
 
   /// The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
   /// following event." Combined server-side with `target`'s own formatted content (title/description/date-time
-  /// range/location -- the same formatting [`SyncDestination`](#jonline-SyncDestination)s use) before being sent to
+  /// range/location -- the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to
   /// the model, so the user never has to paste that context in by hand.
   @$pb.TagNumber(2)
   $core.String get userPrompt => $_getSZ(1);
@@ -239,11 +239,11 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserPrompt() => clearField(2);
 
-  /// Existing [`Media`](#jonline-Media) to pass to the model alongside `user_prompt`, for image editing/
+  /// Existing [`Media`](#rellm-Media) to pass to the model alongside `user_prompt`, for image editing/
   /// reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave
   /// empty for plain text-to-image generation instead -- `model` must have the matching capability either way
   /// (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see
-  /// [`AIModelCapability`](#jonline-AIModelCapability)'s own doc). Every id must be owned by the current user (or
+  /// [`AIModelCapability`](#rellm-AIModelCapability)'s own doc). Every id must be owned by the current user (or
   /// the current user must be an Admin).
   @$pb.TagNumber(3)
   $core.List<$core.String> get mediaIds => $_getList(2);
@@ -283,26 +283,26 @@ enum AIModelProvider_Provider {
 
 ///  An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
 ///  key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
-///  [`SyncDestination`](#jonline-SyncDestination)/[`SyncSource`](#jonline-SyncSource) (also user-owned integrations
-///  with an [`Author`](#jonline-Author) `owner` and a `oneof` naming which external system is configured), but where
+///  [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource) (also user-owned integrations
+///  with an [`Author`](#rellm-Author) `owner` and a `oneof` naming which external system is configured), but where
 ///  those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
-///  other users via [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+///  other users via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s rather than posted-to/subscribed-from.
 ///
 ///  Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
 ///  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
 ///  [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user's), and
 ///  [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
-///  [`SyncDestination`](#jonline-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
+///  [`SyncDestination`](#rellm-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
 ///  [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
 ///  unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
 ///  record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
 ///  call only its owner should be able to make.
 ///
-///  [`GeminiCredentials`](#jonline-GeminiCredentials)/[`OpenAICredentials`](#jonline-OpenAICredentials)/
-///  [`DigitalOceanCredentials`](#jonline-DigitalOceanCredentials) all have a working connection flow (Gemini's
+///  [`GeminiCredentials`](#rellm-GeminiCredentials)/[`OpenAICredentials`](#rellm-OpenAICredentials)/
+///  [`DigitalOceanCredentials`](#rellm-DigitalOceanCredentials) all have a working connection flow (Gemini's
 ///  Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
 ///  OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
-///  [`AnthropicCredentials`](#jonline-AnthropicCredentials) is defined for forward compatibility but is not yet
+///  [`AnthropicCredentials`](#rellm-AnthropicCredentials) is defined for forward compatibility but is not yet
 ///  accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
 class AIModelProvider extends $pb.GeneratedMessage {
   factory AIModelProvider({
@@ -361,7 +361,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
     7 : AIModelProvider_Provider.digitaloceanCredentials,
     0 : AIModelProvider_Provider.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AIModelProvider', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AIModelProvider', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [4, 5, 6, 7])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
@@ -521,7 +521,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(9);
 }
 
-/// A grant of metered access to someone else's [`AIModelProvider`](#jonline-AIModelProvider), created/reset via
+/// A grant of metered access to someone else's [`AIModelProvider`](#rellm-AIModelProvider), created/reset via
 /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
 /// [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
 /// `(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
@@ -565,7 +565,7 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   factory AIModelProviderGrant.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AIModelProviderGrant.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AIModelProviderGrant', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AIModelProviderGrant', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'aiModelProviderId')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'aiModelGrantee', subBuilder: $15.Author.create)
     ..pPS(3, _omitFieldNames ? '' : 'modelNames')
@@ -597,7 +597,7 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   static AIModelProviderGrant getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AIModelProviderGrant>(create);
   static AIModelProviderGrant? _defaultInstance;
 
-  /// The ID of the [`AIModelProvider`](#jonline-AIModelProvider) this grant is for.
+  /// The ID of the [`AIModelProvider`](#rellm-AIModelProvider) this grant is for.
   @$pb.TagNumber(1)
   $core.String get aiModelProviderId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -679,7 +679,7 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(6);
 }
 
-/// Response to a request for a user's [`AIModelProvider`](#jonline-AIModelProvider)s.
+/// Response to a request for a user's [`AIModelProvider`](#rellm-AIModelProvider)s.
 class GetAIModelProvidersResponse extends $pb.GeneratedMessage {
   factory GetAIModelProvidersResponse({
     $core.Iterable<AIModelProvider>? providers,
@@ -698,7 +698,7 @@ class GetAIModelProvidersResponse extends $pb.GeneratedMessage {
   factory GetAIModelProvidersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetAIModelProvidersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAIModelProvidersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetAIModelProvidersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<AIModelProvider>(1, _omitFieldNames ? '' : 'providers', $pb.PbFieldType.PM, subBuilder: AIModelProvider.create)
     ..pc<AvailableAIModel>(2, _omitFieldNames ? '' : 'availableAiModels', $pb.PbFieldType.PM, subBuilder: AvailableAIModel.create)
     ..hasRequiredFields = false
@@ -734,12 +734,12 @@ class GetAIModelProvidersResponse extends $pb.GeneratedMessage {
   $core.List<AIModelProvider> get providers => $_getList(0);
 
   /// Every model the requested user may currently call -- their own providers' models, plus any
-  /// models granted to them on other users' providers. See [`AvailableAIModel`](#jonline-AvailableAIModel)'s own doc.
+  /// models granted to them on other users' providers. See [`AvailableAIModel`](#rellm-AvailableAIModel)'s own doc.
   @$pb.TagNumber(2)
   $core.List<AvailableAIModel> get availableAiModels => $_getList(1);
 }
 
-/// Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#jonline-AIModelProviderGrant)s.
+/// Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s.
 class DeleteAIModelProviderRequest extends $pb.GeneratedMessage {
   factory DeleteAIModelProviderRequest({
     AIModelProvider? provider,
@@ -754,7 +754,7 @@ class DeleteAIModelProviderRequest extends $pb.GeneratedMessage {
   factory DeleteAIModelProviderRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory DeleteAIModelProviderRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<AIModelProvider>(1, _omitFieldNames ? '' : 'provider', subBuilder: AIModelProvider.create)
     ..hasRequiredFields = false
   ;
@@ -794,7 +794,7 @@ class DeleteAIModelProviderRequest extends $pb.GeneratedMessage {
 }
 
 /// Request to grant (or reset) another user's metered access to one of the current user's
-/// [`AIModelProvider`](#jonline-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+/// [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
 class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
   factory GrantAIModelProviderRequest({
     $core.String? userId,
@@ -821,7 +821,7 @@ class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
   factory GrantAIModelProviderRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GrantAIModelProviderRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GrantAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'aiModelProviderId')
     ..a<$fixnum.Int64>(3, _omitFieldNames ? '' : 'tokens', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
@@ -881,7 +881,7 @@ class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearTokens() => clearField(3);
 
-  /// The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#jonline-AIModelProviderGrant)
+  /// The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#rellm-AIModelProviderGrant)
   /// -- if empty, allows access to any model the provider supports. Also replaced (not merged)
   /// on a repeat call, same as `tokens`.
   @$pb.TagNumber(4)
@@ -889,7 +889,7 @@ class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
 }
 
 /// Request to revoke another user's access to one of the current user's
-/// [`AIModelProvider`](#jonline-AIModelProvider)s, the reverse of
+/// [`AIModelProvider`](#rellm-AIModelProvider)s, the reverse of
 /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
 class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
   factory RevokeAIModelProviderRequest({
@@ -909,7 +909,7 @@ class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
   factory RevokeAIModelProviderRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RevokeAIModelProviderRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokeAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RevokeAIModelProviderRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'aiModelProviderId')
     ..hasRequiredFields = false
@@ -958,7 +958,7 @@ class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
 }
 
 /// Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
-/// [`AIModelProvider.provider`](#jonline-AIModelProvider) variant currently accepted by
+/// [`AIModelProvider.provider`](#rellm-AIModelProvider) variant currently accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
 /// Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
 /// e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -976,7 +976,7 @@ class GeminiCredentials extends $pb.GeneratedMessage {
   factory GeminiCredentials.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GeminiCredentials.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GeminiCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GeminiCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'geminiApiKey')
     ..hasRequiredFields = false
   ;
@@ -1005,7 +1005,7 @@ class GeminiCredentials extends $pb.GeneratedMessage {
   /// The Gemini API key. Required (and only used) on
   /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
   /// **never populated in responses**, the same write-only convention as e.g.
-  /// [`MastodonAccount.access_token`](#jonline-MastodonAccount) in `sync.proto`.
+  /// [`MastodonAccount.access_token`](#rellm-MastodonAccount) in `sync.proto`.
   @$pb.TagNumber(1)
   $core.String get geminiApiKey => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1019,7 +1019,7 @@ class GeminiCredentials extends $pb.GeneratedMessage {
 /// Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
 /// Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
-/// (the GPT Image model family) -- same use case as [`GeminiCredentials`](#jonline-GeminiCredentials), see
+/// (the GPT Image model family) -- same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
 /// [`GenerateMedia`](#grpc-api-GenerateMedia).
 class OpenAICredentials extends $pb.GeneratedMessage {
   factory OpenAICredentials({
@@ -1035,7 +1035,7 @@ class OpenAICredentials extends $pb.GeneratedMessage {
   factory OpenAICredentials.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory OpenAICredentials.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'OpenAICredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'OpenAICredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'openaiApiKey')
     ..hasRequiredFields = false
   ;
@@ -1063,7 +1063,7 @@ class OpenAICredentials extends $pb.GeneratedMessage {
 
   /// The OpenAI API key. Required (and only used) on
   /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
-  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)).
   @$pb.TagNumber(1)
   $core.String get openaiApiKey => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1095,7 +1095,7 @@ class DigitalOceanCredentials extends $pb.GeneratedMessage {
   factory DigitalOceanCredentials.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory DigitalOceanCredentials.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DigitalOceanCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DigitalOceanCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'digitaloceanApiKey')
     ..hasRequiredFields = false
   ;
@@ -1123,7 +1123,7 @@ class DigitalOceanCredentials extends $pb.GeneratedMessage {
 
   /// The DigitalOcean Serverless Inference API token. Required (and only used) on
   /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
-  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  /// never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)).
   @$pb.TagNumber(1)
   $core.String get digitaloceanApiKey => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1150,7 +1150,7 @@ class AnthropicCredentials extends $pb.GeneratedMessage {
   factory AnthropicCredentials.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AnthropicCredentials.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnthropicCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnthropicCredentials', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'anthropicApiKey')
     ..hasRequiredFields = false
   ;
@@ -1177,7 +1177,7 @@ class AnthropicCredentials extends $pb.GeneratedMessage {
   static AnthropicCredentials? _defaultInstance;
 
   /// The Anthropic API key. Never populated in responses (see
-  /// [`GeminiCredentials.gemini_api_key`](#jonline-GeminiCredentials)).
+  /// [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)).
   @$pb.TagNumber(1)
   $core.String get anthropicApiKey => $_getSZ(0);
   @$pb.TagNumber(1)

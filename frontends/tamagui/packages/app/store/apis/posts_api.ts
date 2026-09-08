@@ -1,4 +1,4 @@
-import { GetPostsRequest, GetPostsResponse } from '@jonline/api';
+import { GetPostsRequest, GetPostsResponse } from '@rellm/api';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getCredentialClient } from '../credentialed_data';
 import { AccountOrServer } from '../types';

@@ -112,7 +112,7 @@ pub fn get_ai_model_provider_grants_for_providers(
 
 /// Every grant made *to* any of `grantee_ids`, on any provider (their own or someone else's),
 /// paired with that grant's `AIModelProvider` and its owner's `Author` -- used to build
-/// [`AvailableAIModel`](#jonline-AvailableAIModel)s for `User.available_ai_models`/
+/// [`AvailableAIModel`](#rellm-AvailableAIModel)s for `User.available_ai_models`/
 /// `GetAIModelProvidersResponse.available_ai_models`. Batched variant of what used to be a
 /// single-grantee-at-a-time loader.
 pub fn get_ai_model_provider_grants_for_grantees(

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../generated/posts.pb.dart';
 import '../data_cache.dart';
-import '../models/jonline_operations.dart';
+import '../models/rellm_operations.dart';
 
 class PostDataKey {
   final String? groupId;
@@ -53,6 +53,6 @@ class PostCache
     if (request == null) {
       return null;
     }
-    return await JonlineOperations.getPosts(request: request);
+    return await RellmOperations.getPosts(request: request);
   }
 }

@@ -10,9 +10,9 @@ phone-width screen. Wired into `Shared.Model`/`UI.elm` the same way
 opened from wherever it's needed (see `TargetType`) rather than each caller
 owning its own editor state.
 
-Knows how to edit/submit a `Proto.Jonline.Post`'s `content` (via `TargetType`)
+Knows how to edit/submit a `Proto.Rellm.Post`'s `content` (via `TargetType`)
 -- editing a `Post` already in hand (`PostContent`), or composing a brand new
-reply to one (`NewReply`) -- or a `Proto.Jonline.User`'s `bio` (`UserBio`, see
+reply to one (`NewReply`) -- or a `Proto.Rellm.User`'s `bio` (`UserBio`, see
 `Components.UserProfilePage`). More `TargetType` constructors can be added
 later without touching callers that only care about the ones they use.
 
@@ -28,10 +28,10 @@ import Html exposing (Html, button, div, img, label, option, select, span, text,
 import Html.Attributes exposing (alt, attribute, class, disabled, id, placeholder, selected, spellcheck, src, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
-import Proto.Jonline exposing (Author, Message, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Rellm exposing (Author, Message, Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultSendMessageRequest, defaultServerInfo)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
@@ -1015,7 +1015,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                 accountsPanelModel
                 maybeAccountServer
                 (\server token ->
-                    Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just post.id }
+                    Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just post.id }
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
@@ -1023,7 +1023,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                             (\response ->
                                 case List.head response.posts of
                                     Just freshPost ->
-                                        Grpc.new Jonline.updatePost { freshPost | content = Just content }
+                                        Grpc.new Rellm.updatePost { freshPost | content = Just content }
                                             |> Grpc.setHost (AccountsPanel.serverUrl server)
                                             |> withAccessToken (Just token)
                                             |> Grpc.toTask
@@ -1039,7 +1039,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                 accountsPanelModel
                 maybeAccountServer
                 (\server token ->
-                    Grpc.new Jonline.createPost
+                    Grpc.new Rellm.createPost
                         { defaultPost
                             | replyToPostId = Just post.id
                             , content = Just content
@@ -1106,7 +1106,7 @@ sendMessageTask accountsPanelModel maybeAccountServer recipientUserIds subject b
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.sendMessage
+            Grpc.new Rellm.sendMessage
                 { defaultSendMessageRequest
                     | toUserIds = recipientUserIds
                     , subject =
@@ -1151,7 +1151,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
         accountsPanelModel
         maybeAccountServer
         (\resolvedServer token ->
-            Grpc.new Jonline.getServerConfiguration {}
+            Grpc.new Rellm.getServerConfiguration {}
                 |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -1162,7 +1162,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
                             info =
                                 Maybe.withDefault defaultServerInfo freshConfig.serverInfo
                         in
-                        Grpc.new Jonline.configureServer { freshConfig | serverInfo = Just (updateInfo info) }
+                        Grpc.new Rellm.configureServer { freshConfig | serverInfo = Just (updateInfo info) }
                             |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
                             |> withAccessToken (Just token)
                             |> Grpc.toTask

@@ -59,10 +59,10 @@ impl ToProtoMarshalableAIModelProviderGrant for MarshalableAIModelProviderGrant 
     }
 }
 
-/// Builds every [`AvailableAIModel`](#jonline-AvailableAIModel) for each of `target_user_ids`, plus each target
-/// user's own [`AIModelProvider`](#jonline-AIModelProvider)s -- combines, per target user, their own providers
+/// Builds every [`AvailableAIModel`](#rellm-AvailableAIModel) for each of `target_user_ids`, plus each target
+/// user's own [`AIModelProvider`](#rellm-AIModelProvider)s -- combines, per target user, their own providers
 /// (each expanded into every model `logic::models_for_provider` lists for it, `grant: None`, full
-/// ungated access) with every [`AIModelProviderGrant`](#jonline-AIModelProviderGrant) made *to* them (each expanded
+/// ungated access) with every [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) made *to* them (each expanded
 /// into the model(s) it actually covers -- `grant.model_names`, or the provider's full catalog if
 /// that list is empty). A target user can never end up with both an owned entry and a granted entry
 /// for the same provider -- `grant_ai_model_provider.rs` rejects granting yourself access to your

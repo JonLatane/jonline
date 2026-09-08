@@ -2,8 +2,8 @@ module Federation.BlueskyTests exposing (suite)
 
 import Expect
 import Json.Decode as Decode
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.Federation.Bluesky as Bluesky
 import Support.BlueskyFactory as Factory exposing (defaultOverrides)
 import Test exposing (Test, describe, test)
@@ -38,7 +38,7 @@ suite =
                         |> Expect.equal (Ok Nothing)
             ]
         , describe "toPost"
-            [ test "namespaces the id off the at:// URI, never colliding with a real Jonline post id" <|
+            [ test "namespaces the id off the at:// URI, never colliding with a real Rellm post id" <|
                 \_ ->
                     Factory.feedPost defaultOverrides
                         |> Bluesky.toPost
@@ -68,7 +68,7 @@ suite =
                         |> Bluesky.toPost
                         |> .link
                         |> Expect.equal (Just "https://bsky.app/profile/alice.bsky.social/post/xyz789")
-            , test "carries the author's own avatar as a MediaReference.url, not a Jonline media id" <|
+            , test "carries the author's own avatar as a MediaReference.url, not a Rellm media id" <|
                 \_ ->
                     Factory.feedPost defaultOverrides
                         |> Bluesky.toPost
@@ -76,7 +76,7 @@ suite =
                         |> Maybe.andThen .avatar
                         |> Maybe.andThen .url
                         |> Expect.equal (Just "https://cdn.bsky.app/img/avatar/alice.jpg")
-            , test "the author's own handle is used as their Jonline username, unqualified (already globally unique)" <|
+            , test "the author's own handle is used as their Rellm username, unqualified (already globally unique)" <|
                 \_ ->
                     Factory.feedPost defaultOverrides
                         |> Bluesky.toPost

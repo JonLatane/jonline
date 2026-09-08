@@ -1,6 +1,6 @@
-import { Post, PostContext } from "@jonline/api";
-import { AnimatePresence, Button, Paragraph, Spinner, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
-import { standardHorizontalAnimation } from '@jonline/ui/src/animations';
+import { Post, PostContext } from "@rellm/api";
+import { AnimatePresence, Button, Paragraph, Spinner, XStack, YStack, standardAnimation, useMedia } from "@rellm/ui";
+import { standardHorizontalAnimation } from '@rellm/ui/src/animations';
 import { createSelector } from "@reduxjs/toolkit";
 import { ChevronDown, ChevronUp, MessagesSquare } from "@tamagui/lucide-icons";
 import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";

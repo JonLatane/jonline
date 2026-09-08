@@ -27,10 +27,10 @@ enum SyncDestination_Configuration {
   notSet
 }
 
-/// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#jonline-SyncSource),
+/// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
 /// but for pushing content out rather than pulling content in. Originally Event-specific
-/// (as `EventSyncDestination`), now shared by both [`EventInstance`](#jonline-EventInstance)s (see `events.proto`'s
-/// [`SyncEventInstanceRequest`](#jonline-SyncEventInstanceRequest)) and [`Post`](#jonline-Post)s (see `posts.proto`'s [`SyncPostRequest`](#jonline-SyncPostRequest)).
+/// (as `EventSyncDestination`), now shared by both [`EventInstance`](#rellm-EventInstance)s (see `events.proto`'s
+/// [`SyncEventInstanceRequest`](#rellm-SyncEventInstanceRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
 class SyncDestination extends $pb.GeneratedMessage {
   factory SyncDestination({
     $core.String? id,
@@ -98,7 +98,7 @@ class SyncDestination extends $pb.GeneratedMessage {
     14 : SyncDestination_Configuration.threadsAccount,
     0 : SyncDestination_Configuration.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestination', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [9, 10, 11, 12, 13, 14])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
@@ -186,7 +186,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(3);
 
   /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike [`SyncSource`](#jonline-SyncSource)'s `event_count`/`event_instance_count`, which are
+  /// request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`event_instance_count`, which are
   /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   /// in bulk on an interval.
   @$pb.TagNumber(6)
@@ -282,7 +282,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   ThreadsAccount ensureThreadsAccount() => $_ensure(11);
 }
 
-/// Response to a request for the current user's [`SyncDestination`](#jonline-SyncDestination)s.
+/// Response to a request for the current user's [`SyncDestination`](#rellm-SyncDestination)s.
 class GetSyncDestinationsResponse extends $pb.GeneratedMessage {
   factory GetSyncDestinationsResponse({
     $core.Iterable<SyncDestination>? destinations,
@@ -297,7 +297,7 @@ class GetSyncDestinationsResponse extends $pb.GeneratedMessage {
   factory GetSyncDestinationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetSyncDestinationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncDestinationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncDestinationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<SyncDestination>(1, _omitFieldNames ? '' : 'destinations', $pb.PbFieldType.PM, subBuilder: SyncDestination.create)
     ..hasRequiredFields = false
   ;
@@ -347,7 +347,7 @@ class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeleteSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory DeleteSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<SyncDestination>(1, _omitFieldNames ? '' : 'destination', subBuilder: SyncDestination.create)
     ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedPosts')
     ..hasRequiredFields = false
@@ -397,12 +397,12 @@ class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
   void clearDeleteSyncedPosts() => clearField(2);
 }
 
-///  A Facebook Page connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal profile**. Facebook
+///  A Facebook Page connected as a [`SyncDestination`](#rellm-SyncDestination) -- **never a personal profile**. Facebook
 ///  deprecated the `publish_actions` permission in 2018, which was the only way any third-party app
 ///  could ever post to a personal timeline; there's no Graph API call today, for any app, that can
 ///  post anything (feed post, photo, or otherwise) to a personal profile on a user's behalf. A Page
 ///  is the only kind of Facebook entity a self-hosted server like this can post to at all -- this
-///  isn't a Jonline design choice to work around, it's a hard platform restriction. (Unrelated to
+///  isn't a Rellm design choice to work around, it's a hard platform restriction. (Unrelated to
 ///  this: Facebook *Events* specifically are also unreachable, even for Pages -- see
 ///  `docs/facebook_and_x_twitter_federation.md`'s "It posts to the Page's feed, not a real Facebook
 ///  Event" for that separate, independent 2018-era lockdown.)
@@ -432,7 +432,7 @@ class FacebookPage extends $pb.GeneratedMessage {
   factory FacebookPage.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FacebookPage.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookPage', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookPage', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'pageId')
     ..aOS(2, _omitFieldNames ? '' : 'pageName')
     ..aOS(3, _omitFieldNames ? '' : 'shortLivedUserAccessToken')
@@ -493,14 +493,14 @@ class FacebookPage extends $pb.GeneratedMessage {
   void clearShortLivedUserAccessToken() => clearField(3);
 }
 
-///  An Instagram Business/Creator account connected as a [`SyncDestination`](#jonline-SyncDestination) -- **never a personal
-///  Instagram account**. Unlike [`FacebookPage`](#jonline-FacebookPage)'s restriction (a *deprecated* permission that used to let
+///  An Instagram Business/Creator account connected as a [`SyncDestination`](#rellm-SyncDestination) -- **never a personal
+///  Instagram account**. Unlike [`FacebookPage`](#rellm-FacebookPage)'s restriction (a *deprecated* permission that used to let
 ///  apps post to a personal timeline), this one was never possible in the first place: Instagram's
 ///  Content Publishing API was built from the start only for professional (Business/Creator)
 ///  accounts, so a personal Instagram account simply has no API surface to post to at all,
 ///  regardless of what this server does. Posting to Instagram also requires the professional account
 ///  to be linked to a Facebook Page, so this reuses the same Facebook Login popup and app credentials
-///  as [`FacebookPage`](#jonline-FacebookPage) -- the server exchanges the token for the Page's access token, then looks up
+///  as [`FacebookPage`](#rellm-FacebookPage) -- the server exchanges the token for the Page's access token, then looks up
 ///  that Page's linked Instagram Business account.
 ///
 ///  Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
@@ -532,7 +532,7 @@ class InstagramAccount extends $pb.GeneratedMessage {
   factory InstagramAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory InstagramAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'InstagramAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'InstagramAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'instagramBusinessAccountId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOS(3, _omitFieldNames ? '' : 'pageId')
@@ -592,7 +592,7 @@ class InstagramAccount extends $pb.GeneratedMessage {
   void clearPageId() => clearField(3);
 
   /// Only used (and required) on [`CreateSyncDestination`](#grpc-api-CreateSyncDestination): a short-lived user access token
-  /// from client-side Facebook Login (same flow as [`FacebookPage`](#jonline-FacebookPage)), exchanged server-side for a
+  /// from client-side Facebook Login (same flow as [`FacebookPage`](#rellm-FacebookPage)), exchanged server-side for a
   /// long-lived Page access token, which is also used to post to the linked Instagram account.
   /// Never populated in responses.
   @$pb.TagNumber(4)
@@ -605,7 +605,7 @@ class InstagramAccount extends $pb.GeneratedMessage {
   void clearShortLivedUserAccessToken() => clearField(4);
 }
 
-///  A Mastodon account connected as a [`SyncDestination`](#jonline-SyncDestination) via a user-supplied Personal Access Token
+///  A Mastodon account connected as a [`SyncDestination`](#rellm-SyncDestination) via a user-supplied Personal Access Token
 ///  (generated on the user's own instance, under Preferences > Development), rather than an OAuth
 ///  popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
 ///  register ahead of time the way Facebook/Instagram have one.
@@ -635,7 +635,7 @@ class MastodonAccount extends $pb.GeneratedMessage {
   factory MastodonAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MastodonAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'instanceHost')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOS(3, _omitFieldNames ? '' : 'accessToken')
@@ -695,7 +695,7 @@ class MastodonAccount extends $pb.GeneratedMessage {
   void clearAccessToken() => clearField(3);
 }
 
-///  A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#jonline-SyncDestination) via an "App Password"
+///  A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#rellm-SyncDestination) via an "App Password"
 ///  (generated at Settings > App Passwords -- not the account's main password), rather than an
 ///  OAuth popup.
 ///
@@ -724,7 +724,7 @@ class BlueskyAccount extends $pb.GeneratedMessage {
   factory BlueskyAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory BlueskyAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BlueskyAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BlueskyAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'handle')
     ..aOS(2, _omitFieldNames ? '' : 'did')
     ..aOS(3, _omitFieldNames ? '' : 'appPassword')
@@ -786,11 +786,11 @@ class BlueskyAccount extends $pb.GeneratedMessage {
   void clearAppPassword() => clearField(3);
 }
 
-///  An X (Twitter) account connected as a [`SyncDestination`](#jonline-SyncDestination), via an OAuth 2.0 Authorization Code +
+///  An X (Twitter) account connected as a [`SyncDestination`](#rellm-SyncDestination), via an OAuth 2.0 Authorization Code +
 ///  PKCE flow at x.com. Requires this server to have a registered X Developer App configured (see
 ///  `FederationInfo.x_twitter_auth_config`) -- every RPC touching an `XTwitterAccount` destination
 ///  fails with `x_twitter_app_not_configured` until an admin sets one, mirroring
-///  [`FacebookAuthConfig`](#jonline-FacebookAuthConfig)/`facebook_app_not_configured`. Unlike Facebook/Instagram/Threads (which reuse one
+///  [`FacebookAuthConfig`](#rellm-FacebookAuthConfig)/`facebook_app_not_configured`. Unlike Facebook/Instagram/Threads (which reuse one
 ///  Meta App), an admin registers this app once and every user on the server connects their own X
 ///  account through it -- no per-user API keys needed.
 ///
@@ -824,7 +824,7 @@ class XTwitterAccount extends $pb.GeneratedMessage {
   factory XTwitterAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory XTwitterAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(3, _omitFieldNames ? '' : 'xUserId')
     ..aOS(4, _omitFieldNames ? '' : 'authorizationCode')
@@ -899,19 +899,19 @@ class XTwitterAccount extends $pb.GeneratedMessage {
 }
 
 ///  A connected Threads account -- **a genuinely personal account works fine here**, unlike
-///  [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount): the Threads API (a separate product from Instagram's,
+///  [`FacebookPage`](#rellm-FacebookPage)/[`InstagramAccount`](#rellm-InstagramAccount): the Threads API (a separate product from Instagram's,
 ///  launched 2024) has no Page-linkage or Business/Creator-account requirement at all -- Threads
 ///  OAuth directly authorizes whatever single Threads account the user logs in with, personal or
-///  not. It's still a product added to this server's existing Meta App (see [`FacebookAuthConfig`](#jonline-FacebookAuthConfig))
+///  not. It's still a product added to this server's existing Meta App (see [`FacebookAuthConfig`](#rellm-FacebookAuthConfig))
 ///  rather than a separately-registered app, so no separate auth config is needed. Unlike
-///  [`FacebookPage`](#jonline-FacebookPage)/[`InstagramAccount`](#jonline-InstagramAccount), connecting one is a `response_type=code` OAuth flow at
+///  [`FacebookPage`](#rellm-FacebookPage)/[`InstagramAccount`](#rellm-InstagramAccount), connecting one is a `response_type=code` OAuth flow at
 ///  threads.net (not facebook.com) with no "choose a Page" step -- the code is exchanged server-side
 ///  for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
 ///  `grant_type=th_refresh_token` -- not yet implemented; a connected destination will need
 ///  reconnecting after ~60 days until a refresh job exists).
 ///
 ///  Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
-///  posted -- no carousel/multi-image support yet. Unlike [`InstagramAccount`](#jonline-InstagramAccount), a text-only post
+///  posted -- no carousel/multi-image support yet. Unlike [`InstagramAccount`](#rellm-InstagramAccount), a text-only post
 ///  (no media at all) is valid.
 class ThreadsAccount extends $pb.GeneratedMessage {
   factory ThreadsAccount({
@@ -935,7 +935,7 @@ class ThreadsAccount extends $pb.GeneratedMessage {
   factory ThreadsAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ThreadsAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ThreadsAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ThreadsAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'threadsUserId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOS(3, _omitFieldNames ? '' : 'authorizationCode')
@@ -995,8 +995,8 @@ class ThreadsAccount extends $pb.GeneratedMessage {
   void clearAuthorizationCode() => clearField(3);
 }
 
-/// The status of a single piece of content's (an [`EventInstance`](#jonline-EventInstance) or [`Post`](#jonline-Post)) sync (cross-post) to
-/// one [`SyncDestination`](#jonline-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+/// The status of a single piece of content's (an [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post)) sync (cross-post) to
+/// one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
 /// `Post.sync_destinations` can reuse it.
 class SyncDestinationStatus extends $pb.GeneratedMessage {
   factory SyncDestinationStatus({
@@ -1024,7 +1024,7 @@ class SyncDestinationStatus extends $pb.GeneratedMessage {
   factory SyncDestinationStatus.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory SyncDestinationStatus.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestinationStatus', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncDestinationStatus', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'syncDestinationId')
     ..aOS(2, _omitFieldNames ? '' : 'destinationInstanceId')
     ..aOS(3, _omitFieldNames ? '' : 'destinationUrl')
@@ -1156,7 +1156,7 @@ class SyncSource extends $pb.GeneratedMessage {
     9 : SyncSource_Configuration.icsSubscriptionUrl,
     0 : SyncSource_Configuration.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [9])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
@@ -1321,7 +1321,7 @@ class GetSyncSourcesResponse extends $pb.GeneratedMessage {
   factory GetSyncSourcesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetSyncSourcesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncSourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetSyncSourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<SyncSource>(1, _omitFieldNames ? '' : 'sources', $pb.PbFieldType.PM, subBuilder: SyncSource.create)
     ..hasRequiredFields = false
   ;
@@ -1370,7 +1370,7 @@ class DeleteSyncSourceRequest extends $pb.GeneratedMessage {
   factory DeleteSyncSourceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory DeleteSyncSourceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncSourceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteSyncSourceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<SyncSource>(1, _omitFieldNames ? '' : 'source', subBuilder: SyncSource.create)
     ..aOB(2, _omitFieldNames ? '' : 'deleteSyncedEvents')
     ..hasRequiredFields = false

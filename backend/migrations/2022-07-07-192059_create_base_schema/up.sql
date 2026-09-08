@@ -256,8 +256,8 @@ CREATE TABLE federated_accounts (
   federated_server_id BIGINT NULL DEFAULT NULL REFERENCES federated_servers ON DELETE SET NULL,
   federated_user_id VARCHAR NOT NULL,
   -- Note that user_id may be null. In this case, the federated account doesn't belong to a
-  -- user on this Jonline instance. There is a local user *following* the federated account.
+  -- user on this Rellm instance. There is a local user *following* the federated account.
   -- But the user being followed, who "lives" on the other server, has not (yet?) federated
-  -- their account to this Jonline instance.
+  -- their account to this Rellm instance.
   user_id BIGINT NULL DEFAULT NULL REFERENCES users ON DELETE CASCADE
 );

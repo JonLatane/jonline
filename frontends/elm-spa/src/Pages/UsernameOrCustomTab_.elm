@@ -12,7 +12,7 @@ only) some other federated server. Three checks run in order:
 2. If no custom tab matched, and the segment starts with a character no username/custom tab path
    could ever legally start with (`Components.Users.startsWithReservedShortUrlCharacter`), it's
    tried as a short Post/Event URL instead (`Components.Pages.PostOrEventPage`) -- see
-   `jonline.proto`'s own `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
+   `rellm.proto`'s own `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing
    doc. Unlike `customTabFor`, this check is a pure string test with no async server config to wait
    on, so it's decided once at `init` and never needs re-checking.
 3. Otherwise, the ordinary username fallback below.
@@ -42,7 +42,7 @@ import Gen.Route as Route exposing (Route)
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
 import Page
-import Proto.Jonline.NavigationTab exposing (NavigationTab(..))
+import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel

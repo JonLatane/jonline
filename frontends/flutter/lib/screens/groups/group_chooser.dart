@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_server.dart';
 
-// import 'package:jonline/db.dart';
+// import 'package:rellm/db.dart';
 
 class GroupChooser extends StatefulWidget {
   final Function(Group)? onGroupSelected;
@@ -26,7 +26,7 @@ class GroupChooser extends StatefulWidget {
   GroupChooserState createState() => GroupChooserState();
 }
 
-class GroupChooserState extends JonlineState<GroupChooser> {
+class GroupChooserState extends RellmState<GroupChooser> {
   @override
   void initState() {
     super.initState();
@@ -172,7 +172,7 @@ Future<Object> showGroupsMenu(
                         : darkTheme.textTheme.titleLarge,
                   ),
                   Text(
-                    "${JonlineServer.selectedServer.server}/",
+                    "${RellmServer.selectedServer.server}/",
                     style: darkTheme.textTheme.bodySmall,
                   ),
                 ],
@@ -190,7 +190,7 @@ Future<Object> showGroupsMenu(
                       style: darkTheme.textTheme.titleLarge,
                     ),
                     // Text(
-                    //   "${JonlineServer.selectedServer.server}/",
+                    //   "${RellmServer.selectedServer.server}/",
                     //   style: darkTheme.textTheme.bodySmall,
                     // ),
                   ],
@@ -211,7 +211,7 @@ Future<Object> showGroupsMenu(
                         : darkTheme.textTheme.titleLarge,
                   ),
                   Text(
-                    "${JonlineServer.selectedServer.server}/",
+                    "${RellmServer.selectedServer.server}/",
                     style: darkTheme.textTheme.bodySmall,
                   ),
                 ],
@@ -247,7 +247,7 @@ Widget _groupItem(Group g, BuildContext context) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                     content: Text(
-                        "Viewing all groups on ${JonlineServer.selectedServer.server}.")),
+                        "Viewing all groups on ${RellmServer.selectedServer.server}.")),
               );
             } else {
               appState.selectedGroup.value = g;
@@ -255,7 +255,7 @@ Widget _groupItem(Group g, BuildContext context) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                     content: Text(
-                        "Viewing ${g.name} on ${JonlineServer.selectedServer.server}.")),
+                        "Viewing ${g.name} on ${RellmServer.selectedServer.server}.")),
               );
             }
           },
@@ -273,7 +273,7 @@ Widget _groupItem(Group g, BuildContext context) {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                            "${JonlineServer.selectedServer.server}/g/${g.id}",
+                            "${RellmServer.selectedServer.server}/g/${g.id}",
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

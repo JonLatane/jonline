@@ -1,6 +1,6 @@
-import { Post } from '@jonline/api';
+import { Post } from '@rellm/api';
 import { useAccountOrServerContext } from 'app/contexts';
-import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, pinServer } from 'app/store';
+import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, RellmServer, pinServer } from 'app/store';
 import { useAppDispatch } from "./store_hooks";
 import { server } from '../../../apps/expo/metro.config';
 import { useCurrentAccountOrServer } from './account_or_server/use_current_account_or_server';
@@ -53,14 +53,14 @@ export function useFederatedDispatch<T extends HasIdFromServer>(
 }
 
 /**
- * Returns the available {@link CredentialDispatch} for the given {@link JonlineServer}, or the current account or server if none is provided.
+ * Returns the available {@link CredentialDispatch} for the given {@link RellmServer}, or the current account or server if none is provided.
  * 
  * TODO: Implementation update: Maybe this should resolve from pinned accounts when server is overridden? Current functionality doesn't need this.
  * 
  * @param serverOverride An optional server to use instead of the one from the AccountOrServerContext or the Redux store state.
  * @returns 
  */
-export function useProvidedDispatch(serverOverride?: JonlineServer): CredentialDispatch {
+export function useProvidedDispatch(serverOverride?: RellmServer): CredentialDispatch {
   const dispatch = useAppDispatch();
   return { dispatch, accountOrServer: useProvidedAccountOrServer(serverOverride) };
 }

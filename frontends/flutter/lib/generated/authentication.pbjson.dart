@@ -19,8 +19,8 @@ const CreateAccountRequest$json = {
   '2': [
     {'1': 'username', '3': 1, '4': 1, '5': 9, '10': 'username'},
     {'1': 'password', '3': 2, '4': 1, '5': 9, '10': 'password'},
-    {'1': 'email', '3': 3, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 0, '10': 'email', '17': true},
-    {'1': 'phone', '3': 4, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 1, '10': 'phone', '17': true},
+    {'1': 'email', '3': 3, '4': 1, '5': 11, '6': '.rellm.ContactMethod', '9': 0, '10': 'email', '17': true},
+    {'1': 'phone', '3': 4, '4': 1, '5': 11, '6': '.rellm.ContactMethod', '9': 1, '10': 'phone', '17': true},
     {'1': 'expires_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'expiresAt', '17': true},
     {'1': 'device_name', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'deviceName', '17': true},
   ],
@@ -35,11 +35,11 @@ const CreateAccountRequest$json = {
 /// Descriptor for `CreateAccountRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List createAccountRequestDescriptor = $convert.base64Decode(
     'ChRDcmVhdGVBY2NvdW50UmVxdWVzdBIaCgh1c2VybmFtZRgBIAEoCVIIdXNlcm5hbWUSGgoIcG'
-    'Fzc3dvcmQYAiABKAlSCHBhc3N3b3JkEjEKBWVtYWlsGAMgASgLMhYuam9ubGluZS5Db250YWN0'
-    'TWV0aG9kSABSBWVtYWlsiAEBEjEKBXBob25lGAQgASgLMhYuam9ubGluZS5Db250YWN0TWV0aG'
-    '9kSAFSBXBob25liAEBEj4KCmV4cGlyZXNfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGlt'
-    'ZXN0YW1wSAJSCWV4cGlyZXNBdIgBARIkCgtkZXZpY2VfbmFtZRgGIAEoCUgDUgpkZXZpY2VOYW'
-    '1liAEBQggKBl9lbWFpbEIICgZfcGhvbmVCDQoLX2V4cGlyZXNfYXRCDgoMX2RldmljZV9uYW1l');
+    'Fzc3dvcmQYAiABKAlSCHBhc3N3b3JkEi8KBWVtYWlsGAMgASgLMhQucmVsbG0uQ29udGFjdE1l'
+    'dGhvZEgAUgVlbWFpbIgBARIvCgVwaG9uZRgEIAEoCzIULnJlbGxtLkNvbnRhY3RNZXRob2RIAV'
+    'IFcGhvbmWIAQESPgoKZXhwaXJlc19hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
+    'bXBIAlIJZXhwaXJlc0F0iAEBEiQKC2RldmljZV9uYW1lGAYgASgJSANSCmRldmljZU5hbWWIAQ'
+    'FCCAoGX2VtYWlsQggKBl9waG9uZUINCgtfZXhwaXJlc19hdEIOCgxfZGV2aWNlX25hbWU=');
 
 @$core.Deprecated('Use loginRequestDescriptor instead')
 const LoginRequest$json = {
@@ -90,18 +90,18 @@ final $typed_data.Uint8List createThirdPartyRefreshTokenRequestDescriptor = $con
 const RefreshTokenResponse$json = {
   '1': 'RefreshTokenResponse',
   '2': [
-    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'refreshToken'},
-    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'accessToken'},
-    {'1': 'user', '3': 3, '4': 1, '5': 11, '6': '.jonline.User', '10': 'user'},
+    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.rellm.ExpirableToken', '10': 'refreshToken'},
+    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.rellm.ExpirableToken', '10': 'accessToken'},
+    {'1': 'user', '3': 3, '4': 1, '5': 11, '6': '.rellm.User', '10': 'user'},
   ],
 };
 
 /// Descriptor for `RefreshTokenResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List refreshTokenResponseDescriptor = $convert.base64Decode(
-    'ChRSZWZyZXNoVG9rZW5SZXNwb25zZRI8Cg1yZWZyZXNoX3Rva2VuGAEgASgLMhcuam9ubGluZS'
-    '5FeHBpcmFibGVUb2tlblIMcmVmcmVzaFRva2VuEjoKDGFjY2Vzc190b2tlbhgCIAEoCzIXLmpv'
-    'bmxpbmUuRXhwaXJhYmxlVG9rZW5SC2FjY2Vzc1Rva2VuEiEKBHVzZXIYAyABKAsyDS5qb25saW'
-    '5lLlVzZXJSBHVzZXI=');
+    'ChRSZWZyZXNoVG9rZW5SZXNwb25zZRI6Cg1yZWZyZXNoX3Rva2VuGAEgASgLMhUucmVsbG0uRX'
+    'hwaXJhYmxlVG9rZW5SDHJlZnJlc2hUb2tlbhI4CgxhY2Nlc3NfdG9rZW4YAiABKAsyFS5yZWxs'
+    'bS5FeHBpcmFibGVUb2tlblILYWNjZXNzVG9rZW4SHwoEdXNlchgDIAEoCzILLnJlbGxtLlVzZX'
+    'JSBHVzZXI=');
 
 @$core.Deprecated('Use expirableTokenDescriptor instead')
 const ExpirableToken$json = {
@@ -143,8 +143,8 @@ final $typed_data.Uint8List accessTokenRequestDescriptor = $convert.base64Decode
 const AccessTokenResponse$json = {
   '1': 'AccessTokenResponse',
   '2': [
-    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '9': 0, '10': 'refreshToken', '17': true},
-    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'accessToken'},
+    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.rellm.ExpirableToken', '9': 0, '10': 'refreshToken', '17': true},
+    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.rellm.ExpirableToken', '10': 'accessToken'},
   ],
   '8': [
     {'1': '_refresh_token'},
@@ -153,10 +153,9 @@ const AccessTokenResponse$json = {
 
 /// Descriptor for `AccessTokenResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List accessTokenResponseDescriptor = $convert.base64Decode(
-    'ChNBY2Nlc3NUb2tlblJlc3BvbnNlEkEKDXJlZnJlc2hfdG9rZW4YASABKAsyFy5qb25saW5lLk'
-    'V4cGlyYWJsZVRva2VuSABSDHJlZnJlc2hUb2tlbogBARI6CgxhY2Nlc3NfdG9rZW4YAiABKAsy'
-    'Fy5qb25saW5lLkV4cGlyYWJsZVRva2VuUgthY2Nlc3NUb2tlbkIQCg5fcmVmcmVzaF90b2tlbg'
-    '==');
+    'ChNBY2Nlc3NUb2tlblJlc3BvbnNlEj8KDXJlZnJlc2hfdG9rZW4YASABKAsyFS5yZWxsbS5FeH'
+    'BpcmFibGVUb2tlbkgAUgxyZWZyZXNoVG9rZW6IAQESOAoMYWNjZXNzX3Rva2VuGAIgASgLMhUu'
+    'cmVsbG0uRXhwaXJhYmxlVG9rZW5SC2FjY2Vzc1Rva2VuQhAKDl9yZWZyZXNoX3Rva2Vu');
 
 @$core.Deprecated('Use resetPasswordRequestDescriptor instead')
 const ResetPasswordRequest$json = {
@@ -179,14 +178,14 @@ final $typed_data.Uint8List resetPasswordRequestDescriptor = $convert.base64Deco
 const UserRefreshTokensResponse$json = {
   '1': 'UserRefreshTokensResponse',
   '2': [
-    {'1': 'refresh_tokens', '3': 1, '4': 3, '5': 11, '6': '.jonline.RefreshTokenMetadata', '10': 'refreshTokens'},
+    {'1': 'refresh_tokens', '3': 1, '4': 3, '5': 11, '6': '.rellm.RefreshTokenMetadata', '10': 'refreshTokens'},
   ],
 };
 
 /// Descriptor for `UserRefreshTokensResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List userRefreshTokensResponseDescriptor = $convert.base64Decode(
-    'ChlVc2VyUmVmcmVzaFRva2Vuc1Jlc3BvbnNlEkQKDnJlZnJlc2hfdG9rZW5zGAEgAygLMh0uam'
-    '9ubGluZS5SZWZyZXNoVG9rZW5NZXRhZGF0YVINcmVmcmVzaFRva2Vucw==');
+    'ChlVc2VyUmVmcmVzaFRva2Vuc1Jlc3BvbnNlEkIKDnJlZnJlc2hfdG9rZW5zGAEgAygLMhsucm'
+    'VsbG0uUmVmcmVzaFRva2VuTWV0YWRhdGFSDXJlZnJlc2hUb2tlbnM=');
 
 @$core.Deprecated('Use refreshTokenMetadataDescriptor instead')
 const RefreshTokenMetadata$json = {

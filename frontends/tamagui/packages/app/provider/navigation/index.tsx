@@ -30,7 +30,7 @@ export function NavigationProvider({
               people: 'people',
               followRequests: 'people/follow_requests',
               about: 'about',
-              about_jonline: 'about_jonline',
+              about_rellm: 'about_rellm',
             },
           },
         }),

@@ -1,13 +1,13 @@
-import { CreateAccountRequest, FederatedAccount, LoginRequest } from "@jonline/api";
+import { CreateAccountRequest, FederatedAccount, LoginRequest } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import 'react-native-get-random-values';
-import { AccountOrServer, JonlineAccount, JonlineServer, getCredentialClient, getServerClient } from "..";
+import { AccountOrServer, RellmAccount, RellmServer, getCredentialClient, getServerClient } from "..";
 export type SkipSelection = { skipSelection?: boolean; }
-export type CreateAccount = JonlineServer & CreateAccountRequest & SkipSelection;
-export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
+export type CreateAccount = RellmServer & CreateAccountRequest & SkipSelection;
+export const createAccount = createAsyncThunk<RellmAccount, CreateAccount>(
   "accounts/create",
   async (createAccountRequest) => {
     const client = await getServerClient(createAccountRequest);
@@ -24,8 +24,8 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   }
 );
 
-export type Login = JonlineServer & LoginRequest & SkipSelection;
-export const login = createAsyncThunk<JonlineAccount, Login>(
+export type Login = RellmServer & LoginRequest & SkipSelection;
+export const login = createAsyncThunk<RellmAccount, Login>(
   "accounts/login",
   async (loginRequest) => {
     const client = await getServerClient(loginRequest);

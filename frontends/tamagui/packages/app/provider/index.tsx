@@ -1,4 +1,4 @@
-import { CustomToast, TamaguiProvider, TamaguiProviderProps, ToastProvider } from '@jonline/ui';
+import { CustomToast, TamaguiProvider, TamaguiProviderProps, ToastProvider } from '@rellm/ui';
 import { persistor, store } from "app/store";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from 'redux-persist/integration/react';

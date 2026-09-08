@@ -1,17 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:rellm/models/rellm_clients.dart';
+import 'package:rellm/utils/moderation_accessors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
-import '../../jonline_state.dart';
-import '../../models/jonline_account.dart';
-import '../../models/jonline_server.dart';
+import '../../rellm_state.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/colors.dart';
@@ -35,7 +35,7 @@ class GroupPreview extends StatefulWidget {
   State<GroupPreview> createState() => _GroupPreviewState();
 }
 
-class _GroupPreviewState extends JonlineState<GroupPreview> {
+class _GroupPreviewState extends RellmState<GroupPreview> {
   Group get group => widget.group;
   bool editingDescription = false;
 
@@ -109,7 +109,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
             ? () {
                 context.navigateTo(GroupDetailsRoute(
                     groupId: group.id,
-                    server: JonlineServer.selectedServer.server));
+                    server: RellmServer.selectedServer.server));
               }
             : null,
         child: Padding(
@@ -133,7 +133,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                      '${JonlineServer.selectedServer.server}/group/${group.id}',
+                                      '${RellmServer.selectedServer.server}/group/${group.id}',
                                       style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5),
                                       ),
@@ -434,13 +434,13 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
   joinGroup(Group group) async {
     try {
       final membership =
-          await (await JonlineAccount.selectedAccount!.getClient())!
+          await (await RellmAccount.selectedAccount!.getClient())!
               .createMembership(
                   Membership()
-                    ..userId = JonlineAccount.selectedAccount!.userId
+                    ..userId = RellmAccount.selectedAccount!.userId
                     ..groupId = group.id,
                   options:
-                      JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                      RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         group.currentUserMembership = membership;
         if (membership.member) {
@@ -457,13 +457,13 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
   leaveGroup(Group group) async {
     final membership = group.currentUserMembership;
     try {
-      await (await JonlineAccount.selectedAccount!.getClient())!
+      await (await RellmAccount.selectedAccount!.getClient())!
           .deleteMembership(
               Membership()
-                ..userId = JonlineAccount.selectedAccount!.userId
+                ..userId = RellmAccount.selectedAccount!.userId
                 ..groupId = group.id,
               options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+                  RellmAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         group.currentUserMembership = Membership();
 

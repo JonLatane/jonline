@@ -1,6 +1,6 @@
 module Pages.Server.ServerIdentifier_ exposing (Model, Msg, fromShared, page)
 
-{-| `/server/:serverIdentifier` -- a read-only detail page for a Jonline
+{-| `/server/:serverIdentifier` -- a read-only detail page for a Rellm
 server, identified by a `[http|https]:hostname` route segment (e.g.
 "<http:localhost">, "<https:jonline.io"> -- no slashes, since this is a single
 route param; mirrors the Tamagui app's `server_details_screen.tsx`, which

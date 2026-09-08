@@ -1,10 +1,10 @@
-# Jonline Tamagui FE
+# Rellm Tamagui FE
 
 | CI Status                                                                                                    | Information                                                                                         |
 | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml) |
+| ![Tamagui Web Build Badge](https://github.com/jonlatane/rellm/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/rellm/actions/workflows/tamagui_web.yml) |
 
-- [Jonline Tamagui FE](#jonline-tamagui-fe)
+- [Rellm Tamagui FE](#rellm-tamagui-fe)
   - [gRPC implementation](#grpc-implementation)
   - [Adding new routes/pages](#adding-new-routespages)
 - [Tamagui Monorepo info](#tamagui-monorepo-info)
@@ -18,18 +18,18 @@
     - [Pure JS dependencies](#pure-js-dependencies)
     - [Native dependencies](#native-dependencies)
 
-The Tamagui FE was chosen for Jonline's web UI because it is performant and supports
+The Tamagui FE was chosen for Rellm's web UI because it is performant and supports
 both React Native and React Web ergonomically. It should become an alternative FE to the
 existing Flutter one, to provide multiple options for the best user experience against any
-Jonline server.
+Rellm server.
 
 ## gRPC implementation
-Jonline's Tamagui FE uses the "protos" target in `package.json`, atop/along with
+Rellm's Tamagui FE uses the "protos" target in `package.json`, atop/along with
 [ts-proto](https://github.com/stephenh/ts-proto) and [nice-grpc](https://github.com/deeplay-io/nice-grpc),
-to generate the `packages/api` package, a gRPC-web TypeScript client for Jonline.
+to generate the `packages/api` package, a gRPC-web TypeScript client for Rellm.
 
-It would be quite straightforward to push `packages/api` (i.e. `@jonline/api`) to NPM.
-This would make it incredibly easy for any external developer to create an external web FE for Jonline,
+It would be quite straightforward to push `packages/api` (i.e. `@rellm/api`) to NPM.
+This would make it incredibly easy for any external developer to create an external web FE for Rellm,
 using any framework they want. This would be a welcome contribution from any such dev!
 
 ## Adding new routes/pages
@@ -63,7 +63,7 @@ The main apps are:
 - `next` (web)
 
 - `packages` shared packages across apps
-  - `api` contains the generated Jonline gRPC APIs (see the "protos" target in `package.json`, and/or [ts-proto](https://github.com/stephenh/ts-proto) and [nice-grpc](https://github.com/deeplay-io/nice-grpc) for the API generation implementation)
+  - `api` contains the generated Rellm gRPC APIs (see the "protos" target in `package.json`, and/or [ts-proto](https://github.com/stephenh/ts-proto) and [nice-grpc](https://github.com/deeplay-io/nice-grpc) for the API generation implementation)
   - `ui` includes your custom UI kit that will be optimized by Tamagui
   - `app` you'll be importing most files from `app/`
     - `features` (don't use a `screens` folder. organize by feature.)
@@ -93,7 +93,7 @@ We've added `packages/ui` to show an example of [building your own design system
 
 Note we're following the [design systems guide](https://tamagui.dev/docs/guides/design-systems) and creating our own package for components.
 
-See `packages/ui` named `@jonline/ui` for how this works.
+See `packages/ui` named `@rellm/ui` for how this works.
 
 ## 🆕 Add new dependencies
 

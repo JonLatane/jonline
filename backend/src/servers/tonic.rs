@@ -1,11 +1,11 @@
 use std::{env, sync::Arc};
 
-use crate::jonline_service::JonlineService;
+use crate::rellm_service::RellmService;
 use crate::{db_connection::PgPool, env_var};
 
 use crate::report_error;
 
-use crate::protos::jonline_server::JonlineServer;
+use crate::protos::rellm_server::RellmServer;
 
 use ::log::{info, warn};
 use std::net::SocketAddr;
@@ -20,7 +20,7 @@ pub fn start_tonic_server(
     bucket: Arc<s3::Bucket>,
     port: u16,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    let jonline = JonlineService { pool, bucket };
+    let rellm = RellmService { pool, bucket };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
@@ -53,7 +53,7 @@ pub fn start_tonic_server(
         .layer(CorsLayer::permissive())
         .layer(GrpcWebLayer::new())
         // .layer(CorsLayer::permissive())
-        .add_service(JonlineServer::new(jonline))
+        .add_service(RellmServer::new(rellm))
         .add_service(reflection_service);
 
     tokio::spawn(async move {
@@ -61,7 +61,7 @@ pub fn start_tonic_server(
         info!("Starting Tonic server on {}", tonic_addr);
         match tonic_router.serve(tonic_addr).await {
             Ok(_) => {
-                ::log::warn!("Tonic server stopped unexpectedly. Sending a panic! to stop the Jonline server...");
+                ::log::warn!("Tonic server stopped unexpectedly. Sending a panic! to stop the Rellm server...");
                 panic!("Tonic server stopped on {}", tonic_addr)
             }
             Err(e) => {

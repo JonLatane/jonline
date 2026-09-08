@@ -2,7 +2,7 @@ module Components.ServerDependentView exposing (ConnectStatus(..), availableServ
 
 {-| A view for content that belongs to a specific server (by hostname) which
 the app might not actually know about yet -- e.g. a post linked from another
-Jonline server (see `Pages.Post.PostId_`). Resolves the hostname against the
+Rellm server (see `Pages.Post.PostId_`). Resolves the hostname against the
 app's known servers and either renders `render` with what it finds (the
 matching `Server`, and whichever of its accounts is currently enabled, if
 any), or shows a prompt instead -- to connect to the server, if it isn't known

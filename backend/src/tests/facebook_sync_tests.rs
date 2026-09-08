@@ -15,7 +15,7 @@ use crate::logic::{
 use crate::models;
 use crate::tests::factories::*;
 
-/// `app_id`/`app_secret` are this Jonline server's own Facebook App credentials (now sourced from
+/// `app_id`/`app_secret` are this Rellm server's own Facebook App credentials (now sourced from
 /// `ServerConfiguration.federation_info.facebook_auth_config`, not an env var) -- their actual
 /// value doesn't matter against a mock server, only that they're passed through.
 const TEST_APP_ID: &str = "test-app-id";

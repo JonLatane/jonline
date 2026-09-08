@@ -9,7 +9,7 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Author } from "./authors";
 import { Timestamp } from "./google/protobuf/timestamp";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 export enum MessageListingType {
   /** PERSONAL_MESSAGES - Gets messages sent to the current user, and messages (purportedly) sent by the user. */
@@ -63,7 +63,7 @@ export function messageListingTypeToJSON(object: MessageListingType): string {
 }
 
 /**
- * A Jonline `Message` represents a single message/email sent to one or more recipients
+ * A Rellm `Message` represents a single message/email sent to one or more recipients
  * (really, "zero or more", as the design incorporates undeliverable messages).
  */
 export interface Message {
@@ -131,7 +131,7 @@ export interface MessageRead {
   messageId: string;
   userId: string;
   /**
-   * When the message was marked read. Always set on a [`MessageRead`](#jonline-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
+   * When the message was marked read. Always set on a [`MessageRead`](#rellm-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
    * -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
    * a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
    */
@@ -159,7 +159,7 @@ export interface MarkMessagesReadRequest {
 }
 
 /**
- * Response to a [`MarkMessagesReadRequest`](#jonline-MarkMessagesReadRequest) -- one [`MessageRead`](#jonline-MessageRead) per `message_ids` entry, in the
+ * Response to a [`MarkMessagesReadRequest`](#rellm-MarkMessagesReadRequest) -- one [`MessageRead`](#rellm-MessageRead) per `message_ids` entry, in the
  * same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
  */
 export interface MarkMessagesReadResponse {
@@ -179,7 +179,7 @@ export interface SendMessageRequest {
 /**
  * A group of users who are participating in a conversation.
  * Most servers will probably have a (dynamically created) "empty group" for an email like
- * `not_a_user@my_jonline_instance.com`.
+ * `not_a_user@my_rellm_instance.com`.
  */
 export interface MessagingGroup {
   /** The ID of the messaging group. */
@@ -229,7 +229,7 @@ export interface GetMessagesRequest {
   fromEmail?: string | undefined;
 }
 
-/** Response to a [`GetMessagesRequest`](#jonline-GetMessagesRequest), containing the requested messages. */
+/** Response to a [`GetMessagesRequest`](#rellm-GetMessagesRequest), containing the requested messages. */
 export interface GetMessagesResponse {
   /**
    * The messages that match the request. May be empty if no messages match.
@@ -291,7 +291,7 @@ export interface GetPushSubscriptionStatusRequest {
 }
 
 export interface GetPushSubscriptionStatusResponse {
-  /** Whether the current user has a [`PushSubscription`](#jonline-PushSubscription) registered for this exact `endpoint`. */
+  /** Whether the current user has a [`PushSubscription`](#rellm-PushSubscription) registered for this exact `endpoint`. */
   registered: boolean;
 }
 

@@ -15,7 +15,7 @@ import Gen.Params.User.UserId_.Followers exposing (Params)
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
 import Page
-import Proto.Jonline.UserListingType exposing (UserListingType(..))
+import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Request
 import Shared
 import UI

@@ -25,7 +25,7 @@ const grpcErrorConversions: RegExpErrorMatcher[] = [
 
 export type ParsedError = { status: string, message: string };
 export function parseErrorMessage(unparsed: string): ParsedError | undefined {
-  let [_, status, message] = unparsed.match(/^\/jonline.Jonline\/\w+ (\w+): (.*)$/)?.map(a => a) ?? [];
+  let [_, status, message] = unparsed.match(/^\/rellm.Rellm\/\w+ (\w+): (.*)$/)?.map(a => a) ?? [];
   if (status && message) {
     return { status, message };
   } else {

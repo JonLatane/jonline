@@ -3,7 +3,7 @@ module Pages.About exposing (Model, Msg, fromShared, page)
 {-| `/about` -- the main server's own info (`Components.Pages.ServerInformationPage`,
 same as `Pages.Server.ServerIdentifier_` shows for an arbitrary server, just
 always pointed at `mainFrontendHost`), followed by this app's own "About
-Jonline" blurb. Thin wrapper, mirrors `Pages.User.UserId_`'s direct-alias
+Rellm" blurb. Thin wrapper, mirrors `Pages.User.UserId_`'s direct-alias
 shape around `Components.Pages.UserProfilePage` -- there's no route segment
 of its own to parse (and thus nothing that can be invalid), so unlike
 `Pages.Server.ServerIdentifier_` there's no extra `Invalid`/`Info` split
@@ -54,18 +54,18 @@ view shared req model =
             req.route
             fromShared
             [ ServerInformationPage.view shared model
-            , aboutJonlineView
+            , aboutRellmView
             ]
     }
 
 
-aboutJonlineView : Html.Html Msg
-aboutJonlineView =
-    div [ class "about-jonline" ]
-        [ h2 [] [ text "About Jonline" ]
-        , p [] [ text "Jonline is a federated, decentralized social media platform created by Jon Latané." ]
-        , p [] [ text "It's AGPLv3, with a Rust BE and Elm FE (in the past, alternative ", a [ href "/tamagui/about", target "_self" ] [ text "React/Tamagui" ], text " and Flutter FEs), ", a [ href "https://github.com/JonLatane/jonline" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
-        , p [] [ text "Its only external requirements are PostgreSQL and MinIO/S3. If you have ", pre [] [ text "docker" ], text " and Postgres's ", pre [] [ text "createdb" ], text " it takes about ", a [ href "https://github.com/JonLatane/jonline#2-minute-startup-with-homebrew" ] [ text "2 minutes to set up Jonline on macOS with Homebrew" ], text " or ", a [ href "https://github.com/JonLatane/jonline#3-minute-startup-on-linux" ] [ text "3 minutes to set up Jonline on Linux" ], text "." ]
+aboutRellmView : Html.Html Msg
+aboutRellmView =
+    div [ class "about-rellm" ]
+        [ h2 [] [ text "About Rellm" ]
+        , p [] [ text "Rellm is a federated, decentralized social media platform created by Jon Latané." ]
+        , p [] [ text "It's AGPLv3, with a Rust BE and Elm FE (in the past, alternative ", a [ href "/tamagui/about", target "_self" ] [ text "React/Tamagui" ], text " and Flutter FEs), ", a [ href "https://github.com/JonLatane/rellm" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
+        , p [] [ text "Its only external requirements are PostgreSQL and MinIO/S3. If you have ", pre [] [ text "docker" ], text " and Postgres's ", pre [] [ text "createdb" ], text " it takes about ", a [ href "https://github.com/JonLatane/rellm#2-minute-startup-with-homebrew" ] [ text "2 minutes to set up Rellm on macOS with Homebrew" ], text " or ", a [ href "https://github.com/JonLatane/rellm#3-minute-startup-on-linux" ] [ text "3 minutes to set up Rellm on Linux" ], text "." ]
         , p [] [ text "Feel free to ", a [ href "mailto:jonlatane@gmail.com" ] [ text "email me" ], text " if you have any questions or want to contribute." ]
         ]
 

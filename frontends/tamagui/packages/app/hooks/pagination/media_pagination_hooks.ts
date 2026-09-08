@@ -1,4 +1,4 @@
-import { useDebounce } from "@jonline/ui";
+import { useDebounce } from "@rellm/ui";
 import { useAccountOrServerContext } from "app/contexts";
 import { useAppDispatch, useCreationAccountOrServer } from "app/hooks";
 import { FederatedMedia, RootState, getHasMediaPage, getHasMoreMediaPages, getMediaPages, loadMediaPage, useRootSelector } from "app/store";

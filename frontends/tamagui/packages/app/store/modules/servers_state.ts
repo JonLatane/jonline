@@ -8,15 +8,15 @@ import {
 } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
 import { accountIDHost, deleteClient, getServerClient, pinServer, resetCredentialedData, selectAccount, store } from "..";
-import { JonlineServer } from "../types";
-import { FederatedServer } from "@jonline/api";
+import { RellmServer } from "../types";
+import { FederatedServer } from "@rellm/api";
 import { pageInitializer } from "../../utils/page_initializer";
 
-export function optServerID(server: JonlineServer | undefined): string | undefined {
+export function optServerID(server: RellmServer | undefined): string | undefined {
   return server ? serverID(server) : undefined;
 }
 
-export function serverID(server: JonlineServer): string {
+export function serverID(server: RellmServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
 }
 
@@ -25,17 +25,17 @@ export function serverIDHost(serverId: string): string {
   return serverId.split(':')[1]!;
 }
 
-export function serverUrl(server: JonlineServer): string {
+export function serverUrl(server: RellmServer): string {
   return `http${server.secure ? "s" : ""}://${server.host}`;
 }
 
-export function frontendServerUrl(server: JonlineServer): string {
+export function frontendServerUrl(server: RellmServer): string {
   const host = server.serverConfiguration?.externalCdnConfig?.frontendHost ?? server.host;
   return `http${server.secure ? "s" : ""}://${host}`;
 }
 
 
-// export function backendServerUrl(server: JonlineServer): string {
+// export function backendServerUrl(server: RellmServer): string {
 //   const host = server.serverConfiguration?.externalCdnConfig?.backendHost ?? server.host;
 //   return `http${server.secure ? "s" : ""}://${host}`;
 // }
@@ -55,16 +55,16 @@ export interface ServersState {
   // we need to know which server to send the request to.
   // The account for the server is stored in the accounts module, in accounts.pinnedServers.
   creationServerId?: string;
-  // server?: JonlineServer;
+  // server?: RellmServer;
   ids: EntityId[];
-  entities: Dictionary<JonlineServer>;
+  entities: Dictionary<RellmServer>;
 }
 
-export const serversAdapter = createEntityAdapter<JonlineServer>({
+export const serversAdapter = createEntityAdapter<RellmServer>({
   selectId: serverID,
 });
 
-export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
+export const upsertServer = createAsyncThunk<RellmServer, RellmServer>(
   "servers/create",
   async (server, state) => {
     // getServerClient will update/upsert the server as a side effect.
@@ -87,7 +87,7 @@ pageInitializer(async () => {
 
 
   if (!store.getState().servers.currentServerId) {
-    const initialServer: JonlineServer = Platform.OS == 'web' && globalThis.window?.location
+    const initialServer: RellmServer = Platform.OS == 'web' && globalThis.window?.location
       ? {
         host: window.location.hostname,
         secure: window.location.protocol === 'https:',
@@ -104,7 +104,7 @@ pageInitializer(async () => {
   }
 }, 1);
 
-function initializeWithServer(initialServer: JonlineServer) {
+function initializeWithServer(initialServer: RellmServer) {
   store.dispatch(startConfiguringFederation());
   getServerClient(initialServer).then(async () => {
     if (!store.getState().servers.currentServerId) {
@@ -175,7 +175,7 @@ const serversSlice = createSlice({
   name: "servers",
   initialState: initialState,
   reducers: {
-    upsertServer: (state, action: PayloadAction<JonlineServer>) => {
+    upsertServer: (state, action: PayloadAction<RellmServer>) => {
       const isAdd = !serversAdapter.getSelectors().selectById(state, serverID(action.payload));
       serversAdapter.upsertOne(state, action);
       if (isAdd) {
@@ -185,7 +185,7 @@ const serversSlice = createSlice({
         })), 1);
       }
     },
-    removeServer: (state, action: PayloadAction<JonlineServer>) => {
+    removeServer: (state, action: PayloadAction<RellmServer>) => {
       // if (state.currentServerId === serverID(action.payload)) {
       //   state.currentServerId = serversAdapter.getSelectors().selectAll(state)
       //     .filter(s => serverID(s) !== serverID(action.payload)).map(serverID)[0];
@@ -207,7 +207,7 @@ const serversSlice = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
-    selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
+    selectServer: (state, action: PayloadAction<RellmServer | undefined>) => {
       const oldServerId = state.currentServerId;
       const newServerId = serverID(action.payload!);
       if (newServerId === undefined && state.ids.length > 0) return;
@@ -217,7 +217,7 @@ const serversSlice = createSlice({
       state.creationServerId = newServerId;
 
       // This is no longer necessary with the refactor to remove currentAccountId from AccountsState!
-      // The notion of "current account" in Jonline's store derives purely from 
+      // The notion of "current account" in Rellm's store derives purely from 
       // state.servers.currentServerId and state.accounts.pinnedServers.
 
       // setTimeout(() => {
@@ -228,7 +228,7 @@ const serversSlice = createSlice({
       //   }
       // }, 1);
     },
-    selectCreationServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
+    selectCreationServer: (state, action: PayloadAction<RellmServer | undefined>) => {
       const creationServerId = serverID(action.payload!);
       state.creationServerId = creationServerId;
 
@@ -281,7 +281,7 @@ const serversSlice = createSlice({
       // if (!state.server || serverID(server) == serverID(state.server!)) {
       //   state.currentServerId = serverId(server);
       // }
-      console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
+      console.log(`Server ${action.payload.host} running Rellm v${action.payload.serviceVersion?.version} added.`);
       state.successMessage = `Server added.`;
       setTimeout(() => {
         store.dispatch(clearServerAlerts());

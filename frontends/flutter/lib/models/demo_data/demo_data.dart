@@ -1,18 +1,18 @@
 import '../../app_state.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/posts.pb.dart';
-import '../jonline_account.dart';
-import '../jonline_account_operations.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_account_operations.dart';
+import '../rellm_clients.dart';
 import 'demo_accounts.dart';
 import 'demo_conversations.dart';
 import 'demo_events.dart';
 import 'demo_groups.dart';
 import 'demo_posts.dart';
 
-createDemoData(JonlineAccount account, Function(String) showSnackBar,
+createDemoData(RellmAccount account, Function(String) showSnackBar,
     AppState appState) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -33,7 +33,7 @@ createDemoData(JonlineAccount account, Function(String) showSnackBar,
     demoGroups,
   );
 
-  List<JonlineAccount> sideAccounts =
+  List<RellmAccount> sideAccounts =
       await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
   showSnackBar("Generating conversations...");

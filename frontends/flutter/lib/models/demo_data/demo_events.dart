@@ -1,20 +1,20 @@
 import 'package:fixnum/fixnum.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:rellm/models/rellm_account_operations.dart';
 
 import '../../app_state.dart';
 import '../../generated/events.pb.dart';
 import '../../generated/google/protobuf/timestamp.pb.dart';
 import '../../generated/groups.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/posts.pb.dart';
-import '../jonline_account.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_clients.dart';
 import 'demo_groups.dart';
 
 createDemoEvents(
-    JonlineAccount account, Function(String) showSnackBar, AppState appState,
+    RellmAccount account, Function(String) showSnackBar, AppState appState,
     {List<DemoEvent>? eventSetOverride}) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -29,8 +29,8 @@ createDemoEvents(
 }
 
 Future<List<Event>> generateEvents(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
     Map<DemoGroup, Group> demoGroups,

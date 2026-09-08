@@ -1,14 +1,14 @@
 ---
 name: elm-call-rpc
-description: Call a Jonline gRPC RPC (from protos/*.proto) from Elm SPA code (frontends/elm-spa). Use when writing or wiring up a new fetch/mutation against the backend from a page or Shared panel.
+description: Call a Rellm gRPC RPC (from protos/*.proto) from Elm SPA code (frontends/elm-spa). Use when writing or wiring up a new fetch/mutation against the backend from a page or Shared panel.
 ---
 
 ## Basic shape
 
-Each RPC (`protos/jonline.proto`'s `service Jonline`) has a generated `Grpc.Rpc req res` value in `Proto.Jonline.Jonline` (e.g. `Jonline.updatePost`, `Jonline.createPost`, `Jonline.getPosts`), from the `anmolitor/elm-grpc` package (`Grpc` module).
+Each RPC (`protos/rellm.proto`'s `service Rellm`) has a generated `Grpc.Rpc req res` value in `Proto.Rellm.Rellm` (e.g. `Rellm.updatePost`, `Rellm.createPost`, `Rellm.getPosts`), from the `anmolitor/elm-grpc` package (`Grpc` module).
 
 ```elm
-Grpc.new Jonline.updatePost requestValue
+Grpc.new Rellm.updatePost requestValue
     |> Grpc.setHost (AccountsPanel.serverUrl server)
     |> Grpc.addHeader "authorization" token   -- only for authenticated calls
     |> Grpc.toTask                            -- : Task Grpc.Error res

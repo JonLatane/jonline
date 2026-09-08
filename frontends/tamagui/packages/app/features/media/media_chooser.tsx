@@ -1,4 +1,4 @@
-import { Button, Paragraph, XStack, useTheme } from '@jonline/ui';
+import { Button, Paragraph, XStack, useTheme } from '@rellm/ui';
 import { useCreationServer, useProvidedDispatch } from 'app/hooks';
 import { useServerTheme } from 'app/store';
 import React, { useCallback, useEffect, useState } from 'react';

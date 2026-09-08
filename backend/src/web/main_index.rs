@@ -13,13 +13,13 @@ use std::str::FromStr;
 /// The unprefixed "/" home page. Renders whichever app the server's
 /// configured `WebUserInterface` indicates (`ElmSpa` -> `elm_web::elm_index`'s
 /// app, everything else -> `tamagui_web::index`'s app, at least for now) with
-/// the same `JonlineSummary` either way -- see `spa_web_path.rs`'s
+/// the same `RellmSummary` either way -- see `spa_web_path.rs`'s
 /// `index_summary`. Flutter is handled separately: it isn't part of the
 /// `SPA_PAGES`/`spa_web_path` system since it has no per-route SEO pages.
 #[rocket::get("/")]
 pub async fn main_index(
     state: &State<RocketState>,
-) -> CacheResponse<Result<JonlineResponder, Status>> {
+) -> CacheResponse<Result<RellmResponder, Status>> {
     let mut conn = state.pool.get().unwrap();
     let configuration = get_server_configuration_proto(&mut conn).unwrap();
     let server_info = configuration.server_info.unwrap_or_default();
@@ -32,7 +32,7 @@ pub async fn main_index(
                 Err(e) => Err(e),
             },
         };
-        let result_data = result.map(|data| JonlineResponder {
+        let result_data = result.map(|data| RellmResponder {
             inner: data,
             content_type: ContentType(MediaType::from_str("text/html").unwrap()),
         });
@@ -45,7 +45,7 @@ pub async fn main_index(
         );
     }
 
-    let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+    let server_name = server_info.name.clone().unwrap_or("Rellm".to_string());
     let server_logo = server_info
         .logo
         .clone()

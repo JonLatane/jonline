@@ -1,5 +1,5 @@
-import { Post } from '@jonline/api';
-import { Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { Post } from '@rellm/api';
+import { Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@rellm/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { FederatedPost, federatedId, loadPostReplies, setDiscussionChatUI, useServerTheme } from 'app/store';

@@ -1,15 +1,15 @@
 ---
 name: rebuild-protos
-description: Regenerate protobuf bindings and docs for all Jonline frontends/backend after editing .proto files. Use when the user changes anything under protos/ or asks to regenerate protos/docs/graphs.
+description: Regenerate protobuf bindings and docs for all Rellm frontends/backend after editing .proto files. Use when the user changes anything under protos/ or asks to regenerate protos/docs/graphs.
 ---
 
-Jonline is Makefile-driven from the repo root. After editing any `.proto` file (or when docs/graphs look stale), regenerate everything with:
+Rellm is Makefile-driven from the repo root. After editing any `.proto` file (or when docs/graphs look stale), regenerate everything with:
 
 ```
 make
 ```
 
-run from the **repo root** (`/Users/jonlatane/Development/jonline`). This is the `default` target: `protos docs graphs`.
+run from the **repo root** (`/Users/jonlatane/Development/rellm`). This is the `default` target: `protos docs graphs`.
 
 ## What `make protos` does
 

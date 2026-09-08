@@ -1,5 +1,5 @@
-import { User } from "@jonline/api";
-import { formatError } from "@jonline/ui";
+import { User } from "@rellm/api";
+import { formatError } from "@rellm/ui";
 import {
   Dictionary,
   EntityId,
@@ -10,7 +10,7 @@ import {
 import 'react-native-get-random-values';
 import { getCredentialClient, loadUser, loadUsername, loadUsersPage, resetAccessTokens, resetCredentialedData, store } from "..";
 import { PinnedServer } from '../federation';
-import { JonlineAccount, JonlineServer } from "../types";
+import { RellmAccount, RellmServer } from "../types";
 import { createAccount, login } from "./account_actions";
 import { serverID, serverIDHost, upsertServer } from './servers_state';
 
@@ -20,16 +20,16 @@ export interface AccountsState {
   successMessage?: string;
   errorMessage?: string;
   // currentAccountId?: string;
-  // account?: JonlineAccount;
+  // account?: RellmAccount;
   // Allows a user to be primarily signed into the above account,
   // but view data from other servers (and accounts on those servers).
   pinnedServers: PinnedServer[];
   excludeCurrentServer: boolean;
   ids: EntityId[];
-  entities: Dictionary<JonlineAccount>;
+  entities: Dictionary<RellmAccount>;
 }
 
-export function accountID(account: JonlineAccount | undefined): string | undefined {
+export function accountID(account: RellmAccount | undefined): string | undefined {
   if (!account) return undefined;
 
   return `${serverID(account.server)}-${account.user?.id}`;
@@ -39,7 +39,7 @@ export function accountIDHost(accountId: string): string {
   return accountId.split('-')[0]!.split(':')[1]!;
 }
 
-const accountsAdapter = createEntityAdapter<JonlineAccount>({
+const accountsAdapter = createEntityAdapter<RellmAccount>({
   selectId: (account) => accountID(account)!,
 });
 
@@ -77,7 +77,7 @@ export const accountsSlice = createSlice({
   name: "accounts",
   initialState: initialState,
   reducers: {
-    upsertAccount: (state, action: PayloadAction<JonlineAccount>) => {
+    upsertAccount: (state, action: PayloadAction<RellmAccount>) => {
       accountsAdapter.upsertOne(state, action.payload);
     },
     removeAccount: (state, action: PayloadAction<string>) => {
@@ -88,7 +88,7 @@ export const accountsSlice = createSlice({
     deselectAccount: (state, action: PayloadAction<string>) => {
       state.pinnedServers = state.pinnedServers.map((ps) => withAccountUnpinned(ps, action.payload));
     },
-    selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
+    selectAccount: (state, action: PayloadAction<RellmAccount | undefined>) => {
       const account = action.payload;
       const accountId = accountID(account);
 
@@ -147,7 +147,7 @@ export const accountsSlice = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
-    upsertUserData(state, action: PayloadAction<{ user: User, server: JonlineServer }>) {
+    upsertUserData(state, action: PayloadAction<{ user: User, server: RellmServer }>) {
       for (const accountId in state.entities) {
         const account = state.entities[accountId]!;
         const { user: accountUser, server: accountServer } = account;
@@ -158,7 +158,7 @@ export const accountsSlice = createSlice({
         //TODO does this work as expected?
       }
     },
-    notifyUserDeleted: (state, action: PayloadAction<{ user: User, server: JonlineServer }>) => {
+    notifyUserDeleted: (state, action: PayloadAction<{ user: User, server: RellmServer }>) => {
       for (const id in state.entities) {
         const account = state.entities[id]!;
         const { user: accountUser, server: accountServer } = account;
@@ -168,7 +168,7 @@ export const accountsSlice = createSlice({
           account.lastSyncFailed = true;
 
           // This is no longer necessary with the refactor to remove currentAccountId from AccountsState!
-          // The notion of "current account" in Jonline's store derives purely from 
+          // The notion of "current account" in Rellm's store derives purely from 
           // state.servers.currentServerId and state.accounts.pinnedServers.
 
           // if (state.currentAccountId === accountID(account)) {
@@ -205,7 +205,7 @@ export const accountsSlice = createSlice({
         }
       }, 1);
     },
-    pinAccount: (state, action: PayloadAction<JonlineAccount>) => {
+    pinAccount: (state, action: PayloadAction<RellmAccount>) => {
       const account = action.payload;
       const existing = state.pinnedServers.find(s => s.serverId === serverID(account.server));
       if (existing?.accountId !== accountID(account)) {
@@ -235,7 +235,7 @@ export const accountsSlice = createSlice({
         }, 1);
       }
     },
-    unpinAccount: (state, action: PayloadAction<JonlineAccount>) => {
+    unpinAccount: (state, action: PayloadAction<RellmAccount>) => {
       const existing = state.pinnedServers.find(s => s.serverId === serverID(action.payload.server));
       if (existing) {
         existing.accountId = undefined;

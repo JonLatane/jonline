@@ -46,8 +46,8 @@ import Grpc
 import Html exposing (Html, button, div, option, select, span, text, textarea)
 import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (AvailableAIModel, Event, EventInstance, Media, MediaReference, Post, defaultGenerateMediaRequest)
-import Proto.Jonline.GenerateMediaRequest.Target as GenerateMediaRequestTarget
+import Proto.Rellm exposing (AvailableAIModel, Event, EventInstance, Media, MediaReference, Post, defaultGenerateMediaRequest)
+import Proto.Rellm.GenerateMediaRequest.Target as GenerateMediaRequestTarget
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Conversions as Conversions
 import Shared.MyMediaPanel as MyMediaPanel

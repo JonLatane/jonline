@@ -35,7 +35,7 @@ module Components.Users exposing
     , visibilityText
     )
 
-{-| Shared building blocks for displaying `Proto.Jonline.User`s -- the fetch
+{-| Shared building blocks for displaying `Proto.Rellm.User`s -- the fetch
 helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.UsernameOrCustomTab_`, by
 username) need against a specific `Shared.AccountsPanel.Server`, the
 `/user/:id[@host]`/`/:username[@host]` route id parsing/linking (mirroring
@@ -49,12 +49,12 @@ import Grpc
 import Html exposing (Html, a, div, img, text)
 import Html.Attributes exposing (alt, attribute, href, src)
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Moderation exposing (Moderation(..))
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.UserListingType exposing (UserListingType(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Moderation exposing (Moderation(..))
+import Proto.Rellm.Permission exposing (Permission(..))
+import Proto.Rellm.UserListingType exposing (UserListingType(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Task exposing (Task)
@@ -111,7 +111,7 @@ fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType 
         trimmedSearchText =
             String.trim searchText
 
-        request : Proto.Jonline.GetUsersRequest
+        request : Proto.Rellm.GetUsersRequest
         request =
             if String.isEmpty trimmedSearchText then
                 { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
@@ -129,7 +129,7 @@ fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType 
 {-| The `*_TEXT_SEARCH` counterpart of `listingType`, for `fetchUserListing`'s
 non-blank-`searchText` case: `EVERYONE` -> `USERSTEXTSEARCH` (named
 `USERS_TEXT_SEARCH`, not the bare `TEXT_SEARCH` used by `PostListingType`,
-since proto3 enum values share one namespace across the whole `jonline`
+since proto3 enum values share one namespace across the whole `rellm`
 package -- see `protos/users.proto`), and
 `FOLLOWING`/`FOLLOWERS`/`FRIENDS`/`FOLLOWREQUESTS` -> their own
 `*TEXTSEARCH` variant. Any other `UserListingType` is left as-is (there's no
@@ -157,14 +157,14 @@ textSearchListingType listingType =
 fetchUsers :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> Proto.Jonline.GetUsersRequest
+    -> Proto.Rellm.GetUsersRequest
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
 fetchUsers accountsPanelModel maybeAccountServer request =
     performWithOptionalAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getUsers request
+            Grpc.new Rellm.getUsers request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -191,7 +191,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.getUsers { defaultGetUsersRequest | userId = Just userId }
+            Grpc.new Rellm.getUsers { defaultGetUsersRequest | userId = Just userId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -199,7 +199,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
                     (\response ->
                         case List.head response.users of
                             Just freshUser ->
-                                Grpc.new Jonline.updateUser (updateFn freshUser)
+                                Grpc.new Rellm.updateUser (updateFn freshUser)
                                     |> Grpc.setHost (AccountsPanel.serverUrl server)
                                     |> withAccessToken (Just token)
                                     |> Grpc.toTask
@@ -226,7 +226,7 @@ federateProfile accountsPanelModel maybeAccountServer target =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.federateProfile target
+            Grpc.new Rellm.federateProfile target
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -246,7 +246,7 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.defederateProfile target
+            Grpc.new Rellm.defederateProfile target
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -273,7 +273,7 @@ deleteUser accountsPanelModel maybeAccountServer user =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteUser user
+            Grpc.new Rellm.deleteUser user
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -294,7 +294,7 @@ createFollow accountsPanelModel maybeAccountServer follow =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.createFollow follow
+            Grpc.new Rellm.createFollow follow
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -315,7 +315,7 @@ updateFollow accountsPanelModel maybeAccountServer follow =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.updateFollow follow
+            Grpc.new Rellm.updateFollow follow
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -336,7 +336,7 @@ deleteFollow accountsPanelModel maybeAccountServer follow =
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Jonline.deleteFollow follow
+            Grpc.new Rellm.deleteFollow follow
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -370,7 +370,7 @@ legally start with -- see `backend/src/rpcs/validations/validate_fields.rs`'s
 `RESERVED_LEAD_CHAR_RE`, which this set must stay in sync with. `Pages.UsernameOrCustomTab_`
 checks this before falling back to a plain username/custom-tab lookup: a route segment starting
 with one of these is unambiguously *not* a username or custom tab, so it's tried as a short
-Post/Event URL instead (`Components.Pages.PostOrEventPage`) -- see `jonline.proto`'s own
+Post/Event URL instead (`Components.Pages.PostOrEventPage`) -- see `rellm.proto`'s own
 `### /[-._~:/?[]@!$&'()*+,;%=]{postId}: Short Post/Event URLs` routing doc. `#` is deliberately
 excluded: URL fragments never reach the server, so they're not part of this at all.
 -}
@@ -492,7 +492,7 @@ authorAvatarUrl server maybeAccount author =
 `avatarPreviewUrl`) to preview a newly-picked media item that isn't
 `user.avatar` yet.
 -}
-mediaReferenceUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Proto.Jonline.MediaReference -> Maybe String
+mediaReferenceUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Proto.Rellm.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia
         |> Maybe.andThen

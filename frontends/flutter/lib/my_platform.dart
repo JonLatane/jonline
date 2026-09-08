@@ -31,5 +31,5 @@ class MyPlatform {
                   : 'Other OS';
 
   static String get userAgent =>
-      "$operatingSystem:Jonline:v$appVersion (by Jon Latané)";
+      "$operatingSystem:Rellm:v$appVersion (by Jon Latané)";
 }

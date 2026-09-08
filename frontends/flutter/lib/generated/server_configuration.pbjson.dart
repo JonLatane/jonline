@@ -99,21 +99,21 @@ final $typed_data.Uint8List navigationTabDescriptor = $convert.base64Decode(
 const ServerConfiguration$json = {
   '1': 'ServerConfiguration',
   '2': [
-    {'1': 'server_info', '3': 1, '4': 1, '5': 11, '6': '.jonline.ServerInfo', '9': 0, '10': 'serverInfo', '17': true},
-    {'1': 'federation_info', '3': 2, '4': 1, '5': 11, '6': '.jonline.FederationInfo', '9': 1, '10': 'federationInfo', '17': true},
-    {'1': 'anonymous_user_permissions', '3': 10, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'anonymousUserPermissions'},
-    {'1': 'default_user_permissions', '3': 11, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultUserPermissions'},
-    {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'basicUserPermissions'},
-    {'1': 'custom_tabs', '3': 19, '4': 1, '5': 11, '6': '.jonline.CustomNavigationTabSet', '9': 2, '10': 'customTabs', '17': true},
-    {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'peopleSettings'},
-    {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'groupSettings'},
-    {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
-    {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.EventSettings', '10': 'eventSettings'},
-    {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.MediaSettings', '10': 'mediaSettings'},
-    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 3, '10': 'externalCdnConfig', '17': true},
-    {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
-    {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
-    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.jonline.WebPushConfig', '9': 4, '10': 'webPushConfig', '17': true},
+    {'1': 'server_info', '3': 1, '4': 1, '5': 11, '6': '.rellm.ServerInfo', '9': 0, '10': 'serverInfo', '17': true},
+    {'1': 'federation_info', '3': 2, '4': 1, '5': 11, '6': '.rellm.FederationInfo', '9': 1, '10': 'federationInfo', '17': true},
+    {'1': 'anonymous_user_permissions', '3': 10, '4': 3, '5': 14, '6': '.rellm.Permission', '10': 'anonymousUserPermissions'},
+    {'1': 'default_user_permissions', '3': 11, '4': 3, '5': 14, '6': '.rellm.Permission', '10': 'defaultUserPermissions'},
+    {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.rellm.Permission', '10': 'basicUserPermissions'},
+    {'1': 'custom_tabs', '3': 19, '4': 1, '5': 11, '6': '.rellm.CustomNavigationTabSet', '9': 2, '10': 'customTabs', '17': true},
+    {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.rellm.FeatureSettings', '10': 'peopleSettings'},
+    {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.rellm.FeatureSettings', '10': 'groupSettings'},
+    {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.rellm.PostSettings', '10': 'postSettings'},
+    {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.rellm.EventSettings', '10': 'eventSettings'},
+    {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.rellm.MediaSettings', '10': 'mediaSettings'},
+    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.rellm.ExternalCDNConfig', '9': 3, '10': 'externalCdnConfig', '17': true},
+    {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.rellm.PrivateUserStrategy', '10': 'privateUserStrategy'},
+    {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.rellm.AuthenticationFeature', '10': 'authenticationFeatures'},
+    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.rellm.WebPushConfig', '9': 4, '10': 'webPushConfig', '17': true},
   ],
   '8': [
     {'1': '_server_info'},
@@ -126,28 +126,27 @@ const ServerConfiguration$json = {
 
 /// Descriptor for `ServerConfiguration`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decode(
-    'ChNTZXJ2ZXJDb25maWd1cmF0aW9uEjkKC3NlcnZlcl9pbmZvGAEgASgLMhMuam9ubGluZS5TZX'
-    'J2ZXJJbmZvSABSCnNlcnZlckluZm+IAQESRQoPZmVkZXJhdGlvbl9pbmZvGAIgASgLMhcuam9u'
-    'bGluZS5GZWRlcmF0aW9uSW5mb0gBUg5mZWRlcmF0aW9uSW5mb4gBARJRChphbm9ueW1vdXNfdX'
-    'Nlcl9wZXJtaXNzaW9ucxgKIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblIYYW5vbnltb3VzVXNl'
-    'clBlcm1pc3Npb25zEk0KGGRlZmF1bHRfdXNlcl9wZXJtaXNzaW9ucxgLIAMoDjITLmpvbmxpbm'
-    'UuUGVybWlzc2lvblIWZGVmYXVsdFVzZXJQZXJtaXNzaW9ucxJJChZiYXNpY191c2VyX3Blcm1p'
-    'c3Npb25zGAwgAygOMhMuam9ubGluZS5QZXJtaXNzaW9uUhRiYXNpY1VzZXJQZXJtaXNzaW9ucx'
-    'JFCgtjdXN0b21fdGFicxgTIAEoCzIfLmpvbmxpbmUuQ3VzdG9tTmF2aWdhdGlvblRhYlNldEgC'
-    'UgpjdXN0b21UYWJziAEBEkEKD3Blb3BsZV9zZXR0aW5ncxgUIAEoCzIYLmpvbmxpbmUuRmVhdH'
-    'VyZVNldHRpbmdzUg5wZW9wbGVTZXR0aW5ncxI/Cg5ncm91cF9zZXR0aW5ncxgVIAEoCzIYLmpv'
-    'bmxpbmUuRmVhdHVyZVNldHRpbmdzUg1ncm91cFNldHRpbmdzEjoKDXBvc3Rfc2V0dGluZ3MYFi'
-    'ABKAsyFS5qb25saW5lLlBvc3RTZXR0aW5nc1IMcG9zdFNldHRpbmdzEj0KDmV2ZW50X3NldHRp'
-    'bmdzGBcgASgLMhYuam9ubGluZS5FdmVudFNldHRpbmdzUg1ldmVudFNldHRpbmdzEj0KDm1lZG'
-    'lhX3NldHRpbmdzGBggASgLMhYuam9ubGluZS5NZWRpYVNldHRpbmdzUg1tZWRpYVNldHRpbmdz'
-    'Ek8KE2V4dGVybmFsX2Nkbl9jb25maWcYWiABKAsyGi5qb25saW5lLkV4dGVybmFsQ0ROQ29uZm'
-    'lnSANSEWV4dGVybmFsQ2RuQ29uZmlniAEBElAKFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEo'
-    'DjIcLmpvbmxpbmUuUHJpdmF0ZVVzZXJTdHJhdGVneVITcHJpdmF0ZVVzZXJTdHJhdGVneRJXCh'
-    'dhdXRoZW50aWNhdGlvbl9mZWF0dXJlcxhlIAMoDjIeLmpvbmxpbmUuQXV0aGVudGljYXRpb25G'
-    'ZWF0dXJlUhZhdXRoZW50aWNhdGlvbkZlYXR1cmVzEkMKD3dlYl9wdXNoX2NvbmZpZxhuIAEoCz'
-    'IWLmpvbmxpbmUuV2ViUHVzaENvbmZpZ0gEUg13ZWJQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJf'
-    'aW5mb0ISChBfZmVkZXJhdGlvbl9pbmZvQg4KDF9jdXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2'
-    'RuX2NvbmZpZ0ISChBfd2ViX3B1c2hfY29uZmln');
+    'ChNTZXJ2ZXJDb25maWd1cmF0aW9uEjcKC3NlcnZlcl9pbmZvGAEgASgLMhEucmVsbG0uU2Vydm'
+    'VySW5mb0gAUgpzZXJ2ZXJJbmZviAEBEkMKD2ZlZGVyYXRpb25faW5mbxgCIAEoCzIVLnJlbGxt'
+    'LkZlZGVyYXRpb25JbmZvSAFSDmZlZGVyYXRpb25JbmZviAEBEk8KGmFub255bW91c191c2VyX3'
+    'Blcm1pc3Npb25zGAogAygOMhEucmVsbG0uUGVybWlzc2lvblIYYW5vbnltb3VzVXNlclBlcm1p'
+    'c3Npb25zEksKGGRlZmF1bHRfdXNlcl9wZXJtaXNzaW9ucxgLIAMoDjIRLnJlbGxtLlBlcm1pc3'
+    'Npb25SFmRlZmF1bHRVc2VyUGVybWlzc2lvbnMSRwoWYmFzaWNfdXNlcl9wZXJtaXNzaW9ucxgM'
+    'IAMoDjIRLnJlbGxtLlBlcm1pc3Npb25SFGJhc2ljVXNlclBlcm1pc3Npb25zEkMKC2N1c3RvbV'
+    '90YWJzGBMgASgLMh0ucmVsbG0uQ3VzdG9tTmF2aWdhdGlvblRhYlNldEgCUgpjdXN0b21UYWJz'
+    'iAEBEj8KD3Blb3BsZV9zZXR0aW5ncxgUIAEoCzIWLnJlbGxtLkZlYXR1cmVTZXR0aW5nc1IOcG'
+    'VvcGxlU2V0dGluZ3MSPQoOZ3JvdXBfc2V0dGluZ3MYFSABKAsyFi5yZWxsbS5GZWF0dXJlU2V0'
+    'dGluZ3NSDWdyb3VwU2V0dGluZ3MSOAoNcG9zdF9zZXR0aW5ncxgWIAEoCzITLnJlbGxtLlBvc3'
+    'RTZXR0aW5nc1IMcG9zdFNldHRpbmdzEjsKDmV2ZW50X3NldHRpbmdzGBcgASgLMhQucmVsbG0u'
+    'RXZlbnRTZXR0aW5nc1INZXZlbnRTZXR0aW5ncxI7Cg5tZWRpYV9zZXR0aW5ncxgYIAEoCzIULn'
+    'JlbGxtLk1lZGlhU2V0dGluZ3NSDW1lZGlhU2V0dGluZ3MSTQoTZXh0ZXJuYWxfY2RuX2NvbmZp'
+    'ZxhaIAEoCzIYLnJlbGxtLkV4dGVybmFsQ0ROQ29uZmlnSANSEWV4dGVybmFsQ2RuQ29uZmlniA'
+    'EBEk4KFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEoDjIaLnJlbGxtLlByaXZhdGVVc2VyU3Ry'
+    'YXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVQoXYXV0aGVudGljYXRpb25fZmVhdHVyZXMYZS'
+    'ADKA4yHC5yZWxsbS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dGhlbnRpY2F0aW9uRmVhdHVy'
+    'ZXMSQQoPd2ViX3B1c2hfY29uZmlnGG4gASgLMhQucmVsbG0uV2ViUHVzaENvbmZpZ0gEUg13ZW'
+    'JQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJfaW5mb0ISChBfZmVkZXJhdGlvbl9pbmZvQg4KDF9j'
+    'dXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZ0ISChBfd2ViX3B1c2hfY29uZmln');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {
@@ -180,25 +179,25 @@ const MediaSettings$json = {
   '1': 'MediaSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
+    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.rellm.Moderation', '10': 'defaultModeration'},
+    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'defaultVisibility'},
   ],
 };
 
 /// Descriptor for `MediaSettings`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List mediaSettingsDescriptor = $convert.base64Decode(
-    'Cg1NZWRpYVNldHRpbmdzEhgKB3Zpc2libGUYASABKAhSB3Zpc2libGUSQgoSZGVmYXVsdF9tb2'
-    'RlcmF0aW9uGAIgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUhFkZWZhdWx0TW9kZXJhdGlvbhJC'
-    'ChJkZWZhdWx0X3Zpc2liaWxpdHkYAyABKA4yEy5qb25saW5lLlZpc2liaWxpdHlSEWRlZmF1bH'
-    'RWaXNpYmlsaXR5');
+    'Cg1NZWRpYVNldHRpbmdzEhgKB3Zpc2libGUYASABKAhSB3Zpc2libGUSQAoSZGVmYXVsdF9tb2'
+    'RlcmF0aW9uGAIgASgOMhEucmVsbG0uTW9kZXJhdGlvblIRZGVmYXVsdE1vZGVyYXRpb24SQAoS'
+    'ZGVmYXVsdF92aXNpYmlsaXR5GAMgASgOMhEucmVsbG0uVmlzaWJpbGl0eVIRZGVmYXVsdFZpc2'
+    'liaWxpdHk=');
 
 @$core.Deprecated('Use featureSettingsDescriptor instead')
 const FeatureSettings$json = {
   '1': 'FeatureSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
+    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.rellm.Moderation', '10': 'defaultModeration'},
+    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'defaultVisibility'},
     {'1': 'alias_singular', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'aliasSingular', '17': true},
     {'1': 'alias_plural', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'aliasPlural', '17': true},
   ],
@@ -210,20 +209,20 @@ const FeatureSettings$json = {
 
 /// Descriptor for `FeatureSettings`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List featureSettingsDescriptor = $convert.base64Decode(
-    'Cg9GZWF0dXJlU2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJCChJkZWZhdWx0X2'
-    '1vZGVyYXRpb24YAiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SEWRlZmF1bHRNb2RlcmF0aW9u'
-    'EkIKEmRlZmF1bHRfdmlzaWJpbGl0eRgDIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIRZGVmYX'
-    'VsdFZpc2liaWxpdHkSKgoOYWxpYXNfc2luZ3VsYXIYBCABKAlIAFINYWxpYXNTaW5ndWxhcogB'
-    'ARImCgxhbGlhc19wbHVyYWwYBSABKAlIAVILYWxpYXNQbHVyYWyIAQFCEQoPX2FsaWFzX3Npbm'
-    'd1bGFyQg8KDV9hbGlhc19wbHVyYWw=');
+    'Cg9GZWF0dXJlU2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJAChJkZWZhdWx0X2'
+    '1vZGVyYXRpb24YAiABKA4yES5yZWxsbS5Nb2RlcmF0aW9uUhFkZWZhdWx0TW9kZXJhdGlvbhJA'
+    'ChJkZWZhdWx0X3Zpc2liaWxpdHkYAyABKA4yES5yZWxsbS5WaXNpYmlsaXR5UhFkZWZhdWx0Vm'
+    'lzaWJpbGl0eRIqCg5hbGlhc19zaW5ndWxhchgEIAEoCUgAUg1hbGlhc1Npbmd1bGFyiAEBEiYK'
+    'DGFsaWFzX3BsdXJhbBgFIAEoCUgBUgthbGlhc1BsdXJhbIgBAUIRCg9fYWxpYXNfc2luZ3VsYX'
+    'JCDwoNX2FsaWFzX3BsdXJhbA==');
 
 @$core.Deprecated('Use postSettingsDescriptor instead')
 const PostSettings$json = {
   '1': 'PostSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
+    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.rellm.Moderation', '10': 'defaultModeration'},
+    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'defaultVisibility'},
     {'1': 'alias_singular', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'aliasSingular', '17': true},
     {'1': 'alias_plural', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'aliasPlural', '17': true},
     {'1': 'enable_replies', '3': 6, '4': 1, '5': 8, '9': 2, '10': 'enableReplies', '17': true},
@@ -237,26 +236,26 @@ const PostSettings$json = {
 
 /// Descriptor for `PostSettings`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List postSettingsDescriptor = $convert.base64Decode(
-    'CgxQb3N0U2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJCChJkZWZhdWx0X21vZG'
-    'VyYXRpb24YAiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SEWRlZmF1bHRNb2RlcmF0aW9uEkIK'
-    'EmRlZmF1bHRfdmlzaWJpbGl0eRgDIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIRZGVmYXVsdF'
-    'Zpc2liaWxpdHkSKgoOYWxpYXNfc2luZ3VsYXIYBCABKAlIAFINYWxpYXNTaW5ndWxhcogBARIm'
-    'CgxhbGlhc19wbHVyYWwYBSABKAlIAVILYWxpYXNQbHVyYWyIAQESKgoOZW5hYmxlX3JlcGxpZX'
-    'MYBiABKAhIAlINZW5hYmxlUmVwbGllc4gBAUIRCg9fYWxpYXNfc2luZ3VsYXJCDwoNX2FsaWFz'
-    'X3BsdXJhbEIRCg9fZW5hYmxlX3JlcGxpZXM=');
+    'CgxQb3N0U2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJAChJkZWZhdWx0X21vZG'
+    'VyYXRpb24YAiABKA4yES5yZWxsbS5Nb2RlcmF0aW9uUhFkZWZhdWx0TW9kZXJhdGlvbhJAChJk'
+    'ZWZhdWx0X3Zpc2liaWxpdHkYAyABKA4yES5yZWxsbS5WaXNpYmlsaXR5UhFkZWZhdWx0VmlzaW'
+    'JpbGl0eRIqCg5hbGlhc19zaW5ndWxhchgEIAEoCUgAUg1hbGlhc1Npbmd1bGFyiAEBEiYKDGFs'
+    'aWFzX3BsdXJhbBgFIAEoCUgBUgthbGlhc1BsdXJhbIgBARIqCg5lbmFibGVfcmVwbGllcxgGIA'
+    'EoCEgCUg1lbmFibGVSZXBsaWVziAEBQhEKD19hbGlhc19zaW5ndWxhckIPCg1fYWxpYXNfcGx1'
+    'cmFsQhEKD19lbmFibGVfcmVwbGllcw==');
 
 @$core.Deprecated('Use eventSettingsDescriptor instead')
 const EventSettings$json = {
   '1': 'EventSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
+    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.rellm.Moderation', '10': 'defaultModeration'},
+    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'defaultVisibility'},
     {'1': 'alias_singular', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'aliasSingular', '17': true},
     {'1': 'alias_plural', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'aliasPlural', '17': true},
     {'1': 'enable_replies', '3': 6, '4': 1, '5': 8, '9': 2, '10': 'enableReplies', '17': true},
     {'1': 'calendar_lookback_days', '3': 7, '4': 1, '5': 13, '9': 3, '10': 'calendarLookbackDays', '17': true},
-    {'1': 'default_calendar_display_mode', '3': 8, '4': 1, '5': 14, '6': '.jonline.CalendarDisplayMode', '10': 'defaultCalendarDisplayMode'},
+    {'1': 'default_calendar_display_mode', '3': 8, '4': 1, '5': 14, '6': '.rellm.CalendarDisplayMode', '10': 'defaultCalendarDisplayMode'},
     {'1': 'show_started_or_long_events_by_default', '3': 9, '4': 1, '5': 8, '10': 'showStartedOrLongEventsByDefault'},
   ],
   '8': [
@@ -269,18 +268,18 @@ const EventSettings$json = {
 
 /// Descriptor for `EventSettings`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventSettingsDescriptor = $convert.base64Decode(
-    'Cg1FdmVudFNldHRpbmdzEhgKB3Zpc2libGUYASABKAhSB3Zpc2libGUSQgoSZGVmYXVsdF9tb2'
-    'RlcmF0aW9uGAIgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUhFkZWZhdWx0TW9kZXJhdGlvbhJC'
-    'ChJkZWZhdWx0X3Zpc2liaWxpdHkYAyABKA4yEy5qb25saW5lLlZpc2liaWxpdHlSEWRlZmF1bH'
-    'RWaXNpYmlsaXR5EioKDmFsaWFzX3Npbmd1bGFyGAQgASgJSABSDWFsaWFzU2luZ3VsYXKIAQES'
-    'JgoMYWxpYXNfcGx1cmFsGAUgASgJSAFSC2FsaWFzUGx1cmFsiAEBEioKDmVuYWJsZV9yZXBsaW'
-    'VzGAYgASgISAJSDWVuYWJsZVJlcGxpZXOIAQESOQoWY2FsZW5kYXJfbG9va2JhY2tfZGF5cxgH'
-    'IAEoDUgDUhRjYWxlbmRhckxvb2tiYWNrRGF5c4gBARJfCh1kZWZhdWx0X2NhbGVuZGFyX2Rpc3'
-    'BsYXlfbW9kZRgIIAEoDjIcLmpvbmxpbmUuQ2FsZW5kYXJEaXNwbGF5TW9kZVIaZGVmYXVsdENh'
-    'bGVuZGFyRGlzcGxheU1vZGUSUAomc2hvd19zdGFydGVkX29yX2xvbmdfZXZlbnRzX2J5X2RlZm'
-    'F1bHQYCSABKAhSIHNob3dTdGFydGVkT3JMb25nRXZlbnRzQnlEZWZhdWx0QhEKD19hbGlhc19z'
-    'aW5ndWxhckIPCg1fYWxpYXNfcGx1cmFsQhEKD19lbmFibGVfcmVwbGllc0IZChdfY2FsZW5kYX'
-    'JfbG9va2JhY2tfZGF5cw==');
+    'Cg1FdmVudFNldHRpbmdzEhgKB3Zpc2libGUYASABKAhSB3Zpc2libGUSQAoSZGVmYXVsdF9tb2'
+    'RlcmF0aW9uGAIgASgOMhEucmVsbG0uTW9kZXJhdGlvblIRZGVmYXVsdE1vZGVyYXRpb24SQAoS'
+    'ZGVmYXVsdF92aXNpYmlsaXR5GAMgASgOMhEucmVsbG0uVmlzaWJpbGl0eVIRZGVmYXVsdFZpc2'
+    'liaWxpdHkSKgoOYWxpYXNfc2luZ3VsYXIYBCABKAlIAFINYWxpYXNTaW5ndWxhcogBARImCgxh'
+    'bGlhc19wbHVyYWwYBSABKAlIAVILYWxpYXNQbHVyYWyIAQESKgoOZW5hYmxlX3JlcGxpZXMYBi'
+    'ABKAhIAlINZW5hYmxlUmVwbGllc4gBARI5ChZjYWxlbmRhcl9sb29rYmFja19kYXlzGAcgASgN'
+    'SANSFGNhbGVuZGFyTG9va2JhY2tEYXlziAEBEl0KHWRlZmF1bHRfY2FsZW5kYXJfZGlzcGxheV'
+    '9tb2RlGAggASgOMhoucmVsbG0uQ2FsZW5kYXJEaXNwbGF5TW9kZVIaZGVmYXVsdENhbGVuZGFy'
+    'RGlzcGxheU1vZGUSUAomc2hvd19zdGFydGVkX29yX2xvbmdfZXZlbnRzX2J5X2RlZmF1bHQYCS'
+    'ABKAhSIHNob3dTdGFydGVkT3JMb25nRXZlbnRzQnlEZWZhdWx0QhEKD19hbGlhc19zaW5ndWxh'
+    'ckIPCg1fYWxpYXNfcGx1cmFsQhEKD19lbmFibGVfcmVwbGllc0IZChdfY2FsZW5kYXJfbG9va2'
+    'JhY2tfZGF5cw==');
 
 @$core.Deprecated('Use serverInfoDescriptor instead')
 const ServerInfo$json = {
@@ -290,9 +289,9 @@ const ServerInfo$json = {
     {'1': 'short_name', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'shortName', '17': true},
     {'1': 'description', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
     {'1': 'privacy_policy', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'privacyPolicy', '17': true},
-    {'1': 'logo', '3': 5, '4': 1, '5': 11, '6': '.jonline.ServerLogo', '9': 4, '10': 'logo', '17': true},
-    {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.jonline.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
-    {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.jonline.ServerColors', '9': 6, '10': 'colors', '17': true},
+    {'1': 'logo', '3': 5, '4': 1, '5': 11, '6': '.rellm.ServerLogo', '9': 4, '10': 'logo', '17': true},
+    {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.rellm.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
+    {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.rellm.ServerColors', '9': 6, '10': 'colors', '17': true},
     {'1': 'media_policy', '3': 8, '4': 1, '5': 9, '9': 7, '10': 'mediaPolicy', '17': true},
     {
       '1': 'recommended_server_hosts',
@@ -319,14 +318,14 @@ const ServerInfo$json = {
 final $typed_data.Uint8List serverInfoDescriptor = $convert.base64Decode(
     'CgpTZXJ2ZXJJbmZvEhcKBG5hbWUYASABKAlIAFIEbmFtZYgBARIiCgpzaG9ydF9uYW1lGAIgAS'
     'gJSAFSCXNob3J0TmFtZYgBARIlCgtkZXNjcmlwdGlvbhgDIAEoCUgCUgtkZXNjcmlwdGlvbogB'
-    'ARIqCg5wcml2YWN5X3BvbGljeRgEIAEoCUgDUg1wcml2YWN5UG9saWN5iAEBEiwKBGxvZ28YBS'
-    'ABKAsyEy5qb25saW5lLlNlcnZlckxvZ29IBFIEbG9nb4gBARJMChJ3ZWJfdXNlcl9pbnRlcmZh'
-    'Y2UYBiABKA4yGS5qb25saW5lLldlYlVzZXJJbnRlcmZhY2VIBVIQd2ViVXNlckludGVyZmFjZY'
-    'gBARIyCgZjb2xvcnMYByABKAsyFS5qb25saW5lLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQES'
-    'JgoMbWVkaWFfcG9saWN5GAggASgJSAdSC21lZGlhUG9saWN5iAEBEjwKGHJlY29tbWVuZGVkX3'
-    'NlcnZlcl9ob3N0cxgJIAMoCUICGAFSFnJlY29tbWVuZGVkU2VydmVySG9zdHNCBwoFX25hbWVC'
-    'DQoLX3Nob3J0X25hbWVCDgoMX2Rlc2NyaXB0aW9uQhEKD19wcml2YWN5X3BvbGljeUIHCgVfbG'
-    '9nb0IVChNfd2ViX3VzZXJfaW50ZXJmYWNlQgkKB19jb2xvcnNCDwoNX21lZGlhX3BvbGljeQ==');
+    'ARIqCg5wcml2YWN5X3BvbGljeRgEIAEoCUgDUg1wcml2YWN5UG9saWN5iAEBEioKBGxvZ28YBS'
+    'ABKAsyES5yZWxsbS5TZXJ2ZXJMb2dvSARSBGxvZ2+IAQESSgoSd2ViX3VzZXJfaW50ZXJmYWNl'
+    'GAYgASgOMhcucmVsbG0uV2ViVXNlckludGVyZmFjZUgFUhB3ZWJVc2VySW50ZXJmYWNliAEBEj'
+    'AKBmNvbG9ycxgHIAEoCzITLnJlbGxtLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQESJgoMbWVk'
+    'aWFfcG9saWN5GAggASgJSAdSC21lZGlhUG9saWN5iAEBEjwKGHJlY29tbWVuZGVkX3NlcnZlcl'
+    '9ob3N0cxgJIAMoCUICGAFSFnJlY29tbWVuZGVkU2VydmVySG9zdHNCBwoFX25hbWVCDQoLX3No'
+    'b3J0X25hbWVCDgoMX2Rlc2NyaXB0aW9uQhEKD19wcml2YWN5X3BvbGljeUIHCgVfbG9nb0IVCh'
+    'Nfd2ViX3VzZXJfaW50ZXJmYWNlQgkKB19jb2xvcnNCDwoNX21lZGlhX3BvbGljeQ==');
 
 @$core.Deprecated('Use serverLogoDescriptor instead')
 const ServerLogo$json = {
@@ -357,8 +356,8 @@ final $typed_data.Uint8List serverLogoDescriptor = $convert.base64Decode(
 const CustomNavigationTabSet$json = {
   '1': 'CustomNavigationTabSet',
   '2': [
-    {'1': 'home', '3': 1, '4': 1, '5': 11, '6': '.jonline.CustomHomePage', '9': 0, '10': 'home', '17': true},
-    {'1': 'tabs', '3': 2, '4': 3, '5': 11, '6': '.jonline.CustomNavigationTab', '10': 'tabs'},
+    {'1': 'home', '3': 1, '4': 1, '5': 11, '6': '.rellm.CustomHomePage', '9': 0, '10': 'home', '17': true},
+    {'1': 'tabs', '3': 2, '4': 3, '5': 11, '6': '.rellm.CustomNavigationTab', '10': 'tabs'},
   ],
   '8': [
     {'1': '_home'},
@@ -367,20 +366,20 @@ const CustomNavigationTabSet$json = {
 
 /// Descriptor for `CustomNavigationTabSet`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customNavigationTabSetDescriptor = $convert.base64Decode(
-    'ChZDdXN0b21OYXZpZ2F0aW9uVGFiU2V0EjAKBGhvbWUYASABKAsyFy5qb25saW5lLkN1c3RvbU'
-    'hvbWVQYWdlSABSBGhvbWWIAQESMAoEdGFicxgCIAMoCzIcLmpvbmxpbmUuQ3VzdG9tTmF2aWdh'
-    'dGlvblRhYlIEdGFic0IHCgVfaG9tZQ==');
+    'ChZDdXN0b21OYXZpZ2F0aW9uVGFiU2V0Ei4KBGhvbWUYASABKAsyFS5yZWxsbS5DdXN0b21Ib2'
+    '1lUGFnZUgAUgRob21liAEBEi4KBHRhYnMYAiADKAsyGi5yZWxsbS5DdXN0b21OYXZpZ2F0aW9u'
+    'VGFiUgR0YWJzQgcKBV9ob21l');
 
 @$core.Deprecated('Use customHomePageDescriptor instead')
 const CustomHomePage$json = {
   '1': 'CustomHomePage',
   '2': [
-    {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.jonline.NavigationTab', '9': 0, '10': 'tab'},
+    {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.rellm.NavigationTab', '9': 0, '10': 'tab'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'postId'},
     {'1': 'pinned_post_ids', '3': 3, '4': 3, '5': 9, '10': 'pinnedPostIds'},
     {'1': 'show_events_strip', '3': 4, '4': 1, '5': 8, '10': 'showEventsStrip'},
     {'1': 'default_events_strip_to_row', '3': 5, '4': 1, '5': 8, '10': 'defaultEventsStripToRow'},
-    {'1': 'default_events_strip_calendar_display_mode', '3': 6, '4': 1, '5': 14, '6': '.jonline.CalendarDisplayMode', '10': 'defaultEventsStripCalendarDisplayMode'},
+    {'1': 'default_events_strip_calendar_display_mode', '3': 6, '4': 1, '5': 14, '6': '.rellm.CalendarDisplayMode', '10': 'defaultEventsStripCalendarDisplayMode'},
   ],
   '8': [
     {'1': 'target'},
@@ -389,19 +388,19 @@ const CustomHomePage$json = {
 
 /// Descriptor for `CustomHomePage`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customHomePageDescriptor = $convert.base64Decode(
-    'Cg5DdXN0b21Ib21lUGFnZRIqCgN0YWIYASABKA4yFi5qb25saW5lLk5hdmlnYXRpb25UYWJIAF'
-    'IDdGFiEhkKB3Bvc3RfaWQYAiABKAlIAFIGcG9zdElkEiYKD3Bpbm5lZF9wb3N0X2lkcxgDIAMo'
-    'CVINcGlubmVkUG9zdElkcxIqChFzaG93X2V2ZW50c19zdHJpcBgEIAEoCFIPc2hvd0V2ZW50c1'
-    'N0cmlwEjwKG2RlZmF1bHRfZXZlbnRzX3N0cmlwX3RvX3JvdxgFIAEoCFIXZGVmYXVsdEV2ZW50'
-    'c1N0cmlwVG9Sb3cSdwoqZGVmYXVsdF9ldmVudHNfc3RyaXBfY2FsZW5kYXJfZGlzcGxheV9tb2'
-    'RlGAYgASgOMhwuam9ubGluZS5DYWxlbmRhckRpc3BsYXlNb2RlUiVkZWZhdWx0RXZlbnRzU3Ry'
-    'aXBDYWxlbmRhckRpc3BsYXlNb2RlQggKBnRhcmdldA==');
+    'Cg5DdXN0b21Ib21lUGFnZRIoCgN0YWIYASABKA4yFC5yZWxsbS5OYXZpZ2F0aW9uVGFiSABSA3'
+    'RhYhIZCgdwb3N0X2lkGAIgASgJSABSBnBvc3RJZBImCg9waW5uZWRfcG9zdF9pZHMYAyADKAlS'
+    'DXBpbm5lZFBvc3RJZHMSKgoRc2hvd19ldmVudHNfc3RyaXAYBCABKAhSD3Nob3dFdmVudHNTdH'
+    'JpcBI8ChtkZWZhdWx0X2V2ZW50c19zdHJpcF90b19yb3cYBSABKAhSF2RlZmF1bHRFdmVudHNT'
+    'dHJpcFRvUm93EnUKKmRlZmF1bHRfZXZlbnRzX3N0cmlwX2NhbGVuZGFyX2Rpc3BsYXlfbW9kZR'
+    'gGIAEoDjIaLnJlbGxtLkNhbGVuZGFyRGlzcGxheU1vZGVSJWRlZmF1bHRFdmVudHNTdHJpcENh'
+    'bGVuZGFyRGlzcGxheU1vZGVCCAoGdGFyZ2V0');
 
 @$core.Deprecated('Use customNavigationTabDescriptor instead')
 const CustomNavigationTab$json = {
   '1': 'CustomNavigationTab',
   '2': [
-    {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.jonline.NavigationTab', '9': 0, '10': 'tab'},
+    {'1': 'tab', '3': 1, '4': 1, '5': 14, '6': '.rellm.NavigationTab', '9': 0, '10': 'tab'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'postId'},
     {'1': 'is_profile', '3': 3, '4': 1, '5': 8, '9': 0, '10': 'isProfile'},
     {'1': 'emoji_icon', '3': 10, '4': 1, '5': 9, '9': 1, '10': 'emojiIcon'},
@@ -418,11 +417,11 @@ const CustomNavigationTab$json = {
 
 /// Descriptor for `CustomNavigationTab`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List customNavigationTabDescriptor = $convert.base64Decode(
-    'ChNDdXN0b21OYXZpZ2F0aW9uVGFiEioKA3RhYhgBIAEoDjIWLmpvbmxpbmUuTmF2aWdhdGlvbl'
-    'RhYkgAUgN0YWISGQoHcG9zdF9pZBgCIAEoCUgAUgZwb3N0SWQSHwoKaXNfcHJvZmlsZRgDIAEo'
-    'CEgAUglpc1Byb2ZpbGUSHwoKZW1vamlfaWNvbhgKIAEoCUgBUgllbW9qaUljb24SJAoNaWNvbl'
-    '9tZWRpYV9pZBgLIAEoCUgBUgtpY29uTWVkaWFJZBIZCgV0aXRsZRgMIAEoCUgCUgV0aXRsZYgB'
-    'ARISCgRwYXRoGA0gASgJUgRwYXRoQggKBnRhcmdldEIGCgRpY29uQggKBl90aXRsZQ==');
+    'ChNDdXN0b21OYXZpZ2F0aW9uVGFiEigKA3RhYhgBIAEoDjIULnJlbGxtLk5hdmlnYXRpb25UYW'
+    'JIAFIDdGFiEhkKB3Bvc3RfaWQYAiABKAlIAFIGcG9zdElkEh8KCmlzX3Byb2ZpbGUYAyABKAhI'
+    'AFIJaXNQcm9maWxlEh8KCmVtb2ppX2ljb24YCiABKAlIAVIJZW1vamlJY29uEiQKDWljb25fbW'
+    'VkaWFfaWQYCyABKAlIAVILaWNvbk1lZGlhSWQSGQoFdGl0bGUYDCABKAlIAlIFdGl0bGWIAQES'
+    'EgoEcGF0aBgNIAEoCVIEcGF0aEIICgZ0YXJnZXRCBgoEaWNvbkIICgZfdGl0bGU=');
 
 @$core.Deprecated('Use serverColorsDescriptor instead')
 const ServerColors$json = {

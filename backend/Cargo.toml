@@ -1,15 +1,15 @@
 [package]
-name = "jonline"
+name = "rellm"
 version = "0.5.553"
 edition = "2024"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
 
 license = "AGPL"
-repository = "https://github.com/jonlatane/jonline"
-description = "Jonline is a decentralized social network server."
+repository = "https://github.com/jonlatane/rellm"
+description = "Rellm is a decentralized social network server."
 homepage = "https://jonline.io"
-default-run = "jonline"
+default-run = "rellm"
 readme = "README.md"
 
 [profile.release]

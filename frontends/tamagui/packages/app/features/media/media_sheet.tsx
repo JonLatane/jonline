@@ -1,4 +1,4 @@
-import { AlertDialog, AnimatePresence, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, Text, XStack, YStack, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AlertDialog, AnimatePresence, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, Text, XStack, YStack, standardAnimation, useMedia, useWindowDimensions } from '@rellm/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
 import { RootState, deleteMedia, loadMediaPage, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 
 import { ChevronLeft, Info, Trash, Wand2 } from '@tamagui/lucide-icons';
 
-import { MediaReference, Permission, Post } from '@jonline/api';
+import { MediaReference, Permission, Post } from '@rellm/api';
 import { AccountOrServerContextProvider, MediaRef, useMediaContext } from 'app/contexts';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { highlightedButtonBackground } from 'app/utils';

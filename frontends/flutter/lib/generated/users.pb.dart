@@ -24,8 +24,8 @@ import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'users.pbenum.dart';
 
-/// Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
-/// [`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
+/// Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s,
+/// [`Post`](#rellm-Post)s, [`Event`](#rellm-Event)s, and other objects associated with them.
 class User extends $pb.GeneratedMessage {
   factory User({
     $core.String? id,
@@ -152,7 +152,7 @@ class User extends $pb.GeneratedMessage {
   factory User.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory User.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'User', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'User', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOS(3, _omitFieldNames ? '' : 'realName')
@@ -260,7 +260,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   ContactMethod ensurePhone() => $_ensure(4);
 
-  /// The user's permissions. See [`Permission`](#jonline-Permission) for details.
+  /// The user's permissions. See [`Permission`](#rellm-Permission) for details.
   @$pb.TagNumber(6)
   $core.List<$14.Permission> get permissions => $_getList(5);
 
@@ -302,7 +302,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   void clearVisibility() => clearField(20);
 
-  /// The user's moderation status. See [`Moderation`](#jonline-Moderation) for details.
+  /// The user's moderation status. See [`Moderation`](#rellm-Moderation) for details.
   @$pb.TagNumber(21)
   $13.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
@@ -372,7 +372,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(35)
   void clearPostCount() => clearField(35);
 
-  /// The number of responses to [`Post`](#jonline-Post)s and [`Event`](#jonline-Event)s this user has made.
+  /// The number of responses to [`Post`](#rellm-Post)s and [`Event`](#rellm-Event)s this user has made.
   @$pb.TagNumber(36)
   $core.int get responseCount => $_getIZ(16);
   @$pb.TagNumber(36)
@@ -428,9 +428,9 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(51)
   Follow ensureTargetCurrentUserFollow() => $_ensure(20);
 
-  /// Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
-  /// The [`Membership`](#jonline-Membership) should match the [`Group`](#jonline-Group) from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
-  /// providing whether the user is a member of that [`Group`](#jonline-Group), has been invited, requested to join, etc..
+  /// Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s.
+  /// The [`Membership`](#rellm-Membership) should match the [`Group`](#rellm-Group) from the originating [`GetMembersRequest`](#rellm-GetMembersRequest),
+  /// providing whether the user is a member of that [`Group`](#rellm-Group), has been invited, requested to join, etc..
   @$pb.TagNumber(52)
   Membership get currentGroupMembership => $_getN(21);
   @$pb.TagNumber(52)
@@ -467,7 +467,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(82)
   $core.List<$10.SyncDestination> get syncDestinations => $_getList(24);
 
-  /// The target user's own [`SyncSource`](#jonline-SyncSource)s. Unlike `sync_destinations`, also populated for
+  /// The target user's own [`SyncSource`](#rellm-SyncSource)s. Unlike `sync_destinations`, also populated for
   /// the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
   /// single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
   /// filled in, batch-loaded in one query rather than per-user. Also populated by
@@ -476,9 +476,9 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(83)
   $core.List<$10.SyncSource> get syncSources => $_getList(25);
 
-  /// Every [`AIModelProvider`](#jonline-AIModelProvider) model the target user may currently call -- their own
+  /// Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call -- their own
   /// providers' models, plus any models granted to them on other users' providers (see
-  /// [`AvailableAIModel`](#jonline-AvailableAIModel)). Gated and populated the same way as `sync_sources`
+  /// [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
   /// (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
   /// [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
   @$pb.TagNumber(84)
@@ -540,7 +540,7 @@ class Follow extends $pb.GeneratedMessage {
   factory Follow.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Follow.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'targetUserId')
     ..e<$13.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $13.Moderation.MODERATION_UNKNOWN, valueOf: $13.Moderation.valueOf, enumValues: $13.Moderation.values)
@@ -626,7 +626,7 @@ class Follow extends $pb.GeneratedMessage {
 }
 
 /// Model for a user's membership in a group. Memberships are generically
-/// included as part of User models when relevant in Jonline, but UIs should use the group_id
+/// included as part of User models when relevant in Rellm, but UIs should use the group_id
 /// to reconcile memberships with groups.
 class Membership extends $pb.GeneratedMessage {
   factory Membership({
@@ -666,7 +666,7 @@ class Membership extends $pb.GeneratedMessage {
   factory Membership.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Membership.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'groupId')
     ..pc<$14.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $14.Permission.valueOf, enumValues: $14.Permission.values, defaultEnumValue: $14.Permission.PERMISSION_UNKNOWN)
@@ -795,7 +795,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   factory ContactMethod.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ContactMethod.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
     ..e<$13.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
@@ -906,7 +906,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   factory GetUsersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetUsersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..aOS(3, _omitFieldNames ? '' : 'searchText')
@@ -988,7 +988,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   void clearListingType() => clearField(100);
 }
 
-/// Response to a [`GetUsersRequest`](#jonline-GetUsersRequest).
+/// Response to a [`GetUsersRequest`](#rellm-GetUsersRequest).
 class GetUsersResponse extends $pb.GeneratedMessage {
   factory GetUsersResponse({
     $core.Iterable<User>? users,
@@ -1007,7 +1007,7 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   factory GetUsersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetUsersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<User>(1, _omitFieldNames ? '' : 'users', $pb.PbFieldType.PM, subBuilder: User.create)
     ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
     ..hasRequiredFields = false

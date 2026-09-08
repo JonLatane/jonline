@@ -1,5 +1,5 @@
 
-import { Heading, Tooltip } from "@jonline/ui";
+import { Heading, Tooltip } from "@rellm/ui";
 import moment from "moment";
 
 export type DateViewerProps = {

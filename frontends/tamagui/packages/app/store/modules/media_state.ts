@@ -1,4 +1,4 @@
-import { Media } from "@jonline/api";
+import { Media } from "@rellm/api";
 import {
   Dictionary,
   EntityAdapter,

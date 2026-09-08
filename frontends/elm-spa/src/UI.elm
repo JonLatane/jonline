@@ -12,9 +12,9 @@ import Html.Attributes exposing (alt, attribute, checked, class, classList, disa
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Jonline exposing (FederatedServer, MastodonServer)
-import Proto.Jonline.SyncSource.Configuration as Configuration
-import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
+import Proto.Rellm exposing (FederatedServer, MastodonServer)
+import Proto.Rellm.SyncSource.Configuration as Configuration
+import Proto.Rellm.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -1440,7 +1440,7 @@ Mastodon instances `browsingHost`'s own admin has listed (`FederationInfo.mastod
 aren't already connected (`AccountsPanel.mastodonAccounts`), plus a read-only row per account that
 already is. Unlike the recommended-servers strip, this one never collapses behind a "N
 instances..." toggle -- there's no expectation of there being many, the way there can be many
-federated Jonline servers.
+federated Rellm servers.
 -}
 mastodonServersStrip : Shared.Model -> Html Shared.Msg
 mastodonServersStrip shared =
@@ -1536,7 +1536,7 @@ connectedMastodonAccountChip mastodonAccount =
 `MastodonServer` admin config needed at all, since `Shared.Federation.Mastodon.fetchPosts` is a
 plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonServersStrip`'s
 "Connect" chips, which exist to authenticate as a specific account, this is closer to
-`serversStrip`'s own "type a host, add it" shape for real Jonline servers, just without any of the
+`serversStrip`'s own "type a host, add it" shape for real Rellm servers, just without any of the
 connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
 time, a bad/unreachable host just silently fails to load posts the same way any other feed fetch
 failure does (see `Components.Pages.PostsPage.GotFeedPosts`'s `FeedFailed` doc).
@@ -2635,7 +2635,7 @@ createAccountConfirmationModal shared =
 
         Just pending ->
             let
-                info : Proto.Jonline.ServerInfo
+                info : Proto.Rellm.ServerInfo
                 info =
                     AccountsPanel.serverInfoOf pending.server
             in

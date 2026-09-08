@@ -1,4 +1,4 @@
-import { XStack, standardFadeAnimation } from "@jonline/ui";
+import { XStack, standardFadeAnimation } from "@rellm/ui";
 import React, { PropsWithChildren } from "react";
 import { DimensionValue, ViewStyle } from "react-native";
 

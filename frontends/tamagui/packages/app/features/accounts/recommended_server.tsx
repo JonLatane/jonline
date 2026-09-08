@@ -1,7 +1,7 @@
-import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
+import { Button, Heading, Paragraph, XStack, YStack } from "@rellm/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
 import { Selector, useAppDispatch, useAppSelector, useLocalConfiguration } from 'app/hooks';
-import { JonlineServer, RootState, colorIntMeta, getServerClient, pinServer, serverID, serversAdapter, setAllowServerSelection, setBrowsingServers, store, upsertServer, useRootSelector } from 'app/store';
+import { RellmServer, RootState, colorIntMeta, getServerClient, pinServer, serverID, serversAdapter, setAllowServerSelection, setBrowsingServers, store, upsertServer, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -18,24 +18,24 @@ interface Props {
 
 const recommendedServerCache = new Map<string, any>();
 
-export type JonlineServerInfo = {
-  server: JonlineServer;
-  existingServer: JonlineServer | undefined;
-  pendingServer: JonlineServer | undefined;
-  prototypeServer: JonlineServer;
+export type RellmServerInfo = {
+  server: RellmServer;
+  existingServer: RellmServer | undefined;
+  pendingServer: RellmServer | undefined;
+  prototypeServer: RellmServer;
 }
 
 const selectPinnedAccountsAndServers = (
   host: string
-): Selector<JonlineServer | undefined> =>
+): Selector<RellmServer | undefined> =>
   createSelector(
     [state => serversAdapter.getSelectors().selectAll(state.servers).find(server => server.host == host)],
     (data) => data
   );
 
-export function useJonlineServerInfo(host: string): JonlineServerInfo {
-  const existingServer: JonlineServer | undefined = useAppSelector(selectPinnedAccountsAndServers(host));
-  const prototypeServer: JonlineServer = {
+export function useRellmServerInfo(host: string): RellmServerInfo {
+  const existingServer: RellmServer | undefined = useAppSelector(selectPinnedAccountsAndServers(host));
+  const prototypeServer: RellmServer = {
     host,
     secure: true,
   };
@@ -72,7 +72,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
   const dispatch = useAppDispatch();
   const [addingServer, setAddingServer] = React.useState(false);
 
-  const { server, existingServer } = useJonlineServerInfo(host);
+  const { server, existingServer } = useRellmServerInfo(host);
 
   const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {

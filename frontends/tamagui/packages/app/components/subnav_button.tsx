@@ -1,4 +1,4 @@
-import { Button, Heading, Paragraph, YStack } from "@jonline/ui";
+import { Button, Heading, Paragraph, YStack } from "@rellm/ui";
 import { useServerTheme } from "app/store";
 
 export type SubnavButtonProps = {

@@ -1,9 +1,9 @@
 module Components.Pages.ServerInformationPage exposing (Model, Msg, fromShared, init, subscriptions, titleFor, update, view)
 
-{-| The shared guts of a read-only Jonline server detail page -- reused by
+{-| The shared guts of a read-only Rellm server detail page -- reused by
 `Pages.Server.ServerIdentifier_` (`/server/[http|https]:hostname`, an
 arbitrary server) and `Pages.About` (always `mainFrontendHost`, shown above
-the app's own "About Jonline" blurb). Mirrors `Components.Pages.UserProfilePage`,
+the app's own "About Rellm" blurb). Mirrors `Components.Pages.UserProfilePage`,
 generalized the same way over "which server" that module is over "which user."
 
 If the server's already known (added to `Shared.AccountsPanel`, i.e. the user
@@ -59,9 +59,9 @@ import Grpc
 import Html exposing (Html, button, div, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (GetServiceVersionResponse, GetUsersResponse, defaultGetUsersRequest)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Rellm exposing (GetServiceVersionResponse, GetUsersResponse, defaultGetUsersRequest)
+import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -416,7 +416,7 @@ pushTabUrl model =
 
 fetchAdmins : AccountsPanel.Server -> Effect Msg
 fetchAdmins server =
-    Grpc.new Jonline.getUsers defaultGetUsersRequest
+    Grpc.new Rellm.getUsers defaultGetUsersRequest
         |> Grpc.setHost (AccountsPanel.serverUrl server)
         |> Grpc.toTask
         |> Task.attempt GotAdmins
@@ -425,7 +425,7 @@ fetchAdmins server =
 
 fetchVersion : AccountsPanel.Server -> Effect Msg
 fetchVersion server =
-    Grpc.new Jonline.getServiceVersion {}
+    Grpc.new Rellm.getServiceVersion {}
         |> Grpc.setHost (AccountsPanel.serverUrl server)
         |> Grpc.toTask
         |> Task.attempt GotVersion
@@ -466,7 +466,7 @@ view shared model =
 
                 OwnServerFailed err ->
                     div [ class "server-details-error" ]
-                        [ p [] [ text ("Couldn't find a Jonline server at " ++ identifierText model ++ ".") ]
+                        [ p [] [ text ("Couldn't find a Rellm server at " ++ identifierText model ++ ".") ]
                         , p [] [ text err ]
                         ]
 

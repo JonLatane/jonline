@@ -1,5 +1,5 @@
 // import { J } from '@fullcalendar/core/internal-common';
-import { GetThemeValueForKey, Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
+import { GetThemeValueForKey, Heading, Label, Paragraph, Switch, XStack, YStack } from '@rellm/ui';
 import { useAppDispatch } from 'app/hooks';
 import React, { useEffect, useRef } from 'react';
 import autoAnimate from '@formkit/auto-animate'

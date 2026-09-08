@@ -81,13 +81,13 @@ pub fn default_server_configuration() -> NewServerConfiguration {
     .to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
-            name: Some("Jonline 🛠️ Unconfigured server".to_string()),
+            name: Some("Rellm 🛠️ Unconfigured server".to_string()),
             short_name: None,
             description: Some("
 This is a description of your server and/or the community, business, group, etc. you're running it for.
             ".to_string()),
             privacy_policy: Some("
-Jonline is configured to be very private, but is also open-source. The privacy policy should mention any ways you might use private user data.
+Rellm is configured to be very private, but is also open-source. The privacy policy should mention any ways you might use private user data.
             ".to_string()),
             media_policy: Some("
 Your media policy should describe who has ownership of uploaded media, anything you may use it for, etc.

@@ -1,12 +1,12 @@
-import { Button, Heading, useMedia } from '@jonline/ui';
+import { Button, Heading, useMedia } from '@rellm/ui';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
 import { useCreationServer, useCurrentServer } from 'app/hooks';
-import { JonlineServer, useServerTheme } from 'app/store';
+import { RellmServer, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React from 'react';
 
 export type AuthSheetButtonProps = {
-  server?: JonlineServer;
+  server?: RellmServer;
   operation?: string;
   button?: (onPress: () => void) => React.JSX.Element;
 }

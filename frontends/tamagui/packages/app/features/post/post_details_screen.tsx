@@ -1,5 +1,5 @@
-import { PostContext } from '@jonline/api/index'
-import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui'
+import { PostContext } from '@rellm/api/index'
+import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useMedia } from '@rellm/ui'
 import { createSelector } from '@reduxjs/toolkit'
 import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'

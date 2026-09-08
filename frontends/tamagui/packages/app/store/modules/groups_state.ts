@@ -1,4 +1,4 @@
-import { Group, GroupListingType, GroupPost, Membership, Moderation } from "@jonline/api";
+import { Group, GroupListingType, GroupPost, Membership, Moderation } from "@rellm/api";
 
 import {
   createEntityAdapter,

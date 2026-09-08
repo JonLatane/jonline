@@ -1,4 +1,4 @@
-import { Button, Paragraph, ScrollView, XStack, YStack, useTheme } from '@jonline/ui';
+import { Button, Paragraph, ScrollView, XStack, YStack, useTheme } from '@rellm/ui';
 import { useAccountOrServerContext } from 'app/contexts';
 import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServer, useProvidedDispatch } from 'app/hooks';
 import { useServerTheme } from 'app/store';

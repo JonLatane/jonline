@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package jonline;
+package rellm;
 
 // Locations are places where events can happen.
 message Location {

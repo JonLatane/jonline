@@ -1,4 +1,4 @@
-import { Event, EventAttendances, EventInstance, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
+import { Event, EventAttendances, EventInstance, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk

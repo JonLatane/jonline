@@ -1,5 +1,5 @@
-import { MediaReference } from '@jonline/api';
-import { Button, ScrollView, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { MediaReference } from '@rellm/api';
+import { Button, ScrollView, XStack, YStack, ZStack, standardAnimation, useMedia } from '@rellm/ui';
 import { ArrowLeft, ArrowRight, Delete } from '@tamagui/lucide-icons';
 import React from 'react';
 import { MediaChooser } from '../media/media_chooser';

@@ -63,7 +63,7 @@
       }
 
       window.opener.postMessage(
-        { source: "jonline-oauth-login", accessToken: accessToken, error: error },
+        { source: "rellm-oauth-login", accessToken: accessToken, error: error },
         window.location.origin
       );
       window.close();

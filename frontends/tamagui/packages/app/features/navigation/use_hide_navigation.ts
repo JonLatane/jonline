@@ -1,4 +1,4 @@
-import { useDebounceValue, useMedia } from '@jonline/ui';
+import { useDebounceValue, useMedia } from '@rellm/ui';
 import useDetectScroll, { Axis, Direction } from '@smakss/react-scroll-direction';
 import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { setHideNavigation, setShowPinnedServers } from 'app/store';

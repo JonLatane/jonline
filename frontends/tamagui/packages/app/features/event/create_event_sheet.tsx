@@ -1,5 +1,5 @@
-import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
-import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
+import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@rellm/api';
+import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@rellm/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, identifyEvent, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';

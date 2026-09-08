@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jonline/models/jonline_server.dart';
+import 'package:rellm/models/rellm_server.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
 
 import '../app_state.dart';
@@ -185,12 +185,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         !isServerConfigPage(context.topRoute)) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         appState.colorTheme.value =
-            JonlineServer.selectedServer.configuration?.serverInfo.colors;
+            RellmServer.selectedServer.configuration?.serverInfo.colors;
         await appState.updateServersAndAccounts();
-        // await JonlineServer.selectedServer.updateConfiguration();
+        // await RellmServer.selectedServer.updateConfiguration();
         // if (!isServerConfigPage(context.topRoute)) {
         //   appState.colorTheme.value =
-        //       JonlineServer.selectedServer.configuration?.serverInfo.colors;
+        //       RellmServer.selectedServer.configuration?.serverInfo.colors;
         // }
       });
     } else if (!isServerConfigPage(_lastRoute) &&

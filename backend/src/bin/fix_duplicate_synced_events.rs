@@ -1,13 +1,13 @@
 extern crate diesel;
-extern crate jonline;
+extern crate rellm;
 
 use std::collections::HashMap;
 
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::*;
-use jonline::models::{Event, EventInstance, EVENT_INSTANCE_COLUMNS};
-use jonline::schema::*;
-use jonline::{db_connection, init_bin_logging, init_crypto};
+use rellm::models::{Event, EventInstance, EVENT_INSTANCE_COLUMNS};
+use rellm::schema::*;
+use rellm::{db_connection, init_bin_logging, init_crypto};
 
 /// TODO(2026-09-04): temporary, one-off repair tool. Once this has been run against every
 /// deployed namespace that has ever had a `SyncSource` (ato-band at least -- check

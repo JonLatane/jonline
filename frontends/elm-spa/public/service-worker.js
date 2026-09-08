@@ -1,8 +1,8 @@
-// Jonline's service worker. Currently only used for Web Push notifications -- see
+// Rellm's service worker. Currently only used for Web Push notifications -- see
 // `Shared.AccountsPanel`'s "Enable notifications", `index.html`'s subscribeToPush/pushSubscribed/
 // unsubscribeFromPush port handlers, and `backend/src/web_push` (which sends the pushes this
 // reacts to). Registered unconditionally at page load (see index.html), scoped to wherever this
-// file itself is served from (`/` or `/elm/`, matching `jonlineBasePath`) -- a no-op until a user
+// file itself is served from (`/` or `/elm/`, matching `rellmBasePath`) -- a no-op until a user
 // actually opts into notifications.
 
 // Push payloads arrive already decrypted by the browser (Web Push's own encryption, handled
@@ -22,7 +22,7 @@
 // `Components.Pages.MessagesPage.PushNotificationReceived`) instead of only finding out once the
 // notification itself is clicked.
 self.addEventListener('push', function (event) {
-  var payload = { title: 'Jonline', body: 'You have a new message.' };
+  var payload = { title: 'Rellm', body: 'You have a new message.' };
   if (event.data) {
     try {
       payload = event.data.json();
@@ -32,7 +32,7 @@ self.addEventListener('push', function (event) {
   }
   event.waitUntil(
     Promise.all([
-      self.registration.showNotification(payload.title || 'Jonline', {
+      self.registration.showNotification(payload.title || 'Rellm', {
         body: payload.body || '',
         icon: payload.icon || '/favicon.png',
         badge: '/favicon.png',
@@ -47,11 +47,11 @@ self.addEventListener('push', function (event) {
   );
 });
 
-// Navigates an already-open Jonline tab straight to the Message the notification was about (a
+// Navigates an already-open Rellm tab straight to the Message the notification was about (a
 // full navigation, not an in-app route change -- `WindowClient.navigate()` has no way to hand
 // control back to the already-running Elm app's own router), falling back to just focusing it if
 // navigation isn't supported (e.g. `client.navigate` is missing in some Safari versions), or
-// opening a fresh tab there if no Jonline tab is open at all.
+// opening a fresh tab there if no Rellm tab is open at all.
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   var targetUrl = (event.notification.data && event.notification.data.url) || '/';

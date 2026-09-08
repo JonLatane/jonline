@@ -1,8 +1,8 @@
-import { FederatedEvent, FederatedUser, IdentifiedEventInstance, JonlineServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedUser, IdentifiedEventInstance, RellmServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { Author, Visibility } from "@jonline/api";
-import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
+import { Author, Visibility } from "@rellm/api";
+import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from "@rellm/ui";
 import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink, Link } from "@tamagui/lucide-icons";
 import { useAnonymousAuthToken, useComponentKey, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
@@ -22,7 +22,7 @@ type Props = {
   tiny?: boolean;
   showSubscriptions?: {
     user?: FederatedUser,
-    servers?: JonlineServer[],
+    servers?: RellmServer[],
   }
 };
 export const EventCalendarExporter: React.FC<Props> = ({

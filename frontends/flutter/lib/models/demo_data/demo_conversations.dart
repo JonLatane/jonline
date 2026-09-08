@@ -1,19 +1,19 @@
 import 'dart:math';
 
-import 'package:jonline/generated/events.pb.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:rellm/generated/events.pb.dart';
+import 'package:rellm/models/rellm_account_operations.dart';
 
 import '../../app_state.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/posts.pb.dart';
-import '../jonline_account.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_clients.dart';
 import 'demo_accounts.dart';
 
 createDemoConversations(
-    JonlineAccount account, Function(String) showSnackBar, AppState appState,
+    RellmAccount account, Function(String) showSnackBar, AppState appState,
     {bool randomizePosts = false}) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -26,7 +26,7 @@ createDemoConversations(
   final events = (await client.getEvents(GetEventsRequest()
         ..listingType = EventListingType.ALL_ACCESSIBLE_EVENTS))
       .events;
-  List<JonlineAccount> sideAccounts =
+  List<RellmAccount> sideAccounts =
       await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
   await generateConversations(client, account, showSnackBar, appState,
@@ -34,15 +34,15 @@ createDemoConversations(
 }
 
 Future<void> generateConversations(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
     List<Post> topLevelPosts,
-    List<JonlineAccount> sideAccounts) async {
+    List<RellmAccount> sideAccounts) async {
   final List<Post> posts = List.of(topLevelPosts, growable: true);
 
-  List<JonlineAccount> replyAccounts = [
+  List<RellmAccount> replyAccounts = [
     account,
     ...sideAccounts,
     ...sideAccounts

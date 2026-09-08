@@ -2,7 +2,7 @@ module Components.PostReplies exposing (Model, Msg, ReplyLoadStatus, init, refre
 
 {-| Threaded replies for a single Post (see `Pages.Post.PostId_`) -- the
 `Post` proto is itself recursive/graph-shaped via its own `replies` field (see
-`Proto.Jonline.Post`'s doc comment), so `Model` just wraps a `root` Post and
+`Proto.Rellm.Post`'s doc comment), so `Model` just wraps a `root` Post and
 tracks, per-node (`statuses`, keyed by Post id), whether that node's own
 `replies` have been explicitly (re-)loaded via `GetPosts`'s `reply_depth`.
 
@@ -32,7 +32,7 @@ import Grpc
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (class, style)
 import Html.Keyed
-import Proto.Jonline exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
+import Proto.Rellm exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel

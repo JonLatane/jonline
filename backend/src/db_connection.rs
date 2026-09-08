@@ -32,7 +32,7 @@ pub fn establish_connection() -> PgConnection {
 }
 
 /// Mirrors `establish_pool`, but points at `TEST_DATABASE_URL` (a separate database, e.g.
-/// `jonline_test` alongside the `jonline_dev` pointed to by `DATABASE_URL`) so integration tests
+/// `rellm_test` alongside the `rellm_dev` pointed to by `DATABASE_URL`) so integration tests
 /// never touch dev data. Used only by `crate::tests::factories::test_conn`.
 pub fn establish_test_pool() -> PgPool {
     dotenv().ok();

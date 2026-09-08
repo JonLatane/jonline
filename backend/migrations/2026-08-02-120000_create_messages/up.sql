@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gin;
 
 CREATE TABLE messages (
   id BIGSERIAL PRIMARY KEY,
-  -- Set for messages composed by a Jonline user (e.g. future in-app direct messages). NULL for
+  -- Set for messages composed by a Rellm user (e.g. future in-app direct messages). NULL for
   -- inbound email, which has no local sender account. The /email endpoint never sets this.
   from_user_id BIGINT REFERENCES users ON DELETE SET NULL,
   subject VARCHAR,

@@ -1,5 +1,5 @@
-import { Moderation, UserListingType } from "@jonline/api";
-import { useDebounce } from "@jonline/ui";
+import { Moderation, UserListingType } from "@rellm/api";
+import { useDebounce } from "@rellm/ui";
 import { FederatedUser, getMembersPage, getServersMissingUsersPage, getUsersPage, loadGroupMembers, loadUsersPage, parseFederatedId } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { PaginationResults } from ".";

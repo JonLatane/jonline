@@ -1,4 +1,4 @@
-import { EventInstance } from '@jonline/api';
+import { EventInstance } from '@rellm/api';
 import { describe, expect, test } from 'vitest';
 import { instanceTimeSort, isNotPastInstance, isPastInstance, timeSort } from './time';
 

@@ -13,7 +13,7 @@
 <title>cluster0</title>
 <polygon fill="lightgrey" stroke="lightgrey" points="8,-8 8,-333.77 490,-333.77 490,-8 8,-8"/>
 <polygon fill="none" stroke="lightgrey" points="197.25,-304.27 197.25,-326.77 300.75,-326.77 300.75,-304.27 197.25,-304.27"/>
-<text text-anchor="start" x="229.12" y="-311.47" font-family="Times,serif" font-weight="bold" font-size="14.00">jonline</text>
+<text text-anchor="start" x="233.25" y="-311.47" font-family="Times,serif" font-weight="bold" font-size="14.00">rellm</text>
 <polygon fill="none" stroke="lightgrey" points="197.25,-279.77 197.25,-302.27 300.75,-302.27 300.75,-279.77 197.25,-279.77"/>
 <text text-anchor="start" x="200.25" y="-285.97" font-family="Times,serif" font-size="14.00">(K8s Namespace)</text>
 <polygon fill="none" stroke="lightgrey" points="194.25,-276.77 194.25,-329.77 303.75,-329.77 303.75,-276.77 194.25,-276.77"/>
@@ -55,17 +55,17 @@
 <path fill="none" stroke="black" stroke-width="2" d="M645,-521.85C645,-513.11 645,-504.57 645,-496.97"/>
 <polygon fill="black" stroke="black" stroke-width="2" points="648.5,-498.58 645,-488.58 641.5,-498.58 648.5,-498.58"/>
 </g>
-<!-- jonlineio -->
+<!-- rellmio -->
 <g id="node3" class="node">
-<title>jonlineio</title>
+<title>rellmio</title>
 <polygon fill="none" stroke="black" points="482.88,-412.27 421.12,-412.27 421.12,-376.27 488.88,-376.27 488.88,-406.27 482.88,-412.27"/>
 <polyline fill="none" stroke="black" points="482.88,-412.27 482.88,-406.27"/>
 <polyline fill="none" stroke="black" points="488.88,-406.27 482.88,-406.27"/>
 <text text-anchor="middle" x="455" y="-389.22" font-family="Times,serif" font-size="14.00">jonline.io</text>
 </g>
-<!-- resolve_dns&#45;&gt;jonlineio -->
+<!-- resolve_dns&#45;&gt;rellmio -->
 <g id="edge2" class="edge">
-<title>resolve_dns&#45;&gt;jonlineio</title>
+<title>resolve_dns&#45;&gt;rellmio</title>
 <path fill="none" stroke="black" stroke-dasharray="1,5" d="M598.52,-448.9C568.38,-437.64 529.34,-423.05 499.59,-411.93"/>
 <polygon fill="black" stroke="black" points="501.09,-408.75 490.5,-408.53 498.64,-415.31 501.09,-408.75"/>
 </g>
@@ -97,53 +97,53 @@
 <path fill="none" stroke="black" stroke-dasharray="1,5" d="M701.02,-452.41C751.22,-439.99 824.51,-421.86 875.01,-409.37"/>
 <polygon fill="black" stroke="black" points="875.72,-412.8 884.58,-407 874.04,-406 875.72,-412.8"/>
 </g>
-<!-- jonline0 -->
+<!-- rellm0 -->
 <g id="node6" class="node">
-<title>jonline0</title>
+<title>rellm0</title>
 <ellipse fill="white" stroke="white" cx="221" cy="-221.63" rx="97.76" ry="43.13"/>
 <polygon fill="none" stroke="white" points="162.88,-222.63 162.88,-245.13 279.12,-245.13 279.12,-222.63 162.88,-222.63"/>
-<text text-anchor="start" x="201.12" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">jonline</text>
+<text text-anchor="start" x="205.25" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">rellm</text>
 <polygon fill="none" stroke="white" points="162.88,-198.13 162.88,-220.63 279.12,-220.63 279.12,-198.13 162.88,-198.13"/>
 <text text-anchor="start" x="165.88" y="-204.33" font-family="Times,serif" font-size="14.00">(K8s LoadBalancer)</text>
 <polygon fill="none" stroke="white" points="159.88,-195.13 159.88,-248.13 282.12,-248.13 282.12,-195.13 159.88,-195.13"/>
 </g>
-<!-- jonlineio&#45;&gt;jonline0 -->
+<!-- rellmio&#45;&gt;rellm0 -->
 <g id="edge8" class="edge">
-<title>jonlineio&#45;&gt;jonline0</title>
+<title>rellmio&#45;&gt;rellm0</title>
 <path fill="none" stroke="black" d="M431.28,-375.97C396.13,-350.34 329.11,-301.47 280.15,-265.77"/>
 <polygon fill="black" stroke="black" points="282.29,-262.99 272.15,-259.93 278.16,-268.65 282.29,-262.99"/>
 <text text-anchor="start" x="404.46" y="-345.97" font-family="Times,serif" font-weight="bold" font-size="14.00">$12/mo</text>
 </g>
-<!-- jonline1 -->
+<!-- rellm1 -->
 <g id="node10" class="node">
-<title>jonline1</title>
+<title>rellm1</title>
 <ellipse fill="white" stroke="white" cx="645" cy="-221.63" rx="97.76" ry="43.13"/>
 <polygon fill="none" stroke="white" points="586.88,-222.63 586.88,-245.13 703.12,-245.13 703.12,-222.63 586.88,-222.63"/>
-<text text-anchor="start" x="625.12" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">jonline</text>
+<text text-anchor="start" x="629.25" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">rellm</text>
 <polygon fill="none" stroke="white" points="586.88,-198.13 586.88,-220.63 703.12,-220.63 703.12,-198.13 586.88,-198.13"/>
 <text text-anchor="start" x="589.88" y="-204.33" font-family="Times,serif" font-size="14.00">(K8s LoadBalancer)</text>
 <polygon fill="none" stroke="white" points="583.88,-195.13 583.88,-248.13 706.12,-248.13 706.12,-195.13 583.88,-195.13"/>
 </g>
-<!-- oakcitysocial&#45;&gt;jonline1 -->
+<!-- oakcitysocial&#45;&gt;rellm1 -->
 <g id="edge12" class="edge">
-<title>oakcitysocial&#45;&gt;jonline1</title>
+<title>oakcitysocial&#45;&gt;rellm1</title>
 <path fill="none" stroke="black" d="M645,-375.97C645,-352.83 645,-310.74 645,-276.51"/>
 <polygon fill="black" stroke="black" points="648.5,-276.75 645,-266.75 641.5,-276.75 648.5,-276.75"/>
 <text text-anchor="start" x="645" y="-345.97" font-family="Times,serif" font-weight="bold" font-size="14.00">$12/mo</text>
 </g>
-<!-- jonline2 -->
+<!-- rellm2 -->
 <g id="node14" class="node">
-<title>jonline2</title>
+<title>rellm2</title>
 <ellipse fill="white" stroke="white" cx="1110" cy="-221.63" rx="97.76" ry="43.13"/>
 <polygon fill="none" stroke="white" points="1051.88,-222.63 1051.88,-245.13 1168.12,-245.13 1168.12,-222.63 1051.88,-222.63"/>
-<text text-anchor="start" x="1090.12" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">jonline</text>
+<text text-anchor="start" x="1094.25" y="-229.83" font-family="Times,serif" font-weight="bold" font-size="14.00">rellm</text>
 <polygon fill="none" stroke="white" points="1051.88,-198.13 1051.88,-220.63 1168.12,-220.63 1168.12,-198.13 1051.88,-198.13"/>
 <text text-anchor="start" x="1054.88" y="-204.33" font-family="Times,serif" font-size="14.00">(K8s LoadBalancer)</text>
 <polygon fill="none" stroke="white" points="1048.88,-195.13 1048.88,-248.13 1171.12,-248.13 1171.12,-195.13 1048.88,-195.13"/>
 </g>
-<!-- bullcitysocial&#45;&gt;jonline2 -->
+<!-- bullcitysocial&#45;&gt;rellm2 -->
 <g id="edge16" class="edge">
-<title>bullcitysocial&#45;&gt;jonline2</title>
+<title>bullcitysocial&#45;&gt;rellm2</title>
 <path fill="none" stroke="black" d="M950.05,-375.97C976.01,-351.08 1024.84,-304.27 1061.75,-268.89"/>
 <polygon fill="black" stroke="black" points="1064.01,-271.56 1068.81,-262.12 1059.17,-266.51 1064.01,-271.56"/>
 <text text-anchor="start" x="984.6" y="-345.97" font-family="Times,serif" font-weight="bold" font-size="14.00">$12/mo</text>
@@ -155,9 +155,9 @@
 <path fill="none" stroke="white" d="M70,-85.73C70,-83.92 57.9,-82.45 43,-82.45 28.1,-82.45 16,-83.92 16,-85.73"/>
 <text text-anchor="middle" x="43" y="-65.95" font-family="Times,serif" font-size="14.00">Minio</text>
 </g>
-<!-- jonline0&#45;&gt;minio0 -->
+<!-- rellm0&#45;&gt;minio0 -->
 <g id="edge5" class="edge">
-<title>jonline0&#45;&gt;minio0</title>
+<title>rellm0&#45;&gt;minio0</title>
 <path fill="none" stroke="black" d="M137.78,-198.77C115.99,-189.8 94,-177.42 77.5,-160.5 61.48,-144.07 52.68,-119.36 47.99,-100.22"/>
 <polygon fill="black" stroke="black" points="51.45,-99.65 45.89,-90.63 44.61,-101.15 51.45,-99.65"/>
 <text text-anchor="start" x="77.5" y="-148.2" font-family="Times,serif" font-size="14.00">5GB @ </text>
@@ -170,9 +170,9 @@
 <path fill="none" stroke="white" d="M149.88,-85.73C149.88,-83.92 136.04,-82.45 119,-82.45 101.96,-82.45 88.12,-83.92 88.12,-85.73"/>
 <text text-anchor="middle" x="119" y="-65.95" font-family="Times,serif" font-size="14.00">Postgres</text>
 </g>
-<!-- jonline0&#45;&gt;postgres0 -->
+<!-- rellm0&#45;&gt;postgres0 -->
 <g id="edge6" class="edge">
-<title>jonline0&#45;&gt;postgres0</title>
+<title>rellm0&#45;&gt;postgres0</title>
 <path fill="none" stroke="black" d="M193.13,-180.02C175.35,-154.11 152.82,-121.28 137.28,-98.64"/>
 <polygon fill="black" stroke="black" points="140.29,-96.84 131.74,-90.57 134.52,-100.8 140.29,-96.84"/>
 <text text-anchor="start" x="179.14" y="-148.2" font-family="Times,serif" font-size="14.00">1GB @ </text>
@@ -183,7 +183,7 @@
 <title>tls0</title>
 <polygon fill="#c1b2ff" stroke="#c1b2ff" points="482.25,-126 167.75,-126 167.75,-16 482.25,-16 482.25,-126"/>
 <polygon fill="none" stroke="#c1b2ff" points="178.75,-96.5 178.75,-119 471.25,-119 471.25,-96.5 178.75,-96.5"/>
-<text text-anchor="start" x="297.62" y="-102.7" font-family="Times,serif" font-size="14.00">jonline&#45;tls</text>
+<text text-anchor="start" x="301.75" y="-102.7" font-family="Times,serif" font-size="14.00">rellm&#45;tls</text>
 <polygon fill="none" stroke="#c1b2ff" points="178.75,-72 178.75,-94.5 471.25,-94.5 471.25,-72 178.75,-72"/>
 <text text-anchor="start" x="290.88" y="-78.2" font-family="Times,serif" font-size="14.00">(K8s Secret)</text>
 <polygon fill="none" stroke="#c1b2ff" points="178.75,-47.5 178.75,-70 471.25,-70 471.25,-47.5 178.75,-47.5"/>
@@ -193,9 +193,9 @@
 <text text-anchor="start" x="365.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="175.75,-20 175.75,-122 474.25,-122 474.25,-20 175.75,-20"/>
 </g>
-<!-- jonline0&#45;&gt;tls0 -->
+<!-- rellm0&#45;&gt;tls0 -->
 <g id="edge7" class="edge">
-<title>jonline0&#45;&gt;tls0</title>
+<title>rellm0&#45;&gt;tls0</title>
 <path fill="none" stroke="black" d="M256.23,-180.93C261.7,-174.26 267.14,-167.29 272,-160.5 277.61,-152.67 283.2,-144.23 288.53,-135.77"/>
 <polygon fill="black" stroke="black" points="291.34,-137.88 293.63,-127.54 285.39,-134.2 291.34,-137.88"/>
 </g>
@@ -206,9 +206,9 @@
 <path fill="none" stroke="white" d="M560,-85.73C560,-83.92 547.9,-82.45 533,-82.45 518.1,-82.45 506,-83.92 506,-85.73"/>
 <text text-anchor="middle" x="533" y="-65.95" font-family="Times,serif" font-size="14.00">Minio</text>
 </g>
-<!-- jonline1&#45;&gt;minio1 -->
+<!-- rellm1&#45;&gt;minio1 -->
 <g id="edge9" class="edge">
-<title>jonline1&#45;&gt;minio1</title>
+<title>rellm1&#45;&gt;minio1</title>
 <path fill="none" stroke="black" d="M569.84,-193.8C555.81,-185.33 542.93,-174.42 534.5,-160.5 523.72,-142.71 523.92,-118.99 526.5,-100.59"/>
 <polygon fill="black" stroke="black" points="529.93,-101.32 528.19,-90.87 523.03,-100.12 529.93,-101.32"/>
 <text text-anchor="start" x="534.5" y="-148.2" font-family="Times,serif" font-size="14.00">5GB @ </text>
@@ -221,9 +221,9 @@
 <path fill="none" stroke="white" d="M639.88,-85.73C639.88,-83.92 626.04,-82.45 609,-82.45 591.96,-82.45 578.12,-83.92 578.12,-85.73"/>
 <text text-anchor="middle" x="609" y="-65.95" font-family="Times,serif" font-size="14.00">Postgres</text>
 </g>
-<!-- jonline1&#45;&gt;postgres1 -->
+<!-- rellm1&#45;&gt;postgres1 -->
 <g id="edge10" class="edge">
-<title>jonline1&#45;&gt;postgres1</title>
+<title>rellm1&#45;&gt;postgres1</title>
 <path fill="none" stroke="black" d="M634.78,-178.44C628.72,-153.41 621.2,-122.37 615.85,-100.28"/>
 <polygon fill="black" stroke="black" points="619.31,-99.69 613.55,-90.79 612.5,-101.34 619.31,-99.69"/>
 <text text-anchor="start" x="630.22" y="-148.2" font-family="Times,serif" font-size="14.00">1GB @ </text>
@@ -234,7 +234,7 @@
 <title>tls1</title>
 <polygon fill="#c1b2ff" stroke="#c1b2ff" points="972.25,-126 657.75,-126 657.75,-16 972.25,-16 972.25,-126"/>
 <polygon fill="none" stroke="#c1b2ff" points="668.75,-96.5 668.75,-119 961.25,-119 961.25,-96.5 668.75,-96.5"/>
-<text text-anchor="start" x="787.62" y="-102.7" font-family="Times,serif" font-size="14.00">jonline&#45;tls</text>
+<text text-anchor="start" x="791.75" y="-102.7" font-family="Times,serif" font-size="14.00">rellm&#45;tls</text>
 <polygon fill="none" stroke="#c1b2ff" points="668.75,-72 668.75,-94.5 961.25,-94.5 961.25,-72 668.75,-72"/>
 <text text-anchor="start" x="780.88" y="-78.2" font-family="Times,serif" font-size="14.00">(K8s Secret)</text>
 <polygon fill="none" stroke="#c1b2ff" points="668.75,-47.5 668.75,-70 961.25,-70 961.25,-47.5 668.75,-47.5"/>
@@ -244,9 +244,9 @@
 <text text-anchor="start" x="855.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="665.75,-20 665.75,-122 964.25,-122 964.25,-20 665.75,-20"/>
 </g>
-<!-- jonline1&#45;&gt;tls1 -->
+<!-- rellm1&#45;&gt;tls1 -->
 <g id="edge11" class="edge">
-<title>jonline1&#45;&gt;tls1</title>
+<title>rellm1&#45;&gt;tls1</title>
 <path fill="none" stroke="black" d="M694.34,-183.91C703.99,-176.35 713.93,-168.31 723,-160.5 732.61,-152.22 742.52,-143.22 752.12,-134.23"/>
 <polygon fill="black" stroke="black" points="754.49,-136.8 759.35,-127.39 749.68,-131.72 754.49,-136.8"/>
 </g>
@@ -257,9 +257,9 @@
 <path fill="none" stroke="white" d="M1050,-85.73C1050,-83.92 1037.9,-82.45 1023,-82.45 1008.1,-82.45 996,-83.92 996,-85.73"/>
 <text text-anchor="middle" x="1023" y="-65.95" font-family="Times,serif" font-size="14.00">Minio</text>
 </g>
-<!-- jonline2&#45;&gt;minio2 -->
+<!-- rellm2&#45;&gt;minio2 -->
 <g id="edge13" class="edge">
-<title>jonline2&#45;&gt;minio2</title>
+<title>rellm2&#45;&gt;minio2</title>
 <path fill="none" stroke="black" d="M1042.73,-190.08C1031.8,-182.05 1021.96,-172.26 1015.5,-160.5 1005.47,-142.23 1008.12,-118.58 1012.86,-100.32"/>
 <polygon fill="black" stroke="black" points="1016.16,-101.52 1015.65,-90.94 1009.45,-99.53 1016.16,-101.52"/>
 <text text-anchor="start" x="1015.5" y="-148.2" font-family="Times,serif" font-size="14.00">5GB @ </text>
@@ -272,9 +272,9 @@
 <path fill="none" stroke="white" d="M1129.88,-85.73C1129.88,-83.92 1116.04,-82.45 1099,-82.45 1081.96,-82.45 1068.12,-83.92 1068.12,-85.73"/>
 <text text-anchor="middle" x="1099" y="-65.95" font-family="Times,serif" font-size="14.00">Postgres</text>
 </g>
-<!-- jonline2&#45;&gt;postgres2 -->
+<!-- rellm2&#45;&gt;postgres2 -->
 <g id="edge14" class="edge">
-<title>jonline2&#45;&gt;postgres2</title>
+<title>rellm2&#45;&gt;postgres2</title>
 <path fill="none" stroke="black" d="M1109.63,-178.03C1109.33,-166.94 1108.83,-155.02 1108,-144 1106.92,-129.67 1105.02,-113.81 1103.24,-100.64"/>
 <polygon fill="black" stroke="black" points="1106.73,-100.33 1101.87,-90.91 1099.79,-101.3 1106.73,-100.33"/>
 <text text-anchor="start" x="1108.9" y="-148.2" font-family="Times,serif" font-size="14.00">1GB @ </text>
@@ -285,7 +285,7 @@
 <title>tls2</title>
 <polygon fill="#c1b2ff" stroke="#c1b2ff" points="1462.25,-126 1147.75,-126 1147.75,-16 1462.25,-16 1462.25,-126"/>
 <polygon fill="none" stroke="#c1b2ff" points="1158.75,-96.5 1158.75,-119 1451.25,-119 1451.25,-96.5 1158.75,-96.5"/>
-<text text-anchor="start" x="1277.62" y="-102.7" font-family="Times,serif" font-size="14.00">jonline&#45;tls</text>
+<text text-anchor="start" x="1281.75" y="-102.7" font-family="Times,serif" font-size="14.00">rellm&#45;tls</text>
 <polygon fill="none" stroke="#c1b2ff" points="1158.75,-72 1158.75,-94.5 1451.25,-94.5 1451.25,-72 1158.75,-72"/>
 <text text-anchor="start" x="1270.88" y="-78.2" font-family="Times,serif" font-size="14.00">(K8s Secret)</text>
 <polygon fill="none" stroke="#c1b2ff" points="1158.75,-47.5 1158.75,-70 1451.25,-70 1451.25,-47.5 1158.75,-47.5"/>
@@ -295,9 +295,9 @@
 <text text-anchor="start" x="1345.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="1155.75,-20 1155.75,-122 1454.25,-122 1454.25,-20 1155.75,-20"/>
 </g>
-<!-- jonline2&#45;&gt;tls2 -->
+<!-- rellm2&#45;&gt;tls2 -->
 <g id="edge15" class="edge">
-<title>jonline2&#45;&gt;tls2</title>
+<title>rellm2&#45;&gt;tls2</title>
 <path fill="none" stroke="black" d="M1165.12,-185.76C1177.14,-177.73 1189.65,-169.03 1201,-160.5 1212.14,-152.13 1223.65,-142.93 1234.77,-133.74"/>
 <polygon fill="black" stroke="black" points="1236.99,-136.44 1242.43,-127.34 1232.51,-131.07 1236.99,-136.44"/>
 </g>

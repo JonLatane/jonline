@@ -11,7 +11,7 @@ module Components.Users.Resolver exposing
     , update
     )
 
-{-| Fetches a `Proto.Jonline.User` from a specific (possibly not-yet-connected)
+{-| Fetches a `Proto.Rellm.User` from a specific (possibly not-yet-connected)
 server, by id or by username -- the common guts `Components.Pages.UserProfilePage`
 (which additionally lets the viewer edit the resolved profile once loaded) and
 `Pages.UsernameOrCustomTab_.Posts` (which just needs the resolved id, to filter
@@ -29,7 +29,7 @@ same event-driven-plus-slow-poll approach as `Components.Pages.PostsPage`.
 import Components.Users as Users
 import Effect exposing (Effect)
 import Grpc
-import Proto.Jonline
+import Proto.Rellm
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task
@@ -45,7 +45,7 @@ type alias Model =
 
 
 type Msg
-    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
+    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -59,7 +59,7 @@ type Lookup
 
 type Status
     = Loading
-    | Loaded Proto.Jonline.User
+    | Loaded Proto.Rellm.User
     | Failed
 
 
@@ -158,7 +158,7 @@ host is currently a known, connected server -- shared by `fetchIfReady` (only
 kicked off once) and `refetch` (kicked off unconditionally, e.g. after a Real
 Name/bio/permissions save succeeds).
 -}
-fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
+fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
 fetchTask shared model =
     AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost
         |> Maybe.map

@@ -1,4 +1,4 @@
-import { Label, Paragraph, Switch, YStack } from '@jonline/ui';
+import { Label, Paragraph, Switch, YStack } from '@rellm/ui';
 import { useComponentKey } from 'app/hooks';
 import { useCurrentAccount, useAppDispatch } from 'app/hooks';
 import React from 'react';

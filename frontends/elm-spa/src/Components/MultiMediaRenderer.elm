@@ -31,8 +31,8 @@ handling.
 import Components.MediaRenderer as MediaRenderer
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
-import Proto.Jonline exposing (MediaReference)
-import Proto.Jonline.PostMediaLayout exposing (PostMediaLayout(..))
+import Proto.Rellm exposing (MediaReference)
+import Proto.Rellm.PostMediaLayout exposing (PostMediaLayout(..))
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 

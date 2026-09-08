@@ -88,7 +88,7 @@ class WebUserInterface extends $pb.ProtobufEnum {
   const WebUserInterface._($core.int v, $core.String n) : super(v, n);
 }
 
-/// The default navigation tabs in Jonline's Elm UI.
+/// The default navigation tabs in Rellm's Elm UI.
 class NavigationTab extends $pb.ProtobufEnum {
   static const NavigationTab HOME_TAB = NavigationTab._(0, _omitEnumNames ? '' : 'HOME_TAB');
   static const NavigationTab EVENTS_TAB = NavigationTab._(10, _omitEnumNames ? '' : 'EVENTS_TAB');

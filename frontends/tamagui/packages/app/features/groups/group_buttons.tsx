@@ -1,5 +1,5 @@
-import { Group } from '@jonline/api';
-import { Button, Heading, Image, Paragraph, Spinner, Text, XStack, YStack, useMedia } from '@jonline/ui';
+import { Group } from '@rellm/api';
+import { Button, Heading, Image, Paragraph, Spinner, Text, XStack, YStack, useMedia } from '@rellm/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';

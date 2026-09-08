@@ -26,7 +26,7 @@ const CHARS_PER_TOKEN_ESTIMATE: usize = 4;
 const IMAGE_TOKEN_ESTIMATE: i64 = 258;
 
 /// Generates (or edits, given reference `media_ids`) an image via one of the current user's
-/// [`AvailableAIModel`](#jonline-AvailableAIModel)s, stores it as a new `Media`, and -- if `target`
+/// [`AvailableAIModel`](#rellm-AvailableAIModel)s, stores it as a new `Media`, and -- if `target`
 /// is set -- prepends it to that Post's (or Event's own Post's) `media`. See `GenerateMediaRequest`'s
 /// own doc for the full shape.
 pub async fn generate_media(
@@ -485,7 +485,7 @@ fn combine_title_or_content(event_side: &Option<String>, instance_side: &Option<
     }
 }
 
-/// Best-effort `https://{frontend_host}/{kind}/{id}` link back to this Jonline server's own
+/// Best-effort `https://{frontend_host}/{kind}/{id}` link back to this Rellm server's own
 /// frontend, mirroring `sync_post`/`sync_event_instance`'s own `post_url`/`event_url` -- `None` if
 /// `external_cdn_config.frontend_host` isn't configured (this RPC has no HTTP `Host` header to fall
 /// back on).

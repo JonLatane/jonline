@@ -1,6 +1,6 @@
 module Components.Authors exposing (avatarUrl, badges, compactBadges, link, name)
 
-{-| Everything about displaying a `Proto.Jonline.Author` -- the
+{-| Everything about displaying a `Proto.Rellm.Author` -- the
 post/authorship-centric, cacheable-in-the-UI sibling of `User` embedded
 directly in a `Post` (see `authentication.proto`'s own doc comment on
 `Author`: "UI can cross-reference user details from its own cache (for things
@@ -21,7 +21,7 @@ Used by `Components.Posts`' `postCard`/`postDetail`, `Components.PostReplies`'
 the exact same author rendering, badges included, rather than `PostReplies`
 (the one place badges were first added) alone.
 
-`badges`/`compactBadges` also work directly against a `Proto.Jonline.User`
+`badges`/`compactBadges` also work directly against a `Proto.Rellm.User`
 (see `Components.Pages.UserProfilePage.usernameHeading`) -- both types have
 their own `permissions : List Permission` field, so these two are written
 against the structural `{ a | permissions : List Permission }` rather than
@@ -45,8 +45,8 @@ append the result without their own empty-badges check.
 import Components.Users as Users
 import Html exposing (Html, a, div, img, span, text)
 import Html.Attributes exposing (alt, attribute, class, src, title)
-import Proto.Jonline exposing (Author)
-import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Rellm exposing (Author)
+import Proto.Rellm.Permission exposing (Permission(..))
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 

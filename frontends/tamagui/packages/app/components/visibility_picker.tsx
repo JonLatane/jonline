@@ -1,5 +1,5 @@
-import { Visibility } from "@jonline/api";
-import { Heading, Label, Paragraph, Select, Tooltip, XStack, YStack } from "@jonline/ui";
+import { Visibility } from "@rellm/api";
+import { Heading, Label, Paragraph, Select, Tooltip, XStack, YStack } from "@rellm/ui";
 import { Check, ChevronDown } from "@tamagui/lucide-icons";
 import { useComponentKey } from "app/hooks";
 import { useCallback, useState } from "react";

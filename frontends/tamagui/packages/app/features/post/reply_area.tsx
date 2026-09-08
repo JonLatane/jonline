@@ -1,5 +1,5 @@
-import { Permission, Post } from '@jonline/api'
-import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
+import { Permission, Post } from '@rellm/api'
+import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@rellm/ui'
 import { ChevronRight, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { MediaRef, useAccountOrServerContext } from 'app/contexts'

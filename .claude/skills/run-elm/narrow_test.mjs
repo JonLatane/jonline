@@ -23,9 +23,9 @@ await page.click('body', { position: { x: 5, y: 400 } });
 await page.waitForTimeout(300);
 await page.click('button[title="Create New"]');
 await page.waitForSelector(".create-new-panel-visibility-select");
-await page.screenshot({ path: "/private/tmp/claude-501/-Users-jonlatane-Development-jonline/29c805e4-32d4-4649-a7b3-5ffe794fe304/scratchpad/narrow_post_mode.png" });
+await page.screenshot({ path: "/private/tmp/claude-501/-Users-jonlatane-Development-rellm/29c805e4-32d4-4649-a7b3-5ffe794fe304/scratchpad/narrow_post_mode.png" });
 await page.click('.create-new-panel-tab:has-text("New Event")');
 await page.waitForTimeout(300);
-await page.screenshot({ path: "/private/tmp/claude-501/-Users-jonlatane-Development-jonline/29c805e4-32d4-4649-a7b3-5ffe794fe304/scratchpad/narrow_event_mode.png" });
+await page.screenshot({ path: "/private/tmp/claude-501/-Users-jonlatane-Development-rellm/29c805e4-32d4-4649-a7b3-5ffe794fe304/scratchpad/narrow_event_mode.png" });
 
 await browser.close();

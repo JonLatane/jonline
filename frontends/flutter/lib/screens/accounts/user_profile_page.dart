@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/jonline_state.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/screens/people/person_preview.dart';
-import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/enum_conversions.dart';
+import 'package:rellm/rellm_state.dart';
+import 'package:rellm/models/rellm_clients.dart';
+import 'package:rellm/screens/people/person_preview.dart';
+import 'package:rellm/utils/colors.dart';
+import 'package:rellm/utils/enum_conversions.dart';
 import 'package:logging/logging.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -15,10 +15,10 @@ import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
-import '../../models/jonline_account.dart';
-import '../../models/jonline_account_operations.dart';
-import '../../models/jonline_operations.dart';
-import '../../models/jonline_server.dart';
+import '../../models/rellm_account.dart';
+import '../../models/rellm_account_operations.dart';
+import '../../models/rellm_operations.dart';
+import '../../models/rellm_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
@@ -62,25 +62,25 @@ class MyProfilePage extends UserProfilePage {
   State<UserProfilePage> createState() => _UserProfilePageState();
 }
 
-class _UserProfilePageState extends JonlineState<UserProfilePage> {
+class _UserProfilePageState extends RellmState<UserProfilePage> {
   static final log = Logger('_UserProfilePageState');
   bool loading = true;
-  JonlineAccount? account;
+  RellmAccount? account;
   User? userData;
   bool get loaded => userData != null;
   TextEditingController usernameController = TextEditingController();
 
   bool get ownProfile =>
       widget.accountId != null ||
-      widget.userId == JonlineAccount.selectedAccount?.userId;
+      widget.userId == RellmAccount.selectedAccount?.userId;
   bool get admin => widget.accountId != null
       ? userData?.permissions.contains(Permission.ADMIN) == true
-      : JonlineAccount.selectedAccount?.permissions
+      : RellmAccount.selectedAccount?.permissions
               .contains(Permission.ADMIN) ==
           true;
   bool get moderator => widget.accountId != null
       ? userData?.permissions.contains(Permission.MODERATE_USERS) == true
-      : JonlineAccount.selectedAccount?.permissions
+      : RellmAccount.selectedAccount?.permissions
               .contains(Permission.MODERATE_USERS) ==
           true;
 
@@ -111,16 +111,16 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
   }
 
   updateProfileData() async {
-    JonlineAccount? account;
+    RellmAccount? account;
     User? userData;
     if (widget.accountId != null) {
-      account = (await JonlineAccount.accounts).firstWhere(
+      account = (await RellmAccount.accounts).firstWhere(
         (account) => account.id == widget.accountId,
       );
       await account.updateUserData();
       userData = account.user;
     } else {
-      final users = (await JonlineOperations.getUsers(
+      final users = (await RellmOperations.getUsers(
                   request: GetUsersRequest()..userId = widget.userId!))
               ?.users ??
           [];
@@ -141,7 +141,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (widget.accountId == null &&
-        JonlineServer.selectedServer.server != widget.server) {
+        RellmServer.selectedServer.server != widget.server) {
       context.replaceRoute(const PeopleRoute());
     }
     return Scaffold(
@@ -217,7 +217,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               PersonPreview(
                 usernameController: usernameController,
-                server: widget.server ?? JonlineServer.selectedServer.server,
+                server: widget.server ?? RellmServer.selectedServer.server,
                 person: Person(userData ?? User()),
                 navigable: false,
               ),
@@ -247,7 +247,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               //                           children: [
               //                             Expanded(
               //                               child: Text(
-              //                                   '${JonlineServer.selectedServer.server}/',
+              //                                   '${RellmServer.selectedServer.server}/',
               //                                   style: textTheme.bodySmall,
               //                                   maxLines: 1,
               //                                   overflow:
@@ -380,7 +380,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               if (admin || ownProfile)
                 Container(
                   key: Key(
-                      "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}"),
+                      "visibility-control-${(account ?? RellmAccount.selectedAccount)?.id}"),
                   child: MultiSelectChipField<vm.Visibility?>(
                     decoration: const BoxDecoration(),
                     // decoration: null,
@@ -395,7 +395,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                     items: vm.Visibility.values
                         .where((v) {
                           final account =
-                              this.account ?? JonlineAccount.selectedAccount;
+                              this.account ?? RellmAccount.selectedAccount;
                           return v != vm.Visibility.VISIBILITY_UNKNOWN &&
                               (account?.permissions.contains(
                                           Permission.PUBLISH_USERS_GLOBALLY) ==
@@ -511,7 +511,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                     try {
                       final account = (widget.accountId != null)
                           ? this.account
-                          : JonlineAccount.selectedAccount;
+                          : RellmAccount.selectedAccount;
                       await account!.ensureAccessToken();
                       await (await account.getClient())!.updateUser(userData!,
                           options: account.authenticatedCallOptions);

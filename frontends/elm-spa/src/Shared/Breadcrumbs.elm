@@ -40,7 +40,7 @@ import Gen.Route as Route
 import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, class, href, src, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Post, User)
+import Proto.Rellm exposing (Post, User)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
@@ -390,7 +390,7 @@ serverOverviewView basePath accountsPanelModel model =
     case AccountsPanel.serverForHost accountsPanelModel.servers model.host of
         Just server ->
             let
-                info : Proto.Jonline.ServerInfo
+                info : Proto.Rellm.ServerInfo
                 info =
                     AccountsPanel.serverInfoOf server
             in

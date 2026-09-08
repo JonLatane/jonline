@@ -1,5 +1,5 @@
-import { Permission } from '@jonline/api';
-import { Heading, XStack, YStack } from '@jonline/ui';
+import { Permission } from '@rellm/api';
+import { Heading, XStack, YStack } from '@rellm/ui';
 import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useCurrentAccount } from 'app/hooks';
 import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';

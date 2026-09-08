@@ -5,7 +5,7 @@ module Shared.Federation.Bluesky exposing
     , toPost
     )
 
-{-| Translates Bluesky's (AT Protocol) API into Jonline's `Post` shape, entirely client-side -- see
+{-| Translates Bluesky's (AT Protocol) API into Rellm's `Post` shape, entirely client-side -- see
 `Shared.AccountsPanel.BlueskyAccount`'s own doc for the connection side this feeds off of. Unlike
 Mastodon, there's no meaningful *unauthenticated* equivalent: a bare "public timeline" isn't a
 concept AT Proto's federated network has (every PDS only ever serves its own users' own posts/feeds,
@@ -17,9 +17,9 @@ account's own home timeline. See `Components.Pages.PostsPage.fetchFeedSource`'s 
 import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
-import Proto.Jonline exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
-import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
+import Proto.Rellm exposing (Author, Post, defaultAuthor, defaultMediaReference, defaultPost)
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
@@ -55,9 +55,9 @@ decoder =
         (Decode.maybe (Decode.at [ "post", "author", "avatar" ] Decode.string))
 
 
-{-| A `FeedPost`'s translation into a Jonline `Post` -- `id` is namespaced (`"bluesky:" ++
+{-| A `FeedPost`'s translation into a Rellm `Post` -- `id` is namespaced (`"bluesky:" ++
 feedPost.uri`, already globally unique on its own -- an `at://` URI embeds the author's DID) so it
-can never collide with a real Jonline post's own id, mirroring
+can never collide with a real Rellm post's own id, mirroring
 `Shared.Federation.Mastodon.toPost`'s own `"mastodon:"` namespacing. `link` is a real
 `https://bsky.app/...` URL (see `webUrl`) built from the `at://` URI, since that's meaningless to a
 browser directly. `visibility` is always `GLOBALPUBLIC`: everything in a Bluesky timeline is

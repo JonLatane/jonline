@@ -9,7 +9,7 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 /**
  * Post/authorship-centric version of User. UI can cross-reference user details

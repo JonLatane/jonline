@@ -1,6 +1,6 @@
-import { Post, PostContext } from "@jonline/api";
-import { Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from "@jonline/ui";
-import { reverseHorizontalAnimation } from '@jonline/ui/src/animations';
+import { Post, PostContext } from "@rellm/api";
+import { Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from "@rellm/ui";
+import { reverseHorizontalAnimation } from '@rellm/ui/src/animations';
 import { createSelector } from "@reduxjs/toolkit";
 import { ChevronLeft, Fullscreen, Info, ListEnd, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";

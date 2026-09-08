@@ -8,7 +8,7 @@ import { Provider } from 'app/provider'
 import Head from 'next/head'
 import React, { startTransition } from 'react'
 import type { SolitoAppProps } from 'solito'
-import { isSafari } from '@jonline/ui'
+import { isSafari } from '@rellm/ui'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
@@ -41,8 +41,8 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
   return (
     <>
       <Head>
-        <title>Jonline</title>
-        <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
+        <title>Rellm</title>
+        <meta name="description" content="Rellm is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
         {/* <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /> */}
         {/* <meta name="viewport" content="viewport-fit=cover" /> */}
         <link rel="icon" href="/favicon.ico" />
@@ -50,9 +50,9 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
 
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
-        {/** Note that these tags must be findable by tamagui_web.rs, so Jonline's Rust server 
+        {/** Note that these tags must be findable by tamagui_web.rs, so Rellm's Rust server 
          * can override them with Post/Event titles, images, etc. */}
-        <meta property="og:title" content="Jonline Social Link" />
+        <meta property="og:title" content="Rellm Social Link" />
         <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
         <meta property="og:image" content="/favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />

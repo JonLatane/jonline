@@ -1,7 +1,7 @@
 // don't import from here, that's handled already
 // instead this is just setting types for this folder
 
-import { config } from '@jonline/ui'
+import { config } from '@rellm/ui'
 
 type Conf = typeof config
 

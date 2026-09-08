@@ -34,7 +34,7 @@ import Components.Pages.PostPage as PostPage
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, text)
-import Proto.Jonline exposing (GetEventsResponse)
+import Proto.Rellm exposing (GetEventsResponse)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task

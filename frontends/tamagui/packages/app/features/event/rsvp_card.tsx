@@ -2,8 +2,8 @@ import { useFederatedDispatch } from "app/hooks";
 import { FederatedEvent, getCredentialClient, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
-import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
-import { Button, Card, Heading, Paragraph, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
+import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@rellm/api";
+import { Button, Card, Heading, Paragraph, XStack, YStack, standardAnimation, useMedia } from "@rellm/ui";
 import { Edit3 as Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { AccountOrServerContextProvider } from "app/contexts";

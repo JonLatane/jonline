@@ -1,8 +1,8 @@
-import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, ScrollView, Theme, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
+import { Permission } from "@rellm/api";
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, ScrollView, Theme, Tooltip, XStack, YStack, ZStack, useMedia } from '@rellm/ui';
 import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
-import { standardAnimation } from "@jonline/ui";
+import { standardAnimation } from "@rellm/ui";
 import { MediaRef, useGroupContext } from "app/contexts";
 import { useAppDispatch, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";

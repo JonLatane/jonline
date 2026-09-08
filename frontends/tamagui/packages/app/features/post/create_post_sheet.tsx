@@ -1,4 +1,4 @@
-import { Group, Permission, Post } from '@jonline/api';
+import { Group, Permission, Post } from '@rellm/api';
 import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
 import { FederatedGroup, FederatedPost, createGroupPost, createPost } from 'app/store';
 import React, { useCallback } from 'react';

@@ -13,7 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-/// Version information for the Jonline server.
+/// Version information for the Rellm server.
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
   factory GetServiceVersionResponse({
     $core.String? version,
@@ -28,7 +28,7 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetServiceVersionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'version')
     ..hasRequiredFields = false
   ;
@@ -54,7 +54,7 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   static GetServiceVersionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetServiceVersionResponse>(create);
   static GetServiceVersionResponse? _defaultInstance;
 
-  /// The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
+  /// The version of the Rellm server. May be suffixed with the GitHub SHA of the commit
   /// that generated the binary for the server.
   @$pb.TagNumber(1)
   $core.String get version => $_getSZ(0);
@@ -66,7 +66,7 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   void clearVersion() => clearField(1);
 }
 
-/// The federation configuration for a Jonline server.
+/// The federation configuration for a Rellm server.
 class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo({
     $core.Iterable<FederatedServer>? servers,
@@ -93,7 +93,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederationInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
     ..aOM<FacebookAuthConfig>(2, _omitFieldNames ? '' : 'facebookAuthConfig', subBuilder: FacebookAuthConfig.create)
     ..aOM<XTwitterAuthConfig>(3, _omitFieldNames ? '' : 'xTwitterAuthConfig', subBuilder: XTwitterAuthConfig.create)
@@ -141,7 +141,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   /// X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations
   /// for their Posts and EventInstances -- an admin registers one X Developer App here, and every
   /// user on the server connects their own X account through it via OAuth, the same relationship
-  /// `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#jonline-XTwitterAccount)
+  /// `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount)
   /// SyncDestinations always fail with `x_twitter_app_not_configured`.
   @$pb.TagNumber(3)
   XTwitterAuthConfig get xTwitterAuthConfig => $_getN(2);
@@ -162,7 +162,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   /// attempting to open an OAuth popup with no app to authorize against. (A client could instead
   /// dynamically self-register a throwaway app with the instance directly, via Mastodon's own
   /// `POST /api/v1/apps`, and skip this entirely -- Mastodon itself supports that. But that's a
-  /// client-side choice the Jonline protocol doesn't get involved in either way: this field only
+  /// client-side choice the Rellm protocol doesn't get involved in either way: this field only
   /// covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently
   /// across every client on this server rather than each one self-registering its own.)
   @$pb.TagNumber(4)
@@ -192,7 +192,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   factory FederatedServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederatedServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
     ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
     ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
@@ -252,7 +252,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   void clearPinnedByDefault() => clearField(3);
 }
 
-/// Some user on a Jonline server.
+/// Some user on a Rellm server.
 /// Most commonly a different server than the one serving up FederatedAccount data,
 /// but users may also federate multiple accounts on the same server.
 class FederatedAccount extends $pb.GeneratedMessage {
@@ -273,7 +273,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..hasRequiredFields = false
@@ -340,7 +340,7 @@ class FacebookAuthConfig extends $pb.GeneratedMessage {
   factory FacebookAuthConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FacebookAuthConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookAuthConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FacebookAuthConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'appId')
     ..aOS(2, _omitFieldNames ? '' : 'appSecret')
     ..hasRequiredFields = false
@@ -408,7 +408,7 @@ class XTwitterAuthConfig extends $pb.GeneratedMessage {
   factory XTwitterAuthConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory XTwitterAuthConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAuthConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'XTwitterAuthConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'clientId')
     ..aOS(2, _omitFieldNames ? '' : 'clientSecret')
     ..hasRequiredFields = false
@@ -488,7 +488,7 @@ class MastodonServer extends $pb.GeneratedMessage {
   factory MastodonServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory MastodonServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MastodonServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'domain')
     ..aOS(2, _omitFieldNames ? '' : 'appId')
     ..aOS(3, _omitFieldNames ? '' : 'appSecret')

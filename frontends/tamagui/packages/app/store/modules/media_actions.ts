@@ -1,4 +1,4 @@
-import { Empty, GetMediaRequest, GetMediaResponse, Media } from "@jonline/api";
+import { Empty, GetMediaRequest, GetMediaResponse, Media } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk

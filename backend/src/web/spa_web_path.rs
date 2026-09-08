@@ -3,7 +3,7 @@ use rocket_cache_response::CacheResponse;
 
 use crate::protos::{ServerInfo, WebUserInterface};
 
-use super::{jonline_path_responder, JonlineResponder, JonlineSummary};
+use super::{rellm_path_responder, RellmResponder, RellmSummary};
 
 /// Which single-page-app should render a given request: the Tamagui
 /// (React/Next.js) frontend or the Elm frontend. Both apps are mounted at the
@@ -82,15 +82,15 @@ macro_rules! html_sanitize_user_text {
 /// The link-preview summary shown for each SPA's home page. Shared so both
 /// apps' home routes (and the "/" root dispatcher in `main_index.rs`) render
 /// identical text, regardless of which app ends up serving the request.
-pub fn index_summary(server_name: &str, server_logo: Option<String>) -> Option<JonlineSummary> {
-    Some(JonlineSummary {
+pub fn index_summary(server_name: &str, server_logo: Option<String>) -> Option<RellmSummary> {
+    Some(RellmSummary {
         title: Some(server_name.to_string()),
         description: None,
         image: server_logo.or(Some("/favicon.png".to_string())),
     })
 }
 
-/// Render a page for either SPA frontend. Interpolates `JonlineSummary` data
+/// Render a page for either SPA frontend. Interpolates `RellmSummary` data
 /// into `<title/>`, `<meta property="og:title"/>`, etc. tags in the app's
 /// HTML template -- both apps' templates use the same placeholder strings
 /// (see `frontends/tamagui/apps/next/pages/_document.tsx`'s defaults and
@@ -114,9 +114,9 @@ pub fn index_summary(server_name: &str, server_logo: Option<String>) -> Option<J
 pub async fn spa_web_path(
     app: SpaApp,
     tamagui_html_path: &str,
-    summary: Option<JonlineSummary>,
+    summary: Option<RellmSummary>,
     is_tamagui_prefixed: bool,
-) -> CacheResponse<Result<JonlineResponder, Status>> {
+) -> CacheResponse<Result<RellmResponder, Status>> {
     let mut template = match app {
         SpaApp::Tamagui => {
             let (opt_dir, repo_dir) = if is_tamagui_prefixed {
@@ -125,7 +125,7 @@ pub async fn spa_web_path(
                 ("tamagui_web", "out")
             };
             let cache_key = format!("{}/{}", opt_dir, tamagui_html_path);
-            jonline_path_responder(
+            rellm_path_responder(
                 &cache_key,
                 &format!("opt/{}/{}", opt_dir, tamagui_html_path),
                 &format!(
@@ -136,7 +136,7 @@ pub async fn spa_web_path(
             .await
         }
         SpaApp::Elm => {
-            jonline_path_responder(
+            rellm_path_responder(
                 "elm_web/index.html",
                 "opt/elm_web/index.html",
                 "../frontends/elm-spa/public/index.html",
@@ -152,12 +152,12 @@ pub async fn spa_web_path(
                     let updated_body = template
                         .inner
                         .replacen(
-                            "Jonline Social Link",
+                            "Rellm Social Link",
                             sanitize_user_text!(title), //.replace("\"", "\\\"").split('\n').next().unwrap_or(""),
                             1,
                         )
                         .replacen(
-                            "<title>Jonline</title>",
+                            "<title>Rellm</title>",
                             &format!("<title>{}</title>", html_sanitize_user_text!(title)),
                             1,
                         );

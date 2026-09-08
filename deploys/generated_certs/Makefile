@@ -1,7 +1,7 @@
 .NOTPARALLEL:
 
-# Configure these variables to deploy/test the official Jonline images on your own cluster.
-NAMESPACE ?= jonline
+# Configure these variables to deploy/test the official Rellm images on your own cluster.
+NAMESPACE ?= rellm
 
 # K8S_PROVIDER, CERT_MANAGER_DOMAIN, CERT_MANAGER_EMAIL and CERT_MANAGER_API_TOKEN
 # are no longer configured via environment variables. The targets below that need
@@ -9,9 +9,9 @@ NAMESPACE ?= jonline
 
 # Certificate-related targets
 get_backend_generated_certs:
-	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
+	kubectl get secret rellm-generated-tls -n $(NAMESPACE)
 get_backend_generated_ca_certs:
-	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
+	kubectl get configmap rellm-generated-ca -n $(NAMESPACE)
 
 deploy_certmanager:
 	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
@@ -80,13 +80,13 @@ certs_delete_from_k8s:
 	- $(MAKE) certs_ca_delete_from_k8s
 
 certs_server_store_in_k8s:
-	kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
+	kubectl create secret tls rellm-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
 certs_server_delete_from_k8s:
-	kubectl delete secret jonline-generated-tls -n $(NAMESPACE)
+	kubectl delete secret rellm-generated-tls -n $(NAMESPACE)
 certs_ca_store_in_k8s:
-	kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
+	kubectl create configmap rellm-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
 certs_ca_delete_from_k8s:
-	kubectl delete configmap jonline-generated-ca -n $(NAMESPACE)
+	kubectl delete configmap rellm-generated-ca -n $(NAMESPACE)
 
 # Custom CA cert testing targets
 certs_gen_test: certs_gen_test_pass_openssl_verify

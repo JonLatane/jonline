@@ -7,18 +7,18 @@ import 'package:username_gen/username_gen.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
-import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/rellm.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
 import '../../my_platform.dart';
-import '../jonline_account.dart';
-import '../jonline_account_operations.dart';
-import '../jonline_clients.dart';
+import '../rellm_account.dart';
+import '../rellm_account_operations.dart';
+import '../rellm_clients.dart';
 import 'demo_groups.dart';
 
-createDemoAccounts(JonlineAccount account, Function(String) showSnackBar,
+createDemoAccounts(RellmAccount account, Function(String) showSnackBar,
     AppState appState) async {
-  final JonlineClient? client =
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -32,11 +32,11 @@ createDemoAccounts(JonlineAccount account, Function(String) showSnackBar,
 }
 
 createFollowsAndGroupMemberships(
-    JonlineAccount account,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
-    List<JonlineAccount> sideAccounts) async {
-  final JonlineClient? client =
+    List<RellmAccount> sideAccounts) async {
+  final RellmClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
@@ -67,9 +67,9 @@ createFollowsAndGroupMemberships(
       "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
 }
 
-Future<List<JonlineAccount>> generateSideAccounts(
-    JonlineClient client,
-    JonlineAccount account,
+Future<List<RellmAccount>> generateSideAccounts(
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
     int count) async {
@@ -98,22 +98,22 @@ Future<List<JonlineAccount>> generateSideAccounts(
 
     http.Response response = await httpClient
         .get(Uri.parse(create100kFacesUrl()), headers: {
-      if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client"
+      if (!MyPlatform.isWeb) "User-Agent": "Rellm Flutter Client"
     });
     avatars.add(response.bodyBytes);
   }
 
   showSnackBar("Loaded ${avatars.length} avatars.");
 
-  Iterable<Future<JonlineAccount?>> futures = range.map((i) async {
-    JonlineAccount? sideAccount;
+  Iterable<Future<RellmAccount?>> futures = range.map((i) async {
+    RellmAccount? sideAccount;
     String fakeAccountName = generateRandomName();
     int retryCount = 0;
     int sideAccountsLoaded = 0;
     lastMessageTime = DateTime.now();
     while (retryCount < 15) {
       try {
-        final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
+        final RellmAccount? sideAccount = await RellmAccount.createAccount(
             account.server, fakeAccountName, getRandomString(15), (m) {
           // if (!m.contains("insecurely") &&
           //     !m.contains("already exists") &&
@@ -154,7 +154,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
                 user.avatar.id = uploadResult.body;
               }
               // client.get
-              // JonlineServer? server = account.server;
+              // RellmServer? server = account.server;
               // await client.updateUser(user,
               //     options: account.authenticatedCallOptions);
 
@@ -180,7 +180,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
     return sideAccount;
   });
 
-  List<JonlineAccount> sideAccounts =
+  List<RellmAccount> sideAccounts =
       (await Future.wait(futures.toList())).whereNotNull().toList();
   showSnackBar("Created ${sideAccounts.length} side accounts.");
 
@@ -188,11 +188,11 @@ Future<List<JonlineAccount>> generateSideAccounts(
 }
 
 Future<int> generateFollowRelationships(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Function(String) showSnackBar,
     AppState appState,
-    List<JonlineAccount> sideAccounts) async {
+    List<RellmAccount> sideAccounts) async {
   //Generate follow relationships between side accounts and originating account
   int relationshipsCreated = 0;
 
@@ -236,12 +236,12 @@ Future<int> generateFollowRelationships(
 }
 
 Future<int> generateGroupMemberships(
-    JonlineClient client,
-    JonlineAccount account,
+    RellmClient client,
+    RellmAccount account,
     Map<DemoGroup, Group> demoGroups,
     Function(String) showSnackBar,
     AppState appState,
-    List<JonlineAccount> sideAccounts) async {
+    List<RellmAccount> sideAccounts) async {
   int membershipsCreated = 0;
   var lastMessageTime = DateTime.now();
 

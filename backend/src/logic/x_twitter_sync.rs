@@ -135,7 +135,7 @@ fn parse_token_response(body: &serde_json::Value) -> Result<TokenResponse, Statu
 
 /// Exchanges the OAuth authorization `code` from the X login popup (together with the PKCE
 /// `code_verifier` the popup generated -- see the module doc on `plain` PKCE) for an access/refresh
-/// token pair. `client_id`/`client_secret` are this Jonline server's own X Developer App
+/// token pair. `client_id`/`client_secret` are this Rellm server's own X Developer App
 /// credentials. `redirect_uri` must be byte-for-byte identical to the one the popup sent X's own
 /// authorize endpoint.
 pub fn exchange_x_twitter_code_for_token(
@@ -195,7 +195,7 @@ pub fn exchange_x_twitter_code_for_token_at(
 
 /// Exchanges a `refresh_token` for a fresh access/refresh token pair -- X rotates the refresh token
 /// on every use (the old one is invalidated), so both must be persisted, not just the new access
-/// token. `client_id`/`client_secret` are this Jonline server's own X Developer App credentials.
+/// token. `client_id`/`client_secret` are this Rellm server's own X Developer App credentials.
 pub fn refresh_access_token(
     client_id: &str,
     client_secret: &str,
@@ -417,7 +417,7 @@ pub fn post_tweet_at(
     Ok((tweet_id, permalink))
 }
 
-/// Fetches `media.url`'s raw bytes from this Jonline server's own public media endpoint, then
+/// Fetches `media.url`'s raw bytes from this Rellm server's own public media endpoint, then
 /// re-uploads them to `base_url`'s `/2/media/upload` as `multipart/form-data` with
 /// `media_category=tweet_image`. Returns the new media attachment's ID (to pass as
 /// `media.media_ids[]` on the subsequent `/2/tweets` call). Mirrors

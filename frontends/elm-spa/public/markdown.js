@@ -1,4 +1,4 @@
-// Backs the `<jonline-markdown>` custom element used throughout the app
+// Backs the `<rellm-markdown>` custom element used throughout the app
 // (see `Components.Markdown` on the Elm side) to render post Markdown with
 // syntax-highlighted code blocks, without routing content through ports --
 // Elm just sets the `content` property on the node via `Html.Attributes.property`,
@@ -19,7 +19,7 @@
     });
   }
 
-  class JonlineMarkdown extends HTMLElement {
+  class RellmMarkdown extends HTMLElement {
     connectedCallback() {
       renderMarkdown(this);
     }
@@ -36,12 +36,12 @@
     }
   }
 
-  customElements.define("jonline-markdown", JonlineMarkdown);
+  customElements.define("rellm-markdown", RellmMarkdown);
 
   // Keeps highlight.js's theme in sync with the app's own dark/light mode
   // (see `index.html`'s `setTheme` port subscription, which calls this any
   // time the effective mode changes -- including once, right at startup).
-  window.jonlineUpdateCodeTheme = function (isDark) {
+  window.rellmUpdateCodeTheme = function (isDark) {
     var link = document.getElementById("hljs-theme");
     if (!link) {
       return;

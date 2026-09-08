@@ -6,17 +6,17 @@
 
 /* eslint-disable */
 
-export const protobufPackage = "jonline";
+export const protobufPackage = "rellm";
 
 /**
- * Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
- * (A [`Membership`](#jonline-Membership) is the link between a [`Group`](#jonline-Group) and a [`User`](#jonline-User).)
+ * Rellm Permissions are a set of permissions that can be granted directly to [`User`](#rellm-User)s and [`Membership`](#rellm-Membership)s.
+ * (A [`Membership`](#rellm-Membership) is the link between a [`Group`](#rellm-Group) and a [`User`](#rellm-User).)
  *
- * Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
- * and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
+ * Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#rellm-ServerConfiguration),
+ * and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group), as well as others documented there.
  */
 export enum Permission {
-  /** PERMISSION_UNKNOWN - A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) */
+  /** PERMISSION_UNKNOWN - A permission that could not be read using the Rellm protocol. (Perhaps, a permission from a newer Rellm version.) */
   PERMISSION_UNKNOWN = 0,
   /**
    * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visibility.
@@ -42,7 +42,7 @@ export enum Permission {
   FOLLOW_USERS = 5,
   /**
    * GRANT_BASIC_PERMISSIONS - Allow the user to grant Basic Permissions to other users. "Basic Permissions"
-   * are defined by your [`ServerConfiguration`](#jonline-ServerConfiguration)'s `basic_user_permissions`.
+   * are defined by your [`ServerConfiguration`](#rellm-ServerConfiguration)'s `basic_user_permissions`.
    */
   GRANT_BASIC_PERMISSIONS = 6,
   /**
@@ -67,13 +67,13 @@ export enum Permission {
   INVITE_GROUP_MEMBERS = 16,
   /**
    * VIEW_POSTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
-   * As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Post`](#jonline-Post)s have `LIMITED` or higher visibility.
+   * As a group permission, allow the user to view [`GroupPost`](#rellm-GroupPost)s whose [`Post`](#rellm-Post)s have `LIMITED` or higher visibility.
    * Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
    */
   VIEW_POSTS = 20,
   /**
-   * CREATE_POSTS - As a user permission, allow the user to create [`Post`](#jonline-Post)s of `PRIVATE` and `LIMITED` visibility.
-   * As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `POST` and `FEDERATED_POST` [`PostContext`](#jonline-PostContext)s..
+   * CREATE_POSTS - As a user permission, allow the user to create [`Post`](#rellm-Post)s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `POST` and `FEDERATED_POST` [`PostContext`](#rellm-PostContext)s..
    */
   CREATE_POSTS = 21,
   /** PUBLISH_POSTS_LOCALLY - Allow the user to publish posts with `SERVER_PUBLIC` visibility. */
@@ -88,13 +88,13 @@ export enum Permission {
   EDIT_POST_TITLES_AND_LINKS = 26,
   /**
    * VIEW_EVENTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
-   * As a group permission, allow the user to view [`GroupPost`](#jonline-GroupPost)s whose [`Event`](#jonline-Event) [`Post`](#jonline-Post)s have `LIMITED` or higher visibility.
+   * As a group permission, allow the user to view [`GroupPost`](#rellm-GroupPost)s whose [`Event`](#rellm-Event) [`Post`](#rellm-Post)s have `LIMITED` or higher visibility.
    * Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
    */
   VIEW_EVENTS = 30,
   /**
-   * CREATE_EVENTS - As a user permission, allow the user to create [`Event`](#jonline-Event)s of `PRIVATE` and `LIMITED` visibility.
-   * As a group permission, allow the user to create [`GroupPost`](#jonline-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#jonline-PostContext)s..
+   * CREATE_EVENTS - As a user permission, allow the user to create [`Event`](#rellm-Event)s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#rellm-PostContext)s..
    */
   CREATE_EVENTS = 31,
   /** PUBLISH_EVENTS_LOCALLY - Allow the user to publish events with `SERVER_PUBLIC` visibility. */
@@ -121,76 +121,76 @@ export enum Permission {
   READ_PERSONAL_MESSAGES = 50,
   READ_ALL_SYSTEM_MESSAGES = 51,
   /**
-   * CREATE_AI_MODEL_PROVIDERS - Allow the user to create/update their own [`AIModelProvider`](#jonline-AIModelProvider)s (see
+   * CREATE_AI_MODEL_PROVIDERS - Allow the user to create/update their own [`AIModelProvider`](#rellm-AIModelProvider)s (see
    * `ai_model_providers.proto`) and grant/revoke other users' access to them.
    */
   CREATE_AI_MODEL_PROVIDERS = 60,
   /**
-   * SYNC_EVENTS_FROM_ICS - Allow the user to create/update [`SyncSource`](#jonline-SyncSource)s (iCal subscriptions) that
-   * synchronize [`Event`](#jonline-Event)s in.
+   * SYNC_EVENTS_FROM_ICS - Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that
+   * synchronize [`Event`](#rellm-Event)s in.
    */
   SYNC_EVENTS_FROM_ICS = 700,
   /**
-   * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#jonline-SyncDestination)s of that platform, and
+   * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and
    * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
    * since this is the most likely area to keep growing as new platforms are added.
    *
-   * Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Facebook Page, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_FACEBOOK = 1000,
   /**
-   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected Facebook Page, and to sync Posts to them.
    */
   SYNC_POSTS_TO_FACEBOOK = 1001,
   /**
-   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Instagram Business/Creator account, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_INSTAGRAM = 1010,
   /**
-   * SYNC_POSTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected Instagram Business/Creator account, and to sync Posts to them.
    */
   SYNC_POSTS_TO_INSTAGRAM = 1011,
   /**
-   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Mastodon account, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_MASTODON = 1020,
   /**
-   * SYNC_POSTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected Mastodon account, and to sync Posts to them.
    */
   SYNC_POSTS_TO_MASTODON = 1021,
   /**
-   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Bluesky account, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_BLUESKY = 1030,
   /**
-   * SYNC_POSTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected Bluesky account, and to sync Posts to them.
    */
   SYNC_POSTS_TO_BLUESKY = 1031,
   /**
-   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected X (Twitter) account, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_X_TWITTER = 1040,
   /**
-   * SYNC_POSTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected X (Twitter) account, and to sync Posts to them.
    */
   SYNC_POSTS_TO_X_TWITTER = 1041,
   /**
-   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Threads account, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_THREADS = 1050,
   /**
-   * SYNC_POSTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#jonline-SyncDestination)s that cross-post Posts to a
+   * SYNC_POSTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a
    * connected Threads account, and to sync Posts to them.
    */
   SYNC_POSTS_TO_THREADS = 1051,
@@ -203,8 +203,8 @@ export enum Permission {
   RUN_BOTS = 9999,
   /**
    * ADMIN - Marks the user as an admin. In the context of user permissions, allows the user to configure the server,
-   * moderate/update visibility/permissions to any [`User`](#jonline-User), [`Group`](#jonline-Group), [`Post`](#jonline-Post) or [`Event`](#jonline-Event). In the context of group permissions, allows the user to configure the group,
-   * modify members and member permissions, and moderate [`GroupPost`](#jonline-GroupPost)s and `GroupEvent`s.
+   * moderate/update visibility/permissions to any [`User`](#rellm-User), [`Group`](#rellm-Group), [`Post`](#rellm-Post) or [`Event`](#rellm-Event). In the context of group permissions, allows the user to configure the group,
+   * modify members and member permissions, and moderate [`GroupPost`](#rellm-GroupPost)s and `GroupEvent`s.
    */
   ADMIN = 10000,
   /**

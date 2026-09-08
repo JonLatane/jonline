@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Paragraph, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, standardHorizontalAnimation, useDebounceValue, useMedia, useWindowDimensions } from "@jonline/ui";
+import { AnimatePresence, Button, Paragraph, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, standardHorizontalAnimation, useDebounceValue, useMedia, useWindowDimensions } from "@rellm/ui";
 import { ChevronLeft, ChevronRight, Home as HomeIcon, PanelTopClose, PanelTopOpen } from '@tamagui/lucide-icons';
 import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from 'app/contexts';
 import { AccountsSheetContextProvider, useNewAccountsSheetContext } from "app/contexts/accounts_sheet_context";
@@ -27,7 +27,7 @@ import { PortalProvider } from '@tamagui/portal'
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
-  // onlyShowServer?: JonlineServer;
+  // onlyShowServer?: RellmServer;
   appSection?: AppSection;
   appSubsection?: AppSubsection;
   selectedGroup?: FederatedGroup;
@@ -48,8 +48,8 @@ export type TabsNavigationProps = {
 // export const tabNavBaseHeight = 64;
 
 export const useTabsNavigationHeight = () => {
-  const topNavHeight = document.getElementById('jonline-top-navigation')?.clientHeight ?? 0;
-  const bottomNavHeight = document.getElementById('jonline-bottom-navigation')?.clientHeight ?? 0;
+  const topNavHeight = document.getElementById('rellm-top-navigation')?.clientHeight ?? 0;
+  const bottomNavHeight = document.getElementById('rellm-bottom-navigation')?.clientHeight ?? 0;
 
   const { showPinnedServers } = useLocalConfiguration();
   const hideNavigation = useHideNavigation();
@@ -215,7 +215,7 @@ export function TabsNavigation({
                       // backgroundColor: transparentBackgroundColor
                     }}>
 
-                      <YStack w='100%' className='blur' id='jonline-top-navigation'>
+                      <YStack w='100%' className='blur' id='rellm-top-navigation'>
                         {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
                           pointerEvents={hideNavigation ? 'none' : undefined}
                           backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
@@ -393,7 +393,7 @@ export function TabsNavigation({
 
                     {bottomChrome
                       ?
-                      <div id='jonline-bottom-navigation' className='blur bottomChrome' style={{
+                      <div id='rellm-bottom-navigation' className='blur bottomChrome' style={{
                         position: 'fixed',
                         bottom: 0,
                         left: 0,

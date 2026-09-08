@@ -21,9 +21,9 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: jonline-letsencrypt-cert
+  name: rellm-letsencrypt-cert
 spec:
-  secretName: jonline-generated-tls
+  secretName: rellm-generated-tls
   issuerRef: 
     kind: Issuer
     name: letsencrypt-prod

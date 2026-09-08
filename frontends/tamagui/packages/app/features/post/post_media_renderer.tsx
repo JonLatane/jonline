@@ -1,8 +1,8 @@
 import { FederatedGroup, federateId, useServerTheme } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { Post } from "@jonline/api";
-import { Anchor, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
+import { Post } from "@rellm/api";
+import { Anchor, ScrollView, Spinner, XStack, YStack, useMedia } from '@rellm/ui';
 import { useCurrentServer, useMediaUrl, usePostDispatch } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, XEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";

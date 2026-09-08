@@ -1,14 +1,14 @@
-import { Media } from "@jonline/api";
-import { Heading, Paragraph, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
+import { Media } from "@rellm/api";
+import { Heading, Paragraph, Tooltip, XStack, YStack, useMedia } from "@rellm/ui";
 import { Home } from "@tamagui/lucide-icons";
 import { useCurrentServer } from "app/hooks";
-import { JonlineServer } from "app/store";
+import { RellmServer } from "app/store";
 import { MediaRenderer } from "../media/media_renderer";
 import '@formatjs/intl-segmenter/polyfill'
 
 export type ServerNameAndLogoProps = {
   shrinkToSquare?: boolean;
-  server?: JonlineServer;
+  server?: RellmServer;
   enlargeSmallText?: boolean;
   fallbackToHomeIcon?: boolean;
   disableWidthLimits?: boolean;
@@ -56,7 +56,7 @@ export function splitOnFirstEmoji(
   return result;
 }
 
-export function shortenServerName(server?: JonlineServer): string {
+export function shortenServerName(server?: RellmServer): string {
   return server?.serverConfiguration?.serverInfo?.shortName
     ||
     // Note the split *without* support for pipes (so | will be included)
