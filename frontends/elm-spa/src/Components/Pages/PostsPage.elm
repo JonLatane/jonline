@@ -824,17 +824,25 @@ customNavPostIds shared frontendHost =
 
 {-| Every `FeedSource` this page should ever fetch from -- `relevantServers`' real Rellm servers
 (unconditionally), plus every Mastodon instance being browsed/connected and every connected Bluesky
-account, but only for the plain, unscoped "Posts" feed (`model.author == Nothing`, `not
-model.embeddedPage`) -- the same condition `recentPostsTabsView` uses to decide whether to show its
-own tabs, since neither Mastodon nor Bluesky supports the author-scoping, text search, or
-`PostsBeforeDate` cutoff a real `GetPosts` request does (`fetchFeedSource` doesn't even attempt to
-send those for a `MastodonInstance`/`BlueskyFeed`), so showing them anywhere those apply would be
-misleading.
+account, but only while the feed isn't scoped to one particular author (`model.author == Nothing`),
+since neither Mastodon nor Bluesky supports the author-scoping a real `GetPosts` request does
+(`fetchFeedSource` doesn't even attempt to send that for a `MastodonInstance`/`BlueskyFeed`), so
+showing them on someone's profile page would be misleading -- they'd read as that person's own posts.
+
+Deliberately *not* also gated on `model.embeddedPage`: that's `True` for both
+`Components.Pages.UserProfilePage`'s embedded copy (already excluded above, since it's author-scoped)
+and `Pages.Home_`'s "Recent Posts" widget (`model.author == Nothing`, exactly like the standalone
+Posts page) -- Home's embedded copy has just as much claim to showing federated content as the
+standalone page does, so there's nothing about `embeddedPage` alone that should exclude it. Text
+search/`PostsBeforeDate` aren't a factor either way, on Home or the standalone page: a federated fetch
+is never re-triggered by `applySearchChange`/`TabChanged` (see `refetchFeeds`'s own doc), so an
+already-fetched federated post simply keeps showing, unfiltered by whatever search text is active --
+an accepted first-pass limitation on the standalone page already, not a new one introduced here.
 -}
 relevantFeedSources : Shared.Model -> Model -> List FeedSource
 relevantFeedSources shared model =
     List.map RellmServer (relevantServers shared model)
-        ++ (if model.author /= Nothing || model.embeddedPage then
+        ++ (if model.author /= Nothing then
                 []
 
             else
@@ -864,7 +872,11 @@ mastodonHostsToFetch shared =
 {-| Actually fires one `FeedSource`'s fetch -- a real `GetPosts` RPC (author-scoped, search/context/
 cutoff-aware) for a `RellmServer`, or an unauthenticated/self-authenticated plain `Task.attempt`
 against Mastodon's/Bluesky's own REST API for the other two, translated via
-`Shared.Federation.Mastodon`/`Bluesky`'s own `fetchPosts`. Every case funnels its result through the
+`Shared.Federation.Mastodon.fetchPosts`/`Shared.Federation.Bluesky.fetchPosts`. `BlueskyFeed` is the
+one partial exception: a non-blank `model.searchText` switches it to `Bluesky.searchPosts` instead
+(Bluesky's own real, network-wide search endpoint) -- the closest either federated source gets to a
+real `GetPosts` request's own `TEXTSEARCH` mode. `MastodonInstance` has no search equivalent wired up
+at all, so its fetch ignores `model.searchText` entirely. Every case funnels its result through the
 same `GotFeedPosts` `Msg` regardless -- see `fromServerResult`/`fromFederatedResult`.
 -}
 fetchFeedSource : Shared.Model -> Model -> FeedSource -> Effect Msg
@@ -898,19 +910,30 @@ fetchFeedSource shared model source =
                 |> Effect.fromCmd
 
         BlueskyFeed account ->
-            Bluesky.fetchPosts account.accessToken
+            let
+                trimmedSearch : String
+                trimmedSearch =
+                    String.trim model.searchText
+            in
+            (if String.isEmpty trimmedSearch then
+                Bluesky.fetchPosts account.accessToken
+
+             else
+                Bluesky.searchPosts account.accessToken trimmedSearch
+            )
                 |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
 
 
-{-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for any
-`RellmServer` among them -- meaningless to a `MastodonInstance`/`BlueskyFeed`, see
-`fetchFeedSource`), and drops any already-fetched source that's no longer `relevantFeedSources` --
-shared by `fetchNewFeeds` (which only passes the sources that actually need it, see its own doc
-comment) and `applySearchChange` (which always passes every relevant *server*, since a changed
-search must re-fetch everything regardless of whether that server's acting account also happens to
-have changed -- Mastodon/Bluesky sources are deliberately never included there, since neither
-supports server-side search at all, so re-fetching them on every keystroke would just be a wasted,
+{-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for a `RellmServer`,
+full author-scoped/search/context/cutoff support; for a `BlueskyFeed`, just `model.searchText`, see
+`fetchFeedSource`'s own doc; meaningless to a `MastodonInstance`, which has no search of its own),
+and drops any already-fetched source that's no longer `relevantFeedSources` -- shared by
+`fetchNewFeeds` (which only passes the sources that actually need it, see its own doc comment) and
+`applySearchChange` (which always passes every relevant server *and* Bluesky account, since a changed
+search must re-fetch everything regardless of whether that source's acting account also happens to
+have changed -- `MastodonInstance` sources are deliberately never included there, since they have no
+server-side search at all, so re-fetching one on every keystroke would just be a wasted,
 unfiltered-anyway request).
 
 A source already `Loaded` under the _same_ acting account (see `feedSourceAccountId`) keeps showing
@@ -1020,18 +1043,32 @@ fetchNewFeeds shared model =
     refetchFeeds shared model sourcesToFetch
 
 
-{-| Re-fetches every relevant *server* (unconditionally -- unlike `fetchNewFeeds`, a changed search
-has to override every already-Loaded feed, not just servers whose acting account changed) and
-persists the new `search_text`/`context` to the URL -- the single path `SearchDebounceElapsed`,
-`ContextChanged`, and `ClearSearchClicked` all funnel through. Deliberately scoped to
-`relevantServers` rather than `relevantFeedSources` -- see `refetchFeeds`'s own doc on why
-Mastodon/Bluesky sources are never part of a search re-fetch.
+{-| Re-fetches every relevant server, plus every enabled Bluesky account (unconditionally -- unlike
+`fetchNewFeeds`, a changed search has to override every already-Loaded feed, not just sources whose
+acting account changed) and persists the new `search_text`/`context` to the URL -- the single path
+`SearchDebounceElapsed`, `ContextChanged`, and `ClearSearchClicked` all funnel through. Bluesky is
+included here (unlike `MastodonInstance`, which has no search of its own -- see `refetchFeeds`'s own
+doc) since `fetchFeedSource` actually does something different with a changed `model.searchText` for
+it (`Bluesky.searchPosts` instead of `Bluesky.fetchPosts`), gated the same way
+`relevantFeedSources` gates it off entirely: only while `model.author == Nothing`, since a Bluesky
+network-wide search has no way to scope itself to one profile's own posts the way a real `GetPosts`
+request can.
 -}
 applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
 applySearchChange shared model =
     let
+        sourcesToRefetch : List FeedSource
+        sourcesToRefetch =
+            List.map RellmServer (relevantServers shared model)
+                ++ (if model.author == Nothing then
+                        List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+
+                    else
+                        []
+                   )
+
         ( refetchedModel, refetchEffect ) =
-            refetchFeeds shared model (List.map RellmServer (relevantServers shared model))
+            refetchFeeds shared model sourcesToRefetch
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 

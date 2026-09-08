@@ -2,6 +2,7 @@ module Shared.Federation.Bluesky exposing
     ( FeedPost
     , decoder
     , fetchPosts
+    , searchPosts
     , toPost
     )
 
@@ -10,8 +11,9 @@ module Shared.Federation.Bluesky exposing
 Mastodon, there's no meaningful *unauthenticated* equivalent: a bare "public timeline" isn't a
 concept AT Proto's federated network has (every PDS only ever serves its own users' own posts/feeds,
 not a "local instance timeline" the way a Mastodon server does), so `fetchPosts` is a connected
-account's own home timeline. See `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case
-(and `FeedSource`'s own doc) for how that gets wired into a real page.
+account's own home timeline; `searchPosts` is the exception -- a real network-wide search endpoint,
+still requiring the same auth. See `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case
+(and `FeedSource`'s own doc) for how both get wired into a real page.
 -}
 
 import Http
@@ -24,6 +26,7 @@ import Shared.Conversions exposing (posixToTimestamp)
 import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
 import Time
+import Url
 
 
 {-| Just the fields of one `app.bsky.feed.defs#feedViewPost` (one element of
@@ -99,6 +102,44 @@ fetchPosts accessToken =
         , timeout = Just 10000
         }
         |> Task.map (List.map toPost)
+
+
+{-| `GET /xrpc/app.bsky.feed.searchPosts` -- Bluesky's real search endpoint, searching the whole
+public network (not just the connected account's own timeline/follows) -- see
+<https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>. Requires auth despite that broad scope
+(confirmed empirically: an unauthenticated request gets a clean `AuthMissing` JSON error, not a
+network/CORS failure), so this is only ever called for an already-connected `BlueskyAccount` -- see
+`Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case, which switches to this instead of
+`fetchPosts` whenever `model.searchText` isn't blank, mirroring how a real `GetPosts` request switches
+to `TEXTSEARCH`. Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
+`reply` context), each entry here is a bare `app.bsky.feed.defs#postView` directly, so `searchDecoder`
+reads its fields one level shallower than `decoder` does, and detects a reply via the post's own
+`record.reply` field being present (the same information `getTimeline`'s sibling `reply` field
+carries, just nested differently here) rather than a sibling key.
+-}
+searchPosts : String -> String -> Task Http.Error (List Post)
+searchPosts accessToken query =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.feed.searchPosts?q=" ++ Url.percentEncode query ++ "&limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "posts" (Decode.list searchDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map toPost)
+
+
+searchDecoder : Decoder FeedPost
+searchDecoder =
+    Decode.map7 FeedPost
+        (Decode.field "uri" Decode.string)
+        (Decode.at [ "record", "text" ] Decode.string)
+        (Decode.at [ "record", "createdAt" ] Iso8601.decoder)
+        (Decode.maybe (Decode.at [ "record", "reply" ] Decode.value) |> Decode.map ((/=) Nothing))
+        (Decode.at [ "author", "handle" ] Decode.string)
+        (Decode.maybe (Decode.at [ "author", "displayName" ] Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
+        (Decode.maybe (Decode.at [ "author", "avatar" ] Decode.string))
 
 
 {-| `at://{did}/app.bsky.feed.post/{rkey}` -> `https://bsky.app/profile/{handle}/post/{rkey}` --
