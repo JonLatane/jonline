@@ -95,7 +95,7 @@ import Set
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.Conversions exposing (timestampToPosix)
-import Shared.Federation.Common exposing (jsonResolver)
+import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
@@ -460,14 +460,14 @@ type Msg
     | BlueskyAppPasswordChanged String
     | BlueskyConnectClicked
     | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
-    | GotBlueskyAvatarResult String (Result Http.Error (Maybe String))
+    | GotBlueskyProfileResult String (Result Http.Error BlueskyProfile)
     | RemoveBlueskyAccountClicked String
     | ToggleBlueskyAccountEnabled String
     | ShowMastodonServerFormClicked
     | HideMastodonServerFormClicked
     | BrowseMastodonInstanceInputChanged String
     | BrowseMastodonInstanceClicked
-    | GotMastodonInstanceLogoResult String (Result Http.Error (Maybe String))
+    | GotMastodonInstanceInfoResult String (Result Http.Error MastodonInstanceInfo)
     | RemoveBrowsedMastodonInstanceClicked String
     | ToggleBrowsedMastodonInstanceEnabled String
     | NoOp
@@ -550,15 +550,16 @@ the way Mastodon's OAuth `code` needs). Known first-pass limitation: always call
 directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
 doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
 are hosted there by default, so this covers the common case. `enabled` mirrors `Server.enabled` -- see
-`BrowsedMastodonInstance`'s own doc. `avatarUrl` starts `Nothing` (the `createSession` response this
-is built from carries no profile info at all) and is filled in shortly after, if it resolves, by a
-follow-up `fetchBlueskyAvatarTask` call -- see `GotBlueskyAvatarResult`.
+`BrowsedMastodonInstance`'s own doc. `avatarUrl`/`displayName` both start `Nothing` (the
+`createSession` response this is built from carries no profile info at all) and are filled in shortly
+after, if they resolve, by a follow-up `fetchBlueskyProfileTask` call -- see `GotBlueskyProfileResult`.
 -}
 type alias BlueskyAccount =
     { handle : String
     , accessToken : String
     , enabled : Bool
     , avatarUrl : Maybe String
+    , displayName : Maybe String
     }
 
 
@@ -567,14 +568,15 @@ mirrors `Server.enabled`: toggled via `UI.mastodonServerFeedChip`'s switch
 (`ToggleBrowsedMastodonInstanceEnabled`), it's what `Components.Pages.PostsPage.relevantFeedSources`
 checks to decide whether this instance's feed is currently shown, exactly as `enabledServers` does for
 a real `Server`. Unlike a `Server`, there's no separate "connected" state to track alongside it --
-browsing needs no connection, so `enabled` alone is the whole story. `logoUrl` starts `Nothing` and is
-filled in shortly after, if it resolves, by a follow-up `fetchMastodonInstanceLogoTask` call -- see
-`GotMastodonInstanceLogoResult`.
+browsing needs no connection, so `enabled` alone is the whole story. `logoUrl`/`displayName` both
+start `Nothing` and are filled in shortly after, if they resolve, by a follow-up
+`fetchMastodonInstanceInfoTask` call -- see `GotMastodonInstanceInfoResult`.
 -}
 type alias BrowsedMastodonInstance =
     { host : String
     , enabled : Bool
     , logoUrl : Maybe String
+    , displayName : Maybe String
     }
 
 
@@ -2149,7 +2151,7 @@ sendUpdate req msg model =
                                     (\ms ->
                                         Maybe.withDefault False ms.configuredByDefault || Maybe.withDefault False ms.pinnedByDefault
                                     )
-                                |> List.map (\ms -> { host = ms.domain, enabled = True, logoUrl = Nothing })
+                                |> List.map (\ms -> { host = ms.domain, enabled = True, logoUrl = Nothing, displayName = Nothing })
 
                         newlyAddedMastodonInstances : List BrowsedMastodonInstance
                         newlyAddedMastodonInstances =
@@ -2165,12 +2167,12 @@ sendUpdate req msg model =
                                 , browsedMastodonInstances = model.browsedMastodonInstances ++ newlyAddedMastodonInstances
                             }
 
-                        -- Fetches each newly-added default instance's logo, same as
+                        -- Fetches each newly-added default instance's logo/name, same as
                         -- `BrowseMastodonInstanceClicked` does for a manually-added one.
                         mastodonInstanceLogoCmds : List (Cmd Msg)
                         mastodonInstanceLogoCmds =
                             newlyAddedMastodonInstances
-                                |> List.map (\i -> Task.attempt (GotMastodonInstanceLogoResult i.host) (fetchMastodonInstanceLogoTask i.host))
+                                |> List.map (\i -> Task.attempt (GotMastodonInstanceInfoResult i.host) (fetchMastodonInstanceInfoTask i.host))
 
                         -- The base host may recommend other servers to federate with (see
                         -- `federation.proto`'s `FederatedServer`). At this first-setup moment
@@ -3341,7 +3343,7 @@ sendUpdate req msg model =
             ( { model | blueskyConnectForm = Nothing, blueskyAccounts = newAccounts }
             , Cmd.batch
                 [ Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
-                , Task.attempt (GotBlueskyAvatarResult account.handle) (fetchBlueskyAvatarTask account.handle account.accessToken)
+                , Task.attempt (GotBlueskyProfileResult account.handle) (fetchBlueskyProfileTask account.handle account.accessToken)
                 ]
             )
 
@@ -3350,22 +3352,19 @@ sendUpdate req msg model =
             , Cmd.none
             )
 
-        GotBlueskyAvatarResult _ (Err _) ->
-            -- No avatar to show -- `blueskyAccountChip` already falls back to a placeholder for
-            -- `avatarUrl == Nothing`, so there's nothing more to do here.
+        GotBlueskyProfileResult _ (Err _) ->
+            -- No avatar/name to show -- `blueskyAccountChip` already falls back gracefully for
+            -- `avatarUrl`/`displayName == Nothing`, so there's nothing more to do here.
             ( model, Cmd.none )
 
-        GotBlueskyAvatarResult _ (Ok Nothing) ->
-            ( model, Cmd.none )
-
-        GotBlueskyAvatarResult handle (Ok (Just avatarUrl)) ->
+        GotBlueskyProfileResult handle (Ok profile) ->
             let
                 newAccounts : List BlueskyAccount
                 newAccounts =
                     List.map
                         (\a ->
                             if a.handle == handle then
-                                { a | avatarUrl = Just avatarUrl }
+                                { a | avatarUrl = profile.avatarUrl, displayName = profile.displayName }
 
                             else
                                 a
@@ -3421,26 +3420,24 @@ sendUpdate req msg model =
                     newModel : Model
                     newModel =
                         { model
-                            | browsedMastodonInstances = { host = host, enabled = True, logoUrl = Nothing } :: model.browsedMastodonInstances
+                            | browsedMastodonInstances =
+                                { host = host, enabled = True, logoUrl = Nothing, displayName = Nothing } :: model.browsedMastodonInstances
                             , browseMastodonInstanceInput = ""
                         }
                 in
                 ( newModel
                 , Cmd.batch
                     [ Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel)
-                    , Task.attempt (GotMastodonInstanceLogoResult host) (fetchMastodonInstanceLogoTask host)
+                    , Task.attempt (GotMastodonInstanceInfoResult host) (fetchMastodonInstanceInfoTask host)
                     ]
                 )
 
-        GotMastodonInstanceLogoResult _ (Err _) ->
-            -- No logo to show -- `mastodonServerFeedChip` already falls back to a placeholder for
-            -- `logoUrl == Nothing`, so there's nothing more to do here.
+        GotMastodonInstanceInfoResult _ (Err _) ->
+            -- No logo/name to show -- `mastodonServerFeedChip` already falls back gracefully for
+            -- `logoUrl`/`displayName == Nothing`, so there's nothing more to do here.
             ( model, Cmd.none )
 
-        GotMastodonInstanceLogoResult _ (Ok Nothing) ->
-            ( model, Cmd.none )
-
-        GotMastodonInstanceLogoResult host (Ok (Just logoUrl)) ->
+        GotMastodonInstanceInfoResult host (Ok info) ->
             let
                 newModel : Model
                 newModel =
@@ -3449,7 +3446,7 @@ sendUpdate req msg model =
                             List.map
                                 (\i ->
                                     if i.host == host then
-                                        { i | logoUrl = Just logoUrl }
+                                        { i | logoUrl = info.logoUrl, displayName = info.displayName }
 
                                     else
                                         i
@@ -4587,25 +4584,40 @@ verifyMastodonCredentialsTask instanceHost accessToken =
         }
 
 
+{-| `fetchMastodonInstanceInfoTask`'s result -- `logoUrl` (from `thumbnail`) and `displayName` (from
+`title`) both `Nothing` if blank/absent, the same as a Rellm server with no logo/name configured.
+-}
+type alias MastodonInstanceInfo =
+    { logoUrl : Maybe String
+    , displayName : Maybe String
+    }
+
+
 {-| `GET /api/v1/instance` against `host` -- a public, unauthenticated Mastodon REST endpoint (same
 "no auth needed" reasoning as `Shared.Federation.Mastodon.fetchPosts`), fetched once when an instance
 is added to `browsedMastodonInstances` (see `BrowseMastodonInstanceClicked`/
-`GotMastodonInstanceLogoResult`) to get its `thumbnail` -- the small instance logo/banner image shown
-in `UI.mastodonServerFeedChip`. `Nothing` (not an error) if the field is present but blank/absent, the
-same as a Rellm server with no logo configured.
+`GotMastodonInstanceInfoResult`) to get its `thumbnail`/`title` -- the small instance logo image and
+display name shown in `UI.mastodonServerFeedChip`.
 -}
-fetchMastodonInstanceLogoTask : String -> Task Http.Error (Maybe String)
-fetchMastodonInstanceLogoTask host =
+fetchMastodonInstanceInfoTask : String -> Task Http.Error MastodonInstanceInfo
+fetchMastodonInstanceInfoTask host =
     Http.task
         { method = "GET"
         , headers = []
         , url = "https://" ++ host ++ "/api/v1/instance"
         , body = Http.emptyBody
         , resolver =
-            jsonResolver (Decode.maybe (Decode.field "thumbnail" Decode.string))
+            jsonResolver mastodonInstanceInfoDecoder
                 (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }
+
+
+mastodonInstanceInfoDecoder : Decode.Decoder MastodonInstanceInfo
+mastodonInstanceInfoDecoder =
+    Decode.map2 MastodonInstanceInfo
+        (Decode.maybe (Decode.field "thumbnail" Decode.string))
+        (Decode.maybe (Decode.field "title" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
 
 
 {-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
@@ -4634,10 +4646,11 @@ createBlueskySessionTask handle appPassword =
 
 blueskySessionDecoder : Decode.Decoder BlueskyAccount
 blueskySessionDecoder =
-    Decode.map4 BlueskyAccount
+    Decode.map5 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessJwt" Decode.string)
         (Decode.succeed True)
+        (Decode.succeed Nothing)
         (Decode.succeed Nothing)
 
 
@@ -4651,24 +4664,39 @@ blueskyErrorBody body =
     Decode.decodeString (Decode.field "message" Decode.string) body |> Result.toMaybe
 
 
+{-| `fetchBlueskyProfileTask`'s result -- `avatarUrl`/`displayName` both `Nothing` if unset, the same
+as `MastodonInstanceInfo`'s own convention.
+-}
+type alias BlueskyProfile =
+    { avatarUrl : Maybe String
+    , displayName : Maybe String
+    }
+
+
 {-| `app.bsky.actor.getProfile` for `handle`, authenticated with the just-connected account's own
 `accessToken` -- fetched once right after `createBlueskySessionTask` succeeds (see
-`GotBlueskyConnectResult`/`GotBlueskyAvatarResult`), since the session response itself carries no
-profile info. `Nothing` (not an error) if the account has no avatar set, same as
-`fetchMastodonInstanceLogoTask`'s own `Nothing`-for-unset convention.
+`GotBlueskyConnectResult`/`GotBlueskyProfileResult`), since the session response itself carries no
+profile info.
 -}
-fetchBlueskyAvatarTask : String -> String -> Task Http.Error (Maybe String)
-fetchBlueskyAvatarTask handle accessToken =
+fetchBlueskyProfileTask : String -> String -> Task Http.Error BlueskyProfile
+fetchBlueskyProfileTask handle accessToken =
     Http.task
         { method = "GET"
         , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
         , url = "https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" ++ handle
         , body = Http.emptyBody
         , resolver =
-            jsonResolver (Decode.maybe (Decode.field "avatar" Decode.string))
+            jsonResolver blueskyProfileDecoder
                 (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }
+
+
+blueskyProfileDecoder : Decode.Decoder BlueskyProfile
+blueskyProfileDecoder =
+    Decode.map2 BlueskyProfile
+        (Decode.maybe (Decode.field "avatar" Decode.string))
+        (Decode.maybe (Decode.field "displayName" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
 
 
 {-| `GotBlueskyConnectResult`'s error-to-display-string projection -- `Http.BadBody` here always
@@ -5015,6 +5043,7 @@ encodeBrowsedMastodonInstance instance =
         [ ( "host", Encode.string instance.host )
         , ( "enabled", Encode.bool instance.enabled )
         , ( "logoUrl", instance.logoUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+        , ( "displayName", instance.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -5035,10 +5064,11 @@ mastodonAccountDecoder =
 
 browsedMastodonInstanceDecoder : Decoder BrowsedMastodonInstance
 browsedMastodonInstanceDecoder =
-    Decode.map3 BrowsedMastodonInstance
+    Decode.map4 BrowsedMastodonInstance
         (Decode.field "host" Decode.string)
         (Decode.field "enabled" Decode.bool)
         (Decode.maybe (Decode.field "logoUrl" Decode.string))
+        (Decode.maybe (Decode.field "displayName" Decode.string))
 
 
 encodeBlueskyAccounts : List BlueskyAccount -> Encode.Value
@@ -5053,6 +5083,7 @@ encodeBlueskyAccount account =
         , ( "accessToken", Encode.string account.accessToken )
         , ( "enabled", Encode.bool account.enabled )
         , ( "avatarUrl", account.avatarUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+        , ( "displayName", account.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -5063,11 +5094,12 @@ blueskyAccountsDecoder =
 
 blueskyAccountDecoder : Decoder BlueskyAccount
 blueskyAccountDecoder =
-    Decode.map4 BlueskyAccount
+    Decode.map5 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessToken" Decode.string)
         (Decode.field "enabled" Decode.bool)
         (Decode.maybe (Decode.field "avatarUrl" Decode.string))
+        (Decode.maybe (Decode.field "displayName" Decode.string))
 
 
 {-| The `PushManager.subscribe()` result Ports.pushSubscribed's JS side hands back on success --

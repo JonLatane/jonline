@@ -1633,18 +1633,22 @@ federatedFeedLogoImage circular altText maybeUrl =
 
 
 {-| One connected Bluesky account or browsed Mastodon instance, in `federatedFeedsSection`'s combined
-strip -- both share the same shape: a "⇄ <Service>" label up top (colored via
-`background-color-nav`/`background-color-primary` respectively, `mainFrontendHost`-scoped -- see
-`UI.EmittedStylesheet`'s own doc on why: neither is a real `Server` with its own registered theme, so
-there's no per-instance color to draw on the way `serverChip`/`recommendedServerChip` do), then an
-enable switch (mirrors `serverChip`'s own `switchInput server.enabled ...` -- toggling it fires the
-same `Shared.AccountsPanelMsg` update path a real server's switch does, so
-`Components.Pages.PostsPage`'s `SharedMsg (Shared.AccountsPanelMsg _) -> fetchNewFeeds shared model`
-branch reacts to it exactly the same way: a disabled entry drops out of `relevantFeedSources`,
-pruning its posts from `postsByServer` and FLIP-animating them out; re-enabling reintroduces it as a
-"new" source and fetches it fresh), the account/host itself, and a delete button. `border-color-accent`
-(same `mainFrontendHost` scoping) gives both a shared, recognizable border regardless of which service
-they're for.
+strip -- both mirror `serverChip`'s own shape as closely as they can without a real `Server`/
+`ServerTheme` behind them: a colored top section (`background-color-nav`/`background-color-primary`
+respectively, `mainFrontendHost`-scoped -- see `UI.EmittedStylesheet`'s own doc on why: neither is a
+real `Server` with its own registered theme, so there's no per-instance color to draw on the way
+`serverChip`/`recommendedServerChip` do) pairing the avatar/logo with a "⇄ <Service>" label (standing
+in for `serverNameAndLogo`'s own logo+name row), then the fetched display name if one resolved (see
+`AccountsPanel.BlueskyAccount`/`BrowsedMastodonInstance`'s own doc), then the handle/host itself --
+and a `background-color-nav` bottom section holding every action as one button strip, same as
+`serverChip`'s own bottom: an enable switch (toggling it fires the same `Shared.AccountsPanelMsg`
+update path a real server's switch does, so `Components.Pages.PostsPage`'s `SharedMsg
+(Shared.AccountsPanelMsg _) -> fetchNewFeeds shared model` branch reacts to it exactly the same way:
+a disabled entry drops out of `relevantFeedSources`, pruning its posts from `postsByServer` and
+FLIP-animating them out; re-enabling reintroduces it as a "new" source and fetches it fresh), an
+external-link button (mirrors `serverChip`'s own `external-link-btn`), and a delete button.
+`border-color-accent` (same `mainFrontendHost` scoping) gives both a shared, recognizable border
+regardless of which service they're for.
 -}
 blueskyAccountChip : Shared.Model -> AccountsPanel.BlueskyAccount -> Html Shared.Msg
 blueskyAccountChip shared blueskyAccount =
@@ -1652,17 +1656,34 @@ blueskyAccountChip shared blueskyAccount =
         mainHostClass : String
         mainHostClass =
             hostnameToCSSClass shared.accounts.mainFrontendHost
+
+        nameRow : List (Html Shared.Msg)
+        nameRow =
+            case blueskyAccount.displayName of
+                Just name ->
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ] ]
+
+                Nothing ->
+                    []
     in
     div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
         [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
-            [ div [ class "server-chip-host-row" ]
+            (div [ class "server-chip-host-row" ]
                 [ federatedFeedLogoImage True ("@" ++ blueskyAccount.handle ++ " avatar") blueskyAccount.avatarUrl
                 , div [ class "server-chip-host" ] [ text "⇄ Bluesky" ]
                 ]
-            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ]
-            ]
-        , div [ classes [ "server-chip-bottom", mainHostClass ] ]
+                :: nameRow
+                ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
+            )
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]
             [ switchInput blueskyAccount.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBlueskyAccountEnabled blueskyAccount.handle))
+            , a
+                [ class "external-link-btn"
+                , href ("https://bsky.app/profile/" ++ blueskyAccount.handle)
+                , target "_blank"
+                , title ("Open @" ++ blueskyAccount.handle ++ " on Bluesky in a new tab")
+                ]
+                [ text "↗" ]
             , button
                 [ class "remove-btn"
                 , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBlueskyAccountClicked blueskyAccount.handle))
@@ -1673,11 +1694,11 @@ blueskyAccountChip shared blueskyAccount =
         ]
 
 
-{-| One Mastodon instance being browsed -- see `federatedFeedsSection`'s own doc on how this differs
-from `mastodonServersStrip`'s admin-registered, OAuth-connectable kind: no avatar/branding (there's no
-`Server`/`MastodonAccount` behind it, just a string) and no "Connect" affordance either, since
-browsing and connecting are independent actions -- a browsed instance doesn't invite upgrading itself
-into a connected account here. See `blueskyAccountChip`'s own doc for what its enable switch does.
+{-| One Mastodon instance being browsed -- see `blueskyAccountChip`'s own doc for the shared
+`serverChip`-mirroring shape/reasoning. Differs from `mastodonServersStrip`'s admin-registered,
+OAuth-connectable kind in that there's no `MastodonAccount` behind it, just a string, and no "Connect"
+affordance either, since browsing and connecting are independent actions -- a browsed instance
+doesn't invite upgrading itself into a connected account here.
 -}
 mastodonServerFeedChip : Shared.Model -> AccountsPanel.BrowsedMastodonInstance -> Html Shared.Msg
 mastodonServerFeedChip shared instance =
@@ -1685,17 +1706,34 @@ mastodonServerFeedChip shared instance =
         mainHostClass : String
         mainHostClass =
             hostnameToCSSClass shared.accounts.mainFrontendHost
+
+        nameRow : List (Html Shared.Msg)
+        nameRow =
+            case instance.displayName of
+                Just name ->
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ] ]
+
+                Nothing ->
+                    []
     in
     div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
         [ div [ classes [ "server-chip-top", mainHostClass, "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ]
+            (div [ class "server-chip-host-row" ]
                 [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl
                 , div [ class "server-chip-host" ] [ text "⇄ Mastodon" ]
                 ]
-            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ]
-            ]
-        , div [ classes [ "server-chip-bottom", mainHostClass ] ]
+                :: nameRow
+                ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ] ]
+            )
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]
             [ switchInput instance.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBrowsedMastodonInstanceEnabled instance.host))
+            , a
+                [ class "external-link-btn"
+                , href ("https://" ++ instance.host)
+                , target "_blank"
+                , title ("Open " ++ instance.host ++ " in a new tab")
+                ]
+                [ text "↗" ]
             , button
                 [ class "remove-btn"
                 , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked instance.host))
