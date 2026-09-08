@@ -1661,18 +1661,17 @@ blueskyAccountChip shared blueskyAccount =
         nameRow =
             case blueskyAccount.displayName of
                 Just name ->
-                    [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ] ]
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-name-primary" ] [ text name ] ] ]
 
                 Nothing ->
                     []
     in
     div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
         [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
-            (div [ class "server-chip-host-row" ]
-                [ federatedFeedLogoImage True ("@" ++ blueskyAccount.handle ++ " avatar") blueskyAccount.avatarUrl
-                , div [ class "server-chip-host" ] [ text "⇄ Bluesky" ]
-                ]
-                :: nameRow
+            ([ div [ class "server-chip-host-row" ] [ div [ class "federated-feed-service-label" ] [ text "⇄ Bluesky" ] ]
+             , div [ class "server-chip-host-row" ] [ federatedFeedLogoImage True ("@" ++ blueskyAccount.handle ++ " avatar") blueskyAccount.avatarUrl ]
+             ]
+                ++ nameRow
                 ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
             )
         , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]
@@ -1711,18 +1710,17 @@ mastodonServerFeedChip shared instance =
         nameRow =
             case instance.displayName of
                 Just name ->
-                    [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ] ]
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-name-primary" ] [ text name ] ] ]
 
                 Nothing ->
                     []
     in
     div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
         [ div [ classes [ "server-chip-top", mainHostClass, "background-color-primary" ] ]
-            (div [ class "server-chip-host-row" ]
-                [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl
-                , div [ class "server-chip-host" ] [ text "⇄ Mastodon" ]
-                ]
-                :: nameRow
+            ([ div [ class "server-chip-host-row" ] [ div [ class "federated-feed-service-label" ] [ text "⇄ Mastodon" ] ]
+             , div [ class "server-chip-host-row" ] [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl ]
+             ]
+                ++ nameRow
                 ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ] ]
             )
         , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]

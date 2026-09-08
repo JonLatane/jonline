@@ -559,13 +559,22 @@
   border-radius: 50%;
 }
 
-/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own label row -- unlike `.server-name-and-logo`'s
-   own context-scoped sizing (regular/compact/horizontal), these chips use `.server-logo-image`
-   directly with no such wrapper, so this fills in the size that would otherwise be missing. Matches
-   `.server-name-and-logo.compact`'s own 20px, since this row is just as tight on space. */
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own avatar/logo row -- unlike
+   `.server-name-and-logo`'s own context-scoped sizing (regular/compact/horizontal), these chips use
+   `.server-logo-image` directly with no such wrapper, so this fills in the size that would otherwise
+   be missing. Matches `.server-name-and-logo.regular`'s own 32px, same size as a real server chip's
+   own logo. */
 .server-chip-host-row .server-logo-image {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
+}
+
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own "⇄ Bluesky"/"⇄ Mastodon" row -- de-emphasized
+   (both smaller and dimmer than `.server-chip-host`) since the avatar/logo and display name below it
+   already carry the chip's real identity; this is just a category label. */
+.federated-feed-service-label {
+  font-size: 0.75rem;
+  opacity: 0.5;
 }
 
 .server-name-and-logo.compact .server-logo-image {
