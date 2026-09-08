@@ -1756,7 +1756,7 @@ mastodonServerFormView shared =
             , attribute "autocapitalize" "none"
             , attribute "autocorrect" "off"
             , spellcheck False
-            , placeholder "mastodon.social"
+            , placeholder "mastodon.world"
             , value shared.accounts.browseMastodonInstanceInput
             , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
             ]

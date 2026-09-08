@@ -5,7 +5,10 @@ module Components.Markdown exposing (view)
 libraries it vendors in `public/vendor/`: marked.js parses the Markdown,
 DOMPurify sanitizes the result -- post content comes from other users and
 federated servers, so it's untrusted -- and highlight.js highlights fenced
-code blocks).
+code blocks). Also doubles as the render path for a Mastodon post's own
+`content` (see `Shared.Federation.Mastodon.toPost`'s doc), which is already
+HTML rather than Markdown source -- `markdown.js` detects that (a leading
+`<`) and skips the Markdown-parsing step, going straight to DOMPurify.
 
 Elm's virtual DOM has no way to render a raw HTML string itself, so this
 hands the Markdown source to the custom element as a JS _property_ (not an

@@ -1358,7 +1358,7 @@ mastodonServersEditorView edit =
                 [ class "server-details-federation-add-input"
                 , value edit.domainInput
                 , onInput MastodonServerDomainInputChanged
-                , placeholder "mastodon.social"
+                , placeholder "mastodon.world"
                 ]
                 []
             , button

@@ -10,8 +10,20 @@
 // the parsed HTML is untrusted and always run through DOMPurify before
 // being assigned as `innerHTML`.
 (function () {
+  // A Mastodon `Status.content` (see `Shared.Federation.Mastodon.toPost`'s own doc) is already
+  // server-sanitized HTML, not Markdown source -- e.g. `"<p>Hello <a href=...>world</a></p>"`.
+  // Feeding that through `marked.parse` first mostly doesn't do what you'd want (its HTML-block
+  // grammar is whitespace/line-sensitive and this is compact, single-line markup), so a leading `<`
+  // (after trimming) is treated as a signal to skip straight to DOMPurify instead. Real post
+  // Markdown essentially never starts with a literal `<` -- and even if it did, the fallback here is
+  // just an HTML parse of that text, which degrades reasonably rather than breaking anything.
+  function looksLikeHtml(content) {
+    return /^\s*</.test(content);
+  }
+
   function renderMarkdown(el) {
-    var raw = window.marked.parse(el._content || "", { breaks: true, gfm: true });
+    var content = el._content || "";
+    var raw = looksLikeHtml(content) ? content : window.marked.parse(content, { breaks: true, gfm: true });
     var clean = window.DOMPurify.sanitize(raw, { ADD_ATTR: ["target"] });
     el.innerHTML = clean;
     el.querySelectorAll("pre code").forEach(function (block) {

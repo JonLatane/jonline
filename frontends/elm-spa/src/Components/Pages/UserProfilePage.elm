@@ -5287,7 +5287,7 @@ mastodonConnectView status =
                 [ div [ class "sync-destinations-message" ] [ text "Connect a Mastodon account:" ]
                 , input
                     [ class "sync-destination-connect-input"
-                    , placeholder "Instance host, e.g. mastodon.social"
+                    , placeholder "Instance host, e.g. mastodon.world"
                     , value form.instanceHost
                     , onInput MastodonInstanceHostChanged
                     ]
