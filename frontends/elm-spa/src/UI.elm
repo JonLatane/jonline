@@ -1634,14 +1634,16 @@ federatedFeedLogoImage circular altText maybeUrl =
 
 {-| One connected Bluesky account or browsed Mastodon instance, in `federatedFeedsSection`'s combined
 strip -- both mirror `serverChip`'s own shape as closely as they can without a real `Server`/
-`ServerTheme` behind them: a colored top section (`background-color-nav`/`background-color-primary`
-respectively, `mainFrontendHost`-scoped -- see `UI.EmittedStylesheet`'s own doc on why: neither is a
-real `Server` with its own registered theme, so there's no per-instance color to draw on the way
-`serverChip`/`recommendedServerChip` do) pairing the avatar/logo with a "⇄ <Service>" label (standing
-in for `serverNameAndLogo`'s own logo+name row), then the fetched display name if one resolved (see
-`AccountsPanel.BlueskyAccount`/`BrowsedMastodonInstance`'s own doc), then the handle/host itself --
-and a `background-color-nav` bottom section holding every action as one button strip, same as
-`serverChip`'s own bottom: an enable switch (toggling it fires the same `Shared.AccountsPanelMsg`
+`ServerTheme` behind them, with its two-tone coloring deliberately *inverted* (`background-color-nav`
+top / `background-color-primary` bottom, vs. `serverChip`'s own primary-top/nav-bottom) as a quick
+visual "this one's different" cue, `mainFrontendHost`-scoped either way -- see `UI.EmittedStylesheet`'s
+own doc on why: neither is a real `Server` with its own registered theme, so there's no per-instance
+color to draw on the way `serverChip`/`recommendedServerChip` do. The top section pairs the
+avatar/logo with a "⇄ <Service>" label (standing in for `serverNameAndLogo`'s own logo+name row), then
+the fetched display name if one resolved (see `AccountsPanel.BlueskyAccount`/`BrowsedMastodonInstance`'s
+own doc), then the handle/host itself -- and the bottom section holds every action as one button
+strip, same as `serverChip`'s own bottom: an enable switch (toggling it fires the same
+`Shared.AccountsPanelMsg`
 update path a real server's switch does, so `Components.Pages.PostsPage`'s `SharedMsg
 (Shared.AccountsPanelMsg _) -> fetchNewFeeds shared model` branch reacts to it exactly the same way:
 a disabled entry drops out of `relevantFeedSources`, pruning its posts from `postsByServer` and
@@ -1674,7 +1676,7 @@ blueskyAccountChip shared blueskyAccount =
                 ++ nameRow
                 ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
             )
-        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-primary" ] ]
             [ switchInput blueskyAccount.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBlueskyAccountEnabled blueskyAccount.handle))
             , a
                 [ class "external-link-btn"
@@ -1716,14 +1718,14 @@ mastodonServerFeedChip shared instance =
                     []
     in
     div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
-        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-primary" ] ]
+        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
             ([ div [ class "server-chip-host-row" ] [ div [ class "federated-feed-service-label" ] [ text "⇄ Mastodon" ] ]
              , div [ class "server-chip-host-row" ] [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl ]
              ]
                 ++ nameRow
                 ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ] ]
             )
-        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-nav" ] ]
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-primary" ] ]
             [ switchInput instance.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBrowsedMastodonInstanceEnabled instance.host))
             , a
                 [ class "external-link-btn"
