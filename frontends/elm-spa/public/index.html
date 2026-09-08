@@ -414,11 +414,15 @@
     }
 
     // Dynamically self-registers a throwaway OAuth app on `instanceHost` (Mastodon's own
-    // `POST /api/v1/apps` -- no admin involvement needed, unlike `MastodonServer.appId`'s
-    // *optional* admin-pre-registered default). Returns a Promise of `{ clientId }` (or rejects
-    // with an Error) -- there's no synchronous path here at all, since registration itself is a
-    // network call. `clientId` is needed again at token-exchange time (see `mastodonExchangeCode`),
-    // not just to build the authorize URL, so it's returned rather than consumed here.
+    // `POST /api/v1/apps`) -- the fallback `facebookLoginPopup.subscribe`'s `"mastodon"` branch
+    // uses only when `payload.appId` is blank (no admin-registered `MastodonServer` for this
+    // instance); when it isn't, that real `appId` is used as `clientId` directly instead of calling
+    // this at all, so every user connecting through the same admin-configured instance authorizes
+    // the same, consistently-branded app rather than a fresh one per login. Returns a Promise of
+    // `{ clientId }` (or rejects with an Error) -- there's no synchronous path here at all, since
+    // registration itself is a network call. `clientId` is needed again at token-exchange time (see
+    // `mastodonExchangeCode`), not just to build the authorize URL, so it's returned rather than
+    // consumed here.
     function mastodonRegisterApp(instanceHost, redirectUri) {
       var body = new URLSearchParams();
       body.set("client_name", "Rellm");
@@ -435,14 +439,16 @@
         });
     }
 
-    // Exchanges an authorization `code` for an access token directly against `instanceHost` --
-    // no `client_secret` at all, since `clientId` was registered fresh for this one login attempt
-    // (see `mastodonRegisterApp`) and the PKCE `codeVerifier` alone is what proves this exchange
-    // came from the same client that started the authorize request (the standard "public client"
-    // OAuth pattern -- there's no confidential secret to protect here in the first place, so
-    // nothing is lost by never sending one). Mirrors how `mastodonRegisterApp` never asks the
-    // Rellm server for anything either: this whole flow is between the browser and the Mastodon
-    // instance, no Rellm backend involved.
+    // Exchanges an authorization `code` for an access token directly against `instanceHost` -- no
+    // `client_secret` at all, regardless of whether `clientId` is a throwaway app registered fresh
+    // for this one login attempt (see `mastodonRegisterApp`) or an admin-registered `MastodonServer`
+    // reused across every login on this instance (see `facebookLoginPopup.subscribe`'s own
+    // `"mastodon"` branch): the PKCE `codeVerifier` alone is what proves this exchange came from the
+    // same client that started the authorize request (the standard "public client" OAuth pattern),
+    // and an admin-registered app's own `app_secret` never leaves the Rellm server in the first
+    // place (see `MastodonServer.appSecret`'s own doc) for this to send even if it wanted to. Mirrors
+    // how `mastodonRegisterApp` never asks the Rellm server for anything either: this whole flow is
+    // between the browser and the Mastodon instance, no Rellm backend involved either way.
     function mastodonExchangeCode(instanceHost, clientId, code, codeVerifier, redirectUri) {
       var body = new URLSearchParams();
       body.set("client_id", clientId);
@@ -557,10 +563,20 @@
         generateMastodonCodeChallenge()
           .then(function (pkce) {
             mastodonCodeVerifier = pkce.codeVerifier;
-            return mastodonRegisterApp(payload.instanceHost, redirectUri).then(function (app) {
-              mastodonClientId = app.clientId;
+            // Use the admin-registered app (see `MastodonConnectClicked`'s own doc) when there is
+            // one -- only self-registering a throwaway app on the spot as a fallback for an instance
+            // with none. Either way, no `client_secret` is ever sent here (an admin-registered app's
+            // own secret never leaves the Rellm server at all -- see `MastodonServer.appSecret`'s own
+            // doc) -- PKCE's `code_verifier` alone proves this exchange came from the same client
+            // that started the authorize request, the standard "public client" pattern, regardless
+            // of which kind of app this is.
+            var clientIdPromise = payload.appId
+              ? Promise.resolve(payload.appId)
+              : mastodonRegisterApp(payload.instanceHost, redirectUri).then(function (app) { return app.clientId; });
+            return clientIdPromise.then(function (clientId) {
+              mastodonClientId = clientId;
               return "https://" + payload.instanceHost + "/oauth/authorize" +
-                "?client_id=" + encodeURIComponent(app.clientId) +
+                "?client_id=" + encodeURIComponent(clientId) +
                 "&redirect_uri=" + encodeURIComponent(redirectUri) +
                 "&response_type=code" +
                 "&scope=" + encodeURIComponent("read") +

@@ -528,11 +528,14 @@ type alias AccountAuthTokens =
 
 {-| A Mastodon account connected via `UI.mastodonServerChip`'s "Connect" button (see
 `MastodonConnectClicked`/`GotMastodonLoginResult`) -- `accessToken` came out of an OAuth popup Elm
-never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: dynamic app
-registration, PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
-between the browser and `instanceHost` itself), and `username` is fetched once, right after, via
-`GET /api/v1/accounts/verify_credentials` (see `verifyMastodonCredentialsTask`) -- just enough to
-display the connection, not a full `Account`, since a Mastodon account isn't a Rellm one.
+never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: app registration
+(the admin-registered `MastodonServer.appId` `MastodonConnectClicked` looks up via
+`mastodonServerFor`, or -- if that instance has none -- a throwaway one dynamically self-registered
+on the spot), PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
+between the browser and `instanceHost` itself, `app_secret` never included either way), and
+`username` is fetched once, right after, via `GET /api/v1/accounts/verify_credentials` (see
+`verifyMastodonCredentialsTask`) -- just enough to display the connection, not a full `Account`,
+since a Mastodon account isn't a Rellm one.
 -}
 type alias MastodonAccount =
     { instanceHost : String
@@ -3275,8 +3278,13 @@ sendUpdate req msg model =
             ( { model | federatedSignInNotice = Nothing }, Cmd.none )
 
         MastodonConnectClicked instanceHost ->
+            let
+                appId : String
+                appId =
+                    mastodonServerFor model instanceHost |> Maybe.map .appId |> Maybe.withDefault ""
+            in
             ( { model | mastodonConnectPopupOpen = Just instanceHost }
-            , Ports.facebookLoginPopup { provider = "mastodon", appId = "", instanceHost = instanceHost }
+            , Ports.facebookLoginPopup { provider = "mastodon", appId = appId, instanceHost = instanceHost }
             )
 
         GotMastodonLoginResult value ->
@@ -3579,6 +3587,18 @@ recommendedFederatedServers model =
         |> List.filter (\fs -> not (isKnownServer model fs.host))
 
 
+{-| Every admin-registered `MastodonServer` on `mainFrontendHost`'s own `FederationInfo`, regardless
+of connection status -- `connectableMastodonServers`/`mastodonServerFor` both build on this.
+-}
+allMastodonServers : Model -> List MastodonServer
+allMastodonServers model =
+    serverForHost model.servers model.mainFrontendHost
+        |> Maybe.map configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .mastodonServers
+        |> Maybe.withDefault []
+
+
 {-| Mirrors `recommendedFederatedServers` exactly (same `mainFrontendHost`-config sourcing), against
 `federationInfo.mastodonServers` instead of `.servers` -- the Mastodon instances `UI.mastodonServerChip`
 shows for connecting, minus any already in `model.mastodonAccounts`. Unlike `FederatedServer`s, a
@@ -3588,12 +3608,18 @@ hiding it entirely would just look like the instance was never offered at all.
 -}
 connectableMastodonServers : Model -> List MastodonServer
 connectableMastodonServers model =
-    serverForHost model.servers model.mainFrontendHost
-        |> Maybe.map configurationOf
-        |> Maybe.andThen .federationInfo
-        |> Maybe.map .mastodonServers
-        |> Maybe.withDefault []
+    allMastodonServers model
         |> List.filter (\ms -> not (List.any (\a -> a.instanceHost == ms.domain) model.mastodonAccounts))
+
+
+{-| The admin-registered `MastodonServer` entry for `instanceHost`, if one exists -- what
+`MastodonConnectClicked` needs to pass the real `appId` through to `Ports.facebookLoginPopup` instead
+of dynamically self-registering a throwaway app on every single login (see that port's own
+`"mastodon"` provider doc).
+-}
+mastodonServerFor : Model -> String -> Maybe MastodonServer
+mastodonServerFor model instanceHost =
+    allMastodonServers model |> List.filter (\ms -> ms.domain == instanceHost) |> List.head
 
 
 {-| Whether `frontendHost` (trimmed) is this app's own "home" server --

@@ -257,8 +257,12 @@ separately-registered app, so `appId` there is `XTwitterAuthConfig.clientId` ins
 `Components.Pages.UserProfilePage`'s `facebookAppId`/`xTwitterAppId`) -- either way it's just
 interpreted against a different OAuth dialog per `provider`. `instanceHost` is used only by
 `"mastodon"` (the others pass `""`): unlike the other three providers, there's no fixed app to
-register against -- the instance is user-chosen, so the popup itself dynamically self-registers an
-app on it first (`POST /api/v1/apps`) before it has anything to redirect to at all. Deliberately
+register against -- the instance is user-chosen. `appId` there is the admin-registered
+`MastodonServer.appId` for that instance if one exists (see `Shared.AccountsPanel.mastodonServerFor`,
+`MastodonConnectClicked`), so every user connecting through it authorizes the same,
+consistently-branded app; only when it's blank (no admin registration for that instance) does the
+popup dynamically self-register a throwaway one on the spot (`POST /api/v1/apps`) before it has
+anything to redirect to at all. Deliberately
 hand-rolled (a plain `window.open` at the provider's own OAuth dialog URL, with our own tiny static
 `oauth-callback.html` as the `redirect_uri`) rather than loading a JS SDK -- see
 `public/index.html`'s subscription for why: the popup has to open synchronously inside the click
