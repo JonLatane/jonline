@@ -839,20 +839,24 @@ relevantFeedSources shared model =
 
             else
                 List.map MastodonInstance (mastodonHostsToFetch shared)
-                    ++ List.map BlueskyFeed shared.accounts.blueskyAccounts
+                    ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
            )
 
 
 {-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
-(`mastodonAccounts`) and instances just being browsed anonymously (`browsedMastodonInstances`, see
-`UI.mastodonBrowseSection`) -- deduplicated, since `Mastodon.fetchPosts` hits the exact same
-unauthenticated public-timeline endpoint either way (see that function's own doc: it never actually
-uses a `MastodonAccount`'s `accessToken`) -- there's nothing a connected account's fetch gets that a
-browsed one doesn't, so fetching the same host twice would just be a wasted request.
+(`mastodonAccounts`, which have no enable/disable flag of their own -- see that field's own doc) and
+instances just being browsed anonymously and currently enabled (`browsedMastodonInstances`, see
+`AccountsPanel.BrowsedMastodonInstance`'s own doc on what disabling one does here) -- deduplicated,
+since `Mastodon.fetchPosts` hits the exact same unauthenticated public-timeline endpoint either way
+(see that function's own doc: it never actually uses a `MastodonAccount`'s `accessToken`) -- there's
+nothing a connected account's fetch gets that a browsed one doesn't, so fetching the same host twice
+would just be a wasted request.
 -}
 mastodonHostsToFetch : Shared.Model -> List String
 mastodonHostsToFetch shared =
-    (List.map .instanceHost shared.accounts.mastodonAccounts ++ shared.accounts.browsedMastodonInstances)
+    (List.map .instanceHost shared.accounts.mastodonAccounts
+        ++ (shared.accounts.browsedMastodonInstances |> List.filter .enabled |> List.map .host)
+    )
         |> Set.fromList
         |> Set.toList
 

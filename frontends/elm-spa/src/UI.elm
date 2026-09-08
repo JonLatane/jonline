@@ -1027,8 +1027,7 @@ accountsAndServersTab shared currentRoute =
         , unreachableServersWarning shared
         , recommendedServersStrip shared
         , mastodonServersStrip shared
-        , mastodonBrowseSection shared
-        , blueskyConnectSection shared
+        , federatedFeedsSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1532,113 +1531,206 @@ connectedMastodonAccountChip mastodonAccount =
         ]
 
 
-{-| A user-added "just browse this instance's public timeline" affordance -- no OAuth, no
-`MastodonServer` admin config needed at all, since `Shared.Federation.Mastodon.fetchPosts` is a
-plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonServersStrip`'s
-"Connect" chips, which exist to authenticate as a specific account, this is closer to
-`serversStrip`'s own "type a host, add it" shape for real Rellm servers, just without any of the
-connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
-time, a bad/unreachable host just silently fails to load posts the same way any other feed fetch
-failure does (see `Components.Pages.PostsPage.GotFeedPosts`'s `FeedFailed` doc).
+{-| The combined "Bluesky accounts and Mastodon servers" section -- one chip strip merging connected
+Bluesky accounts (`blueskyAccountChip`) and browsed Mastodon instances (`mastodonServerFeedChip`, see
+its own doc on why "server" here means "instance browsed anonymously," not `mastodonServersStrip`'s
+admin-registered OAuth kind, which this section leaves entirely untouched), plus a row of two
+tab-like "+ Bluesky Account"/"+ Mastodon Server" buttons -- styled exactly like the single
+"+ Connect Bluesky Account" button this replaces (`server-details-rename-button`, no active-tab
+highlighting) -- that each open their own add-form below the row, mutually exclusive (clicking one
+closes the other's form if it was open; clicking an already-open tab's own button closes it) and both
+closed by default. See `AccountsPanel.Model.mastodonServerFormOpen`'s own doc for how that mutual
+exclusivity is actually modeled.
 -}
-mastodonBrowseSection : Shared.Model -> Html Shared.Msg
-mastodonBrowseSection shared =
+federatedFeedsSection : Shared.Model -> Html Shared.Msg
+federatedFeedsSection shared =
+    let
+        chips : List (Html Shared.Msg)
+        chips =
+            List.map (blueskyAccountChip shared) shared.accounts.blueskyAccounts
+                ++ List.map (mastodonServerFeedChip shared) shared.accounts.browsedMastodonInstances
+
+        blueskyFormOpen : Bool
+        blueskyFormOpen =
+            shared.accounts.blueskyConnectForm /= Nothing
+    in
     div [ class "recommended-servers-section" ]
         [ div [ class "panel-divider" ] []
-        , if List.isEmpty shared.accounts.browsedMastodonInstances then
+        , if List.isEmpty chips then
             text ""
 
           else
-            div [ class "recommended-servers-strip" ] (List.map browsedMastodonInstanceChip shared.accounts.browsedMastodonInstances)
+            div [ class "recommended-servers-strip" ] chips
         , div [ class "server-details-federation-add" ]
-            [ input
-                [ type_ "text"
-                , attribute "autocapitalize" "none"
-                , attribute "autocorrect" "off"
-                , spellcheck False
-                , placeholder "mastodon.social"
-                , value shared.accounts.browseMastodonInstanceInput
-                , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+            [ button
+                [ classList
+                    [ ( "server-details-rename-button", True )
+                    , ( hostnameToCSSClass shared.accounts.mainFrontendHost, blueskyFormOpen )
+                    , ( "background-color-accent", blueskyFormOpen )
+                    ]
+                , onClick
+                    (Shared.AccountsPanelMsg
+                        (if blueskyFormOpen then
+                            AccountsPanel.HideBlueskyConnectFormClicked
+
+                         else
+                            AccountsPanel.ShowBlueskyConnectFormClicked
+                        )
+                    )
                 ]
-                []
+                [ text "+ Bluesky Account" ]
             , button
-                [ class "server-details-rename-button"
-                , onClick (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked)
-                , disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput))
+                [ classList
+                    [ ( "server-details-rename-button", True )
+                    , ( hostnameToCSSClass shared.accounts.mainFrontendHost, shared.accounts.mastodonServerFormOpen )
+                    , ( "background-color-accent", shared.accounts.mastodonServerFormOpen )
+                    ]
+                , onClick
+                    (Shared.AccountsPanelMsg
+                        (if shared.accounts.mastodonServerFormOpen then
+                            AccountsPanel.HideMastodonServerFormClicked
+
+                         else
+                            AccountsPanel.ShowMastodonServerFormClicked
+                        )
+                    )
                 ]
-                [ text "+ Browse Instance" ]
+                [ text "+ Mastodon Server" ]
             ]
+        , case ( shared.accounts.blueskyConnectForm, shared.accounts.mastodonServerFormOpen ) of
+            ( Just form, _ ) ->
+                blueskyConnectFormView form
+
+            ( Nothing, True ) ->
+                mastodonServerFormView shared
+
+            ( Nothing, False ) ->
+                text ""
         ]
 
 
-{-| One instance being browsed (see `mastodonBrowseSection`) -- a bare host with a remove button,
-no avatar/branding (there's no `Server`/`MastodonAccount` behind it, just a string) and no "Connect"
-affordance either, unlike `mastodonServerChip` -- browsing and connecting are independent actions,
-so a browsed instance doesn't invite upgrading itself into a connected account here.
+{-| The small avatar/logo image in a `blueskyAccountChip`/`mastodonServerFeedChip`'s label row --
+`text ""` (nothing rendered) until the account/instance's own async fetch resolves one (see
+`AccountsPanel.BlueskyAccount.avatarUrl`/`BrowsedMastodonInstance.logoUrl`'s own doc). Reuses
+`serverNameAndLogo`'s own `.server-logo-image` sizing/fit (32px, `object-fit: cover`) -- `circular`
+adds `.server-logo-image-circular` on top of that (Bluesky avatars) to override its default 6px
+corner rounding with a full circle; Mastodon instance logos stay un-rounded, matching how a real
+`serverChip`'s own logo looks.
 -}
-browsedMastodonInstanceChip : String -> Html Shared.Msg
-browsedMastodonInstanceChip host =
-    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass host ] ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
-            [ button
+federatedFeedLogoImage : Bool -> String -> Maybe String -> Html msg
+federatedFeedLogoImage circular altText maybeUrl =
+    case maybeUrl of
+        Just url ->
+            img
+                [ classList [ ( "server-logo-image", True ), ( "server-logo-image-circular", circular ) ]
+                , src url
+                , alt altText
+                ]
+                []
+
+        Nothing ->
+            text ""
+
+
+{-| One connected Bluesky account or browsed Mastodon instance, in `federatedFeedsSection`'s combined
+strip -- both share the same shape: a "⇄ <Service>" label up top (colored via
+`background-color-nav`/`background-color-primary` respectively, `mainFrontendHost`-scoped -- see
+`UI.EmittedStylesheet`'s own doc on why: neither is a real `Server` with its own registered theme, so
+there's no per-instance color to draw on the way `serverChip`/`recommendedServerChip` do), then an
+enable switch (mirrors `serverChip`'s own `switchInput server.enabled ...` -- toggling it fires the
+same `Shared.AccountsPanelMsg` update path a real server's switch does, so
+`Components.Pages.PostsPage`'s `SharedMsg (Shared.AccountsPanelMsg _) -> fetchNewFeeds shared model`
+branch reacts to it exactly the same way: a disabled entry drops out of `relevantFeedSources`,
+pruning its posts from `postsByServer` and FLIP-animating them out; re-enabling reintroduces it as a
+"new" source and fetches it fresh), the account/host itself, and a delete button. `border-color-accent`
+(same `mainFrontendHost` scoping) gives both a shared, recognizable border regardless of which service
+they're for.
+-}
+blueskyAccountChip : Shared.Model -> AccountsPanel.BlueskyAccount -> Html Shared.Msg
+blueskyAccountChip shared blueskyAccount =
+    let
+        mainHostClass : String
+        mainHostClass =
+            hostnameToCSSClass shared.accounts.mainFrontendHost
+    in
+    div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
+        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
+            [ div [ class "server-chip-host-row" ]
+                [ federatedFeedLogoImage True ("@" ++ blueskyAccount.handle ++ " avatar") blueskyAccount.avatarUrl
+                , div [ class "server-chip-host" ] [ text "⇄ Bluesky" ]
+                ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", mainHostClass ] ]
+            [ switchInput blueskyAccount.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBlueskyAccountEnabled blueskyAccount.handle))
+            , button
                 [ class "remove-btn"
-                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked host))
-                , title ("Stop browsing " ++ host)
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBlueskyAccountClicked blueskyAccount.handle))
+                , title ("Disconnect " ++ blueskyAccount.handle)
                 ]
                 [ text "╳" ]
             ]
         ]
 
 
-{-| Bluesky connection UI -- mirrors `mastodonServersStrip`'s general shape (a chip per already-
-connected account), but the "connect" side is a plain inline handle/App Password form
-(`AccountsPanel.BlueskyConnectForm`) rather than a chip/button that opens a popup -- see
-`AccountsPanel.BlueskyAccount`'s own doc on why Bluesky's login has no OAuth popup at all. Always
-shown (unlike `mastodonServersStrip`, which hides entirely when there's nothing to connect to) --
-there's no admin-configuration gate the way `FederationInfo.mastodonServers` is, so there's always
-at least the "Connect Bluesky Account" button to show.
+{-| One Mastodon instance being browsed -- see `federatedFeedsSection`'s own doc on how this differs
+from `mastodonServersStrip`'s admin-registered, OAuth-connectable kind: no avatar/branding (there's no
+`Server`/`MastodonAccount` behind it, just a string) and no "Connect" affordance either, since
+browsing and connecting are independent actions -- a browsed instance doesn't invite upgrading itself
+into a connected account here. See `blueskyAccountChip`'s own doc for what its enable switch does.
 -}
-blueskyConnectSection : Shared.Model -> Html Shared.Msg
-blueskyConnectSection shared =
+mastodonServerFeedChip : Shared.Model -> AccountsPanel.BrowsedMastodonInstance -> Html Shared.Msg
+mastodonServerFeedChip shared instance =
     let
-        connected : List AccountsPanel.BlueskyAccount
-        connected =
-            shared.accounts.blueskyAccounts
+        mainHostClass : String
+        mainHostClass =
+            hostnameToCSSClass shared.accounts.mainFrontendHost
     in
-    div [ class "recommended-servers-section" ]
-        (div [ class "panel-divider" ] []
-            :: (if List.isEmpty connected then
-                    []
+    div [ classes [ "server-chip", mainHostClass, "border-color-accent" ] ]
+        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ]
+                [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl
+                , div [ class "server-chip-host" ] [ text "⇄ Mastodon" ]
+                ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", mainHostClass ] ]
+            [ switchInput instance.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBrowsedMastodonInstanceEnabled instance.host))
+            , button
+                [ class "remove-btn"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked instance.host))
+                , title ("Stop browsing " ++ instance.host)
+                ]
+                [ text "╳" ]
+            ]
+        ]
 
-                else
-                    [ div [ class "recommended-servers-strip" ] (List.map connectedBlueskyAccountChip connected) ]
-               )
-            ++ [ case shared.accounts.blueskyConnectForm of
-                    Just form ->
-                        blueskyConnectFormView form
 
-                    Nothing ->
-                        button
-                            [ class "server-details-rename-button", onClick (Shared.AccountsPanelMsg AccountsPanel.ShowBlueskyConnectFormClicked) ]
-                            [ text "+ Connect Bluesky Account" ]
-               ]
-        )
-
-
-{-| One already-connected Bluesky account -- read-only for now, same first-pass scope as
-`connectedMastodonAccountChip`. Always tinted/keyed as "bsky.social" (rather than each account's own
-host, the way Mastodon chips are) since every account here was, for now, necessarily connected
-through that one PDS -- see `AccountsPanel.BlueskyAccount`'s own doc on that limitation.
+{-| The "add a Mastodon instance to browse" `<input>` + submit/cancel buttons, shown once
+`AccountsPanel.ShowMastodonServerFormClicked` opens this tab -- mirrors `blueskyConnectFormView`'s own
+`<form>`-with-`onSubmit` shape (so Enter submits it), just with the one plain host input
+`browseMastodonInstanceInput` needs instead of a whole record.
 -}
-connectedBlueskyAccountChip : AccountsPanel.BlueskyAccount -> Html Shared.Msg
-connectedBlueskyAccountChip blueskyAccount =
-    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass "bsky.social" ] ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass "bsky.social", "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass "bsky.social", "background-color-nav" ] ]
-            [ text "bsky.social" ]
+mastodonServerFormView : Shared.Model -> Html Shared.Msg
+mastodonServerFormView shared =
+    Html.form
+        [ class "server-details-federation-add", onSubmit (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked) ]
+        [ input
+            [ type_ "text"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
+            , placeholder "mastodon.social"
+            , value shared.accounts.browseMastodonInstanceInput
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+            ]
+            []
+        , button
+            [ disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput)) ]
+            [ text "+ Browse Instance" ]
+        , button
+            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideMastodonServerFormClicked) ]
+            [ text "Cancel" ]
         ]
 
 

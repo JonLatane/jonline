@@ -7,6 +7,7 @@ module Shared.AccountsPanel exposing
     , Branding
     , BlueskyAccount
     , BlueskyConnectForm
+    , BrowsedMastodonInstance
     , Connection
     , FormStatus(..)
     , MastodonAccount
@@ -322,11 +323,11 @@ type alias Model =
 
     -- Mastodon accounts connected via `UI.mastodonServerChip`'s "Connect" button (see
     -- `MastodonConnectClicked`) -- each one's `accessToken` came straight out of an OAuth popup Elm
-    -- never touched directly (see `Ports.facebookLoginPopup`'s `"mastodon"` provider), fetched for
-    -- the sole purpose of a future `GetPosts` translation layer, not used for anything yet.
-    -- Session-only for now (not persisted, unlike `accounts`/`servers`) -- reconnecting after every
-    -- reload is an accepted first-pass limitation until that translation layer lands and there's an
-    -- actual reason to keep these around across reloads.
+    -- never touched directly (see `Ports.facebookLoginPopup`'s `"mastodon"` provider). Persisted
+    -- alongside `browsedMastodonInstances` via `Ports.persistMastodonAccountsAndServers` -- see that
+    -- port's own doc. No remove/disconnect UI yet, unlike `browsedMastodonInstances`/
+    -- `blueskyAccounts` -- once connected, an account here now survives reloads with no way to clear
+    -- it short of clearing site data, an accepted first-pass limitation.
     , mastodonAccounts : List MastodonAccount
 
     -- The instance host `MastodonConnectClicked` most recently opened a popup for, until that
@@ -340,12 +341,12 @@ type alias Model =
     -- Mastodon instances the user just wants to browse the public timeline of -- no OAuth, no
     -- admin-registered app, no account at all (see `Shared.Federation.Mastodon.fetchPosts`'s own
     -- doc: it's a plain unauthenticated `GET`), the same "just add a host" affordance
-    -- `AddServerClicked`'s server strip already offers for real Rellm servers. Deliberately a
-    -- bare `List String` (not a richer record the way `Server`/`MastodonAccount` are) -- there's
-    -- no connection state, account identity, or credential to track here at all, just a host to
-    -- fetch. Session-only, same as `mastodonAccounts`/`blueskyAccounts` -- see those fields' own
-    -- doc on that being an accepted first-pass limitation.
-    , browsedMastodonInstances : List String
+    -- `AddServerClicked`'s server strip already offers for real Rellm servers. `enabled` mirrors
+    -- `Server.enabled`/`BlueskyAccount.enabled` -- a disabled instance stays in this list (so its
+    -- chip keeps showing, switched off) but is dropped from
+    -- `Components.Pages.PostsPage.relevantFeedSources`, the same as a disabled `Server` is from
+    -- `enabledServers`. Persisted alongside `mastodonAccounts` via `Ports.persistMastodonAccountsAndServers`.
+    , browsedMastodonInstances : List BrowsedMastodonInstance
 
     -- `UI.mastodonBrowseSection`'s "add an instance to browse" `<input>` value -- mirrors
     -- `AddServerForm`'s own text-input-plus-button shape, just without needing a whole record
@@ -353,9 +354,18 @@ type alias Model =
     -- a browsed instance is instant, synchronous, and can't fail, unlike adding a real server).
     , browseMastodonInstanceInput : String
 
+    -- `True` while `UI.mastodonBrowseSection`'s "+ Mastodon Server" tab is the open one -- see
+    -- `ShowMastodonServerFormClicked`/`HideMastodonServerFormClicked`. Mirrors
+    -- `blueskyConnectForm`'s own `Maybe`-as-open/closed convention, just as a plain `Bool` since this
+    -- form has only the one `browseMastodonInstanceInput` field to carry rather than a whole record.
+    -- `ShowBlueskyConnectFormClicked`/`ShowMastodonServerFormClicked` each close the other one, so
+    -- the two behave like tabs -- only one open at a time -- despite being two independent fields.
+    , mastodonServerFormOpen : Bool
+
     -- Bluesky accounts connected via `UI.blueskyConnectSection`'s form (see
-    -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- same session-only, not-yet-wired-into-
-    -- anything first-pass scope as `mastodonAccounts`, see that field's own doc.
+    -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- persisted via
+    -- `Ports.persistBlueskyAccounts`, same as `mastodonAccounts`/`browsedMastodonInstances` are via
+    -- `Ports.persistMastodonAccountsAndServers` (see that port's own doc).
     , blueskyAccounts : List BlueskyAccount
 
     -- `Just` while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded -- see
@@ -450,9 +460,16 @@ type Msg
     | BlueskyAppPasswordChanged String
     | BlueskyConnectClicked
     | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
+    | GotBlueskyAvatarResult String (Result Http.Error (Maybe String))
+    | RemoveBlueskyAccountClicked String
+    | ToggleBlueskyAccountEnabled String
+    | ShowMastodonServerFormClicked
+    | HideMastodonServerFormClicked
     | BrowseMastodonInstanceInputChanged String
     | BrowseMastodonInstanceClicked
+    | GotMastodonInstanceLogoResult String (Result Http.Error (Maybe String))
     | RemoveBrowsedMastodonInstanceClicked String
+    | ToggleBrowsedMastodonInstanceEnabled String
     | NoOp
 
 
@@ -532,11 +549,32 @@ the session response already carries `handle`, so there's no separate verify-cre
 the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
 directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
 doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
-are hosted there by default, so this covers the common case.
+are hosted there by default, so this covers the common case. `enabled` mirrors `Server.enabled` -- see
+`BrowsedMastodonInstance`'s own doc. `avatarUrl` starts `Nothing` (the `createSession` response this
+is built from carries no profile info at all) and is filled in shortly after, if it resolves, by a
+follow-up `fetchBlueskyAvatarTask` call -- see `GotBlueskyAvatarResult`.
 -}
 type alias BlueskyAccount =
     { handle : String
     , accessToken : String
+    , enabled : Bool
+    , avatarUrl : Maybe String
+    }
+
+
+{-| One Mastodon instance being browsed (see `Model.browsedMastodonInstances`'s own doc) -- `enabled`
+mirrors `Server.enabled`: toggled via `UI.mastodonServerFeedChip`'s switch
+(`ToggleBrowsedMastodonInstanceEnabled`), it's what `Components.Pages.PostsPage.relevantFeedSources`
+checks to decide whether this instance's feed is currently shown, exactly as `enabledServers` does for
+a real `Server`. Unlike a `Server`, there's no separate "connected" state to track alongside it --
+browsing needs no connection, so `enabled` alone is the whole story. `logoUrl` starts `Nothing` and is
+filled in shortly after, if it resolves, by a follow-up `fetchMastodonInstanceLogoTask` call -- see
+`GotMastodonInstanceLogoResult`.
+-}
+type alias BrowsedMastodonInstance =
+    { host : String
+    , enabled : Bool
+    , logoUrl : Maybe String
     }
 
 
@@ -1386,13 +1424,23 @@ isPictographic c =
         || isRegionalIndicator c
 
 
-init : Request -> Flags -> ( Model, Cmd Msg )
-init req flags =
+init : Request -> Flags -> Flags -> Flags -> ( Model, Cmd Msg )
+init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
     let
         persisted : PersistedState
         persisted =
             Decode.decodeValue persistedStateDecoder flags
                 |> Result.withDefault emptyPersistedState
+
+        persistedBlueskyAccounts : List BlueskyAccount
+        persistedBlueskyAccounts =
+            Decode.decodeValue blueskyAccountsDecoder blueskyAccountsFlags
+                |> Result.withDefault []
+
+        persistedMastodon : MastodonAccountsAndServers
+        persistedMastodon =
+            Decode.decodeValue mastodonAccountsAndServersDecoder mastodonAccountsAndServersFlags
+                |> Result.withDefault emptyMastodonAccountsAndServers
 
         pageIsSecure : Bool
         pageIsSecure =
@@ -1520,11 +1568,12 @@ init req flags =
       , pendingNotificationAccountId = Nothing
       , pendingPushSubscriptionCheck = Nothing
       , federatedSignInNotice = Nothing
-      , mastodonAccounts = []
+      , mastodonAccounts = persistedMastodon.accounts
       , mastodonConnectPopupOpen = Nothing
-      , browsedMastodonInstances = []
+      , browsedMastodonInstances = persistedMastodon.browsedInstances
       , browseMastodonInstanceInput = ""
-      , blueskyAccounts = []
+      , mastodonServerFormOpen = False
+      , blueskyAccounts = persistedBlueskyAccounts
       , blueskyConnectForm = Nothing
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
@@ -2086,12 +2135,12 @@ sendUpdate req msg model =
                         -- `Shared.Federation.Mastodon.fetchPosts`'s own doc: it's a plain
                         -- unauthenticated `GET`), so this can just fold straight into `newModel`
                         -- rather than firing its own `Cmd`s. Both `configuredByDefault` and
-                        -- `pinnedByDefault` trigger the same "add to the browse list" effect here
-                        -- -- unlike `Server.enabled`, `browsedMastodonInstances` has no
-                        -- disabled-but-present state for `pinnedByDefault` to mean "enabled
-                        -- immediately" *as opposed to*, so the two aren't distinguishable yet. If
-                        -- that ever changes, this is the spot to make them diverge.
-                        defaultBrowsedMastodonInstances : List String
+                        -- `pinnedByDefault` trigger the same "add to the browse list, enabled"
+                        -- effect here -- as of this writing the two aren't distinguishable yet
+                        -- (unlike `Server.enabled`, which `pinnedByDefault` alone controls via
+                        -- `federatedServerCmds` below). If that ever changes, this is the spot to
+                        -- make them diverge, e.g. `pinnedByDefault` alone setting `enabled = True`.
+                        defaultBrowsedMastodonInstances : List BrowsedMastodonInstance
                         defaultBrowsedMastodonInstances =
                             config.federationInfo
                                 |> Maybe.map .mastodonServers
@@ -2100,7 +2149,12 @@ sendUpdate req msg model =
                                     (\ms ->
                                         Maybe.withDefault False ms.configuredByDefault || Maybe.withDefault False ms.pinnedByDefault
                                     )
-                                |> List.map .domain
+                                |> List.map (\ms -> { host = ms.domain, enabled = True, logoUrl = Nothing })
+
+                        newlyAddedMastodonInstances : List BrowsedMastodonInstance
+                        newlyAddedMastodonInstances =
+                            defaultBrowsedMastodonInstances
+                                |> List.filter (\di -> not (List.any (\i -> i.host == di.host) model.browsedMastodonInstances))
 
                         newModel : Model
                         newModel =
@@ -2108,10 +2162,15 @@ sendUpdate req msg model =
                                 | mainFrontendHost = resolvedFrontend
                                 , servers = upsertServer server model.servers
                                 , browsingHostConfigResolved = True
-                                , browsedMastodonInstances =
-                                    model.browsedMastodonInstances
-                                        ++ List.filter (\domain -> not (List.member domain model.browsedMastodonInstances)) defaultBrowsedMastodonInstances
+                                , browsedMastodonInstances = model.browsedMastodonInstances ++ newlyAddedMastodonInstances
                             }
+
+                        -- Fetches each newly-added default instance's logo, same as
+                        -- `BrowseMastodonInstanceClicked` does for a manually-added one.
+                        mastodonInstanceLogoCmds : List (Cmd Msg)
+                        mastodonInstanceLogoCmds =
+                            newlyAddedMastodonInstances
+                                |> List.map (\i -> Task.attempt (GotMastodonInstanceLogoResult i.host) (fetchMastodonInstanceLogoTask i.host))
 
                         -- The base host may recommend other servers to federate with (see
                         -- `federation.proto`'s `FederatedServer`). At this first-setup moment
@@ -2141,8 +2200,15 @@ sendUpdate req msg model =
                     in
                     -- `refreshPermissionsForServer` persists (this server's own addition/
                     -- `mainFrontendHost` change included) once it settles -- see its own doc.
+                    -- `browsedMastodonInstances` uses its own separate port, so its default-browsed
+                    -- additions above need their own explicit persist here rather than riding along.
                     ( newModel
-                    , Cmd.batch (refreshPermissionsForServer server newModel.accounts :: federatedServerCmds)
+                    , Cmd.batch
+                        (refreshPermissionsForServer server newModel.accounts
+                            :: Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel)
+                            :: federatedServerCmds
+                            ++ mastodonInstanceLogoCmds
+                        )
                     )
 
                 Err _ ->
@@ -3231,18 +3297,21 @@ sendUpdate req msg model =
                             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
         GotMastodonVerifyCredentialsResult instanceHost accessToken (Ok username) ->
-            ( { model
-                | mastodonConnectPopupOpen = Nothing
-                , mastodonAccounts = { instanceHost = instanceHost, accessToken = accessToken, username = username } :: model.mastodonAccounts
-              }
-            , Cmd.none
-            )
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | mastodonConnectPopupOpen = Nothing
+                        , mastodonAccounts = { instanceHost = instanceHost, accessToken = accessToken, username = username } :: model.mastodonAccounts
+                    }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
 
         GotMastodonVerifyCredentialsResult _ _ (Err _) ->
             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
         ShowBlueskyConnectFormClicked ->
-            ( { model | blueskyConnectForm = Just { handle = "", appPassword = "", status = Idle } }, Cmd.none )
+            ( { model | blueskyConnectForm = Just { handle = "", appPassword = "", status = Idle }, mastodonServerFormOpen = False }, Cmd.none )
 
         HideBlueskyConnectFormClicked ->
             ( { model | blueskyConnectForm = Nothing }, Cmd.none )
@@ -3264,12 +3333,76 @@ sendUpdate req msg model =
                     ( model, Cmd.none )
 
         GotBlueskyConnectResult (Ok account) ->
-            ( { model | blueskyConnectForm = Nothing, blueskyAccounts = account :: model.blueskyAccounts }, Cmd.none )
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    account :: model.blueskyAccounts
+            in
+            ( { model | blueskyConnectForm = Nothing, blueskyAccounts = newAccounts }
+            , Cmd.batch
+                [ Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
+                , Task.attempt (GotBlueskyAvatarResult account.handle) (fetchBlueskyAvatarTask account.handle account.accessToken)
+                ]
+            )
 
         GotBlueskyConnectResult (Err err) ->
             ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | status = Errored (blueskyErrorMessage err) }) }
             , Cmd.none
             )
+
+        GotBlueskyAvatarResult _ (Err _) ->
+            -- No avatar to show -- `blueskyAccountChip` already falls back to a placeholder for
+            -- `avatarUrl == Nothing`, so there's nothing more to do here.
+            ( model, Cmd.none )
+
+        GotBlueskyAvatarResult _ (Ok Nothing) ->
+            ( model, Cmd.none )
+
+        GotBlueskyAvatarResult handle (Ok (Just avatarUrl)) ->
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    List.map
+                        (\a ->
+                            if a.handle == handle then
+                                { a | avatarUrl = Just avatarUrl }
+
+                            else
+                                a
+                        )
+                        model.blueskyAccounts
+            in
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
+
+        RemoveBlueskyAccountClicked handle ->
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    List.filter (\a -> a.handle /= handle) model.blueskyAccounts
+            in
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
+
+        ToggleBlueskyAccountEnabled handle ->
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    List.map
+                        (\a ->
+                            if a.handle == handle then
+                                { a | enabled = not a.enabled }
+
+                            else
+                                a
+                        )
+                        model.blueskyAccounts
+            in
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
+
+        ShowMastodonServerFormClicked ->
+            ( { model | mastodonServerFormOpen = True, blueskyConnectForm = Nothing }, Cmd.none )
+
+        HideMastodonServerFormClicked ->
+            ( { model | mastodonServerFormOpen = False, browseMastodonInstanceInput = "" }, Cmd.none )
 
         BrowseMastodonInstanceInputChanged text ->
             ( { model | browseMastodonInstanceInput = text }, Cmd.none )
@@ -3280,19 +3413,78 @@ sendUpdate req msg model =
                 host =
                     String.trim model.browseMastodonInstanceInput
             in
-            if String.isEmpty host || List.member host model.browsedMastodonInstances then
+            if String.isEmpty host || List.any (\i -> i.host == host) model.browsedMastodonInstances then
                 ( model, Cmd.none )
 
             else
-                ( { model
-                    | browsedMastodonInstances = host :: model.browsedMastodonInstances
-                    , browseMastodonInstanceInput = ""
-                  }
-                , Cmd.none
+                let
+                    newModel : Model
+                    newModel =
+                        { model
+                            | browsedMastodonInstances = { host = host, enabled = True, logoUrl = Nothing } :: model.browsedMastodonInstances
+                            , browseMastodonInstanceInput = ""
+                        }
+                in
+                ( newModel
+                , Cmd.batch
+                    [ Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel)
+                    , Task.attempt (GotMastodonInstanceLogoResult host) (fetchMastodonInstanceLogoTask host)
+                    ]
                 )
 
+        GotMastodonInstanceLogoResult _ (Err _) ->
+            -- No logo to show -- `mastodonServerFeedChip` already falls back to a placeholder for
+            -- `logoUrl == Nothing`, so there's nothing more to do here.
+            ( model, Cmd.none )
+
+        GotMastodonInstanceLogoResult _ (Ok Nothing) ->
+            ( model, Cmd.none )
+
+        GotMastodonInstanceLogoResult host (Ok (Just logoUrl)) ->
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | browsedMastodonInstances =
+                            List.map
+                                (\i ->
+                                    if i.host == host then
+                                        { i | logoUrl = Just logoUrl }
+
+                                    else
+                                        i
+                                )
+                                model.browsedMastodonInstances
+                    }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
+
         RemoveBrowsedMastodonInstanceClicked host ->
-            ( { model | browsedMastodonInstances = List.filter ((/=) host) model.browsedMastodonInstances }, Cmd.none )
+            let
+                newModel : Model
+                newModel =
+                    { model | browsedMastodonInstances = List.filter (\i -> i.host /= host) model.browsedMastodonInstances }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
+
+        ToggleBrowsedMastodonInstanceEnabled host ->
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | browsedMastodonInstances =
+                            List.map
+                                (\i ->
+                                    if i.host == host then
+                                        { i | enabled = not i.enabled }
+
+                                    else
+                                        i
+                                )
+                                model.browsedMastodonInstances
+                    }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
 
         NoOp ->
             ( model, Cmd.none )
@@ -4395,6 +4587,27 @@ verifyMastodonCredentialsTask instanceHost accessToken =
         }
 
 
+{-| `GET /api/v1/instance` against `host` -- a public, unauthenticated Mastodon REST endpoint (same
+"no auth needed" reasoning as `Shared.Federation.Mastodon.fetchPosts`), fetched once when an instance
+is added to `browsedMastodonInstances` (see `BrowseMastodonInstanceClicked`/
+`GotMastodonInstanceLogoResult`) to get its `thumbnail` -- the small instance logo/banner image shown
+in `UI.mastodonServerFeedChip`. `Nothing` (not an error) if the field is present but blank/absent, the
+same as a Rellm server with no logo configured.
+-}
+fetchMastodonInstanceLogoTask : String -> Task Http.Error (Maybe String)
+fetchMastodonInstanceLogoTask host =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ host ++ "/api/v1/instance"
+        , body = Http.emptyBody
+        , resolver =
+            jsonResolver (Decode.maybe (Decode.field "thumbnail" Decode.string))
+                (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
 {-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
 directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
 `bsky.social`-only limitation). Decodes just `handle`/`accessJwt`, all a `BlueskyAccount` needs.
@@ -4421,9 +4634,11 @@ createBlueskySessionTask handle appPassword =
 
 blueskySessionDecoder : Decode.Decoder BlueskyAccount
 blueskySessionDecoder =
-    Decode.map2 BlueskyAccount
+    Decode.map4 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessJwt" Decode.string)
+        (Decode.succeed True)
+        (Decode.succeed Nothing)
 
 
 {-| `com.atproto.server.createSession`'s error responses are `{ error : String, message : String }`
@@ -4434,6 +4649,26 @@ a bare status code.
 blueskyErrorBody : String -> Maybe String
 blueskyErrorBody body =
     Decode.decodeString (Decode.field "message" Decode.string) body |> Result.toMaybe
+
+
+{-| `app.bsky.actor.getProfile` for `handle`, authenticated with the just-connected account's own
+`accessToken` -- fetched once right after `createBlueskySessionTask` succeeds (see
+`GotBlueskyConnectResult`/`GotBlueskyAvatarResult`), since the session response itself carries no
+profile info. `Nothing` (not an error) if the account has no avatar set, same as
+`fetchMastodonInstanceLogoTask`'s own `Nothing`-for-unset convention.
+-}
+fetchBlueskyAvatarTask : String -> String -> Task Http.Error (Maybe String)
+fetchBlueskyAvatarTask handle accessToken =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" ++ handle
+        , body = Http.emptyBody
+        , resolver =
+            jsonResolver (Decode.maybe (Decode.field "avatar" Decode.string))
+                (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
 
 
 {-| `GotBlueskyConnectResult`'s error-to-display-string projection -- `Http.BadBody` here always
@@ -4739,6 +4974,100 @@ encodePersistedServer server =
 emptyPersistedState : PersistedState
 emptyPersistedState =
     { accounts = [], servers = [] }
+
+
+{-| `Ports.persistMastodonAccountsAndServers`'s wire format -- `mastodonAccounts` and
+`browsedMastodonInstances` bundled into one value, since they're persisted together (see that port's
+own doc), even though they're two separate `Model` fields and, in `UI.mastodonServersStrip`'s case,
+two separately-rendered pieces of UI.
+-}
+type alias MastodonAccountsAndServers =
+    { accounts : List MastodonAccount
+    , browsedInstances : List BrowsedMastodonInstance
+    }
+
+
+emptyMastodonAccountsAndServers : MastodonAccountsAndServers
+emptyMastodonAccountsAndServers =
+    { accounts = [], browsedInstances = [] }
+
+
+encodeMastodonAccountsAndServers : Model -> Encode.Value
+encodeMastodonAccountsAndServers model =
+    Encode.object
+        [ ( "accounts", Encode.list encodeMastodonAccount model.mastodonAccounts )
+        , ( "browsedInstances", Encode.list encodeBrowsedMastodonInstance model.browsedMastodonInstances )
+        ]
+
+
+encodeMastodonAccount : MastodonAccount -> Encode.Value
+encodeMastodonAccount account =
+    Encode.object
+        [ ( "instanceHost", Encode.string account.instanceHost )
+        , ( "accessToken", Encode.string account.accessToken )
+        , ( "username", Encode.string account.username )
+        ]
+
+
+encodeBrowsedMastodonInstance : BrowsedMastodonInstance -> Encode.Value
+encodeBrowsedMastodonInstance instance =
+    Encode.object
+        [ ( "host", Encode.string instance.host )
+        , ( "enabled", Encode.bool instance.enabled )
+        , ( "logoUrl", instance.logoUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+        ]
+
+
+mastodonAccountsAndServersDecoder : Decoder MastodonAccountsAndServers
+mastodonAccountsAndServersDecoder =
+    Decode.map2 MastodonAccountsAndServers
+        (Decode.field "accounts" (Decode.list mastodonAccountDecoder))
+        (Decode.field "browsedInstances" (Decode.list browsedMastodonInstanceDecoder))
+
+
+mastodonAccountDecoder : Decoder MastodonAccount
+mastodonAccountDecoder =
+    Decode.map3 MastodonAccount
+        (Decode.field "instanceHost" Decode.string)
+        (Decode.field "accessToken" Decode.string)
+        (Decode.field "username" Decode.string)
+
+
+browsedMastodonInstanceDecoder : Decoder BrowsedMastodonInstance
+browsedMastodonInstanceDecoder =
+    Decode.map3 BrowsedMastodonInstance
+        (Decode.field "host" Decode.string)
+        (Decode.field "enabled" Decode.bool)
+        (Decode.maybe (Decode.field "logoUrl" Decode.string))
+
+
+encodeBlueskyAccounts : List BlueskyAccount -> Encode.Value
+encodeBlueskyAccounts accounts =
+    Encode.list encodeBlueskyAccount accounts
+
+
+encodeBlueskyAccount : BlueskyAccount -> Encode.Value
+encodeBlueskyAccount account =
+    Encode.object
+        [ ( "handle", Encode.string account.handle )
+        , ( "accessToken", Encode.string account.accessToken )
+        , ( "enabled", Encode.bool account.enabled )
+        , ( "avatarUrl", account.avatarUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+        ]
+
+
+blueskyAccountsDecoder : Decoder (List BlueskyAccount)
+blueskyAccountsDecoder =
+    Decode.list blueskyAccountDecoder
+
+
+blueskyAccountDecoder : Decoder BlueskyAccount
+blueskyAccountDecoder =
+    Decode.map4 BlueskyAccount
+        (Decode.field "handle" Decode.string)
+        (Decode.field "accessToken" Decode.string)
+        (Decode.field "enabled" Decode.bool)
+        (Decode.maybe (Decode.field "avatarUrl" Decode.string))
 
 
 {-| The `PushManager.subscribe()` result Ports.pushSubscribed's JS side hands back on success --

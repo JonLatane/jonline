@@ -552,6 +552,22 @@
   object-fit: cover;
 }
 
+/* Overrides the plain `.server-logo-image`'s 6px corner rounding with a full circle -- see
+   `UI.federatedFeedLogoImage`'s own doc on when this is added (Bluesky avatars) vs. left off
+   (Mastodon instance logos, which stay un-rounded like a real server's own chip logo). */
+.server-logo-image-circular {
+  border-radius: 50%;
+}
+
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own label row -- unlike `.server-name-and-logo`'s
+   own context-scoped sizing (regular/compact/horizontal), these chips use `.server-logo-image`
+   directly with no such wrapper, so this fills in the size that would otherwise be missing. Matches
+   `.server-name-and-logo.compact`'s own 20px, since this row is just as tight on space. */
+.server-chip-host-row .server-logo-image {
+  width: 20px;
+  height: 20px;
+}
+
 .server-name-and-logo.compact .server-logo-image {
   width: 20px;
   height: 20px;

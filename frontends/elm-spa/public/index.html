@@ -208,6 +208,22 @@
       console.error("Failed to read stored user preferences", e);
     }
 
+    var storedBlueskyAccounts = [];
+    try {
+      var rawBlueskyAccounts = localStorage.getItem("rellmBlueskyAccounts");
+      storedBlueskyAccounts = rawBlueskyAccounts ? JSON.parse(rawBlueskyAccounts) : [];
+    } catch (e) {
+      console.error("Failed to read stored Bluesky accounts", e);
+    }
+
+    var storedMastodonAccountsAndServers = null;
+    try {
+      var rawMastodonAccountsAndServers = localStorage.getItem("rellmMastodonAccountsAndServers");
+      storedMastodonAccountsAndServers = rawMastodonAccountsAndServers ? JSON.parse(rawMastodonAccountsAndServers) : null;
+    } catch (e) {
+      console.error("Failed to read stored Mastodon accounts/servers", e);
+    }
+
     var app = Elm.Main.init({
       flags: {
         state: storedState,
@@ -217,7 +233,9 @@
         uses24HourTime: uses24HourTime,
         starredPosts: storedStarredPosts,
         federatedAuthKeyPair: storedFederatedAuthKeyPair,
-        userPreferences: storedUserPreferences
+        userPreferences: storedUserPreferences,
+        blueskyAccounts: storedBlueskyAccounts,
+        mastodonAccountsAndServers: storedMastodonAccountsAndServers
       }
     });
 
@@ -251,6 +269,15 @@
     // live into already-open tabs.
     app.ports.persistUserPreferences.subscribe(function (preferences) {
       localStorage.setItem("rellmUserPreferences", JSON.stringify(preferences));
+    });
+
+    // No `BroadcastChannel` here either -- same reasoning as `persistUserPreferences`, above.
+    app.ports.persistBlueskyAccounts.subscribe(function (blueskyAccounts) {
+      localStorage.setItem("rellmBlueskyAccounts", JSON.stringify(blueskyAccounts));
+    });
+
+    app.ports.persistMastodonAccountsAndServers.subscribe(function (mastodonAccountsAndServers) {
+      localStorage.setItem("rellmMastodonAccountsAndServers", JSON.stringify(mastodonAccountsAndServers));
     });
 
     // Same cross-tab sync as `accountsAndServersChannel`, above.

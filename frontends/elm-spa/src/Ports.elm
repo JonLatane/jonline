@@ -17,7 +17,9 @@ port module Ports exposing
     , hideSplash
     , measureElements
     , persistAccountsAndServers
+    , persistBlueskyAccounts
     , persistFederatedAuthKeyPair
+    , persistMastodonAccountsAndServers
     , persistStarredPosts
     , persistThemePreference
     , persistUserPreferences
@@ -54,6 +56,26 @@ origin stay in sync (e.g. signing in on one tab shows the new account on all
 the others) without each tab polling localStorage.
 -}
 port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Persists `Shared.AccountsPanel.Model.blueskyAccounts` to its own localStorage key -- decode with
+`Shared.AccountsPanel.blueskyAccountsDecoder` at `init`. Kept independent of `persistAccountsAndServers`
+for the same reason `persistStarredPosts` is: these aren't real Rellm `Server`/`Account`s, just a
+translated feed source (see `Shared.Federation.Bluesky`). No cross-tab `BroadcastChannel`, unlike
+`persistAccountsAndServers`/`persistStarredPosts` -- mirrors `persistUserPreferences`'s own doc on why:
+connecting a Bluesky account in one tab doesn't need to show up live in another already-open one, only
+on that other tab's next reload.
+-}
+port persistBlueskyAccounts : Encode.Value -> Cmd msg
+
+
+{-| Persists `Shared.AccountsPanel.Model.mastodonAccounts` (OAuth-connected accounts) and
+`browsedMastodonInstances` (anonymously-browsed instances) together, to their own localStorage key --
+decode with `Shared.AccountsPanel.mastodonAccountsAndServersDecoder` at `init`. See
+`persistBlueskyAccounts`'s own doc for why this is separate from `persistAccountsAndServers` and has
+no cross-tab `BroadcastChannel`.
+-}
+port persistMastodonAccountsAndServers : Encode.Value -> Cmd msg
 
 
 {-| Persists the set of starred Posts (as a list of `postId@frontendHost`
