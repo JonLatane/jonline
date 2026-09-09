@@ -36,6 +36,7 @@ import Html exposing (Html, node, text)
 import Html.Attributes exposing (id)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, RellmServer)
 import UI.Classes exposing (hostnameToCSSClass)
 import UI.ServerTheme
 
@@ -99,16 +100,16 @@ mainFrontendServerRules theme accountsPanel =
         ]
 
 
-serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> AccountsPanel.RellmServer -> String
+serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> RellmServer -> String
 serverRules darkMode mainTheme mainFrontendHost server =
     let
         theme : UI.ServerTheme.ServerTheme
         theme =
-            AccountsPanel.serverThemeOf darkMode server
+            RellmServers.rellmServerThemeOf darkMode server
 
-        branding : AccountsPanel.Branding
+        branding : Branding
         branding =
-            AccountsPanel.brandingOf server
+            RellmServers.brandingOf server
 
         selector : String
         selector =

@@ -49,6 +49,8 @@ import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (AvailableAIModel, Event, EventInstance, Media, MediaReference, Post, defaultGenerateMediaRequest)
 import Proto.Rellm.GenerateMediaRequest.Target as GenerateMediaRequestTarget
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Conversions as Conversions
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.Time as SharedTime
@@ -119,8 +121,8 @@ type Msg
 
 
 type alias Resolved =
-    { server : AccountsPanel.RellmServer
-    , account : AccountsPanel.RellmAccount
+    { server : RellmServer
+    , account : RellmAccount
     }
 
 
@@ -299,9 +301,9 @@ chooser, `selectedModel`, and what `GenerateClicked` can actually submit all sta
 availableModelsFor : AccountsPanel.Model -> String -> List MediaReference -> List AvailableAIModel
 availableModelsFor accountsPanelModel host media =
     let
-        account : Maybe AccountsPanel.RellmAccount
+        account : Maybe RellmAccount
         account =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
         capable : AvailableAIModel -> Bool
         capable =
@@ -398,9 +400,9 @@ availableAIModelLabel viewerUsername available =
 view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
 view time accountsPanelModel model =
     let
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost
 
         availableModels : List AvailableAIModel
         availableModels =
@@ -492,13 +494,13 @@ targetIndicatorView time accountsPanelModel model =
 targetCardView : SharedTime.Model -> AccountsPanel.Model -> String -> String -> Target -> Html Msg
 targetCardView time accountsPanelModel basePath host target =
     let
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost accountsPanelModel.servers host
+            RellmServers.rellmServerForHost accountsPanelModel.servers host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
     in
     case target of
         TargetPost post ->
@@ -556,16 +558,16 @@ mediaSectionView : AccountsPanel.Model -> Model -> Html Msg
 mediaSectionView accountsPanelModel model =
     div [ class "media-generator-panel-field" ]
         [ span [ class "media-generator-panel-label" ] [ text "Reference Media" ]
-        , case AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost of
+        , case RellmServers.rellmServerForHost accountsPanelModel.servers model.targetHost of
             Just server ->
                 if List.isEmpty model.media then
                     div [ class "media-generator-panel-media-empty" ] [ text "No media selected." ]
 
                 else
                     let
-                        maybeAccount : Maybe AccountsPanel.RellmAccount
+                        maybeAccount : Maybe RellmAccount
                         maybeAccount =
-                            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+                            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost
                     in
                     div [ class "media-generator-panel-media-strip" ]
                         (List.map
@@ -587,7 +589,7 @@ actual author-or-Admin/owner-or-grantee checks all happen server-side, in `Gener
 -}
 resolve : AccountsPanel.Model -> String -> Result String Resolved
 resolve accountsPanelModel host =
-    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+    case RellmServers.rellmServerForHost accountsPanelModel.servers host of
         Nothing ->
             Err "That server isn't connected."
 
@@ -596,7 +598,7 @@ resolve accountsPanelModel host =
                 Err (server.frontendHost ++ " is disabled.")
 
             else
-                case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+                case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host of
                     Nothing ->
                         Err "You're not signed in on that server."
 

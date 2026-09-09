@@ -7,7 +7,7 @@ module Shared.Federation.Mastodon exposing
     )
 
 {-| Translates Mastodon's REST API into Rellm's `Post` shape, entirely client-side -- see
-`Ports.facebookLoginPopup`'s `"mastodon"` provider doc and `Shared.AccountsPanel.MastodonAccount`'s
+`Ports.facebookLoginPopup`'s `"mastodon"` provider doc and `Shared.MastodonAccount`'s
 own doc for the connection side this feeds off of. `fetchPosts` is called from
 `Components.Pages.PostsPage.fetchFeedSource`'s `MastodonInstance` case -- see `FeedSource`'s own doc
 for how a Mastodon instance's feed is fetched/stored/animated alongside a real Rellm server's.

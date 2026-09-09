@@ -37,7 +37,7 @@ module Components.Users exposing
 
 {-| Shared building blocks for displaying `Proto.Rellm.User`s -- the fetch
 helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.UsernameOrCustomTab_`, by
-username) need against a specific `Shared.AccountsPanel.RellmServer`, the
+username) need against a specific `Shared.RellmServer`, the
 `/user/:id[@host]`/`/:username[@host]` route id parsing/linking (mirroring
 `Components.Posts`' `postHref`/`parsePostRouteId` for `/post/:id[@host]`), and
 plain-English labels for a `User`'s `Visibility`/`Moderation`/`Permission`
@@ -56,7 +56,9 @@ import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Set exposing (Set)
-import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer)
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
@@ -165,7 +167,7 @@ fetchUsers accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getUsers request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -192,7 +194,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getUsers { defaultGetUsersRequest | userId = Just userId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
@@ -200,7 +202,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
                         case List.head response.users of
                             Just freshUser ->
                                 Grpc.new Rellm.updateUser (updateFn freshUser)
-                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                    |> Grpc.setHost (RellmServers.rellmServerUrl server)
                                     |> withAccessToken (Just token)
                                     |> Grpc.toTask
 
@@ -227,7 +229,7 @@ federateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.federateProfile target
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -247,7 +249,7 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.defederateProfile target
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -274,7 +276,7 @@ deleteUser accountsPanelModel maybeAccountServer user =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteUser user
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -295,7 +297,7 @@ createFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -316,7 +318,7 @@ updateFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -337,7 +339,7 @@ deleteFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -444,7 +446,7 @@ parseUserRouteId mainFrontendHost rawId =
 
 
 {-| A username display enriched with the user's Real Name, if they have one --
-mirrors `Shared.AccountsPanel.displayName`.
+mirrors `Shared.RellmAccounts.rellmAccountDisplayName`.
 -}
 displayName : User -> String
 displayName user =
@@ -471,9 +473,9 @@ titleName user =
 {-| The URL for a user's avatar, authorized with `maybeAccount`'s access token
 if given -- avatars can be visibility-restricted, so an anonymous request (or
 one from an account that isn't allowed to see it) may still 403 despite this
-returning `Just` a URL. Mirrors `Shared.AccountsPanel.accountAvatarUrl`.
+returning `Just` a URL. Mirrors `Shared.RellmAccounts.rellmAccountAvatarUrl`.
 -}
-avatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Maybe String
+avatarUrl : RellmServer -> Maybe RellmAccount -> User -> Maybe String
 avatarUrl server maybeAccount user =
     mediaReferenceUrl server maybeAccount user.avatar
 
@@ -481,7 +483,7 @@ avatarUrl server maybeAccount user =
 {-| Like `avatarUrl`, but for an `Author` (the smaller, post-embedded version
 of a `User` -- see `Components.Posts.postAuthorHref`) instead of a full `User`.
 -}
-authorAvatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Author -> Maybe String
+authorAvatarUrl : RellmServer -> Maybe RellmAccount -> Author -> Maybe String
 authorAvatarUrl server maybeAccount author =
     mediaReferenceUrl server maybeAccount author.avatar
 
@@ -492,12 +494,12 @@ authorAvatarUrl server maybeAccount author =
 `avatarPreviewUrl`) to preview a newly-picked media item that isn't
 `user.avatar` yet.
 -}
-mediaReferenceUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Proto.Rellm.MediaReference -> Maybe String
+mediaReferenceUrl : RellmServer -> Maybe RellmAccount -> Maybe Proto.Rellm.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia
         |> Maybe.andThen
             (\media ->
-                AccountsPanel.mediaUrl server media.id
+                RellmServers.mediaUrl server media.id
                     |> Maybe.map
                         (\base ->
                             case maybeAccount of
@@ -528,7 +530,7 @@ needing this function's callers to reach for that module's own "stretched
 link" treatment.
 
 -}
-userCard : String -> String -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Html msg -> User -> Html msg
+userCard : String -> String -> RellmServer -> Maybe RellmAccount -> Html msg -> User -> Html msg
 userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
     a
         [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })
@@ -588,7 +590,7 @@ userCardAvatar name maybeUrl =
             img [ Html.Attributes.class "user-card-avatar", src url, alt name, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter name) ]
 
 
 {-| "N followers · N following" for `userCard` -- either half is dropped

@@ -63,6 +63,8 @@ import Proto.Rellm exposing (Event, EventInstance, SyncDestination, User)
 import Proto.Rellm.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
@@ -873,7 +875,7 @@ updateInner shared msg model =
                         -- successful un-sync changes `instance.syncDestinations`
                         -- behind this already-fetched copy's back the same way.
                         Shared.GotEventInstanceSyncDestinationDeleteResult host (Ok _) ->
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchServers shared model [ server ]
 
@@ -1173,7 +1175,7 @@ updateInner shared msg model =
 
                 maybeAccountServer : ( Maybe String, String )
                 maybeAccountServer =
-                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+                    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
             in
             ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
             , Events.syncEventInstance shared.accounts maybeAccountServer eventInstanceId eventSyncDestinationId
@@ -1195,7 +1197,7 @@ updateInner shared msg model =
                 Ok ( maybeAccountsPanelMsg, _ ) ->
                     let
                         ( refetchedModel, refetchEffect ) =
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchServers shared clearedModel [ server ]
 
@@ -1482,11 +1484,11 @@ enabled server for an unfiltered feed (`Pages.Events`), or just `author`'s own
 resolved host once there is one (`Pages.UsernameOrCustomTab_.Events`/
 `Pages.User.UserId_.Events`).
 -}
-relevantServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
+relevantServers : Shared.Model -> Model -> List RellmServer
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
@@ -1515,8 +1517,8 @@ configuration, or `eventSettings` itself isn't known yet.
 -}
 calendarLookbackDays : Shared.Model -> Int
 calendarLookbackDays shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.map AccountsPanel.configurationOf
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
         |> Maybe.andThen .eventSettings
         |> Maybe.andThen .calendarLookbackDays
         |> Maybe.withDefault calendarLookbackDaysDefault
@@ -1552,11 +1554,11 @@ still `Nothing`) -- mirrors `Components.Pages.PostsPage.refetchServers`'s
 inline `fetchEffect`, just factored out since `GotNow` also needs to kick
 every relevant server's fetch off again once a real cutoff lands.
 -}
-fetchServerEffect : Shared.Model -> Model -> Time.Posix -> AccountsPanel.RellmServer -> Effect Msg
+fetchServerEffect : Shared.Model -> Model -> Time.Posix -> RellmServer -> Effect Msg
 fetchServerEffect shared model endsAfter server =
     Events.fetchEvents
         shared.accounts
-        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
+        ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
         , server.frontendHost
         )
         (model.author |> Maybe.map (Tuple.second >> .id))
@@ -1584,7 +1586,7 @@ touched, no fetch fired) while `model.endsAfter` is still `Nothing` -- see
 its own doc comment for why this page must never fetch before that's
 resolved.
 -}
-refetchServers : Shared.Model -> Model -> List AccountsPanel.RellmServer -> ( Model, Effect Msg )
+refetchServers : Shared.Model -> Model -> List RellmServer -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
     case model.endsAfter of
         Nothing ->
@@ -1592,20 +1594,20 @@ refetchServers shared model serversToFetch =
 
         Just endsAfter ->
             let
-                enabledServers : List AccountsPanel.RellmServer
+                enabledServers : List RellmServer
                 enabledServers =
                     relevantServers shared model
 
-                currentAccountId : AccountsPanel.RellmServer -> Maybe String
+                currentAccountId : RellmServer -> Maybe String
                 currentAccountId server =
-                    AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                        |> Maybe.map AccountsPanel.accountId
+                    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                        |> Maybe.map RellmAccounts.rellmAccountId
 
                 prunedEventsByServer : Dict String ServerFeed
                 prunedEventsByServer =
                     Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.eventsByServer
 
-                markServer : AccountsPanel.RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
+                markServer : RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
                 markServer server dict =
                     let
                         accountId : Maybe String
@@ -1710,12 +1712,12 @@ against `GetEvents` instead of `GetPosts`.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        currentAccountId : AccountsPanel.RellmServer -> Maybe String
+        currentAccountId : RellmServer -> Maybe String
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map RellmAccounts.rellmAccountId
 
-        serversToFetch : List AccountsPanel.RellmServer
+        serversToFetch : List RellmServer
         serversToFetch =
             relevantServers shared model
                 |> List.filter
@@ -2250,8 +2252,8 @@ config already carries a real value once `eventSettings` itself is known.
 -}
 calendarDisplayMode : Shared.Model -> CalendarDisplayMode
 calendarDisplayMode shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.map AccountsPanel.configurationOf
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
         |> Maybe.andThen .eventSettings
         |> Maybe.map .defaultCalendarDisplayMode
         |> Maybe.withDefault CalendarDisplayMode.defaultCalendarDisplayMode
@@ -2265,8 +2267,8 @@ proto3 default for an unset `bool`) rather than a locally-defined constant. `ini
 -}
 showStartedOrLongEventsByDefault : Shared.Model -> Bool
 showStartedOrLongEventsByDefault shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.map AccountsPanel.configurationOf
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
         |> Maybe.andThen .eventSettings
         |> Maybe.map .showStartedOrLongEventsByDefault
         |> Maybe.withDefault False
@@ -2675,9 +2677,9 @@ authorHeadingView shared maybeAuthor =
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text "Events" ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
+                    [ case RellmServers.rellmServerForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) author
+                            ProfileHeading.nameHeader server (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host) author
 
                         Nothing ->
                             ProfileHeading.usernameHeading author
@@ -3216,13 +3218,13 @@ the rendered count doesn't yet.
 eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
 eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts host
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host
 
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =

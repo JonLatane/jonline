@@ -1,77 +1,45 @@
 module Shared.AccountsPanel exposing
     ( AcceptedCreateAccount
-    , RellmAccount
-    , AccountAuthTokens
     , AccountForm
     , AccountOrServerFormType(..)
     , AddServerForm
-    , Branding
-    , BlueskyAccount
     , BlueskyConnectForm
-    , BrowsedMastodonInstance
-    , CombinedFeedItem(..)
-    , Connection
+    , CombinedAccountItem(..)
+    , CombinedServerFeedItem(..)
     , FormStatus(..)
-    , MastodonAccount
     , MaybeAccountServer
     , Model
     , Msg(..)
     , NewAccountType(..)
     , PendingCreateAccount
-    , RellmServer
-    , ServerLogoSize(..)
     , Tab(..)
-    , Token
-    , accountAuthTokensDecoder
-    , accountAvatarUrl
-    , accountId
     , accountRowDomId
     , activeAddAccountServerFormType
-    , brandingFor
-    , brandingOf
-    , combinedFeedItemKey
-    , combinedFeedItems
-    , configurationOf
-    , connectToServer
+    , combinedAccountItemKey
+    , combinedAccountItems
+    , combinedServerFeedItemKey
+    , combinedServerFeedItems
     , connectableMastodonServers
-    , connectionOf
-    , connectionUrl
     , createAccountModalBodyId
-    , displayName
-    , enabledAccountForServer
     , enabledAccounts
     , enabledServers
-    , encodeAccountAuthTokens
-    , feedItemChipDomId
+    , serverFeedItemChipDomId
     , grpcErrorToString
     , hasAdminAccount
     , init
-    , initialLetter
-    , isAdmin
     , isKnownServer
     , isMainServer
     , isSecure
-    , knownConnectedServer
     , mainServerTheme
-    , mediaBaseUrl
-    , mediaUrl
+    , mastodonServerFor
     , performWithAccountServer
     , performWithOptionalAccountServer
     , recommendedFederatedServers
-    , resolveFederatedAccountTokens
-    , serverForHost
-    , serverHasAccounts
-    , serverInfoOf
-    , serverNameAndLogo
-    , serverThemeOf
-    , serverUrl
-    , serverWebPushPublicKey
     , shouldShowAddAccountForm
     , subscriptions
     , unreachableAccountHosts
     , update
     , updateServerConfig
-    , withAccessToken
     )
 
 {-| Everything behind the Accounts Panel: known servers, signed-into accounts,
@@ -84,23 +52,24 @@ import Animation
 import Browser.Dom as Dom
 import Dict exposing (Dict)
 import Grpc
-import Html exposing (Html, div, img, text)
-import Html.Attributes exposing (alt, class, src)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Rellm exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, SyncDestination, SyncSource, User, defaultServerInfo)
+import Proto.Rellm exposing (AccessTokenResponse, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User)
 import Proto.Rellm.Rellm as Rellm
-import Proto.Rellm.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Rellm.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Set
 import Shared.AccountsPanel.AdminTab as AdminTab
+import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.DebugTab as DebugTab
-import Shared.Conversions exposing (timestampToPosix)
-import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
+import Shared.AccountsPanel.MastodonAccounts as MastodonAccounts exposing (MastodonAccount)
+import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (BrowsedMastodonInstance, MastodonInstanceInfo)
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, rellmAccountId)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, Connection, PersistedRellmServer, RellmServer)
+import Shared.AccountsPanel.SortOrder exposing (missingSortOrderSentinel)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (escapeCSSClass)
@@ -126,7 +95,7 @@ type alias Model =
     , recommendedServersExpanded : Bool
 
     -- Once-fetched `ServerConfiguration`s (as `RellmServer`s, so the same
-    -- `serverNameAndLogo`/branding machinery renders them) for hosts
+    -- `RellmServers.rellmServerNameAndLogo`/branding machinery renders them) for hosts
     -- currently recommended via `recommendedFederatedServers` -- keyed by
     -- `frontendHost`, populated lazily by `ToggleRecommendedServersExpanded`
     -- (a fresh disconnected placeholder inserted immediately, replaced once
@@ -203,7 +172,7 @@ type alias Model =
     -- The server that host resolves to, once known: usually `browsingHost`
     -- itself, but corrected to a CDN's public `frontendHost` if `browsingHost`
     -- turns out to be a backend host presenting a different public identity
-    -- (see `resolvedFrontendHost`). A mismatch between the two is shown as a
+    -- (see `RellmServers.resolvedFrontendHost`). A mismatch between the two is shown as a
     -- warning (`UI.hostMismatchWarning`), which the user can click to force it
     -- back to `browsingHost` (`ResetMainFrontendHost`) -- same as the brief
     -- window before the main server's first connect resolves, this leaves
@@ -214,42 +183,41 @@ type alias Model =
     -- can change it.
     , mainFrontendHost : String
 
-    -- In-flight/settling FLIP slide animations for accounts just reordered
-    -- via `MoveAccountUpClicked`/`MoveAccountDownClicked` (see
-    -- `UI.Flip.MoveState`), keyed by `accountId`. An account with no entry
-    -- here (the common case) just renders at rest.
+    -- In-flight/settling FLIP slide animations for the combined account list (Rellm accounts,
+    -- connected Mastodon accounts, and connected Bluesky accounts together -- see
+    -- `CombinedAccountItem`) reordered via `MoveAccountItemUpClicked`/`MoveAccountItemDownClicked`,
+    -- keyed by `combinedAccountItemKey`. An item with no entry here (the common case) just renders
+    -- at rest.
     , moveAnimations : Dict String (UI.Flip.MoveState Msg)
 
-    -- Same as `moveAnimations`, but for the combined feed item strip (servers,
-    -- browsed Mastodon instances, and Bluesky accounts together -- see
-    -- `CombinedFeedItem`) reordered via `MoveFeedItemLeftClicked`/
-    -- `MoveFeedItemRightClicked`, keyed by `combinedFeedItemKey`. Kept
-    -- separate from `moveAnimations` (rather than one dict shared by both
-    -- lists) since they're two independent keyed lists -- an account id and a
-    -- feed item key happening to collide as plain strings would otherwise
-    -- cross-wire their animations.
+    -- Same as `moveAnimations`, but for the combined server feed strip (servers and browsed
+    -- Mastodon instances together -- see `CombinedServerFeedItem`) reordered via
+    -- `MoveServerFeedItemLeftClicked`/`MoveServerFeedItemRightClicked`, keyed by
+    -- `combinedServerFeedItemKey`. Kept separate from `moveAnimations` (rather than one dict shared
+    -- by both lists) since they're two independent keyed lists -- an account item key and a server
+    -- feed item key happening to collide as plain strings would otherwise cross-wire their
+    -- animations.
     , serverMoveAnimations : Dict String (UI.Flip.MoveState Msg)
 
-    -- Each account's enter/leave `UI.Flip.State`, keyed by `accountId` --
-    -- `update`'s very last step (see `syncItemAnimations`) is always
-    -- `UI.Flip.syncEnter accountId model.accounts`, which inserts a fresh
-    -- `UI.Flip.enter` for any account that doesn't have an entry yet, so a
-    -- newly-added account animates in with no need to hunt down every single
-    -- "this added an account" code path by hand. An account mid fade-out
-    -- after `RemoveAccountClicked` (confirmed via `UI.deleteConfirmationModal`)
-    -- stays in `accounts` -- and its entry here keeps `removing = True` --
-    -- until its fade actually finishes (`FinishRemoveAccount`), so it keeps
-    -- rendering (fading/collapsing) instead of just vanishing. `init` seeds
-    -- this with a plain `UI.Flip.restingState` (not `enter`) for every
-    -- persisted account, so reloading the app doesn't replay their entrances.
+    -- Each combined account item's enter/leave `UI.Flip.State` (see `CombinedAccountItem`), keyed
+    -- by `combinedAccountItemKey` -- `update`'s very last step (see `syncItemAnimations`) is always
+    -- `UI.Flip.syncEnter combinedAccountItemKey (combinedAccountItems model)`, which inserts a
+    -- fresh `UI.Flip.enter` for any item that doesn't have an entry yet, so a newly-added
+    -- account/connection animates in with no need to hunt down every single "this added an item"
+    -- code path by hand. A Rellm account mid fade-out after `RemoveAccountClicked` (confirmed via
+    -- `UI.deleteConfirmationModal`) stays in `accounts` -- and its entry here keeps
+    -- `removing = True` -- until its fade actually finishes (`FinishRemoveAccount`), so it keeps
+    -- rendering (fading/collapsing) instead of just vanishing; `RemoveBlueskyAccountClicked`/
+    -- `FinishRemoveBlueskyAccount` do the same for a Bluesky account. `init` seeds this with a
+    -- plain `UI.Flip.restingState` (not `enter`) for every persisted item, so reloading the app
+    -- doesn't replay their entrances.
     , accountAnimations : Dict String (UI.Flip.State Msg)
 
-    -- Same as `accountAnimations`, but for the combined feed item strip
-    -- (servers, browsed Mastodon instances, and Bluesky accounts together --
-    -- see `CombinedFeedItem`), keyed by `combinedFeedItemKey` -- covers
-    -- `RemoveServerClicked`/`RemoveBlueskyAccountClicked`/
-    -- `RemoveBrowsedMastodonInstanceClicked` and their `Finish*` counterparts,
-    -- plus `syncEnter combinedFeedItemKey (combinedFeedItems model)`. See
+    -- Same as `accountAnimations`, but for the combined server feed strip (servers and browsed
+    -- Mastodon instances together -- see `CombinedServerFeedItem`), keyed by
+    -- `combinedServerFeedItemKey` -- covers `RemoveServerClicked`/
+    -- `RemoveBrowsedMastodonInstanceClicked` and their `Finish*` counterparts, plus
+    -- `syncEnter combinedServerFeedItemKey (combinedServerFeedItems model)`. See
     -- `accountAnimations`'s own doc for why these stay separate dicts.
     , serverAnimations : Dict String (UI.Flip.State Msg)
 
@@ -283,7 +251,7 @@ type alias Model =
     , debugTab : DebugTab.Model
     , adminTab : AdminTab.Model
 
-    -- Every account (keyed by `accountId`) with an active Web Push subscription registered by
+    -- Every account (keyed by `rellmAccountId`) with an active Web Push subscription registered by
     -- this browser -- the value is the subscription's `endpoint`, so `DisableNotificationsClicked`
     -- can pass it back to both `Ports.unsubscribeFromPush` and `UnregisterPushSubscription`. The
     -- Push API allows only *one* active subscription per browser origin, tied to one VAPID key --
@@ -303,15 +271,15 @@ type alias Model =
     , pushSubscriptions : Dict String String
 
     -- Last known reason "Enable notifications" (or the register/unregister RPC that follows it)
-    -- failed for a given `accountId`, if any -- e.g. "Notification permission wasn't granted.",
+    -- failed for a given `rellmAccountId`, if any -- e.g. "Notification permission wasn't granted.",
     -- or a `grpcErrorToString`. Surfaced by `UI.notificationsButton` so a failure (silently
     -- swallowed prior to this field's existence -- see its own git history) is actually visible
     -- instead of the button just doing nothing. Cleared whenever that account's button is clicked
     -- again, so a retry starts from a clean slate.
     , notificationErrors : Dict String String
 
-    -- The `accountId` `EnableNotificationsClicked`/`DisableNotificationsClicked` most recently
-    -- fired for -- `PushSubscriptionPortReceived` already carries its own `accountId` back, but
+    -- The `rellmAccountId` `EnableNotificationsClicked`/`DisableNotificationsClicked` most recently
+    -- fired for -- `PushSubscriptionPortReceived` already carries its own `rellmAccountId` back, but
     -- `GotRegisterPushSubscriptionResult`/`GotUnregisterPushSubscriptionResult`'s `Err` case is
     -- just a bare `Grpc.Error` with no account info of its own, so this is what lets those two
     -- still know which `notificationErrors` entry to fill in.
@@ -442,15 +410,15 @@ type Msg
     | FocusInput String
     | ClearFieldClicked String Msg
     | ServerConnected RellmServer
-    | MoveAccountUpClicked String
-    | MoveAccountDownClicked String
-    | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
-    | MoveFeedItemLeftClicked String
-    | MoveFeedItemRightClicked String
-    | GotPreMoveFeedItemPositions String String (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | MoveAccountItemUpClicked String
+    | MoveAccountItemDownClicked String
+    | GotPreMoveAccountItemPositions String String (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | MoveServerFeedItemLeftClicked String
+    | MoveServerFeedItemRightClicked String
+    | GotPreMoveServerFeedItemPositions String String (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
-    | MoveSettled String
-    | FeedItemMoveSettled String
+    | AccountItemMoveSettled String
+    | ServerFeedItemMoveSettled String
     | FinishRemoveAccount String
     | FinishRemoveServer String
     | AnimateItemFlip Animation.Msg
@@ -471,7 +439,7 @@ type Msg
     | BlueskyAppPasswordChanged String
     | BlueskyConnectClicked
     | GotBlueskyConnectResult (Result Http.Error BlueskyAccount)
-    | GotBlueskyProfileResult String (Result Http.Error BlueskyProfile)
+    | GotBlueskyProfileResult String (Result Http.Error BlueskyAccounts.BlueskyProfile)
     | RemoveBlueskyAccountClicked String
     | FinishRemoveBlueskyAccount String
     | ToggleBlueskyAccountEnabled String
@@ -482,118 +450,6 @@ type Msg
     | FinishRemoveBrowsedMastodonInstance String
     | ToggleBrowsedMastodonInstanceEnabled String
     | NoOp
-
-
-{-| A signed-into account on a server (identified by its `frontendHost`, e.g.
-"jonline.io" -- see `RellmServer`). `enabled` is a lightweight, non-destructive
-"signed in/out" toggle: disabling an account keeps its tokens around so it can
-be re-enabled without logging in again. Fully forgetting an account
-(`RemoveAccountClicked`) is the "traditional" sign out.
-
-`permissions` is refreshed via `GetCurrentUser` whenever the account's server
-reconnects (app startup/reload, or the account being re-enabled) -- see
-`refreshPermissions` -- so it's usually current, though it can still lag
-between those refreshes if permissions change server-side. That same refresh
-is what discovers a `refreshToken` no longer works (revoked, expired past its
-own grace period) -- see `GotPermissionsRefresh` -- setting `needsPassword`
-so the account shows as needing to be signed back into with a password rather
-than silently failing every request.
-
--}
-type alias RellmAccount =
-    { server : String
-    , userId : String
-    , username : String
-    , refreshToken : Token
-    , accessToken : Token
-    , enabled : Bool
-    , avatarMediaId : Maybe String
-    , permissions : List Permission
-    , realName : String
-    , needsPassword : Bool
-
-    -- The signed-in user's own linked SyncDestinations/SyncSources/AvailableAIModels (see
-    -- `Proto.Rellm.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
-    -- `refreshPermissionsTask` (which now calls `GetUsers { userId = Just account.userId }` rather
-    -- than `GetCurrentUser`, since only a self-or-Admin `GetUsers` lookup ever populates these).
-    -- Login/CreateAccount (`GotAuthResult`) can't populate them either (same backend restriction),
-    -- so they start empty there and only appear once the first refresh lands.
-    , syncDestinations : List SyncDestination
-    , syncSources : List SyncSource
-    , availableAiModels : List AvailableAIModel
-    }
-
-
-{-| The payload that actually crosses the wire in the cross-server SSO hand-off (see
-`Shared.FederatedAuth`/`Pages.Auth.To.Key_`/`Pages.Auth.From.EncryptedAccountAuthTokens_`): just enough
-to let the receiving origin authenticate as this account itself, via `resolveFederatedAccountTokens`
-below -- everything else an `RellmAccount` needs (`userId`, `username`, `permissions`, etc.) is hydrated
-straight from the receiving side's own `GetCurrentUser` call rather than trusted from this payload.
--}
-type alias AccountAuthTokens =
-    { server : String
-    , refreshToken : Token
-    , accessToken : Token
-    }
-
-
-{-| A Mastodon account connected via `UI.mastodonConnectButton`'s "Connect" button (see
-`MastodonConnectClicked`/`GotMastodonLoginResult`) -- `accessToken` came out of an OAuth popup Elm
-never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: app registration
-(the admin-registered `MastodonServer.appId` `MastodonConnectClicked` looks up via
-`mastodonServerFor`, or -- if that instance has none -- a throwaway one dynamically self-registered
-on the spot), PKCE, and the code/token exchange all happen in `public/index.html`'s JS, entirely
-between the browser and `instanceHost` itself, `app_secret` never included either way), and
-`username` is fetched once, right after, via `GET /api/v1/accounts/verify_credentials` (see
-`verifyMastodonCredentialsTask`) -- just enough to display the connection, not a full `RellmAccount`,
-since a Mastodon account isn't a Rellm one.
--}
-type alias MastodonAccount =
-    { instanceHost : String
-    , accessToken : String
-    , username : String
-    }
-
-
-{-| A Bluesky (AT Protocol) account connected via `UI.blueskyConnectSection`'s form -- unlike
-Mastodon, there's no OAuth popup at all: `com.atproto.server.createSession` (see
-`createBlueskySessionTask`) takes a handle and App Password directly, the same "plain form" shape
-`Pages.Auth.To.Key_` already uses for Rellm's own Login RPC (and is itself the identity check --
-the session response already carries `handle`, so there's no separate verify-credentials round trip
-the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
-directly rather than resolving `handle` to its actual PDS first (see `createBlueskySessionTask`'s own
-doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
-are hosted there by default, so this covers the common case. `enabled` mirrors `RellmServer.enabled` -- see
-`BrowsedMastodonInstance`'s own doc. `avatarUrl`/`displayName` both start `Nothing` (the
-`createSession` response this is built from carries no profile info at all) and are filled in shortly
-after, if they resolve, by a follow-up `fetchBlueskyProfileTask` call -- see `GotBlueskyProfileResult`.
--}
-type alias BlueskyAccount =
-    { handle : String
-    , accessToken : String
-    , enabled : Bool
-    , avatarUrl : Maybe String
-    , displayName : Maybe String
-    , sortOrder : Int
-    }
-
-
-{-| One Mastodon instance being browsed (see `Model.browsedMastodonInstances`'s own doc) -- `enabled`
-mirrors `RellmServer.enabled`: toggled via `UI.mastodonServerFeedChip`'s switch
-(`ToggleBrowsedMastodonInstanceEnabled`), it's what `Components.Pages.PostsPage.relevantFeedSources`
-checks to decide whether this instance's feed is currently shown, exactly as `enabledServers` does for
-a real `RellmServer`. Unlike a `RellmServer`, there's no separate "connected" state to track alongside it --
-browsing needs no connection, so `enabled` alone is the whole story. `logoUrl`/`displayName` both
-start `Nothing` and are filled in shortly after, if they resolve, by a follow-up
-`fetchMastodonInstanceInfoTask` call -- see `GotMastodonInstanceInfoResult`.
--}
-type alias BrowsedMastodonInstance =
-    { host : String
-    , enabled : Bool
-    , logoUrl : Maybe String
-    , displayName : Maybe String
-    , sortOrder : Int
-    }
 
 
 {-| The Bluesky tab's own handle/App Password fields and submit status -- see
@@ -613,73 +469,8 @@ emptyBlueskyConnectForm =
     { handle = "", appPassword = "", status = Idle }
 
 
-{-| A server the app knows about -- either from a persisted server list entry
-or an account signed into it. `frontendHost` is the server's public identity,
-e.g. "jonline.io" -- what a user types in and what accounts are keyed by.
-
-`enabled` controls whether the server's (eventually public) data is included
-when aggregating data across servers. It's tracked here (rather than only on
-`connected`) because it's meaningful -- and persisted (see
-`encodePersistedServer`) -- even while disconnected.
-
-`connected` is everything that's only known once we've actually negotiated
-with the server (see `negotiateServerConfig`): `Nothing` for a server that's
-currently unreachable (down, moved, or just not tried yet this session) --
-see `disconnectedServer`/`ReconnectServerClicked`. A server keeps its place in
-`Model.servers` (and so its position in the persisted list/UI) whether or not
-it's currently connected -- only `FinishRemoveServer` (an explicit user
-delete) removes an entry outright.
-
--}
-type alias RellmServer =
-    { frontendHost : String
-    , enabled : Bool
-    , connected : Maybe ConnectedServer
-    , sortOrder : Int
-    }
-
-
-{-| Everything about a `RellmServer` that's only known once we've actually
-connected to it: `backendHost`/`port_`/`tls` are the combination that's known
-to work (`backendHost` is where its gRPC API actually lives, e.g.
-"jonline.io.getj.online" behind a CDN -- discovered via
-`GET {frontendHost}/backend_host`, see `discoverBackendHost` -- often the same
-as `frontendHost`), and `configuration`/`branding` are real data, never a
-placeholder.
--}
-type alias ConnectedServer =
-    { backendHost : String
-    , port_ : Int
-    , tls : Bool
-    , configuration : ServerConfiguration
-    , branding : Branding
-    }
-
-
-{-| A server's user-facing identity: its name, square logo (if any), and its
-primary/nav brand colors -- decomposed into `UI.ServerTheme.ColorMeta` (text
-color, light/dark variants) once, when `configuration` first arrives (see
-`brandingFromConfig`), and cached here rather than recomputed on every
-render. Combine with the app's current dark/light mode via
-`serverThemeOf`/`serverThemeFor` to get the full `UI.ServerTheme.ServerTheme`.
--}
-type alias Branding =
-    { name : String
-    , logoUrl : Maybe String
-    , primary : UI.ServerTheme.ColorMeta
-    , nav : UI.ServerTheme.ColorMeta
-    }
-
-
-{-| Where a `RellmServer` lives: enough to build a URL, before we know anything
-else about it.
--}
-type alias Connection =
-    { frontendHost : String
-    , backendHost : String
-    , port_ : Int
-    , tls : Bool
-    }
+-- `RellmServer`/`ConnectedServer`/`Branding`/`Connection` all live in `RellmServers` now -- see
+-- that module's own docs.
 
 
 type FormStatus
@@ -701,8 +492,9 @@ type NewAccountType
 
 {-| Which of the three tabs `UI.addAccountServerForm` -- the one merged "Add Account/Server" area,
 replacing what used to be three separate forms/toggles (`addAccountFormExpanded`'s Rellm form, the
-"+ Bluesky Account" button/form, the "+ Mastodon Server" button/form, and `mastodonServersStrip`'s
-own "Connect" buttons for admin-registered instances) -- is currently showing. See
+"+ Bluesky Account" button/form, the "+ Mastodon Server" button/form, and the former
+`mastodonServersStrip`'s own "Connect" buttons for admin-registered instances) -- is currently
+showing. See
 `Model.addAccountServerFormType`'s own doc for how "which tab, or none at all" is actually modeled.
 -}
 type AccountOrServerFormType
@@ -792,21 +584,14 @@ type alias AddServerForm =
     }
 
 
-{-| Like `ExpirableToken`, but with a plain `Time.Posix` expiration instead of
-a protobuf `Timestamp` (whose seconds are an `Int64`) -- directly comparable
-to `Time.now`, and easy to persist as milliseconds.
--}
-type alias Token =
-    { token : String
-    , expiresAt : Maybe Time.Posix
-    }
+-- `Token` lives in `RellmAccounts` now -- see that module's own doc.
 
 
 type alias Flags =
     Decode.Value
 
 
-type alias PersistedServer =
+type alias PersistedRellmServer =
     { frontendHost : String
     , enabled : Bool
     , sortOrder : Int
@@ -815,7 +600,7 @@ type alias PersistedServer =
 
 type alias PersistedState =
     { accounts : List RellmAccount
-    , servers : List PersistedServer
+    , servers : List PersistedRellmServer
     }
 
 
@@ -834,208 +619,98 @@ type alias MaybeAccountServer =
     ( Maybe String, String )
 
 
-{-| A stable identifier for an account: a user's id is only unique per-server.
--}
-accountId : RellmAccount -> String
-accountId account =
-    account.server ++ "|" ++ account.userId
-
-
-{-| The DOM `id` an account's row is rendered with (see `UI.accountRow`) --
-purely so `MoveAccountUpClicked`/`MoveAccountDownClicked` can measure its
-position before/after a reorder (`Browser.Dom.getElement`) to drive its
-`UI.Flip` slide.
+{-| The DOM `id` a combined account item row is rendered with (see `UI.accountRow`/
+`UI.mastodonAccountRow`/`UI.blueskyAccountRow`), keyed by its `combinedAccountItemKey` -- purely so
+`MoveAccountItemUpClicked`/`MoveAccountItemDownClicked` can measure its position before/after a
+reorder (`Browser.Dom.getElement`) to drive its `UI.Flip` slide.
 -}
 accountRowDomId : String -> String
-accountRowDomId id =
-    "account-row-" ++ id
+accountRowDomId key =
+    "account-row-" ++ escapeCSSClass key
 
 
-{-| The DOM `id` a combined feed item chip (server, browsed Mastodon instance, or Bluesky account --
-see `CombinedFeedItem`) is rendered with, keyed by its `combinedFeedItemKey` -- the
-`UI.Flip.Horizontal` counterpart of `accountRowDomId`, for `MoveFeedItemLeftClicked`/
-`MoveFeedItemRightClicked`.
+{-| The DOM `id` a combined server feed item chip (server or browsed Mastodon instance -- see
+`CombinedServerFeedItem`) is rendered with, keyed by its `combinedServerFeedItemKey` -- the
+`UI.Flip.Horizontal` counterpart of `accountRowDomId`, for `MoveServerFeedItemLeftClicked`/
+`MoveServerFeedItemRightClicked`.
 -}
-feedItemChipDomId : String -> String
-feedItemChipDomId key =
+serverFeedItemChipDomId : String -> String
+serverFeedItemChipDomId key =
     "server-chip-" ++ escapeCSSClass key
 
 
-accountAt : Int -> List RellmAccount -> Maybe RellmAccount
-accountAt idx accounts =
-    List.drop idx accounts |> List.head
-
-
-accountIndex : String -> List RellmAccount -> Maybe Int
-accountIndex id accounts =
-    accounts
-        |> List.indexedMap Tuple.pair
-        |> List.filter (\( _, a ) -> accountId a == id)
-        |> List.head
-        |> Maybe.map Tuple.first
-
-
-slice : Int -> Int -> List a -> List a
-slice lo hi items =
-    items |> List.drop lo |> List.take (hi - lo + 1)
-
-
-{-| What `id` moving by `offset` (always +-1, from a move button) actually
-swaps: normally just `id`'s own RellmAccount trading places with its single
-`offset` neighbor -- but if that neighbor is on a _different_ server, `id`
-sits at the edge of its own same-server group nearest that neighbor (top
-edge moving up, bottom edge moving down), so every other RellmAccount on `id`'s
-server on the _other_ side (below it moving up, above it moving down) comes
-along too. That group is found by scanning _only_ away from the neighbor,
-back across `id`'s own side -- same-server Accounts are already kept
-contiguous elsewhere (see `sortMainServerAccountsFirst`/
-`insertAfterSameServer`).
-
-The neighbor's own same-server group has to come along too, though: it's
-just as contiguous as `id`'s, so swapping `id`'s group past only the single
-adjacent neighbor RellmAccount would split the neighbor's group in two (its far
-side ending up on the wrong side of the moved group). So the neighbor side
-is expanded the same way -- scanning _forward_, away from `id`, from
-`neighborIdx`.
-
-Returns the moved Accounts' index range `( lo, hi )` and the neighbor
-group's own index range, or `Nothing` if `id` isn't found or there's no
-neighbor in that direction.
-
+{-| The bookkeeping any reorderable combined-item list built from several otherwise-separate
+`Model` lists (`CombinedServerFeedItem`'s server strip, `CombinedAccountItem`'s account list) needs
+around its own shared `sortOrder` space: how to read/write one item's `sortOrder` by its own kind of
+key, and every *non-main* item's current `sortOrder` (for `nextFrontSortOrderIn`/`nextBackSortOrderIn`).
+Pulled out so the actual swap/next-front/next-back arithmetic is written once instead of twice, even
+though each space still has to dispatch into its own, differently-shaped `Model` fields to actually
+read or write anything -- see `serverFeedItemSortOrderSpace`/`accountItemSortOrderSpace`, the two
+concrete instances.
 -}
-accountSwapRange : Int -> String -> List RellmAccount -> Maybe ( ( Int, Int ), ( Int, Int ) )
-accountSwapRange offset id accounts =
-    accountIndex id accounts
-        |> Maybe.andThen
-            (\i ->
-                let
-                    neighborIdx : Int
-                    neighborIdx =
-                        i + offset
-                in
-                case ( accountAt i accounts, accountAt neighborIdx accounts ) of
-                    ( Just clicked, Just neighbor ) ->
-                        if clicked.server == neighbor.server then
-                            Just ( ( i, i ), ( neighborIdx, neighborIdx ) )
-
-                        else
-                            let
-                                walk : Int -> String -> Int -> Int
-                                walk step server idx =
-                                    if (accountAt (idx + step) accounts |> Maybe.map .server) == Just server then
-                                        walk step server (idx + step)
-
-                                    else
-                                        idx
-
-                                movedEdge : Int
-                                movedEdge =
-                                    walk -offset clicked.server i
-
-                                neighborEdge : Int
-                                neighborEdge =
-                                    walk offset neighbor.server neighborIdx
-                            in
-                            Just
-                                ( ( min i movedEdge, max i movedEdge )
-                                , ( min neighborIdx neighborEdge, max neighborIdx neighborEdge )
-                                )
-
-                    _ ->
-                        Nothing
-            )
+type alias SortOrderSpace =
+    { itemSortOrder : String -> Model -> Maybe Int
+    , setItemSortOrder : String -> Int -> Model -> Model
+    , nonMainSortOrders : Model -> List Int
+    }
 
 
-{-| `accounts`' own order is exactly what `UI.accountsList` renders, so
-reordering is just reordering this list (see `accountSwapRange`).
+{-| Reorders two adjacent items of the same `SortOrderSpace` by swapping their `sortOrder` values --
+not their position in whichever underlying list each happens to live in, since e.g. a Rellm server
+and a browsed Mastodon instance swapping places can't be expressed as a move within either list
+alone. A no-op if either key's current item can't be found.
 -}
-moveAccountBy : Int -> String -> List RellmAccount -> List RellmAccount
-moveAccountBy offset id accounts =
-    case accountSwapRange offset id accounts of
-        Nothing ->
-            accounts
+swapSortOrders : SortOrderSpace -> String -> String -> Model -> Model
+swapSortOrders space keyA keyB model =
+    case ( space.itemSortOrder keyA model, space.itemSortOrder keyB model ) of
+        ( Just orderA, Just orderB ) ->
+            model
+                |> space.setItemSortOrder keyA orderB
+                |> space.setItemSortOrder keyB orderA
 
-        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
-            if nhi < lo then
-                List.take nlo accounts
-                    ++ slice lo hi accounts
-                    ++ slice nlo nhi accounts
-                    ++ List.drop (hi + 1) accounts
-
-            else
-                List.take lo accounts
-                    ++ slice nlo nhi accounts
-                    ++ slice lo hi accounts
-                    ++ List.drop (nhi + 1) accounts
+        _ ->
+            model
 
 
-{-| Kicks off a reorder move (see `accountSwapRange`): measures the pre-swap
-position of the moved RellmAccount(s)' first/last row and the neighbor group's
-first/last row it's swapping past (the "First" of FLIP), via
-`GotPreMovePositions` -- so the resulting message has something to compare
-the post-swap position against. A no-op (no neighbor in that direction) just
-does nothing.
+{-| The `sortOrder` a brand-new item in `space` should get so it appears first -- "just after the
+main item" -- among every other movable item in that same space. One less than the current lowest,
+or `-1` if there's nothing else yet.
 -}
-beginAccountMove : Int -> String -> List RellmAccount -> Cmd Msg
-beginAccountMove offset id accounts =
-    case accountSwapRange offset id accounts of
-        Nothing ->
-            Cmd.none
-
-        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
-            let
-                movedIds : List String
-                movedIds =
-                    slice lo hi accounts |> List.map accountId
-
-                neighborIds : List String
-                neighborIds =
-                    slice nlo nhi accounts |> List.map accountId
-
-                movedFirstId : String
-                movedFirstId =
-                    List.head movedIds |> Maybe.withDefault id
-
-                movedLastId : String
-                movedLastId =
-                    List.reverse movedIds |> List.head |> Maybe.withDefault id
-
-                neighborFirstId : String
-                neighborFirstId =
-                    List.head neighborIds |> Maybe.withDefault id
-
-                neighborLastId : String
-                neighborLastId =
-                    List.reverse neighborIds |> List.head |> Maybe.withDefault id
-            in
-            Task.attempt (GotPreMovePositions id movedIds neighborIds offset)
-                (Task.map2 Tuple.pair
-                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId movedFirstId)) (Dom.getElement (accountRowDomId movedLastId)))
-                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId neighborFirstId)) (Dom.getElement (accountRowDomId neighborLastId)))
-                )
+nextFrontSortOrderIn : SortOrderSpace -> Model -> Int
+nextFrontSortOrderIn space model =
+    (space.nonMainSortOrders model |> List.minimum |> Maybe.withDefault 0) - 1
 
 
-{-| A Rellm server, browsed Mastodon instance, or connected Bluesky account, as they appear together
-in `UI.combinedFeedItemsStrip`'s one merged, reorderable chip strip -- the three underlying lists
-(`servers`, `browsedMastodonInstances`, `blueskyAccounts`) stay separate (each persisted through its
-own port -- `Ports.persistAccountsAndServers`/`persistMastodonAccountsAndServers`/
-`persistBlueskyAccounts`), so this is purely a rendering-time view over all three at once, built by
-`combinedFeedItems`.
+{-| Like `nextFrontSortOrderIn`, but for an item that should land at the *end* of `space` instead.
 -}
-type CombinedFeedItem
+nextBackSortOrderIn : SortOrderSpace -> Model -> Int
+nextBackSortOrderIn space model =
+    (space.nonMainSortOrders model |> List.maximum |> Maybe.withDefault -1) + 1
+
+
+{-| A Rellm server or browsed Mastodon instance, as they appear together in
+`UI.combinedServerFeedItemsStrip`'s one merged, reorderable chip strip -- the two underlying lists
+(`servers`, `browsedMastodonInstances`) stay separate (each persisted through its own port --
+`Ports.persistAccountsAndServers`/`persistMastodonAccountsAndServers`), so this is purely a
+rendering-time view over both at once, built by `combinedServerFeedItems`. Connected Bluesky
+accounts *don't* appear here -- unlike a Rellm server or a browsed Mastodon instance, a Bluesky
+account has no separate sign-in step of its own (connecting *is* signing in), so it belongs
+alongside the other accounts in `CombinedAccountItem`/`UI.accountsList` instead -- see that type's
+own doc.
+-}
+type CombinedServerFeedItem
     = CombinedRellmServer RellmServer
     | CombinedMastodonInstance BrowsedMastodonInstance
-    | CombinedBlueskyAccount BlueskyAccount
 
 
-{-| A stable, cross-type identity for one `CombinedFeedItem` -- namespaced by kind (`"server:"`/
-`"mastodon:"`/`"bluesky:"`) so a Bluesky handle can never collide with a Rellm `frontendHost` or a
-browsed Mastodon `host`, even though all three are plain strings. Used as the shared key for
-`feedItemAnimations`/`feedItemMoveAnimations` (fade in/out, reorder-slide) and `feedItemChipDomId`
-(for `UI.Flip.beginReorder`'s DOM measurement) across all three types at once.
+{-| A stable, cross-type identity for one `CombinedServerFeedItem` -- namespaced by kind (`"server:"`/
+`"mastodon:"`) so a browsed Mastodon `host` can never collide with a Rellm `frontendHost`, even
+though both are plain strings. Used as the shared key for `serverAnimations`/`serverMoveAnimations`
+(fade in/out, reorder-slide) and `serverFeedItemChipDomId` (for `UI.Flip.beginReorder`'s DOM
+measurement) across both types at once.
 -}
-combinedFeedItemKey : CombinedFeedItem -> String
-combinedFeedItemKey item =
+combinedServerFeedItemKey : CombinedServerFeedItem -> String
+combinedServerFeedItemKey item =
     case item of
         CombinedRellmServer server ->
             "server:" ++ server.frontendHost
@@ -1043,12 +718,9 @@ combinedFeedItemKey item =
         CombinedMastodonInstance instance ->
             "mastodon:" ++ instance.host
 
-        CombinedBlueskyAccount account ->
-            "bluesky:" ++ account.handle
 
-
-combinedFeedItemSortOrder : CombinedFeedItem -> Int
-combinedFeedItemSortOrder item =
+combinedServerFeedItemSortOrder : CombinedServerFeedItem -> Int
+combinedServerFeedItemSortOrder item =
     case item of
         CombinedRellmServer server ->
             server.sortOrder
@@ -1056,81 +728,57 @@ combinedFeedItemSortOrder item =
         CombinedMastodonInstance instance ->
             instance.sortOrder
 
-        CombinedBlueskyAccount account ->
-            account.sortOrder
 
-
-{-| The full, ordered contents of `UI.combinedFeedItemsStrip`: the `mainFrontendHost` server first
+{-| The full, ordered contents of `UI.combinedServerFeedItemsStrip`: the `mainFrontendHost` server first
 (unmovable, same as `sortMainServerFirst` already pins it within `servers` alone), then every other
-server, browsed Mastodon instance, and Bluesky account together, sorted by `sortOrder` ascending --
-the one field that lets three otherwise-separate lists interleave into a single reorderable order
-(plain adjacent-swap reordering, as `UI.Flip.moveListItemBy` already does for a single list, can't
-reach across three of them on its own). Lower `sortOrder` sorts earlier, i.e. closer to the main
-server. See `nextFrontSortOrder`/`nextBackSortOrder` for how a freshly-added item gets one, and
-`swapFeedItemSortOrders` for how reordering changes them.
+server and browsed Mastodon instance together, sorted by `sortOrder` ascending -- the one field that
+lets two otherwise-separate lists interleave into a single reorderable order (plain adjacent-swap
+reordering, as `UI.Flip.moveListItemBy` already does for a single list, can't reach across both of
+them on its own). Lower `sortOrder` sorts earlier, i.e. closer to the main server. See
+`nextFrontSortOrder`/`nextBackSortOrder` for how a freshly-added item gets one, and
+`swapServerFeedItemSortOrders` for how reordering changes them.
 -}
-combinedFeedItems : Model -> List CombinedFeedItem
-combinedFeedItems model =
+combinedServerFeedItems : Model -> List CombinedServerFeedItem
+combinedServerFeedItems model =
     let
         ( mainServers, otherServers ) =
             List.partition (\s -> s.frontendHost == model.mainFrontendHost) model.servers
 
-        others : List CombinedFeedItem
+        others : List CombinedServerFeedItem
         others =
             (otherServers |> List.map CombinedRellmServer)
                 ++ (model.browsedMastodonInstances |> List.map CombinedMastodonInstance)
-                ++ (model.blueskyAccounts |> List.map CombinedBlueskyAccount)
-                |> List.sortBy combinedFeedItemSortOrder
+                |> List.sortBy combinedServerFeedItemSortOrder
     in
     (mainServers |> List.map CombinedRellmServer) ++ others
 
 
-{-| Every non-main item's current `sortOrder`, across all three lists -- the main server is excluded
+{-| Every non-main item's current `sortOrder`, across both lists -- the main server is excluded
 since its `sortOrder` is never meaningful (it's always pinned first regardless of its value), and
 including it here would let a stale/arbitrary value skew `nextFrontSortOrder`/`nextBackSortOrder`.
 -}
-nonMainFeedItemSortOrders : Model -> List Int
-nonMainFeedItemSortOrders model =
+nonMainServerFeedItemSortOrders : Model -> List Int
+nonMainServerFeedItemSortOrders model =
     (model.servers |> List.filter (\s -> s.frontendHost /= model.mainFrontendHost) |> List.map .sortOrder)
         ++ (model.browsedMastodonInstances |> List.map .sortOrder)
-        ++ (model.blueskyAccounts |> List.map .sortOrder)
 
 
-{-| The `sortOrder` a brand-new item (a manually-added server, a newly-browsed Mastodon instance, a
-freshly-connected Bluesky account) should get so it appears first -- "just after the main server" --
-among every other movable item, same as adding a server used to prepend it to `servers` before
-`sortOrder` existed. One less than the current lowest, or `-1` if there's nothing else yet.
+{-| Looks up one `CombinedServerFeedItem`'s current `sortOrder` by its `combinedServerFeedItemKey`, across
+both underlying lists.
 -}
-nextFrontSortOrder : Model -> Int
-nextFrontSortOrder model =
-    (nonMainFeedItemSortOrders model |> List.minimum |> Maybe.withDefault 0) - 1
-
-
-{-| Like `nextFrontSortOrder`, but for an item that should land at the *end* instead -- mirrors
-`upsertServerAppend`'s pre-`sortOrder` append-to-end behavior, still used for a server discovered via
-federation recommendations rather than added deliberately (see `GotReconnectResult`'s `appendToEnd`).
--}
-nextBackSortOrder : Model -> Int
-nextBackSortOrder model =
-    (nonMainFeedItemSortOrders model |> List.maximum |> Maybe.withDefault -1) + 1
-
-
-{-| Looks up one `CombinedFeedItem`'s current `sortOrder` by its `combinedFeedItemKey`, across all
-three underlying lists.
--}
-feedItemSortOrder : String -> Model -> Maybe Int
-feedItemSortOrder key model =
-    combinedFeedItems model
-        |> List.filter (\item -> combinedFeedItemKey item == key)
+serverFeedItemSortOrder : String -> Model -> Maybe Int
+serverFeedItemSortOrder key model =
+    combinedServerFeedItems model
+        |> List.filter (\item -> combinedServerFeedItemKey item == key)
         |> List.head
-        |> Maybe.map combinedFeedItemSortOrder
+        |> Maybe.map combinedServerFeedItemSortOrder
 
 
-{-| Sets one item's `sortOrder` in place, dispatching to whichever of the three underlying lists its
-`combinedFeedItemKey` namespace names -- a no-op if `key` doesn't match any current item.
+{-| Sets one item's `sortOrder` in place, dispatching to whichever of the two underlying lists its
+`combinedServerFeedItemKey` namespace names -- a no-op if `key` doesn't match any current item.
 -}
-setFeedItemSortOrder : String -> Int -> Model -> Model
-setFeedItemSortOrder key newSortOrder model =
+setServerFeedItemSortOrder : String -> Int -> Model -> Model
+setServerFeedItemSortOrder key newSortOrder model =
     if String.startsWith "server:" key then
         { model
             | servers =
@@ -1145,7 +793,7 @@ setFeedItemSortOrder key newSortOrder model =
                     model.servers
         }
 
-    else if String.startsWith "mastodon:" key then
+    else
         { model
             | browsedMastodonInstances =
                 List.map
@@ -1157,6 +805,168 @@ setFeedItemSortOrder key newSortOrder model =
                             i
                     )
                     model.browsedMastodonInstances
+        }
+
+
+serverFeedItemSortOrderSpace : SortOrderSpace
+serverFeedItemSortOrderSpace =
+    { itemSortOrder = serverFeedItemSortOrder
+    , setItemSortOrder = setServerFeedItemSortOrder
+    , nonMainSortOrders = nonMainServerFeedItemSortOrders
+    }
+
+
+{-| The `sortOrder` a brand-new item (a manually-added server, a newly-browsed Mastodon instance)
+should get so it appears first -- "just after the main server" -- among every other movable item,
+same as adding a server used to prepend it to `servers` before `sortOrder` existed.
+-}
+nextFrontSortOrder : Model -> Int
+nextFrontSortOrder model =
+    nextFrontSortOrderIn serverFeedItemSortOrderSpace model
+
+
+{-| Like `nextFrontSortOrder`, but for an item that should land at the *end* instead -- mirrors
+`RellmServers.upsertRellmServerAppend`'s pre-`sortOrder` append-to-end behavior, still used for a server discovered via
+federation recommendations rather than added deliberately (see `GotReconnectResult`'s `appendToEnd`).
+-}
+nextBackSortOrder : Model -> Int
+nextBackSortOrder model =
+    nextBackSortOrderIn serverFeedItemSortOrderSpace model
+
+
+swapServerFeedItemSortOrders : String -> String -> Model -> Model
+swapServerFeedItemSortOrders =
+    swapSortOrders serverFeedItemSortOrderSpace
+
+
+{-| A Rellm account, connected Mastodon account, or connected Bluesky account, as they appear
+together in `UI.accountsList`'s one merged, reorderable vertical list -- the three underlying lists
+(`accounts`, `mastodonAccounts`, `blueskyAccounts`) stay separate (each persisted through its own
+port), so this is purely a rendering-time view over all three at once, built by
+`combinedAccountItems`. Mirrors `CombinedServerFeedItem` in every way that matters -- see that
+type's own doc -- just one level down: a server/instance is something the app merely *watches*
+(browses/federates with), while every kind here is something the app is *signed in as*.
+-}
+type CombinedAccountItem
+    = CombinedRellmAccount RellmAccount
+    | CombinedMastodonAccount MastodonAccount
+    | CombinedBlueskyAccount BlueskyAccount
+
+
+{-| A stable, cross-type identity for one `CombinedAccountItem` -- namespaced by kind (`"account:"`/
+`"mastodon-account:"`/`"bluesky:"`) so none of the three can ever collide with each other, even
+though all three ultimately key off plain strings. Used as the shared key for
+`accountAnimations`/`moveAnimations` (fade in/out, reorder-slide) and `accountRowDomId` (for
+`UI.Flip.beginReorder`'s DOM measurement) across all three types at once.
+-}
+combinedAccountItemKey : CombinedAccountItem -> String
+combinedAccountItemKey item =
+    case item of
+        CombinedRellmAccount account ->
+            "account:" ++ rellmAccountId account
+
+        CombinedMastodonAccount account ->
+            "mastodon-account:" ++ account.instanceHost ++ "|" ++ account.username
+
+        CombinedBlueskyAccount account ->
+            "bluesky:" ++ account.handle
+
+
+combinedAccountItemSortOrder : CombinedAccountItem -> Int
+combinedAccountItemSortOrder item =
+    case item of
+        CombinedRellmAccount account ->
+            account.sortOrder
+
+        CombinedMastodonAccount account ->
+            account.sortOrder
+
+        CombinedBlueskyAccount account ->
+            account.sortOrder
+
+
+{-| The full, ordered contents of `UI.accountsList`: every account on `mainFrontendHost` first (see
+`sortMainServerAccountsFirst`), sorted among themselves by `sortOrder`, then every other Rellm
+account, connected Mastodon account, and connected Bluesky account together, also sorted by
+`sortOrder` ascending -- the one field that lets three otherwise-separate lists interleave into a
+single reorderable order. See `nextFrontAccountSortOrder`/`nextBackAccountSortOrder` for how a
+freshly-added item gets one, and `swapAccountItemSortOrders` for how reordering changes them.
+-}
+combinedAccountItems : Model -> List CombinedAccountItem
+combinedAccountItems model =
+    let
+        ( mainAccounts, otherAccounts ) =
+            List.partition (\a -> a.server == model.mainFrontendHost) model.accounts
+
+        mainItems : List CombinedAccountItem
+        mainItems =
+            mainAccounts |> List.sortBy .sortOrder |> List.map CombinedRellmAccount
+
+        otherItems : List CombinedAccountItem
+        otherItems =
+            (otherAccounts |> List.map CombinedRellmAccount)
+                ++ (model.mastodonAccounts |> List.map CombinedMastodonAccount)
+                ++ (model.blueskyAccounts |> List.map CombinedBlueskyAccount)
+                |> List.sortBy combinedAccountItemSortOrder
+    in
+    mainItems ++ otherItems
+
+
+{-| Every non-main item's current `sortOrder`, across all three lists -- mirrors
+`nonMainServerFeedItemSortOrders`'s own reasoning, except main-server *accounts* aren't excluded for
+the same "never meaningful" reason (there can be more than one, and they're still individually
+reorderable amongst themselves -- see `combinedAccountItems`); they're excluded purely so a fresh
+non-main item's `sortOrder` doesn't get skewed by whatever range the main group happens to occupy.
+-}
+nonMainAccountItemSortOrders : Model -> List Int
+nonMainAccountItemSortOrders model =
+    (model.accounts |> List.filter (\a -> a.server /= model.mainFrontendHost) |> List.map .sortOrder)
+        ++ (model.mastodonAccounts |> List.map .sortOrder)
+        ++ (model.blueskyAccounts |> List.map .sortOrder)
+
+
+{-| Looks up one `CombinedAccountItem`'s current `sortOrder` by its `combinedAccountItemKey`, across
+all three underlying lists.
+-}
+accountItemSortOrder : String -> Model -> Maybe Int
+accountItemSortOrder key model =
+    combinedAccountItems model
+        |> List.filter (\item -> combinedAccountItemKey item == key)
+        |> List.head
+        |> Maybe.map combinedAccountItemSortOrder
+
+
+{-| Sets one item's `sortOrder` in place, dispatching to whichever of the three underlying lists its
+`combinedAccountItemKey` namespace names -- a no-op if `key` doesn't match any current item.
+-}
+setAccountItemSortOrder : String -> Int -> Model -> Model
+setAccountItemSortOrder key newSortOrder model =
+    if String.startsWith "account:" key then
+        { model
+            | accounts =
+                List.map
+                    (\a ->
+                        if "account:" ++ rellmAccountId a == key then
+                            { a | sortOrder = newSortOrder }
+
+                        else
+                            a
+                    )
+                    model.accounts
+        }
+
+    else if String.startsWith "mastodon-account:" key then
+        { model
+            | mastodonAccounts =
+                List.map
+                    (\a ->
+                        if "mastodon-account:" ++ a.instanceHost ++ "|" ++ a.username == key then
+                            { a | sortOrder = newSortOrder }
+
+                        else
+                            a
+                    )
+                    model.mastodonAccounts
         }
 
     else
@@ -1174,21 +984,26 @@ setFeedItemSortOrder key newSortOrder model =
         }
 
 
-{-| Reorders two adjacent `CombinedFeedItem`s (see `MoveFeedItemLeftClicked`/`MoveFeedItemRightClicked`)
-by swapping their `sortOrder` values -- not their position in whichever underlying list each happens
-to live in, since a Rellm server and a Bluesky account swapping places can't be expressed as a move
-within either list alone. A no-op if either key's current item can't be found.
--}
-swapFeedItemSortOrders : String -> String -> Model -> Model
-swapFeedItemSortOrders keyA keyB model =
-    case ( feedItemSortOrder keyA model, feedItemSortOrder keyB model ) of
-        ( Just orderA, Just orderB ) ->
-            model
-                |> setFeedItemSortOrder keyA orderB
-                |> setFeedItemSortOrder keyB orderA
+accountItemSortOrderSpace : SortOrderSpace
+accountItemSortOrderSpace =
+    { itemSortOrder = accountItemSortOrder
+    , setItemSortOrder = setAccountItemSortOrder
+    , nonMainSortOrders = nonMainAccountItemSortOrders
+    }
 
-        _ ->
-            model
+
+{-| The `sortOrder` a brand-new account item (a fresh login/`CreateAccount`, a freshly-connected
+Mastodon or Bluesky account) should get so it appears first among every other movable account item
+-- mirrors `nextFrontSortOrder`'s own reasoning, one level down (see `CombinedAccountItem`'s doc).
+-}
+nextFrontAccountSortOrder : Model -> Int
+nextFrontAccountSortOrder model =
+    nextFrontSortOrderIn accountItemSortOrderSpace model
+
+
+swapAccountItemSortOrders : String -> String -> Model -> Model
+swapAccountItemSortOrders =
+    swapSortOrders accountItemSortOrderSpace
 
 
 {-| Pins the `mainFrontendHost` server (if known yet) at the front of
@@ -1209,14 +1024,12 @@ sortMainServerFirst model =
     { model | servers = mainServers ++ otherServers }
 
 
-{-| Same idea as `sortMainServerFirst`, for `accounts` -- pins every account
-on the `mainFrontendHost` server at the front, preserving the relative order
-of everything else. Run at the same two points (see `sortMainServerFirst`'s
-doc), this keeps the main server's account(s) contiguous at the front, which
-is what lets `UI.accountRow` hide (rather than merely disable) an arrow that
-would otherwise cross the main/non-main boundary -- moving a main-server
-account below the group, or a non-main one above it -- instead of just
-tracking each account's own up/down bounds.
+{-| Same idea as `sortMainServerFirst`, for `accounts` -- pins every account on the
+`mainFrontendHost` server at the front, preserving the relative order of everything else. Run at
+the same two points (see `sortMainServerFirst`'s doc). `combinedAccountItems` itself re-derives the
+main/non-main partition live from `.server` on every call (not from this list's own physical
+order), so this is no longer load-bearing for render order the way it once was -- kept purely to
+keep `encodeState`'s own on-disk ordering tidy, same as `sortMainServerFirst`'s own doc on that.
 -}
 sortMainServerAccountsFirst : Model -> Model
 sortMainServerAccountsFirst model =
@@ -1227,11 +1040,6 @@ sortMainServerAccountsFirst model =
     { model | accounts = mainAccounts ++ otherAccounts }
 
 
-{-| Whether an account has the `ADMIN` permission.
--}
-isAdmin : RellmAccount -> Bool
-isAdmin account =
-    List.member ADMIN account.permissions
 
 
 {-| Whether any _signed-in_ (enabled) account has `ADMIN` on its server --
@@ -1239,7 +1047,7 @@ gates showing the Server Admin Panel button at all.
 -}
 hasAdminAccount : Model -> Bool
 hasAdminAccount model =
-    List.any (\a -> a.enabled && isAdmin a) model.accounts
+    List.any (\a -> a.enabled && RellmAccounts.isAdmin a) model.accounts
 
 
 {-| Signed-in accounts -- what the accounts-menu toggle button renders as a
@@ -1251,93 +1059,21 @@ enabledAccounts model =
     List.filter .enabled model.accounts
 
 
-{-| A username display enriched with the account's Real Name, if it has one --
-e.g. "Jon Latane (jon)" rather than just "jon". Falls back to the bare
-username when `realName` is empty (unset).
--}
-displayName : RellmAccount -> String
-displayName account =
-    if String.isEmpty (String.trim account.realName) then
-        account.username
-
-    else
-        account.realName ++ " (" ++ account.username ++ ")"
 
 
-{-| The URL for an account's avatar, authorized with its own access token
-(avatars can be visibility-restricted, but an account can always see its own).
--}
-accountAvatarUrl : List RellmServer -> RellmAccount -> Maybe String
-accountAvatarUrl servers account =
-    account.avatarMediaId
-        |> Maybe.andThen
-            (\id ->
-                serverForHost servers account.server
-                    |> Maybe.andThen (\s -> mediaUrl s id)
-                    |> Maybe.map (\url -> url ++ "?authorization=" ++ account.accessToken.token)
-            )
 
 
-{-| The (unauthorized) base URL for a piece of media by `id` on `server` --
-e.g. avatars belonging to some other user (see `Components.Users.avatarUrl`),
-which the caller may still need to append its own `?authorization=` to if
-that media turns out to be visibility-restricted. `Nothing` if `server` is
-currently disconnected -- there's no host to fetch it from.
--}
-mediaUrl : RellmServer -> String -> Maybe String
-mediaUrl server id =
-    connectionOf server
-        |> Maybe.map (\connection -> mediaBaseUrl connection ++ "/media/" ++ id)
 
 
-{-| A server's branding, looked up by its `frontendHost` (for e.g. an
-account's `server` field, cross-referenced against the server list), falling
-back to the bare hostname and neutral colors if that server isn't known, or
-is known but currently disconnected (see `RellmServer.connected`).
--}
-brandingFor : List RellmServer -> String -> Branding
-brandingFor servers frontendHost =
-    serverForHost servers frontendHost
-        |> Maybe.map brandingOf
-        |> Maybe.withDefault (defaultBranding frontendHost)
 
 
-defaultBranding : String -> Branding
-defaultBranding frontendHost =
-    { name = frontendHost
-    , logoUrl = Nothing
-    , primary = UI.ServerTheme.neutralColorMeta
-    , nav = UI.ServerTheme.neutralColorMeta
-    }
 
 
-{-| A `RellmServer`'s branding, falling back to the bare hostname and neutral
-colors while it's disconnected (see `RellmServer.connected`) -- `brandingFor`'s
-same fallback, for callers that already have the `RellmServer` in hand rather
-than just its `frontendHost`.
--}
-brandingOf : RellmServer -> Branding
-brandingOf server =
-    server.connected
-        |> Maybe.map .branding
-        |> Maybe.withDefault (defaultBranding server.frontendHost)
 
 
-{-| The full color theme for a server, combining its cached `branding` with
-the app's current dark/light mode (`Shared.effectiveDarkMode`). Cheap -- fine
-to call on every render.
--}
-serverThemeOf : Bool -> RellmServer -> UI.ServerTheme.ServerTheme
-serverThemeOf darkMode server =
-    let
-        branding : Branding
-        branding =
-            brandingOf server
-    in
-    UI.ServerTheme.fromColorMetas darkMode branding.primary branding.nav
 
 
-{-| Like `serverThemeOf`, but looks a server up by `frontendHost` (for e.g. an
+{-| Like `RellmServers.rellmServerThemeOf`, but looks a server up by `frontendHost` (for e.g. an
 account's `server` field).
 -}
 serverThemeFor : Bool -> Model -> String -> UI.ServerTheme.ServerTheme
@@ -1345,7 +1081,7 @@ serverThemeFor darkMode model frontendHost =
     let
         branding : Branding
         branding =
-            brandingFor model.servers frontendHost
+            RellmServers.brandingFor model.servers frontendHost
     in
     UI.ServerTheme.fromColorMetas darkMode branding.primary branding.nav
 
@@ -1358,277 +1094,28 @@ mainServerTheme darkMode model =
     serverThemeFor darkMode model model.mainFrontendHost
 
 
-
--- SERVER NAME + LOGO
--- Port of the React app's `server_name_and_logo.tsx`: server names often
--- encode a short "badge" name before a `|` or the name's first emoji, with a
--- fuller name after it (e.g. "jonline.io | Jon's Cool Server 🎉"). This pulls
--- that apart and picks a logo (the server's square image, its emoji, or an
--- initial-letter placeholder, in that preference order) and font sizes so the
--- short badge name doesn't look tiny next to a long full one.
-
-
-{-| `CompactServerLogo` is a single-line horizontal glyph+name, for tight
-spaces like the nav bar; `RegularServerLogo` stacks a larger glyph above a
-(possibly two-line) name, for the Accounts Panel's server chips.
-`HorizontalServerLogo` is `RegularServerLogo`'s same larger glyph/(possibly
-two-line) name, just laid out in a row (glyph left of the name) with the name
-left-aligned instead of stacked/centered -- for contexts with more width to
-spare than the nav bar but where a centered stack still reads oddly, e.g.
-`Shared.Breadcrumbs`' server overview panel.
+{-| `Ports.persistMastodonAccountsAndServers`'s wire format -- `MastodonAccount`s
+and `BrowsedMastodonInstance`s bundled into one value, since they're persisted
+together (see that port's own doc), even though they're two separate `Model` fields rendered in two
+entirely different places -- `mastodonAccounts` in `UI.accountsList` (see `CombinedAccountItem`),
+`browsedMastodonInstances` in `UI.combinedServerFeedItemsStrip` (see `CombinedServerFeedItem`).
 -}
-type ServerLogoSize
-    = RegularServerLogo
-    | HorizontalServerLogo
+type alias MastodonAccountsAndServers =
+    { accounts : List MastodonAccount
+    , browsedInstances : List BrowsedMastodonInstance
+    }
 
 
-serverNameAndLogo : RellmServer -> ServerLogoSize -> Html msg
-serverNameAndLogo server size =
-    let
-        branding : Branding
-        branding =
-            brandingOf server
-
-        ( namePrefix, emoji, nameSuffix ) =
-            splitOnFirstEmoji True branding.name
-
-        largeName : Bool
-        largeName =
-            String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
-
-        logo : Html msg
-        logo =
-            case branding.logoUrl of
-                Just url ->
-                    img [ class "server-logo-image", src url, alt branding.name ] []
-
-                Nothing ->
-                    let
-                        hasEmoji : Bool
-                        hasEmoji =
-                            case emoji of
-                                Just e ->
-                                    e /= "" && e /= "|"
-
-                                Nothing ->
-                                    False
-                    in
-                    if hasEmoji then
-                        div [ class "server-logo-emoji" ] [ text (Maybe.withDefault "" emoji) ]
-
-                    else
-                        div [ class "server-logo-placeholder" ] [ text (initialLetter branding.name) ]
-
-        -- The emoji never gets folded into the primary line, even when it's
-        -- not already standing in as the logo above (i.e. there's a real
-        -- image logo) -- appending it as text throws off the browser's width
-        -- measurement for the nav's ellipsis-truncated name (emoji glyphs
-        -- need font-fallback shaping that the intrinsic-sizing pass
-        -- under-measures vs. their actual painted width), causing the name
-        -- to truncate early even with plenty of room on screen.
-        primaryLine : String
-        primaryLine =
-            namePrefix
-
-        -- `RegularServerLogo` and `HorizontalServerLogo` share the same
-        -- larger glyph size and "large" primary-line/secondary-line logic --
-        -- they differ only in layout (stacked+centered vs. row+left-aligned,
-        -- both via `sizeClass` below), not sizing.
-        isBig : Bool
-        isBig =
-            True
-
-        primaryClasses : List String
-        primaryClasses =
-            "server-name-primary"
-                :: (if isBig && largeName then
-                        [ "large" ]
-
-                    else
-                        []
-                   )
-
-        secondaryLine : Html msg
-        secondaryLine =
-            case nameSuffix of
-                Just suffix ->
-                    if isBig && not largeName && suffix /= "" then
-                        div [ class "server-name-secondary" ] [ text suffix ]
-
-                    else
-                        text ""
-
-                Nothing ->
-                    text ""
-
-        sizeClass : String
-        sizeClass =
-            case size of
-                RegularServerLogo ->
-                    "regular"
-
-                HorizontalServerLogo ->
-                    "horizontal"
-    in
-    div [ class ("server-name-and-logo " ++ sizeClass) ]
-        [ logo
-        , div [ class "server-name-breakdown" ]
-            [ div [ class (String.join " " primaryClasses) ] [ text primaryLine ]
-            , secondaryLine
-            ]
-        ]
+emptyMastodonAccountsAndServers : MastodonAccountsAndServers
+emptyMastodonAccountsAndServers =
+    { accounts = [], browsedInstances = [] }
 
 
-{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder
--- see `UI.imageOrInitial`.
--}
-initialLetter : String -> String
-initialLetter fullName =
-    fullName
-        |> String.trim
-        |> String.uncons
-        |> Maybe.map (Tuple.first >> Char.toUpper >> String.fromChar)
-        |> Maybe.withDefault "?"
-
-
-{-| Approximates the React app's `splitOnFirstEmoji` (which gets grapheme-
-cluster splitting for free from `Intl.Segmenter`): finds the first
-pictographic character (or, if `supportPipe`, a literal `|`) and splits the
-string around it, trimming both sides. A found emoji is extended to swallow
-any immediately-following variation-selector/ZWJ/skin-tone/pictographic/
-regional-indicator characters, so most multi-codepoint emoji (flags, ZWJ
-sequences, skin tones) stay together as one unit -- not a real grapheme
-segmenter, but close enough for the short server names this is applied to.
--}
-splitOnFirstEmoji : Bool -> String -> ( String, Maybe String, Maybe String )
-splitOnFirstEmoji supportPipe fullText =
-    let
-        chars : List Char
-        chars =
-            String.toList fullText
-
-        isSplitChar : Char -> Bool
-        isSplitChar c =
-            isPictographic c || (supportPipe && c == '|')
-    in
-    case findIndex isSplitChar chars of
-        Nothing ->
-            ( fullText, Nothing, Nothing )
-
-        Just idx ->
-            let
-                before : String
-                before =
-                    List.take idx chars |> String.fromList |> String.trim
-
-                atSplit : List Char
-                atSplit =
-                    List.drop idx chars
-            in
-            case atSplit of
-                '|' :: rest ->
-                    ( before, Just "|", ifNonEmpty (String.trim (String.fromList rest)) )
-
-                _ ->
-                    let
-                        ( emojiChars, rest ) =
-                            takeEmojiRun atSplit
-                    in
-                    ( before, Just (String.fromList emojiChars), ifNonEmpty (String.trim (String.fromList rest)) )
-
-
-findIndex : (a -> Bool) -> List a -> Maybe Int
-findIndex pred list =
-    list
-        |> List.indexedMap Tuple.pair
-        |> List.filter (Tuple.second >> pred)
-        |> List.head
-        |> Maybe.map Tuple.first
-
-
-takeEmojiRun : List Char -> ( List Char, List Char )
-takeEmojiRun chars =
-    case chars of
-        first :: rest ->
-            let
-                ( continuation, remaining ) =
-                    spanEmojiContinuation rest
-            in
-            ( first :: continuation, remaining )
-
-        [] ->
-            ( [], [] )
-
-
-spanEmojiContinuation : List Char -> ( List Char, List Char )
-spanEmojiContinuation chars =
-    case chars of
-        c :: rest ->
-            if isEmojiContinuation c then
-                let
-                    ( more, remaining ) =
-                        spanEmojiContinuation rest
-                in
-                ( c :: more, remaining )
-
-            else
-                ( [], chars )
-
-        [] ->
-            ( [], [] )
-
-
-isEmojiContinuation : Char -> Bool
-isEmojiContinuation c =
-    isPictographic c || isVariationSelector c || isZeroWidthJoiner c || isSkinToneModifier c
-
-
-isVariationSelector : Char -> Bool
-isVariationSelector c =
-    Char.toCode c == 0xFE0F
-
-
-isZeroWidthJoiner : Char -> Bool
-isZeroWidthJoiner c =
-    Char.toCode c == 0x200D
-
-
-isSkinToneModifier : Char -> Bool
-isSkinToneModifier c =
-    let
-        code : Int
-        code =
-            Char.toCode c
-    in
-    code >= 0x0001F3FB && code <= 0x0001F3FF
-
-
-isRegionalIndicator : Char -> Bool
-isRegionalIndicator c =
-    let
-        code : Int
-        code =
-            Char.toCode c
-    in
-    code >= 0x0001F1E6 && code <= 0x0001F1FF
-
-
-{-| Approximates Unicode's `Extended_Pictographic` property (which the React
-app's regex engine gets for free) via known emoji code-point blocks -- covers
-the vast majority of emoji actually used in server names.
--}
-isPictographic : Char -> Bool
-isPictographic c =
-    let
-        code : Int
-        code =
-            Char.toCode c
-    in
-    (code >= 0x0001F300 && code <= 0x0001FAFF)
-        || (code >= 0x2600 && code <= 0x27BF)
-        || (code >= 0x2300 && code <= 0x23FF)
-        || (code >= 0x2B00 && code <= 0x2BFF)
-        || isRegionalIndicator c
+mastodonAccountsAndServersDecoder : Decoder MastodonAccountsAndServers
+mastodonAccountsAndServersDecoder =
+    Decode.map2 MastodonAccountsAndServers
+        (Decode.field "accounts" (Decode.list MastodonAccounts.mastodonAccountDecoder))
+        (Decode.field "browsedInstances" (Decode.list MastodonServers.browsedMastodonInstanceDecoder))
 
 
 init : Request -> Flags -> Flags -> Flags -> ( Model, Cmd Msg )
@@ -1641,7 +1128,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
 
         rawBlueskyAccounts : List BlueskyAccount
         rawBlueskyAccounts =
-            Decode.decodeValue blueskyAccountsDecoder blueskyAccountsFlags
+            Decode.decodeValue BlueskyAccounts.decoder blueskyAccountsFlags
                 |> Result.withDefault []
 
         rawMastodon : MastodonAccountsAndServers
@@ -1649,21 +1136,25 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
             Decode.decodeValue mastodonAccountsAndServersDecoder mastodonAccountsAndServersFlags
                 |> Result.withDefault emptyMastodonAccountsAndServers
 
-        -- Assigns real `sortOrder` values (see `migrateFeedItemSortOrders`'s own doc) the first
-        -- time any of these three lists is seen without them -- i.e. essentially always, the first
-        -- time a client loads this version. Every other binding in this `let` that reads
-        -- `persisted`/`persistedMastodon`/`persistedBlueskyAccounts` (rather than the `raw*`
-        -- values directly) already sees the migrated ones.
-        ( migratedServers, migratedBrowsedInstances, persistedBlueskyAccounts ) =
-            migrateFeedItemSortOrders rawPersisted.servers rawMastodon.browsedInstances rawBlueskyAccounts
+        -- Assigns real `sortOrder` values (see `migrateServerFeedItemSortOrders`'s/
+        -- `migrateAccountItemSortOrders`'s own docs) the first time any of these five lists is seen
+        -- without them -- i.e. essentially always, the first time a client loads this version.
+        -- Every other binding in this `let` that reads `persisted`/`persistedMastodon`/
+        -- `persistedBlueskyAccounts` (rather than the `raw*` values directly) already sees the
+        -- migrated ones.
+        ( migratedServers, migratedBrowsedInstances ) =
+            migrateServerFeedItemSortOrders rawPersisted.servers rawMastodon.browsedInstances
+
+        ( migratedAccounts, migratedMastodonAccounts, persistedBlueskyAccounts ) =
+            migrateAccountItemSortOrders rawPersisted.accounts rawMastodon.accounts rawBlueskyAccounts
 
         persisted : PersistedState
         persisted =
-            { rawPersisted | servers = migratedServers }
+            { rawPersisted | accounts = migratedAccounts, servers = migratedServers }
 
         persistedMastodon : MastodonAccountsAndServers
         persistedMastodon =
-            { rawMastodon | browsedInstances = migratedBrowsedInstances }
+            { rawMastodon | accounts = migratedMastodonAccounts, browsedInstances = migratedBrowsedInstances }
 
         pageIsSecure : Bool
         pageIsSecure =
@@ -1688,14 +1179,14 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
                 Cmd.none
 
             else
-                negotiateServerConfig pageIsSecure browsingHost
+                RellmServers.negotiateRellmServerConfig pageIsSecure browsingHost
                     |> Task.attempt GotMainServerResult
 
         reconnectCmds : List (Cmd Msg)
         reconnectCmds =
             List.map
                 (\ps ->
-                    negotiateServerConfig pageIsSecure ps.frontendHost
+                    RellmServers.negotiateRellmServerConfig pageIsSecure ps.frontendHost
                         |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled False)
                 )
                 persisted.servers
@@ -1720,7 +1211,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
         missingServerCmds =
             List.map
                 (\host ->
-                    negotiateServerConfig pageIsSecure host
+                    RellmServers.negotiateRellmServerConfig pageIsSecure host
                         |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts) False)
                 )
                 missingServerHosts
@@ -1732,7 +1223,6 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
         nextMissingServerSortOrder =
             ((persisted.servers |> List.map .sortOrder)
                 ++ (persistedMastodon.browsedInstances |> List.map .sortOrder)
-                ++ (persistedBlueskyAccounts |> List.map .sortOrder)
                 |> List.maximum
                 |> Maybe.withDefault -1
             )
@@ -1753,19 +1243,19 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
     in
     ( { accounts = persisted.accounts
 
-      -- Seeded disconnected (see `RellmServer.connected`/`disconnectedServer`), in
+      -- Seeded disconnected (see `RellmServer.connected`/`RellmServers.disconnectedRellmServer`), in
       -- persisted order, rather than starting empty -- so a server stays in
       -- its place (and keeps showing, as disconnected, rather than just
       -- vanishing) if `reconnectCmds`/`missingServerCmds` below never bring
       -- it back this session. Each entry gets replaced in place (see
-      -- `upsertServer`) once/if its own reconnect actually succeeds
+      -- `RellmServers.upsertRellmServer`) once/if its own reconnect actually succeeds
       -- (`GotReconnectResult`).
       , servers =
-            (persisted.servers |> List.map disconnectedServer)
+            (persisted.servers |> List.map RellmServers.disconnectedRellmServer)
                 ++ (missingServerHosts
                         |> List.indexedMap
                             (\idx host ->
-                                disconnectedServer
+                                RellmServers.disconnectedRellmServer
                                     { frontendHost = host
                                     , enabled = List.any (\a -> a.server == host && a.enabled) persisted.accounts
                                     , sortOrder = nextMissingServerSortOrder + idx
@@ -1792,13 +1282,18 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       -- id with no entry as "just appeared" -- doesn't replay every account's/
       -- feed item's entrance on every reload. Only genuinely new ones (signed
       -- in, or added, after this) start from `Dict.empty`-implied absence and
-      -- so actually animate in. Covers all three `CombinedFeedItem` kinds --
-      -- see `serverAnimations`'s own doc.
-      , accountAnimations = persisted.accounts |> List.map (\account -> ( accountId account, UI.Flip.restingState )) |> Dict.fromList
+      -- so actually animate in. Covers all three `CombinedAccountItem`/both
+      -- `CombinedServerFeedItem` kinds -- see `serverAnimations`'s own doc.
+      , accountAnimations =
+            ((persisted.accounts |> List.map (\account -> "account:" ++ rellmAccountId account))
+                ++ (persistedMastodon.accounts |> List.map (\account -> "mastodon-account:" ++ account.instanceHost ++ "|" ++ account.username))
+                ++ (persistedBlueskyAccounts |> List.map (\account -> "bluesky:" ++ account.handle))
+            )
+                |> List.map (\key -> ( key, UI.Flip.restingState ))
+                |> Dict.fromList
       , serverAnimations =
             ((persisted.servers |> List.map (\server -> "server:" ++ server.frontendHost))
                 ++ (persistedMastodon.browsedInstances |> List.map (\instance -> "mastodon:" ++ instance.host))
-                ++ (persistedBlueskyAccounts |> List.map (\account -> "bluesky:" ++ account.handle))
             )
                 |> List.map (\key -> ( key, UI.Flip.restingState ))
                 |> Dict.fromList
@@ -1891,7 +1386,7 @@ resolvePendingPushSubscriptionCheck model =
                 matchingAccounts : List RellmAccount
                 matchingAccounts =
                     model.accounts
-                        |> List.filter (\account -> serverWebPushPublicKey model.servers account.server == Just check.publicKey)
+                        |> List.filter (\account -> RellmServers.rellmServerWebPushPublicKey model.servers account.server == Just check.publicKey)
             in
             if List.isEmpty matchingAccounts then
                 ( model, Cmd.none )
@@ -1901,17 +1396,17 @@ resolvePendingPushSubscriptionCheck model =
                 , matchingAccounts
                     |> List.filterMap
                         (\account ->
-                            serverForHost model.servers account.server
-                                |> Maybe.andThen connectionOf
+                            RellmServers.rellmServerForHost model.servers account.server
+                                |> Maybe.andThen RellmServers.connectionOf
                                 |> Maybe.map
                                     (\connection ->
-                                        performWithAccount
+                                        RellmAccounts.performWithRellmAccount
                                             connection
                                             account
                                             (\accessToken ->
                                                 Grpc.new Rellm.getPushSubscriptionStatus { endpoint = check.endpoint }
-                                                    |> Grpc.setHost (connectionUrl connection)
-                                                    |> withAccessToken (Just accessToken)
+                                                    |> Grpc.setHost (RellmServers.connectionUrl connection)
+                                                    |> RellmServers.withAccessToken (Just accessToken)
                                                     |> Grpc.toTask
                                             )
                                             |> Task.attempt (GotPushSubscriptionStatusResult check.endpoint)
@@ -1921,16 +1416,15 @@ resolvePendingPushSubscriptionCheck model =
                 )
 
 
-{-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
-for any account/combined feed item (server, browsed Mastodon instance, or
-Bluesky account -- see `CombinedFeedItem`) that doesn't have an entry yet --
-see those fields' own docs, and `UI.Flip.syncEnter`.
+{-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations` for any combined
+account item (`CombinedAccountItem`) or combined server feed item (`CombinedServerFeedItem`) that
+doesn't have an entry yet -- see those fields' own docs, and `UI.Flip.syncEnter`.
 -}
 syncItemAnimations : Model -> Model
 syncItemAnimations model =
     { model
-        | accountAnimations = UI.Flip.syncEnter accountId model.accounts model.accountAnimations
-        , serverAnimations = UI.Flip.syncEnter combinedFeedItemKey (combinedFeedItems model) model.serverAnimations
+        | accountAnimations = UI.Flip.syncEnter combinedAccountItemKey (combinedAccountItems model) model.accountAnimations
+        , serverAnimations = UI.Flip.syncEnter combinedServerFeedItemKey (combinedServerFeedItems model) model.serverAnimations
     }
 
 
@@ -1981,7 +1475,7 @@ sendUpdate req msg model =
             ( model
                 |> updateForm (\f -> { f | status = Submitting })
                 |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
-            , resolveHost (isSecure req) model.servers (String.trim form.server)
+            , RellmServers.resolveHost (isSecure req) model.servers (String.trim form.server)
                 |> Task.attempt GotCreateAccountServerInfo
             )
 
@@ -2007,7 +1501,7 @@ sendUpdate req msg model =
             ( model
                 |> updateForm (\f -> { f | status = Submitting })
                 |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
-            , resolveHost (isSecure req) model.servers server
+            , RellmServers.resolveHost (isSecure req) model.servers server
                 |> Task.andThen
                     (\( connection, config ) ->
                         Grpc.new Rellm.login
@@ -2017,7 +1511,7 @@ sendUpdate req msg model =
                             , deviceName = Nothing
                             , userId = Nothing
                             }
-                            |> Grpc.setHost (connectionUrl connection)
+                            |> Grpc.setHost (RellmServers.connectionUrl connection)
                             |> Grpc.toTask
                             |> Task.map (\resp -> ( connection, config, resp ))
                     )
@@ -2034,7 +1528,7 @@ sendUpdate req msg model =
                     ( model, Cmd.none )
 
                 Just accepted ->
-                    case ( connectionOf accepted.server, accepted.server.connected ) of
+                    case ( RellmServers.connectionOf accepted.server, accepted.server.connected ) of
                         ( Just connection, Just { configuration } ) ->
                             let
                                 form : AccountForm
@@ -2051,13 +1545,13 @@ sendUpdate req msg model =
                                 , expiresAt = Nothing
                                 , deviceName = Nothing
                                 }
-                                |> Grpc.setHost (connectionUrl connection)
+                                |> Grpc.setHost (RellmServers.connectionUrl connection)
                                 |> Grpc.toTask
                                 |> Task.map (\resp -> ( connection, configuration, resp ))
                                 |> Task.attempt GotAuthResult
                             )
 
-                        -- `accepted.server` was built by `serverFrom` (see
+                        -- `accepted.server` was built by `RellmServers.rellmServerFrom` (see
                         -- `GotCreateAccountServerInfo`), which is always connected --
                         -- unreachable in practice.
                         _ ->
@@ -2074,7 +1568,7 @@ sendUpdate req msg model =
                     { model
                         | createAccountConfirmation =
                             Just
-                                { server = serverFrom connection True config
+                                { server = RellmServers.rellmServerFrom connection True config
                                 , username = form.username
                                 , reachedBottom = False
                                 }
@@ -2154,13 +1648,14 @@ sendUpdate req msg model =
                             { server = connection.frontendHost
                             , userId = user.id
                             , username = user.username
-                            , refreshToken = tokenFromExpirable refreshToken
-                            , accessToken = tokenFromExpirable accessToken
+                            , refreshToken = RellmAccounts.tokenFromExpirable refreshToken
+                            , accessToken = RellmAccounts.tokenFromExpirable accessToken
                             , enabled = True
                             , avatarMediaId = Maybe.map .id user.avatar
                             , permissions = user.permissions
                             , realName = user.realName
                             , needsPassword = False
+                            , sortOrder = nextFrontAccountSortOrder model
 
                             -- Login/CreateAccount's `User` never carries these (only a
                             -- self-or-Admin `GetUsers` lookup does, see `RellmAccount`'s own doc) --
@@ -2175,11 +1670,11 @@ sendUpdate req msg model =
                         newModel =
                             { model
                                 | accounts =
-                                    upsertAccount account model.accounts
-                                        |> disableOtherAccountsOnServer (accountId account) account.server
+                                    RellmAccounts.upsertRellmAccount account model.accounts
+                                        |> RellmAccounts.disableOtherRellmAccountsOnServer (rellmAccountId account) account.server
                                 , servers =
-                                    upsertServer (nextFrontSortOrder model) (serverFrom connection True config) model.servers
-                                        |> enableServerFor connection.frontendHost
+                                    RellmServers.upsertRellmServer (nextFrontSortOrder model) (RellmServers.rellmServerFrom connection True config) model.servers
+                                        |> RellmServers.enableRellmServerFor connection.frontendHost
                                 , accountForm =
                                     let
                                         form : AccountForm
@@ -2214,15 +1709,20 @@ sendUpdate req msg model =
             let
                 enabledAccount : RellmAccount
                 enabledAccount =
-                    { account | enabled = True }
+                    -- `account.sortOrder` crossed the wire from whatever it meant in the sending
+                    -- origin's own account list -- meaningless here, so it's reassigned fresh
+                    -- (unless this account's already known locally, in which case `RellmAccounts.upsertRellmAccount`
+                    -- below keeps its existing local `sortOrder` anyway -- see that function's own
+                    -- doc).
+                    { account | enabled = True, sortOrder = nextFrontAccountSortOrder model }
 
                 newModel : Model
                 newModel =
                     { model
                         | accounts =
-                            upsertAccount enabledAccount model.accounts
-                                |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
-                        , servers = enableServerFor enabledAccount.server model.servers
+                            RellmAccounts.upsertRellmAccount enabledAccount model.accounts
+                                |> RellmAccounts.disableOtherRellmAccountsOnServer (rellmAccountId enabledAccount) enabledAccount.server
+                        , servers = RellmServers.enableRellmServerFor enabledAccount.server model.servers
                         , federatedSignInNotice = Just enabledAccount
                     }
 
@@ -2249,7 +1749,7 @@ sendUpdate req msg model =
                             refreshPermissions server enabledAccount
 
                         Nothing ->
-                            negotiateServerConfig (isSecure req) enabledAccount.server
+                            RellmServers.negotiateRellmServerConfig (isSecure req) enabledAccount.server
                                 |> Task.attempt (GotReconnectResult enabledAccount.server True False)
             in
             ( newModel
@@ -2272,15 +1772,15 @@ sendUpdate req msg model =
                                         case ( accessTokenResponse.accessToken, accessTokenResponse.refreshToken ) of
                                             ( Just accessToken, Just refreshToken ) ->
                                                 { a
-                                                    | accessToken = tokenFromExpirable accessToken
-                                                    , refreshToken = tokenFromExpirable refreshToken
+                                                    | accessToken = RellmAccounts.tokenFromExpirable accessToken
+                                                    , refreshToken = RellmAccounts.tokenFromExpirable refreshToken
                                                 }
 
                                             ( Just accessToken, Nothing ) ->
-                                                { a | accessToken = tokenFromExpirable accessToken }
+                                                { a | accessToken = RellmAccounts.tokenFromExpirable accessToken }
 
                                             ( Nothing, Just refreshToken ) ->
-                                                { a | refreshToken = tokenFromExpirable refreshToken }
+                                                { a | refreshToken = RellmAccounts.tokenFromExpirable refreshToken }
 
                                             ( Nothing, Nothing ) ->
                                                 a
@@ -2306,17 +1806,17 @@ sendUpdate req msg model =
                 insert : RellmServer -> List RellmServer -> List RellmServer
                 insert =
                     if appendToEnd then
-                        upsertServerAppend newItemSortOrder
+                        RellmServers.upsertRellmServerAppend newItemSortOrder
 
                     else
-                        upsertServer newItemSortOrder
+                        RellmServers.upsertRellmServer newItemSortOrder
             in
             case result of
                 Ok ( connection, config ) ->
                     let
                         server : RellmServer
                         server =
-                            serverFrom connection enabled config
+                            RellmServers.rellmServerFrom connection enabled config
 
                         newModel : Model
                         newModel =
@@ -2326,7 +1826,7 @@ sendUpdate req msg model =
                             }
                     in
                     -- Replaces (rather than just skipping) any existing entry for this host,
-                    -- keeping its place in the list (see `upsertServer`) -- this fires on
+                    -- keeping its place in the list (see `RellmServers.upsertRellmServer`) -- this fires on
                     -- every reconnect (app startup/reload, `init`'s `reconnectCmds`), so an
                     -- unconditional append here would otherwise duplicate the server on each
                     -- successful reconnect. Also refresh permissions for any of its accounts
@@ -2342,8 +1842,8 @@ sendUpdate req msg model =
                 Err _ ->
                     -- Couldn't reconnect (server's down, moved, etc.). Rather than dropping it
                     -- (which would silently erase it from what's persisted, see
-                    -- `encodePersistedServer`, the very next time `persist` fires), mark/keep
-                    -- it disconnected in place -- `disconnectedServer` if this host has no
+                    -- `RellmServers.encodePersistedRellmServer`, the very next time `persist` fires), mark/keep
+                    -- it disconnected in place -- `RellmServers.disconnectedRellmServer` if this host has no
                     -- entry yet at all (e.g. a federated server whose very first negotiation
                     -- failed), otherwise leave any existing entry (already disconnected, or
                     -- about to be replaced by a still-in-flight reconnect for the same host)
@@ -2356,7 +1856,7 @@ sendUpdate req msg model =
                                 model
 
                              else
-                                { model | servers = insert (disconnectedServer { frontendHost = frontendHost, enabled = enabled, sortOrder = 0 }) model.servers }
+                                { model | servers = insert (RellmServers.disconnectedRellmServer { frontendHost = frontendHost, enabled = enabled, sortOrder = 0 }) model.servers }
                             )
                                 |> (\m -> { m | browsingHostConfigResolved = m.browsingHostConfigResolved || frontendHost == m.browsingHost })
                     in
@@ -2373,7 +1873,7 @@ sendUpdate req msg model =
                         -- exactly as if the user had typed it in directly.
                         resolvedFrontend : String
                         resolvedFrontend =
-                            resolvedFrontendHost model.browsingHost config
+                            RellmServers.resolvedFrontendHost model.browsingHost config
 
                         correctedConnection : Connection
                         correctedConnection =
@@ -2381,19 +1881,19 @@ sendUpdate req msg model =
 
                         server : RellmServer
                         server =
-                            serverFrom correctedConnection True config
+                            RellmServers.rellmServerFrom correctedConnection True config
 
                         -- Mirrors `federatedServerCmds` below, for `FederationInfo.mastodonServers`
                         -- instead of `.servers` -- but unlike a real `FederatedServer`, browsing a
                         -- Mastodon instance needs no negotiation/connection at all (see
                         -- `Shared.Federation.Mastodon.fetchPosts`'s own doc: it's a plain
                         -- unauthenticated `GET`), so this can just fold straight into `newModel`
-                        -- rather than firing its own `Cmd`s. Both `configuredByDefault` and
-                        -- `pinnedByDefault` trigger the same "add to the browse list, enabled"
-                        -- effect here -- as of this writing the two aren't distinguishable yet
-                        -- (unlike `RellmServer.enabled`, which `pinnedByDefault` alone controls via
-                        -- `federatedServerCmds` below). If that ever changes, this is the spot to
-                        -- make them diverge, e.g. `pinnedByDefault` alone setting `enabled = True`.
+                        -- rather than firing its own `Cmd`s. `configuredByDefault` alone decides
+                        -- whether an instance gets added to the browse list at all;
+                        -- `pinnedByDefault` alone decides whether it starts `enabled` (a merely
+                        -- `configuredByDefault` one is added but starts switched off, for the user
+                        -- to opt into) -- same split `federatedServerCmds` below already makes for
+                        -- real `FederatedServer`s.
                         defaultBrowsedMastodonInstances : List BrowsedMastodonInstance
                         defaultBrowsedMastodonInstances =
                             config.federationInfo
@@ -2403,7 +1903,15 @@ sendUpdate req msg model =
                                     (\ms ->
                                         Maybe.withDefault False ms.configuredByDefault || Maybe.withDefault False ms.pinnedByDefault
                                     )
-                                |> List.map (\ms -> { host = ms.domain, enabled = True, logoUrl = Nothing, displayName = Nothing, sortOrder = 0 })
+                                |> List.map
+                                    (\ms ->
+                                        { host = ms.domain
+                                        , enabled = Maybe.withDefault False ms.pinnedByDefault
+                                        , logoUrl = Nothing
+                                        , displayName = Nothing
+                                        , sortOrder = 0
+                                        }
+                                    )
 
                         -- Appended at the back (like `federatedServerCmds`'s own servers, via
                         -- `appendToEnd`), each getting the next sequential back `sortOrder` so
@@ -2418,7 +1926,7 @@ sendUpdate req msg model =
                         newModel =
                             { model
                                 | mainFrontendHost = resolvedFrontend
-                                , servers = upsertServer 0 server model.servers
+                                , servers = RellmServers.upsertRellmServer 0 server model.servers
                                 , browsingHostConfigResolved = True
                                 , browsedMastodonInstances = model.browsedMastodonInstances ++ newlyAddedMastodonInstances
                             }
@@ -2428,16 +1936,16 @@ sendUpdate req msg model =
                         mastodonInstanceLogoCmds : List (Cmd Msg)
                         mastodonInstanceLogoCmds =
                             newlyAddedMastodonInstances
-                                |> List.map (\i -> Task.attempt (GotMastodonInstanceInfoResult i.host) (fetchMastodonInstanceInfoTask i.host))
+                                |> List.map (\i -> Task.attempt (GotMastodonInstanceInfoResult i.host) (MastodonServers.fetchMastodonInstanceInfoTask i.host))
 
                         -- The base host may recommend other servers to federate with (see
                         -- `federation.proto`'s `FederatedServer`). At this first-setup moment
                         -- (this whole branch only runs the first time we've ever seen this
                         -- browsing host -- see `init`'s `browsingHostAlreadyKnown`), connect to
                         -- each one that's `configuredByDefault`, appending it to the *end* of
-                        -- the server list once negotiated (see `upsertServerAppend`) -- unlike
+                        -- the server list once negotiated (see `RellmServers.upsertRellmServerAppend`) -- unlike
                         -- a server added later (which lands right after the current server, see
-                        -- `upsertServer`), these are recommendations the user didn't ask for, so
+                        -- `RellmServers.upsertRellmServer`), these are recommendations the user didn't ask for, so
                         -- they shouldn't jump ahead of any server already in the list.
                         -- `pinnedByDefault` ones are enabled immediately, the rest added
                         -- disabled for the user to opt into.
@@ -2452,7 +1960,7 @@ sendUpdate req msg model =
                                     )
                                 |> List.map
                                     (\fs ->
-                                        negotiateServerConfig (isSecure req) fs.host
+                                        RellmServers.negotiateRellmServerConfig (isSecure req) fs.host
                                             |> Task.attempt (GotReconnectResult fs.host (Maybe.withDefault False fs.pinnedByDefault) True)
                                     )
                     in
@@ -2497,7 +2005,7 @@ sendUpdate req msg model =
                                             |> List.filter (\s -> s.frontendHost == ps.frontendHost)
                                             |> List.head
                                             |> Maybe.map (\s -> { s | enabled = ps.enabled, sortOrder = ps.sortOrder })
-                                            |> Maybe.withDefault (disconnectedServer ps)
+                                            |> Maybe.withDefault (RellmServers.disconnectedRellmServer ps)
                                     )
 
                         -- Hosts already connected -- no need to attempt another reconnect for
@@ -2513,7 +2021,7 @@ sendUpdate req msg model =
                                 |> List.filter (\ps -> not (List.member ps.frontendHost connectedHosts))
                                 |> List.map
                                     (\ps ->
-                                        negotiateServerConfig (isSecure req) ps.frontendHost
+                                        RellmServers.negotiateRellmServerConfig (isSecure req) ps.frontendHost
                                             |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled False)
                                     )
 
@@ -2533,7 +2041,7 @@ sendUpdate req msg model =
                         missingServerCmds =
                             List.map
                                 (\host ->
-                                    negotiateServerConfig (isSecure req) host
+                                    RellmServers.negotiateRellmServerConfig (isSecure req) host
                                         |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts) False)
                                 )
                                 missingServerHosts
@@ -2552,7 +2060,7 @@ sendUpdate req msg model =
             -- separate "connected this session" state to preserve -- the broadcast value is already
             -- the other tab's complete, authoritative list (same shape `persistBlueskyAccounts` itself
             -- persists), so this can just replace `blueskyAccounts` outright.
-            case Decode.decodeValue blueskyAccountsDecoder value of
+            case Decode.decodeValue BlueskyAccounts.decoder value of
                 Ok accounts ->
                     ( { model | blueskyAccounts = accounts }, Cmd.none )
 
@@ -2575,7 +2083,7 @@ sendUpdate req msg model =
                 toggledAccounts =
                     List.map
                         (\account ->
-                            if accountId account == id then
+                            if rellmAccountId account == id then
                                 { account | enabled = not account.enabled }
 
                             else
@@ -2586,7 +2094,7 @@ sendUpdate req msg model =
                 justEnabledAccount : Maybe RellmAccount
                 justEnabledAccount =
                     toggledAccounts
-                        |> List.filter (\a -> accountId a == id && a.enabled)
+                        |> List.filter (\a -> rellmAccountId a == id && a.enabled)
                         |> List.head
 
                 -- Only one account per server may be enabled (signed in) at a time --
@@ -2596,7 +2104,7 @@ sendUpdate req msg model =
                 exclusiveAccounts =
                     case justEnabledAccount of
                         Just account ->
-                            disableOtherAccountsOnServer id account.server toggledAccounts
+                            RellmAccounts.disableOtherRellmAccountsOnServer id account.server toggledAccounts
 
                         Nothing ->
                             toggledAccounts
@@ -2605,7 +2113,7 @@ sendUpdate req msg model =
                 newServers =
                     case justEnabledAccount of
                         Just account ->
-                            enableServerFor account.server model.servers
+                            RellmServers.enableRellmServerFor account.server model.servers
 
                         Nothing ->
                             model.servers
@@ -2619,7 +2127,7 @@ sendUpdate req msg model =
                     justEnabledAccount
                         |> Maybe.andThen
                             (\account ->
-                                serverForHost newModel.servers account.server
+                                RellmServers.rellmServerForHost newModel.servers account.server
                                     |> Maybe.map (\server -> refreshPermissions server account)
                             )
                         |> Maybe.withDefault Cmd.none
@@ -2629,13 +2137,20 @@ sendUpdate req msg model =
         RemoveAccountClicked id ->
             -- Doesn't actually remove the account yet -- starts its fade-out
             -- (see `accountAnimations`), which sends `FinishRemoveAccount` once
-            -- that finishes to do the real removal.
+            -- that finishes to do the real removal. Keyed by `combinedAccountItemKey`'s
+            -- `"account:"` namespace, same as every other `CombinedAccountItem` kind sharing this
+            -- dict -- `FinishRemoveAccount` itself still takes the bare `id`, since that's what
+            -- `rellmAccountId`/`Shared.ConfirmAccountDelete` actually compare against.
             let
+                key : String
+                key =
+                    "account:" ++ id
+
                 currentState : UI.Flip.State Msg
                 currentState =
-                    Dict.get id model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
+                    Dict.get key model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
             in
-            ( { model | accountAnimations = Dict.insert id (UI.Flip.remove (FinishRemoveAccount id) currentState) model.accountAnimations }
+            ( { model | accountAnimations = Dict.insert key (UI.Flip.remove (FinishRemoveAccount id) currentState) model.accountAnimations }
             , Cmd.none
             )
 
@@ -2644,112 +2159,92 @@ sendUpdate req msg model =
                 newModel : Model
                 newModel =
                     { model
-                        | accounts = List.filter (\account -> accountId account /= id) model.accounts
-                        , accountAnimations = Dict.remove id model.accountAnimations
+                        | accounts = List.filter (\account -> rellmAccountId account /= id) model.accounts
+                        , accountAnimations = Dict.remove ("account:" ++ id) model.accountAnimations
                     }
             in
             ( newModel, persist newModel )
 
-        MoveAccountUpClicked id ->
-            ( model, beginAccountMove -1 id model.accounts )
-
-        MoveAccountDownClicked id ->
-            ( model, beginAccountMove 1 id model.accounts )
-
-        GotPreMovePositions id _ _ offset (Err _) ->
-            -- Couldn't measure -- e.g. a row not actually mounted -- fall back to
-            -- swapping without a slide animation, same end state either way.
-            let
-                newModel : Model
-                newModel =
-                    { model | accounts = moveAccountBy offset id model.accounts }
-            in
-            ( newModel, persist newModel )
-
-        GotPreMovePositions id movedIds neighborIds offset (Ok ( ( movedFirstEl, movedLastEl ), ( neighborFirstEl, neighborLastEl ) )) ->
-            -- `movedIds`' post-swap position is derivable from this one
-            -- (pre-swap) measurement of its first/last row and the
-            -- neighbor group's first/last row it's swapping past (see
-            -- `accountSwapRange`). Computing it this way (rather than
-            -- swapping first, then measuring again after the next render)
-            -- means the pinned "Invert" transform is set in the very same
-            -- update as the swap, so there's no frame where the swapped
-            -- list renders at rest before the animation kicks in.
-            let
-                newModel : Model
-                newModel =
-                    { model | accounts = moveAccountBy offset id model.accounts }
-
-                -- Both groups span from their first row's top to their last
-                -- row's bottom -- a single synthetic rect standing in for
-                -- each whole group, so `UI.Flip.swapDeltas` (built for a
-                -- plain two-item swap) can compute one shared slide delta
-                -- for each side.
-                span : Dom.Element -> Dom.Element -> Dom.Element
-                span firstEl lastEl =
-                    { firstEl
-                        | element =
-                            { x = firstEl.element.x
-                            , y = firstEl.element.y
-                            , width = firstEl.element.width
-                            , height = lastEl.element.y + lastEl.element.height - firstEl.element.y
-                            }
-                    }
-
-                ( movedDelta, neighborDelta ) =
-                    UI.Flip.swapDeltas UI.Flip.Vertical (span movedFirstEl movedLastEl) (span neighborFirstEl neighborLastEl)
-
-                startOrRestart : ( Float, Float ) -> String -> Dict String (UI.Flip.MoveState Msg) -> Dict String (UI.Flip.MoveState Msg)
-                startOrRestart delta key anims =
-                    Dict.insert key (UI.Flip.startMove (MoveSettled key) delta (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)) anims
-
-                newMoveAnimations : Dict String (UI.Flip.MoveState Msg)
-                newMoveAnimations =
-                    newModel.moveAnimations
-                        |> (\anims -> List.foldl (startOrRestart movedDelta) anims movedIds)
-                        |> (\anims -> List.foldl (startOrRestart neighborDelta) anims neighborIds)
-            in
-            ( { newModel | moveAnimations = newMoveAnimations }, persist newModel )
-
-        MoveFeedItemLeftClicked id ->
+        MoveAccountItemUpClicked id ->
             ( model
-            , UI.Flip.beginReorder combinedFeedItemKey
-                feedItemChipDomId
-                (\movedId neighborId _ result -> GotPreMoveFeedItemPositions movedId neighborId result)
+            , UI.Flip.beginReorder combinedAccountItemKey
+                accountRowDomId
+                (\movedId neighborId _ result -> GotPreMoveAccountItemPositions movedId neighborId result)
                 -1
                 id
-                (combinedFeedItems model)
+                (combinedAccountItems model)
             )
 
-        MoveFeedItemRightClicked id ->
+        MoveAccountItemDownClicked id ->
             ( model
-            , UI.Flip.beginReorder combinedFeedItemKey
-                feedItemChipDomId
-                (\movedId neighborId _ result -> GotPreMoveFeedItemPositions movedId neighborId result)
+            , UI.Flip.beginReorder combinedAccountItemKey
+                accountRowDomId
+                (\movedId neighborId _ result -> GotPreMoveAccountItemPositions movedId neighborId result)
                 1
                 id
-                (combinedFeedItems model)
+                (combinedAccountItems model)
             )
 
-        GotPreMoveFeedItemPositions id neighborId (Err _) ->
+        GotPreMoveAccountItemPositions id neighborId (Err _) ->
             let
                 newModel : Model
                 newModel =
-                    swapFeedItemSortOrders id neighborId model
+                    swapAccountItemSortOrders id neighborId model
             in
-            ( newModel, persistFeedItemOrder newModel )
+            ( newModel, persistCombinedItemOrder newModel )
 
-        GotPreMoveFeedItemPositions id neighborId (Ok ( chipEl, neighborEl )) ->
+        GotPreMoveAccountItemPositions id neighborId (Ok ( movedEl, neighborEl )) ->
             let
                 newModel : Model
                 newModel =
-                    swapFeedItemSortOrders id neighborId model
+                    swapAccountItemSortOrders id neighborId model
+            in
+            ( { newModel
+                | moveAnimations =
+                    UI.Flip.applyReorder UI.Flip.Vertical AccountItemMoveSettled id neighborId movedEl neighborEl newModel.moveAnimations
+              }
+            , persistCombinedItemOrder newModel
+            )
+
+        MoveServerFeedItemLeftClicked id ->
+            ( model
+            , UI.Flip.beginReorder combinedServerFeedItemKey
+                serverFeedItemChipDomId
+                (\movedId neighborId _ result -> GotPreMoveServerFeedItemPositions movedId neighborId result)
+                -1
+                id
+                (combinedServerFeedItems model)
+            )
+
+        MoveServerFeedItemRightClicked id ->
+            ( model
+            , UI.Flip.beginReorder combinedServerFeedItemKey
+                serverFeedItemChipDomId
+                (\movedId neighborId _ result -> GotPreMoveServerFeedItemPositions movedId neighborId result)
+                1
+                id
+                (combinedServerFeedItems model)
+            )
+
+        GotPreMoveServerFeedItemPositions id neighborId (Err _) ->
+            let
+                newModel : Model
+                newModel =
+                    swapServerFeedItemSortOrders id neighborId model
+            in
+            ( newModel, persistCombinedItemOrder newModel )
+
+        GotPreMoveServerFeedItemPositions id neighborId (Ok ( chipEl, neighborEl )) ->
+            let
+                newModel : Model
+                newModel =
+                    swapServerFeedItemSortOrders id neighborId model
             in
             ( { newModel
                 | serverMoveAnimations =
-                    UI.Flip.applyReorder UI.Flip.Horizontal FeedItemMoveSettled id neighborId chipEl neighborEl newModel.serverMoveAnimations
+                    UI.Flip.applyReorder UI.Flip.Horizontal ServerFeedItemMoveSettled id neighborId chipEl neighborEl newModel.serverMoveAnimations
               }
-            , persistFeedItemOrder newModel
+            , persistCombinedItemOrder newModel
             )
 
         AnimateMove animMsg ->
@@ -2772,12 +2267,12 @@ sendUpdate req msg model =
             , Cmd.batch (moveCmds ++ serverMoveCmds)
             )
 
-        MoveSettled id ->
+        AccountItemMoveSettled id ->
             ( { model | moveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.moveAnimations }
             , Cmd.none
             )
 
-        FeedItemMoveSettled id ->
+        ServerFeedItemMoveSettled id ->
             ( { model | serverMoveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.serverMoveAnimations }
             , Cmd.none
             )
@@ -2806,7 +2301,7 @@ sendUpdate req msg model =
             let
                 wasEnabled : Bool
                 wasEnabled =
-                    serverForHost model.servers frontendHost
+                    RellmServers.rellmServerForHost model.servers frontendHost
                         |> Maybe.map .enabled
                         |> Maybe.withDefault False
 
@@ -2858,12 +2353,12 @@ sendUpdate req msg model =
             let
                 enabled : Bool
                 enabled =
-                    serverForHost model.servers frontendHost
+                    RellmServers.rellmServerForHost model.servers frontendHost
                         |> Maybe.map .enabled
                         |> Maybe.withDefault False
             in
             ( model
-            , negotiateServerConfig (isSecure req) frontendHost
+            , RellmServers.negotiateRellmServerConfig (isSecure req) frontendHost
                 |> Task.attempt (GotReconnectResult frontendHost enabled False)
             )
 
@@ -2891,7 +2386,7 @@ sendUpdate req msg model =
                 ( model
                     |> updateAddServerForm (\f -> { f | status = Submitting })
                     |> updateForm (\f -> { f | status = clearErrored f.status })
-                , negotiateServerConfig (isSecure req) host
+                , RellmServers.negotiateRellmServerConfig (isSecure req) host
                     |> Task.attempt GotNewServerResult
                 )
 
@@ -2902,7 +2397,7 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | servers = upsertServer (nextFrontSortOrder model) (serverFrom connection True config) model.servers
+                                | servers = RellmServers.upsertRellmServer (nextFrontSortOrder model) (RellmServers.rellmServerFrom connection True config) model.servers
                                 , addServerForm = emptyAddServerForm
                             }
                     in
@@ -2944,13 +2439,13 @@ sendUpdate req msg model =
                         | recommendedServersExpanded = newlyExpanded
 
                         -- Seeded disconnected immediately (same idea as `init`'s own
-                        -- `disconnectedServer` seeding), so each chip has something to
+                        -- `RellmServers.disconnectedRellmServer` seeding), so each chip has something to
                         -- render -- a "loading" look, via the same
                         -- `server-chip-disconnected` styling -- the instant the strip
                         -- expands, rather than staying blank until its fetch resolves.
                         , recommendedServerConnections =
                             List.foldl
-                                (\host -> Dict.insert host (disconnectedServer { frontendHost = host, enabled = False, sortOrder = 0 }))
+                                (\host -> Dict.insert host (RellmServers.disconnectedRellmServer { frontendHost = host, enabled = False, sortOrder = 0 }))
                                 model.recommendedServerConnections
                                 hostsToFetch
                     }
@@ -2959,7 +2454,7 @@ sendUpdate req msg model =
             , hostsToFetch
                 |> List.map
                     (\host ->
-                        negotiateServerConfig (isSecure req) host
+                        RellmServers.negotiateRellmServerConfig (isSecure req) host
                             |> Task.attempt (GotRecommendedServerConfig host)
                     )
                 |> Cmd.batch
@@ -2968,7 +2463,7 @@ sendUpdate req msg model =
         GotRecommendedServerConfig host result ->
             case result of
                 Ok ( connection, config ) ->
-                    ( { model | recommendedServerConnections = Dict.insert host (serverFrom connection False config) model.recommendedServerConnections }
+                    ( { model | recommendedServerConnections = Dict.insert host (RellmServers.rellmServerFrom connection False config) model.recommendedServerConnections }
                     , Cmd.none
                     )
 
@@ -2980,10 +2475,10 @@ sendUpdate req msg model =
 
         RecommendedServerClicked host ->
             -- Reuses the connection already cached in `recommendedServerConnections`
-            -- (see `resolveHost`) if its fetch already resolved, rather than
+            -- (see `RellmServers.resolveHost`) if its fetch already resolved, rather than
             -- renegotiating one from scratch.
             ( model
-            , resolveHost (isSecure req) (Dict.values model.recommendedServerConnections) host
+            , RellmServers.resolveHost (isSecure req) (Dict.values model.recommendedServerConnections) host
                 |> Task.attempt (GotRecommendedServerAddResult host)
             )
 
@@ -2998,7 +2493,7 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | servers = upsertServer (nextFrontSortOrder model) (serverFrom connection True config) model.servers
+                                | servers = RellmServers.upsertRellmServer (nextFrontSortOrder model) (RellmServers.rellmServerFrom connection True config) model.servers
                                 , recommendedServerConnections = Dict.remove host model.recommendedServerConnections
                             }
                     in
@@ -3010,7 +2505,7 @@ sendUpdate req msg model =
         RemoveServerClicked frontendHost ->
             -- Same "fade first, actually remove once that finishes" deferral as
             -- `RemoveAccountClicked` -- see `serverAnimations`.
-            if serverHasAccounts model.accounts frontendHost || frontendHost == model.mainFrontendHost then
+            if RellmAccounts.rellmServerHasRellmAccounts model.accounts frontendHost || frontendHost == model.mainFrontendHost then
                 ( model, Cmd.none )
 
             else
@@ -3058,7 +2553,7 @@ sendUpdate req msg model =
                         { removedModel
                             | recommendedServerConnections =
                                 Dict.insert frontendHost
-                                    (disconnectedServer { frontendHost = frontendHost, enabled = False, sortOrder = 0 })
+                                    (RellmServers.disconnectedRellmServer { frontendHost = frontendHost, enabled = False, sortOrder = 0 })
                                     removedModel.recommendedServerConnections
                         }
 
@@ -3069,7 +2564,7 @@ sendUpdate req msg model =
             , Cmd.batch
                 [ persist newModel
                 , if needsRefetch then
-                    negotiateServerConfig (isSecure req) frontendHost
+                    RellmServers.negotiateRellmServerConfig (isSecure req) frontendHost
                         |> Task.attempt (GotRecommendedServerConfig frontendHost)
 
                   else
@@ -3130,7 +2625,7 @@ sendUpdate req msg model =
             let
                 newModel : Model
                 newModel =
-                    { model | accounts = applyPermissionsRefreshResult accId result model.accounts }
+                    { model | accounts = RellmAccounts.applyPermissionsRefreshResult accId result model.accounts }
             in
             ( newModel, persist newModel )
 
@@ -3141,7 +2636,7 @@ sendUpdate req msg model =
                     { model
                         | accounts =
                             List.foldl
-                                (\( accId, result ) accounts -> applyPermissionsRefreshResult accId result accounts)
+                                (\( accId, result ) accounts -> RellmAccounts.applyPermissionsRefreshResult accId result accounts)
                                 model.accounts
                                 results
                     }
@@ -3182,12 +2677,12 @@ sendUpdate req msg model =
             let
                 maybeAccount : Maybe RellmAccount
                 maybeAccount =
-                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+                    model.accounts |> List.filter (\a -> rellmAccountId a == id) |> List.head
 
                 maybeServer : Maybe RellmServer
                 maybeServer =
                     maybeAccount
-                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
+                        |> Maybe.andThen (\a -> RellmServers.rellmServerForHost model.servers a.server)
             in
             case ( maybeAccount, maybeServer ) of
                 ( Just account, Just server ) ->
@@ -3203,12 +2698,12 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | accounts = upsertAccount refreshedAccount model.accounts
+                                | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts
                                 , servers =
                                     List.map
                                         (\s ->
                                             if s.frontendHost == refreshedAccount.server then
-                                                updateServerConfiguration newConfig s
+                                                RellmServers.updateRellmServerConfiguration newConfig s
 
                                             else
                                                 s
@@ -3227,12 +2722,12 @@ sendUpdate req msg model =
             let
                 maybeAccount : Maybe RellmAccount
                 maybeAccount =
-                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+                    model.accounts |> List.filter (\a -> rellmAccountId a == id) |> List.head
 
                 maybeServer : Maybe RellmServer
                 maybeServer =
                     maybeAccount
-                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
+                        |> Maybe.andThen (\a -> RellmServers.rellmServerForHost model.servers a.server)
             in
             case ( maybeAccount, maybeServer ) of
                 ( Just account, Just server ) ->
@@ -3248,12 +2743,12 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | accounts = upsertAccount refreshedAccount model.accounts
+                                | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts
                                 , servers =
                                     List.map
                                         (\s ->
                                             if s.frontendHost == refreshedAccount.server then
-                                                updateServerConfiguration newConfig s
+                                                RellmServers.updateRellmServerConfiguration newConfig s
 
                                             else
                                                 s
@@ -3273,12 +2768,12 @@ sendUpdate req msg model =
             let
                 maybeAccount : Maybe RellmAccount
                 maybeAccount =
-                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+                    model.accounts |> List.filter (\a -> rellmAccountId a == id) |> List.head
 
                 maybeServer : Maybe RellmServer
                 maybeServer =
                     maybeAccount
-                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
+                        |> Maybe.andThen (\a -> RellmServers.rellmServerForHost model.servers a.server)
             in
             case ( maybeAccount, maybeServer ) of
                 ( Just account, Just server ) ->
@@ -3294,12 +2789,12 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | accounts = upsertAccount refreshedAccount model.accounts
+                                | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts
                                 , servers =
                                     List.map
                                         (\s ->
                                             if s.frontendHost == refreshedAccount.server then
-                                                updateServerConfiguration newConfig s
+                                                RellmServers.updateRellmServerConfiguration newConfig s
 
                                             else
                                                 s
@@ -3324,7 +2819,7 @@ sendUpdate req msg model =
                             List.map
                                 (\s ->
                                     if s.frontendHost == host then
-                                        updateServerConfiguration newConfig s
+                                        RellmServers.updateRellmServerConfiguration newConfig s
 
                                     else
                                         s
@@ -3356,12 +2851,12 @@ sendUpdate req msg model =
                 let
                     newModel : Model
                     newModel =
-                        { model | servers = upsertServer (nextFrontSortOrder model) server model.servers }
+                        { model | servers = RellmServers.upsertRellmServer (nextFrontSortOrder model) server model.servers }
                 in
                 ( newModel, persist newModel )
 
         EnableNotificationsClicked account ->
-            case serverWebPushPublicKey model.servers account.server of
+            case RellmServers.rellmServerWebPushPublicKey model.servers account.server of
                 Nothing ->
                     -- No `WebPushConfig` on this account's server (see `UI.accountRow`, which
                     -- only shows the button at all when this is `Just _`) -- unreachable in
@@ -3370,12 +2865,12 @@ sendUpdate req msg model =
 
                 Just publicKey ->
                     ( { model
-                        | notificationErrors = Dict.remove (accountId account) model.notificationErrors
-                        , pendingNotificationAccountId = Just (accountId account)
+                        | notificationErrors = Dict.remove (rellmAccountId account) model.notificationErrors
+                        , pendingNotificationAccountId = Just (rellmAccountId account)
                       }
                     , Ports.subscribeToPush
                         (Encode.object
-                            [ ( "accountId", Encode.string (accountId account) )
+                            [ ( "accountId", Encode.string (rellmAccountId account) )
                             , ( "publicKey", Encode.string publicKey )
                             ]
                         )
@@ -3385,9 +2880,9 @@ sendUpdate req msg model =
             let
                 id : String
                 id =
-                    accountId account
+                    rellmAccountId account
             in
-            case ( Dict.get id model.pushSubscriptions, serverForHost model.servers account.server |> Maybe.andThen connectionOf ) of
+            case ( Dict.get id model.pushSubscriptions, RellmServers.rellmServerForHost model.servers account.server |> Maybe.andThen RellmServers.connectionOf ) of
                 ( Just endpoint, Just connection ) ->
                     let
                         -- Multiple accounts on the same server share one real browser
@@ -3419,13 +2914,13 @@ sendUpdate req msg model =
 
                           else
                             Cmd.none
-                        , performWithAccount
+                        , RellmAccounts.performWithRellmAccount
                             connection
                             account
                             (\accessToken ->
                                 Grpc.new Rellm.unregisterPushSubscription { endpoint = endpoint }
-                                    |> Grpc.setHost (connectionUrl connection)
-                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.setHost (RellmServers.connectionUrl connection)
+                                    |> RellmServers.withAccessToken (Just accessToken)
                                     |> Grpc.toTask
                             )
                             |> Task.map Tuple.first
@@ -3444,20 +2939,20 @@ sendUpdate req msg model =
                 Ok ( id, Ok keys ) ->
                     case
                         model.accounts
-                            |> List.filter (\a -> accountId a == id)
+                            |> List.filter (\a -> rellmAccountId a == id)
                             |> List.head
-                            |> Maybe.andThen (\account -> serverForHost model.servers account.server |> Maybe.andThen connectionOf |> Maybe.map (Tuple.pair account))
+                            |> Maybe.andThen (\account -> RellmServers.rellmServerForHost model.servers account.server |> Maybe.andThen RellmServers.connectionOf |> Maybe.map (Tuple.pair account))
                     of
                         Just ( account, connection ) ->
                             ( model
-                            , performWithAccount
+                            , RellmAccounts.performWithRellmAccount
                                 connection
                                 account
                                 (\accessToken ->
                                     Grpc.new Rellm.registerPushSubscription
                                         { endpoint = keys.endpoint, p256dhKey = keys.p256dhKey, authKey = keys.authKey }
-                                        |> Grpc.setHost (connectionUrl connection)
-                                        |> withAccessToken (Just accessToken)
+                                        |> Grpc.setHost (RellmServers.connectionUrl connection)
+                                        |> RellmServers.withAccessToken (Just accessToken)
                                         |> Grpc.toTask
                                 )
                                 |> Task.attempt GotRegisterPushSubscriptionResult
@@ -3483,7 +2978,7 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | accounts = upsertAccount refreshedAccount model.accounts
+                                | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts
 
                                 -- `Dict.insert`, not `Dict.singleton` -- `Ports.subscribeToPush`'s
                                 -- JS side reuses the existing browser subscription when its key
@@ -3492,14 +2987,14 @@ sendUpdate req msg model =
                                 -- account on the same server enables notifications -- both truly
                                 -- do end up sharing one active subscription, so both stay recorded
                                 -- here instead of this one evicting the other.
-                                , pushSubscriptions = Dict.insert (accountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
-                                , notificationErrors = Dict.remove (accountId refreshedAccount) model.notificationErrors
+                                , pushSubscriptions = Dict.insert (rellmAccountId refreshedAccount) pushSubscription.endpoint model.pushSubscriptions
+                                , notificationErrors = Dict.remove (rellmAccountId refreshedAccount) model.notificationErrors
                             }
                     in
                     ( newModel
                     , Cmd.batch
                         [ persist newModel
-                        , broadcastPushSubscriptionChangeCmd (accountId refreshedAccount) (Just pushSubscription.endpoint)
+                        , broadcastPushSubscriptionChangeCmd (rellmAccountId refreshedAccount) (Just pushSubscription.endpoint)
                         ]
                     )
 
@@ -3517,7 +3012,7 @@ sendUpdate req msg model =
                     let
                         newModel : Model
                         newModel =
-                            { model | accounts = upsertAccount refreshedAccount model.accounts }
+                            { model | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts }
                     in
                     ( newModel, persist newModel )
 
@@ -3536,10 +3031,10 @@ sendUpdate req msg model =
                         newModel : Model
                         newModel =
                             { model
-                                | accounts = upsertAccount refreshedAccount model.accounts
+                                | accounts = RellmAccounts.upsertRellmAccount refreshedAccount model.accounts
                                 , pushSubscriptions =
                                     if response.registered then
-                                        Dict.insert (accountId refreshedAccount) endpoint model.pushSubscriptions
+                                        Dict.insert (rellmAccountId refreshedAccount) endpoint model.pushSubscriptions
 
                                     else
                                         model.pushSubscriptions
@@ -3592,11 +3087,11 @@ sendUpdate req msg model =
                     ( model, Cmd.none )
 
                 Just instanceHost ->
-                    case mastodonLoginResultDecoder value of
+                    case MastodonAccounts.mastodonLoginResultDecoder value of
                         Ok accessToken ->
                             ( model
                             , Task.attempt (GotMastodonVerifyCredentialsResult instanceHost accessToken)
-                                (verifyMastodonCredentialsTask instanceHost accessToken)
+                                (MastodonAccounts.verifyMastodonCredentialsTask instanceHost accessToken)
                             )
 
                         Err _ ->
@@ -3608,7 +3103,9 @@ sendUpdate req msg model =
                 newModel =
                     { model
                         | mastodonConnectPopupOpen = Nothing
-                        , mastodonAccounts = { instanceHost = instanceHost, accessToken = accessToken, username = username } :: model.mastodonAccounts
+                        , mastodonAccounts =
+                            { instanceHost = instanceHost, accessToken = accessToken, username = username, sortOrder = nextFrontAccountSortOrder model }
+                                :: model.mastodonAccounts
                     }
             in
             ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
@@ -3629,14 +3126,14 @@ sendUpdate req msg model =
                     model.blueskyConnectForm
             in
             ( { model | blueskyConnectForm = { form | status = Submitting } }
-            , Task.attempt GotBlueskyConnectResult (createBlueskySessionTask form.handle form.appPassword)
+            , Task.attempt GotBlueskyConnectResult (BlueskyAccounts.createSessionTask form.handle form.appPassword)
             )
 
         GotBlueskyConnectResult (Ok connectedAccount) ->
             let
                 account : BlueskyAccount
                 account =
-                    { connectedAccount | sortOrder = nextFrontSortOrder model }
+                    { connectedAccount | sortOrder = nextFrontAccountSortOrder model }
 
                 newAccounts : List BlueskyAccount
                 newAccounts =
@@ -3644,18 +3141,18 @@ sendUpdate req msg model =
             in
             ( { model | blueskyConnectForm = emptyBlueskyConnectForm, blueskyAccounts = newAccounts }
             , Cmd.batch
-                [ Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
-                , Task.attempt (GotBlueskyProfileResult account.handle) (fetchBlueskyProfileTask account.handle account.accessToken)
+                [ Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts)
+                , Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account.handle account.accessToken)
                 ]
             )
 
         GotBlueskyConnectResult (Err err) ->
-            ( { model | blueskyConnectForm = (\form -> { form | status = Errored (blueskyErrorMessage err) }) model.blueskyConnectForm }
+            ( { model | blueskyConnectForm = (\form -> { form | status = Errored (BlueskyAccounts.errorMessage err) }) model.blueskyConnectForm }
             , Cmd.none
             )
 
         GotBlueskyProfileResult _ (Err _) ->
-            -- No avatar/name to show -- `blueskyAccountChip` already falls back gracefully for
+            -- No avatar/name to show -- `UI.blueskyAccountRow` already falls back gracefully for
             -- `avatarUrl`/`displayName == Nothing`, so there's nothing more to do here.
             ( model, Cmd.none )
 
@@ -3673,11 +3170,11 @@ sendUpdate req msg model =
                         )
                         model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
 
         RemoveBlueskyAccountClicked handle ->
             -- Same "fade first, actually remove once that finishes" deferral as
-            -- `RemoveServerClicked` -- see `serverAnimations`.
+            -- `RemoveAccountClicked` -- see `accountAnimations`.
             let
                 key : String
                 key =
@@ -3685,9 +3182,9 @@ sendUpdate req msg model =
 
                 currentState : UI.Flip.State Msg
                 currentState =
-                    Dict.get key model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
+                    Dict.get key model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
             in
-            ( { model | serverAnimations = Dict.insert key (UI.Flip.remove (FinishRemoveBlueskyAccount handle) currentState) model.serverAnimations }
+            ( { model | accountAnimations = Dict.insert key (UI.Flip.remove (FinishRemoveBlueskyAccount handle) currentState) model.accountAnimations }
             , Cmd.none
             )
 
@@ -3697,8 +3194,8 @@ sendUpdate req msg model =
                 newAccounts =
                     List.filter (\a -> a.handle /= handle) model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts, serverAnimations = Dict.remove ("bluesky:" ++ handle) model.serverAnimations }
-            , Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
+            ( { model | blueskyAccounts = newAccounts, accountAnimations = Dict.remove ("bluesky:" ++ handle) model.accountAnimations }
+            , Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts)
             )
 
         ToggleBlueskyAccountEnabled handle ->
@@ -3715,7 +3212,7 @@ sendUpdate req msg model =
                         )
                         model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
 
         BrowseMastodonInstanceInputChanged text ->
             ( { model | browseMastodonInstanceInput = text }, Cmd.none )
@@ -3743,7 +3240,7 @@ sendUpdate req msg model =
                 ( newModel
                 , Cmd.batch
                     [ Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel)
-                    , Task.attempt (GotMastodonInstanceInfoResult host) (fetchMastodonInstanceInfoTask host)
+                    , Task.attempt (GotMastodonInstanceInfoResult host) (MastodonServers.fetchMastodonInstanceInfoTask host)
                     ]
                 )
 
@@ -3828,7 +3325,7 @@ to trying plaintext ports too.
 
 Generic over `params` (rather than just this module's own `Request`) so any
 page can pass its own `Request.With Params` straight in -- see
-`connectToServer`.
+`RellmServers.connectToRellmServer`.
 
 -}
 isSecure : Request.With params -> Bool
@@ -3851,12 +3348,6 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| A server that has any associated accounts can't be removed (only disabled),
-since removing it would orphan those accounts' stored credentials.
--}
-serverHasAccounts : List RellmAccount -> String -> Bool
-serverHasAccounts accounts frontendHost =
-    List.any (\a -> a.server == frontendHost) accounts
 
 
 {-| Hosts of accounts we're keeping around but that are currently disconnected
@@ -3905,8 +3396,8 @@ no federation info, or every federated server it names is already known.
 -}
 recommendedFederatedServers : Model -> List FederatedServer
 recommendedFederatedServers model =
-    serverForHost model.servers model.mainFrontendHost
-        |> Maybe.map configurationOf
+    RellmServers.rellmServerForHost model.servers model.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
         |> Maybe.andThen .federationInfo
         |> Maybe.map .servers
         |> Maybe.withDefault []
@@ -3918,8 +3409,8 @@ of connection status -- `connectableMastodonServers`/`mastodonServerFor` both bu
 -}
 allMastodonServers : Model -> List MastodonServer
 allMastodonServers model =
-    serverForHost model.servers model.mainFrontendHost
-        |> Maybe.map configurationOf
+    RellmServers.rellmServerForHost model.servers model.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
         |> Maybe.andThen .federationInfo
         |> Maybe.map .mastodonServers
         |> Maybe.withDefault []
@@ -4023,65 +3514,12 @@ collapseAddAccountFormIfIdle model =
         { model | addAccountServerFormType = Nothing }
 
 
-{-| Looks up a known server by its `frontendHost` -- e.g. for a route param
-naming a specific server (see `Components.ServerDependentView`), or an
-account's `server` field.
--}
-serverForHost : List RellmServer -> String -> Maybe RellmServer
-serverForHost servers frontendHost =
-    servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
 
 
-{-| The VAPID public key `frontendHost`'s server would want a `RegisterPushSubscription` call
-signed with -- `Nothing` if the server isn't connected, or is connected but has no `WebPushConfig`
-(the admin hasn't set one up), either of which means there's nothing to actually push
-notifications with. `UI.accountRow` only shows its "Enable notifications" button when this is
-`Just _`.
--}
-serverWebPushPublicKey : List RellmServer -> String -> Maybe String
-serverWebPushPublicKey servers frontendHost =
-    serverForHost servers frontendHost
-        |> Maybe.andThen .connected
-        |> Maybe.andThen (\connected -> connected.configuration.webPushConfig)
-        |> Maybe.map .publicVapidKey
 
 
-{-| `serverForHost`, but only if that entry is both known _and_ actually
-connected -- a known-but-disconnected entry (see `RellmServer.connected`) is
-treated the same as not known at all. `init` seeds every persisted server
-disconnected before its own reconnect attempt resolves (see `init`'s own
-doc), so a route-driven fetch gated on plain `serverForHost` alone can fire
-against that placeholder the instant the app boots, before there's an actual
-connection to fetch from -- failing immediately, and (since these fetches are
-typically only attempted once) staying failed even after the real reconnect
-lands moments later. Callers that need to fetch from a specific route-named
-host (`Pages.Event.PostId_`, `Pages.Post.PostId_`,
-`Components.Users.Resolver`) should gate on this instead of `serverForHost`
-directly.
--}
-knownConnectedServer : List RellmServer -> String -> Maybe RellmServer
-knownConnectedServer servers frontendHost =
-    serverForHost servers frontendHost
-        |> Maybe.andThen
-            (\server ->
-                if server.connected /= Nothing then
-                    Just server
-
-                else
-                    Nothing
-            )
 
 
-{-| The signed-in account to use for `frontendHost`, if there is one --
-picking the first enabled account on that server. Used wherever content needs
-to be fetched "as whichever account, if any, is currently signed into this
-server" (see `Components.Posts`), rather than any one specific account.
--}
-enabledAccountForServer : List RellmAccount -> String -> Maybe RellmAccount
-enabledAccountForServer accounts frontendHost =
-    accounts
-        |> List.filter (\a -> a.server == frontendHost && a.enabled)
-        |> List.head
 
 
 {-| Servers whose data should be included when aggregating across all of
@@ -4094,32 +3532,8 @@ enabledServers model =
     List.filter (\s -> s.enabled && s.connected /= Nothing) model.servers
 
 
-{-| A server's full base URL, for making requests against it directly (e.g.
-`Components.Posts`' `GetPosts` calls) without needing to build a `Connection`.
--}
-serverUrl : RellmServer -> String
-serverUrl server =
-    -- Every caller reaches `server` via `resolveAccountServer`/`enabledServers`,
-    -- both of which only ever hand back a connected `RellmServer` -- see
-    -- `RellmServer.connected`. The empty-string fallback is unreachable in
-    -- practice; `serverUrl` stays total rather than pushing a `Maybe` onto
-    -- the many call sites that already know they're on solid ground.
-    connectionOf server
-        |> Maybe.map connectionUrl
-        |> Maybe.withDefault ""
 
 
-{-| Connects to a server given only its hostname, same as adding one via the
-Account form's "Add Server" button (see `AddServerClicked`) -- but as a plain
-`Task`, for callers outside the Accounts Panel that need to connect to a
-specific server themselves (see `Components.ServerDependentView`) and decide
-what to do with the result (typically dispatching `ServerConnected` once it
-resolves, then proceeding with whatever they actually wanted the server for).
--}
-connectToServer : Bool -> String -> Task Grpc.Error RellmServer
-connectToServer pageIsSecure frontendHost =
-    negotiateServerConfig pageIsSecure frontendHost
-        |> Task.map (\( connection, config ) -> serverFrom connection True config)
 
 
 updateAddServerForm : (AddServerForm -> AddServerForm) -> Model -> Model
@@ -4203,270 +3617,28 @@ repopulateBlankServerField model =
         model
 
 
-{-| Disables every other account on `server` besides `keepEnabledId` -- only one
-account per server may be signed in (enabled) at a time, since aggregated
-feeds/permissions assume a single identity per server. Called whenever an
-account becomes enabled, whether by toggling it on or by a fresh sign-in.
--}
-disableOtherAccountsOnServer : String -> String -> List RellmAccount -> List RellmAccount
-disableOtherAccountsOnServer keepEnabledId server accounts =
-    List.map
-        (\a ->
-            if a.server == server && accountId a /= keepEnabledId then
-                { a | enabled = False }
-
-            else
-                a
-        )
-        accounts
 
 
-{-| Signing in/re-enabling an account whose server is still marked disabled
-would leave it silently excluded from aggregated data anyway -- bring the
-server along, mirroring what `ToggleServerEnabled` does for its accounts when
-the server itself is disabled. Used by every path that force-enables an
-account (`GotAuthResult`, `FederatedAccountReceived`, `ToggleAccountEnabled`).
--}
-enableServerFor : String -> List RellmServer -> List RellmServer
-enableServerFor frontendHost servers =
-    List.map
-        (\server ->
-            if server.frontendHost == frontendHost then
-                { server | enabled = True }
-
-            else
-                server
-        )
-        servers
 
 
-upsertAccount : RellmAccount -> List RellmAccount -> List RellmAccount
-upsertAccount account accounts =
-    if List.any (\a -> accountId a == accountId account) accounts then
-        List.map
-            (\a ->
-                if accountId a == accountId account then
-                    account
-
-                else
-                    a
-            )
-            accounts
-
-    else
-        -- TODO: temporarily prepending (bypassing insertAfterSameServer) so a
-        -- newly-added account is visible without scrolling, to see its FLIP
-        -- entrance animation -- revisit ordering later.
-        account :: accounts
 
 
-{-| `sortOrder` is always `0` here -- irrelevant for a server that's just passing through as display
-data (`GotCreateAccountServerInfo`'s confirmation modal, `recommendedServerConnections`) and,
-whenever this actually lands in `model.servers`, always overwritten anyway: by `existing.sortOrder`
-if `upsertServerWith` finds this host already known, or by the caller's own `newSortOrder` if not --
-see that function's own doc.
--}
-serverFrom : Connection -> Bool -> ServerConfiguration -> RellmServer
-serverFrom connection enabled config =
-    { frontendHost = connection.frontendHost
-    , enabled = enabled
-    , connected =
-        Just
-            { backendHost = connection.backendHost
-            , port_ = connection.port_
-            , tls = connection.tls
-            , configuration = config
-            , branding = brandingFromConfig connection config
-            }
-    , sortOrder = 0
-    }
 
 
-{-| A server known only from a persisted server-list entry (or an account
-signed into it), not yet (re)connected this session -- see `RellmServer.connected`.
-Keeps `frontendHost`/`enabled` (the only two fields that get persisted) so it
-still has its place in `Model.servers`, and so its `PersistedServer` entry
-survives a failed/never-attempted reconnect (see `GotReconnectResult`'s `Err`
-branch) exactly as it would if nothing had gone wrong.
--}
-disconnectedServer : PersistedServer -> RellmServer
-disconnectedServer persisted =
-    { frontendHost = persisted.frontendHost
-    , enabled = persisted.enabled
-    , connected = Nothing
-    , sortOrder = persisted.sortOrder
-    }
 
 
-{-| Adds/updates `server` in `servers` by `frontendHost`, keeping its existing
-`sortOrder` (and existing `enabled` flag, if any -- see below) rather than
-moving it to the front/back -- the reordering (`MoveFeedItemLeftClicked`/
-`RightClicked`) or disconnection (`GotReconnectResult`'s `Err` branch)
-already applied to that slot shouldn't be undone just because a fresh
-connection/login/rename came in for it. For a genuinely new host, `newSortOrder`
-places it (see `nextFrontSortOrder`/`nextBackSortOrder`) and it's prepended to
-`servers` -- see `upsertServerAppend` for the append-at-end variant used for
-servers discovered via federation at first-setup time (list position no longer
-drives render order at all, but still matters for `encodeState`'s own on-disk
-ordering, which stays cosmetic).
-
-Deliberately keeps the _existing_ entry's `enabled`/`sortOrder` over `server`'s
-own -- `enabled` is a persisted user preference, independent of whether we're
-currently connected, so a fresh reconnect (whose caller may only know the
-`enabled` its host had at the _start_ of `init`'s startup sweep, see
-`reconnectCmds`) should never clobber a more recent in-session toggle
-(`ToggleServerEnabled`/`ToggleAccountEnabled`) applied to the same host's
-placeholder while that reconnect was still in flight -- and the same
-reconnect obviously shouldn't reset a user's own reordering either.
-
--}
-upsertServer : Int -> RellmServer -> List RellmServer -> List RellmServer
-upsertServer newSortOrder =
-    upsertServerWith (::) newSortOrder
 
 
-{-| Same as `upsertServer`, but for a genuinely new host appends it to the
-_end_ of `servers` instead of prepending it. Used only for servers
-discovered via `GotMainServerResult`'s `federatedServerCmds` at first-setup
-time, so the base host's own federation recommendations land after any
-servers the user already knew about, rather than jumping ahead of them.
--}
-upsertServerAppend : Int -> RellmServer -> List RellmServer -> List RellmServer
-upsertServerAppend newSortOrder =
-    upsertServerWith (\server servers -> servers ++ [ server ]) newSortOrder
 
 
-upsertServerWith : (RellmServer -> List RellmServer -> List RellmServer) -> Int -> RellmServer -> List RellmServer -> List RellmServer
-upsertServerWith insertNew newSortOrder server servers =
-    case List.filter (\s -> s.frontendHost == server.frontendHost) servers |> List.head of
-        Just existing ->
-            List.map
-                (\s ->
-                    if s.frontendHost == server.frontendHost then
-                        { server | enabled = existing.enabled, sortOrder = existing.sortOrder }
-
-                    else
-                        s
-                )
-                servers
-
-        Nothing ->
-            insertNew { server | sortOrder = newSortOrder } servers
 
 
-{-| Patches a server's cached `configuration` (and re-derives `branding` from
-it) in place after a config-changing RPC succeeds (rename, web-UI toggle,
-settings save) -- shared by `GotSetWebUserInterfaceResult`/
-`GotRenameServerResult`/`GotServerConfigSaveResult`. A no-op if `server` is
-currently disconnected (see `RellmServer.connected`) -- unreachable in practice,
-since all three only fire after an RPC that itself required a live
-connection.
--}
-updateServerConfiguration : ServerConfiguration -> RellmServer -> RellmServer
-updateServerConfiguration newConfig server =
-    case connectionOf server of
-        Nothing ->
-            server
-
-        Just connection ->
-            { server
-                | connected =
-                    Maybe.map
-                        (\c -> { c | configuration = newConfig, branding = brandingFromConfig connection newConfig })
-                        server.connected
-            }
 
 
-connectionOf : RellmServer -> Maybe Connection
-connectionOf server =
-    server.connected
-        |> Maybe.map
-            (\c -> { frontendHost = server.frontendHost, backendHost = c.backendHost, port_ = c.port_, tls = c.tls })
 
 
-{-| The bare `Task` behind `refreshPermissions`/`refreshPermissionsForServer` --
-refreshes an account's `permissions` (and `username`, in case it changed
-server-side), plus `syncDestinations`/`syncSources`/`availableAiModels`
-(see `RellmAccount`'s own doc), via `GetCurrentUser` (always a self-view, so the
-backend populates all of these -- see `attach_own_advanced_data` on the
-backend), refreshing its access token first if needed -- see
-`performWithAccount`.
--}
-refreshPermissionsTask : RellmServer -> RellmAccount -> Task Grpc.Error ( RellmAccount, User )
-refreshPermissionsTask server account =
-    case connectionOf server of
-        -- `server` is disconnected (see `RellmServer.connected`) -- nothing to refresh
-        -- against right now; callers (e.g. `ToggleAccountEnabled` re-enabling an
-        -- account on a server that's since gone unreachable) just leave the
-        -- account's existing permissions/token alone.
-        Nothing ->
-            Task.fail Grpc.NetworkError
-
-        Just connection ->
-            performWithAccount
-                connection
-                account
-                (\accessToken ->
-                    Grpc.new Rellm.getCurrentUser {}
-                        |> Grpc.setHost (connectionUrl connection)
-                        |> withAccessToken (Just accessToken)
-                        |> Grpc.toTask
-                )
 
 
-{-| Folds one account's `GetCurrentUser`/access-token-refresh result (see
-`refreshPermissionsTask`) into `accounts` -- shared by `GotPermissionsRefresh`
-(a single account, e.g. `ToggleAccountEnabled`) and `GotServerPermissionsRefresh`
-(a whole server's worth at once, see `refreshPermissionsForServer`) so both
-apply the exact same rules:
-
-  - On success, merges the refreshed `username`/`permissions`/`avatarMediaId`/
-    `realName` and clears `needsPassword`.
-  - On an `Unauthenticated` failure, the refresh token itself was rejected
-    (revoked, expired past its own grace period) -- unlike a network blip,
-    retrying later won't fix this; the account needs a fresh password (see
-    `UI.accountRow`'s "password required" badge, and `PasswordNeededClicked`).
-    Also disabled -- it's not actually signed in anymore (every request would
-    fail the same way), so it shouldn't keep counting as such for aggregated
-    feeds/permissions until the user signs back in.
-  - Any other failure (network blip, server unreachable, etc.) leaves the
-    account as it was; it'll be retried on the next reconnect/enable.
-
--}
-applyPermissionsRefreshResult : String -> Result Grpc.Error ( RellmAccount, User ) -> List RellmAccount -> List RellmAccount
-applyPermissionsRefreshResult accId result accounts =
-    case result of
-        Ok ( refreshedAccount, user ) ->
-            upsertAccount
-                { refreshedAccount
-                    | username = user.username
-                    , permissions = user.permissions
-                    , avatarMediaId = Maybe.map .id user.avatar
-                    , realName = user.realName
-                    , needsPassword = False
-                    , syncDestinations = user.syncDestinations
-                    , syncSources = user.syncSources
-                    , availableAiModels = user.availableAiModels
-                }
-                accounts
-
-        Err (Grpc.BadStatus { status }) ->
-            if status == Grpc.Unauthenticated then
-                List.map
-                    (\a ->
-                        if accountId a == accId then
-                            { a | needsPassword = True, enabled = False }
-
-                        else
-                            a
-                    )
-                    accounts
-
-            else
-                accounts
-
-        Err _ ->
-            accounts
 
 
 {-| Refreshes a single account's permissions -- fired when it's individually
@@ -4476,11 +3648,11 @@ elsewhere stay current without the user doing anything. See
 -}
 refreshPermissions : RellmServer -> RellmAccount -> Cmd Msg
 refreshPermissions server account =
-    refreshPermissionsTask server account
-        |> Task.attempt (GotPermissionsRefresh (accountId account))
+    RellmAccounts.refreshPermissionsTask server account
+        |> Task.attempt (GotPermissionsRefresh (rellmAccountId account))
 
 
-{-| `refreshPermissionsTask` for every account on the given server that isn't
+{-| `RellmAccounts.refreshPermissionsTask` for every account on the given server that isn't
 already known to need a password -- not just enabled (signed-in) ones, so a
 disabled account's access token is refreshed (and `needsPassword` discovered)
 right along with everyone else's, rather than only once the user re-enables
@@ -4513,10 +3685,10 @@ refreshPermissionsForServer server accounts =
         |> List.filter (\a -> a.server == server.frontendHost && not a.needsPassword)
         |> List.map
             (\account ->
-                refreshPermissionsTask server account
+                RellmAccounts.refreshPermissionsTask server account
                     |> Task.map Ok
                     |> Task.onError (Err >> Task.succeed)
-                    |> Task.map (Tuple.pair (accountId account))
+                    |> Task.map (Tuple.pair (rellmAccountId account))
             )
         |> Task.sequence
         |> Task.perform GotServerPermissionsRefresh
@@ -4530,33 +3702,6 @@ federatedSignInNoticeDuration =
     5000
 
 
-{-| The network step behind `Pages.Auth.From.EncryptedAccountAuthTokens_`'s auto-accept: resolves
-`tokens.server`'s connection (reusing an already-connected one if this browser already knows it,
-otherwise negotiating fresh -- see `negotiateServerConfig`), then calls `GetCurrentUser` with
-`tokens.accessToken` to hydrate everything else. The page uses the resulting `User` to build a full
-`RellmAccount` itself (`tokens.server`/`tokens.refreshToken`/`tokens.accessToken` plus `user`'s fields) and
-hand it to `FederatedAccountReceived`, same as any other freshly-signed-in account -- which, for a
-server this browser didn't already have connected, means `negotiateServerConfig` effectively runs
-twice (once here, once inside that handler's own reconnect). Not worth optimizing away: it only
-happens in the background, after this page has already redirected the user onward.
--}
-resolveFederatedAccountTokens : Request.With params -> List RellmServer -> AccountAuthTokens -> Task Grpc.Error User
-resolveFederatedAccountTokens req servers tokens =
-    let
-        getCurrentUser : Connection -> Task Grpc.Error User
-        getCurrentUser connection =
-            Grpc.new Rellm.getCurrentUser {}
-                |> Grpc.setHost (connectionUrl connection)
-                |> withAccessToken (Just tokens.accessToken.token)
-                |> Grpc.toTask
-    in
-    case servers |> List.filter (\s -> s.frontendHost == tokens.server && s.connected /= Nothing) |> List.head |> Maybe.andThen connectionOf of
-        Just connection ->
-            getCurrentUser connection
-
-        Nothing ->
-            negotiateServerConfig (isSecure req) tokens.server
-                |> Task.andThen (\( connection, _ ) -> getCurrentUser connection)
 
 
 {-| Sets which frontend (`/`, `/flutter`, or `/elm`) `server` serves at its
@@ -4573,7 +3718,7 @@ field, so this starts from the server's actual last-known `configuration`
 -}
 setWebUserInterface : RellmServer -> RellmAccount -> WebUserInterface -> Cmd Msg
 setWebUserInterface server account ui =
-    case ( connectionOf server, server.connected ) of
+    case ( RellmServers.connectionOf server, server.connected ) of
         ( Just connection, Just { configuration } ) ->
             let
                 info : ServerInfo
@@ -4584,13 +3729,13 @@ setWebUserInterface server account ui =
                 newConfig =
                     { configuration | serverInfo = Just { info | webUserInterface = Just ui } }
             in
-            performWithAccount
+            RellmAccounts.performWithRellmAccount
                 connection
                 account
                 (\accessToken ->
                     Grpc.new Rellm.configureServer newConfig
-                        |> Grpc.setHost (connectionUrl connection)
-                        |> withAccessToken (Just accessToken)
+                        |> Grpc.setHost (RellmServers.connectionUrl connection)
+                        |> RellmServers.withAccessToken (Just accessToken)
                         |> Grpc.toTask
                 )
                 |> Task.attempt GotSetWebUserInterfaceResult
@@ -4616,7 +3761,7 @@ changing `serverInfo.name`.
 -}
 renameServer : RellmServer -> RellmAccount -> String -> Cmd Msg
 renameServer server account newName =
-    case connectionOf server of
+    case RellmServers.connectionOf server of
         -- `server` is disconnected (see `RellmServer.connected`) -- callers only ever
         -- reach this for a server the account panel shows as connected, so
         -- this is unreachable in practice.
@@ -4624,13 +3769,13 @@ renameServer server account newName =
             Cmd.none
 
         Just connection ->
-            performWithAccount
+            RellmAccounts.performWithRellmAccount
                 connection
                 account
                 (\accessToken ->
                     Grpc.new Rellm.getServerConfiguration {}
-                        |> Grpc.setHost (connectionUrl connection)
-                        |> withAccessToken (Just accessToken)
+                        |> Grpc.setHost (RellmServers.connectionUrl connection)
+                        |> RellmServers.withAccessToken (Just accessToken)
                         |> Grpc.toTask
                         |> Task.andThen
                             (\freshConfig ->
@@ -4644,8 +3789,8 @@ renameServer server account newName =
                                         { freshConfig | serverInfo = Just { info | name = Just newName } }
                                 in
                                 Grpc.new Rellm.configureServer newConfig
-                                    |> Grpc.setHost (connectionUrl connection)
-                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.setHost (RellmServers.connectionUrl connection)
+                                    |> RellmServers.withAccessToken (Just accessToken)
                                     |> Grpc.toTask
                             )
                 )
@@ -4661,7 +3806,7 @@ showing nothing.
 -}
 changeServerShortName : RellmServer -> RellmAccount -> String -> Cmd Msg
 changeServerShortName server account newShortName =
-    case connectionOf server of
+    case RellmServers.connectionOf server of
         -- `server` is disconnected (see `RellmServer.connected`) -- callers only ever
         -- reach this for a server the account panel shows as connected, so
         -- this is unreachable in practice.
@@ -4669,13 +3814,13 @@ changeServerShortName server account newShortName =
             Cmd.none
 
         Just connection ->
-            performWithAccount
+            RellmAccounts.performWithRellmAccount
                 connection
                 account
                 (\accessToken ->
                     Grpc.new Rellm.getServerConfiguration {}
-                        |> Grpc.setHost (connectionUrl connection)
-                        |> withAccessToken (Just accessToken)
+                        |> Grpc.setHost (RellmServers.connectionUrl connection)
+                        |> RellmServers.withAccessToken (Just accessToken)
                         |> Grpc.toTask
                         |> Task.andThen
                             (\freshConfig ->
@@ -4698,8 +3843,8 @@ changeServerShortName server account newShortName =
                                         { freshConfig | serverInfo = Just { info | shortName = trimmedShortName } }
                                 in
                                 Grpc.new Rellm.configureServer newConfig
-                                    |> Grpc.setHost (connectionUrl connection)
-                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.setHost (RellmServers.connectionUrl connection)
+                                    |> RellmServers.withAccessToken (Just accessToken)
                                     |> Grpc.toTask
                             )
                 )
@@ -4731,479 +3876,23 @@ updateServerConfig accountsPanelModel maybeAccountServer updateFn =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getServerConfiguration {}
-                |> Grpc.setHost (serverUrl server)
-                |> withAccessToken (Just token)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                |> RellmServers.withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
                     (\freshConfig ->
                         Grpc.new Rellm.configureServer (updateFn freshConfig)
-                            |> Grpc.setHost (serverUrl server)
-                            |> withAccessToken (Just token)
+                            |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                            |> RellmServers.withAccessToken (Just token)
                             |> Grpc.toTask
                     )
         )
 
 
-{-| A server's configuration can declare (via `externalCdnConfig`) that it's
-really meant to be reached at a different public `frontendHost` than the one
-we just connected to -- e.g. we're on jonline.io.getj.online, a CDN's backend
-host, when it's actually configured to look like jonline.io. Falls back to
-the host we connected to if there's no such declaration.
--}
-resolvedFrontendHost : String -> ServerConfiguration -> String
-resolvedFrontendHost connectedHost config =
-    config.externalCdnConfig
-        |> Maybe.map .frontendHost
-        |> Maybe.andThen ifNonEmpty
-        |> Maybe.withDefault connectedHost
 
 
 
 -- CONNECTING
-
-
-{-| Candidate (port, tls) combinations to try, in order, against a server's
-backend host, once we know it: TLS on the standard gRPC port, then TLS on the
-standard HTTPS port; and, only when this page itself isn't loaded over TLS (a
-secure page can't make plaintext requests), fall back to plaintext on the
-gRPC port, then 80, then 8000, for local/dev servers.
--}
-candidatePorts : Bool -> List ( Int, Bool )
-candidatePorts pageIsSecure =
-    let
-        secure : List ( Int, Bool )
-        secure =
-            [ ( 27707, True ), ( 443, True ) ]
-    in
-    if pageIsSecure then
-        secure
-
-    else
-        let
-            insecure : List ( Int, Bool )
-            insecure =
-                [ ( 27707, False ), ( 80, False ), ( 8000, False ) ]
-        in
-        secure ++ insecure
-
-
-{-| Reuses an already-connected server's known-good connection and cached
-configuration if we have one; otherwise negotiates a fresh connection.
--}
-resolveHost : Bool -> List RellmServer -> String -> Task Grpc.Error ( Connection, ServerConfiguration )
-resolveHost pageIsSecure servers frontendHost =
-    case serverForHost servers frontendHost |> Maybe.andThen .connected of
-        Just connected ->
-            Task.succeed ( { frontendHost = frontendHost, backendHost = connected.backendHost, port_ = connected.port_, tls = connected.tls }, connected.configuration )
-
-        -- Not known, or known but currently disconnected (see `RellmServer.connected`)
-        -- -- either way, there's no cached connection to reuse.
-        Nothing ->
-            negotiateServerConfig pageIsSecure frontendHost
-
-
-{-| Connects to a server given only its public (`frontendHost`) identity:
-first discovers its real backend host (in case it's served from behind a CDN,
-see `discoverBackendHost`), then tries each candidate port/TLS combination
-against that backend host in turn, stopping at the first one that
-successfully returns server configuration -- which doubles as the
-connectivity check ("can we talk to a server here at all?") and a useful
-result (its configuration) at the same time.
-
-Each candidate gets `Grpc.setTimeout` (matching `discoverBackendHost`'s own
-5000ms) -- a wrong `(port_, tls)` combination doesn't always fail fast (a
-`GoodStatus_`-or-`ERR_CONNECTION_REFUSED` port refusal is quick, but e.g. TLS
-against a plaintext-only port can leave the browser's own connect/handshake
-timeout to eventually give up, which is far longer, tens of seconds).
-Without an explicit timeout here, `candidatePorts`' later entries only get
-tried once every earlier wrong one has separately run out that clock --
-multiplied by however many are wrong, this made connecting to a server whose
-correct candidate isn't first in the list (any federated server not
-listening on 27707, e.g. `bullcity.social`) visibly slow to the point of
-looking hung, on every page that needs to resolve it (any
-`Components.ServerDependentView` caller, plus every persisted server `init`
-reconnects to at startup) -- not particular to any one page.
-
--}
-negotiateServerConfig : Bool -> String -> Task Grpc.Error ( Connection, ServerConfiguration )
-negotiateServerConfig pageIsSecure frontendHost =
-    discoverBackendHost pageIsSecure frontendHost
-        |> Task.andThen
-            (\backendHost ->
-                let
-                    tryCandidates : List ( Int, Bool ) -> Task Grpc.Error ( Connection, ServerConfiguration )
-                    tryCandidates candidates =
-                        case candidates of
-                            [] ->
-                                Task.fail Grpc.NetworkError
-
-                            ( port_, tls ) :: rest ->
-                                let
-                                    connection : Connection
-                                    connection =
-                                        { frontendHost = frontendHost, backendHost = backendHost, port_ = port_, tls = tls }
-                                in
-                                Grpc.new Rellm.getServerConfiguration {}
-                                    |> Grpc.setHost (connectionUrl connection)
-                                    |> Grpc.setTimeout 5000
-                                    |> Grpc.toTask
-                                    |> Task.map (Tuple.pair connection)
-                                    |> Task.onError (\_ -> tryCandidates rest)
-                in
-                tryCandidates (candidatePorts pageIsSecure)
-            )
-
-
-{-| A server's public "frontend" host may just be serving a web app that
-points browsers at a different "backend" host for the actual gRPC API (e.g.
-to sit behind a CDN that can't proxy gRPC-web) -- discoverable via a plain
-`GET {frontendHost}/backend_host`, tried over HTTPS/443 then (only when this
-page itself isn't secure) HTTP/80. Falls back to `frontendHost` itself
-(meaning "no redirection") if that fails or comes back empty; never fails.
--}
-discoverBackendHost : Bool -> String -> Task x String
-discoverBackendHost pageIsSecure frontendHost =
-    let
-        tryTls : List Bool -> Task x String
-        tryTls tlsFlags =
-            case tlsFlags of
-                [] ->
-                    Task.succeed frontendHost
-
-                tls :: rest ->
-                    Http.task
-                        { method = "GET"
-                        , headers = []
-                        , url =
-                            (if tls then
-                                "https://"
-
-                             else
-                                "http://"
-                            )
-                                ++ frontendHost
-                                ++ "/backend_host"
-                        , body = Http.emptyBody
-                        , resolver =
-                            Http.stringResolver
-                                (\response ->
-                                    case response of
-                                        Http.GoodStatus_ _ body ->
-                                            Ok body
-
-                                        _ ->
-                                            Err ()
-                                )
-                        , timeout = Just 5000
-                        }
-                        |> Task.map
-                            (\body ->
-                                case String.trim body of
-                                    "" ->
-                                        frontendHost
-
-                                    backendHost ->
-                                        backendHost
-                            )
-                        |> Task.onError (\_ -> tryTls rest)
-    in
-    tryTls
-        (if pageIsSecure then
-            [ True ]
-
-         else
-            [ True, False ]
-        )
-        |> Task.onError (\_ -> Task.succeed frontendHost)
-
-
-{-| Decodes a `facebookLoginResult` payload (`{ ok : Bool, value : String }`, see that port's own
-doc) for the `"mastodon"` provider specifically -- `Ok accessToken` on success, `Err message`
-otherwise (including the "cancelled" case, same as every other provider's use of this port).
-Mirrors `Components.Pages.UserProfilePage.facebookLoginResultDecoder` exactly; kept as its own copy
-here rather than exposed cross-module, since the two are otherwise unrelated (one page's Facebook/
-Threads/X connect flows, this module's Mastodon one).
--}
-mastodonLoginResultDecoder : Decode.Value -> Result String String
-mastodonLoginResultDecoder value =
-    case
-        Decode.decodeValue
-            (Decode.map2 Tuple.pair (Decode.field "ok" Decode.bool) (Decode.field "value" Decode.string))
-            value
-    of
-        Ok ( True, token ) ->
-            Ok token
-
-        Ok ( False, err ) ->
-            Err err
-
-        Err err ->
-            Err (Decode.errorToString err)
-
-
-{-| `GET /api/v1/accounts/verify_credentials` against `instanceHost`, authenticated with the
-freshly-minted `accessToken` -- the one Mastodon call `GotMastodonLoginResult` needs before it can
-actually add a `MastodonAccount`, since the OAuth result alone is just a bare token with no
-identity attached yet. Decodes just `username`, all a `MastodonAccount` needs to display the
-connection.
--}
-verifyMastodonCredentialsTask : String -> String -> Task Http.Error String
-verifyMastodonCredentialsTask instanceHost accessToken =
-    Http.task
-        { method = "GET"
-        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
-        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/verify_credentials"
-        , body = Http.emptyBody
-        , resolver = jsonResolver (Decode.field "username" Decode.string) (\metadata _ -> Http.BadStatus metadata.statusCode)
-        , timeout = Just 10000
-        }
-
-
-{-| `fetchMastodonInstanceInfoTask`'s result -- `logoUrl` (from `thumbnail`) and `displayName` (from
-`title`) both `Nothing` if blank/absent, the same as a Rellm server with no logo/name configured.
--}
-type alias MastodonInstanceInfo =
-    { logoUrl : Maybe String
-    , displayName : Maybe String
-    }
-
-
-{-| `GET /api/v1/instance` against `host` -- a public, unauthenticated Mastodon REST endpoint (same
-"no auth needed" reasoning as `Shared.Federation.Mastodon.fetchPosts`), fetched once when an instance
-is added to `browsedMastodonInstances` (see `BrowseMastodonInstanceClicked`/
-`GotMastodonInstanceInfoResult`) to get its `thumbnail`/`title` -- the small instance logo image and
-display name shown in `UI.mastodonServerFeedChip`.
--}
-fetchMastodonInstanceInfoTask : String -> Task Http.Error MastodonInstanceInfo
-fetchMastodonInstanceInfoTask host =
-    Http.task
-        { method = "GET"
-        , headers = []
-        , url = "https://" ++ host ++ "/api/v1/instance"
-        , body = Http.emptyBody
-        , resolver =
-            jsonResolver mastodonInstanceInfoDecoder
-                (\metadata _ -> Http.BadStatus metadata.statusCode)
-        , timeout = Just 10000
-        }
-
-
-mastodonInstanceInfoDecoder : Decode.Decoder MastodonInstanceInfo
-mastodonInstanceInfoDecoder =
-    Decode.map2 MastodonInstanceInfo
-        (Decode.maybe (Decode.field "thumbnail" Decode.string))
-        (Decode.maybe (Decode.field "title" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
-
-
-{-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
-directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
-`bsky.social`-only limitation). Decodes just `handle`/`accessJwt`, all a `BlueskyAccount` needs.
--}
-createBlueskySessionTask : String -> String -> Task Http.Error BlueskyAccount
-createBlueskySessionTask handle appPassword =
-    Http.task
-        { method = "POST"
-        , headers = []
-        , url = "https://bsky.social/xrpc/com.atproto.server.createSession"
-        , body =
-            Http.jsonBody
-                (Encode.object
-                    [ ( "identifier", Encode.string handle )
-                    , ( "password", Encode.string appPassword )
-                    ]
-                )
-        , resolver =
-            jsonResolver blueskySessionDecoder
-                (\metadata body -> Http.BadBody (blueskyErrorBody body |> Maybe.withDefault ("HTTP " ++ String.fromInt metadata.statusCode)))
-        , timeout = Just 10000
-        }
-
-
-blueskySessionDecoder : Decode.Decoder BlueskyAccount
-blueskySessionDecoder =
-    Decode.map6 BlueskyAccount
-        (Decode.field "handle" Decode.string)
-        (Decode.field "accessJwt" Decode.string)
-        (Decode.succeed True)
-        (Decode.succeed Nothing)
-        (Decode.succeed Nothing)
-        -- Overwritten by `GotBlueskyConnectResult` with `nextFrontSortOrder model` before this ever
-        -- reaches `model.blueskyAccounts` -- see that handler.
-        (Decode.succeed 0)
-
-
-{-| `com.atproto.server.createSession`'s error responses are `{ error : String, message : String }`
-(e.g. `{"error":"AuthenticationRequired","message":"Invalid identifier or password"}`) -- extracts
-`message` when present, so `BlueskyConnectForm.status`'s `Errored` shows something more useful than
-a bare status code.
--}
-blueskyErrorBody : String -> Maybe String
-blueskyErrorBody body =
-    Decode.decodeString (Decode.field "message" Decode.string) body |> Result.toMaybe
-
-
-{-| `fetchBlueskyProfileTask`'s result -- `avatarUrl`/`displayName` both `Nothing` if unset, the same
-as `MastodonInstanceInfo`'s own convention.
--}
-type alias BlueskyProfile =
-    { avatarUrl : Maybe String
-    , displayName : Maybe String
-    }
-
-
-{-| `app.bsky.actor.getProfile` for `handle`, authenticated with the just-connected account's own
-`accessToken` -- fetched once right after `createBlueskySessionTask` succeeds (see
-`GotBlueskyConnectResult`/`GotBlueskyProfileResult`), since the session response itself carries no
-profile info.
--}
-fetchBlueskyProfileTask : String -> String -> Task Http.Error BlueskyProfile
-fetchBlueskyProfileTask handle accessToken =
-    Http.task
-        { method = "GET"
-        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
-        , url = "https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" ++ handle
-        , body = Http.emptyBody
-        , resolver =
-            jsonResolver blueskyProfileDecoder
-                (\metadata _ -> Http.BadStatus metadata.statusCode)
-        , timeout = Just 10000
-        }
-
-
-blueskyProfileDecoder : Decode.Decoder BlueskyProfile
-blueskyProfileDecoder =
-    Decode.map2 BlueskyProfile
-        (Decode.maybe (Decode.field "avatar" Decode.string))
-        (Decode.maybe (Decode.field "displayName" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
-
-
-{-| `GotBlueskyConnectResult`'s error-to-display-string projection -- `Http.BadBody` here always
-carries `createBlueskySessionTask`'s own already-human-readable message (either the server's own
-`message`, or a bare status code fallback -- see `blueskyErrorBody`), so it's shown as-is; every
-other `Http.Error` variant gets a generic message, same as this codebase's `grpcErrorToString`
-doesn't try to describe network/timeout errors in detail either.
--}
-blueskyErrorMessage : Http.Error -> String
-blueskyErrorMessage err =
-    case err of
-        Http.BadBody message ->
-            message
-
-        Http.BadUrl _ ->
-            "Couldn't connect to Bluesky."
-
-        Http.Timeout ->
-            "Bluesky didn't respond in time."
-
-        Http.NetworkError ->
-            "Couldn't reach Bluesky."
-
-        Http.BadStatus code ->
-            "Bluesky returned an error (" ++ String.fromInt code ++ ")."
-
-
-connectionUrl : Connection -> String
-connectionUrl connection =
-    (if connection.tls then
-        "https://"
-
-     else
-        "http://"
-    )
-        ++ connection.backendHost
-        ++ ":"
-        ++ String.fromInt connection.port_
-
-
-{-| Media (avatars, server logos) is served over plain HTTP(S) on the standard
-web port -- not the gRPC(-web) port a `Connection` was negotiated against for
-actual API calls -- so this omits the port entirely (the browser defaults to
-80/443 per scheme). Uses `frontendHost` (the server's branded domain, e.g.
-`ato.band` standing in for the literal `ato.band.getj.online` host actual API
-calls connect to -- see `resolvedFrontendHost`), not `backendHost`, since a
-server declaring an `ExternalCdnConfig` is fully reverse-proxying that
-branded domain through to the backend, `/media` included -- unlike
-`connectionUrl`, which stays on `backendHost` for gRPC(-web) calls
-specifically, since that's the host `candidatePorts` actually negotiated a
-working connection against.
--}
-mediaBaseUrl : Connection -> String
-mediaBaseUrl connection =
-    (if connection.tls then
-        "https://"
-
-     else
-        "http://"
-    )
-        ++ connection.frontendHost
-
-
-{-| A server's raw `ServerInfo` (name, description, privacy/media policy
-text, etc.), defaulted the same way `brandingFromConfig` does -- for callers
-that need fields `Branding` doesn't carry, e.g. `UI.createAccountConfirmationModal`
-showing the description/privacy policy/media policy during account creation.
--}
-serverInfoOf : RellmServer -> ServerInfo
-serverInfoOf server =
-    server.connected
-        |> Maybe.andThen (\connected -> connected.configuration.serverInfo)
-        |> Maybe.withDefault defaultServerInfo
-
-
-{-| A server's raw `ServerConfiguration`, falling back to
-`Proto.Rellm.defaultServerConfiguration` while disconnected (see
-`RellmServer.connected`) -- for callers (e.g. `Components.Pages.ServerInformationPage`)
-that need more of it than `serverInfoOf`'s `ServerInfo` carries.
--}
-configurationOf : RellmServer -> ServerConfiguration
-configurationOf server =
-    server.connected
-        |> Maybe.map .configuration
-        |> Maybe.withDefault Proto.Rellm.defaultServerConfiguration
-
-
-brandingFromConfig : Connection -> ServerConfiguration -> Branding
-brandingFromConfig connection config =
-    let
-        info : ServerInfo
-        info =
-            Maybe.withDefault Proto.Rellm.defaultServerInfo config.serverInfo
-
-        name : String
-        name =
-            info.name
-                |> Maybe.andThen ifNonEmpty
-                |> Maybe.withDefault connection.frontendHost
-
-        logoUrl : Maybe String
-        logoUrl =
-            info.logo
-                |> Maybe.andThen .squareMediaId
-                |> Maybe.map (\id -> mediaBaseUrl connection ++ "/media/" ++ id)
-
-        primaryArgb : Int
-        primaryArgb =
-            info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x00424242
-
-        navArgb : Int
-        navArgb =
-            info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0x00FFFFFF
-    in
-    { name = name
-    , logoUrl = logoUrl
-    , primary = UI.ServerTheme.colorMetaFromArgb primaryArgb
-    , nav = UI.ServerTheme.colorMetaFromArgb navArgb
-    }
-
-
-ifNonEmpty : String -> Maybe String
-ifNonEmpty s =
-    if String.isEmpty s then
-        Nothing
-
-    else
-        Just s
-
 
 grpcErrorToString : Grpc.Error -> String
 grpcErrorToString err =
@@ -5271,16 +3960,19 @@ persist model =
         Cmd.none
 
 
-{-| Same as `persist`, plus the two other feed-item ports -- for a mutation that can touch any of the
-three lists a `CombinedFeedItem` might belong to (a cross-list reorder swaps `sortOrder` values that
-can land in any pairing of the three) and so can't tell in general which one(s) actually changed.
-Simpler and just as correct to always write out all three together than to track that.
+{-| Same as `persist`, plus the two other account/server-list ports -- for a mutation that can touch
+any of the five lists a `CombinedServerFeedItem`/`CombinedAccountItem` might belong to (a cross-list
+reorder swaps `sortOrder` values that can land in any pairing within either combined space) and so
+can't tell in general which one(s) actually changed. Simpler and just as correct to always write out
+all three ports together (covering all five lists between them) than to track that -- used by both
+`GotPreMoveServerFeedItemPositions`/`GotPreMoveAccountItemPositions`, since either one's swap can
+touch any of the five.
 -}
-persistFeedItemOrder : Model -> Cmd Msg
-persistFeedItemOrder model =
+persistCombinedItemOrder : Model -> Cmd Msg
+persistCombinedItemOrder model =
     Cmd.batch
         [ persist model
-        , Ports.persistBlueskyAccounts (encodeBlueskyAccounts model.blueskyAccounts)
+        , Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList model.blueskyAccounts)
         , Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers model)
         ]
 
@@ -5337,237 +4029,113 @@ settleStartupUnit model =
 encodeState : Model -> Encode.Value
 encodeState model =
     Encode.object
-        [ ( "accounts", Encode.list encodeAccount model.accounts )
-        , ( "servers", Encode.list encodePersistedServer model.servers )
+        [ ( "accounts", Encode.list RellmAccounts.encodeRellmAccount model.accounts )
+        , ( "servers", Encode.list RellmServers.encodePersistedRellmServer model.servers )
         ]
-
-
-{-| Deliberately omits `syncDestinations`/`syncSources`/`availableAiModels` -- they're
-nested-proto-shaped, can be sizeable, and change often, so persisting them to `localStorage` (and
-writing the JSON codecs for their `oneof`s) isn't worth it when `refreshPermissionsTask` already
-refetches them on every reconnect/enable. See `accountDecoder`'s own doc for the decode side.
--}
-encodeAccount : RellmAccount -> Encode.Value
-encodeAccount account =
-    Encode.object
-        [ ( "server", Encode.string account.server )
-        , ( "userId", Encode.string account.userId )
-        , ( "username", Encode.string account.username )
-        , ( "refreshToken", encodeToken account.refreshToken )
-        , ( "accessToken", encodeToken account.accessToken )
-        , ( "enabled", Encode.bool account.enabled )
-        , ( "avatarMediaId", account.avatarMediaId |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
-        , ( "permissions", Encode.list (fieldNumbersPermission >> Encode.int) account.permissions )
-        , ( "realName", Encode.string account.realName )
-        , ( "needsPassword", Encode.bool account.needsPassword )
-        ]
-
-
-{-| The cross-server SSO hand-off's wire format (see `AccountAuthTokens`'s own doc) -- deliberately
-just these three fields, unlike `encodeAccount`'s full persisted shape.
--}
-encodeAccountAuthTokens : AccountAuthTokens -> Encode.Value
-encodeAccountAuthTokens tokens =
-    Encode.object
-        [ ( "server", Encode.string tokens.server )
-        , ( "refreshToken", encodeToken tokens.refreshToken )
-        , ( "accessToken", encodeToken tokens.accessToken )
-        ]
-
-
-encodeToken : Token -> Encode.Value
-encodeToken token =
-    Encode.object
-        [ ( "token", Encode.string token.token )
-        , ( "expiresAt", token.expiresAt |> Maybe.map (Time.posixToMillis >> Encode.int) |> Maybe.withDefault Encode.null )
-        ]
-
-
-encodePersistedServer : RellmServer -> Encode.Value
-encodePersistedServer server =
-    Encode.object
-        [ ( "frontendHost", Encode.string server.frontendHost )
-        , ( "enabled", Encode.bool server.enabled )
-        , ( "sortOrder", Encode.int server.sortOrder )
-        ]
-
 
 emptyPersistedState : PersistedState
 emptyPersistedState =
     { accounts = [], servers = [] }
 
 
-{-| `Ports.persistMastodonAccountsAndServers`'s wire format -- `mastodonAccounts` and
-`browsedMastodonInstances` bundled into one value, since they're persisted together (see that port's
-own doc), even though they're two separate `Model` fields and, in `UI.mastodonServersStrip`'s case,
-two separately-rendered pieces of UI.
+{-| Bundles `model.mastodonAccounts`/`model.browsedMastodonInstances` into
+`Ports.persistMastodonAccountsAndServers`'s wire format -- see `MastodonAccountsAndServers`'s own
+doc.
 -}
-type alias MastodonAccountsAndServers =
-    { accounts : List MastodonAccount
-    , browsedInstances : List BrowsedMastodonInstance
-    }
-
-
-emptyMastodonAccountsAndServers : MastodonAccountsAndServers
-emptyMastodonAccountsAndServers =
-    { accounts = [], browsedInstances = [] }
-
-
 encodeMastodonAccountsAndServers : Model -> Encode.Value
 encodeMastodonAccountsAndServers model =
     Encode.object
-        [ ( "accounts", Encode.list encodeMastodonAccount model.mastodonAccounts )
-        , ( "browsedInstances", Encode.list encodeBrowsedMastodonInstance model.browsedMastodonInstances )
+        [ ( "accounts", Encode.list MastodonAccounts.encodeMastodonAccount model.mastodonAccounts )
+        , ( "browsedInstances", Encode.list MastodonServers.encodeBrowsedMastodonInstance model.browsedMastodonInstances )
         ]
 
 
-encodeMastodonAccount : MastodonAccount -> Encode.Value
-encodeMastodonAccount account =
-    Encode.object
-        [ ( "instanceHost", Encode.string account.instanceHost )
-        , ( "accessToken", Encode.string account.accessToken )
-        , ( "username", Encode.string account.username )
-        ]
-
-
-encodeBrowsedMastodonInstance : BrowsedMastodonInstance -> Encode.Value
-encodeBrowsedMastodonInstance instance =
-    Encode.object
-        [ ( "host", Encode.string instance.host )
-        , ( "enabled", Encode.bool instance.enabled )
-        , ( "logoUrl", instance.logoUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
-        , ( "displayName", instance.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
-        , ( "sortOrder", Encode.int instance.sortOrder )
-        ]
-
-
-mastodonAccountsAndServersDecoder : Decoder MastodonAccountsAndServers
-mastodonAccountsAndServersDecoder =
-    Decode.map2 MastodonAccountsAndServers
-        (Decode.field "accounts" (Decode.list mastodonAccountDecoder))
-        (Decode.field "browsedInstances" (Decode.list browsedMastodonInstanceDecoder))
-
-
-mastodonAccountDecoder : Decoder MastodonAccount
-mastodonAccountDecoder =
-    Decode.map3 MastodonAccount
-        (Decode.field "instanceHost" Decode.string)
-        (Decode.field "accessToken" Decode.string)
-        (Decode.field "username" Decode.string)
-
-
-browsedMastodonInstanceDecoder : Decoder BrowsedMastodonInstance
-browsedMastodonInstanceDecoder =
-    Decode.map5 BrowsedMastodonInstance
-        (Decode.field "host" Decode.string)
-        (Decode.field "enabled" Decode.bool)
-        (Decode.maybe (Decode.field "logoUrl" Decode.string))
-        (Decode.maybe (Decode.field "displayName" Decode.string))
-        sortOrderDecoder
-
-
-encodeBlueskyAccounts : List BlueskyAccount -> Encode.Value
-encodeBlueskyAccounts accounts =
-    Encode.list encodeBlueskyAccount accounts
-
-
-encodeBlueskyAccount : BlueskyAccount -> Encode.Value
-encodeBlueskyAccount account =
-    Encode.object
-        [ ( "handle", Encode.string account.handle )
-        , ( "accessToken", Encode.string account.accessToken )
-        , ( "enabled", Encode.bool account.enabled )
-        , ( "avatarUrl", account.avatarUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
-        , ( "displayName", account.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
-        , ( "sortOrder", Encode.int account.sortOrder )
-        ]
-
-
-blueskyAccountsDecoder : Decoder (List BlueskyAccount)
-blueskyAccountsDecoder =
-    Decode.list blueskyAccountDecoder
-
-
-blueskyAccountDecoder : Decoder BlueskyAccount
-blueskyAccountDecoder =
-    Decode.map6 BlueskyAccount
-        (Decode.field "handle" Decode.string)
-        (Decode.field "accessToken" Decode.string)
-        (Decode.field "enabled" Decode.bool)
-        (Decode.maybe (Decode.field "avatarUrl" Decode.string))
-        (Decode.maybe (Decode.field "displayName" Decode.string))
-        sortOrderDecoder
-
-
-{-| Sentinel `sortOrder` for an entry persisted before that field existed -- `sortOrderDecoder`
-falls back to this (mirroring `realNameDecoder`/`needsPasswordDecoder`/`permissionsDecoder`'s own
-"default when the key is missing entirely" pattern) rather than failing the rest of the decode.
-`migrateFeedItemSortOrders` (run once, in `init`) replaces every sentinel-valued entry with a real
-one -- see its own doc. Deliberately far outside the range any real `sortOrder` could reach (`
-nextFrontSortOrder`/`nextBackSortOrder` only ever step by 1 from whatever's already there), so it
-can never collide with one.
+{-| Assigns fresh, sequential `sortOrder` values (see `assignMissingSortOrders`) to every server/
+browsed-Mastodon-instance still carrying `missingSortOrderSentinel` -- i.e. essentially every one of
+them, the first time a client loads a version of the app that has `sortOrder` at all. Doesn't touch
+`blueskyAccounts` -- unlike a server or a browsed instance, a connected Bluesky account belongs to
+the *account* item space now (see `CombinedAccountItem`), migrated separately by
+`migrateAccountItemSortOrders`.
 -}
-missingSortOrderSentinel : Int
-missingSortOrderSentinel =
-    -2000000000
-
-
-{-| Defaults to `missingSortOrderSentinel` if the key is missing entirely (state persisted before
-`sortOrder` existed), without failing the rest of the decode -- see that value's own doc.
--}
-sortOrderDecoder : Decoder Int
-sortOrderDecoder =
-    Decode.oneOf
-        [ Decode.field "sortOrder" Decode.int
-        , Decode.succeed missingSortOrderSentinel
-        ]
-
-
-{-| Assigns fresh, sequential `sortOrder` values to every server/browsed-Mastodon-instance/Bluesky-
-account still carrying `missingSortOrderSentinel` (see that value's own doc) -- i.e. essentially
-every one of them, the first time a client loads a version of the app that has `sortOrder` at all.
-Starts just after whatever real (non-sentinel) values already happen to be present, or at `0` if
-there are none, and walks servers, then browsed Mastodon instances, then Bluesky accounts, each in
-their own existing list order -- so upgrading from a pre-`sortOrder` version doesn't visibly reshuffle
-anything already on screen (each list keeps its own relative order; the three lists stack in
-roughly the same order they used to occupy separate sections in, servers first).
--}
-migrateFeedItemSortOrders : List PersistedServer -> List BrowsedMastodonInstance -> List BlueskyAccount -> ( List PersistedServer, List BrowsedMastodonInstance, List BlueskyAccount )
-migrateFeedItemSortOrders servers instances blueskyAccounts =
+migrateServerFeedItemSortOrders : List PersistedRellmServer -> List BrowsedMastodonInstance -> ( List PersistedRellmServer, List BrowsedMastodonInstance )
+migrateServerFeedItemSortOrders servers instances =
     let
         start : Int
         start =
-            ((List.map .sortOrder servers ++ List.map .sortOrder instances ++ List.map .sortOrder blueskyAccounts)
-                |> List.filter ((/=) missingSortOrderSentinel)
-                |> List.maximum
-                |> Maybe.withDefault -1
-            )
-                + 1
-
-        assignMissing : (a -> Int) -> (Int -> a -> a) -> Int -> List a -> ( Int, List a )
-        assignMissing getSortOrder setSortOrder counter items =
-            List.foldl
-                (\item ( next, acc ) ->
-                    if getSortOrder item == missingSortOrderSentinel then
-                        ( next + 1, setSortOrder next item :: acc )
-
-                    else
-                        ( next, item :: acc )
-                )
-                ( counter, [] )
-                items
-                |> Tuple.mapSecond List.reverse
+            nextMigratedSortOrderStart [ List.map .sortOrder servers, List.map .sortOrder instances ]
 
         ( afterServers, migratedServers ) =
-            assignMissing .sortOrder (\so s -> { s | sortOrder = so }) start servers
+            assignMissingSortOrders start servers
 
-        ( afterInstances, migratedInstances ) =
-            assignMissing .sortOrder (\so i -> { i | sortOrder = so }) afterServers instances
+        ( _, migratedInstances ) =
+            assignMissingSortOrders afterServers instances
+    in
+    ( migratedServers, migratedInstances )
+
+
+{-| Same idea as `migrateServerFeedItemSortOrders`, one level down (see `CombinedAccountItem`'s own
+doc): assigns fresh `sortOrder` values to every Rellm account/connected Mastodon account/connected
+Bluesky account still carrying `missingSortOrderSentinel`. `accounts`/`mastodonAccounts` are brand
+new fields, so this is essentially every one of them the first time a client loads a version of the
+app that has account `sortOrder` at all; `blueskyAccounts`' own `sortOrder` already existed (from
+when it briefly meant a position in the *server* feed space instead -- see `CombinedServerFeedItem`'s
+own doc) so real values there are left as-is, reinterpreted in this now-shared account item space,
+and only ever backfilled here for the rare pre-`sortOrder` straggler.
+-}
+migrateAccountItemSortOrders : List RellmAccount -> List MastodonAccount -> List BlueskyAccount -> ( List RellmAccount, List MastodonAccount, List BlueskyAccount )
+migrateAccountItemSortOrders accounts mastodonAccounts blueskyAccounts =
+    let
+        start : Int
+        start =
+            nextMigratedSortOrderStart [ List.map .sortOrder accounts, List.map .sortOrder mastodonAccounts, List.map .sortOrder blueskyAccounts ]
+
+        ( afterAccounts, migratedAccounts ) =
+            assignMissingSortOrders start accounts
+
+        ( afterMastodonAccounts, migratedMastodonAccounts ) =
+            assignMissingSortOrders afterAccounts mastodonAccounts
 
         ( _, migratedBlueskyAccounts ) =
-            assignMissing .sortOrder (\so a -> { a | sortOrder = so }) afterInstances blueskyAccounts
+            assignMissingSortOrders afterMastodonAccounts blueskyAccounts
     in
-    ( migratedServers, migratedInstances, migratedBlueskyAccounts )
+    ( migratedAccounts, migratedMastodonAccounts, migratedBlueskyAccounts )
+
+
+{-| One past the highest real (non-`missingSortOrderSentinel`) `sortOrder` across every list in a
+migration's shared space, or `0` if none of them have one yet -- where `assignMissingSortOrders`
+should start counting up from for that space's still-missing entries.
+-}
+nextMigratedSortOrderStart : List (List Int) -> Int
+nextMigratedSortOrderStart sortOrderLists =
+    (List.concat sortOrderLists
+        |> List.filter ((/=) missingSortOrderSentinel)
+        |> List.maximum
+        |> Maybe.withDefault -1
+    )
+        + 1
+
+
+{-| Walks `items` in their own existing order, replacing every `missingSortOrderSentinel` entry with
+the next sequential value counting up from `counter` -- so upgrading from a pre-`sortOrder` version
+doesn't visibly reshuffle anything already on screen (each list keeps its own relative order; the
+lists in a migration's shared space stack in roughly the same order they used to occupy separate
+sections in). Returns the counter's value just past the last one it handed out (for a caller
+migrating a second list in the same space right after, see `migrateServerFeedItemSortOrders`/
+`migrateAccountItemSortOrders`) alongside the migrated list itself.
+-}
+assignMissingSortOrders : Int -> List { a | sortOrder : Int } -> ( Int, List { a | sortOrder : Int } )
+assignMissingSortOrders counter items =
+    List.foldl
+        (\item ( next, acc ) ->
+            if item.sortOrder == missingSortOrderSentinel then
+                ( next + 1, { item | sortOrder = next } :: acc )
+
+            else
+                ( next, item :: acc )
+        )
+        ( counter, [] )
+        items
+        |> Tuple.mapSecond List.reverse
 
 
 {-| The `PushManager.subscribe()` result Ports.pushSubscribed's JS side hands back on success --
@@ -5580,9 +4148,9 @@ type alias PushSubscriptionKeys =
     }
 
 
-{-| Decodes `Ports.pushSubscribed`'s payload: `{ accountId, ok, endpoint, p256dhKey, authKey }` on
-success, or `{ accountId, ok, error }` (`ok = False`) on failure -- see that port's own doc
-comment. `accountId` comes back either way, so `PushSubscriptionPortReceived` can always tell which
+{-| Decodes `Ports.pushSubscribed`'s payload: `{ rellmAccountId, ok, endpoint, p256dhKey, authKey }` on
+success, or `{ rellmAccountId, ok, error }` (`ok = False`) on failure -- see that port's own doc
+comment. `rellmAccountId` comes back either way, so `PushSubscriptionPortReceived` can always tell which
 account's `subscribeToPush` call this answers.
 -}
 pushSubscriptionPortDecoder : Decoder ( String, Result String PushSubscriptionKeys )
@@ -5608,7 +4176,7 @@ pushSubscriptionPortDecoder =
 
 
 {-| `Ports.pushSubscriptionChecked`'s payload when the browser has an active Web Push subscription
--- see that port's own doc comment for why `publicKey` (not an `accountId`, which the Push API has
+-- see that port's own doc comment for why `publicKey` (not an `rellmAccountId`, which the Push API has
 no concept of) is what identifies which account it belongs to.
 -}
 type alias PushSubscriptionCheck =
@@ -5629,7 +4197,7 @@ pushSubscriptionCheckDecoder =
 
 
 {-| Decodes `Ports.broadcastPushSubscriptionChange`/`pushSubscriptionChangeReceived`'s payload:
-`{ accountId, endpoint }`, `endpoint` being the account's new endpoint (just enabled) or `null`
+`{ rellmAccountId, endpoint }`, `endpoint` being the account's new endpoint (just enabled) or `null`
 (just disabled).
 -}
 pushSubscriptionChangeDecoder : Decoder ( String, Maybe String )
@@ -5657,336 +4225,13 @@ broadcastPushSubscriptionChangeCmd id endpoint =
 persistedStateDecoder : Decoder PersistedState
 persistedStateDecoder =
     Decode.map2 PersistedState
-        (Decode.field "accounts" (Decode.list accountDecoder))
-        (Decode.field "servers" (Decode.list persistedServerDecoder))
-
-
-{-| `elm/json` only provides `map8`, but `RellmAccount` now has 13 fields -- so this
-decodes the first 8 into a partially-applied `RellmAccount` constructor, then
-applies `realName` and `needsPassword` on top of that. The last 3
-(`syncDestinations`/`syncSources`/`availableAiModels`) are deliberately
-never persisted at all -- see `encodeAccount`'s own doc -- so they always
-decode to `[]` here regardless of what's in storage; the very next
-`refreshPermissionsTask` (fired on every reconnect/enable) fills them back in.
--}
-accountDecoder : Decoder RellmAccount
-accountDecoder =
-    Decode.map3 (\partial realName needsPassword -> partial realName needsPassword [] [] [])
-        (Decode.map8 RellmAccount
-            (Decode.field "server" Decode.string)
-            (Decode.field "userId" Decode.string)
-            (Decode.field "username" Decode.string)
-            (Decode.field "refreshToken" tokenDecoder)
-            (Decode.field "accessToken" tokenDecoder)
-            (Decode.field "enabled" Decode.bool)
-            (optionalString "avatarMediaId")
-            permissionsDecoder
-        )
-        realNameDecoder
-        needsPasswordDecoder
-
-
-{-| Decodes `encodeAccountAuthTokens`'s wire format -- see `AccountAuthTokens`'s own doc.
--}
-accountAuthTokensDecoder : Decoder AccountAuthTokens
-accountAuthTokensDecoder =
-    Decode.map3 AccountAuthTokens
-        (Decode.field "server" Decode.string)
-        (Decode.field "refreshToken" tokenDecoder)
-        (Decode.field "accessToken" tokenDecoder)
-
-
-{-| Defaults to "" if the key is missing entirely (older persisted state),
-without failing the rest of the decode.
--}
-realNameDecoder : Decoder String
-realNameDecoder =
-    Decode.oneOf
-        [ Decode.field "realName" Decode.string
-        , Decode.succeed ""
-        ]
-
-
-{-| Defaults to `False` if the key is missing entirely (older persisted
-state, or a freshly-logged-in account -- see `GotAuthResult`), without
-failing the rest of the decode.
--}
-needsPasswordDecoder : Decoder Bool
-needsPasswordDecoder =
-    Decode.oneOf
-        [ Decode.field "needsPassword" Decode.bool
-        , Decode.succeed False
-        ]
-
-
-{-| Defaults to no permissions if the key is missing entirely (older
-persisted state), without failing the rest of the decode.
--}
-permissionsDecoder : Decoder (List Permission)
-permissionsDecoder =
-    Decode.oneOf
-        [ Decode.field "permissions" (Decode.list (Decode.map permissionFromInt Decode.int))
-        , Decode.succeed []
-        ]
-
-
-permissionFromInt : Int -> Permission
-permissionFromInt n =
-    case n of
-        0 ->
-            PERMISSIONUNKNOWN
-
-        1 ->
-            VIEWUSERS
-
-        2 ->
-            PUBLISHUSERSLOCALLY
-
-        3 ->
-            PUBLISHUSERSGLOBALLY
-
-        4 ->
-            MODERATEUSERS
-
-        5 ->
-            FOLLOWUSERS
-
-        6 ->
-            GRANTBASICPERMISSIONS
-
-        10 ->
-            VIEWGROUPS
-
-        11 ->
-            CREATEGROUPS
-
-        12 ->
-            PUBLISHGROUPSLOCALLY
-
-        13 ->
-            PUBLISHGROUPSGLOBALLY
-
-        14 ->
-            MODERATEGROUPS
-
-        15 ->
-            JOINGROUPS
-
-        16 ->
-            INVITEGROUPMEMBERS
-
-        20 ->
-            VIEWPOSTS
-
-        21 ->
-            CREATEPOSTS
-
-        22 ->
-            PUBLISHPOSTSLOCALLY
-
-        23 ->
-            PUBLISHPOSTSGLOBALLY
-
-        24 ->
-            MODERATEPOSTS
-
-        25 ->
-            REPLYTOPOSTS
-
-        26 ->
-            EDITPOSTTITLESANDLINKS
-
-        30 ->
-            VIEWEVENTS
-
-        31 ->
-            CREATEEVENTS
-
-        32 ->
-            PUBLISHEVENTSLOCALLY
-
-        33 ->
-            PUBLISHEVENTSGLOBALLY
-
-        34 ->
-            MODERATEEVENTS
-
-        35 ->
-            RSVPTOEVENTS
-
-        40 ->
-            VIEWMEDIA
-
-        41 ->
-            CREATEMEDIA
-
-        42 ->
-            PUBLISHMEDIALOCALLY
-
-        43 ->
-            PUBLISHMEDIAGLOBALLY
-
-        44 ->
-            MODERATEMEDIA
-
-        50 ->
-            READPERSONALMESSAGES
-
-        51 ->
-            READALLSYSTEMMESSAGES
-
-        60 ->
-            CREATEAIMODELPROVIDERS
-
-        700 ->
-            SYNCEVENTSFROMICS
-
-        1000 ->
-            SYNCEVENTSTOFACEBOOK
-
-        1001 ->
-            SYNCPOSTSTOFACEBOOK
-
-        1010 ->
-            SYNCEVENTSTOINSTAGRAM
-
-        1011 ->
-            SYNCPOSTSTOINSTAGRAM
-
-        1020 ->
-            SYNCEVENTSTOMASTODON
-
-        1021 ->
-            SYNCPOSTSTOMASTODON
-
-        1030 ->
-            SYNCEVENTSTOBLUESKY
-
-        1031 ->
-            SYNCPOSTSTOBLUESKY
-
-        1040 ->
-            SYNCEVENTSTOXTWITTER
-
-        1041 ->
-            SYNCPOSTSTOXTWITTER
-
-        1050 ->
-            SYNCEVENTSTOTHREADS
-
-        1051 ->
-            SYNCPOSTSTOTHREADS
-
-        9998 ->
-            BUSINESS
-
-        9999 ->
-            RUNBOTS
-
-        10000 ->
-            ADMIN
-
-        10001 ->
-            VIEWPRIVATECONTACTMETHODS
-
-        other ->
-            PermissionUnrecognized_ other
-
-
-persistedServerDecoder : Decoder PersistedServer
-persistedServerDecoder =
-    Decode.map3 PersistedServer
-        (Decode.field "frontendHost" Decode.string)
-        (Decode.field "enabled" Decode.bool)
-        sortOrderDecoder
-
-
-{-| Accepts both the current `{token, expiresAt}` shape and the older
-bare-string shape (from before tokens tracked expiration), so existing
-persisted accounts aren't invalidated by this change.
--}
-tokenDecoder : Decoder Token
-tokenDecoder =
-    Decode.oneOf
-        [ Decode.map2 Token
-            (Decode.field "token" Decode.string)
-            (Decode.maybe (Decode.field "expiresAt" (Decode.nullable Decode.int))
-                |> Decode.map (Maybe.andThen identity >> Maybe.map Time.millisToPosix)
-            )
-        , Decode.map (\token -> { token = token, expiresAt = Nothing }) Decode.string
-        ]
-
-
-optionalString : String -> Decoder (Maybe String)
-optionalString field =
-    Decode.maybe (Decode.field field (Decode.nullable Decode.string))
-        |> Decode.map (Maybe.andThen identity)
-
-
-tokenFromExpirable : ExpirableToken -> Token
-tokenFromExpirable expirable =
-    { token = expirable.token
-    , expiresAt = Maybe.map timestampToPosix expirable.expiresAt
-    }
-
-
-{-| Whether a token is expired, or expiring within the next minute (enough
-margin that it shouldn't expire mid-request). A token with no expiration
-(`expiresAt == Nothing`, the default unless a server was asked for one)
-never expires.
--}
-isExpired : Time.Posix -> Token -> Bool
-isExpired now token =
-    case token.expiresAt of
-        Nothing ->
-            False
-
-        Just expiresAt ->
-            Time.posixToMillis now + 60000 >= Time.posixToMillis expiresAt
-
-
-{-| Ensures `account`'s access token is valid as of now (refreshing it first
-if needed), then performs `req` with it. `req` is given just the access token
-string, ready to pass to `withAccessToken`. Returns the account
-as it ended up (with refreshed tokens if a refresh happened, unchanged
-otherwise) alongside `req`'s result, so the caller can persist any refreshed
-tokens. Private -- `refreshPermissions`/`setWebUserInterface` below (this
-module's own callers, which already hold a live `RellmAccount`) use this
-directly; everyone else goes through `performWithAccountServer`/
-`performWithOptionalAccountServer`, which resolve a fresh `RellmAccount`/`RellmServer`
-from a `MaybeAccountServer` instead of holding one of their own.
--}
-performWithAccount :
-    Connection
-    -> RellmAccount
-    -> (String -> Task Grpc.Error b)
-    -> Task Grpc.Error ( RellmAccount, b )
-performWithAccount connection account req =
-    performWithAccountNotifying connection account req
-        |> Task.map (\( refreshedAccount, _, result ) -> ( refreshedAccount, result ))
-
-
-{-| Like `performWithAccount`, but also surfaces the raw `AccessTokenResponse`
-if a refresh happened (`Nothing` otherwise).
--}
-performWithAccountNotifying :
-    Connection
-    -> RellmAccount
-    -> (String -> Task Grpc.Error b)
-    -> Task Grpc.Error ( RellmAccount, Maybe AccessTokenResponse, b )
-performWithAccountNotifying connection account req =
-    Time.now
-        |> Task.andThen (\now -> refreshIfNeeded connection now account)
-        |> Task.andThen
-            (\( refreshedAccount, refreshResponse ) ->
-                req refreshedAccount.accessToken.token
-                    |> Task.map (\result -> ( refreshedAccount, refreshResponse, result ))
-            )
+        (Decode.field "accounts" (Decode.list RellmAccounts.rellmAccountDecoder))
+        (Decode.field "servers" (Decode.list RellmServers.persistedRellmServerDecoder))
 
 
 resolveAccountServer : Model -> MaybeAccountServer -> Maybe ( Maybe RellmAccount, RellmServer )
 resolveAccountServer model ( maybeUserId, host ) =
-    serverForHost model.servers host
+    RellmServers.rellmServerForHost model.servers host
         |> Maybe.andThen
             (\server ->
                 -- A known-but-disconnected server (see `RellmServer.connected`) can't
@@ -6006,7 +4251,7 @@ resolveAccountServer model ( maybeUserId, host ) =
             )
 
 
-{-| Like `performWithAccount`, but takes a `MaybeAccountServer` (resolved
+{-| Like `RellmAccounts.performWithRellmAccount`, but takes a `MaybeAccountServer` (resolved
 fresh against `model`) instead of a live `RellmAccount`, and requires that it
 resolve to one -- fails with `Grpc.NetworkError` if `host` isn't a known
 server, or if no matching account is found (both meaning the caller
@@ -6025,14 +4270,14 @@ performWithAccountServer :
 performWithAccountServer model maybeAccountServer req =
     case resolveAccountServer model maybeAccountServer of
         Just ( Just account, server ) ->
-            case connectionOf server of
+            case RellmServers.connectionOf server of
                 -- `resolveAccountServer` only ever resolves to a connected `RellmServer`
                 -- (see `RellmServer.connected`), so this is unreachable in practice.
                 Nothing ->
                     Task.fail Grpc.NetworkError
 
                 Just connection ->
-                    performWithAccountNotifying connection account (req server)
+                    RellmAccounts.performWithRellmAccountNotifying connection account (req server)
                         |> Task.map
                             (\( refreshedAccount, maybeResponse, result ) ->
                                 ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
@@ -6057,14 +4302,14 @@ performWithOptionalAccountServer :
 performWithOptionalAccountServer model maybeAccountServer req =
     case resolveAccountServer model maybeAccountServer of
         Just ( Just account, server ) ->
-            case connectionOf server of
+            case RellmServers.connectionOf server of
                 -- `resolveAccountServer` only ever resolves to a connected `RellmServer`
                 -- (see `RellmServer.connected`), so this is unreachable in practice.
                 Nothing ->
                     Task.fail Grpc.NetworkError
 
                 Just connection ->
-                    performWithAccountNotifying connection account (Just >> req server)
+                    RellmAccounts.performWithRellmAccountNotifying connection account (Just >> req server)
                         |> Task.map
                             (\( refreshedAccount, maybeResponse, result ) ->
                                 ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
@@ -6077,44 +4322,5 @@ performWithOptionalAccountServer model maybeAccountServer req =
             Task.fail Grpc.NetworkError
 
 
-refreshIfNeeded :
-    Connection
-    -> Time.Posix
-    -> RellmAccount
-    -> Task Grpc.Error ( RellmAccount, Maybe AccessTokenResponse )
-refreshIfNeeded connection now account =
-    if not (isExpired now account.accessToken) then
-        Task.succeed ( account, Nothing )
-
-    else
-        Grpc.new Rellm.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
-            |> Grpc.setHost (connectionUrl connection)
-            |> Grpc.toTask
-            |> Task.andThen
-                (\resp ->
-                    case resp.accessToken of
-                        Just accessToken ->
-                            Task.succeed
-                                ( { account
-                                    | accessToken = tokenFromExpirable accessToken
-                                    , refreshToken =
-                                        resp.refreshToken
-                                            |> Maybe.map tokenFromExpirable
-                                            |> Maybe.withDefault account.refreshToken
-                                  }
-                                , Just resp
-                                )
-
-                        Nothing ->
-                            Task.fail Grpc.NetworkError
-                )
 
 
-withAccessToken : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
-withAccessToken maybeToken req =
-    case maybeToken of
-        Just token ->
-            Grpc.addHeader "authorization" token req
-
-        Nothing ->
-            req

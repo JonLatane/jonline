@@ -7,7 +7,7 @@ the sending side of the cross-server SSO hand-off (see
 is -- lets them type in (or pick, via `usernameField`'s quick-fill buttons)
 the username to sign in as. Either way, asks for their password (a fresh
 Login RPC, not reusing any already-stored tokens, since only a freshly issued
-token pair is transferred), then encrypts the resulting `AccountAuthTokens`
+token pair is transferred), then encrypts the resulting `RellmAccountAuthTokens`
 (just this server's hostname plus that fresh token pair -- everything else an
 `RellmAccount` needs is hydrated on the other end, via `GetCurrentUser`) to
 `requestingHost`'s public key and redirects back to
@@ -37,7 +37,9 @@ import Proto.Rellm exposing (ExpirableToken, RefreshTokenResponse)
 import Proto.Rellm.Rellm as Rellm
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel exposing (RellmAccount, AccountAuthTokens, FormStatus(..), Token)
+import Shared.AccountsPanel as AccountsPanel exposing (FormStatus(..))
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, RellmAccountAuthTokens, Token)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.FederatedAuth as FederatedAuth
 import Task exposing (Task)
@@ -76,12 +78,12 @@ type alias Model =
     -- `browsingHost` -- see `GotLoginResult`/`GotLocalSignInResult`.
     , alsoSignInHere : Bool
 
-    -- The transfer `AccountAuthTokens` (bound for `requestingHost`) and its public key,
+    -- The transfer `RellmAccountAuthTokens` (bound for `requestingHost`) and its public key,
     -- held here between `GotLoginResult` and `GotLocalSignInResult` while
     -- `alsoSignInHere`'s second Login RPC is still in flight. `Nothing` the
     -- rest of the time -- including once that second RPC settles, at which
     -- point it's consumed to actually kick off the encrypt/redirect.
-    , pendingTransferAccount : Maybe ( AccountAuthTokens, FederatedAuth.PublicKey )
+    , pendingTransferAccount : Maybe ( RellmAccountAuthTokens, FederatedAuth.PublicKey )
     , status : FormStatus
 
     -- The path (app-relative, no `basePath`) the user was on when they
@@ -99,7 +101,7 @@ type Msg
     | UsernameButtonClicked String
     | AlsoSignInHereToggled
     | SignInClicked
-    | GotLoginResult (Result Grpc.Error ( Maybe AccountAuthTokens, FederatedAuth.PublicKey ))
+    | GotLoginResult (Result Grpc.Error ( Maybe RellmAccountAuthTokens, FederatedAuth.PublicKey ))
     | GotLocalSignInResult (Result Grpc.Error (Maybe RellmAccount))
     | GotEncryptResult Encode.Value
     | SharedMsg Shared.Msg
@@ -128,7 +130,7 @@ init shared req =
         -- see `usernameField`'s quick-fill buttons for the ambiguous case.
         defaultUsername : String
         defaultUsername =
-            case AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost of
+            case RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts browsingHost of
                 Just _ ->
                     ""
 
@@ -183,7 +185,7 @@ update shared msg model =
                 browsingHost =
                     shared.accounts.browsingHost
             in
-            case ( AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
+            case ( RellmServers.rellmServerForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
                 ( Just server, Just publicKey ) ->
                     ( { model | status = Submitting }
                     , loginTask server (effectiveUsername shared model) model.password
@@ -204,7 +206,7 @@ update shared msg model =
                     browsingHost =
                         shared.accounts.browsingHost
                 in
-                case AccountsPanel.serverForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected of
+                case RellmServers.rellmServerForHost shared.accounts.servers browsingHost |> Maybe.andThen ifConnected of
                     Just server ->
                         ( { model | pendingTransferAccount = Just ( account, publicKey ) }
                         , loginTask server (effectiveUsername shared model) model.password
@@ -280,9 +282,9 @@ update shared msg model =
             ( model, Effect.fromShared subMsg )
 
 
-loginTask : AccountsPanel.RellmServer -> String -> String -> Task Grpc.Error RefreshTokenResponse
+loginTask : RellmServer -> String -> String -> Task Grpc.Error RefreshTokenResponse
 loginTask server username password =
-    case AccountsPanel.connectionOf server of
+    case RellmServers.connectionOf server of
         -- Both call sites only ever pass a `server` that just passed `ifConnected`
         -- -- unreachable in practice.
         Nothing ->
@@ -296,13 +298,13 @@ loginTask server username password =
                 , deviceName = Nothing
                 , userId = Nothing
                 }
-                |> Grpc.setHost (AccountsPanel.connectionUrl connection)
+                |> Grpc.setHost (RellmServers.connectionUrl connection)
                 |> Grpc.toTask
 
 
-encryptAndSendEffect : FederatedAuth.PublicKey -> AccountAuthTokens -> Effect Msg
+encryptAndSendEffect : FederatedAuth.PublicKey -> RellmAccountAuthTokens -> Effect Msg
 encryptAndSendEffect publicKey tokens =
-    FederatedAuth.encrypt publicKey (Encode.encode 0 (AccountsPanel.encodeAccountAuthTokens tokens))
+    FederatedAuth.encrypt publicKey (Encode.encode 0 (RellmAccounts.encodeRellmAccountAuthTokens tokens))
         |> Effect.fromCmd
 
 
@@ -338,7 +340,7 @@ signInView shared model =
 
                 signedInAccount : Maybe RellmAccount
                 signedInAccount =
-                    AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost
+                    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts browsingHost
 
                 accountsOnHost : List RellmAccount
                 accountsOnHost =
@@ -407,7 +409,7 @@ currentAccountBadge shared account =
     let
         avatarUrl : Maybe String
         avatarUrl =
-            AccountsPanel.accountAvatarUrl shared.accounts.servers account
+            RellmAccounts.rellmAccountAvatarUrl shared.accounts.servers account
 
         nameAndHost : String
         nameAndHost =
@@ -470,7 +472,7 @@ usernameButton shared submitting account =
         , onClick (UsernameButtonClicked account.username)
         , disabled submitting
         ]
-        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (AccountsPanel.accountAvatarUrl shared.accounts.servers account)
+        [ UI.imageOrInitial [ "auth-to-username-button-avatar" ] account.username (RellmAccounts.rellmAccountAvatarUrl shared.accounts.servers account)
         , span [] [ text account.username ]
         ]
 
@@ -511,7 +513,7 @@ never disagree.
 -}
 effectiveUsername : Shared.Model -> Model -> String
 effectiveUsername shared model =
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
+    case RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts shared.accounts.browsingHost of
         Just account ->
             account.username
 
@@ -519,11 +521,11 @@ effectiveUsername shared model =
             model.username
 
 
-{-| `Just server` only while actually connected (see `AccountsPanel.RellmServer.connected`)
+{-| `Just server` only while actually connected (see `RellmServer.connected`)
 -- `loginTask` needs a live connection, so a known-but-disconnected server
 (`serverForHost` matches those too) counts the same as not being signed in.
 -}
-ifConnected : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmServer
+ifConnected : RellmServer -> Maybe RellmServer
 ifConnected server =
     if server.connected == Nothing then
         Nothing
@@ -533,12 +535,12 @@ ifConnected server =
 
 
 {-| The transfer payload's own construction from a fresh `Login` response -- just `server` plus the
-fresh token pair (see `AccountAuthTokens`'s own doc), unlike `accountFromLogin`'s full `RellmAccount`
+fresh token pair (see `RellmAccountAuthTokens`'s own doc), unlike `accountFromLogin`'s full `RellmAccount`
 below (used only for this same page's own, separate "sign back in here" local login). `Nothing` if
 the response is missing token data (an `update` branch above turns that into the same `Errored`
 state `GotAuthResult` would).
 -}
-accountAuthTokensFromLogin : String -> RefreshTokenResponse -> Maybe AccountAuthTokens
+accountAuthTokensFromLogin : String -> RefreshTokenResponse -> Maybe RellmAccountAuthTokens
 accountAuthTokensFromLogin server resp =
     case ( resp.refreshToken, resp.accessToken ) of
         ( Just refreshToken, Just accessToken ) ->
@@ -574,6 +576,10 @@ accountFromLogin server resp =
                 , permissions = user.permissions
                 , realName = user.realName
                 , needsPassword = False
+
+                -- Reassigned by `AccountsPanel.FederatedAccountReceived` itself (see that
+                -- handler's own comment) -- meaningless here either way.
+                , sortOrder = 0
                 , syncDestinations = user.syncDestinations
                 , syncSources = user.syncSources
                 , availableAiModels = user.availableAiModels

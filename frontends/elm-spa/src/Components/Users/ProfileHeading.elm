@@ -17,7 +17,8 @@ import Components.Users as Users
 import Html exposing (Html, div, h1, span, text)
 import Html.Attributes exposing (class)
 import Proto.Rellm exposing (User)
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers exposing (RellmServer)
 import UI
 
 
@@ -28,7 +29,7 @@ unadorned by any edit affordance, so this itself stays `Html msg`-polymorphic.
 Also used directly by `Components.Pages.PostsPage`/`Components.Pages.EventsPage`
 as a no-avatar fallback for their "Posts | <name>"/"Events | <name>"
 headings when the author's server isn't currently known/enabled (so there's no
-`AccountsPanel.RellmServer` to resolve an avatar against).
+`RellmServer` to resolve an avatar against).
 -}
 usernameHeading : User -> Html msg
 usernameHeading user =
@@ -43,7 +44,7 @@ module). Used by `Components.Pages.PostsPage`/`Components.Pages.EventsPage` for
 their "Posts | <name>"/"Events | <name>" heading on a user's own
 posts/events page.
 -}
-nameHeader : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Html msg
+nameHeader : RellmServer -> Maybe RellmAccount -> User -> Html msg
 nameHeader server maybeAccount user =
     div [ class "profile-header" ]
         [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)

@@ -25,7 +25,8 @@ matching doc comment on `getAIModelProviders`.
 import Grpc
 import Proto.Rellm exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
 import Proto.Rellm.Rellm as Rellm
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Shared.Conversions as Conversions
 import Task exposing (Task)
 
@@ -85,7 +86,7 @@ getSyncSources accountsPanelModel maybeAccountServer targetUserId =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getSyncSources { defaultUser | id = targetUserId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -106,7 +107,7 @@ createSyncSource accountsPanelModel maybeAccountServer source =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createSyncSource source
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -123,7 +124,7 @@ updateSyncSource accountsPanelModel maybeAccountServer source =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateSyncSource source
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -142,7 +143,7 @@ deleteSyncSource accountsPanelModel maybeAccountServer source deleteSyncedEvents
         (\server token ->
             Grpc.new Rellm.deleteSyncSource
                 { source = Just source, deleteSyncedEvents = deleteSyncedEvents }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())

@@ -40,6 +40,8 @@ import Process
 import Proto.Rellm exposing (Author, GetUsersResponse, User, defaultUser)
 import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 import UI.Classes exposing (classes, hostnameToCSSClass)
 import UI.Flip
@@ -243,7 +245,7 @@ fetchCmd : AccountsPanel.Model -> String -> String -> Cmd Msg
 fetchCmd accountsPanelModel host searchText =
     Users.fetchUserListing
         accountsPanelModel
-        ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
+        ( RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
         Nothing
         EVERYONE
         searchText
@@ -408,8 +410,8 @@ userRowView accountsPanelModel model user =
 
         maybeAvatarUrl : Maybe String
         maybeAvatarUrl =
-            AccountsPanel.serverForHost accountsPanelModel.servers model.host
-                |> Maybe.andThen (\server -> Users.avatarUrl server (AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host) user)
+            RellmServers.rellmServerForHost accountsPanelModel.servers model.host
+                |> Maybe.andThen (\server -> Users.avatarUrl server (RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.host) user)
 
         name : String
         name =
@@ -445,4 +447,4 @@ avatarView name maybeUrl =
             img [ class "user-card-avatar", src url, alt name, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter name) ]

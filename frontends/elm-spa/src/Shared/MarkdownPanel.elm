@@ -32,7 +32,9 @@ import Proto.Rellm exposing (Author, Message, Post, ServerInfo, User, defaultGet
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
@@ -41,7 +43,7 @@ type alias Model =
     { target : Maybe TargetType
 
     -- The `frontendHost` of the server `target`'s Post lives on -- needed to
-    -- resolve the `AccountsPanel.RellmServer`/signed-in `Account` to submit as,
+    -- resolve the `RellmServer`/signed-in `Account` to submit as,
     -- and to verify (see `resolve`) that server's still enabled and that
     -- account still has the relevant permission, right before submitting.
     -- For `SendNewMessage`, this doubles as "who I'm sending as" -- see
@@ -155,9 +157,9 @@ type TargetType
     | NewReply Post
     | NewPostContent String
     | UserBio User
-    | ServerDescription AccountsPanel.RellmServer
-    | ServerPrivacyPolicy AccountsPanel.RellmServer
-    | ServerMediaPolicy AccountsPanel.RellmServer
+    | ServerDescription RellmServer
+    | ServerPrivacyPolicy RellmServer
+    | ServerMediaPolicy RellmServer
     | SendNewMessage (List Author)
 
 
@@ -179,8 +181,8 @@ type ViewMode
 
 
 type alias Resolved =
-    { server : AccountsPanel.RellmServer
-    , account : AccountsPanel.RellmAccount
+    { server : RellmServer
+    , account : RellmAccount
     }
 
 
@@ -288,7 +290,7 @@ update accountsPanelModel msg model =
         -- (discarding the old selection) exactly when the host actually
         -- changes, rather than clearing it on every selection.
         PostingAsChanged accountId ->
-            case AccountsPanel.enabledAccounts accountsPanelModel |> List.filter (\account -> AccountsPanel.accountId account == accountId) |> List.head of
+            case AccountsPanel.enabledAccounts accountsPanelModel |> List.filter (\account -> RellmAccounts.rellmAccountId account == accountId) |> List.head of
                 Just account ->
                     if account.server == model.targetHost then
                         ( model, Cmd.none, ( Nothing, False, False ) )
@@ -666,7 +668,7 @@ server" error (see `errorMessage`) already covers that case.
 -}
 accountRow : AccountsPanel.Model -> Model -> Html Msg
 accountRow accountsPanelModel model =
-    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost of
+    case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost of
         Just account ->
             div [ class "markdown-panel-account" ]
                 [ text (verbFor model.target)
@@ -705,7 +707,7 @@ sendMessagePostingAsRow accountsPanelModel model =
 
         accounts ->
             div [ class "markdown-panel-account" ]
-                [ case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost of
+                [ case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost of
                     Just account ->
                         accountAvatar accountsPanelModel.servers account
 
@@ -715,7 +717,7 @@ sendMessagePostingAsRow accountsPanelModel model =
                     (List.map
                         (\account ->
                             option
-                                [ value (AccountsPanel.accountId account)
+                                [ value (RellmAccounts.rellmAccountId account)
                                 , selected (account.server == model.targetHost)
                                 ]
                                 [ text (account.username ++ " on " ++ account.server) ]
@@ -725,14 +727,14 @@ sendMessagePostingAsRow accountsPanelModel model =
                 ]
 
 
-accountAvatar : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
+accountAvatar : List RellmServer -> RellmAccount -> Html msg
 accountAvatar servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
+    case RellmAccounts.rellmAccountAvatarUrl servers account of
         Just url ->
             img [ class "markdown-panel-account-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
+            div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter account.username) ]
 
 
 {-| The second extension point (alongside `accountRowFor`) for a
@@ -824,13 +826,13 @@ initialContent target =
             user.bio
 
         ServerDescription server ->
-            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).description
+            Maybe.withDefault "" (RellmServers.rellmServerInfoOf server).description
 
         ServerPrivacyPolicy server ->
-            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).privacyPolicy
+            Maybe.withDefault "" (RellmServers.rellmServerInfoOf server).privacyPolicy
 
         ServerMediaPolicy server ->
-            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).mediaPolicy
+            Maybe.withDefault "" (RellmServers.rellmServerInfoOf server).mediaPolicy
 
         SendNewMessage _ ->
             ""
@@ -897,7 +899,7 @@ before the user even tries).
 -}
 resolve : AccountsPanel.Model -> TargetType -> String -> Result String Resolved
 resolve accountsPanelModel target host =
-    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+    case RellmServers.rellmServerForHost accountsPanelModel.servers host of
         Nothing ->
             Err "That server isn't connected."
 
@@ -906,7 +908,7 @@ resolve accountsPanelModel target host =
                 Err (server.frontendHost ++ " is disabled.")
 
             else
-                case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+                case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host of
                     Nothing ->
                         Err "You're not signed in on that server."
 
@@ -927,7 +929,7 @@ resolve accountsPanelModel target host =
                                     Err "You don't have permission to reply."
 
                             NewPostContent _ ->
-                                if List.member CREATEPOSTS account.permissions || AccountsPanel.isAdmin account then
+                                if List.member CREATEPOSTS account.permissions || RellmAccounts.isAdmin account then
                                     Ok { server = server, account = account }
 
                                 else
@@ -941,21 +943,21 @@ resolve accountsPanelModel target host =
                                     Err "You can only edit your own bio."
 
                             ServerDescription _ ->
-                                if AccountsPanel.isAdmin account then
+                                if RellmAccounts.isAdmin account then
                                     Ok { server = server, account = account }
 
                                 else
                                     Err "You must be an admin to edit this."
 
                             ServerPrivacyPolicy _ ->
-                                if AccountsPanel.isAdmin account then
+                                if RellmAccounts.isAdmin account then
                                     Ok { server = server, account = account }
 
                                 else
                                     Err "You must be an admin to edit this."
 
                             ServerMediaPolicy _ ->
-                                if AccountsPanel.isAdmin account then
+                                if RellmAccounts.isAdmin account then
                                     Ok { server = server, account = account }
 
                                 else
@@ -1016,7 +1018,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                 maybeAccountServer
                 (\server token ->
                     Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just post.id }
-                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
                         |> Task.andThen
@@ -1024,7 +1026,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                                 case List.head response.posts of
                                     Just freshPost ->
                                         Grpc.new Rellm.updatePost { freshPost | content = Just content }
-                                            |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                            |> Grpc.setHost (RellmServers.rellmServerUrl server)
                                             |> withAccessToken (Just token)
                                             |> Grpc.toTask
 
@@ -1046,7 +1048,7 @@ saveTask accountsPanelModel maybeAccountServer target content =
                             , context = REPLY
                             , visibility = post.visibility
                         }
-                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
                 )
@@ -1117,7 +1119,7 @@ sendMessageTask accountsPanelModel maybeAccountServer recipientUserIds subject b
                             Just (String.trim subject)
                     , bodyText = Just bodyText
                 }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (\message -> ( server.frontendHost, message ))
@@ -1143,7 +1145,7 @@ on this server just refreshes again.
 saveServerInfoField :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> AccountsPanel.RellmServer
+    -> RellmServer
     -> (ServerInfo -> ServerInfo)
     -> Task Grpc.Error (Maybe AccountsPanel.Msg)
 saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
@@ -1152,7 +1154,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
         maybeAccountServer
         (\resolvedServer token ->
             Grpc.new Rellm.getServerConfiguration {}
-                |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
+                |> Grpc.setHost (RellmServers.rellmServerUrl resolvedServer)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
@@ -1163,7 +1165,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
                                 Maybe.withDefault defaultServerInfo freshConfig.serverInfo
                         in
                         Grpc.new Rellm.configureServer { freshConfig | serverInfo = Just (updateInfo info) }
-                            |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
+                            |> Grpc.setHost (RellmServers.rellmServerUrl resolvedServer)
                             |> withAccessToken (Just token)
                             |> Grpc.toTask
                     )

@@ -20,6 +20,8 @@ import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (ExternalCDNConfig, ServerConfiguration, defaultExternalCDNConfig)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Task
 
 
@@ -66,7 +68,7 @@ init =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         CdnEditClicked ->
@@ -75,7 +77,7 @@ update shared targetHost maybeServer msg model =
                     let
                         cdnConfig : Maybe ExternalCDNConfig
                         cdnConfig =
-                            (AccountsPanel.configurationOf server).externalCdnConfig
+                            (RellmServers.configurationOf server).externalCdnConfig
                     in
                     ( { model
                         | configEdit =
@@ -155,12 +157,12 @@ applyCdnConfig edit config =
 -- VIEW
 
 
-view : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
+view : RellmServer -> Maybe RellmAccount -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
         cdnConfig : Maybe ExternalCDNConfig
         cdnConfig =
-            (AccountsPanel.configurationOf server).externalCdnConfig
+            (RellmServers.configurationOf server).externalCdnConfig
     in
     div [ class "server-details-tab-content server-details-cdn" ]
         (case model.configEdit of
@@ -172,7 +174,7 @@ view server maybeAdminAccount model =
         )
 
 
-cdnDisplayView : Maybe AccountsPanel.RellmAccount -> Maybe ExternalCDNConfig -> List (Html Msg)
+cdnDisplayView : Maybe RellmAccount -> Maybe ExternalCDNConfig -> List (Html Msg)
 cdnDisplayView maybeAdminAccount cdnConfig =
     [ Common.settingsRow "External CDN HTTP Support" (Common.switchDisplay (cdnConfig /= Nothing))
     , Common.settingsRow "Frontend Host" (span [ class "server-details-feature-settings-value" ] [ text (cdnConfig |> Maybe.map .frontendHost |> Maybe.withDefault "—") ])

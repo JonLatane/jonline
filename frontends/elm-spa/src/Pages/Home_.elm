@@ -80,6 +80,7 @@ import Proto.Rellm.PostContext exposing (PostContext(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import UI.CustomNav as CustomNav
@@ -246,8 +247,8 @@ config has finished connecting) still takes effect.
 -}
 homeConfigFor : Shared.Model -> CustomNav.HomePageConfig
 homeConfigFor shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
         |> CustomNav.homeConfig
 
 

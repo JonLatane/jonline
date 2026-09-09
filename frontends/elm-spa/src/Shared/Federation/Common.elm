@@ -27,8 +27,9 @@ nonEmpty s =
 body (`Http.BadBody` on a decode failure), maps `NetworkError_`/`Timeout_`/`BadUrl_` onto their own
 `Http.Error` constructors, and hands a `BadStatus_`'s metadata/body to `onBadStatus` to build
 whatever `Http.Error` is most useful for that specific API's own error shape -- e.g.
-`Shared.AccountsPanel.verifyMastodonCredentialsTask`'s just uses the bare status code, while
-`createBlueskySessionTask`'s tries to pull a human-readable `message` out of the body first. Shared
+`Shared.AccountsPanel.MastodonAccountAndServers.verifyCredentialsTask`'s just uses the bare status
+code, while `Shared.AccountsPanel.BlueskyAccounts.createSessionTask`'s tries to pull a
+human-readable `message` out of the body first. Shared
 by every caller so this `GoodStatus_`/`NetworkError_`/`Timeout_`/`BadUrl_` boilerplate isn't
 duplicated across them.
 -}

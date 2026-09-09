@@ -56,7 +56,9 @@ import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.Visibility exposing (Visibility(..))
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
@@ -70,7 +72,7 @@ type alias Model =
     { open : Bool
     , mode : Mode
 
-    -- `Just (AccountsPanel.accountId account)` once the user's explicitly
+    -- `Just (RellmAccounts.rellmAccountId account)` once the user's explicitly
     -- switched who they're posting as (see `postingAsSelector`) -- `Nothing`
     -- means "whichever eligible account `resolvedAccount` picks by default",
     -- so a lone eligible account never needs an explicit selection at all.
@@ -151,8 +153,8 @@ type CreatedItem
 
 
 type alias Resolved =
-    { server : AccountsPanel.RellmServer
-    , account : AccountsPanel.RellmAccount
+    { server : RellmServer
+    , account : RellmAccount
     }
 
 
@@ -358,10 +360,10 @@ permission check on the backend -- also accepts `ADMIN` as a blanket bypass.
 What `postingAsSelector` lists, and what `resolvedAccount` picks a default
 from.
 -}
-eligibleAccounts : Mode -> AccountsPanel.Model -> List AccountsPanel.RellmAccount
+eligibleAccounts : Mode -> AccountsPanel.Model -> List RellmAccount
 eligibleAccounts mode accountsPanelModel =
     AccountsPanel.enabledAccounts accountsPanelModel
-        |> List.filter (\account -> AccountsPanel.isAdmin account || List.member (requiredPermission mode) account.permissions)
+        |> List.filter (\account -> RellmAccounts.isAdmin account || List.member (requiredPermission mode) account.permissions)
 
 
 {-| Whether the New Post/Event nav toggle should even show -- no point
@@ -383,14 +385,14 @@ to show/post as whenever at least one exists for the current mode, without
 (or `mode`) change itself -- this is the only coordination `ModeChanged`
 needs with the account selector.
 -}
-resolvedAccount : AccountsPanel.Model -> Model -> Maybe AccountsPanel.RellmAccount
+resolvedAccount : AccountsPanel.Model -> Model -> Maybe RellmAccount
 resolvedAccount accountsPanelModel model =
     let
-        eligible : List AccountsPanel.RellmAccount
+        eligible : List RellmAccount
         eligible =
             eligibleAccounts model.mode accountsPanelModel
     in
-    case model.postingAs |> Maybe.andThen (\id -> List.filter (\account -> AccountsPanel.accountId account == id) eligible |> List.head) of
+    case model.postingAs |> Maybe.andThen (\id -> List.filter (\account -> RellmAccounts.rellmAccountId account == id) eligible |> List.head) of
         Just account ->
             Just account
 
@@ -456,7 +458,7 @@ resolveAccount accountsPanelModel model =
                     Err "You're not signed in anywhere with permission to create events."
 
         Just account ->
-            case AccountsPanel.serverForHost accountsPanelModel.servers account.server of
+            case RellmServers.rellmServerForHost accountsPanelModel.servers account.server of
                 Nothing ->
                     Err "That server isn't connected."
 
@@ -479,7 +481,7 @@ seeds its `<select>` with before the user's made an explicit choice of their
 own (`model.visibility == Nothing`), and what `resolvedVisibility` falls back
 to.
 -}
-defaultVisibilityFor : Mode -> AccountsPanel.RellmAccount -> Visibility
+defaultVisibilityFor : Mode -> RellmAccount -> Visibility
 defaultVisibilityFor mode account =
     let
         ( globalPermission, localPermission ) =
@@ -490,7 +492,7 @@ defaultVisibilityFor mode account =
                 EventMode ->
                     ( PUBLISHEVENTSGLOBALLY, PUBLISHEVENTSLOCALLY )
     in
-    if AccountsPanel.isAdmin account || List.member globalPermission account.permissions then
+    if RellmAccounts.isAdmin account || List.member globalPermission account.permissions then
         GLOBALPUBLIC
 
     else if List.member localPermission account.permissions then
@@ -520,7 +522,7 @@ visibilityContext mode =
 including `defaultVisibilityFor` itself so there's at least one option even
 for an account with neither publish permission.
 -}
-allowedVisibilitiesFor : Mode -> AccountsPanel.RellmAccount -> List Visibility
+allowedVisibilitiesFor : Mode -> RellmAccount -> List Visibility
 allowedVisibilitiesFor mode account =
     Posts.allowedVisibilities account.permissions (visibilityContext mode) (defaultVisibilityFor mode account)
 
@@ -531,7 +533,7 @@ allowedVisibilitiesFor mode account =
 `account` can't publish as widely for), mirroring `resolvedAccount`'s own
 fallback. What `visibilityField` shows as selected and what `saveTask` submits.
 -}
-resolvedVisibility : Mode -> AccountsPanel.RellmAccount -> Model -> Visibility
+resolvedVisibility : Mode -> RellmAccount -> Model -> Visibility
 resolvedVisibility mode account model =
     case model.visibility of
         Just visibility ->
@@ -589,7 +591,7 @@ saveTask accountsPanelModel resolved model =
             case model.mode of
                 PostMode ->
                     Grpc.new Rellm.createPost { post | context = POST }
-                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
                         |> Task.map (CreatedPost resolved.server.frontendHost)
@@ -606,7 +608,7 @@ saveTask accountsPanelModel resolved model =
                                   }
                                 ]
                         }
-                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
                         |> Task.map (CreatedEvent resolved.server.frontendHost)
@@ -833,9 +835,9 @@ mediaField accountsPanelModel model host =
             text ""
 
           else
-            case AccountsPanel.serverForHost accountsPanelModel.servers host of
+            case RellmServers.rellmServerForHost accountsPanelModel.servers host of
                 Just server ->
-                    MultiMediaRenderer.previewExtraSmall server (AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host) (\_ -> EditMediaClicked) model.media
+                    MultiMediaRenderer.previewExtraSmall server (RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host) (\_ -> EditMediaClicked) model.media
 
                 Nothing ->
                     text ""
@@ -889,18 +891,18 @@ postingAsSelector accountsPanelModel model =
             div [ class "create-new-panel-account" ]
                 [ text "Posting as "
                 , accountAvatar accountsPanelModel.servers onlyAccount
-                , span [ class "create-new-panel-account-name" ] [ text (AccountsPanel.displayName onlyAccount) ]
+                , span [ class "create-new-panel-account-name" ] [ text (RellmAccounts.rellmAccountDisplayName onlyAccount) ]
                 ]
 
         eligible ->
             let
-                selectedAccount : Maybe AccountsPanel.RellmAccount
+                selectedAccount : Maybe RellmAccount
                 selectedAccount =
                     resolvedAccount accountsPanelModel model
 
                 selectedId : String
                 selectedId =
-                    selectedAccount |> Maybe.map AccountsPanel.accountId |> Maybe.withDefault ""
+                    selectedAccount |> Maybe.map RellmAccounts.rellmAccountId |> Maybe.withDefault ""
             in
             div [ class "create-new-panel-account" ]
                 [ case selectedAccount of
@@ -913,10 +915,10 @@ postingAsSelector accountsPanelModel model =
                     (List.map
                         (\account ->
                             option
-                                [ value (AccountsPanel.accountId account)
-                                , selected (AccountsPanel.accountId account == selectedId)
+                                [ value (RellmAccounts.rellmAccountId account)
+                                , selected (RellmAccounts.rellmAccountId account == selectedId)
                                 ]
-                                [ text (AccountsPanel.displayName account ++ " on " ++ account.server) ]
+                                [ text (RellmAccounts.rellmAccountDisplayName account ++ " on " ++ account.server) ]
                         )
                         eligible
                     )
@@ -963,11 +965,11 @@ visibilityField accountsPanelModel model =
 `UI` itself imports this module (to embed `CreateNewPanel.view`), so importing
 it back here to reuse that helper would be a circular import.
 -}
-accountAvatar : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
+accountAvatar : List RellmServer -> RellmAccount -> Html msg
 accountAvatar servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
+    case RellmAccounts.rellmAccountAvatarUrl servers account of
         Just url ->
             img [ class "create-new-panel-account-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "create-new-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
+            div [ classes [ "create-new-panel-account-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter account.username) ]

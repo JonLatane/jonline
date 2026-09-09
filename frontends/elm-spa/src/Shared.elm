@@ -38,6 +38,8 @@ import Proto.Google.Protobuf
 import Proto.Rellm exposing (Event, EventInstance, SyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
@@ -122,7 +124,7 @@ type Msg
     | MediaGeneratorPanelMsg MediaGeneratorPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
-    | MyMediaPanelOpenForAccount AccountsPanel.RellmAccount
+    | MyMediaPanelOpenForAccount RellmAccount
     | CreateNewPanelMsg CreateNewPanel.Msg
     | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
@@ -252,8 +254,8 @@ carry.
 
 -}
 type DeleteConfirmation
-    = ConfirmServerDelete AccountsPanel.RellmServer
-    | ConfirmAccountDelete AccountsPanel.RellmAccount
+    = ConfirmServerDelete RellmServer
+    | ConfirmAccountDelete RellmAccount
     | ConfirmMediaDelete Media
     | ConfirmMarkdownEditingDataLost
       -- The trailing `String` on each of these four is the acting
@@ -1243,7 +1245,7 @@ sharedUpdate req msg model =
                         ( model, Cmd.none )
 
                     else
-                        sharedUpdate req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
+                        sharedUpdate req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (RellmAccounts.rellmAccountId account))) model
 
                 ( openedModel, openCmd ) =
                     sharedUpdate req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
@@ -1424,7 +1426,7 @@ sharedUpdate req msg model =
                 Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accounts
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (RellmAccounts.rellmAccountId account)) model.accounts
                     in
                     ( { model | accounts = subModel, panels = { panels | confirmingDeleteFor = Nothing } }
                     , Cmd.map AccountsPanelMsg subCmd
@@ -1497,7 +1499,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , SyncSources.deleteSyncSource
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         source
                         deleteSyncedEvents
                         |> Task.attempt GotSyncSourceDeleteResult
@@ -1507,7 +1509,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Posts.deletePost
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         post.id
                         |> Task.attempt GotPostDeleteResult
                     )
@@ -1516,7 +1518,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteEvent
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         (event.post |> Maybe.map .id |> Maybe.withDefault "")
                         |> Task.attempt GotEventDeleteResult
                     )
@@ -1525,7 +1527,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteRemovedEventInstances
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         { event
                             | instances =
                                 event.instances
@@ -1538,7 +1540,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Users.deleteUser
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         user
                         |> Task.attempt (GotUserDeleteResult user host)
                     )
@@ -1547,7 +1549,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteEventInstanceSyncDestination
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         (instance.post |> Maybe.map .id |> Maybe.withDefault "")
                         eventSyncDestinationId
                         |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
@@ -1557,7 +1559,7 @@ sharedUpdate req msg model =
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Posts.deletePostSyncDestination
                         model.accounts
-                        ( AccountsPanel.enabledAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
+                        ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         post.id
                         syncDestinationId
                         |> Task.attempt (GotPostSyncDestinationDeleteResult host)
@@ -1682,7 +1684,7 @@ sharedUpdate req msg model =
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case refreshedAccounts.accounts |> List.filter (\account -> account.server == host && account.userId == deletedUser.id) |> List.head of
                         Just account ->
-                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) refreshedAccounts
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (RellmAccounts.rellmAccountId account)) refreshedAccounts
 
                         Nothing ->
                             ( refreshedAccounts, Cmd.none )
@@ -1956,7 +1958,7 @@ getBrowserZone =
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`
--- either their signed-in account (see `AccountsPanel.enabledAccountForServer`,
+-- either their signed-in account (see `RellmAccounts.enabledRellmAccountForServer`,
 e.g. logging into/switching accounts on a server, signing out) or whether
 their `Server` itself is enabled (`ToggleServerEnabled` -- which also disables
 its accounts, but not for a server with none signed into it, so that flip
@@ -1994,9 +1996,9 @@ starredPostsRefreshHosts before after =
 
         identity : AccountsPanel.Model -> String -> ( Maybe String, Maybe Bool )
         identity model_ host =
-            ( AccountsPanel.enabledAccountForServer model_.accounts host
-                |> Maybe.map AccountsPanel.accountId
-            , AccountsPanel.serverForHost model_.servers host
+            ( RellmAccounts.enabledRellmAccountForServer model_.accounts host
+                |> Maybe.map RellmAccounts.rellmAccountId
+            , RellmServers.rellmServerForHost model_.servers host
                 |> Maybe.map .enabled
             )
     in

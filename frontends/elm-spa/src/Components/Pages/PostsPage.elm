@@ -44,6 +44,9 @@ import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.BlueskyAccounts exposing (BlueskyAccount)
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
@@ -207,7 +210,7 @@ type alias ServerFeed =
 
 
 {-| One source `postsByServer` can hold a feed for -- a real Rellm server (federating in the usual
-way, `AccountsPanel.RellmServer`), or a Mastodon instance/Bluesky account translated client-side (see
+way, `RellmServer`), or a Mastodon instance/Bluesky account translated client-side (see
 `Shared.Federation.Mastodon`/`Bluesky`). Unifies what used to be two entirely separate
 fetch-and-store paths (`postsByServer`/`GotServerPosts`/`fetchNewServers`/`refetchServers` vs.
 `federatedPosts`/`GotFederatedPosts`/`fetchFederatedPosts`) into one, since both are ultimately
@@ -216,9 +219,9 @@ they just reach different APIs, with different capabilities, to do it. See `feed
 `feedSourceAccountId`/`fetchFeedSource` for where the three cases actually diverge.
 -}
 type FeedSource
-    = RellmServer AccountsPanel.RellmServer
+    = RellmServer RellmServer
     | MastodonInstance String
-    | BlueskyFeed AccountsPanel.BlueskyAccount
+    | BlueskyFeed BlueskyAccount
 
 
 {-| `postsByServer`'s key for a given `FeedSource` -- a real server's own `frontendHost`, or a
@@ -252,8 +255,8 @@ feedSourceAccountId : Shared.Model -> FeedSource -> Maybe String
 feedSourceAccountId shared source =
     case source of
         RellmServer server ->
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map RellmAccounts.rellmAccountId
 
         MastodonInstance _ ->
             Nothing
@@ -332,7 +335,7 @@ heading (see `view`) -- `Pages.Home_` passes `Nothing`,
 already-resolved profile `User` paired with the host it was resolved from
 (`Components.Users.Resolver`'s own `targetHost`, resolved before ever calling
 this, so this module never needs to fetch the `User` itself -- it only needs
-the host alongside it to look up that server's `AccountsPanel.RellmServer`/signed-in
+the host alongside it to look up that server's `RellmServer`/signed-in
 `Account` for `authorHeadingView`'s avatar).
 
 `navKey`/`path`, from the calling page's own `Request`, are what let
@@ -553,7 +556,7 @@ updateInner shared msg model =
                         -- refetch of just `host`'s server), since a successful un-sync changes
                         -- `post.syncDestinations` behind this already-fetched copy's back the same way.
                         Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchFeeds shared model [ RellmServer server ]
 
@@ -701,7 +704,7 @@ updateInner shared msg model =
 
                 maybeAccountServer : ( Maybe String, String )
                 maybeAccountServer =
-                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+                    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
             in
             ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
             , Posts.syncPost shared.accounts maybeAccountServer postId syncDestinationId
@@ -723,7 +726,7 @@ updateInner shared msg model =
                 Ok ( maybeAccountsPanelMsg, _ ) ->
                     let
                         ( refetchedModel, refetchEffect ) =
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchFeeds shared clearedModel [ RellmServer server ]
 
@@ -753,7 +756,7 @@ pushStatusKey postId syncDestinationId =
 {-| The servers this page should ever fetch from: every enabled server for an
 unfiltered feed (`model.author == Nothing`, e.g. `Pages.Home_`), or, once
 `author` restricts the feed to one user, _only_ that user's own resolved
-host -- looked up via `AccountsPanel.serverForHost` (not `enabledServers`),
+host -- looked up via `RellmServers.rellmServerForHost` (not `enabledServers`),
 since a user profile can be resolved, and its posts fetched anonymously,
 from a known server the viewer hasn't toggled "enabled" (or isn't signed
 into at all) -- see `Components.Users.Resolver.fetchTask`, which resolves
@@ -762,11 +765,11 @@ and (especially) `TEXT_SEARCH` would fan out to every other enabled server
 too, e.g. showing `jon@oakcitysocial.com`'s posts on `jon@jonline.io`'s
 own posts page.
 -}
-relevantServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
+relevantServers : Shared.Model -> Model -> List RellmServer
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
@@ -788,8 +791,8 @@ customNavPostIds shared frontendHost =
     let
         maybeCustomTabs : Maybe Proto.Rellm.CustomNavigationTabSet
         maybeCustomTabs =
-            AccountsPanel.serverForHost shared.accounts.servers frontendHost
-                |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+            RellmServers.rellmServerForHost shared.accounts.servers frontendHost
+                |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
 
         tabPostIds : List String
         tabPostIds =
@@ -854,7 +857,7 @@ relevantFeedSources shared model =
 {-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
 (`mastodonAccounts`, which have no enable/disable flag of their own -- see that field's own doc) and
 instances just being browsed anonymously and currently enabled (`browsedMastodonInstances`, see
-`AccountsPanel.BrowsedMastodonInstance`'s own doc on what disabling one does here) -- deduplicated,
+`BrowsedMastodonInstance`'s own doc on what disabling one does here) -- deduplicated,
 since `Mastodon.fetchPosts` hits the exact same unauthenticated public-timeline endpoint either way
 (see that function's own doc: it never actually uses a `MastodonAccount`'s `accessToken`) -- there's
 nothing a connected account's fetch gets that a browsed one doesn't, so fetching the same host twice
@@ -894,7 +897,7 @@ fetchFeedSource shared model source =
             in
             Posts.fetchPosts
                 shared.accounts
-                ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
+                ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
                 , server.frontendHost
                 )
                 (model.author |> Maybe.map (Tuple.second >> .id))
@@ -1530,7 +1533,7 @@ onEscape msg =
 filter by (even before that `User` -- already resolved by the caller, see
 `init` -- has actually rendered), upgraded to "Posts | <name>" via
 `Components.Users.ProfileHeading.nameHeader` (with that author's avatar, via
-its resolved-host `AccountsPanel.RellmServer`/signed-in `Account`, if that host is
+its resolved-host `RellmServer`/signed-in `Account`, if that host is
 still a known server -- falling back to `ProfileHeading.usernameHeading`,
 avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
 (`author == Nothing`), which supplies its own "Recent Posts"/"Recent Replies"
@@ -1560,9 +1563,9 @@ authorHeadingView shared maybeAuthor context =
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text headingText ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
+                    [ case RellmServers.rellmServerForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) author
+                            ProfileHeading.nameHeader server (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host) author
 
                         Nothing ->
                             ProfileHeading.usernameHeading author
@@ -1660,13 +1663,13 @@ postCardView shared showSyncDestinations availableSyncDestinations pushStatuses 
             StarredPanel.toggleStarMsg shared.accounts host displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts host
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host
 
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =

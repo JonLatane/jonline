@@ -22,6 +22,8 @@ import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (User)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.MarkdownPanel as MarkdownPanel
 
 
@@ -44,9 +46,9 @@ type Msg
     | ShortNameChanged String
     | ShortNameCancelClicked
     | ShortNameSaveClicked
-    | EditDescriptionClicked AccountsPanel.RellmServer
-    | EditPrivacyPolicyClicked AccountsPanel.RellmServer
-    | EditMediaPolicyClicked AccountsPanel.RellmServer
+    | EditDescriptionClicked RellmServer
+    | EditPrivacyPolicyClicked RellmServer
+    | EditMediaPolicyClicked RellmServer
 
 
 {-| Live only while the server's name (or, via `Model.shortNameStatus`, its short name) is being
@@ -108,7 +110,7 @@ update shared targetHost msg model =
             case ( model.renameStatus, Common.adminAccountFor shared targetHost ) of
                 ( Renaming pendingName _, Just account ) ->
                     ( { model | renameStatus = Renaming pendingName AccountsPanel.Submitting }
-                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.RenameServerClicked (AccountsPanel.accountId account) pendingName))
+                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.RenameServerClicked (RellmAccounts.rellmAccountId account) pendingName))
                     )
 
                 _ ->
@@ -137,7 +139,7 @@ update shared targetHost msg model =
             case ( model.shortNameStatus, Common.adminAccountFor shared targetHost ) of
                 ( Renaming pendingShortName _, Just account ) ->
                     ( { model | shortNameStatus = Renaming pendingShortName AccountsPanel.Submitting }
-                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ChangeServerShortNameClicked (AccountsPanel.accountId account) pendingShortName))
+                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ChangeServerShortNameClicked (RellmAccounts.rellmAccountId account) pendingShortName))
                     )
 
                 _ ->
@@ -198,12 +200,12 @@ applySharedMsg subMsg model =
 -- VIEW
 
 
-view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> AdminsStatus -> VersionStatus -> Model -> Html Msg
+view : Shared.Model -> RellmServer -> Maybe RellmAccount -> AdminsStatus -> VersionStatus -> Model -> Html Msg
 view shared server maybeAdminAccount adminsStatus versionStatus model =
     let
         info : Proto.Rellm.ServerInfo
         info =
-            AccountsPanel.serverInfoOf server
+            RellmServers.rellmServerInfoOf server
 
         name : String
         name =
@@ -226,7 +228,7 @@ when the field's unset, same as before this page supported editing it; an admin 
 button either way -- even when unset, so they can set it for the first time, not just change
 existing text -- mirroring `nameView`'s Rename button.
 -}
-policySectionView : String -> Maybe String -> Msg -> Maybe AccountsPanel.RellmAccount -> Maybe String -> Html Msg
+policySectionView : String -> Maybe String -> Msg -> Maybe RellmAccount -> Maybe String -> Html Msg
 policySectionView sectionClass heading editClicked maybeAdminAccount content =
     case ( content, maybeAdminAccount ) of
         ( Nothing, Nothing ) ->
@@ -255,7 +257,7 @@ policySectionView sectionClass heading editClicked maybeAdminAccount content =
                 ]
 
 
-nameView : String -> RenameStatus -> Maybe AccountsPanel.RellmAccount -> List (Html Msg)
+nameView : String -> RenameStatus -> Maybe RellmAccount -> List (Html Msg)
 nameView name renameStatus maybeAdminAccount =
     case ( renameStatus, maybeAdminAccount ) of
         ( Renaming pendingName status, Just _ ) ->
@@ -289,7 +291,7 @@ et al, not `Common.settingsRow` -- that helper's shared Save/Cancel doesn't fit 
 self-contained field like this one). Renders nothing for a non-admin viewer when unset, same as
 `policySectionView`.
 -}
-shortNameView : Maybe String -> RenameStatus -> Maybe AccountsPanel.RellmAccount -> Html Msg
+shortNameView : Maybe String -> RenameStatus -> Maybe RellmAccount -> Html Msg
 shortNameView maybeShortName shortNameStatus maybeAdminAccount =
     case ( shortNameStatus, maybeAdminAccount ) of
         ( Renaming pendingShortName status, Just _ ) ->
@@ -352,7 +354,7 @@ versionView status =
             text ""
 
 
-adminsView : Shared.Model -> AccountsPanel.RellmServer -> AdminsStatus -> Html Msg
+adminsView : Shared.Model -> RellmServer -> AdminsStatus -> Html Msg
 adminsView shared server status =
     div [ class "server-details-admins" ]
         [ h3 [] [ text "Admins" ]
@@ -379,11 +381,11 @@ adminsView shared server status =
 follow-status/button slot (`text ""`) since this page is otherwise entirely read-only (see the
 module doc) and doesn't track any per-card `FollowStatusAndButton.Model` state to back one.
 -}
-adminCardView : Shared.Model -> AccountsPanel.RellmServer -> User -> Html Msg
+adminCardView : Shared.Model -> RellmServer -> User -> Html Msg
 adminCardView shared server user =
     Users.userCard shared.basePath
         shared.accounts.mainFrontendHost
         server
-        (AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost)
+        (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost)
         (text "")
         user

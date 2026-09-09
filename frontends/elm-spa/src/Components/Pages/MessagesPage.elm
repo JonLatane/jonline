@@ -49,6 +49,8 @@ import Proto.Rellm exposing (Author, Message, defaultMessageRead)
 import Proto.Rellm.MessageListingType exposing (MessageListingType(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Time as SharedTime
 import Task
 import Time
@@ -1356,7 +1358,7 @@ fetchExpand accountsPanelModel model conversation =
 
         cmd : Cmd Msg
         cmd =
-            case AccountsPanel.knownConnectedServer accountsPanelModel.servers host of
+            case RellmServers.knownConnectedRellmServer accountsPanelModel.servers host of
                 Nothing ->
                     Cmd.none
 
@@ -1694,7 +1696,7 @@ totalUnreadCount model =
         |> List.length
 
 
-eligibleEntries : AccountsPanel.Model -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
+eligibleEntries : AccountsPanel.Model -> List { server : RellmServer, account : RellmAccount, listingType : MessageListingType }
 eligibleEntries =
     Messages.eligibleServers
 
@@ -1702,15 +1704,15 @@ eligibleEntries =
 refetchServers :
     AccountsPanel.Model
     -> Model
-    -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
+    -> List { server : RellmServer, account : RellmAccount, listingType : MessageListingType }
     -> ( Model, Cmd Msg )
 refetchServers accountsPanelModel model entriesToFetch =
     let
-        entries : List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
+        entries : List { server : RellmServer, account : RellmAccount, listingType : MessageListingType }
         entries =
             eligibleEntries accountsPanelModel
 
-        fetchCmd : { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType } -> Cmd Msg
+        fetchCmd : { server : RellmServer, account : RellmAccount, listingType : MessageListingType } -> Cmd Msg
         fetchCmd entry =
             Messages.fetchMessageListing accountsPanelModel ( Just entry.account.userId, entry.server.frontendHost ) entry.listingType model.searchText
                 |> Task.attempt (GotServerMessages entry.server.frontendHost)
@@ -1719,7 +1721,7 @@ refetchServers accountsPanelModel model entriesToFetch =
         prunedMessagesByServer =
             Dict.filter (\host _ -> List.member host (List.map (.server >> .frontendHost) entries)) model.messagesByServer
 
-        markEntry : { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType } -> Dict String ServerFeed -> Dict String ServerFeed
+        markEntry : { server : RellmServer, account : RellmAccount, listingType : MessageListingType } -> Dict String ServerFeed -> Dict String ServerFeed
         markEntry entry dict =
             let
                 statusIfSame : Maybe ServerMessages
@@ -1747,7 +1749,7 @@ refetchServers accountsPanelModel model entriesToFetch =
 fetchNewServers : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 fetchNewServers accountsPanelModel model =
     let
-        entriesToFetch : List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
+        entriesToFetch : List { server : RellmServer, account : RellmAccount, listingType : MessageListingType }
         entriesToFetch =
             eligibleEntries accountsPanelModel
                 |> List.filter
@@ -2569,13 +2571,13 @@ participantChipView accountsPanelModel host author =
         maybeUrl : Maybe String
         maybeUrl =
             Authors.avatarUrl
-                (AccountsPanel.serverForHost accountsPanelModel.servers host)
-                (AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host)
+                (RellmServers.rellmServerForHost accountsPanelModel.servers host)
+                (RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host)
                 (Just author)
 
         isCurrentUser : Bool
         isCurrentUser =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
                 |> Maybe.map (\account -> account.userId == author.userId)
                 |> Maybe.withDefault False
     in
@@ -2636,7 +2638,7 @@ perfectly valid "reply to yourself" there).
 -}
 visibleParticipants : AccountsPanel.Model -> String -> List Author -> List Author
 visibleParticipants accountsPanelModel host members =
-    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+    case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host of
         Nothing ->
             members
 
@@ -2757,7 +2759,7 @@ avatarView baseClass name maybeUrl =
             Html.img [ class baseClass, Html.Attributes.src url, Html.Attributes.alt name, Html.Attributes.attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ baseClass, "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+            div [ classes [ baseClass, "placeholder" ] ] [ text (RellmServers.initialLetter name) ]
 
 
 {-| A message's own `subject`, if it has a non-blank one -- shown on the
@@ -3096,7 +3098,7 @@ replyButtonView accountsPanelModel selected eg =
         host =
             Messages.conversationHost selected
     in
-    case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+    case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host of
         Nothing ->
             text ""
 
@@ -3237,8 +3239,8 @@ messageRowView time accountsPanelModel host interaction highlightMessageId isDet
         senderAvatarUrl : Maybe String
         senderAvatarUrl =
             Authors.avatarUrl
-                (AccountsPanel.serverForHost accountsPanelModel.servers host)
-                (AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host)
+                (RellmServers.rellmServerForHost accountsPanelModel.servers host)
+                (RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host)
                 message.sender
 
         content : List (Html Msg)

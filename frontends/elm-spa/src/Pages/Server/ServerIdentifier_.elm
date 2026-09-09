@@ -116,7 +116,7 @@ titleFor shared model =
 
 {-| Parses a `/server/:serverIdentifier` route segment like "<http:localhost">
 or "<https:jonline.io"> -- `Nothing` if it isn't exactly `[http|https]:host`
-(no slashes, no port -- `AccountsPanel.connectToServer` discovers the actual
+(no slashes, no port -- `RellmServers.connectToRellmServer` discovers the actual
 port/backend host itself).
 -}
 parseServerIdentifier : String -> Maybe { isSecure : Bool, host : String }

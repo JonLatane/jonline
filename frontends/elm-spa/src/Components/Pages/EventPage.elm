@@ -33,7 +33,7 @@ exactly what makes the date-picker strip possible without a second request.
 
 `pageIsSecure`/`navKey` are captured once, at `init` (same reasoning as
 `Components.Pages.PostPage.Model.pageIsSecure`/`navKey`) -- needed later by
-`ConnectClicked` (`AccountsPanel.connectToServer`) and `update`'s own
+`ConnectClicked` (`RellmServers.connectToRellmServer`) and `update`'s own
 `Shared.GotEventDeleteResult`/`Shared.GotEventInstanceDeleteResult` handling
 (navigating away once the viewed Event/instance no longer exists), neither of
 which otherwise has access to the calling page's own `Request`.
@@ -68,6 +68,8 @@ import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.MarkdownPanel as MarkdownPanel
@@ -90,7 +92,7 @@ type alias Model =
     , fetchStarted : Bool
 
     -- Mirrors `Components.Pages.PostPage.Model.fetchedAccountId` exactly --
-    -- the `AccountsPanel.accountId` of whichever account was signed in on
+    -- the `RellmAccounts.rellmAccountId` of whichever account was signed in on
     -- `targetHost` (the Event's own server) when the currently-held
     -- `eventStatus` was last fetched, if any.
     , fetchedAccountId : Maybe String
@@ -255,7 +257,7 @@ type Msg
       -- below.
     | DeleteInstanceClicked EventInstance Event
     | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.RellmServer)
+    | GotConnectResult (Result Grpc.Error RellmServer)
     | EnableClicked
       -- Switches which of the Event's `EventInstance`s the date-picker strip
       -- shows (see `InstanceHistoryDisplay`) -- fired by `historyButtons`.
@@ -1042,7 +1044,7 @@ update shared msg model =
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
-            , AccountsPanel.connectToServer model.pageIsSecure model.targetHost
+            , RellmServers.connectToRellmServer model.pageIsSecure model.targetHost
                 |> Task.attempt GotConnectResult
                 |> Effect.fromCmd
             )
@@ -1298,7 +1300,7 @@ update shared msg model =
 
 {-| Mirrors `Components.Pages.PostPage.fetchIfReady` exactly -- kicks off the actual
 `GetEvents` fetch the first time `targetHost` is a known, connected server
-(see `AccountsPanel.knownConnectedServer` -- a known-but-still-connecting
+(see `RellmServers.knownConnectedRellmServer` -- a known-but-still-connecting
 `targetHost`, e.g. right after startup, doesn't count).
 -}
 fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
@@ -1307,7 +1309,7 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
+        case RellmServers.knownConnectedRellmServer shared.accounts.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.eventInstanceId
@@ -1337,13 +1339,13 @@ refetch shared model =
 
 maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
 maybeAccountServerFor shared model =
-    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
     , model.targetHost
     )
 
 
 {-| Mirrors `Components.Pages.PostPage.currentAccountId` exactly -- the
-`AccountsPanel.accountId` of whichever account is currently signed in on
+`RellmAccounts.rellmAccountId` of whichever account is currently signed in on
 `model.targetHost` (the Event's own server), if any -- compared against
 `model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
 `AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
@@ -1351,8 +1353,8 @@ signed in here, and `refetch` accordingly.
 -}
 currentAccountId : Shared.Model -> Model -> Maybe String
 currentAccountId shared model =
-    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
-        |> Maybe.map AccountsPanel.accountId
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.map RellmAccounts.rellmAccountId
 
 
 {-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
@@ -1360,11 +1362,11 @@ both exist -- what `MediaEditClicked`'s own save (via `Shared.MyMediaPanel`'s
 `SaveMediaClicked`) needs to actually submit its `Posts.updatePost` task.
 Mirrors `Components.Pages.PostPage.serverAndAccount`.
 -}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount )
+serverAndAccount : Shared.Model -> Model -> Maybe ( RellmServer, RellmAccount )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
+        (RellmServers.rellmServerForHost shared.accounts.servers model.targetHost)
+        (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost)
 
 
 {-| Applies a just-saved `updatedPost` to the currently-loaded `Event`'s own
@@ -1803,13 +1805,13 @@ titleFor model =
 eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
 eventDetailView shared model event instance =
     let
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost shared.accounts.servers model.targetHost
+            RellmServers.rellmServerForHost shared.accounts.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
     in
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
@@ -1977,7 +1979,7 @@ out among the three -- see its own doc for why it needs no analogous
 editable fields, so it renders its title as plain text directly instead of
 going through this.
 -}
-titleView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+titleView : Bool -> Maybe PostFieldEdit -> Maybe RellmAccount -> Post -> Html Msg
 titleView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
@@ -1996,7 +1998,7 @@ title itself isn't the field currently being edited (see `titleView`) --
 `editable` (see `eventDetailView`) hides the button entirely for an
 ICS-synced `Event`.
 -}
-titleDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+titleDisplayView : Bool -> Maybe RellmAccount -> Post -> Html Msg
 titleDisplayView editable maybeAccount post =
     span [ class "event-post-title-display" ]
         [ text (Posts.postTitleText post)
@@ -2013,7 +2015,7 @@ mirrors `titleView` exactly, just for the link:
 its own "Edit Link" button sits right after the link (or, if `post` has none
 set, right where the link would otherwise sit -- see `linkDisplayView`).
 -}
-linkView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+linkView : Bool -> Maybe PostFieldEdit -> Maybe RellmAccount -> Post -> Html Msg
 linkView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
@@ -2033,7 +2035,7 @@ whenever the link itself isn't the field currently being edited (see
 a link set, so there's still something to click to add one. `editable` (see
 `eventDetailView`) hides the button entirely for an ICS-synced `Event`.
 -}
-linkDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+linkDisplayView : Bool -> Maybe RellmAccount -> Post -> Html Msg
 linkDisplayView editable maybeAccount post =
     span [ class "event-post-link-display" ]
         [ case Posts.postLinkText post of
@@ -2065,7 +2067,7 @@ this is always just the display half. The button renders regardless of
 whether `post` actually has content set, so there's still something to click
 to add some.
 -}
-contentDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+contentDisplayView : Bool -> Maybe RellmAccount -> Post -> Html Msg
 contentDisplayView editable maybeAccount post =
     div [ class "event-post-content-display" ]
         [ case post.content of
@@ -2154,7 +2156,7 @@ postFieldEditActionsView edit post =
 that field -- thin wrapper around `editButtonView` for `titleDisplayView`/
 `linkDisplayView`'s own `PostFieldEditClicked` buttons.
 -}
-postFieldEditButtonView : PostField -> String -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+postFieldEditButtonView : PostField -> String -> Maybe RellmAccount -> Post -> Html Msg
 postFieldEditButtonView field label maybeAccount post =
     editButtonView label (PostFieldEditClicked field post) maybeAccount post
 
@@ -2171,7 +2173,7 @@ edit). Reuses `Components.Posts`' `.post-edit-button` class (posts.css)
 rather than an `event-*` one of its own, so it looks identical to
 `postDetail`'s own "Edit Content" button.
 -}
-editButtonView : String -> Msg -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
+editButtonView : String -> Msg -> Maybe RellmAccount -> Post -> Html Msg
 editButtonView label onClickMsg maybeAccount post =
     case maybeAccount of
         Just account ->
@@ -2199,7 +2201,7 @@ next to a field -- reuses that row's `.post-edit-button` class rather than
 styling via the `.post-actions` parent postDetail wraps it in, and would look
 inconsistent here).
 -}
-deleteButtonView : Maybe AccountsPanel.RellmAccount -> Event -> Post -> Html Msg
+deleteButtonView : Maybe RellmAccount -> Event -> Post -> Html Msg
 deleteButtonView maybeAccount event post =
     case maybeAccount of
         Just account ->
@@ -2223,7 +2225,7 @@ Opens the same shared "are you sure?" dialog as `deleteButtonView`, via
 `DeleteInstanceClicked`/`Shared.ConfirmEventInstanceDelete`, for just the
 currently-viewed `instance`.
 -}
-deleteInstanceButtonView : Maybe AccountsPanel.RellmAccount -> Event -> Post -> EventInstance -> Html Msg
+deleteInstanceButtonView : Maybe RellmAccount -> Event -> Post -> EventInstance -> Html Msg
 deleteInstanceButtonView maybeAccount event post instance =
     case maybeAccount of
         Just account ->
@@ -2249,7 +2251,7 @@ narrowed to whatever `maybeAccount` can actually publish at
 (`Posts.allowedVisibilities`), mirroring
 `Components.Pages.PostPage.visibilityView` exactly.
 -}
-visibilityView : Maybe AccountsPanel.RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView : Maybe RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
 visibilityView maybeAccount maybeEdit post =
     case ( maybeEdit, maybeAccount ) of
         ( Just edit, Just account ) ->
@@ -2318,7 +2320,7 @@ request, to read distinctly from `postFieldEditButtonView`'s "Edit X"). Reuses
 (posts.css) rather than `event-*` ones of its own, so it looks identical to
 `postDetail`'s own moderation controls.
 -}
-moderationView : Maybe AccountsPanel.RellmAccount -> Maybe ModerationEdit -> Event -> Post -> Html Msg
+moderationView : Maybe RellmAccount -> Maybe ModerationEdit -> Event -> Post -> Html Msg
 moderationView maybeAccount maybeEdit event post =
     case maybeAccount of
         Nothing ->
@@ -2413,7 +2415,7 @@ not the instance's own possibly-different-owner override `Post`) *and*
 `instanceEditable`; the inline `instanceTimeEditFormView` once
 editing.
 -}
-instanceTimeView : Shared.Model -> Maybe AccountsPanel.RellmAccount -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
+instanceTimeView : Shared.Model -> Maybe RellmAccount -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
 instanceTimeView shared maybeAccount maybeEdit eventPost instance =
     case maybeEdit of
         Just edit ->
@@ -2496,7 +2498,7 @@ Location" (no separate location line to show) rather than a plain
 always has *something* to show), renders nothing at all when there's neither
 a location to show nor (a synced instance) a button to add one.
 -}
-instanceLocationView : Maybe AccountsPanel.RellmAccount -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
+instanceLocationView : Maybe RellmAccount -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
 instanceLocationView maybeAccount maybeEdit eventPost instance =
     case maybeEdit of
         Just edit ->
@@ -2579,7 +2581,7 @@ always matches "who can edit this date"'s own time/location buttons right
 above it) *and* `instanceEditable` (see its own doc for why "Add More" is
 gated the same way Edit Time/Edit Location are).
 -}
-addMoreView : Maybe AccountsPanel.RellmAccount -> Model -> Post -> EventInstance -> Html Msg
+addMoreView : Maybe RellmAccount -> Model -> Post -> EventInstance -> Html Msg
 addMoreView maybeAccount model eventPost instance =
     case maybeAccount of
         Nothing ->

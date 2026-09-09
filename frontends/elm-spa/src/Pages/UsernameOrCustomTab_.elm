@@ -46,6 +46,7 @@ import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import UI.CustomNav as CustomNav
 import View exposing (View)
@@ -133,7 +134,7 @@ init shared req =
 
 {-| `mainFrontendHost`'s own `CustomNavigationTabSet.tabs` entry (if any, and if that server's
 `ServerConfiguration` is even known yet) whose `path` matches `path` exactly -- deliberately built
-off `CustomNav.effectiveTabs (Just customTabs)`, not `AccountsPanel.configurationOf server |> .customTabs
+off `CustomNav.effectiveTabs (Just customTabs)`, not `RellmServers.configurationOf server |> .customTabs
 |> CustomNav.effectiveTabs` directly, so an *unset* `customTabs` (the common case) never falls back to
 `CustomNav.defaultTabs`' own paths here -- those are harmless if matched (see the module doc on why
 they're unreachable anyway), but "no config" should mean "no custom routing," not "pretend the
@@ -141,8 +142,8 @@ defaults were explicitly configured."
 -}
 customTabFor : Shared.Model -> String -> Maybe CustomNav.CustomTab
 customTabFor shared path =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
         |> Maybe.andThen (\customTabs -> CustomNav.effectiveTabs (Just customTabs) |> List.filter (\tab -> tab.path == path) |> List.head)
 
 

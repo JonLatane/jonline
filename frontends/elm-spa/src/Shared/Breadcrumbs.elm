@@ -42,6 +42,8 @@ import Html.Attributes exposing (alt, class, href, src, title)
 import Html.Events exposing (onClick)
 import Proto.Rellm exposing (Post, User)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, RellmServer)
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
@@ -51,7 +53,7 @@ type alias Model =
 
     -- The `frontendHost` every Post in `root`/`replies` lives on -- they're
     -- always all on the same server (a reply chain never crosses servers),
-    -- needed to resolve the `AccountsPanel.RellmServer`/signed-in `Account` to
+    -- needed to resolve the `RellmServer`/signed-in `Account` to
     -- render avatars/media/links with, same reasoning as
     -- `Shared.MarkdownPanel.Model`'s `targetHost`.
     , host : String
@@ -215,9 +217,9 @@ rootSegment accountsPanelModel model root =
 
         FromUser user ->
             let
-                maybeServer : Maybe AccountsPanel.RellmServer
+                maybeServer : Maybe RellmServer
                 maybeServer =
-                    AccountsPanel.serverForHost accountsPanelModel.servers model.host
+                    RellmServers.rellmServerForHost accountsPanelModel.servers model.host
 
                 name : String
                 name =
@@ -235,9 +237,9 @@ rootSegment accountsPanelModel model root =
                     (Maybe.andThen
                         (\server ->
                             let
-                                maybeAccount : Maybe AccountsPanel.RellmAccount
+                                maybeAccount : Maybe RellmAccount
                                 maybeAccount =
-                                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
+                                    RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.host
                             in
                             Users.avatarUrl server maybeAccount user
                         )
@@ -254,23 +256,23 @@ rootSegment accountsPanelModel model root =
 initial-letter placeholder, mirroring `segmentAvatar` below) followed by the
 server's own branding name, clipped to one line with an ellipsis (see
 `.breadcrumb-server` in nav.css). Deliberately not
-`AccountsPanel.serverNameAndLogo` -- that splits a server's name into an
+`RellmServers.rellmServerNameAndLogo` -- that splits a server's name into an
 emoji "badge" plus a fuller secondary line across two rows for the Accounts
 Panel's own (much roomier) chips, which doesn't fit the trail's tight single
 line. Always tinted with `host`'s own `background-color-primary` (see
 `UI.EmittedStylesheet`), unconditionally rather than only while some segment
 is `viewing` (contrast `segmentClasses`) -- there's no "open" state for this
 chip, it's just always this server's own color. Renders nothing if `host`
-isn't a known `AccountsPanel.RellmServer` yet (e.g. still being resolved).
+isn't a known `RellmServer` yet (e.g. still being resolved).
 -}
 serverSegment : AccountsPanel.Model -> String -> Bool -> Html Msg
 serverSegment accountsPanelModel host viewingHost =
-    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+    case RellmServers.rellmServerForHost accountsPanelModel.servers host of
         Just server ->
             let
-                branding : AccountsPanel.Branding
+                branding : Branding
                 branding =
-                    AccountsPanel.brandingOf server
+                    RellmServers.brandingOf server
             in
             button
                 [ onClick <|
@@ -298,26 +300,26 @@ serverSegment accountsPanelModel host viewingHost =
             text ""
 
 
-serverSegmentLogo : AccountsPanel.Branding -> Html msg
+serverSegmentLogo : Branding -> Html msg
 serverSegmentLogo branding =
     case branding.logoUrl of
         Just url ->
             img [ class "breadcrumb-server-logo", src url, alt branding.name ] []
 
         Nothing ->
-            div [ classes [ "breadcrumb-server-logo", "placeholder" ] ] [ text (AccountsPanel.initialLetter branding.name) ]
+            div [ classes [ "breadcrumb-server-logo", "placeholder" ] ] [ text (RellmServers.initialLetter branding.name) ]
 
 
 replySegment : AccountsPanel.Model -> Model -> Post -> Html Msg
 replySegment accountsPanelModel model post =
     let
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost accountsPanelModel.servers model.host
+            RellmServers.rellmServerForHost accountsPanelModel.servers model.host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.host
 
         name : String
         name =
@@ -344,7 +346,7 @@ segmentAvatar name maybeUrl =
             img [ classes [ "breadcrumb-reply-avatar" ], src url, alt name ] []
 
         Nothing ->
-            div [ classes [ "breadcrumb-reply-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+            div [ classes [ "breadcrumb-reply-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter name) ]
 
 
 {-| A popup, anchored just under `bar`'s own trail (see nav.css's
@@ -378,25 +380,25 @@ previewPanel basePath accountsPanelModel model =
 
 {-| `previewPanel`'s content while `model.viewingHost` -- `hostSegment`/
 `rootSegment`'s server chip's own equivalent of `replyCardView`, showing the
-server itself rather than one of its Posts: its `AccountsPanel.serverNameAndLogo`,
+server itself rather than one of its Posts: its `RellmServers.rellmServerNameAndLogo`,
 its `ServerInfo.description` (if any, same `Components.Markdown` rendering as
 everywhere else server/Post content renders), and an info button through to
 its full `Components.Pages.ServerInformationPage` (`serverOverviewInfoButton`).
-Renders nothing if `model.host` isn't a known `AccountsPanel.RellmServer` yet, same
+Renders nothing if `model.host` isn't a known `RellmServer` yet, same
 as `serverSegment`.
 -}
 serverOverviewView : String -> AccountsPanel.Model -> Model -> Html Msg
 serverOverviewView basePath accountsPanelModel model =
-    case AccountsPanel.serverForHost accountsPanelModel.servers model.host of
+    case RellmServers.rellmServerForHost accountsPanelModel.servers model.host of
         Just server ->
             let
                 info : Proto.Rellm.ServerInfo
                 info =
-                    AccountsPanel.serverInfoOf server
+                    RellmServers.rellmServerInfoOf server
             in
             div [ class "breadcrumb-server-overview" ]
                 [ div [ class "breadcrumb-server-overview-header" ]
-                    [ AccountsPanel.serverNameAndLogo server AccountsPanel.HorizontalServerLogo
+                    [ RellmServers.rellmServerNameAndLogo server RellmServers.HorizontalServerLogo
                     , serverOverviewInfoButton basePath server
                     ]
                 , case info.description of
@@ -417,10 +419,10 @@ cycle; closes this panel's own viewer (`CloseViewer`) rather than the Accounts
 Panel on click, same `stopPropagationAndPreventDefaultOnClick` reasoning
 (nested inside `previewPanel`, not another link).
 -}
-serverOverviewInfoButton : String -> AccountsPanel.RellmServer -> Html Msg
+serverOverviewInfoButton : String -> RellmServer -> Html Msg
 serverOverviewInfoButton basePath server =
     let
-        -- Disconnected servers (see `AccountsPanel.RellmServer.connected`) default to
+        -- Disconnected servers (see `RellmServer.connected`) default to
         -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
         serverIdentifier : String
         serverIdentifier =
@@ -444,13 +446,13 @@ serverOverviewInfoButton basePath server =
 replyCardView : String -> AccountsPanel.Model -> Model -> Post -> Html Msg
 replyCardView basePath accountsPanelModel model post =
     let
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost accountsPanelModel.servers model.host
+            RellmServers.rellmServerForHost accountsPanelModel.servers model.host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.host
     in
     div [ class "breadcrumb-reply-card" ]
         [ if isRoot model post then

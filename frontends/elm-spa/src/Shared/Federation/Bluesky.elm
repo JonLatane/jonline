@@ -8,7 +8,7 @@ module Shared.Federation.Bluesky exposing
     )
 
 {-| Translates Bluesky's (AT Protocol) API into Rellm's `Post` shape, entirely client-side -- see
-`Shared.AccountsPanel.BlueskyAccount`'s own doc for the connection side this feeds off of. Unlike
+`Shared.BlueskyAccount`'s own doc for the connection side this feeds off of. Unlike
 Mastodon, there's no meaningful *unauthenticated* equivalent: a bare "public timeline" isn't a
 concept AT Proto's federated network has (every PDS only ever serves its own users' own posts/feeds,
 not a "local instance timeline" the way a Mastodon server does), so `fetchPosts` is a connected

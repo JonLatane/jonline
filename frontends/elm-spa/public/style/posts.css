@@ -101,7 +101,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--muted);
+  /* color: var(--muted); */
   font-size: 0.85rem;
   text-decoration: none;
 }

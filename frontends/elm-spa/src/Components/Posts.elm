@@ -39,7 +39,7 @@ module Components.Posts exposing
 `postCard` used in the Home page's recent-posts feed, the fuller `postDetail`
 used by the Post page, and the fetch/link helpers both (and any future
 Post-related page) need: building a `GetPosts` request against a specific
-`Shared.AccountsPanel.RellmServer` (optionally authenticated, via
+`Shared.RellmServer` (optionally authenticated, via
 `Shared.MaybeAccountRequest`), and building/parsing the `/post/:postId`
 route's `id` or `id@host` segment.
 -}
@@ -62,7 +62,9 @@ import Proto.Rellm.PostListingType exposing (PostListingType(..))
 import Proto.Rellm.PostMediaLayout exposing (PostMediaLayout(..))
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Visibility exposing (Visibility(..))
-import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer)
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
 import Shared.Time as SharedTime
 import Task exposing (Task)
@@ -89,7 +91,7 @@ fetchPost accountsPanelModel maybeAccountServer postId =
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -157,7 +159,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getPosts request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -181,7 +183,7 @@ fetchReplies accountsPanelModel maybeAccountServer replyDepth postId =
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -213,7 +215,7 @@ fetchAncestors accountsPanelModel maybeAccountServer post =
         (\server maybeToken -> fetchAncestorsHelp server maybeToken post)
 
 
-fetchAncestorsHelp : AccountsPanel.RellmServer -> Maybe String -> Post -> Task Grpc.Error (List Post)
+fetchAncestorsHelp : RellmServer -> Maybe String -> Post -> Task Grpc.Error (List Post)
 fetchAncestorsHelp server maybeToken post =
     case post.replyToPostId of
         Nothing ->
@@ -221,7 +223,7 @@ fetchAncestorsHelp server maybeToken post =
 
         Just parentId ->
             Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just parentId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
                 |> Task.andThen
@@ -256,7 +258,7 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just postId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
@@ -264,7 +266,7 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
                         case List.head response.posts of
                             Just freshPost ->
                                 Grpc.new Rellm.updatePost (updateFn freshPost)
-                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                    |> Grpc.setHost (RellmServers.rellmServerUrl server)
                                     |> withAccessToken (Just token)
                                     |> Grpc.toTask
 
@@ -291,7 +293,7 @@ deletePost accountsPanelModel maybeAccountServer postId =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deletePost { defaultPost | id = postId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -316,7 +318,7 @@ syncPost accountsPanelModel maybeAccountServer postId syncDestinationId =
         (\server token ->
             Grpc.new Rellm.syncPost
                 { postId = postId, syncDestinationId = syncDestinationId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -343,7 +345,7 @@ deletePostSyncDestination accountsPanelModel maybeAccountServer postId syncDesti
         (\server token ->
             Grpc.new Rellm.deletePostSyncDestination
                 { postId = postId, syncDestinationId = syncDestinationId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
@@ -507,7 +509,7 @@ timestampsText time post =
 Markdown editor panel via `onEditClicked`, supplied by the caller
 (`Pages.Post.PostId_`).
 -}
-editContentButton : Maybe AccountsPanel.RellmAccount -> msg -> Post -> Html msg
+editContentButton : Maybe RellmAccount -> msg -> Post -> Html msg
 editContentButton maybeAccount onEditClicked post =
     case maybeAccount of
         Just account ->
@@ -530,7 +532,7 @@ editContentButton maybeAccount onEditClicked post =
 media chooser via `onMediaEditClicked` (`Pages.Post.PostId_`'s own
 `MediaEditClicked`), unlike `editButton`'s Markdown panel.
 -}
-mediaEditButton : Maybe AccountsPanel.RellmAccount -> msg -> Post -> Html msg
+mediaEditButton : Maybe RellmAccount -> msg -> Post -> Html msg
 mediaEditButton maybeAccount onMediaEditClicked post =
     case maybeAccount of
         Just account ->
@@ -551,7 +553,7 @@ image-capable `AvailableAIModel` at all (`Account.availableAiModels`) before thi
 to offer -- `Nothing` there covers both "not this post's author/an Admin" and "no model available",
 without `Components.Posts` itself needing to know anything about `AvailableAIModel`.
 -}
-generateMediaButton : Maybe AccountsPanel.RellmAccount -> Maybe msg -> Post -> Html msg
+generateMediaButton : Maybe RellmAccount -> Maybe msg -> Post -> Html msg
 generateMediaButton maybeAccount onGenerateMediaClicked post =
     case ( maybeAccount, onGenerateMediaClicked ) of
         ( Just account, Just onClicked ) ->
@@ -580,7 +582,7 @@ first, so this saves immediately on change via `onMediaLayoutChanged` -- the
 same one-click immediacy `mediaEditButton`'s own `Shared.MyMediaPanel`
 picker already has.
 -}
-mediaLayoutSelector : Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Post -> Html msg
+mediaLayoutSelector : Maybe RellmAccount -> (String -> msg) -> Post -> Html msg
 mediaLayoutSelector maybeAccount onMediaLayoutChanged post =
     case maybeAccount of
         Just account ->
@@ -664,7 +666,7 @@ push/delete controls render nowhere else. Ignored entirely by the `REPLY` fallba
 below -- a reply is never synced to anything.
 
 -}
-postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCard : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     if post.context == REPLY then
         replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked 0 True False False Nothing Nothing Nothing post
@@ -677,7 +679,7 @@ postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
 -}
-postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCardView : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     div
         [ classes
@@ -700,19 +702,27 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
             , attribute "aria-label" (postTitleText post)
             ]
             []
-        , div [ class "post-card-title" ] [ text (postTitleText post) ]
-        , case postLinkText post of
-            Just link ->
-                a
-                    [ href link
-                    , target "_blank"
-                    , rel "noopener noreferrer"
-                    , classes [ hostnameToCSSClass postServerHost, "post-card-link" ]
-                    ]
-                    [ text (stripLinkScheme link) ]
+        , if isFederatedHost postServerHost then
+            text ""
 
-            Nothing ->
-                text ""
+          else
+            div [ class "post-card-title" ] [ text (postTitleText post) ]
+        , if isFederatedHost postServerHost then
+            text ""
+
+          else
+            case postLinkText post of
+                Just link ->
+                    a
+                        [ href link
+                        , target "_blank"
+                        , rel "noopener noreferrer"
+                        , classes [ hostnameToCSSClass postServerHost, "post-card-link" ]
+                        ]
+                        [ text (stripLinkScheme link) ]
+
+                Nothing ->
+                    text ""
         , case maybeServer of
             Just server ->
                 if extraSmallMedia then
@@ -740,22 +750,29 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
                 text ""
         , div [ class "post-card-meta" ]
             [ span [ class "post-meta-left" ]
-                [ Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-                , text
-                    ((if postServerHost == viewingServerHost then
-                        ""
+                ((if isFederatedHost postServerHost then
+                    [ text "⇄ " ]
 
-                      else
-                        " · " ++ postServerHost
-                     )
-                        ++ (if showPostVisibility maybeAccount post then
-                                " · " ++ postVisibilityText post
-
-                            else
+                  else
+                    []
+                 )
+                    ++ [ Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
+                       , text
+                            ((if postServerHost == viewingServerHost then
                                 ""
-                           )
-                    )
-                ]
+
+                              else
+                                " · " ++ postServerHost
+                             )
+                                ++ (if showPostVisibility maybeAccount post then
+                                        " · " ++ postVisibilityText post
+
+                                    else
+                                        ""
+                                   )
+                            )
+                       ]
+                )
             , span [ class "post-meta-right" ]
                 [ timestampsText time post
                 , starButton postServerHost starred onStarClicked post
@@ -788,8 +805,8 @@ replyCard :
     String
     -> String
     -> String
-    -> Maybe AccountsPanel.RellmServer
-    -> Maybe AccountsPanel.RellmAccount
+    -> Maybe RellmServer
+    -> Maybe RellmAccount
     -> (String -> msg)
     -> Int
     -> Bool
@@ -962,7 +979,7 @@ resolves, same `Nothing`-falls-back-to-read-only-links behavior as that page (se
 `Components.Pages.PostPage.Model.availableSyncDestinations`'s own doc for the fetch itself).
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
@@ -1327,7 +1344,7 @@ to tell a `GLOBALPUBLIC` post apart from one with no visibility label at all;
 any other visibility, or being signed in, still shows it explicitly (e.g. so
 an author can confirm what they set).
 -}
-showPostVisibility : Maybe AccountsPanel.RellmAccount -> Post -> Bool
+showPostVisibility : Maybe RellmAccount -> Post -> Bool
 showPostVisibility maybeAccount post =
     case ( maybeAccount, post.visibility ) of
         ( Nothing, GLOBALPUBLIC ) ->
@@ -1423,7 +1440,7 @@ commentCountText post =
 only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
 no `author` at all (shouldn't normally happen, but `Post.author` is optional).
 -}
-isAuthor : AccountsPanel.RellmAccount -> Post -> Bool
+isAuthor : RellmAccount -> Post -> Bool
 isAuthor account post =
     Maybe.map .userId post.author == Just account.userId
 
@@ -1467,6 +1484,16 @@ parseFederatedPostId id host =
 
     else
         Nothing
+
+
+{-| Like `parseFederatedPostId /= Nothing`, but without needing a (usually irrelevant) `id` alongside
+`host` -- `postCardView` uses this to hide the title/link row for a Mastodon/Bluesky post's card
+(its own "View original" link lives only on the detail page, via `Components.Pages.MastodonPostPage`/
+`BlueskyPostPage`) and to mark its author row with "⇄".
+-}
+isFederatedHost : String -> Bool
+isFederatedHost host =
+    String.startsWith "mastodon:" host || String.startsWith "bluesky:" host
 
 
 {-| A post's most relevant timestamp for "recency" sorting/display: when it

@@ -48,7 +48,9 @@ import Proto.Rellm exposing (Event, EventInstance, GetEventsRequest, GetEventsRe
 import Proto.Rellm.EventListingType exposing (EventListingType(..))
 import Proto.Rellm.SyncSource.Configuration as SyncSourceConfiguration
 import Proto.Rellm.Rellm as Rellm
-import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer)
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
 import Shared.Time as SharedTime
 import Task exposing (Task)
@@ -75,7 +77,7 @@ fetchEvent accountsPanelModel maybeAccountServer eventInstancePostId =
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getEvents { defaultGetEventsRequest | postId = Just eventInstancePostId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -100,7 +102,7 @@ deleteEvent accountsPanelModel maybeAccountServer eventPostId =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteEvent { defaultEvent | post = Just { defaultPost | id = eventPostId } }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -126,7 +128,7 @@ syncEventInstance accountsPanelModel maybeAccountServer eventInstanceId syncDest
         (\server token ->
             Grpc.new Rellm.syncEventInstance
                 { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -153,7 +155,7 @@ deleteEventInstanceSyncDestination accountsPanelModel maybeAccountServer eventIn
         (\server token ->
             Grpc.new Rellm.deleteEventInstanceSyncDestination
                 { eventInstanceId = eventInstanceId, syncDestinationId = syncDestinationId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
@@ -186,7 +188,7 @@ updateEventInstances accountsPanelModel maybeAccountServer event =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateEventInstances event
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -213,7 +215,7 @@ createNewEventInstances accountsPanelModel maybeAccountServer event =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createNewEventInstances event
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -239,7 +241,7 @@ deleteRemovedEventInstances accountsPanelModel maybeAccountServer event =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteRemovedEventInstances event
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -308,7 +310,7 @@ fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAf
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getEvents request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -342,7 +344,7 @@ fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer instancePostI
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getEvents { defaultGetEventsRequest | eventInstancePostIds = instancePostIds }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -704,8 +706,8 @@ eventCard :
     -> String
     -> String
     -> String
-    -> Maybe AccountsPanel.RellmServer
-    -> Maybe AccountsPanel.RellmAccount
+    -> Maybe RellmServer
+    -> Maybe RellmAccount
     -> (String -> msg)
     -> MediaRenderer.MediaSize
     -> Bool

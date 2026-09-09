@@ -29,6 +29,8 @@ import Json.Decode as Decode
 import Process
 import Proto.Rellm exposing (MediaReference, Post)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Task
 import UI.Classes exposing (classes, openClosedClass)
 
@@ -270,13 +272,13 @@ view accountsPanelModel model =
             model.currentMediaReference
                 |> Maybe.andThen (\id -> List.filter (\m -> m.id == id) model.media |> List.head)
 
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost
+            RellmServers.rellmServerForHost accountsPanelModel.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
+            RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost
 
         -- The would-be `Prev`/`Next` targets, once `model.preloadFor` (see
         -- its own doc) confirms the user's actually settled on
@@ -311,7 +313,7 @@ view accountsPanelModel model =
         -- (as opposed to `display: none`, which many browsers just never
         -- schedule a lazy fetch for at all) loads immediately, same as a
         -- visible one would.
-        preloadView : AccountsPanel.RellmServer -> List ( String, Html Msg )
+        preloadView : RellmServer -> List ( String, Html Msg )
         preloadView server =
             preloadMedia
                 |> List.map

@@ -1,0 +1,729 @@
+module Shared.AccountsPanel.RellmAccounts exposing
+    ( RellmAccount
+    , RellmAccountAuthTokens
+    , Token
+    , applyPermissionsRefreshResult
+    , disableOtherRellmAccountsOnServer
+    , enabledRellmAccountForServer
+    , encodeRellmAccount
+    , encodeRellmAccountAuthTokens
+    , isAdmin
+    , performWithRellmAccount
+    , performWithRellmAccountNotifying
+    , refreshPermissionsTask
+    , rellmAccountAuthTokensDecoder
+    , rellmAccountAvatarUrl
+    , rellmAccountDecoder
+    , rellmAccountDisplayName
+    , rellmAccountId
+    , rellmServerHasRellmAccounts
+    , resolveFederatedRellmAccountTokens
+    , tokenFromExpirable
+    , upsertRellmAccount
+    )
+
+{-| Everything about a Rellm `RellmAccount` that doesn't need `Shared.AccountsPanel.Model` itself to
+make sense: the type and its close relatives (`RellmAccountAuthTokens`, `Token`), its encode/decode,
+and every pure/plain-`Task` piece of "authenticate as this account" logic (access-token refresh,
+`GetCurrentUser` permission refresh, `RellmAccount` list upserts). Imports `RellmServers` (its own
+dependency root -- see that module's own doc) for `Connection`/`RellmServer` wherever an operation
+needs to know which server it's authenticating against.
+
+What's deliberately *not* here, and stays in `Shared.AccountsPanel` itself: the `Model` field this
+lives in (`accounts`), and every `Msg`/`Cmd Msg`-constructing operation (`refreshPermissions`,
+`refreshPermissionsForServer`, `setWebUserInterface`, `renameServer`, `changeServerShortName`,
+`performWithAccountServer`, `performWithOptionalAccountServer`, and the plain `enabledAccounts`/
+`hasAdminAccount`/etc. lookups that take the whole `Model`) -- those are `Shared.AccountsPanel.update`'s
+own coordinating logic.
+
+-}
+
+import Grpc
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
+import Proto.Rellm exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, SyncDestination, SyncSource, User)
+import Proto.Rellm.Permission exposing (Permission(..), fieldNumbersPermission)
+import Proto.Rellm.Rellm as Rellm
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (Connection, RellmServer)
+import Shared.AccountsPanel.SortOrder exposing (sortOrderDecoder)
+import Shared.Conversions exposing (timestampToPosix)
+import Task exposing (Task)
+import Time
+
+
+{-| A signed-into account on a server (identified by its `frontendHost`, e.g.
+"jonline.io" -- see `RellmServer`). `enabled` is a lightweight, non-destructive
+"signed in/out" toggle: disabling an account keeps its tokens around so it can
+be re-enabled without logging in again. Fully forgetting an account
+(`Shared.AccountsPanel.RemoveAccountClicked`) is the "traditional" sign out.
+
+`permissions` is refreshed via `GetCurrentUser` whenever the account's server
+reconnects (app startup/reload, or the account being re-enabled) -- see
+`Shared.AccountsPanel.refreshPermissions` -- so it's usually current, though it can still lag
+between those refreshes if permissions change server-side. That same refresh
+is what discovers a `refreshToken` no longer works (revoked, expired past its
+own grace period) -- see `Shared.AccountsPanel.GotPermissionsRefresh` -- setting `needsPassword`
+so the account shows as needing to be signed back into with a password rather
+than silently failing every request.
+
+-}
+type alias RellmAccount =
+    { server : String
+    , userId : String
+    , username : String
+    , refreshToken : Token
+    , accessToken : Token
+    , enabled : Bool
+    , avatarMediaId : Maybe String
+    , permissions : List Permission
+    , realName : String
+    , needsPassword : Bool
+    , sortOrder : Int
+
+    -- The signed-in user's own linked SyncDestinations/SyncSources/AvailableAIModels (see
+    -- `Proto.Rellm.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
+    -- `refreshPermissionsTask`. Login/CreateAccount (`GotAuthResult`) can't populate them either
+    -- (same backend restriction), so they start empty there and only appear once the first
+    -- refresh lands.
+    , syncDestinations : List SyncDestination
+    , syncSources : List SyncSource
+    , availableAiModels : List AvailableAIModel
+    }
+
+
+{-| The payload that actually crosses the wire in the cross-server SSO hand-off (see
+`Shared.FederatedAuth`/`Pages.Auth.To.Key_`/`Pages.Auth.From.EncryptedAccountAuthTokens_`): just enough
+to let the receiving origin authenticate as this account itself, via `resolveFederatedRellmAccountTokens`
+below -- everything else an `RellmAccount` needs (`userId`, `username`, `permissions`, etc.) is hydrated
+straight from the receiving side's own `GetCurrentUser` call rather than trusted from this payload.
+-}
+type alias RellmAccountAuthTokens =
+    { server : String
+    , refreshToken : Token
+    , accessToken : Token
+    }
+
+
+{-| An access/refresh token, alongside its own expiration (if the server declared one -- see
+`isExpired`).
+-}
+type alias Token =
+    { token : String
+    , expiresAt : Maybe Time.Posix
+    }
+
+
+{-| A stable identifier for an account: a user's id is only unique per-server.
+-}
+rellmAccountId : RellmAccount -> String
+rellmAccountId account =
+    account.server ++ "|" ++ account.userId
+
+
+{-| Whether an account has the `ADMIN` permission.
+-}
+isAdmin : RellmAccount -> Bool
+isAdmin account =
+    List.member ADMIN account.permissions
+
+
+{-| A username display enriched with the account's Real Name, if it has one --
+e.g. "Jon Latane (jon)" rather than just "jon". Falls back to the bare
+username when `realName` is empty (unset).
+-}
+rellmAccountDisplayName : RellmAccount -> String
+rellmAccountDisplayName account =
+    if String.isEmpty (String.trim account.realName) then
+        account.username
+
+    else
+        account.realName ++ " (" ++ account.username ++ ")"
+
+
+{-| The URL for an account's avatar, authorized with its own access token
+(avatars can be visibility-restricted, but an account can always see its own).
+-}
+rellmAccountAvatarUrl : List RellmServer -> RellmAccount -> Maybe String
+rellmAccountAvatarUrl servers account =
+    account.avatarMediaId
+        |> Maybe.andThen
+            (\id ->
+                servers
+                    |> List.filter (\s -> s.frontendHost == account.server)
+                    |> List.head
+                    |> Maybe.andThen (\s -> RellmServers.mediaUrl s id)
+                    |> Maybe.map (\url -> url ++ "?authorization=" ++ account.accessToken.token)
+            )
+
+
+{-| A server that has any associated accounts can't be removed (only disabled),
+since removing it would orphan those accounts' stored credentials.
+-}
+rellmServerHasRellmAccounts : List RellmAccount -> String -> Bool
+rellmServerHasRellmAccounts accounts frontendHost =
+    List.any (\a -> a.server == frontendHost) accounts
+
+
+{-| The signed-in account to use for `frontendHost`, if there is one --
+picking the first enabled account on that server. Used wherever content needs
+to be fetched "as whichever account, if any, is currently signed into this
+server" (see `Components.Posts`), rather than any one specific account.
+-}
+enabledRellmAccountForServer : List RellmAccount -> String -> Maybe RellmAccount
+enabledRellmAccountForServer accounts frontendHost =
+    accounts
+        |> List.filter (\a -> a.server == frontendHost && a.enabled)
+        |> List.head
+
+
+{-| Disables every other account on `server` besides `keepEnabledId` -- only one
+account per server may be signed in (enabled) at a time, since aggregated
+feeds/permissions assume a single identity per server. Called whenever an
+account becomes enabled, whether by toggling it on or by a fresh sign-in.
+-}
+disableOtherRellmAccountsOnServer : String -> String -> List RellmAccount -> List RellmAccount
+disableOtherRellmAccountsOnServer keepEnabledId server accounts =
+    List.map
+        (\a ->
+            if a.server == server && rellmAccountId a /= keepEnabledId then
+                { a | enabled = False }
+
+            else
+                a
+        )
+        accounts
+
+
+{-| Adds/updates `account` in `accounts` by `rellmAccountId`, keeping an existing entry's own
+`sortOrder` rather than the fresh one its caller (`GotAuthResult`/`FederatedAccountReceived`)
+proposed -- same reasoning as `RellmServers.upsertRellmServerWith`'s own doc: a re-login/SSO hand-off
+for an account already known here shouldn't undo the user's own manual reordering of it.
+-}
+upsertRellmAccount : RellmAccount -> List RellmAccount -> List RellmAccount
+upsertRellmAccount account accounts =
+    case List.filter (\a -> rellmAccountId a == rellmAccountId account) accounts |> List.head of
+        Just existing ->
+            List.map
+                (\a ->
+                    if rellmAccountId a == rellmAccountId account then
+                        { account | sortOrder = existing.sortOrder }
+
+                    else
+                        a
+                )
+                accounts
+
+        Nothing ->
+            -- Physical list position no longer drives render order at all (see
+            -- `Shared.AccountsPanel.combinedAccountItems`, which re-derives it from `sortOrder`) --
+            -- prepending here just keeps `encodeState`'s own on-disk ordering roughly newest-first,
+            -- which stays cosmetic.
+            account :: accounts
+
+
+{-| The bare `Task` behind `Shared.AccountsPanel.refreshPermissions`/`refreshPermissionsForServer` --
+refreshes an account's `permissions` (and `username`, in case it changed
+server-side), plus `syncDestinations`/`syncSources`/`availableAiModels`
+(see `RellmAccount`'s own doc), via `GetCurrentUser` (always a self-view, so the
+backend populates all of these -- see `attach_own_advanced_data` on the
+backend), refreshing its access token first if needed -- see
+`performWithRellmAccount`.
+-}
+refreshPermissionsTask : RellmServer -> RellmAccount -> Task Grpc.Error ( RellmAccount, User )
+refreshPermissionsTask server account =
+    case RellmServers.connectionOf server of
+        -- `server` is disconnected (see `RellmServer.connected`) -- nothing to refresh
+        -- against right now; callers (e.g. `ToggleAccountEnabled` re-enabling an
+        -- account on a server that's since gone unreachable) just leave the
+        -- account's existing permissions/token alone.
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+        Just connection ->
+            performWithRellmAccount
+                connection
+                account
+                (\accessToken ->
+                    Grpc.new Rellm.getCurrentUser {}
+                        |> Grpc.setHost (RellmServers.connectionUrl connection)
+                        |> RellmServers.withAccessToken (Just accessToken)
+                        |> Grpc.toTask
+                )
+
+
+{-| Folds one account's `GetCurrentUser`/access-token-refresh result (see
+`refreshPermissionsTask`) into `accounts` -- shared by `Shared.AccountsPanel.GotPermissionsRefresh`
+(a single account, e.g. `ToggleAccountEnabled`) and `GotServerPermissionsRefresh`
+(a whole server's worth at once, see `Shared.AccountsPanel.refreshPermissionsForServer`) so both
+apply the exact same rules:
+
+  - On success, merges the refreshed `username`/`permissions`/`avatarMediaId`/
+    `realName` and clears `needsPassword`.
+  - On an `Unauthenticated` failure, the refresh token itself was rejected
+    (revoked, expired past its own grace period) -- unlike a network blip,
+    retrying later won't fix this; the account needs a fresh password (see
+    `UI.accountRow`'s "password required" badge, and `PasswordNeededClicked`).
+    Also disabled -- it's not actually signed in anymore (every request would
+    fail the same way), so it shouldn't keep counting as such for aggregated
+    feeds/permissions until the user signs back in.
+  - Any other failure (network blip, server unreachable, etc.) leaves the
+    account as it was; it'll be retried on the next reconnect/enable.
+
+-}
+applyPermissionsRefreshResult : String -> Result Grpc.Error ( RellmAccount, User ) -> List RellmAccount -> List RellmAccount
+applyPermissionsRefreshResult accId result accounts =
+    case result of
+        Ok ( refreshedAccount, user ) ->
+            upsertRellmAccount
+                { refreshedAccount
+                    | username = user.username
+                    , permissions = user.permissions
+                    , avatarMediaId = Maybe.map .id user.avatar
+                    , realName = user.realName
+                    , needsPassword = False
+                    , syncDestinations = user.syncDestinations
+                    , syncSources = user.syncSources
+                    , availableAiModels = user.availableAiModels
+                }
+                accounts
+
+        Err (Grpc.BadStatus { status }) ->
+            if status == Grpc.Unauthenticated then
+                List.map
+                    (\a ->
+                        if rellmAccountId a == accId then
+                            { a | needsPassword = True, enabled = False }
+
+                        else
+                            a
+                    )
+                    accounts
+
+            else
+                accounts
+
+        Err _ ->
+            accounts
+
+
+{-| The network step behind `Pages.Auth.From.EncryptedAccountAuthTokens_`'s auto-accept: resolves
+`tokens.server`'s connection (reusing an already-connected one if this browser already knows it,
+otherwise negotiating fresh -- see `RellmServers.negotiateRellmServerConfig`), then calls
+`GetCurrentUser` with `tokens.accessToken` to hydrate everything else. The page uses the resulting
+`User` to build a full `RellmAccount` itself (`tokens.server`/`tokens.refreshToken`/
+`tokens.accessToken` plus `user`'s fields) and hand it to
+`Shared.AccountsPanel.FederatedAccountReceived`, same as any other freshly-signed-in account --
+which, for a server this browser didn't already have connected, means `negotiateRellmServerConfig`
+effectively runs twice (once here, once inside that handler's own reconnect). Not worth optimizing
+away: it only happens in the background, after this page has already redirected the user onward.
+-}
+resolveFederatedRellmAccountTokens : Bool -> List RellmServer -> RellmAccountAuthTokens -> Task Grpc.Error User
+resolveFederatedRellmAccountTokens pageIsSecure servers tokens =
+    let
+        getCurrentUser : Connection -> Task Grpc.Error User
+        getCurrentUser connection =
+            Grpc.new Rellm.getCurrentUser {}
+                |> Grpc.setHost (RellmServers.connectionUrl connection)
+                |> RellmServers.withAccessToken (Just tokens.accessToken.token)
+                |> Grpc.toTask
+    in
+    case servers |> List.filter (\s -> s.frontendHost == tokens.server && s.connected /= Nothing) |> List.head |> Maybe.andThen RellmServers.connectionOf of
+        Just connection ->
+            getCurrentUser connection
+
+        Nothing ->
+            RellmServers.negotiateRellmServerConfig pageIsSecure tokens.server
+                |> Task.andThen (\( connection, _ ) -> getCurrentUser connection)
+
+
+{-| Ensures `account`'s access token is valid as of now (refreshing it first
+if needed), then performs `req` with it. `req` is given just the access token
+string, ready to pass to `RellmServers.withAccessToken`. Returns the account
+as it ended up (with refreshed tokens if a refresh happened, unchanged
+otherwise) alongside `req`'s result, so the caller can persist any refreshed
+tokens. `Shared.AccountsPanel.performWithAccountServer`/`performWithOptionalAccountServer`
+resolve a fresh `RellmAccount`/`RellmServer` from a `MaybeAccountServer` instead of holding one of
+their own, then call this underneath.
+-}
+performWithRellmAccount :
+    Connection
+    -> RellmAccount
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( RellmAccount, b )
+performWithRellmAccount connection account req =
+    performWithRellmAccountNotifying connection account req
+        |> Task.map (\( refreshedAccount, _, result ) -> ( refreshedAccount, result ))
+
+
+{-| Like `performWithRellmAccount`, but also surfaces the raw `AccessTokenResponse`
+if a refresh happened (`Nothing` otherwise).
+-}
+performWithRellmAccountNotifying :
+    Connection
+    -> RellmAccount
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( RellmAccount, Maybe AccessTokenResponse, b )
+performWithRellmAccountNotifying connection account req =
+    Time.now
+        |> Task.andThen (\now -> refreshIfNeeded connection now account)
+        |> Task.andThen
+            (\( refreshedAccount, refreshResponse ) ->
+                req refreshedAccount.accessToken.token
+                    |> Task.map (\result -> ( refreshedAccount, refreshResponse, result ))
+            )
+
+
+refreshIfNeeded :
+    Connection
+    -> Time.Posix
+    -> RellmAccount
+    -> Task Grpc.Error ( RellmAccount, Maybe AccessTokenResponse )
+refreshIfNeeded connection now account =
+    if not (isExpired now account.accessToken) then
+        Task.succeed ( account, Nothing )
+
+    else
+        Grpc.new Rellm.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
+            |> Grpc.setHost (RellmServers.connectionUrl connection)
+            |> Grpc.toTask
+            |> Task.andThen
+                (\resp ->
+                    case resp.accessToken of
+                        Just accessToken ->
+                            Task.succeed
+                                ( { account
+                                    | accessToken = tokenFromExpirable accessToken
+                                    , refreshToken =
+                                        resp.refreshToken
+                                            |> Maybe.map tokenFromExpirable
+                                            |> Maybe.withDefault account.refreshToken
+                                  }
+                                , Just resp
+                                )
+
+                        Nothing ->
+                            Task.fail Grpc.NetworkError
+                )
+
+
+tokenFromExpirable : ExpirableToken -> Token
+tokenFromExpirable expirable =
+    { token = expirable.token
+    , expiresAt = Maybe.map timestampToPosix expirable.expiresAt
+    }
+
+
+{-| Whether a token is expired, or expiring within the next minute (enough
+margin that it shouldn't expire mid-request). A token with no expiration
+(`expiresAt == Nothing`, the default unless a server was asked for one)
+never expires.
+-}
+isExpired : Time.Posix -> Token -> Bool
+isExpired now token =
+    case token.expiresAt of
+        Nothing ->
+            False
+
+        Just expiresAt ->
+            Time.posixToMillis now + 60000 >= Time.posixToMillis expiresAt
+
+
+
+-- ENCODE/DECODE
+
+
+{-| Deliberately omits `syncDestinations`/`syncSources`/`availableAiModels` -- they're
+nested-proto-shaped, can be sizeable, and change often, so persisting them to `localStorage` (and
+writing the JSON codecs for their `oneof`s) isn't worth it when `refreshPermissionsTask` already
+refetches them on every reconnect/enable. See `rellmAccountDecoder`'s own doc for the decode side.
+-}
+encodeRellmAccount : RellmAccount -> Encode.Value
+encodeRellmAccount account =
+    Encode.object
+        [ ( "server", Encode.string account.server )
+        , ( "userId", Encode.string account.userId )
+        , ( "username", Encode.string account.username )
+        , ( "refreshToken", encodeToken account.refreshToken )
+        , ( "accessToken", encodeToken account.accessToken )
+        , ( "enabled", Encode.bool account.enabled )
+        , ( "avatarMediaId", account.avatarMediaId |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
+        , ( "permissions", Encode.list (fieldNumbersPermission >> Encode.int) account.permissions )
+        , ( "realName", Encode.string account.realName )
+        , ( "needsPassword", Encode.bool account.needsPassword )
+        , ( "sortOrder", Encode.int account.sortOrder )
+        ]
+
+
+{-| The cross-server SSO hand-off's wire format (see `RellmAccountAuthTokens`'s own doc) --
+deliberately just these three fields, unlike `encodeRellmAccount`'s full persisted shape.
+-}
+encodeRellmAccountAuthTokens : RellmAccountAuthTokens -> Encode.Value
+encodeRellmAccountAuthTokens tokens =
+    Encode.object
+        [ ( "server", Encode.string tokens.server )
+        , ( "refreshToken", encodeToken tokens.refreshToken )
+        , ( "accessToken", encodeToken tokens.accessToken )
+        ]
+
+
+encodeToken : Token -> Encode.Value
+encodeToken token =
+    Encode.object
+        [ ( "token", Encode.string token.token )
+        , ( "expiresAt", token.expiresAt |> Maybe.map (Time.posixToMillis >> Encode.int) |> Maybe.withDefault Encode.null )
+        ]
+
+
+{-| `elm/json` only provides `map8`, but `RellmAccount` now has 14 fields -- so this
+decodes the first 8 into a partially-applied `RellmAccount` constructor, then
+applies `realName`, `needsPassword`, and `sortOrder` on top of that. The last 3
+(`syncDestinations`/`syncSources`/`availableAiModels`) are deliberately
+never persisted at all -- see `encodeRellmAccount`'s own doc -- so they always
+decode to `[]` here regardless of what's in storage; the very next
+`refreshPermissionsTask` (fired on every reconnect/enable) fills them back in.
+-}
+rellmAccountDecoder : Decoder RellmAccount
+rellmAccountDecoder =
+    Decode.map4 (\partial realName needsPassword sortOrder -> partial realName needsPassword sortOrder [] [] [])
+        (Decode.map8 RellmAccount
+            (Decode.field "server" Decode.string)
+            (Decode.field "userId" Decode.string)
+            (Decode.field "username" Decode.string)
+            (Decode.field "refreshToken" tokenDecoder)
+            (Decode.field "accessToken" tokenDecoder)
+            (Decode.field "enabled" Decode.bool)
+            (optionalString "avatarMediaId")
+            permissionsDecoder
+        )
+        realNameDecoder
+        needsPasswordDecoder
+        sortOrderDecoder
+
+
+{-| Decodes `encodeRellmAccountAuthTokens`'s wire format -- see `RellmAccountAuthTokens`'s own doc.
+-}
+rellmAccountAuthTokensDecoder : Decoder RellmAccountAuthTokens
+rellmAccountAuthTokensDecoder =
+    Decode.map3 RellmAccountAuthTokens
+        (Decode.field "server" Decode.string)
+        (Decode.field "refreshToken" tokenDecoder)
+        (Decode.field "accessToken" tokenDecoder)
+
+
+{-| Defaults to "" if the key is missing entirely (older persisted state),
+without failing the rest of the decode.
+-}
+realNameDecoder : Decoder String
+realNameDecoder =
+    Decode.oneOf
+        [ Decode.field "realName" Decode.string
+        , Decode.succeed ""
+        ]
+
+
+{-| Defaults to `False` if the key is missing entirely (older persisted
+state, or a freshly-logged-in account -- see `GotAuthResult`), without
+failing the rest of the decode.
+-}
+needsPasswordDecoder : Decoder Bool
+needsPasswordDecoder =
+    Decode.oneOf
+        [ Decode.field "needsPassword" Decode.bool
+        , Decode.succeed False
+        ]
+
+
+{-| Defaults to no permissions if the key is missing entirely (older
+persisted state), without failing the rest of the decode.
+-}
+permissionsDecoder : Decoder (List Permission)
+permissionsDecoder =
+    Decode.oneOf
+        [ Decode.field "permissions" (Decode.list (Decode.map permissionFromInt Decode.int))
+        , Decode.succeed []
+        ]
+
+
+permissionFromInt : Int -> Permission
+permissionFromInt n =
+    case n of
+        0 ->
+            PERMISSIONUNKNOWN
+
+        1 ->
+            VIEWUSERS
+
+        2 ->
+            PUBLISHUSERSLOCALLY
+
+        3 ->
+            PUBLISHUSERSGLOBALLY
+
+        4 ->
+            MODERATEUSERS
+
+        5 ->
+            FOLLOWUSERS
+
+        6 ->
+            GRANTBASICPERMISSIONS
+
+        10 ->
+            VIEWGROUPS
+
+        11 ->
+            CREATEGROUPS
+
+        12 ->
+            PUBLISHGROUPSLOCALLY
+
+        13 ->
+            PUBLISHGROUPSGLOBALLY
+
+        14 ->
+            MODERATEGROUPS
+
+        15 ->
+            JOINGROUPS
+
+        16 ->
+            INVITEGROUPMEMBERS
+
+        20 ->
+            VIEWPOSTS
+
+        21 ->
+            CREATEPOSTS
+
+        22 ->
+            PUBLISHPOSTSLOCALLY
+
+        23 ->
+            PUBLISHPOSTSGLOBALLY
+
+        24 ->
+            MODERATEPOSTS
+
+        25 ->
+            REPLYTOPOSTS
+
+        26 ->
+            EDITPOSTTITLESANDLINKS
+
+        30 ->
+            VIEWEVENTS
+
+        31 ->
+            CREATEEVENTS
+
+        32 ->
+            PUBLISHEVENTSLOCALLY
+
+        33 ->
+            PUBLISHEVENTSGLOBALLY
+
+        34 ->
+            MODERATEEVENTS
+
+        35 ->
+            RSVPTOEVENTS
+
+        40 ->
+            VIEWMEDIA
+
+        41 ->
+            CREATEMEDIA
+
+        42 ->
+            PUBLISHMEDIALOCALLY
+
+        43 ->
+            PUBLISHMEDIAGLOBALLY
+
+        44 ->
+            MODERATEMEDIA
+
+        50 ->
+            READPERSONALMESSAGES
+
+        51 ->
+            READALLSYSTEMMESSAGES
+
+        60 ->
+            CREATEAIMODELPROVIDERS
+
+        700 ->
+            SYNCEVENTSFROMICS
+
+        1000 ->
+            SYNCEVENTSTOFACEBOOK
+
+        1001 ->
+            SYNCPOSTSTOFACEBOOK
+
+        1010 ->
+            SYNCEVENTSTOINSTAGRAM
+
+        1011 ->
+            SYNCPOSTSTOINSTAGRAM
+
+        1020 ->
+            SYNCEVENTSTOMASTODON
+
+        1021 ->
+            SYNCPOSTSTOMASTODON
+
+        1030 ->
+            SYNCEVENTSTOBLUESKY
+
+        1031 ->
+            SYNCPOSTSTOBLUESKY
+
+        1040 ->
+            SYNCEVENTSTOXTWITTER
+
+        1041 ->
+            SYNCPOSTSTOXTWITTER
+
+        1050 ->
+            SYNCEVENTSTOTHREADS
+
+        1051 ->
+            SYNCPOSTSTOTHREADS
+
+        9998 ->
+            BUSINESS
+
+        9999 ->
+            RUNBOTS
+
+        10000 ->
+            ADMIN
+
+        10001 ->
+            VIEWPRIVATECONTACTMETHODS
+
+        other ->
+            PermissionUnrecognized_ other
+
+
+{-| Accepts both the current `{token, expiresAt}` shape and the older
+bare-string shape (from before tokens tracked expiration), so existing
+persisted accounts aren't invalidated by this change.
+-}
+tokenDecoder : Decoder Token
+tokenDecoder =
+    Decode.oneOf
+        [ Decode.map2 Token
+            (Decode.field "token" Decode.string)
+            (Decode.maybe (Decode.field "expiresAt" (Decode.nullable Decode.int))
+                |> Decode.map (Maybe.andThen identity >> Maybe.map Time.millisToPosix)
+            )
+        , Decode.map (\token -> { token = token, expiresAt = Nothing }) Decode.string
+        ]
+
+
+optionalString : String -> Decoder (Maybe String)
+optionalString field =
+    Decode.maybe (Decode.field field (Decode.nullable Decode.string))
+        |> Decode.map (Maybe.andThen identity)

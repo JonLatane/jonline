@@ -320,6 +320,15 @@
   width: 132px;
 }
 
+/* Wider than a plain `.federated-server-chip` -- `mastodonServerEditChip`'s own App ID/App Secret
+   rows (`mastodonAppIdField`/`mastodonAppSecretField`, both `.server-details-color-row`'s
+   label-left/input-right layout) need real room for a usable text input alongside their label,
+   which 132px has nowhere near enough of. `federatedServerEditChip`'s own edit chip (Rellm servers'
+   configured-by-default/pinned-by-default toggles, no text inputs) keeps the narrower default. */
+.federated-server-chip.mastodon-server-chip-edit {
+  width: 280px;
+}
+
 /* Overrides `.server-chip-bottom`'s own `justify-content: space-between`
    (meant for exactly two/three items spread across the row) -- the flags
    here stack instead, so `federationDisplayView`'s badges (0-3 of them) and

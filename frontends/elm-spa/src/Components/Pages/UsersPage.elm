@@ -46,6 +46,8 @@ import Proto.Rellm exposing (GetUsersResponse, User)
 import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Task
 import Time
@@ -326,14 +328,14 @@ check, since a profile page's own relationship listings should keep working
 off of whichever server that profile was actually resolved from, regardless
 of whether the viewer happens to have it "enabled" for aggregation elsewhere.
 -}
-candidateServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
+candidateServers : Shared.Model -> Model -> List RellmServer
 candidateServers shared model =
     case model.target of
         Nothing ->
             AccountsPanel.enabledServers shared.accounts
 
         Just ( host, _, _ ) ->
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
@@ -344,11 +346,11 @@ needs a fresh fetch) and `update`'s own `FollowStatusAndButtonMsg` branch
 (kicked off unconditionally for just one server, once a `FollowStatusAndButton`
 action against one of its listed users succeeds).
 -}
-fetchServerEffect : Shared.Model -> Model -> AccountsPanel.RellmServer -> Effect Msg
+fetchServerEffect : Shared.Model -> Model -> RellmServer -> Effect Msg
 fetchServerEffect shared model server =
     Users.fetchUserListing
         shared.accounts
-        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
+        ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
         , server.frontendHost
         )
         (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
@@ -370,19 +372,19 @@ module's own doc comment for why (a server already `Loaded` under the same
 acting account keeps its last-known users on screen while re-fetching, rather
 than flickering every card out and back in via `syncAnimations`).
 -}
-refetchServers : Shared.Model -> Model -> List AccountsPanel.RellmServer -> ( Model, Effect Msg )
+refetchServers : Shared.Model -> Model -> List RellmServer -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
     let
-        servers : List AccountsPanel.RellmServer
+        servers : List RellmServer
         servers =
             candidateServers shared model
 
-        currentAccountId : AccountsPanel.RellmServer -> Maybe String
+        currentAccountId : RellmServer -> Maybe String
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map RellmAccounts.rellmAccountId
 
-        fetchEffect : AccountsPanel.RellmServer -> Effect Msg
+        fetchEffect : RellmServer -> Effect Msg
         fetchEffect server =
             fetchServerEffect shared model server
 
@@ -390,7 +392,7 @@ refetchServers shared model serversToFetch =
         prunedUsersByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
 
-        markServer : AccountsPanel.RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
+        markServer : RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
         markServer server dict =
             let
                 accountId : Maybe String
@@ -430,16 +432,16 @@ rather than unconditionally every enabled server.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        servers : List AccountsPanel.RellmServer
+        servers : List RellmServer
         servers =
             candidateServers shared model
 
-        currentAccountId : AccountsPanel.RellmServer -> Maybe String
+        currentAccountId : RellmServer -> Maybe String
         currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map RellmAccounts.rellmAccountId
 
-        serversToFetch : List AccountsPanel.RellmServer
+        serversToFetch : List RellmServer
         serversToFetch =
             servers
                 |> List.filter
@@ -653,9 +655,9 @@ targetHeadingView shared maybeTarget =
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text (listingTypeHeading listingType) ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
+                    [ case RellmServers.rellmServerForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) targetUser
+                            ProfileHeading.nameHeader server (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host) targetUser
 
                         Nothing ->
                             ProfileHeading.usernameHeading targetUser
@@ -726,7 +728,7 @@ userAnimationView shared model ( key, anim ) =
 
 userCardView : Shared.Model -> Model -> ( String, User ) -> Html Msg
 userCardView shared model ( host, user ) =
-    case AccountsPanel.serverForHost shared.accounts.servers host of
+    case RellmServers.rellmServerForHost shared.accounts.servers host of
         Just server ->
             let
                 key : String
@@ -737,9 +739,9 @@ userCardView shared model ( host, user ) =
                 followStatusAndButtonModel =
                     Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init
 
-                maybeAccount : Maybe AccountsPanel.RellmAccount
+                maybeAccount : Maybe RellmAccount
                 maybeAccount =
-                    AccountsPanel.enabledAccountForServer shared.accounts.accounts host
+                    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host
             in
             Users.userCard shared.basePath
                 shared.accounts.mainFrontendHost
@@ -763,13 +765,13 @@ followStatusAndButtonKey host user =
     user.id ++ "@" ++ host
 
 
-{-| The `AccountsPanel.RellmServer`/signed-in `AccountsPanel.RellmAccount`/`User` a
+{-| The `RellmServer`/signed-in `RellmAccount`/`User` a
 `FollowStatusAndButtonMsg key` refers to -- looked up fresh out of
 `model.usersByServer` each time (rather than carried in the `Msg` itself),
 since the `User` a `Follow` action needs is whatever's currently loaded, not
 a stale snapshot from whenever the button was rendered.
 -}
-findUserForKey : Shared.Model -> Model -> String -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount, User )
+findUserForKey : Shared.Model -> Model -> String -> Maybe ( RellmServer, RellmAccount, User )
 findUserForKey shared model key =
     model.usersByServer
         |> Dict.toList
@@ -788,6 +790,6 @@ findUserForKey shared model key =
         |> Maybe.andThen
             (\( host, user ) ->
                 Maybe.map2 (\server account -> ( server, account, user ))
-                    (AccountsPanel.serverForHost shared.accounts.servers host)
-                    (AccountsPanel.enabledAccountForServer shared.accounts.accounts host)
+                    (RellmServers.rellmServerForHost shared.accounts.servers host)
+                    (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host)
             )

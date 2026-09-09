@@ -559,12 +559,16 @@
   border-radius: 50%;
 }
 
-/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own avatar/logo row -- unlike
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own avatar/logo -- unlike
    `.server-name-and-logo`'s own context-scoped sizing (regular/compact/horizontal), these chips use
    `.server-logo-image` directly with no such wrapper, so this fills in the size that would otherwise
-   be missing. Matches `.server-name-and-logo.regular`'s own 32px, same size as a real server chip's
-   own logo. */
-.server-chip-host-row .server-logo-image {
+   be missing (without it, an unconstrained `<img>` renders at its own natural, often much-taller-
+   than-32px, dimensions). Matches `.server-name-and-logo.regular`'s own 32px, same size as a real
+   server chip's own logo. Covers both rows the image can appear in: `.server-chip-logo-row` (flanked
+   by the reorder arrows, like a real server's own logo) and the older `.server-chip-host-row`
+   placement, kept for any other caller still using that. */
+.server-chip-host-row .server-logo-image,
+.server-chip-logo-row .server-logo-image {
   width: 32px;
   height: 32px;
 }
@@ -1144,6 +1148,20 @@
 .add-account-server-tab-bar .hide-add-account-form-button {
   width: 1.7rem;
   height: 1.7rem;
+}
+
+/* One `UI.mastodonConnectButton` row (an admin-registered Mastodon server, in the Mastodon tab's
+   "connect a real account" list) -- the button itself, plus (only when that server has no `appId`
+   configured, so the button's disabled) a small "Auth Unavailable" notice beside it. */
+.mastodon-connect-account-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mastodon-connect-account-unavailable {
+  opacity: 0.6;
+  font-size: 0.75rem;
 }
 
 .account-form-buttons .hide-add-account-form-button {

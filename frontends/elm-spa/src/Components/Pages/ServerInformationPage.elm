@@ -8,7 +8,7 @@ generalized the same way over "which server" that module is over "which user."
 
 If the server's already known (added to `Shared.AccountsPanel`, i.e. the user
 has it in their Accounts & Servers), its live, cached `Server` is shown.
-Otherwise this page probes it itself (`AccountsPanel.connectToServer`) purely
+Otherwise this page probes it itself (`RellmServers.connectToRellmServer`) purely
 for display -- that probe is never written back to `Shared.AccountsPanel`
 unless the user explicitly clicks "Add Server" (`AddServerClicked`), which
 dispatches the same `AccountsPanel.ServerConnected` used by the Accounts
@@ -64,6 +64,8 @@ import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Task
 import UI.Classes exposing (classes)
@@ -93,8 +95,8 @@ type alias Model =
 
 type Msg
     = TabSelected Tab
-    | GotOwnServerResult (Result Grpc.Error AccountsPanel.RellmServer)
-    | AddServerClicked AccountsPanel.RellmServer
+    | GotOwnServerResult (Result Grpc.Error RellmServer)
+    | AddServerClicked RellmServer
     | GotAdmins (Result Grpc.Error GetUsersResponse)
     | GotVersion (Result Grpc.Error GetServiceVersionResponse)
     | AboutTabMsg AboutTab.Msg
@@ -173,13 +175,13 @@ whenever the server's already known.
 type OwnServerStatus
     = OwnServerNotNeeded
     | LoadingOwnServer
-    | OwnServerLoaded AccountsPanel.RellmServer
+    | OwnServerLoaded RellmServer
     | OwnServerFailed String
 
 
 {-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` (`Pages.About`) or parsed straight out of
 the route (`Pages.Server.ServerIdentifier_`'s `[http|https]:hostname` segment) -- needed for the
-own-probe fallback (see `AccountsPanel.connectToServer`), but not otherwise derivable from
+own-probe fallback (see `RellmServers.connectToRellmServer`), but not otherwise derivable from
 `Shared.Model` alone. `navKey`/`path`, from the calling page's own `Request`, are what let
 `TabSelected` persist the active tab as a `tab` URL query param (see `pushTabUrl`), mirroring
 `Components.Pages.PostsPage.init`'s own `navKey`/`path` (there, for `search_text`/`context`) --
@@ -217,7 +219,7 @@ init shared pageIsSecure targetHost navKey path query =
 
                 Nothing ->
                     ( model0
-                    , AccountsPanel.connectToServer pageIsSecure targetHost
+                    , RellmServers.connectToRellmServer pageIsSecure targetHost
                         |> Task.attempt GotOwnServerResult
                         |> Effect.fromCmd
                     )
@@ -331,20 +333,20 @@ updateInner shared msg model =
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known _and_ actually
-connected (see `AccountsPanel.knownConnectedServer`) -- a known-but-disconnected entry is treated
+connected (see `RellmServers.knownConnectedRellmServer`) -- a known-but-disconnected entry is treated
 the same as not known at all, so this page falls back to its own probe (just like a never-added
 host) rather than trying to show configuration/admins/version for a server it can't currently reach.
 -}
-knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.RellmServer
+knownConnectedServer : Shared.Model -> String -> Maybe RellmServer
 knownConnectedServer shared targetHost =
-    AccountsPanel.knownConnectedServer shared.accounts.servers targetHost
+    RellmServers.knownConnectedRellmServer shared.accounts.servers targetHost
 
 
 {-| The `Server` to actually show details for -- whichever the app already knows about and is
 connected to (from `Shared.AccountsPanel`, if this server's been added to Accounts & Servers
 already), falling back to this page's own probe (`ownServerStatus`) otherwise.
 -}
-effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.RellmServer
+effectiveServer : Shared.Model -> Model -> Maybe RellmServer
 effectiveServer shared model =
     case knownConnectedServer shared model.targetHost of
         Just server ->
@@ -414,19 +416,19 @@ pushTabUrl model =
         |> Effect.fromCmd
 
 
-fetchAdmins : AccountsPanel.RellmServer -> Effect Msg
+fetchAdmins : RellmServer -> Effect Msg
 fetchAdmins server =
     Grpc.new Rellm.getUsers defaultGetUsersRequest
-        |> Grpc.setHost (AccountsPanel.serverUrl server)
+        |> Grpc.setHost (RellmServers.rellmServerUrl server)
         |> Grpc.toTask
         |> Task.attempt GotAdmins
         |> Effect.fromCmd
 
 
-fetchVersion : AccountsPanel.RellmServer -> Effect Msg
+fetchVersion : RellmServer -> Effect Msg
 fetchVersion server =
     Grpc.new Rellm.getServiceVersion {}
-        |> Grpc.setHost (AccountsPanel.serverUrl server)
+        |> Grpc.setHost (RellmServers.rellmServerUrl server)
         |> Grpc.toTask
         |> Task.attempt GotVersion
         |> Effect.fromCmd
@@ -443,7 +445,7 @@ titleFor : Shared.Model -> Model -> String
 titleFor shared model =
     case effectiveServer shared model of
         Just server ->
-            (AccountsPanel.brandingOf server).name
+            (RellmServers.brandingOf server).name
 
         Nothing ->
             model.targetHost
@@ -474,7 +476,7 @@ view shared model =
                     text ""
 
 
-addServerButton : Shared.Model -> Model -> AccountsPanel.RellmServer -> Html Msg
+addServerButton : Shared.Model -> Model -> RellmServer -> Html Msg
 addServerButton shared model server =
     if isKnownServer shared model then
         text ""
@@ -516,10 +518,10 @@ tabButton model ( tab, label_ ) =
         [ text label_ ]
 
 
-tabContent : Shared.Model -> Model -> AccountsPanel.RellmServer -> Html Msg
+tabContent : Shared.Model -> Model -> RellmServer -> Html Msg
 tabContent shared model server =
     let
-        maybeAdminAccount : Maybe AccountsPanel.RellmAccount
+        maybeAdminAccount : Maybe RellmAccount
         maybeAdminAccount =
             Common.adminAccountFor shared model.targetHost
     in
