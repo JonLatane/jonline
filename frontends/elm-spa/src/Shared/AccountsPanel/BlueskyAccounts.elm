@@ -6,13 +6,15 @@ module Shared.AccountsPanel.BlueskyAccounts exposing
     , encodeList
     , errorMessage
     , fetchProfileTask
+    , isReauthError
+    , performWithBlueskyAccount
     )
 
 {-| Everything about a connected Bluesky account that doesn't need `Shared.AccountsPanel.Model`
 itself to make sense: the persisted-list element type (`BlueskyAccount`), its encode/decode
 (`Ports.persistBlueskyAccounts`'s wire format), and the plain HTTP tasks/decoders
 `Shared.AccountsPanel.update` drives to build/refresh it (`com.atproto.server.createSession`,
-`app.bsky.actor.getProfile`).
+`com.atproto.server.refreshSession`, `app.bsky.actor.getProfile`).
 
 What's deliberately *not* here, and stays in `Shared.AccountsPanel` itself: the `Model` fields this
 lives in, `BlueskyConnectForm` (the handle/App Password form itself -- tightly coupled to
@@ -38,18 +40,31 @@ the way Mastodon's OAuth `code` needs). Known first-pass limitation: always call
 directly rather than resolving `handle` to its actual PDS first (see `createSessionTask`'s own
 doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
 are hosted there by default, so this covers the common case. `enabled` mirrors `RellmServer.enabled` --
-see `Shared.AccountsPanel.BrowsedMastodonInstance`'s own doc. `avatarUrl`/`displayName` both start
-`Nothing` (the `createSession` response this is built from carries no profile info at all) and are
-filled in shortly after, if they resolve, by a follow-up `fetchProfileTask` call -- see
-`GotBlueskyProfileResult`.
+see `Shared.AccountsPanel.MastodonServers.BrowsedMastodonInstance`'s own doc. `avatarUrl`/
+`displayName` both start `Nothing` (the `createSession` response this is built from carries no
+profile info at all) and are filled in shortly after, if they resolve, by a follow-up
+`fetchProfileTask` call -- see `GotBlueskyProfileResult`.
+
+`refreshToken` (AT Proto's own `refreshJwt`) is single-use/rotating -- every successful
+`com.atproto.server.refreshSession` call (see `performWithBlueskyAccount`) returns a *new* one,
+which replaces this field entirely; the old one stops working the moment a new one's issued, so
+holding onto a stale copy anywhere (e.g. a second browser tab that hasn't yet seen the rotated
+value) would itself start failing on its next refresh attempt. `needsReauth` mirrors
+`RellmAccount.needsPassword`: set once a refresh itself fails (revoked/expired past AT Proto's own
+refresh-token lifetime, typically much longer than the access token's own short one), meaning the
+only way back in is disconnecting and reconnecting with a fresh App Password -- there's no
+`RellmAccount`-style partial state to recover from short of that.
+
 -}
 type alias BlueskyAccount =
     { handle : String
     , accessToken : String
+    , refreshToken : String
     , enabled : Bool
     , avatarUrl : Maybe String
     , displayName : Maybe String
     , sortOrder : Int
+    , needsReauth : Bool
     }
 
 
@@ -63,10 +78,12 @@ encodeAccount account =
     Encode.object
         [ ( "handle", Encode.string account.handle )
         , ( "accessToken", Encode.string account.accessToken )
+        , ( "refreshToken", Encode.string account.refreshToken )
         , ( "enabled", Encode.bool account.enabled )
         , ( "avatarUrl", account.avatarUrl |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         , ( "displayName", account.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         , ( "sortOrder", Encode.int account.sortOrder )
+        , ( "needsReauth", Encode.bool account.needsReauth )
         ]
 
 
@@ -77,18 +94,47 @@ decoder =
 
 accountDecoder : Decoder BlueskyAccount
 accountDecoder =
-    Decode.map6 BlueskyAccount
+    Decode.map8 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessToken" Decode.string)
+        refreshTokenDecoder
         (Decode.field "enabled" Decode.bool)
         (Decode.maybe (Decode.field "avatarUrl" Decode.string))
         (Decode.maybe (Decode.field "displayName" Decode.string))
         sortOrderDecoder
+        needsReauthDecoder
+
+
+{-| Defaults to `""` if the key is missing entirely -- an account persisted before `refreshToken`
+existed. That empty string will simply fail as a bearer token on this account's next refresh
+attempt (see `performWithBlueskyAccount`), which is exactly what should happen: there's no real
+refresh token to recover, so the account correctly ends up `needsReauth` and the user reconnects
+with a fresh App Password, same one-time migration cost `RellmAccounts.realNameDecoder`'s own kind
+of default pays elsewhere.
+-}
+refreshTokenDecoder : Decoder String
+refreshTokenDecoder =
+    Decode.oneOf
+        [ Decode.field "refreshToken" Decode.string
+        , Decode.succeed ""
+        ]
+
+
+{-| Defaults to `False` if the key is missing entirely (older persisted state, or a freshly
+connected account -- see `sessionDecoder`).
+-}
+needsReauthDecoder : Decoder Bool
+needsReauthDecoder =
+    Decode.oneOf
+        [ Decode.field "needsReauth" Decode.bool
+        , Decode.succeed False
+        ]
 
 
 {-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
 directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
-`bsky.social`-only limitation). Decodes just `handle`/`accessJwt`, all a `BlueskyAccount` needs.
+`bsky.social`-only limitation). Decodes `handle`/`accessJwt`/`refreshJwt`, all a `BlueskyAccount`
+needs.
 -}
 createSessionTask : String -> String -> Task Http.Error BlueskyAccount
 createSessionTask handle appPassword =
@@ -112,9 +158,10 @@ createSessionTask handle appPassword =
 
 sessionDecoder : Decode.Decoder BlueskyAccount
 sessionDecoder =
-    Decode.map6 BlueskyAccount
+    Decode.map8 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessJwt" Decode.string)
+        (Decode.field "refreshJwt" Decode.string)
         (Decode.succeed True)
         (Decode.succeed Nothing)
         (Decode.succeed Nothing)
@@ -122,6 +169,93 @@ sessionDecoder =
         -- `nextFrontAccountSortOrder model` before this ever reaches `model.blueskyAccounts` --
         -- see that handler.
         (Decode.succeed 0)
+        (Decode.succeed False)
+
+
+{-| `com.atproto.server.refreshSession` -- exchanges `account`'s `refreshToken` for a fresh
+`accessToken`/`refreshToken` pair, authenticated with the refresh token itself as the bearer token
+(not the presumably-expired access token). AT Proto rotates the refresh token on every use, so the
+old one in `account` stops working the instant this succeeds -- the returned `BlueskyAccount`
+(same `handle`/`enabled`/`avatarUrl`/`displayName`/`sortOrder`, fresh tokens, `needsReauth = False`)
+is what has to actually replace `account` wherever it's stored, not just get read from once. See
+`performWithBlueskyAccount` for what actually calls this, and when.
+-}
+refreshSessionTask : BlueskyAccount -> Task Http.Error BlueskyAccount
+refreshSessionTask account =
+    Http.task
+        { method = "POST"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ account.refreshToken) ]
+        , url = "https://bsky.social/xrpc/com.atproto.server.refreshSession"
+        , body = Http.emptyBody
+        , resolver =
+            jsonResolver refreshedTokensDecoder
+                (\metadata body -> Http.BadBody (errorBody body |> Maybe.withDefault ("HTTP " ++ String.fromInt metadata.statusCode)))
+        , timeout = Just 10000
+        }
+        |> Task.map
+            (\( newAccessToken, newRefreshToken ) ->
+                { account | accessToken = newAccessToken, refreshToken = newRefreshToken, needsReauth = False }
+            )
+
+
+refreshedTokensDecoder : Decode.Decoder ( String, String )
+refreshedTokensDecoder =
+    Decode.map2 Tuple.pair
+        (Decode.field "accessJwt" Decode.string)
+        (Decode.field "refreshJwt" Decode.string)
+
+
+{-| Ensures `account`'s access token still works around performing `req`: tries `req` with the
+current `accessToken` first, and only attempts a refresh (see `refreshSessionTask`) if that comes
+back `Http.BadStatus _` -- AT Proto's exact status code/error-body shape for "this token is
+expired" (historically inconsistent across its own endpoints) isn't worth depending on precisely
+here, so *any* bad-status response is treated as a "maybe expired, worth one refresh-and-retry"
+signal. If the refresh itself fails (refresh token revoked/expired past its own, much longer
+lifetime, or a network error), this surfaces the *original* `req` failure rather than the refresh's
+own -- callers should treat a final `Http.BadStatus _` here as "this account needs
+`needsReauth = True`" (see `isReauthError`), same shape `RellmAccounts.applyPermissionsRefreshResult`
+already uses for `RellmAccount.needsPassword`. On a successful refresh, retries `req` exactly once
+with the new access token and returns the *updated* `account` alongside whatever it resolves to
+(or that retry's own failure, uninterrupted, if it fails for an unrelated reason) -- either way,
+callers should persist the returned account whenever this succeeds, since its tokens may have
+rotated even though the caller never asked for that explicitly.
+-}
+performWithBlueskyAccount : BlueskyAccount -> (String -> Task Http.Error a) -> Task Http.Error ( BlueskyAccount, a )
+performWithBlueskyAccount account req =
+    req account.accessToken
+        |> Task.map (\result -> ( account, result ))
+        |> Task.onError
+            (\originalError ->
+                case originalError of
+                    Http.BadStatus _ ->
+                        refreshSessionTask account
+                            |> Task.mapError (\_ -> originalError)
+                            |> Task.andThen
+                                (\refreshedAccount ->
+                                    req refreshedAccount.accessToken
+                                        |> Task.map (\result -> ( refreshedAccount, result ))
+                                )
+
+                    _ ->
+                        Task.fail originalError
+            )
+
+
+{-| Whether an `Http.Error` (from `performWithBlueskyAccount`, once every refresh-and-retry
+possibility is exhausted) means this account needs a fresh App Password rather than being some
+unrelated/transient failure -- mirrors `Grpc.Unauthenticated`'s own role in
+`RellmAccounts.applyPermissionsRefreshResult`. Deliberately as broad as `performWithBlueskyAccount`'s
+own retry trigger (any `Http.BadStatus _`), for the same reason: a more specific check would need to
+depend on AT Proto's own not-fully-consistent error body shape across endpoints.
+-}
+isReauthError : Http.Error -> Bool
+isReauthError err =
+    case err of
+        Http.BadStatus _ ->
+            True
+
+        _ ->
+            False
 
 
 {-| `com.atproto.server.createSession`'s error responses are `{ error : String, message : String }`
@@ -135,7 +269,7 @@ errorBody body =
 
 
 {-| `fetchProfileTask`'s result -- `avatarUrl`/`displayName` both `Nothing` if unset, the same
-as `Shared.AccountsPanel.MastodonAccountAndServers.MastodonInstanceInfo`'s own convention.
+as `Shared.AccountsPanel.MastodonServers.MastodonInstanceInfo`'s own convention.
 -}
 type alias BlueskyProfile =
     { avatarUrl : Maybe String

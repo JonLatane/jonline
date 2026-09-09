@@ -44,7 +44,7 @@ import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AccountsPanel.BlueskyAccounts exposing (BlueskyAccount)
+import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
@@ -272,7 +272,7 @@ branch), so there's nothing lost by discarding the distinction.
 -}
 type FeedResult
     = FeedLoaded (List Post) (Maybe AccountsPanel.Msg)
-    | FeedFailed
+    | FeedFailed (Maybe AccountsPanel.Msg)
 
 
 fromServerResult : Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ) -> FeedResult
@@ -282,7 +282,7 @@ fromServerResult result =
             FeedLoaded response.posts maybeAccountsPanelMsg
 
         Err _ ->
-            FeedFailed
+            FeedFailed Nothing
 
 
 fromFederatedResult : Result Http.Error (List Post) -> FeedResult
@@ -292,7 +292,38 @@ fromFederatedResult result =
             FeedLoaded posts Nothing
 
         Err _ ->
+            FeedFailed Nothing
+
+
+{-| `BlueskyFeed`'s own `FeedResult` conversion -- unlike `fromFederatedResult`, this needs `account`
+(the credential the request was fired with) alongside the raw `Result`, since
+`BlueskyAccounts.performWithBlueskyAccount` may have silently rotated its tokens (a successful
+refresh-and-retry, see that function's own doc) or exhausted its retry entirely (a `needsReauth`-worthy
+failure, see `BlueskyAccounts.isReauthError`) -- either way something needs to reach
+`Shared.AccountsPanel`'s own persisted `blueskyAccounts`, which this page has no direct write access
+to. Piggybacks on the same `Maybe AccountsPanel.Msg` channel `fromServerResult` already uses for a
+Rellm server's own token refresh, so `GotFeedPosts`'s handling doesn't need a federated-specific case.
+-}
+fromBlueskyResult : BlueskyAccount -> Result Http.Error ( BlueskyAccount, List Post ) -> FeedResult
+fromBlueskyResult account result =
+    case result of
+        Ok ( refreshedAccount, posts ) ->
+            FeedLoaded posts
+                (if refreshedAccount.accessToken == account.accessToken then
+                    Nothing
+
+                 else
+                    Just (AccountsPanel.BlueskyAccountRefreshed refreshedAccount)
+                )
+
+        Err err ->
             FeedFailed
+                (if BlueskyAccounts.isReauthError err then
+                    Just (AccountsPanel.MarkBlueskyAccountNeedsReauth account.handle)
+
+                 else
+                    Nothing
+                )
 
 
 {-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
@@ -511,13 +542,20 @@ updateInner shared msg model =
             , accountEffect
             )
 
-        GotFeedPosts host FeedFailed ->
+        GotFeedPosts host (FeedFailed maybeAccountsPanelMsg) ->
+            let
+                accountEffect : Effect Msg
+                accountEffect =
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+            in
             ( { model
                 | postsByServer =
                     Dict.update host (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
               }
                 |> syncAnimations
-            , Effect.none
+            , accountEffect
             )
 
         Poll ->
@@ -917,14 +955,17 @@ fetchFeedSource shared model source =
                 trimmedSearch : String
                 trimmedSearch =
                     String.trim model.searchText
-            in
-            (if String.isEmpty trimmedSearch then
-                Bluesky.fetchPosts account.accessToken
 
-             else
-                Bluesky.searchPosts account.accessToken trimmedSearch
-            )
-                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                request : String -> Task.Task Http.Error (List Post)
+                request accessToken =
+                    if String.isEmpty trimmedSearch then
+                        Bluesky.fetchPosts accessToken
+
+                    else
+                        Bluesky.searchPosts accessToken trimmedSearch
+            in
+            BlueskyAccounts.performWithBlueskyAccount account request
+                |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
 
 

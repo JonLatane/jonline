@@ -2093,6 +2093,18 @@ mastodonAccountRow shared count mainCount index mastodonAccount =
                     [ text mastodonAccount.instanceHost ]
                 ]
             ]
+        , if mastodonAccount.needsReauth then
+            div [ class "account-row-alerts" ]
+                [ button
+                    [ type_ "button"
+                    , class "account-needs-password"
+                    , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg (AccountsPanel.MastodonConnectClicked mastodonAccount.instanceHost))
+                    ]
+                    [ text "Reconnect" ]
+                ]
+
+          else
+            text ""
         ]
 
 
@@ -2155,6 +2167,18 @@ blueskyAccountRow shared count mainCount index blueskyAccount =
                 ]
                 [ text "╳" ]
             ]
+        , if blueskyAccount.needsReauth then
+            div [ class "account-row-alerts" ]
+                [ button
+                    [ type_ "button"
+                    , class "account-needs-password"
+                    , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg (AccountsPanel.ReconnectBlueskyAccountClicked blueskyAccount.handle))
+                    ]
+                    [ text "Reconnect" ]
+                ]
+
+          else
+            text ""
         ]
 
 

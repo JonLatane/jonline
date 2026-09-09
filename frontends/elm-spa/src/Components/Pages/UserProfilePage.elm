@@ -738,7 +738,7 @@ grantedAIModelAccess user =
         |> Tuple.second
 
 
-{-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` from the calling
+{-| `pageIsSecure` is `Shared.AccountsPanel.RellmServers.isSecure req` from the calling
 page's own `Request` -- needed for `ConnectClicked` (see `RellmServers.connectToRellmServer`),
 but not otherwise derivable from `Shared.Model` alone. `navKey`/`path`/`query` are
 the calling page's own `Request.With Params`' `key`/`url.path`/`query` -- kept around

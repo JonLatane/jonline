@@ -17,7 +17,7 @@ import Gen.Params.Event.PostId_ exposing (Params)
 import Page
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import View exposing (View)
 
@@ -42,7 +42,7 @@ type alias Msg =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    EventPage.init shared (AccountsPanel.isSecure req) req.params.postId req.key
+    EventPage.init shared (RellmServers.isSecure req) req.params.postId req.key
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )

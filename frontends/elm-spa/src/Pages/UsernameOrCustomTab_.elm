@@ -45,7 +45,6 @@ import Page
 import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import UI.CustomNav as CustomNav
@@ -124,7 +123,7 @@ init shared req =
 
         Nothing ->
             if Users.startsWithReservedShortUrlCharacter req.params.usernameOrCustomTab then
-                PostOrEventPage.init shared (AccountsPanel.isSecure req) req.params.usernameOrCustomTab req.key
+                PostOrEventPage.init shared (RellmServers.isSecure req) req.params.usernameOrCustomTab req.key
                     |> Tuple.mapFirst EmbeddedPostOrEvent
                     |> Tuple.mapSecond (Effect.map EmbeddedPostOrEventMsg)
 
@@ -182,7 +181,7 @@ initEmbedded shared req tab =
                 |> Tuple.mapSecond (Effect.map PeopleMsg)
 
         CustomNav.TargetTab ABOUTTAB ->
-            ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
+            ServerInformationPage.init shared (RellmServers.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedAbout
                 |> Tuple.mapSecond (Effect.map AboutMsg)
 
@@ -193,7 +192,7 @@ initEmbedded shared req tab =
             initProfile shared req
 
         CustomNav.TargetPost postId ->
-            PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+            PostPage.init shared (RellmServers.isSecure req) postId req.key
                 |> Tuple.mapFirst EmbeddedPost
                 |> Tuple.mapSecond (Effect.map EmbeddedPostMsg)
 
@@ -202,7 +201,7 @@ initEmbedded shared req tab =
                 ( username, targetHost ) =
                     Users.parseUserRouteId shared.accounts.mainFrontendHost tab.path
             in
-            UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedProfile
                 |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
@@ -228,7 +227,7 @@ initProfile shared req =
         )
 
     else
-        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+        UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
             |> Tuple.mapFirst Profile
             |> Tuple.mapSecond (Effect.map ProfileMsg)
 

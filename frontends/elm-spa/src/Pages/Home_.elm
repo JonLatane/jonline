@@ -79,7 +79,6 @@ import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmServers as RellmServers
 import Shared.Breadcrumbs as Breadcrumbs
 import UI
@@ -219,7 +218,7 @@ initForTarget shared req home =
                             False
 
                     ( postModel, postEffect ) =
-                        PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                        PostPage.init shared (RellmServers.isSecure req) postId req.key
                 in
                 Just
                     ( HomePostWithEvents { events = eventsModel, post = postModel }
@@ -227,7 +226,7 @@ initForTarget shared req home =
                     )
 
             else
-                PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                PostPage.init shared (RellmServers.isSecure req) postId req.key
                     |> Tuple.mapFirst HomePost
                     |> Tuple.mapSecond (Effect.map HomePostMsg)
                     |> Just

@@ -15,7 +15,7 @@ import Gen.Params.User.UserId_ exposing (Params)
 import Page
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import View exposing (View)
 
@@ -44,7 +44,7 @@ init shared req =
         ( userId, targetHost ) =
             Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.userId
     in
-    UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query
+    UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg

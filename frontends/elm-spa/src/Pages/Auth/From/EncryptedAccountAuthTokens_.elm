@@ -31,6 +31,7 @@ import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, RellmAccountAuthTokens)
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Shared.FederatedAuth as FederatedAuth
 import Task
 import UI
@@ -104,7 +105,7 @@ update shared req msg model =
                     case Decode.decodeString RellmAccounts.rellmAccountAuthTokensDecoder tokensJson of
                         Ok tokens ->
                             ( { model | status = SigningIn }
-                            , RellmAccounts.resolveFederatedRellmAccountTokens (AccountsPanel.isSecure req) shared.accounts.servers tokens
+                            , RellmAccounts.resolveFederatedRellmAccountTokens (RellmServers.isSecure req) shared.accounts.servers tokens
                                 |> Task.attempt (GotSignInResult tokens)
                                 |> Effect.fromCmd
                             )

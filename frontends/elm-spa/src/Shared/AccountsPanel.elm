@@ -29,7 +29,6 @@ module Shared.AccountsPanel exposing
     , init
     , isKnownServer
     , isMainServer
-    , isSecure
     , mainServerTheme
     , mastodonServerFor
     , performWithAccountServer
@@ -69,13 +68,12 @@ import Shared.AccountsPanel.MastodonAccounts as MastodonAccounts exposing (Masto
 import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (BrowsedMastodonInstance, MastodonInstanceInfo)
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, rellmAccountId)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, Connection, PersistedRellmServer, RellmServer)
-import Shared.AccountsPanel.SortOrder exposing (missingSortOrderSentinel)
+import Shared.AccountsPanel.SortOrder as SortOrder
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (escapeCSSClass)
 import UI.Flip
 import UI.ServerTheme
-import Url
 
 
 type alias Model =
@@ -433,7 +431,9 @@ type Msg
     | DismissFederatedSignInNotice
     | MastodonConnectClicked String
     | GotMastodonLoginResult Decode.Value
-    | GotMastodonVerifyCredentialsResult String String (Result Http.Error String)
+    | GotMastodonVerifyCredentialsResult String MastodonAccounts.MastodonLoginResult (Result Http.Error String)
+    | MastodonAccountRefreshed MastodonAccounts.MastodonAccount
+    | MarkMastodonAccountNeedsReauth String
     | AddAccountServerFormTypeSelected AccountOrServerFormType
     | BlueskyHandleChanged String
     | BlueskyAppPasswordChanged String
@@ -443,6 +443,9 @@ type Msg
     | RemoveBlueskyAccountClicked String
     | FinishRemoveBlueskyAccount String
     | ToggleBlueskyAccountEnabled String
+    | BlueskyAccountRefreshed BlueskyAccount
+    | MarkBlueskyAccountNeedsReauth String
+    | ReconnectBlueskyAccountClicked String
     | BrowseMastodonInstanceInputChanged String
     | BrowseMastodonInstanceClicked
     | GotMastodonInstanceInfoResult String (Result Http.Error MastodonInstanceInfo)
@@ -1058,21 +1061,6 @@ enabledAccounts : Model -> List RellmAccount
 enabledAccounts model =
     List.filter .enabled model.accounts
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 {-| Like `RellmServers.rellmServerThemeOf`, but looks a server up by `frontendHost` (for e.g. an
 account's `server` field).
 -}
@@ -1158,7 +1146,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
 
         pageIsSecure : Bool
         pageIsSecure =
-            isSecure req
+            RellmServers.isSecure req
 
         browsingHost : String
         browsingHost =
@@ -1314,7 +1302,11 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , blueskyAccounts = persistedBlueskyAccounts
       , blueskyConnectForm = emptyBlueskyConnectForm
       }
-    , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
+    , Cmd.batch
+        (Ports.checkPushSubscription Encode.null
+            :: mainServerCmd
+            :: (List.map healthCheckMastodonAccountCmd persistedMastodon.accounts ++ reconnectCmds ++ missingServerCmds)
+        )
     )
 
 
@@ -1475,7 +1467,7 @@ sendUpdate req msg model =
             ( model
                 |> updateForm (\f -> { f | status = Submitting })
                 |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
-            , RellmServers.resolveHost (isSecure req) model.servers (String.trim form.server)
+            , RellmServers.resolveHost (RellmServers.isSecure req) model.servers (String.trim form.server)
                 |> Task.attempt GotCreateAccountServerInfo
             )
 
@@ -1501,7 +1493,7 @@ sendUpdate req msg model =
             ( model
                 |> updateForm (\f -> { f | status = Submitting })
                 |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
-            , RellmServers.resolveHost (isSecure req) model.servers server
+            , RellmServers.resolveHost (RellmServers.isSecure req) model.servers server
                 |> Task.andThen
                     (\( connection, config ) ->
                         Grpc.new Rellm.login
@@ -1749,7 +1741,7 @@ sendUpdate req msg model =
                             refreshPermissions server enabledAccount
 
                         Nothing ->
-                            RellmServers.negotiateRellmServerConfig (isSecure req) enabledAccount.server
+                            RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) enabledAccount.server
                                 |> Task.attempt (GotReconnectResult enabledAccount.server True False)
             in
             ( newModel
@@ -1960,7 +1952,7 @@ sendUpdate req msg model =
                                     )
                                 |> List.map
                                     (\fs ->
-                                        RellmServers.negotiateRellmServerConfig (isSecure req) fs.host
+                                        RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) fs.host
                                             |> Task.attempt (GotReconnectResult fs.host (Maybe.withDefault False fs.pinnedByDefault) True)
                                     )
                     in
@@ -2021,7 +2013,7 @@ sendUpdate req msg model =
                                 |> List.filter (\ps -> not (List.member ps.frontendHost connectedHosts))
                                 |> List.map
                                     (\ps ->
-                                        RellmServers.negotiateRellmServerConfig (isSecure req) ps.frontendHost
+                                        RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) ps.frontendHost
                                             |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled False)
                                     )
 
@@ -2041,7 +2033,7 @@ sendUpdate req msg model =
                         missingServerCmds =
                             List.map
                                 (\host ->
-                                    RellmServers.negotiateRellmServerConfig (isSecure req) host
+                                    RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) host
                                         |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts) False)
                                 )
                                 missingServerHosts
@@ -2358,7 +2350,7 @@ sendUpdate req msg model =
                         |> Maybe.withDefault False
             in
             ( model
-            , RellmServers.negotiateRellmServerConfig (isSecure req) frontendHost
+            , RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) frontendHost
                 |> Task.attempt (GotReconnectResult frontendHost enabled False)
             )
 
@@ -2386,7 +2378,7 @@ sendUpdate req msg model =
                 ( model
                     |> updateAddServerForm (\f -> { f | status = Submitting })
                     |> updateForm (\f -> { f | status = clearErrored f.status })
-                , RellmServers.negotiateRellmServerConfig (isSecure req) host
+                , RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) host
                     |> Task.attempt GotNewServerResult
                 )
 
@@ -2454,7 +2446,7 @@ sendUpdate req msg model =
             , hostsToFetch
                 |> List.map
                     (\host ->
-                        RellmServers.negotiateRellmServerConfig (isSecure req) host
+                        RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) host
                             |> Task.attempt (GotRecommendedServerConfig host)
                     )
                 |> Cmd.batch
@@ -2478,7 +2470,7 @@ sendUpdate req msg model =
             -- (see `RellmServers.resolveHost`) if its fetch already resolved, rather than
             -- renegotiating one from scratch.
             ( model
-            , RellmServers.resolveHost (isSecure req) (Dict.values model.recommendedServerConnections) host
+            , RellmServers.resolveHost (RellmServers.isSecure req) (Dict.values model.recommendedServerConnections) host
                 |> Task.attempt (GotRecommendedServerAddResult host)
             )
 
@@ -2564,7 +2556,7 @@ sendUpdate req msg model =
             , Cmd.batch
                 [ persist newModel
                 , if needsRefetch then
-                    RellmServers.negotiateRellmServerConfig (isSecure req) frontendHost
+                    RellmServers.negotiateRellmServerConfig (RellmServers.isSecure req) frontendHost
                         |> Task.attempt (GotRecommendedServerConfig frontendHost)
 
                   else
@@ -3088,30 +3080,93 @@ sendUpdate req msg model =
 
                 Just instanceHost ->
                     case MastodonAccounts.mastodonLoginResultDecoder value of
-                        Ok accessToken ->
+                        Ok loginResult ->
                             ( model
-                            , Task.attempt (GotMastodonVerifyCredentialsResult instanceHost accessToken)
-                                (MastodonAccounts.verifyMastodonCredentialsTask instanceHost accessToken)
+                            , Task.attempt (GotMastodonVerifyCredentialsResult instanceHost loginResult)
+                                (MastodonAccounts.verifyMastodonCredentialsTask instanceHost loginResult.accessToken)
                             )
 
                         Err _ ->
                             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
-        GotMastodonVerifyCredentialsResult instanceHost accessToken (Ok username) ->
+        GotMastodonVerifyCredentialsResult instanceHost loginResult (Ok username) ->
             let
+                -- A reconnect (`ReconnectMastodonAccountClicked`'s own use of this same
+                -- `MastodonConnectClicked` popup, see `UI.mastodonAccountRow`'s reauth button) lands
+                -- back here as a brand new OAuth result for an instance/username that may already
+                -- have a (now-stale) entry -- replace it in place rather than prepending a duplicate.
+                account : MastodonAccounts.MastodonAccount
+                account =
+                    { instanceHost = instanceHost
+                    , accessToken = loginResult.accessToken
+                    , refreshToken = loginResult.refreshToken
+                    , clientId = loginResult.clientId
+                    , username = username
+                    , sortOrder = nextFrontAccountSortOrder model
+                    , needsReauth = False
+                    }
+
                 newModel : Model
                 newModel =
                     { model
                         | mastodonConnectPopupOpen = Nothing
                         , mastodonAccounts =
-                            { instanceHost = instanceHost, accessToken = accessToken, username = username, sortOrder = nextFrontAccountSortOrder model }
-                                :: model.mastodonAccounts
+                            account
+                                :: List.filter
+                                    (\a -> not (a.instanceHost == instanceHost && a.username == username))
+                                    model.mastodonAccounts
                     }
             in
             ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
 
         GotMastodonVerifyCredentialsResult _ _ (Err _) ->
             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
+
+        MastodonAccountRefreshed refreshedAccount ->
+            -- `MastodonAccounts.performWithMastodonAccount` rotated `refreshedAccount`'s tokens (see
+            -- its own doc) while resolving some other request -- persisted here the same way
+            -- `BlueskyAccountRefreshed` persists a rotated Bluesky token pair.
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | mastodonAccounts =
+                            List.map
+                                (\a ->
+                                    if a.instanceHost == refreshedAccount.instanceHost && a.username == refreshedAccount.username then
+                                        refreshedAccount
+
+                                    else
+                                        a
+                                )
+                                model.mastodonAccounts
+                    }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
+
+        MarkMastodonAccountNeedsReauth instanceHost ->
+            -- Sent once `MastodonAccounts.performWithMastodonAccount`'s own refresh-and-retry has
+            -- been exhausted (see `MastodonAccounts.isReauthError`) -- mirrors
+            -- `MarkBlueskyAccountNeedsReauth` exactly. There's no remove/disconnect UI for a Mastodon
+            -- account yet (see `Model.mastodonAccounts`'s own doc), so this is currently surfaced only
+            -- via `UI.mastodonAccountRow`'s own reauth affordance, with no automated recovery path.
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | mastodonAccounts =
+                            List.map
+                                (\a ->
+                                    if a.instanceHost == instanceHost then
+                                        { a | needsReauth = True }
+
+                                    else
+                                        a
+                                )
+                                model.mastodonAccounts
+                    }
+            in
+            ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
 
         BlueskyHandleChanged handle ->
             ( { model | blueskyConnectForm = (\form -> { form | handle = handle }) model.blueskyConnectForm }, Cmd.none )
@@ -3213,6 +3268,64 @@ sendUpdate req msg model =
                         model.blueskyAccounts
             in
             ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+
+        BlueskyAccountRefreshed refreshedAccount ->
+            -- `BlueskyAccounts.performWithBlueskyAccount` rotated `refreshedAccount`'s tokens (see
+            -- its own doc) while resolving some other request (a post fetch, a profile refresh) --
+            -- whichever caller reached that point sends this back so the rotated tokens actually get
+            -- persisted; a stale, no-longer-working `accessToken`/`refreshToken` pair left in
+            -- `blueskyAccounts` would otherwise force every subsequent request through a refresh of
+            -- its own, and eventually fail outright once the old `refreshToken` itself gets rejected.
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    List.map
+                        (\a ->
+                            if a.handle == refreshedAccount.handle then
+                                refreshedAccount
+
+                            else
+                                a
+                        )
+                        model.blueskyAccounts
+            in
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+
+        MarkBlueskyAccountNeedsReauth handle ->
+            -- Sent once `BlueskyAccounts.performWithBlueskyAccount`'s own refresh-and-retry has been
+            -- exhausted (see `BlueskyAccounts.isReauthError`) -- `handle`'s refresh token itself is no
+            -- longer valid, so there's no automatic recovery left; `UI.blueskyAccountRow` shows a
+            -- "Reconnect" button (`ReconnectBlueskyAccountClicked`) for any account in this state,
+            -- mirroring `RellmAccount.needsPassword`'s own "Reauthentication Required" button.
+            let
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    List.map
+                        (\a ->
+                            if a.handle == handle then
+                                { a | needsReauth = True }
+
+                            else
+                                a
+                        )
+                        model.blueskyAccounts
+            in
+            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+
+        ReconnectBlueskyAccountClicked handle ->
+            -- Opens the same Bluesky tab/form `BlueskyConnectClicked` submits, pre-filled with
+            -- `handle` -- there's no way to "refresh" past a fully revoked/expired refresh token
+            -- short of a brand new `createSessionTask` call with a fresh App Password, same as
+            -- disconnecting and reconnecting from scratch. `GotBlueskyConnectResult`'s own handling
+            -- doesn't special-case this: a successful reconnect just prepends a new `BlueskyAccount`
+            -- (see that handler), so the caller is expected to remove the old, now-redundant entry
+            -- via `RemoveBlueskyAccountClicked` themselves if they don't want both.
+            ( { model
+                | addAccountServerFormType = Just BlueskyAccountFormType
+                , blueskyConnectForm = { emptyBlueskyConnectForm | handle = handle }
+              }
+            , Cmd.none
+            )
 
         BrowseMastodonInstanceInputChanged text ->
             ( { model | browseMastodonInstanceInput = text }, Cmd.none )
@@ -3316,21 +3429,6 @@ sendUpdate req msg model =
 
         NoOp ->
             ( model, Cmd.none )
-
-
-{-| Whether the page itself was loaded over TLS -- if so, we only ever try
-TLS candidates for a new host, since a secure page can't make plaintext
-requests (mixed content). Only an insecure (e.g. local dev) page falls back
-to trying plaintext ports too.
-
-Generic over `params` (rather than just this module's own `Request`) so any
-page can pass its own `Request.With Params` straight in -- see
-`RellmServers.connectToRellmServer`.
-
--}
-isSecure : Request.With params -> Bool
-isSecure req =
-    req.url.protocol == Url.Https
 
 
 emptyForm : AccountForm
@@ -3639,6 +3737,32 @@ repopulateBlankServerField model =
 
 
 
+
+
+{-| Re-verifies a persisted `MastodonAccount`'s credentials once, at app startup (see `init`'s own
+`Cmd.batch`) -- the only point today `mastodonAccounts` ever gets checked at all, since nothing else
+in the app currently makes an authenticated request with one (see `Model.mastodonAccounts`'s own doc
+on the "no remove/disconnect UI yet" first-pass limitation). Goes through
+`MastodonAccounts.performWithMastodonAccount` so an access token that's since expired gets one
+refresh-and-retry (see that function's own doc) before this gives up -- a bare `verifyMastodonCredentialsTask`
+call would otherwise report a perfectly recoverable account as broken. `account.username` is
+refreshed from the response too (not just assumed unchanged), same as the original connect flow --
+a `MastodonAccountRefreshed`/`MarkMastodonAccountNeedsReauth` either way, so a stale or now-invalid
+account doesn't just sit there silently until some future feature tries to use it.
+-}
+healthCheckMastodonAccountCmd : MastodonAccounts.MastodonAccount -> Cmd Msg
+healthCheckMastodonAccountCmd account =
+    MastodonAccounts.performWithMastodonAccount account (MastodonAccounts.verifyMastodonCredentialsTask account.instanceHost)
+        |> Task.map (\( refreshedAccount, username ) -> MastodonAccountRefreshed { refreshedAccount | username = username })
+        |> Task.onError
+            (\err ->
+                if MastodonAccounts.isReauthError err then
+                    Task.succeed (MarkMastodonAccountNeedsReauth account.instanceHost)
+
+                else
+                    Task.succeed NoOp
+            )
+        |> Task.perform identity
 
 
 {-| Refreshes a single account's permissions -- fired when it's individually
@@ -4062,13 +4186,13 @@ migrateServerFeedItemSortOrders servers instances =
     let
         start : Int
         start =
-            nextMigratedSortOrderStart [ List.map .sortOrder servers, List.map .sortOrder instances ]
+            SortOrder.nextMigratedSortOrderStart [ List.map .sortOrder servers, List.map .sortOrder instances ]
 
         ( afterServers, migratedServers ) =
-            assignMissingSortOrders start servers
+            SortOrder.assignMissingSortOrders start servers
 
         ( _, migratedInstances ) =
-            assignMissingSortOrders afterServers instances
+            SortOrder.assignMissingSortOrders afterServers instances
     in
     ( migratedServers, migratedInstances )
 
@@ -4087,55 +4211,18 @@ migrateAccountItemSortOrders accounts mastodonAccounts blueskyAccounts =
     let
         start : Int
         start =
-            nextMigratedSortOrderStart [ List.map .sortOrder accounts, List.map .sortOrder mastodonAccounts, List.map .sortOrder blueskyAccounts ]
+            SortOrder.nextMigratedSortOrderStart [ List.map .sortOrder accounts, List.map .sortOrder mastodonAccounts, List.map .sortOrder blueskyAccounts ]
 
         ( afterAccounts, migratedAccounts ) =
-            assignMissingSortOrders start accounts
+            SortOrder.assignMissingSortOrders start accounts
 
         ( afterMastodonAccounts, migratedMastodonAccounts ) =
-            assignMissingSortOrders afterAccounts mastodonAccounts
+            SortOrder.assignMissingSortOrders afterAccounts mastodonAccounts
 
         ( _, migratedBlueskyAccounts ) =
-            assignMissingSortOrders afterMastodonAccounts blueskyAccounts
+            SortOrder.assignMissingSortOrders afterMastodonAccounts blueskyAccounts
     in
     ( migratedAccounts, migratedMastodonAccounts, migratedBlueskyAccounts )
-
-
-{-| One past the highest real (non-`missingSortOrderSentinel`) `sortOrder` across every list in a
-migration's shared space, or `0` if none of them have one yet -- where `assignMissingSortOrders`
-should start counting up from for that space's still-missing entries.
--}
-nextMigratedSortOrderStart : List (List Int) -> Int
-nextMigratedSortOrderStart sortOrderLists =
-    (List.concat sortOrderLists
-        |> List.filter ((/=) missingSortOrderSentinel)
-        |> List.maximum
-        |> Maybe.withDefault -1
-    )
-        + 1
-
-
-{-| Walks `items` in their own existing order, replacing every `missingSortOrderSentinel` entry with
-the next sequential value counting up from `counter` -- so upgrading from a pre-`sortOrder` version
-doesn't visibly reshuffle anything already on screen (each list keeps its own relative order; the
-lists in a migration's shared space stack in roughly the same order they used to occupy separate
-sections in). Returns the counter's value just past the last one it handed out (for a caller
-migrating a second list in the same space right after, see `migrateServerFeedItemSortOrders`/
-`migrateAccountItemSortOrders`) alongside the migrated list itself.
--}
-assignMissingSortOrders : Int -> List { a | sortOrder : Int } -> ( Int, List { a | sortOrder : Int } )
-assignMissingSortOrders counter items =
-    List.foldl
-        (\item ( next, acc ) ->
-            if item.sortOrder == missingSortOrderSentinel then
-                ( next + 1, { item | sortOrder = next } :: acc )
-
-            else
-                ( next, item :: acc )
-        )
-        ( counter, [] )
-        items
-        |> Tuple.mapSecond List.reverse
 
 
 {-| The `PushManager.subscribe()` result Ports.pushSubscribed's JS side hands back on success --

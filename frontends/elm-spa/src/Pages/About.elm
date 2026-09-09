@@ -18,7 +18,7 @@ import Html.Attributes exposing (class, href, target)
 import Page
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import View exposing (View)
 
@@ -43,7 +43,7 @@ type alias Msg =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
+    ServerInformationPage.init shared (RellmServers.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg

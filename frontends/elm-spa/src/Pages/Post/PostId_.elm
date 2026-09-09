@@ -21,7 +21,7 @@ import Html
 import Page
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import View exposing (View)
 
@@ -80,7 +80,7 @@ init shared req =
                 |> Tuple.mapSecond (Effect.map BlueskyPostMsg)
 
         Nothing ->
-            PostPage.init shared (AccountsPanel.isSecure req) req.params.postId req.key
+            PostPage.init shared (RellmServers.isSecure req) req.params.postId req.key
                 |> Tuple.mapFirst RellmPost
                 |> Tuple.mapSecond (Effect.map RellmPostMsg)
 

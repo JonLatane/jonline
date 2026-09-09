@@ -21,6 +21,8 @@ import Html.Attributes exposing (class, href, rel, target)
 import Http
 import Proto.Rellm exposing (Post)
 import Shared
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.Federation.Bluesky as Bluesky
 import Task
 
@@ -38,7 +40,7 @@ type PostStatus
 
 
 type Msg
-    = GotPost (Result Http.Error Post)
+    = GotPost String (Result Http.Error ( Maybe BlueskyAccount, Post ))
 
 
 {-| `uri` comes straight from `Components.Posts.parseFederatedPostId`'s `BlueskyPostId` -- see that
@@ -46,33 +48,68 @@ type's own doc. Fetched using whichever connected Bluesky account comes first --
 post doesn't need to be *that* account's own, any connected token works (see
 `Shared.Federation.Bluesky.fetchPost`'s own doc) -- and fails outright (a bare `Http.BadStatus 401`,
 landing on `PostFailed`, same as a real auth failure would) if none is connected at all, since AT
-Protocol has no anonymous access to anything.
+Protocol has no anonymous access to anything. Goes through `BlueskyAccounts.performWithBlueskyAccount`
+same as `Components.Pages.PostsPage.fetchFeedSource`'s own `BlueskyFeed` case, so a since-expired
+access token gets one refresh-and-retry rather than failing outright -- see `update`'s own handling
+of the rotated/reauth-needed account this can come back with.
 -}
 init : Shared.Model -> String -> ( Model, Effect Msg )
 init shared uri =
     let
-        fetchTask : Task.Task Http.Error Post
+        actingHandle : String
+        actingHandle =
+            List.head shared.accounts.blueskyAccounts |> Maybe.map .handle |> Maybe.withDefault ""
+
+        fetchTask : Task.Task Http.Error ( Maybe BlueskyAccount, Post )
         fetchTask =
             case shared.accounts.blueskyAccounts of
                 account :: _ ->
-                    Bluesky.fetchPost account.accessToken uri
+                    BlueskyAccounts.performWithBlueskyAccount account (\accessToken -> Bluesky.fetchPost accessToken uri)
+                        |> Task.map
+                            (\( refreshedAccount, post ) ->
+                                ( if refreshedAccount.accessToken == account.accessToken then
+                                    Nothing
+
+                                  else
+                                    Just refreshedAccount
+                                , post
+                                )
+                            )
 
                 [] ->
                     Task.fail (Http.BadStatus 401)
     in
     ( { uri = uri, postStatus = LoadingPost }
-    , fetchTask |> Task.attempt GotPost |> Effect.fromCmd
+    , fetchTask |> Task.attempt (GotPost actingHandle) |> Effect.fromCmd
     )
 
 
+{-| A successful fetch persists a rotated access/refresh token pair, if `performWithBlueskyAccount`
+had to refresh one to get here (see that function's own doc on why the tokens it carries may have
+silently rotated), via `Shared.AccountsPanel.BlueskyAccountRefreshed`; a final failure worth flagging
+as `needsReauth` (see `BlueskyAccounts.isReauthError`) marks it the same way
+`Components.Pages.PostsPage`'s own `fromBlueskyResult` does, so a revoked/expired account shows its
+"Reconnect" affordance in the Accounts Panel rather than just failing silently every time this page
+(or any other Bluesky-post link) is opened.
+-}
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        GotPost (Ok post) ->
-            ( { model | postStatus = PostLoaded post }, Effect.none )
+        GotPost _ (Ok ( maybeRefreshedAccount, post )) ->
+            ( { model | postStatus = PostLoaded post }
+            , maybeRefreshedAccount
+                |> Maybe.map (AccountsPanel.BlueskyAccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
+                |> Maybe.withDefault Effect.none
+            )
 
-        GotPost (Err _) ->
-            ( { model | postStatus = PostFailed }, Effect.none )
+        GotPost handle (Err err) ->
+            ( { model | postStatus = PostFailed }
+            , if BlueskyAccounts.isReauthError err && handle /= "" then
+                Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.MarkBlueskyAccountNeedsReauth handle))
+
+              else
+                Effect.none
+            )
 
 
 view : Model -> Html Msg

@@ -1,4 +1,8 @@
-module Shared.AccountsPanel.SortOrder exposing (missingSortOrderSentinel, sortOrderDecoder)
+module Shared.AccountsPanel.SortOrder exposing
+    ( assignMissingSortOrders
+    , nextMigratedSortOrderStart
+    , sortOrderDecoder
+    )
 
 {-| The shared `sortOrder : Int` decode fallback every reorderable, persisted list in
 `Shared.AccountsPanel` (Rellm servers/accounts, browsed Mastodon instances, connected Mastodon/
@@ -34,3 +38,43 @@ sortOrderDecoder =
         [ Decode.field "sortOrder" Decode.int
         , Decode.succeed missingSortOrderSentinel
         ]
+
+
+{-| One past the highest real (non-`missingSortOrderSentinel`) `sortOrder` across every list in a
+migration's shared space, or `0` if none of them have one yet -- where `assignMissingSortOrders`
+should start counting up from for that space's still-missing entries. Used by
+`Shared.AccountsPanel.migrateServerFeedItemSortOrders`/`migrateAccountItemSortOrders` (kept there,
+not here, since each mixes types from more than one provider submodule -- Rellm servers/accounts
+alongside browsed Mastodon instances/connected Mastodon and Bluesky accounts -- so there's no single
+provider module either could live in without a cyclic or one-sided dependency on the others).
+-}
+nextMigratedSortOrderStart : List (List Int) -> Int
+nextMigratedSortOrderStart sortOrderLists =
+    (List.concat sortOrderLists
+        |> List.filter ((/=) missingSortOrderSentinel)
+        |> List.maximum
+        |> Maybe.withDefault -1
+    )
+        + 1
+
+
+{-| Walks `items` in their own existing order, replacing every `missingSortOrderSentinel` entry with
+the next sequential value counting up from `counter` -- so upgrading from a pre-`sortOrder` version
+doesn't visibly reshuffle anything already on screen (each list keeps its own relative order; the
+lists in a migration's shared space stack in roughly the same order they used to occupy separate
+sections in). Returns the counter's value just past the last one it handed out (for a caller
+migrating a second list in the same space right after) alongside the migrated list itself.
+-}
+assignMissingSortOrders : Int -> List { a | sortOrder : Int } -> ( Int, List { a | sortOrder : Int } )
+assignMissingSortOrders counter items =
+    List.foldl
+        (\item ( next, acc ) ->
+            if item.sortOrder == missingSortOrderSentinel then
+                ( next + 1, { item | sortOrder = next } :: acc )
+
+            else
+                ( next, item :: acc )
+        )
+        ( counter, [] )
+        items
+        |> Tuple.mapSecond List.reverse

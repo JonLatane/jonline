@@ -179,7 +179,7 @@ type OwnServerStatus
     | OwnServerFailed String
 
 
-{-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` (`Pages.About`) or parsed straight out of
+{-| `pageIsSecure` is `Shared.AccountsPanel.RellmServers.isSecure req` (`Pages.About`) or parsed straight out of
 the route (`Pages.Server.ServerIdentifier_`'s `[http|https]:hostname` segment) -- needed for the
 own-probe fallback (see `RellmServers.connectToRellmServer`), but not otherwise derivable from
 `Shared.Model` alone. `navKey`/`path`, from the calling page's own `Request`, are what let

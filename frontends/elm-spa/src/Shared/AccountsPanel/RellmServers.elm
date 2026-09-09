@@ -15,6 +15,7 @@ module Shared.AccountsPanel.RellmServers exposing
     , enableRellmServerFor
     , encodePersistedRellmServer
     , initialLetter
+    , isSecure
     , knownConnectedRellmServer
     , mediaBaseUrl
     , mediaUrl
@@ -61,9 +62,11 @@ import Proto.Rellm
 import Proto.Rellm exposing (ServerConfiguration, ServerInfo)
 import Proto.Rellm.Rellm as Rellm
 import Grpc
+import Request
 import Shared.AccountsPanel.SortOrder exposing (sortOrderDecoder)
 import Task exposing (Task)
 import UI.ServerTheme
+import Url
 
 
 {-| A server the app knows about -- either from a persisted server list entry
@@ -646,6 +649,19 @@ rellmServerUrl server =
     connectionOf server
         |> Maybe.map connectionUrl
         |> Maybe.withDefault ""
+
+
+{-| Whether the page itself was loaded over TLS -- if so, `negotiateRellmServerConfig`/`resolveHost`
+only ever try TLS candidates for a new host, since a secure page can't make plaintext requests (mixed
+content). Only an insecure (e.g. local dev) page falls back to trying plaintext ports too.
+
+Generic over `params` (rather than any one page's own `Request`) so any page can pass its own
+`Request.With Params` straight in -- see `connectToRellmServer`'s own `pageIsSecure` parameter, which
+every caller ultimately derives from this.
+-}
+isSecure : Request.With params -> Bool
+isSecure req =
+    req.url.protocol == Url.Https
 
 
 {-| Connects to a server given only its hostname, same as adding one via the
