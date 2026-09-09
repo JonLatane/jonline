@@ -252,8 +252,8 @@ view :
     { basePath : String
     , viewingServerHost : String
     , postServerHost : String
-    , maybeServer : Maybe AccountsPanel.Server
-    , maybeAccount : Maybe AccountsPanel.Account
+    , maybeServer : Maybe AccountsPanel.RellmServer
+    , maybeAccount : Maybe AccountsPanel.RellmAccount
     , onMediaClicked : Post -> String -> msg
     , onReplyClicked : Post -> msg
     , toMsg : Msg -> msg
@@ -295,8 +295,8 @@ replyAnimationView :
         | basePath : String
         , viewingServerHost : String
         , postServerHost : String
-        , maybeServer : Maybe AccountsPanel.Server
-        , maybeAccount : Maybe AccountsPanel.Account
+        , maybeServer : Maybe AccountsPanel.RellmServer
+        , maybeAccount : Maybe AccountsPanel.RellmAccount
         , onMediaClicked : Post -> String -> msg
         , onReplyClicked : Post -> msg
         , toMsg : Msg -> msg

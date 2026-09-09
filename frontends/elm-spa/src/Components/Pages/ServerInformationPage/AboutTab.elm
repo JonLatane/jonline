@@ -44,9 +44,9 @@ type Msg
     | ShortNameChanged String
     | ShortNameCancelClicked
     | ShortNameSaveClicked
-    | EditDescriptionClicked AccountsPanel.Server
-    | EditPrivacyPolicyClicked AccountsPanel.Server
-    | EditMediaPolicyClicked AccountsPanel.Server
+    | EditDescriptionClicked AccountsPanel.RellmServer
+    | EditPrivacyPolicyClicked AccountsPanel.RellmServer
+    | EditMediaPolicyClicked AccountsPanel.RellmServer
 
 
 {-| Live only while the server's name (or, via `Model.shortNameStatus`, its short name) is being
@@ -198,7 +198,7 @@ applySharedMsg subMsg model =
 -- VIEW
 
 
-view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> AdminsStatus -> VersionStatus -> Model -> Html Msg
+view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> AdminsStatus -> VersionStatus -> Model -> Html Msg
 view shared server maybeAdminAccount adminsStatus versionStatus model =
     let
         info : Proto.Rellm.ServerInfo
@@ -226,7 +226,7 @@ when the field's unset, same as before this page supported editing it; an admin 
 button either way -- even when unset, so they can set it for the first time, not just change
 existing text -- mirroring `nameView`'s Rename button.
 -}
-policySectionView : String -> Maybe String -> Msg -> Maybe AccountsPanel.Account -> Maybe String -> Html Msg
+policySectionView : String -> Maybe String -> Msg -> Maybe AccountsPanel.RellmAccount -> Maybe String -> Html Msg
 policySectionView sectionClass heading editClicked maybeAdminAccount content =
     case ( content, maybeAdminAccount ) of
         ( Nothing, Nothing ) ->
@@ -255,7 +255,7 @@ policySectionView sectionClass heading editClicked maybeAdminAccount content =
                 ]
 
 
-nameView : String -> RenameStatus -> Maybe AccountsPanel.Account -> List (Html Msg)
+nameView : String -> RenameStatus -> Maybe AccountsPanel.RellmAccount -> List (Html Msg)
 nameView name renameStatus maybeAdminAccount =
     case ( renameStatus, maybeAdminAccount ) of
         ( Renaming pendingName status, Just _ ) ->
@@ -289,7 +289,7 @@ et al, not `Common.settingsRow` -- that helper's shared Save/Cancel doesn't fit 
 self-contained field like this one). Renders nothing for a non-admin viewer when unset, same as
 `policySectionView`.
 -}
-shortNameView : Maybe String -> RenameStatus -> Maybe AccountsPanel.Account -> Html Msg
+shortNameView : Maybe String -> RenameStatus -> Maybe AccountsPanel.RellmAccount -> Html Msg
 shortNameView maybeShortName shortNameStatus maybeAdminAccount =
     case ( shortNameStatus, maybeAdminAccount ) of
         ( Renaming pendingShortName status, Just _ ) ->
@@ -352,7 +352,7 @@ versionView status =
             text ""
 
 
-adminsView : Shared.Model -> AccountsPanel.Server -> AdminsStatus -> Html Msg
+adminsView : Shared.Model -> AccountsPanel.RellmServer -> AdminsStatus -> Html Msg
 adminsView shared server status =
     div [ class "server-details-admins" ]
         [ h3 [] [ text "Admins" ]
@@ -379,7 +379,7 @@ adminsView shared server status =
 follow-status/button slot (`text ""`) since this page is otherwise entirely read-only (see the
 module doc) and doesn't track any per-card `FollowStatusAndButton.Model` state to back one.
 -}
-adminCardView : Shared.Model -> AccountsPanel.Server -> User -> Html Msg
+adminCardView : Shared.Model -> AccountsPanel.RellmServer -> User -> Html Msg
 adminCardView shared server user =
     Users.userCard shared.basePath
         shared.accounts.mainFrontendHost

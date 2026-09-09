@@ -63,7 +63,7 @@ type SizeConstraint
     | ToWidthAndHeight
 
 
-view : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+view : MediaSize -> SizeConstraint -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> MediaReference -> Html msg
 view =
     viewHelper False
 
@@ -86,12 +86,12 @@ isn't in `elm/html`'s own `Html.Attributes` (unlike `autoplay`/`controls`),
 and needs setting via `property` rather than `attribute` regardless -- see
 `autoplayAttributes`'s own doc.
 -}
-viewAutoplay : MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+viewAutoplay : MediaSize -> SizeConstraint -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> MediaReference -> Html msg
 viewAutoplay =
     viewHelper True
 
 
-viewHelper : Bool -> MediaSize -> SizeConstraint -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+viewHelper : Bool -> MediaSize -> SizeConstraint -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> MediaReference -> Html msg
 viewHelper autoplay mediaSize sizeConstraint server maybeAccount onImageClicked media =
     let
         mediaUrl : String
@@ -220,7 +220,7 @@ sizing requests the server's larger rendition (`?size=large`) since it's used
 for a post's single "focus" media item, rather than the server's default
 size.
 -}
-url : MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> String
+url : MediaSize -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> MediaReference -> String
 url mediaSize server maybeAccount media =
     let
         base : String

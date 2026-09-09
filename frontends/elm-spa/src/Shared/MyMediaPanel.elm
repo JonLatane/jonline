@@ -202,9 +202,9 @@ type Msg
       -- `MoveSelectedMediaLeftClicked`/`-RightClicked` (see
       -- `selectedMediaItemView`'s reorder buttons) kick off a reorder slide
       -- for `selectedMedia`, exactly mirroring
-      -- `AccountsPanel.MoveServerLeftClicked`/`-RightClicked`'s own
-      -- `beginReorder`/`GotPreMoveServerPositions`/`applyReorder`/
-      -- `ServerMoveSettled` chain -- see that module for the full FLIP
+      -- `AccountsPanel.MoveFeedItemLeftClicked`/`-RightClicked`'s own
+      -- `beginReorder`/`GotPreMoveFeedItemPositions`/`applyReorder`/
+      -- `FeedItemMoveSettled` chain -- see that module for the full FLIP
       -- reorder story, just scoped to this panel's own `selectedMedia`/
       -- `selectedMediaMoveAnimations` in place of its `servers`/
       -- `serverMoveAnimations`.
@@ -303,8 +303,8 @@ type alias MediaAnimation =
 
 
 type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
+    { server : AccountsPanel.RellmServer
+    , account : AccountsPanel.RellmAccount
     }
 
 
@@ -783,7 +783,7 @@ addSelectedMedia mediaRef model =
 
 {-| DOM id for a selected-media strip item (see `selectedMediaItemView`) --
 what `UI.Flip.beginReorder`/`applyReorder` measure pre-swap rects against,
-mirroring `AccountsPanel.serverChipDomId`.
+mirroring `AccountsPanel.feedItemChipDomId`.
 -}
 selectedMediaDomId : String -> String
 selectedMediaDomId mediaId =
@@ -887,7 +887,7 @@ backend's "no user\_id means the caller's own media" fallback, keeps this
 request meaningful even though today it only ever runs for the signed-in
 account's own chip.
 -}
-fetchTask : AccountsPanel.Model -> AccountsPanel.Account -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse )
+fetchTask : AccountsPanel.Model -> AccountsPanel.RellmAccount -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse )
 fetchTask accountsPanelModel account =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
@@ -906,7 +906,7 @@ fetchTask accountsPanelModel account =
 reads. Its response is `google.protobuf.Empty`; mapped away to `()` here
 purely so `GotDeleteResult` doesn't need its own import of that type.
 -}
-deleteTask : AccountsPanel.Model -> AccountsPanel.Account -> Media -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
+deleteTask : AccountsPanel.Model -> AccountsPanel.RellmAccount -> Media -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
 deleteTask accountsPanelModel account media =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
@@ -936,7 +936,7 @@ uploadTask accountsPanelModel resolved host file =
 sets `Content-Type` from `file`'s own MIME type, so only `Authorization`/
 `Filename` need to be added as headers.
 -}
-postMediaTask : AccountsPanel.Server -> String -> File -> Task Grpc.Error String
+postMediaTask : AccountsPanel.RellmServer -> String -> File -> Task Grpc.Error String
 postMediaTask server token file =
     case AccountsPanel.connectionOf server of
         -- `server` is reached via `performWithAccountServer`, which only ever
@@ -1210,7 +1210,7 @@ accountBadge accountsPanelModel model =
 avatar -- `UI` itself imports this module (to embed `MyMediaPanel.view`), so
 importing it back here to reuse that helper would be a circular import.
 -}
-avatarOrInitial : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
+avatarOrInitial : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
 avatarOrInitial servers account =
     case AccountsPanel.accountAvatarUrl servers account of
         Just url ->
@@ -1333,7 +1333,7 @@ mediaTimestamp media =
 left-to-right, wrap-to-next-row flow (see `flip.css`'s `.flip-animated-grid`
 doc). Mirrors `UI.serverChipFlip` -- see its own doc.
 -}
-mediaAnimationView : AccountsPanel.Server -> AccountsPanel.Account -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
+mediaAnimationView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
 mediaAnimationView server account model ( mediaId, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
@@ -1380,7 +1380,7 @@ still needs `stopPropagationOn` -- without it, a click there would bubble up
 into this same handler and select/re-add the very item just deleted.
 
 -}
-mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> String -> Set String -> Bool -> Media -> Html Msg
+mediaItemView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> String -> Set String -> Bool -> Media -> Html Msg
 mediaItemView server account targetHost deletingIds selected media =
     let
         deleting : Bool
@@ -1461,7 +1461,7 @@ is clicked) plus its independent reorder-slide -- exactly mirrors
 full reasoning), `UI.Flip.Horizontal` to match this strip's own left-to-right
 flow.
 -}
-selectedMediaItemFlip : AccountsPanel.Server -> AccountsPanel.Account -> Model -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemFlip : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Model -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemFlip server account model count index media =
     let
         flipState : UI.Flip.State Msg
@@ -1493,7 +1493,7 @@ server does, so unlike `serverChip` both ends are only ever gated by
 selection outright (`RemoveSelectedMediaClicked`) -- no confirmation, see
 that message's own doc for why.
 -}
-selectedMediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemView server account moveAnimations count index media =
     let
         moveAttrs : List (Html.Attribute Msg)

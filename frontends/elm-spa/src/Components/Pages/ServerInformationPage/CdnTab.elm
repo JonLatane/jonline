@@ -66,7 +66,7 @@ init =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.Server -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         CdnEditClicked ->
@@ -155,7 +155,7 @@ applyCdnConfig edit config =
 -- VIEW
 
 
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
         cdnConfig : Maybe ExternalCDNConfig
@@ -172,7 +172,7 @@ view server maybeAdminAccount model =
         )
 
 
-cdnDisplayView : Maybe AccountsPanel.Account -> Maybe ExternalCDNConfig -> List (Html Msg)
+cdnDisplayView : Maybe AccountsPanel.RellmAccount -> Maybe ExternalCDNConfig -> List (Html Msg)
 cdnDisplayView maybeAdminAccount cdnConfig =
     [ Common.settingsRow "External CDN HTTP Support" (Common.switchDisplay (cdnConfig /= Nothing))
     , Common.settingsRow "Frontend Host" (span [ class "server-details-feature-settings-value" ] [ text (cdnConfig |> Maybe.map .frontendHost |> Maybe.withDefault "—") ])

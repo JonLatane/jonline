@@ -518,7 +518,7 @@ against `server`'s own media (via `AccountsPanel.mediaUrl`, the same helper the 
 pickers use), falling back to a placeholder glyph if that id doesn't resolve to a URL (e.g. a media
 item deleted out from under a still-configured tab).
 -}
-iconView : AccountsPanel.Server -> CustomTabIcon -> Html msg
+iconView : AccountsPanel.RellmServer -> CustomTabIcon -> Html msg
 iconView server icon =
     case icon of
         EmojiIcon emoji ->
@@ -552,7 +552,7 @@ visitor who lands on plain `/events` (an old link, a bookmark, `Gen.Route.routes
 should still see the "Events" tab (now living at `/gigs`) highlighted as current, not dark. Not
 relevant for `TargetPost`/`TargetProfile`, whose only route *is* their own `path` either way.
 -}
-navLinkView : Shared.Model -> Route -> AccountsPanel.Server -> CustomTab -> Html msg
+navLinkView : Shared.Model -> Route -> AccountsPanel.RellmServer -> CustomTab -> Html msg
 navLinkView shared currentRoute server tab =
     let
         route : Route

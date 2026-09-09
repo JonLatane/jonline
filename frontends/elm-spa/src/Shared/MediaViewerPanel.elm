@@ -270,11 +270,11 @@ view accountsPanelModel model =
             model.currentMediaReference
                 |> Maybe.andThen (\id -> List.filter (\m -> m.id == id) model.media |> List.head)
 
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
 
@@ -311,7 +311,7 @@ view accountsPanelModel model =
         -- (as opposed to `display: none`, which many browsers just never
         -- schedule a lazy fetch for at all) loads immediately, same as a
         -- visible one would.
-        preloadView : AccountsPanel.Server -> List ( String, Html Msg )
+        preloadView : AccountsPanel.RellmServer -> List ( String, Html Msg )
         preloadView server =
             preloadMedia
                 |> List.map

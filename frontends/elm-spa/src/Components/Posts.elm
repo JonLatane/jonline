@@ -1,5 +1,6 @@
 module Components.Posts exposing
-    ( allModerations
+    ( FederatedPostId(..)
+    , allModerations
     , allowedVisibilities
     , commentCountText
     , contentPreviewFadeThreshold
@@ -13,6 +14,7 @@ module Components.Posts exposing
     , isAuthor
     , mediaEditButton
     , moderationFromText
+    , parseFederatedPostId
     , parsePostRouteId
     , postCard
     , postContextLabel
@@ -37,7 +39,7 @@ module Components.Posts exposing
 `postCard` used in the Home page's recent-posts feed, the fuller `postDetail`
 used by the Post page, and the fetch/link helpers both (and any future
 Post-related page) need: building a `GetPosts` request against a specific
-`Shared.AccountsPanel.Server` (optionally authenticated, via
+`Shared.AccountsPanel.RellmServer` (optionally authenticated, via
 `Shared.MaybeAccountRequest`), and building/parsing the `/post/:postId`
 route's `id` or `id@host` segment.
 -}
@@ -53,12 +55,12 @@ import Html exposing (Html, a, button, div, h1, option, select, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, selected, style, target, title, value)
 import Html.Events
 import Proto.Rellm exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost)
-import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.PostListingType exposing (PostListingType(..))
 import Proto.Rellm.PostMediaLayout exposing (PostMediaLayout(..))
+import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
@@ -211,7 +213,7 @@ fetchAncestors accountsPanelModel maybeAccountServer post =
         (\server maybeToken -> fetchAncestorsHelp server maybeToken post)
 
 
-fetchAncestorsHelp : AccountsPanel.Server -> Maybe String -> Post -> Task Grpc.Error (List Post)
+fetchAncestorsHelp : AccountsPanel.RellmServer -> Maybe String -> Post -> Task Grpc.Error (List Post)
 fetchAncestorsHelp server maybeToken post =
     case post.replyToPostId of
         Nothing ->
@@ -505,7 +507,7 @@ timestampsText time post =
 Markdown editor panel via `onEditClicked`, supplied by the caller
 (`Pages.Post.PostId_`).
 -}
-editContentButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+editContentButton : Maybe AccountsPanel.RellmAccount -> msg -> Post -> Html msg
 editContentButton maybeAccount onEditClicked post =
     case maybeAccount of
         Just account ->
@@ -528,7 +530,7 @@ editContentButton maybeAccount onEditClicked post =
 media chooser via `onMediaEditClicked` (`Pages.Post.PostId_`'s own
 `MediaEditClicked`), unlike `editButton`'s Markdown panel.
 -}
-mediaEditButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+mediaEditButton : Maybe AccountsPanel.RellmAccount -> msg -> Post -> Html msg
 mediaEditButton maybeAccount onMediaEditClicked post =
     case maybeAccount of
         Just account ->
@@ -549,7 +551,7 @@ image-capable `AvailableAIModel` at all (`Account.availableAiModels`) before thi
 to offer -- `Nothing` there covers both "not this post's author/an Admin" and "no model available",
 without `Components.Posts` itself needing to know anything about `AvailableAIModel`.
 -}
-generateMediaButton : Maybe AccountsPanel.Account -> Maybe msg -> Post -> Html msg
+generateMediaButton : Maybe AccountsPanel.RellmAccount -> Maybe msg -> Post -> Html msg
 generateMediaButton maybeAccount onGenerateMediaClicked post =
     case ( maybeAccount, onGenerateMediaClicked ) of
         ( Just account, Just onClicked ) ->
@@ -578,7 +580,7 @@ first, so this saves immediately on change via `onMediaLayoutChanged` -- the
 same one-click immediacy `mediaEditButton`'s own `Shared.MyMediaPanel`
 picker already has.
 -}
-mediaLayoutSelector : Maybe AccountsPanel.Account -> (String -> msg) -> Post -> Html msg
+mediaLayoutSelector : Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Post -> Html msg
 mediaLayoutSelector maybeAccount onMediaLayoutChanged post =
     case maybeAccount of
         Just account ->
@@ -660,8 +662,9 @@ bottom of the card, the rest thread straight into that call. `availableSyncDesti
 `Nothing` for every caller except `Components.Pages.UserProfilePage`'s embedded posts feed, so
 push/delete controls render nowhere else. Ignored entirely by the `REPLY` fallback to `replyCard`
 below -- a reply is never synced to anything.
+
 -}
-postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCard : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     if post.context == REPLY then
         replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked 0 True False False Nothing Nothing Nothing post
@@ -674,7 +677,7 @@ postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
 -}
-postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postCardView : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
     div
         [ classes
@@ -785,8 +788,8 @@ replyCard :
     String
     -> String
     -> String
-    -> Maybe AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    -> Maybe AccountsPanel.RellmServer
+    -> Maybe AccountsPanel.RellmAccount
     -> (String -> msg)
     -> Int
     -> Bool
@@ -959,7 +962,7 @@ resolves, same `Nothing`-falls-back-to-read-only-links behavior as that page (se
 `Components.Pages.PostPage.Model.availableSyncDestinations`'s own doc for the fetch itself).
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
 postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
@@ -1104,8 +1107,209 @@ stripLinkScheme link =
 fallbackTitle : Post -> String
 fallbackTitle post =
     post.content
-        |> Maybe.map (String.left 60)
+        |> Maybe.map (stripHtmlTagsIfPresent >> String.left 60)
         |> Maybe.withDefault "Post"
+
+
+{-| Strips HTML tags out of `content` before it's ever truncated/shown as plain text (see
+`fallbackTitle`) -- a real Rellm post's Markdown source essentially never starts with a literal `<`,
+but a Mastodon post's `content` (see `Shared.Federation.Mastodon.toPost`'s own doc) always does, so
+that's the same heuristic `markdown.js`'s `looksLikeHtml` uses to skip Markdown-parsing it (that path
+runs the content through DOMPurify and renders it as real HTML; this one instead needs a _plain-text_
+string, since a card title/page `<h1>` can't render markup at all). A no-op otherwise. Not a full HTML
+parser -- just enough for Mastodon's own simple, machine-generated markup (`<p>`, `<br>`,
+`<a href=...>`, `<span class=...>`) to read as plain text instead of literal tags.
+-}
+stripHtmlTagsIfPresent : String -> String
+stripHtmlTagsIfPresent content =
+    if String.startsWith "<" (String.trimLeft content) then
+        stripTagsAndDecodeEntities content
+
+    else
+        content
+
+
+{-| The actual scan `stripHtmlTagsIfPresent` hands off to once it's decided `content` is HTML --
+drops everything between `<`/`>` (tags), and decodes character references (`&amp;`, `&#39;`, `&#x27;`,
+etc.) back into their literal characters, the same as a browser's own HTML parser would when setting
+`innerHTML` (which is what `markdown.js`'s own HTML path relies on for the _rendered_ content -- this
+function exists because a plain-text title has no such parser to lean on).
+-}
+stripTagsAndDecodeEntities : String -> String
+stripTagsAndDecodeEntities input =
+    case String.uncons input of
+        Nothing ->
+            ""
+
+        Just ( '<', rest ) ->
+            stripTagsAndDecodeEntities (dropThroughTag rest)
+
+        Just ( '&', rest ) ->
+            case decodeEntity rest of
+                Just ( char, afterEntity ) ->
+                    String.cons char (stripTagsAndDecodeEntities afterEntity)
+
+                Nothing ->
+                    String.cons '&' (stripTagsAndDecodeEntities rest)
+
+        Just ( char, rest ) ->
+            String.cons char (stripTagsAndDecodeEntities rest)
+
+
+dropThroughTag : String -> String
+dropThroughTag input =
+    case String.uncons input of
+        Nothing ->
+            ""
+
+        Just ( '>', rest ) ->
+            rest
+
+        Just ( _, rest ) ->
+            dropThroughTag rest
+
+
+{-| Decodes one HTML character reference starting right after its `&` -- e.g. `"amp;rest"` ->
+`Just ( '&', "rest" )`, `"#39;rest"` -> `Just ( '\'', "rest" )`. `Nothing` if what follows isn't a
+recognized reference (a bare `&` in real text, not an escape), so the `&` gets kept literally instead
+of eaten. Only looks within the next 10 characters for a closing `;` -- long enough for any entity
+this actually needs to handle, short enough that a stray `&` followed by ordinary prose (which will
+often contain a `;` eventually) doesn't get misread as one.
+-}
+decodeEntity : String -> Maybe ( Char, String )
+decodeEntity afterAmp =
+    case String.indexes ";" (String.left 10 afterAmp) |> List.head of
+        Just semicolonIndex ->
+            entityChar (String.left semicolonIndex afterAmp)
+                |> Maybe.map (\char -> ( char, String.dropLeft (semicolonIndex + 1) afterAmp ))
+
+        Nothing ->
+            Nothing
+
+
+{-| The handful of character references Mastodon's own HTML-escaping (and, occasionally, a user's
+own hand-typed HTML entities before that) actually produces -- the 5 XML-predefined ones, a few
+common typographic ones, and numeric references (`#NNN` decimal, `#xHHH`/`#XHHH` hex) generally.
+Not a full HTML5 named-entity table (hundreds of entries like `&hellip;`'s less common cousins) --
+just enough for real-world Mastodon content to read as plain text instead of literal escapes.
+-}
+entityChar : String -> Maybe Char
+entityChar name =
+    case name of
+        "amp" ->
+            Just '&'
+
+        "lt" ->
+            Just '<'
+
+        "gt" ->
+            Just '>'
+
+        "quot" ->
+            Just '"'
+
+        "apos" ->
+            Just '\''
+
+        "nbsp" ->
+            Just ' '
+
+        "hellip" ->
+            Just '…'
+
+        "mdash" ->
+            Just '—'
+
+        "ndash" ->
+            Just '–'
+
+        "lsquo" ->
+            Just '‘'
+
+        "rsquo" ->
+            Just '’'
+
+        "ldquo" ->
+            Just '“'
+
+        "rdquo" ->
+            Just '”'
+
+        _ ->
+            if String.startsWith "#x" name || String.startsWith "#X" name then
+                String.dropLeft 2 name |> hexToInt |> Maybe.map Char.fromCode
+
+            else if String.startsWith "#" name then
+                String.dropLeft 1 name |> String.toInt |> Maybe.map Char.fromCode
+
+            else
+                Nothing
+
+
+hexToInt : String -> Maybe Int
+hexToInt hex =
+    if String.isEmpty hex then
+        Nothing
+
+    else
+        hex
+            |> String.toList
+            |> List.foldl (\c acc -> acc |> Maybe.andThen (\n -> hexDigit c |> Maybe.map (\d -> n * 16 + d))) (Just 0)
+
+
+hexDigit : Char -> Maybe Int
+hexDigit c =
+    case Char.toLower c of
+        '0' ->
+            Just 0
+
+        '1' ->
+            Just 1
+
+        '2' ->
+            Just 2
+
+        '3' ->
+            Just 3
+
+        '4' ->
+            Just 4
+
+        '5' ->
+            Just 5
+
+        '6' ->
+            Just 6
+
+        '7' ->
+            Just 7
+
+        '8' ->
+            Just 8
+
+        '9' ->
+            Just 9
+
+        'a' ->
+            Just 10
+
+        'b' ->
+            Just 11
+
+        'c' ->
+            Just 12
+
+        'd' ->
+            Just 13
+
+        'e' ->
+            Just 14
+
+        'f' ->
+            Just 15
+
+        _ ->
+            Nothing
 
 
 {-| Display text for a post's visibility, e.g. for a "Public"/"Private"/etc.
@@ -1123,7 +1327,7 @@ to tell a `GLOBALPUBLIC` post apart from one with no visibility label at all;
 any other visibility, or being signed in, still shows it explicitly (e.g. so
 an author can confirm what they set).
 -}
-showPostVisibility : Maybe AccountsPanel.Account -> Post -> Bool
+showPostVisibility : Maybe AccountsPanel.RellmAccount -> Post -> Bool
 showPostVisibility maybeAccount post =
     case ( maybeAccount, post.visibility ) of
         ( Nothing, GLOBALPUBLIC ) ->
@@ -1219,7 +1423,7 @@ commentCountText post =
 only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
 no `author` at all (shouldn't normally happen, but `Post.author` is optional).
 -}
-isAuthor : AccountsPanel.Account -> Post -> Bool
+isAuthor : AccountsPanel.RellmAccount -> Post -> Bool
 isAuthor account post =
     Maybe.map .userId post.author == Just account.userId
 
@@ -1235,6 +1439,34 @@ parsePostRouteId mainFrontendHost rawPostId =
 
         _ ->
             ( rawPostId, mainFrontendHost )
+
+
+{-| Recognizes a Mastodon/Bluesky post from `parsePostRouteId`'s own `( id, host )` pair -- `host` is
+what actually carries the `"mastodon:"`/`"bluesky:"` tag here (see
+`Components.Pages.PostsPage.feedSourceKey`'s own construction, and `Shared.Federation.Mastodon`/
+`Bluesky`'s own `toPost`, whose `id` is deliberately just the bare platform id/URI with no such
+prefix of its own -- see either's doc for why), so this picks `instanceHost`/`uri` back apart from
+`host`, pairing it with `id` verbatim, into whatever `Shared.Federation.Mastodon.fetchStatus`/
+`Shared.Federation.Bluesky.fetchPost` need to look the post back up directly -- no Rellm server
+involved at all, unlike a real post's `GetPosts` fetch. `Nothing` for a real Rellm post's own
+`host` (or anything else unrecognized). `Components.Pages.PostPage.init` is the one caller -- see its
+own doc for why a federated post gets an entirely separate, read-only fetch/view path.
+-}
+type FederatedPostId
+    = MastodonPostId { instanceHost : String, statusId : String }
+    | BlueskyPostId { uri : String }
+
+
+parseFederatedPostId : String -> String -> Maybe FederatedPostId
+parseFederatedPostId id host =
+    if String.startsWith "mastodon:" host then
+        Just (MastodonPostId { instanceHost = String.dropLeft 9 host, statusId = id })
+
+    else if String.startsWith "bluesky:" host then
+        Just (BlueskyPostId { uri = id })
+
+    else
+        Nothing
 
 
 {-| A post's most relevant timestamp for "recency" sorting/display: when it

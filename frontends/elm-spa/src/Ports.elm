@@ -1,5 +1,6 @@
 port module Ports exposing
     ( accountsAndServersUpdated
+    , blueskyAccountsUpdated
     , broadcastPushSubscriptionChange
     , calendarEventClicked
     , checkPushSubscription
@@ -15,9 +16,12 @@ port module Ports exposing
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
     , hideSplash
+    , mastodonAccountsAndServersUpdated
     , measureElements
     , persistAccountsAndServers
+    , persistBlueskyAccounts
     , persistFederatedAuthKeyPair
+    , persistMastodonAccountsAndServers
     , persistStarredPosts
     , persistThemePreference
     , persistUserPreferences
@@ -54,6 +58,42 @@ origin stay in sync (e.g. signing in on one tab shows the new account on all
 the others) without each tab polling localStorage.
 -}
 port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Persists `Shared.AccountsPanel.Model.blueskyAccounts` to its own localStorage key -- decode with
+`Shared.AccountsPanel.blueskyAccountsDecoder` at `init`. Kept independent of `persistAccountsAndServers`
+for the same reason `persistStarredPosts` is: these aren't real Rellm `Server`/`Account`s, just a
+translated feed source (see `Shared.Federation.Bluesky`). Also broadcasts it (see `public/index.html`'s
+`BroadcastChannel`) to any other tab open on the same origin, which applies it via
+`blueskyAccountsUpdated` -- see `Shared.AccountsPanel.subscriptions` -- so an enable/disable toggle or a
+reorder (see `CombinedFeedItem`) shows up live in every open tab, mirroring
+`persistAccountsAndServers`/`accountsAndServersUpdated`.
+-}
+port persistBlueskyAccounts : Encode.Value -> Cmd msg
+
+
+{-| Fires in _other_ tabs (never the tab that called `persistBlueskyAccounts` itself) whenever one
+tab's Bluesky accounts change, carrying the same value `persistBlueskyAccounts` was given -- decode
+with `Shared.AccountsPanel.blueskyAccountsDecoder`.
+-}
+port blueskyAccountsUpdated : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Persists `Shared.AccountsPanel.Model.mastodonAccounts` (OAuth-connected accounts) and
+`browsedMastodonInstances` (anonymously-browsed instances) together, to their own localStorage key --
+decode with `Shared.AccountsPanel.mastodonAccountsAndServersDecoder` at `init`. See
+`persistBlueskyAccounts`'s own doc for why this is separate from `persistAccountsAndServers`, and for
+why it also broadcasts to other tabs (via `mastodonAccountsAndServersUpdated`).
+-}
+port persistMastodonAccountsAndServers : Encode.Value -> Cmd msg
+
+
+{-| Fires in _other_ tabs (never the tab that called `persistMastodonAccountsAndServers` itself)
+whenever one tab's Mastodon accounts/browsed instances change, carrying the same value
+`persistMastodonAccountsAndServers` was given -- decode with
+`Shared.AccountsPanel.mastodonAccountsAndServersDecoder`.
+-}
+port mastodonAccountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the set of starred Posts (as a list of `postId@frontendHost`
@@ -227,7 +267,7 @@ port systemPrefersDarkChanged : (Bool -> msg) -> Sub msg
 {-| Opens an OAuth login popup for `Components.SyncDestinations` (via
 `Components.Pages.UserProfilePage`'s "Sign in to Facebook Page"/"Sign in to Instagram"/"Connect
 Threads"/"Connect X (Twitter)" buttons) or `Shared.AccountsPanel` (via its "Connect" button on a
-Mastodon instance chip -- see `UI.mastodonServerChip`), for the given `provider` (`"facebook"`,
+Mastodon instance chip -- see `UI.mastodonConnectButton`), for the given `provider` (`"facebook"`,
 `"threads"`, `"x_twitter"`, or `"mastodon"`) and that provider's own OAuth Client/App ID -- Threads
 rides on the very same Meta App as Facebook/Instagram (a product added to it, not a
 separately-registered app), so `appId` is the same value for all three, but X requires its own
@@ -235,8 +275,12 @@ separately-registered app, so `appId` there is `XTwitterAuthConfig.clientId` ins
 `Components.Pages.UserProfilePage`'s `facebookAppId`/`xTwitterAppId`) -- either way it's just
 interpreted against a different OAuth dialog per `provider`. `instanceHost` is used only by
 `"mastodon"` (the others pass `""`): unlike the other three providers, there's no fixed app to
-register against -- the instance is user-chosen, so the popup itself dynamically self-registers an
-app on it first (`POST /api/v1/apps`) before it has anything to redirect to at all. Deliberately
+register against -- the instance is user-chosen. `appId` there is the admin-registered
+`MastodonServer.appId` for that instance if one exists (see `Shared.AccountsPanel.mastodonServerFor`,
+`MastodonConnectClicked`), so every user connecting through it authorizes the same,
+consistently-branded app; only when it's blank (no admin registration for that instance) does the
+popup dynamically self-register a throwaway one on the spot (`POST /api/v1/apps`) before it has
+anything to redirect to at all. Deliberately
 hand-rolled (a plain `window.open` at the provider's own OAuth dialog URL, with our own tiny static
 `oauth-callback.html` as the `redirect_uri`) rather than loading a JS SDK -- see
 `public/index.html`'s subscription for why: the popup has to open synchronously inside the click

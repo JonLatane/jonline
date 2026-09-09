@@ -51,7 +51,7 @@ type alias Model =
 
     -- The `frontendHost` every Post in `root`/`replies` lives on -- they're
     -- always all on the same server (a reply chain never crosses servers),
-    -- needed to resolve the `AccountsPanel.Server`/signed-in `Account` to
+    -- needed to resolve the `AccountsPanel.RellmServer`/signed-in `Account` to
     -- render avatars/media/links with, same reasoning as
     -- `Shared.MarkdownPanel.Model`'s `targetHost`.
     , host : String
@@ -215,7 +215,7 @@ rootSegment accountsPanelModel model root =
 
         FromUser user ->
             let
-                maybeServer : Maybe AccountsPanel.Server
+                maybeServer : Maybe AccountsPanel.RellmServer
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
@@ -235,7 +235,7 @@ rootSegment accountsPanelModel model root =
                     (Maybe.andThen
                         (\server ->
                             let
-                                maybeAccount : Maybe AccountsPanel.Account
+                                maybeAccount : Maybe AccountsPanel.RellmAccount
                                 maybeAccount =
                                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
                             in
@@ -261,7 +261,7 @@ line. Always tinted with `host`'s own `background-color-primary` (see
 `UI.EmittedStylesheet`), unconditionally rather than only while some segment
 is `viewing` (contrast `segmentClasses`) -- there's no "open" state for this
 chip, it's just always this server's own color. Renders nothing if `host`
-isn't a known `AccountsPanel.Server` yet (e.g. still being resolved).
+isn't a known `AccountsPanel.RellmServer` yet (e.g. still being resolved).
 -}
 serverSegment : AccountsPanel.Model -> String -> Bool -> Html Msg
 serverSegment accountsPanelModel host viewingHost =
@@ -311,11 +311,11 @@ serverSegmentLogo branding =
 replySegment : AccountsPanel.Model -> Model -> Post -> Html Msg
 replySegment accountsPanelModel model post =
     let
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
 
@@ -382,7 +382,7 @@ server itself rather than one of its Posts: its `AccountsPanel.serverNameAndLogo
 its `ServerInfo.description` (if any, same `Components.Markdown` rendering as
 everywhere else server/Post content renders), and an info button through to
 its full `Components.Pages.ServerInformationPage` (`serverOverviewInfoButton`).
-Renders nothing if `model.host` isn't a known `AccountsPanel.Server` yet, same
+Renders nothing if `model.host` isn't a known `AccountsPanel.RellmServer` yet, same
 as `serverSegment`.
 -}
 serverOverviewView : String -> AccountsPanel.Model -> Model -> Html Msg
@@ -417,10 +417,10 @@ cycle; closes this panel's own viewer (`CloseViewer`) rather than the Accounts
 Panel on click, same `stopPropagationAndPreventDefaultOnClick` reasoning
 (nested inside `previewPanel`, not another link).
 -}
-serverOverviewInfoButton : String -> AccountsPanel.Server -> Html Msg
+serverOverviewInfoButton : String -> AccountsPanel.RellmServer -> Html Msg
 serverOverviewInfoButton basePath server =
     let
-        -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
+        -- Disconnected servers (see `AccountsPanel.RellmServer.connected`) default to
         -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
         serverIdentifier : String
         serverIdentifier =
@@ -444,11 +444,11 @@ serverOverviewInfoButton basePath server =
 replyCardView : String -> AccountsPanel.Model -> Model -> Post -> Html Msg
 replyCardView basePath accountsPanelModel model post =
     let
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers model.host
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
     in

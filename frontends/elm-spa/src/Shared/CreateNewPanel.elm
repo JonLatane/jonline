@@ -151,8 +151,8 @@ type CreatedItem
 
 
 type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
+    { server : AccountsPanel.RellmServer
+    , account : AccountsPanel.RellmAccount
     }
 
 
@@ -358,7 +358,7 @@ permission check on the backend -- also accepts `ADMIN` as a blanket bypass.
 What `postingAsSelector` lists, and what `resolvedAccount` picks a default
 from.
 -}
-eligibleAccounts : Mode -> AccountsPanel.Model -> List AccountsPanel.Account
+eligibleAccounts : Mode -> AccountsPanel.Model -> List AccountsPanel.RellmAccount
 eligibleAccounts mode accountsPanelModel =
     AccountsPanel.enabledAccounts accountsPanelModel
         |> List.filter (\account -> AccountsPanel.isAdmin account || List.member (requiredPermission mode) account.permissions)
@@ -383,10 +383,10 @@ to show/post as whenever at least one exists for the current mode, without
 (or `mode`) change itself -- this is the only coordination `ModeChanged`
 needs with the account selector.
 -}
-resolvedAccount : AccountsPanel.Model -> Model -> Maybe AccountsPanel.Account
+resolvedAccount : AccountsPanel.Model -> Model -> Maybe AccountsPanel.RellmAccount
 resolvedAccount accountsPanelModel model =
     let
-        eligible : List AccountsPanel.Account
+        eligible : List AccountsPanel.RellmAccount
         eligible =
             eligibleAccounts model.mode accountsPanelModel
     in
@@ -479,7 +479,7 @@ seeds its `<select>` with before the user's made an explicit choice of their
 own (`model.visibility == Nothing`), and what `resolvedVisibility` falls back
 to.
 -}
-defaultVisibilityFor : Mode -> AccountsPanel.Account -> Visibility
+defaultVisibilityFor : Mode -> AccountsPanel.RellmAccount -> Visibility
 defaultVisibilityFor mode account =
     let
         ( globalPermission, localPermission ) =
@@ -520,7 +520,7 @@ visibilityContext mode =
 including `defaultVisibilityFor` itself so there's at least one option even
 for an account with neither publish permission.
 -}
-allowedVisibilitiesFor : Mode -> AccountsPanel.Account -> List Visibility
+allowedVisibilitiesFor : Mode -> AccountsPanel.RellmAccount -> List Visibility
 allowedVisibilitiesFor mode account =
     Posts.allowedVisibilities account.permissions (visibilityContext mode) (defaultVisibilityFor mode account)
 
@@ -531,7 +531,7 @@ allowedVisibilitiesFor mode account =
 `account` can't publish as widely for), mirroring `resolvedAccount`'s own
 fallback. What `visibilityField` shows as selected and what `saveTask` submits.
 -}
-resolvedVisibility : Mode -> AccountsPanel.Account -> Model -> Visibility
+resolvedVisibility : Mode -> AccountsPanel.RellmAccount -> Model -> Visibility
 resolvedVisibility mode account model =
     case model.visibility of
         Just visibility ->
@@ -894,7 +894,7 @@ postingAsSelector accountsPanelModel model =
 
         eligible ->
             let
-                selectedAccount : Maybe AccountsPanel.Account
+                selectedAccount : Maybe AccountsPanel.RellmAccount
                 selectedAccount =
                     resolvedAccount accountsPanelModel model
 
@@ -963,7 +963,7 @@ visibilityField accountsPanelModel model =
 `UI` itself imports this module (to embed `CreateNewPanel.view`), so importing
 it back here to reuse that helper would be a circular import.
 -}
-accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
+accountAvatar : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
 accountAvatar servers account =
     case AccountsPanel.accountAvatarUrl servers account of
         Just url ->

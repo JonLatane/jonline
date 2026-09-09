@@ -37,7 +37,7 @@ import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 
 
-view : PostMediaLayout -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+view : PostMediaLayout -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> List MediaReference -> Html msg
 view layout server maybeAccount onImageClicked media =
     render layout Nothing server maybeAccount onImageClicked media
 
@@ -56,7 +56,7 @@ than falling through to `postCard`'s `.post-card-link-overlay` like
 `.post-card-meta`'s plain text does.
 
 -}
-preview : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+preview : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> List MediaReference -> Html msg
 preview server maybeAccount onImageClicked media =
     render MEDIALAYOUTSTANDARD (Just MediaRenderer.Small) server maybeAccount onImageClicked media
 
@@ -65,7 +65,7 @@ preview server maybeAccount onImageClicked media =
 height of `preview`'s usual `Small`) -- for contexts even tighter on vertical
 space than an ordinary post card, e.g. `Shared.StarredPanel`'s post rows.
 -}
-previewExtraSmall : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+previewExtraSmall : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> List MediaReference -> Html msg
 previewExtraSmall server maybeAccount onImageClicked media =
     render MEDIALAYOUTSTANDARD (Just MediaRenderer.ExtraSmall) server maybeAccount onImageClicked media
 
@@ -89,7 +89,7 @@ ratio, rather than each capped independently and so varying in width across
 the strip.
 
 -}
-render : PostMediaLayout -> Maybe MediaRenderer.MediaSize -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+render : PostMediaLayout -> Maybe MediaRenderer.MediaSize -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> (String -> msg) -> List MediaReference -> Html msg
 render layout previewSizing server maybeAccount onImageClicked media =
     let
         previewClasses : List String

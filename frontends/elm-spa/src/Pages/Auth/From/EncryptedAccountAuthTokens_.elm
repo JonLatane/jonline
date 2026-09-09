@@ -116,7 +116,7 @@ update shared req msg model =
 
         GotSignInResult tokens (Ok user) ->
             let
-                account : AccountsPanel.Account
+                account : AccountsPanel.RellmAccount
                 account =
                     { server = tokens.server
                     , userId = user.id

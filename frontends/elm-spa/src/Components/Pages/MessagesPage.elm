@@ -1694,7 +1694,7 @@ totalUnreadCount model =
         |> List.length
 
 
-eligibleEntries : AccountsPanel.Model -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
+eligibleEntries : AccountsPanel.Model -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
 eligibleEntries =
     Messages.eligibleServers
 
@@ -1702,15 +1702,15 @@ eligibleEntries =
 refetchServers :
     AccountsPanel.Model
     -> Model
-    -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
+    -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
     -> ( Model, Cmd Msg )
 refetchServers accountsPanelModel model entriesToFetch =
     let
-        entries : List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
+        entries : List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
         entries =
             eligibleEntries accountsPanelModel
 
-        fetchCmd : { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType } -> Cmd Msg
+        fetchCmd : { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType } -> Cmd Msg
         fetchCmd entry =
             Messages.fetchMessageListing accountsPanelModel ( Just entry.account.userId, entry.server.frontendHost ) entry.listingType model.searchText
                 |> Task.attempt (GotServerMessages entry.server.frontendHost)
@@ -1719,7 +1719,7 @@ refetchServers accountsPanelModel model entriesToFetch =
         prunedMessagesByServer =
             Dict.filter (\host _ -> List.member host (List.map (.server >> .frontendHost) entries)) model.messagesByServer
 
-        markEntry : { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType } -> Dict String ServerFeed -> Dict String ServerFeed
+        markEntry : { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType } -> Dict String ServerFeed -> Dict String ServerFeed
         markEntry entry dict =
             let
                 statusIfSame : Maybe ServerMessages
@@ -1747,7 +1747,7 @@ refetchServers accountsPanelModel model entriesToFetch =
 fetchNewServers : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
 fetchNewServers accountsPanelModel model =
     let
-        entriesToFetch : List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
+        entriesToFetch : List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
         entriesToFetch =
             eligibleEntries accountsPanelModel
                 |> List.filter

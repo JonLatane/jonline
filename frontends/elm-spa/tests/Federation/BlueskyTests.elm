@@ -38,12 +38,12 @@ suite =
                         |> Expect.equal (Ok Nothing)
             ]
         , describe "toPost"
-            [ test "namespaces the id off the at:// URI, never colliding with a real Rellm post id" <|
+            [ test "id is the bare at:// URI, unnamespaced -- the synthetic host alongside it (never id alone) is what disambiguates it from a real Rellm post id" <|
                 \_ ->
                     Factory.feedPost defaultOverrides
                         |> Bluesky.toPost
                         |> .id
-                        |> Expect.equal "bluesky:at://did:plc:abc123/app.bsky.feed.post/xyz789"
+                        |> Expect.equal "at://did:plc:abc123/app.bsky.feed.post/xyz789"
             , test "is always GLOBALPUBLIC -- AT Protocol has no private-post concept" <|
                 \_ ->
                     Factory.feedPost defaultOverrides

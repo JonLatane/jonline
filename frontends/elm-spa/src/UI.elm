@@ -532,14 +532,14 @@ postsLink shared currentRoute =
 
 {-| Looks up a known server by `frontendHost` -- a thin wrapper around
 `AccountsPanel.serverForHost` for callers that already have a `Shared.Model`
-in scope rather than the bare `List AccountsPanel.Server`.
+in scope rather than the bare `List AccountsPanel.RellmServer`.
 -}
-findServer : Shared.Model -> String -> Maybe AccountsPanel.Server
+findServer : Shared.Model -> String -> Maybe AccountsPanel.RellmServer
 findServer shared frontendHost =
     AccountsPanel.serverForHost shared.accounts.servers frontendHost
 
 
-mainServer : Shared.Model -> Maybe AccountsPanel.Server
+mainServer : Shared.Model -> Maybe AccountsPanel.RellmServer
 mainServer shared =
     findServer shared shared.accounts.mainFrontendHost
 
@@ -626,10 +626,10 @@ aboutLink shared currentRoute =
 `Route.About`, which is always `mainFrontendHost`) so a chip for any known
 server can be inspected the same way.
 -}
-serverInfoButton : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
+serverInfoButton : Shared.Model -> AccountsPanel.RellmServer -> Html Shared.Msg
 serverInfoButton shared server =
     let
-        -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
+        -- Disconnected servers (see `AccountsPanel.RellmServer.connected`) default to
         -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
         serverIdentifier : String
         serverIdentifier =
@@ -683,7 +683,7 @@ themeToggle shared =
 accountsMenu : Shared.Model -> Route -> Html Shared.Msg
 accountsMenu shared currentRoute =
     let
-        enabledAccounts : List AccountsPanel.Account
+        enabledAccounts : List AccountsPanel.RellmAccount
         enabledAccounts =
             AccountsPanel.enabledAccounts shared.accounts
 
@@ -750,7 +750,7 @@ accountsMenu shared currentRoute =
 otherwise a small avatar/placeholder per signed-in account (see
 `accountsMenuAvatar`) in place of any username/count text.
 -}
-accountsMenuButtonContent : Shared.Model -> List AccountsPanel.Account -> Html Shared.Msg
+accountsMenuButtonContent : Shared.Model -> List AccountsPanel.RellmAccount -> Html Shared.Msg
 accountsMenuButtonContent shared enabledAccounts =
     case enabledAccounts of
         [] ->
@@ -777,7 +777,7 @@ toggled/reconnected) directly off `AccountsPanel.enabledServers` and
 accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
 accountsMenuServerSummary accountsPanelModel =
     let
-        servers : List AccountsPanel.Server
+        servers : List AccountsPanel.RellmServer
         servers =
             AccountsPanel.enabledServers accountsPanelModel
 
@@ -827,7 +827,7 @@ with the account's server's `primaryColor` (via `border-color-primary`, see
 `mainFrontendHost`, so the common case (only signed into the main server)
 doesn't show a border at all.
 -}
-accountsMenuAvatar : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+accountsMenuAvatar : Shared.Model -> AccountsPanel.RellmAccount -> Html Shared.Msg
 accountsMenuAvatar shared account =
     let
         accountsPanelModel : AccountsPanel.Model
@@ -1023,12 +1023,10 @@ activeTab shared =
 accountsAndServersTab : Shared.Model -> Route -> Html Shared.Msg
 accountsAndServersTab shared currentRoute =
     div [ class "accounts-panel-tab-content" ]
-        [ serversStrip shared
+        [ combinedFeedItemsStrip shared
         , unreachableServersWarning shared
         , recommendedServersStrip shared
         , mastodonServersStrip shared
-        , mastodonBrowseSection shared
-        , blueskyConnectSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1037,7 +1035,7 @@ accountsAndServersTab shared currentRoute =
 
 
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
-into other hosts with username/password" (see `addAccountForm`), "Show
+into other hosts with username/password" (see `rellmAddAccountServerForm`), "Show
 all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`), and
 "Show Posts linked to Custom Tabs" (see `Components.Pages.PostsPage.customNavPostIds`)
 toggles -- only shown (via `debugCount`) while an admin account is signed
@@ -1071,7 +1069,7 @@ standalone Admin Panel.
 adminTab : Shared.Model -> Html Shared.Msg
 adminTab shared =
     let
-        adminAccounts : List AccountsPanel.Account
+        adminAccounts : List AccountsPanel.RellmAccount
         adminAccounts =
             List.filter AccountsPanel.isAdmin shared.accounts.accounts
     in
@@ -1088,43 +1086,52 @@ adminTab shared =
 -- SERVERS
 
 
-serversStrip : Shared.Model -> Html Shared.Msg
-serversStrip shared =
+{-| The one combined, reorderable chip strip for every `AccountsPanel.CombinedFeedItem` -- Rellm
+servers, browsed Mastodon instances, and connected Bluesky accounts together, in `sortOrder`
+(the `mainFrontendHost` server always first, unmovable) -- replaces the former separate
+`serversStrip` and the chip portion of `federatedFeedsSection` (which now holds only the
+"+ Bluesky Account"/"+ Mastodon Server" add-buttons and their forms).
+-}
+combinedFeedItemsStrip : Shared.Model -> Html Shared.Msg
+combinedFeedItemsStrip shared =
     let
-        servers : List AccountsPanel.Server
-        servers =
-            shared.accounts.servers
+        items : List AccountsPanel.CombinedFeedItem
+        items =
+            AccountsPanel.combinedFeedItems shared.accounts
 
         count : Int
         count =
-            List.length servers
+            List.length items
     in
     Html.Keyed.node "div"
         [ classes [ "servers-strip", "flip-animated-row" ] ]
         (List.indexedMap
-            (\index server -> ( server.frontendHost, serverChipFlip shared count index server ))
-            servers
+            (\index item -> ( AccountsPanel.combinedFeedItemKey item, combinedFeedItemChipFlip shared count index item ))
+            items
         )
 
 
-{-| Wraps `serverChip` in a fading/scaling/collapsing animated outer `div`
-(entering when freshly added, removing when deleted -- see
-`AccountsPanel.serverAnimations`/`UI.Flip`) -- the `UI.Flip.Horizontal`
-counterpart of `accountRowFlip`, whose doc covers the two-layer reasoning
-(fade/collapse here vs. `serverChip`'s own, independent reorder-slide) in
-full.
+{-| Wraps one `CombinedFeedItem`'s chip (`serverChip`/`mastodonServerFeedChip`/`blueskyAccountChip`)
+in a fading/scaling/collapsing animated outer `div` (entering when freshly added, removing when
+deleted -- see `AccountsPanel.serverAnimations`/`UI.Flip`) -- the `UI.Flip.Horizontal` counterpart of
+`accountRowFlip`, whose doc covers the two-layer reasoning (fade/collapse here vs. each chip's own,
+independent reorder-slide) in full.
 -}
-serverChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
-serverChipFlip shared count index server =
+combinedFeedItemChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.CombinedFeedItem -> Html Shared.Msg
+combinedFeedItemChipFlip shared count index item =
     let
+        key : String
+        key =
+            AccountsPanel.combinedFeedItemKey item
+
         flipState : UI.Flip.State AccountsPanel.Msg
         flipState =
-            Dict.get server.frontendHost shared.accounts.serverAnimations
+            Dict.get key shared.accounts.serverAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
         isMoving : Bool
         isMoving =
-            Dict.get server.frontendHost shared.accounts.serverMoveAnimations
+            Dict.get key shared.accounts.serverMoveAnimations
                 |> Maybe.map .moving
                 |> Maybe.withDefault False
 
@@ -1135,9 +1142,79 @@ serverChipFlip shared count index server =
 
             else
                 []
+
+        chip : Html Shared.Msg
+        chip =
+            case item of
+                AccountsPanel.CombinedRellmServer server ->
+                    serverChip shared count index server
+
+                AccountsPanel.CombinedMastodonInstance instance ->
+                    mastodonServerFeedChip shared count index instance
+
+                AccountsPanel.CombinedBlueskyAccount account ->
+                    blueskyAccountChip shared count index account
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
-        [ div pointerEventsAttr [ serverChip shared count index server ] ]
+        [ div pointerEventsAttr [ chip ] ]
+
+
+{-| The reorder-arrow pair, `moveAttrs` (reorder-slide transform), and whether each arrow is
+interactive, shared by every `CombinedFeedItem` chip (`serverChip`/`mastodonServerFeedChip`/
+`blueskyAccountChip`) -- see `AccountsPanel.combinedFeedItems`'s own doc for the ordering this
+reasons about.
+
+The main server (always `index == 0`) is pinned in place and isn't reorderable at all, so neither of
+its arrows is interactive. The item right after it can't move left into the main server's fixed
+slot, so its left arrow isn't interactive either; the last item can't move right past the end, so
+its right arrow isn't. Both conditions naturally leave a lone non-main item (`count == 2`) with
+neither arrow interactive. Non-interactive arrows still render (`reorder-arrow-hidden` just
+fades/no-ops them) rather than disappearing, so a chip's width/layout doesn't jump around depending
+on position.
+-}
+feedItemReorderInfo :
+    Shared.Model
+    -> Int
+    -> Int
+    -> String
+    -> { moveAttrs : List (Html.Attribute Shared.Msg)
+       , reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+       , showBackward : Bool
+       , showForward : Bool
+       }
+feedItemReorderInfo shared count index key =
+    let
+        moveAttrs : List (Html.Attribute Shared.Msg)
+        moveAttrs =
+            shared.accounts.serverMoveAnimations
+                |> Dict.get key
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
+
+        -- `stopPropagationOn`, not `onClick` -- these two buttons sit inside a chip's own "select
+        -- this item"/switch-input click targets, so a plain `onClick` here would also fire those.
+        stopClick : Shared.Msg -> Attribute Shared.Msg
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
+        showBackward : Bool
+        showBackward =
+            index > 1
+
+        showForward : Bool
+        showForward =
+            index > 0 && index < count - 1
+
+        reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveFeedItemLeftClicked key))
+                , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveFeedItemRightClicked key))
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
+                }
+    in
+    { moveAttrs = moveAttrs, reorderPair = reorderPair, showBackward = showBackward, showForward = showForward }
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
@@ -1156,7 +1233,7 @@ on (see `Shared.AccountsPanel.DebugTab`), that tap additionally sets this server
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 
 -}
-serverChip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
+serverChip : Shared.Model -> Int -> Int -> AccountsPanel.RellmServer -> Html Shared.Msg
 serverChip shared count index server =
     let
         accountsPanelModel : AccountsPanel.Model
@@ -1208,53 +1285,31 @@ serverChip shared count index server =
                 )
             ]
 
-        moveAttrs : List (Html.Attribute Shared.Msg)
-        moveAttrs =
-            accountsPanelModel.serverMoveAnimations
-                |> Dict.get server.frontendHost
-                |> Maybe.map UI.Flip.moveAttributes
-                |> Maybe.withDefault []
+        reorderInfo :
+            { moveAttrs : List (Html.Attribute Shared.Msg)
+            , reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+            , showBackward : Bool
+            , showForward : Bool
+            }
+        reorderInfo =
+            feedItemReorderInfo shared count index ("server:" ++ server.frontendHost)
 
-        -- `stopPropagationOn`, not `onClick` -- these two buttons sit inside
-        -- `topAttrs`'s own "select this server" click target (see
-        -- `reorderButtonPair`'s doc), so a plain `onClick` here would also
-        -- fire that.
-        stopClick : Shared.Msg -> Attribute Shared.Msg
-        stopClick msg =
-            stopPropagationOn "click" (Decode.succeed ( msg, True ))
-
-        -- The main server (always `index == 0` -- see
-        -- `AccountsPanel.sortMainServerFirst`) is pinned in place and isn't
-        -- reorderable at all, so neither of its arrows is interactive. The
-        -- server right after it can't move left into the main server's fixed
-        -- slot, so its left arrow isn't interactive either; the last server
-        -- can't move right past the end, so its right arrow isn't. Both
-        -- conditions naturally leave a lone non-main server (`count == 2`)
-        -- with neither arrow interactive. Non-interactive arrows still
-        -- render (`reorder-arrow-hidden` just fades/no-ops them) rather than
-        -- disappearing, so the chip's width/layout doesn't jump around
-        -- depending on position.
         showBackward : Bool
         showBackward =
-            index > 1
+            reorderInfo.showBackward
 
         showForward : Bool
         showForward =
-            index > 0 && index < count - 1
+            reorderInfo.showForward
 
         reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
         reorderPair =
-            UI.Flip.reorderButtonPair UI.Flip.Horizontal
-                { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
-                , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerRightClicked server.frontendHost))
-                , canMoveBackward = showBackward
-                , canMoveForward = showForward
-                }
+            reorderInfo.reorderPair
     in
     div
-        (id (AccountsPanel.serverChipDomId server.frontendHost)
+        (id (AccountsPanel.feedItemChipDomId ("server:" ++ server.frontendHost))
             :: classList [ ( "server-chip", True ), ( "server-chip-disconnected", isDisconnected ) ]
-            :: moveAttrs
+            :: reorderInfo.moveAttrs
         )
         [ div topAttrs
             [ div [ class "server-chip-logo-row" ]
@@ -1412,10 +1467,10 @@ recommendedServerChip shared federatedServer =
         host =
             federatedServer.host
 
-        server : AccountsPanel.Server
+        server : AccountsPanel.RellmServer
         server =
             Dict.get host shared.accounts.recommendedServerConnections
-                |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
+                |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing, sortOrder = 0 }
 
         isDisconnected : Bool
         isDisconnected =
@@ -1435,47 +1490,51 @@ recommendedServerChip shared federatedServer =
         ]
 
 
-{-| Mirrors `recommendedServersStrip`, against `AccountsPanel.connectableMastodonServers` instead --
-Mastodon instances `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
-aren't already connected (`AccountsPanel.mastodonAccounts`), plus a read-only row per account that
-already is. Unlike the recommended-servers strip, this one never collapses behind a "N
-instances..." toggle -- there's no expectation of there being many, the way there can be many
-federated Rellm servers.
+{-| A read-only row per already-connected Mastodon account (`AccountsPanel.mastodonAccounts`) --
+connecting a new one now happens in the Mastodon tab of `addAccountServerForm` (see
+`mastodonConnectSection`), not here. Unlike the recommended-servers strip, this one never collapses
+behind a "N instances..." toggle -- there's no expectation of there being many, the way there can be
+many federated Rellm servers.
 -}
 mastodonServersStrip : Shared.Model -> Html Shared.Msg
 mastodonServersStrip shared =
-    let
-        connectable : List MastodonServer
-        connectable =
-            AccountsPanel.connectableMastodonServers shared.accounts
-
-        connected : List AccountsPanel.MastodonAccount
-        connected =
-            shared.accounts.mastodonAccounts
-    in
-    if List.isEmpty connectable && List.isEmpty connected then
+    if List.isEmpty shared.accounts.mastodonAccounts then
         text ""
 
     else
         div [ class "recommended-servers-section" ]
             [ div [ class "panel-divider" ] []
             , div [ class "recommended-servers-strip" ]
-                (List.map connectedMastodonAccountChip connected
-                    ++ List.map (mastodonServerChip shared) connectable
-                )
+                (List.map connectedMastodonAccountChip shared.accounts.mastodonAccounts)
             ]
 
 
-{-| One not-yet-connected Mastodon instance -- mirrors `recommendedServerChip`'s look (logo-less
-top/bottom split, tinted by `hostnameToCSSClass`) but its bottom row is either an alert (no `appId`
-configured, per `MastodonServer.appId`'s own doc on that being admin-optional) or a real "Connect"
-button that opens the OAuth popup (`AccountsPanel.MastodonConnectClicked`) -- never automatically,
-only on this explicit click. Disabled (and shows "Connecting…") while
-`AccountsPanel.mastodonConnectPopupOpen` names this same instance, so a slow/stuck popup can't be
-double-triggered.
+{-| The Mastodon tab's "connect a real account" sub-section, in `addAccountServerForm` -- one button
+per Mastodon instance `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
+isn't already connected (`AccountsPanel.mastodonAccounts`, see `AccountsPanel.connectableMastodonServers`).
+Nothing rendered at all if there's nothing connectable. Each button opens the OAuth popup
+(`AccountsPanel.MastodonConnectClicked`) -- never automatically, only on this explicit click --
+disabled (and shows "Connecting…") while `AccountsPanel.mastodonConnectPopupOpen` names this same
+instance, so a slow/stuck popup can't be double-triggered. A server with no `appId` configured (per
+`MastodonServer.appId`'s own doc on that being admin-optional) shows as unavailable instead of a
+working button.
 -}
-mastodonServerChip : Shared.Model -> MastodonServer -> Html Shared.Msg
-mastodonServerChip shared mastodonServer =
+mastodonConnectSection : Shared.Model -> Html Shared.Msg
+mastodonConnectSection shared =
+    let
+        connectable : List MastodonServer
+        connectable =
+            AccountsPanel.connectableMastodonServers shared.accounts
+    in
+    if List.isEmpty connectable then
+        text ""
+
+    else
+        div [ class "mastodon-connect-account-list" ] (List.map (mastodonConnectButton shared) connectable)
+
+
+mastodonConnectButton : Shared.Model -> MastodonServer -> Html Shared.Msg
+mastodonConnectButton shared mastodonServer =
     let
         domain : String
         domain =
@@ -1490,31 +1549,28 @@ mastodonServerChip shared mastodonServer =
             not (String.isEmpty mastodonServer.appId)
     in
     button
-        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( hostnameToCSSClass domain, True ) ]
+        [ type_ "button"
+        , classes [ "mastodon-connect-account-button", hostnameToCSSClass domain, "background-color-primary" ]
         , onClick (Shared.AccountsPanelMsg (AccountsPanel.MastodonConnectClicked domain))
         , disabled (not hasAppId || connecting)
         , title
             (if hasAppId then
-                "Connect " ++ domain
+                "Connect an account on " ++ domain
 
              else
                 domain ++ " hasn't been configured for Mastodon sign-in by this server's admin yet."
             )
         ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass domain, "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass domain, "background-color-nav" ] ]
-            [ text
-                (if not hasAppId then
-                    "⚠️ Not configured"
+        [ text
+            (if not hasAppId then
+                "⚠️ " ++ domain ++ " not configured"
 
-                 else if connecting then
-                    "Connecting…"
+             else if connecting then
+                "Connecting to " ++ domain ++ "…"
 
-                 else
-                    "+ Connect"
-                )
-            ]
+             else
+                "Connect Account on " ++ domain
+            )
         ]
 
 
@@ -1532,121 +1588,213 @@ connectedMastodonAccountChip mastodonAccount =
         ]
 
 
-{-| A user-added "just browse this instance's public timeline" affordance -- no OAuth, no
-`MastodonServer` admin config needed at all, since `Shared.Federation.Mastodon.fetchPosts` is a
-plain unauthenticated `GET` (see that function's own doc) -- unlike `mastodonServersStrip`'s
-"Connect" chips, which exist to authenticate as a specific account, this is closer to
-`serversStrip`'s own "type a host, add it" shape for real Rellm servers, just without any of the
-connectivity/negotiation validation a real server add does: there's nothing to validate ahead of
-time, a bad/unreachable host just silently fails to load posts the same way any other feed fetch
-failure does (see `Components.Pages.PostsPage.GotFeedPosts`'s `FeedFailed` doc).
+{-| The small avatar/logo image in a `blueskyAccountChip`/`mastodonServerFeedChip`'s label row --
+`text ""` (nothing rendered) until the account/instance's own async fetch resolves one (see
+`AccountsPanel.BlueskyAccount.avatarUrl`/`BrowsedMastodonInstance.logoUrl`'s own doc). Reuses
+`serverNameAndLogo`'s own `.server-logo-image` sizing/fit (32px, `object-fit: cover`) -- `circular`
+adds `.server-logo-image-circular` on top of that (Bluesky avatars) to override its default 6px
+corner rounding with a full circle; Mastodon instance logos stay un-rounded, matching how a real
+`serverChip`'s own logo looks.
 -}
-mastodonBrowseSection : Shared.Model -> Html Shared.Msg
-mastodonBrowseSection shared =
-    div [ class "recommended-servers-section" ]
-        [ div [ class "panel-divider" ] []
-        , if List.isEmpty shared.accounts.browsedMastodonInstances then
-            text ""
-
-          else
-            div [ class "recommended-servers-strip" ] (List.map browsedMastodonInstanceChip shared.accounts.browsedMastodonInstances)
-        , div [ class "server-details-federation-add" ]
-            [ input
-                [ type_ "text"
-                , attribute "autocapitalize" "none"
-                , attribute "autocorrect" "off"
-                , spellcheck False
-                , placeholder "mastodon.social"
-                , value shared.accounts.browseMastodonInstanceInput
-                , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+federatedFeedLogoImage : Bool -> String -> Maybe String -> Html msg
+federatedFeedLogoImage circular altText maybeUrl =
+    case maybeUrl of
+        Just url ->
+            img
+                [ classList [ ( "server-logo-image", True ), ( "server-logo-image-circular", circular ) ]
+                , src url
+                , alt altText
                 ]
                 []
-            , button
-                [ class "server-details-rename-button"
-                , onClick (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked)
-                , disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput))
-                ]
-                [ text "+ Browse Instance" ]
-            ]
-        ]
+
+        Nothing ->
+            text ""
 
 
-{-| One instance being browsed (see `mastodonBrowseSection`) -- a bare host with a remove button,
-no avatar/branding (there's no `Server`/`MastodonAccount` behind it, just a string) and no "Connect"
-affordance either, unlike `mastodonServerChip` -- browsing and connecting are independent actions,
-so a browsed instance doesn't invite upgrading itself into a connected account here.
+{-| One connected Bluesky account or browsed Mastodon instance, in `federatedFeedsSection`'s combined
+strip -- both mirror `serverChip`'s own shape as closely as they can without a real `Server`/
+`ServerTheme` behind them, with its two-tone coloring deliberately *inverted* (`background-color-nav`
+top / `background-color-primary` bottom, vs. `serverChip`'s own primary-top/nav-bottom) as a quick
+visual "this one's different" cue, `mainFrontendHost`-scoped either way -- see `UI.EmittedStylesheet`'s
+own doc on why: neither is a real `Server` with its own registered theme, so there's no per-instance
+color to draw on the way `serverChip`/`recommendedServerChip` do. The top section pairs the
+avatar/logo with a "⇄ <Service>" label (standing in for `serverNameAndLogo`'s own logo+name row), then
+the fetched display name if one resolved (see `AccountsPanel.BlueskyAccount`/`BrowsedMastodonInstance`'s
+own doc), then the handle/host itself -- and the bottom section holds every action as one button
+strip, same as `serverChip`'s own bottom: an enable switch (toggling it fires the same
+`Shared.AccountsPanelMsg`
+update path a real server's switch does, so `Components.Pages.PostsPage`'s `SharedMsg
+(Shared.AccountsPanelMsg _) -> fetchNewFeeds shared model` branch reacts to it exactly the same way:
+a disabled entry drops out of `relevantFeedSources`, pruning its posts from `postsByServer` and
+FLIP-animating them out; re-enabling reintroduces it as a "new" source and fetches it fresh), an
+external-link button (mirrors `serverChip`'s own `external-link-btn`), and a delete button.
+`border-color-accent` (same `mainFrontendHost` scoping) gives both a shared, recognizable border
+regardless of which service they're for.
 -}
-browsedMastodonInstanceChip : String -> Html Shared.Msg
-browsedMastodonInstanceChip host =
-    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass host ] ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
-            [ button
+blueskyAccountChip : Shared.Model -> Int -> Int -> AccountsPanel.BlueskyAccount -> Html Shared.Msg
+blueskyAccountChip shared count index blueskyAccount =
+    let
+        mainHostClass : String
+        mainHostClass =
+            hostnameToCSSClass shared.accounts.mainFrontendHost
+
+        key : String
+        key =
+            "bluesky:" ++ blueskyAccount.handle
+
+        reorderInfo :
+            { moveAttrs : List (Html.Attribute Shared.Msg)
+            , reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+            , showBackward : Bool
+            , showForward : Bool
+            }
+        reorderInfo =
+            feedItemReorderInfo shared count index key
+
+        nameRow : List (Html Shared.Msg)
+        nameRow =
+            case blueskyAccount.displayName of
+                Just name ->
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-name-primary" ] [ text name ] ] ]
+
+                Nothing ->
+                    []
+    in
+    div
+        (id (AccountsPanel.feedItemChipDomId key)
+            :: classes [ "server-chip", mainHostClass, "border-color-accent" ]
+            :: reorderInfo.moveAttrs
+        )
+        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
+            ([ div [ class "server-chip-logo-row" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showBackward ) ] ] [ reorderInfo.reorderPair.backward ]
+                , div [ class "federated-feed-service-label" ] [ text "⇄ Bluesky" ]
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showForward ) ] ] [ reorderInfo.reorderPair.forward ]
+                ]
+             , div [ class "server-chip-host-row" ] [ federatedFeedLogoImage True ("@" ++ blueskyAccount.handle ++ " avatar") blueskyAccount.avatarUrl ]
+             ]
+                ++ nameRow
+                ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
+            )
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-primary" ] ]
+            [ switchInput blueskyAccount.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBlueskyAccountEnabled blueskyAccount.handle))
+            , a
+                [ class "external-link-btn"
+                , href ("https://bsky.app/profile/" ++ blueskyAccount.handle)
+                , target "_blank"
+                , title ("Open @" ++ blueskyAccount.handle ++ " on Bluesky in a new tab")
+                ]
+                [ text "↗" ]
+            , button
                 [ class "remove-btn"
-                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked host))
-                , title ("Stop browsing " ++ host)
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBlueskyAccountClicked blueskyAccount.handle))
+                , title ("Disconnect " ++ blueskyAccount.handle)
                 ]
                 [ text "╳" ]
             ]
         ]
 
 
-{-| Bluesky connection UI -- mirrors `mastodonServersStrip`'s general shape (a chip per already-
-connected account), but the "connect" side is a plain inline handle/App Password form
-(`AccountsPanel.BlueskyConnectForm`) rather than a chip/button that opens a popup -- see
-`AccountsPanel.BlueskyAccount`'s own doc on why Bluesky's login has no OAuth popup at all. Always
-shown (unlike `mastodonServersStrip`, which hides entirely when there's nothing to connect to) --
-there's no admin-configuration gate the way `FederationInfo.mastodonServers` is, so there's always
-at least the "Connect Bluesky Account" button to show.
+{-| One Mastodon instance being browsed -- see `blueskyAccountChip`'s own doc for the shared
+`serverChip`-mirroring shape/reasoning. Differs from `mastodonServersStrip`'s admin-registered,
+OAuth-connectable kind in that there's no `MastodonAccount` behind it, just a string, and no "Connect"
+affordance either, since browsing and connecting are independent actions -- a browsed instance
+doesn't invite upgrading itself into a connected account here.
 -}
-blueskyConnectSection : Shared.Model -> Html Shared.Msg
-blueskyConnectSection shared =
+mastodonServerFeedChip : Shared.Model -> Int -> Int -> AccountsPanel.BrowsedMastodonInstance -> Html Shared.Msg
+mastodonServerFeedChip shared count index instance =
     let
-        connected : List AccountsPanel.BlueskyAccount
-        connected =
-            shared.accounts.blueskyAccounts
-    in
-    div [ class "recommended-servers-section" ]
-        (div [ class "panel-divider" ] []
-            :: (if List.isEmpty connected then
+        mainHostClass : String
+        mainHostClass =
+            hostnameToCSSClass shared.accounts.mainFrontendHost
+
+        key : String
+        key =
+            "mastodon:" ++ instance.host
+
+        reorderInfo :
+            { moveAttrs : List (Html.Attribute Shared.Msg)
+            , reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+            , showBackward : Bool
+            , showForward : Bool
+            }
+        reorderInfo =
+            feedItemReorderInfo shared count index key
+
+        nameRow : List (Html Shared.Msg)
+        nameRow =
+            case instance.displayName of
+                Just name ->
+                    [ div [ class "server-chip-host-row" ] [ div [ class "server-name-primary" ] [ text name ] ] ]
+
+                Nothing ->
                     []
-
-                else
-                    [ div [ class "recommended-servers-strip" ] (List.map connectedBlueskyAccountChip connected) ]
-               )
-            ++ [ case shared.accounts.blueskyConnectForm of
-                    Just form ->
-                        blueskyConnectFormView form
-
-                    Nothing ->
-                        button
-                            [ class "server-details-rename-button", onClick (Shared.AccountsPanelMsg AccountsPanel.ShowBlueskyConnectFormClicked) ]
-                            [ text "+ Connect Bluesky Account" ]
-               ]
+    in
+    div
+        (id (AccountsPanel.feedItemChipDomId key)
+            :: classes [ "server-chip", mainHostClass, "border-color-accent" ]
+            :: reorderInfo.moveAttrs
         )
-
-
-{-| One already-connected Bluesky account -- read-only for now, same first-pass scope as
-`connectedMastodonAccountChip`. Always tinted/keyed as "bsky.social" (rather than each account's own
-host, the way Mastodon chips are) since every account here was, for now, necessarily connected
-through that one PDS -- see `AccountsPanel.BlueskyAccount`'s own doc on that limitation.
--}
-connectedBlueskyAccountChip : AccountsPanel.BlueskyAccount -> Html Shared.Msg
-connectedBlueskyAccountChip blueskyAccount =
-    div [ classes [ "server-chip", "recommended-server-chip", hostnameToCSSClass "bsky.social" ] ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass "bsky.social", "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ blueskyAccount.handle) ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass "bsky.social", "background-color-nav" ] ]
-            [ text "bsky.social" ]
+        [ div [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
+            ([ div [ class "server-chip-logo-row" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showBackward ) ] ] [ reorderInfo.reorderPair.backward ]
+                , div [ class "federated-feed-service-label" ] [ text "⇄ Mastodon" ]
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showForward ) ] ] [ reorderInfo.reorderPair.forward ]
+                ]
+             , div [ class "server-chip-host-row" ] [ federatedFeedLogoImage False (instance.host ++ " logo") instance.logoUrl ]
+             ]
+                ++ nameRow
+                ++ [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text instance.host ] ] ]
+            )
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-primary" ] ]
+            [ switchInput instance.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBrowsedMastodonInstanceEnabled instance.host))
+            , a
+                [ class "external-link-btn"
+                , href ("https://" ++ instance.host)
+                , target "_blank"
+                , title ("Open " ++ instance.host ++ " in a new tab")
+                ]
+                [ text "↗" ]
+            , button
+                [ class "remove-btn"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBrowsedMastodonInstanceClicked instance.host))
+                , title ("Stop browsing " ++ instance.host)
+                ]
+                [ text "╳" ]
+            ]
         ]
 
 
-{-| The handle/App Password inputs plus Connect/Cancel buttons, shown once
-`AccountsPanel.ShowBlueskyConnectFormClicked` expands the form -- a real `<form>` (not a `button`
-`onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form uses
-(see its own doc), so Enter submits it and password managers recognize it as a login form worth
-offering to fill.
+{-| The Mastodon tab's "browse an instance" `<input>` + submit button -- mirrors
+`blueskyConnectFormView`'s own `<form>`-with-`onSubmit` shape (so Enter submits it), just with the
+one plain host input `browseMastodonInstanceInput` needs instead of a whole record. No "Cancel"
+button of its own -- `addAccountServerFormTabBar`'s shared "←" collapses the whole tabbed form.
+-}
+mastodonServerFormView : Shared.Model -> Html Shared.Msg
+mastodonServerFormView shared =
+    Html.form
+        [ class "server-details-federation-add", onSubmit (Shared.AccountsPanelMsg AccountsPanel.BrowseMastodonInstanceClicked) ]
+        [ input
+            [ type_ "text"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
+            , placeholder "mastodon.world"
+            , value shared.accounts.browseMastodonInstanceInput
+            , onInput (Shared.AccountsPanelMsg << AccountsPanel.BrowseMastodonInstanceInputChanged)
+            ]
+            []
+        , button
+            [ disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput)) ]
+            [ text "+ Browse Instance" ]
+        ]
+
+
+{-| The Bluesky tab's handle/App Password inputs plus Connect button -- a real `<form>` (not a
+`button` `onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form
+uses (see its own doc), so Enter submits it and password managers recognize it as a login form worth
+offering to fill. No "Cancel" button of its own -- `addAccountServerFormTabBar`'s shared "←"
+collapses the whole tabbed form.
 -}
 blueskyConnectFormView : AccountsPanel.BlueskyConnectForm -> Html Shared.Msg
 blueskyConnectFormView form =
@@ -1690,9 +1838,6 @@ blueskyConnectFormView form =
                     "Connect"
                 )
             ]
-        , button
-            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideBlueskyConnectFormClicked), disabled submitting ]
-            [ text "Cancel" ]
         , case form.status of
             AccountsPanel.Errored err ->
                 div [ class "auth-error" ] [ text err ]
@@ -1709,7 +1854,7 @@ blueskyConnectFormView form =
 accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
     let
-        accounts : List AccountsPanel.Account
+        accounts : List AccountsPanel.RellmAccount
         accounts =
             shared.accounts.accounts
     in
@@ -1756,7 +1901,7 @@ newAccountFlowActive shared =
 `AccountsPanel.AccountForm`) currently name -- the one row `newAccountFlowActive`
 leaves visible.
 -}
-accountMatchesForm : Shared.Model -> AccountsPanel.Account -> Bool
+accountMatchesForm : Shared.Model -> AccountsPanel.RellmAccount -> Bool
 accountMatchesForm shared account =
     let
         form : AccountsPanel.AccountForm
@@ -1782,7 +1927,7 @@ that flow is active -- reusing the same collapsing-grid-track CSS transition
 rather than a separate ad hoc show/hide animation.
 
 -}
-accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.RellmAccount -> Html Shared.Msg
 accountRowFlip shared count mainCount index account =
     let
         flipState : UI.Flip.State AccountsPanel.Msg
@@ -1835,7 +1980,7 @@ otherwise move an account across the main/non-main boundary, rather than
 just checking this account's own position against the list's two ends.
 
 -}
-accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.RellmAccount -> Html Shared.Msg
 accountRow shared count mainCount index account =
     let
         accId : String
@@ -1948,7 +2093,7 @@ accountRow shared count mainCount index account =
 notification error, if either applies to `account`. Renders nothing (not even an empty div) when
 neither applies, so rows with nothing to report stay single-row.
 -}
-accountRowAlerts : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+accountRowAlerts : Shared.Model -> AccountsPanel.RellmAccount -> Html Shared.Msg
 accountRowAlerts shared account =
     let
         hasNotificationError : Bool
@@ -2004,7 +2149,7 @@ subscription (a real, not-yet-built feature; see this button's own git history f
 investigation).
 
 -}
-notificationsButton : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+notificationsButton : Shared.Model -> AccountsPanel.RellmAccount -> Html Shared.Msg
 notificationsButton shared account =
     if account.server /= shared.accounts.browsingHost then
         text ""
@@ -2073,7 +2218,7 @@ button itself: the button lives inside `.nav-panel`, which sets its own `overflo
 per the CSS spec, therefore also computes `overflow-x` to `auto`), so anything positioned to poke
 outside the button just gets silently clipped instead of actually being readable.
 -}
-notificationError : Shared.Model -> AccountsPanel.Account -> Html msg
+notificationError : Shared.Model -> AccountsPanel.RellmAccount -> Html msg
 notificationError shared account =
     case Dict.get (AccountsPanel.accountId account) shared.accounts.notificationErrors of
         Just reason ->
@@ -2083,7 +2228,7 @@ notificationError shared account =
             text ""
 
 
-avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
+avatarOrPlaceholder : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
 avatarOrPlaceholder servers account =
     imageOrInitial [ "account-avatar" ] account.username (AccountsPanel.accountAvatarUrl servers account)
 
@@ -2121,7 +2266,7 @@ Enter, type a password" flow.
 formView : Shared.Model -> Route -> Html Shared.Msg
 formView shared currentRoute =
     if AccountsPanel.shouldShowAddAccountForm shared.accounts then
-        addAccountForm shared currentRoute
+        addAccountServerForm shared currentRoute
 
     else
         div [ class "account-form" ]
@@ -2131,6 +2276,85 @@ formView shared currentRoute =
                 ]
                 [ text "Add Account/Server..." ]
             ]
+
+
+{-| The expanded "Add Account/Server" area, once `AccountsPanel.shouldShowAddAccountForm` -- one
+merged form with three tabs (Rellm/Mastodon/Bluesky, see `AccountsPanel.AccountOrServerFormType`)
+replacing what used to be three separate forms with their own independent show/hide state: the Rellm
+`addAccountForm` (now `rellmAddAccountServerForm`), the "+ Bluesky Account"/"+ Mastodon Server"
+buttons and their forms (`federatedFeedsSection`, removed), and `mastodonServersStrip`'s own
+"Connect" buttons for admin-registered instances (now `mastodonConnectSection`). Each tab keeps its
+own separate set of inputs (`AccountsPanel.Model.accountForm`/`addServerForm`,
+`browseMastodonInstanceInput`, `blueskyConnectForm`) -- only which one is currently *showing* is
+now shared.
+-}
+addAccountServerForm : Shared.Model -> Route -> Html Shared.Msg
+addAccountServerForm shared currentRoute =
+    let
+        activeType : AccountsPanel.AccountOrServerFormType
+        activeType =
+            AccountsPanel.activeAddAccountServerFormType shared.accounts
+    in
+    div [ class "account-form" ]
+        [ addAccountServerFormTabBar shared activeType
+        , case activeType of
+            AccountsPanel.RellmServerFormType ->
+                rellmAddAccountServerForm shared currentRoute
+
+            AccountsPanel.MastodonServerFormType ->
+                div [ class "account-form" ]
+                    [ mastodonServerFormView shared
+                    , mastodonConnectSection shared
+                    ]
+
+            AccountsPanel.BlueskyAccountFormType ->
+                blueskyConnectFormView shared.accounts.blueskyConnectForm
+        ]
+
+
+{-| The Rellm/Mastodon/Bluesky tab row for `addAccountServerForm`, plus the shared "←" button that
+collapses the whole area back behind its "Add Account/Server..." button (see
+`hideAddAccountFormButton`) -- reuses the outer Accounts Panel's own `.accounts-panel-tab`/
+`.selected` styling (see `accountsPanelTab`) for visual consistency, one level deeper.
+-}
+addAccountServerFormTabBar : Shared.Model -> AccountsPanel.AccountOrServerFormType -> Html Shared.Msg
+addAccountServerFormTabBar shared activeType =
+    div [ class "add-account-server-tab-bar" ]
+        [ hideAddAccountFormButton shared (addAccountServerFormBusy shared activeType)
+        , div [ class "accounts-panel-tabs" ]
+            [ addAccountServerFormTabButton activeType AccountsPanel.RellmServerFormType "Rellm"
+            , addAccountServerFormTabButton activeType AccountsPanel.MastodonServerFormType "Mastodon"
+            , addAccountServerFormTabButton activeType AccountsPanel.BlueskyAccountFormType "Bluesky"
+            ]
+        ]
+
+
+addAccountServerFormTabButton : AccountsPanel.AccountOrServerFormType -> AccountsPanel.AccountOrServerFormType -> String -> Html Shared.Msg
+addAccountServerFormTabButton activeType tabType label =
+    button
+        [ type_ "button"
+        , classList [ ( "accounts-panel-tab", True ), ( "selected", activeType == tabType ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.AddAccountServerFormTypeSelected tabType))
+        ]
+        [ text label ]
+
+
+{-| Whether the currently-active tab has a submission in flight -- used only to disable the shared
+"←" collapse button while that's true, same as it was already disabled mid-submit before this was a
+tabbed form.
+-}
+addAccountServerFormBusy : Shared.Model -> AccountsPanel.AccountOrServerFormType -> Bool
+addAccountServerFormBusy shared activeType =
+    case activeType of
+        AccountsPanel.RellmServerFormType ->
+            (shared.accounts.accountForm.status == AccountsPanel.Submitting)
+                || (shared.accounts.addServerForm.status == AccountsPanel.Submitting)
+
+        AccountsPanel.MastodonServerFormType ->
+            shared.accounts.mastodonConnectPopupOpen /= Nothing
+
+        AccountsPanel.BlueskyAccountFormType ->
+            shared.accounts.blueskyConnectForm.status == AccountsPanel.Submitting
 
 
 {-| The server whose theme the form's own controls (Login/Create Account,
@@ -2179,8 +2403,8 @@ hideAddAccountFormButton shared accountFieldsDisabled =
             [ text "←" ]
 
 
-addAccountForm : Shared.Model -> Route -> Html Shared.Msg
-addAccountForm shared currentRoute =
+rellmAddAccountServerForm : Shared.Model -> Route -> Html Shared.Msg
+rellmAddAccountServerForm shared currentRoute =
     let
         accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
@@ -2436,8 +2660,7 @@ addAccountForm shared currentRoute =
             div [ class "account-form-buttons" ]
                 (case newAccountType of
                     Nothing ->
-                        [ hideAddAccountFormButton shared accountFieldsDisabled
-                        , button
+                        [ button
                             [ type_ "button"
                             , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
                             , disabled accountFieldsDisabled
@@ -2515,7 +2738,7 @@ addAccountForm shared currentRoute =
         ]
 
 
-{-| A small circular "×" button overlaid on a field (see `addAccountForm`'s
+{-| A small circular "×" button overlaid on a field (see `rellmAddAccountServerForm`'s
 server/username/password fields) that clears it in one click and refocuses
 it (via `AccountsPanel.ClearFieldClicked`) -- shown only once there's
 something typed in to clear.
@@ -2546,7 +2769,7 @@ key (once generated -- near-instant after app load) to
 
 Only shown once the Server field names a host other than our own
 (`AccountsPanel.isMainServer`) -- username/password auth (see
-`addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
+`rellmAddAccountServerForm`'s `showUsernamePasswordFields`) is the only way into our own
 server, and this SSO hand-off is (ordinarily) the only way into anywhere
 else. `DebugTab.allowUsernamePasswordForOtherHosts` can additionally enable
 username/password for other hosts too, but never suppresses this button for
@@ -3076,7 +3299,7 @@ it's clear which admin identity a change would be made as, since the RPC is
 authenticated per-account rather than "whichever account is currently
 active".
 -}
-adminAccountPanel : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+adminAccountPanel : Shared.Model -> AccountsPanel.RellmAccount -> Html Shared.Msg
 adminAccountPanel shared account =
     let
         id : String
@@ -3087,7 +3310,7 @@ adminAccountPanel shared account =
         isOpen =
             AdminTab.isAccountPanelOpen id shared.accounts.adminTab
 
-        adminServer : Maybe AccountsPanel.Server
+        adminServer : Maybe AccountsPanel.RellmServer
         adminServer =
             findServer shared account.server
 

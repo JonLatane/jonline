@@ -552,6 +552,31 @@
   object-fit: cover;
 }
 
+/* Overrides the plain `.server-logo-image`'s 6px corner rounding with a full circle -- see
+   `UI.federatedFeedLogoImage`'s own doc on when this is added (Bluesky avatars) vs. left off
+   (Mastodon instance logos, which stay un-rounded like a real server's own chip logo). */
+.server-logo-image-circular {
+  border-radius: 50%;
+}
+
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own avatar/logo row -- unlike
+   `.server-name-and-logo`'s own context-scoped sizing (regular/compact/horizontal), these chips use
+   `.server-logo-image` directly with no such wrapper, so this fills in the size that would otherwise
+   be missing. Matches `.server-name-and-logo.regular`'s own 32px, same size as a real server chip's
+   own logo. */
+.server-chip-host-row .server-logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+/* `UI.blueskyAccountChip`/`mastodonServerFeedChip`'s own "⇄ Bluesky"/"⇄ Mastodon" row -- de-emphasized
+   (both smaller and dimmer than `.server-chip-host`) since the avatar/logo and display name below it
+   already carry the chip's real identity; this is just a category label. */
+.federated-feed-service-label {
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
 .server-name-and-logo.compact .server-logo-image {
   width: 20px;
   height: 20px;
@@ -1101,6 +1126,24 @@
   align-items: center;
   justify-content: center;
   width: 32px;
+}
+
+/* The Rellm/Mastodon/Bluesky tab row for `addAccountServerForm` (UI.elm's
+   `addAccountServerFormTabBar`) -- the "←" collapse button sits to the tabs'
+   left, both vertically centered in the row. Explicit width+height (rather
+   than `.hide-add-account-form-button`'s own `aspect-ratio`+`width: 32px`)
+   shrinks it down to match `.accounts-panel-tab`'s own rendered height,
+   instead of the taller 32px square it is everywhere else it's used
+   (`.account-form-buttons`/`.sign-in-from-row`). */
+.add-account-server-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.add-account-server-tab-bar .hide-add-account-form-button {
+  width: 1.7rem;
+  height: 1.7rem;
 }
 
 .account-form-buttons .hide-add-account-form-button {

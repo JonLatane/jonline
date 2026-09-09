@@ -18,9 +18,9 @@ import UI.Classes exposing (classes)
 {-| The signed-in, enabled account (if any) on `targetHost`, but only if it actually has `ADMIN` --
 what every tab gates its own Edit buttons/editors on. Renaming (or any other `ConfigureServer`
 mutation) is only possible for a server that's already known, so this only ever matches once the
-page has resolved an `AccountsPanel.Server` for `targetHost` to begin with.
+page has resolved an `AccountsPanel.RellmServer` for `targetHost` to begin with.
 -}
-adminAccountFor : Shared.Model -> String -> Maybe AccountsPanel.Account
+adminAccountFor : Shared.Model -> String -> Maybe AccountsPanel.RellmAccount
 adminAccountFor shared targetHost =
     AccountsPanel.enabledAccountForServer shared.accounts.accounts targetHost
         |> Maybe.andThen

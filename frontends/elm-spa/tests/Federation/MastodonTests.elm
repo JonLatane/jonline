@@ -32,12 +32,12 @@ suite =
                         |> Expect.equal (Ok Nothing)
             ]
         , describe "toPost"
-            [ test "namespaces the id by instance host, never colliding with a real Rellm post id" <|
+            [ test "id is the bare status id, unnamespaced -- the synthetic host alongside it (never id alone) is what disambiguates it from a real Rellm post id" <|
                 \_ ->
                     Factory.status Factory.defaultOverrides
                         |> Mastodon.toPost "mastodon.social"
                         |> .id
-                        |> Expect.equal "mastodon:mastodon.social:110224857075517327"
+                        |> Expect.equal "110224857075517327"
             , test "is always GLOBALPUBLIC -- a public-timeline Status is definitionally public" <|
                 \_ ->
                     Factory.status Factory.defaultOverrides

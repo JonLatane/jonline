@@ -145,7 +145,7 @@ subscriptions model =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.Server -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         CustomTabsEditClicked ->
@@ -663,7 +663,7 @@ own `colorEditorRow`/`logoEditorView`. `Home`'s own target (Default vs. a custom
 saves/cancels in that same editor, alongside `pending` (see `CustomTabsEdit`'s own doc for why it
 isn't a `CustomTabEntry` itself).
 -}
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
 view server maybeAdminAccount model =
     div [ Html.Attributes.class "server-details-custom-tabs" ]
         [ h3 [ classes [ "section-title" ] ] [ text "Navigation Tabs" ]
@@ -682,7 +682,7 @@ view server maybeAdminAccount model =
         ]
 
 
-customTabsDisplayView : AccountsPanel.Server -> List CustomNav.CustomTab -> Html Msg
+customTabsDisplayView : AccountsPanel.RellmServer -> List CustomNav.CustomTab -> Html Msg
 customTabsDisplayView server tabs =
     div [ Html.Attributes.class "custom-tabs-strip" ] (homeTabChip server :: List.map (customTabChip server) tabs)
 
@@ -696,7 +696,7 @@ other tab's own chip is keyed off its `icon`/`title`, neither of which a `home` 
 (see `UI.CustomNav.homeTarget`'s own doc). Shown in `customTabsDisplayView` so the preview always
 reads as "this is where Home sits, then your tabs."
 -}
-homeTabChip : AccountsPanel.Server -> Html msg
+homeTabChip : AccountsPanel.RellmServer -> Html msg
 homeTabChip server =
     div [ classes [ "server-chip", "custom-tab-chip", "custom-tab-chip-home", hostnameToCSSClass server.frontendHost ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
@@ -706,7 +706,7 @@ homeTabChip server =
         ]
 
 
-customTabChip : AccountsPanel.Server -> CustomNav.CustomTab -> Html msg
+customTabChip : AccountsPanel.RellmServer -> CustomNav.CustomTab -> Html msg
 customTabChip server tab =
     div [ classes [ "server-chip", "custom-tab-chip", hostnameToCSSClass server.frontendHost ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary", "custom-tab-chip-icon-row" ] ]
@@ -722,7 +722,7 @@ almost exactly), the "Add Tab" button, and the Save/Cancel actions -- everything
 non-reorderable entry (see its own doc) -- it edits `edit.home` directly rather than being one of
 `edit.pending`.
 -}
-customTabsEditorView : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
+customTabsEditorView : AccountsPanel.RellmServer -> CustomTabsEdit -> Html Msg
 customTabsEditorView server edit =
     div [ Html.Attributes.class "server-details-custom-tabs-edit" ]
         [ Html.Keyed.node "div"
@@ -748,7 +748,7 @@ freshly added via `CustomTabAddClicked`, removing when `CustomTabRemoveClicked`)
 `FederationTab.federatedServerEditChipFlip` exactly, just over `CustomTabEntry` instead of
 `FederatedServer`.
 -}
-customTabEditChipFlip : AccountsPanel.Server -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
+customTabEditChipFlip : AccountsPanel.RellmServer -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
 customTabEditChipFlip server edit count index entry =
     let
         flipState : UI.Flip.State Msg
@@ -775,7 +775,7 @@ customTabEditChipFlip server edit count index entry =
 `FederationTab.federatedServerEditChip`'s own layout), then the "type of tab" `<select>` (plus a
 Post-id `<input>` when that's the chosen kind), a Title `<input>`, and a remove button.
 -}
-customTabEditChip : AccountsPanel.Server -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
+customTabEditChip : AccountsPanel.RellmServer -> CustomTabsEdit -> Int -> Int -> CustomTabEntry -> Html Msg
 customTabEditChip server edit count index entry =
     let
         moveAttrs : List (Html.Attribute Msg)
@@ -869,7 +869,7 @@ while `entry.icon` is already an `EmojiIcon` -- typing into it always keeps it o
 `CustomTabChooseImageClicked`/`applySharedMsg`) or, once a `MediaIcon`'s chosen, a "Use Emoji" button
 reverting to a blank `EmojiIcon` instead.
 -}
-customTabIconEditor : AccountsPanel.Server -> CustomTabEntry -> Html Msg
+customTabIconEditor : AccountsPanel.RellmServer -> CustomTabEntry -> Html Msg
 customTabIconEditor server entry =
     div [ Html.Attributes.class "custom-tab-icon-editor" ]
         [ div [ Html.Attributes.class "custom-tab-icon-preview" ] [ CustomNav.iconView server entry.icon ]
@@ -922,7 +922,7 @@ Events strip" toggle actually does anything for -- see `CustomHomePage.show_even
 proto doc), the events-strip toggle and its own conditional row/calendar-mode controls. Mirrors
 `customTabEditChip`'s own bottom row.
 -}
-homeEditChip : AccountsPanel.Server -> CustomTabsEdit -> Html Msg
+homeEditChip : AccountsPanel.RellmServer -> CustomTabsEdit -> Html Msg
 homeEditChip server edit =
     div [ classes [ "server-chip", "custom-tab-chip", "custom-tab-chip-home", "custom-tab-chip-edit", hostnameToCSSClass server.frontendHost ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]

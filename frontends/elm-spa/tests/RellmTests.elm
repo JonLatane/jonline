@@ -85,8 +85,8 @@ suite =
                     sortedIds
                         |> Expect.equal
                             [ "42"
-                            , "mastodon:mastodon.social:110224857075517327"
-                            , "bluesky:at://did:plc:abc123/app.bsky.feed.post/xyz789"
+                            , "110224857075517327"
+                            , "at://did:plc:abc123/app.bsky.feed.post/xyz789"
                             ]
             ]
         ]

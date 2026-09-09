@@ -1482,7 +1482,7 @@ enabled server for an unfiltered feed (`Pages.Events`), or just `author`'s own
 resolved host once there is one (`Pages.UsernameOrCustomTab_.Events`/
 `Pages.User.UserId_.Events`).
 -}
-relevantServers : Shared.Model -> Model -> List AccountsPanel.Server
+relevantServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
@@ -1552,7 +1552,7 @@ still `Nothing`) -- mirrors `Components.Pages.PostsPage.refetchServers`'s
 inline `fetchEffect`, just factored out since `GotNow` also needs to kick
 every relevant server's fetch off again once a real cutoff lands.
 -}
-fetchServerEffect : Shared.Model -> Model -> Time.Posix -> AccountsPanel.Server -> Effect Msg
+fetchServerEffect : Shared.Model -> Model -> Time.Posix -> AccountsPanel.RellmServer -> Effect Msg
 fetchServerEffect shared model endsAfter server =
     Events.fetchEvents
         shared.accounts
@@ -1584,7 +1584,7 @@ touched, no fetch fired) while `model.endsAfter` is still `Nothing` -- see
 its own doc comment for why this page must never fetch before that's
 resolved.
 -}
-refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
+refetchServers : Shared.Model -> Model -> List AccountsPanel.RellmServer -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
     case model.endsAfter of
         Nothing ->
@@ -1592,11 +1592,11 @@ refetchServers shared model serversToFetch =
 
         Just endsAfter ->
             let
-                enabledServers : List AccountsPanel.Server
+                enabledServers : List AccountsPanel.RellmServer
                 enabledServers =
                     relevantServers shared model
 
-                currentAccountId : AccountsPanel.Server -> Maybe String
+                currentAccountId : AccountsPanel.RellmServer -> Maybe String
                 currentAccountId server =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                         |> Maybe.map AccountsPanel.accountId
@@ -1605,7 +1605,7 @@ refetchServers shared model serversToFetch =
                 prunedEventsByServer =
                     Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.eventsByServer
 
-                markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
+                markServer : AccountsPanel.RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
                 markServer server dict =
                     let
                         accountId : Maybe String
@@ -1710,12 +1710,12 @@ against `GetEvents` instead of `GetPosts`.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        currentAccountId : AccountsPanel.Server -> Maybe String
+        currentAccountId : AccountsPanel.RellmServer -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
-        serversToFetch : List AccountsPanel.Server
+        serversToFetch : List AccountsPanel.RellmServer
         serversToFetch =
             relevantServers shared model
                 |> List.filter
@@ -3216,11 +3216,11 @@ the rendered count doesn't yet.
 eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
 eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
     let
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 

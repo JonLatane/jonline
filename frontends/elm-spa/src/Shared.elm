@@ -122,7 +122,7 @@ type Msg
     | MediaGeneratorPanelMsg MediaGeneratorPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
-    | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | MyMediaPanelOpenForAccount AccountsPanel.RellmAccount
     | CreateNewPanelMsg CreateNewPanel.Msg
     | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
@@ -252,8 +252,8 @@ carry.
 
 -}
 type DeleteConfirmation
-    = ConfirmServerDelete AccountsPanel.Server
-    | ConfirmAccountDelete AccountsPanel.Account
+    = ConfirmServerDelete AccountsPanel.RellmServer
+    | ConfirmAccountDelete AccountsPanel.RellmAccount
     | ConfirmMediaDelete Media
     | ConfirmMarkdownEditingDataLost
       -- The trailing `String` on each of these four is the acting
@@ -345,14 +345,14 @@ type alias NavAnimationState =
     }
 
 
-{-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation, uses24HourTime }`
--- see `index.html`. `state` (the persisted accounts/servers blob) is handed
-to `AccountsPanel.init` un-decoded; appearance has its own, separate
-persisted key (`themePreference`) so changing it doesn't need to know
-anything about `AccountsPanel`'s persisted shape, or vice versa. `req.url` is
-assumed already-normalized (see `normalizeUrl`) -- `basePath` is passed
-alongside it only because view code (see `UI.navLink`) needs it back to
-build hrefs.
+{-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation, uses24HourTime,
+blueskyAccounts, mastodonAccountsAndServers, ... }` -- see `index.html`. `state` (the persisted
+accounts/servers blob), `blueskyAccounts`, and `mastodonAccountsAndServers` are all handed to
+`AccountsPanel.init` un-decoded, as three separate values (mirroring their three separate
+`Ports.persist*` calls) -- appearance has its own, separate persisted key (`themePreference`) so
+changing it doesn't need to know anything about `AccountsPanel`'s persisted shape, or vice versa.
+`req.url` is assumed already-normalized (see `normalizeUrl`) -- `basePath` is passed alongside it only
+because view code (see `UI.navLink`) needs it back to build hrefs.
 -}
 init : String -> Request -> Flags -> ( Model, Cmd Msg )
 init basePath req flags =
@@ -377,6 +377,16 @@ init basePath req flags =
             Decode.decodeValue (Decode.field "userPreferences" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        blueskyAccountsFlags : Decode.Value
+        blueskyAccountsFlags =
+            Decode.decodeValue (Decode.field "blueskyAccounts" Decode.value) flags
+                |> Result.withDefault Encode.null
+
+        mastodonAccountsAndServersFlags : Decode.Value
+        mastodonAccountsAndServersFlags =
+            Decode.decodeValue (Decode.field "mastodonAccountsAndServers" Decode.value) flags
+                |> Result.withDefault Encode.null
+
         systemPrefersDark : Bool
         systemPrefersDark =
             Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
@@ -399,7 +409,7 @@ init basePath req flags =
                 |> Result.withDefault False
 
         ( accountsPanelModel, accountsPanelCmd ) =
-            AccountsPanel.init req accountsPanelFlags
+            AccountsPanel.init req accountsPanelFlags blueskyAccountsFlags mastodonAccountsAndServersFlags
 
         ( federatedAuthModel, federatedAuthCmd ) =
             FederatedAuth.init federatedAuthFlags

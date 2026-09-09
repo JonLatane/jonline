@@ -99,7 +99,7 @@ mainFrontendServerRules theme accountsPanel =
         ]
 
 
-serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> AccountsPanel.Server -> String
+serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> AccountsPanel.RellmServer -> String
 serverRules darkMode mainTheme mainFrontendHost server =
     let
         theme : UI.ServerTheme.ServerTheme

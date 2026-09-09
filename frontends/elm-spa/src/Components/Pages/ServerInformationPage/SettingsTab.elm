@@ -152,7 +152,7 @@ init =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.Server -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         PermissionsEditClicked set ->
@@ -825,7 +825,7 @@ addablePermissions pending =
 -- VIEW
 
 
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
         config : ServerConfiguration
@@ -856,7 +856,7 @@ view server maybeAdminAccount model =
 edited. Mirrors `Components.Pages.UserProfilePage.permissionsSection` exactly, just over a
 `ServerConfiguration`'s permission list instead of a `User`'s.
 -}
-permissionsSection : ServerPermissionsSet -> String -> Maybe AccountsPanel.Account -> Maybe PermissionsEdit -> List Permission -> Html Msg
+permissionsSection : ServerPermissionsSet -> String -> Maybe AccountsPanel.RellmAccount -> Maybe PermissionsEdit -> List Permission -> Html Msg
 permissionsSection set label_ maybeAdminAccount maybeEdit permissions =
     case maybeEdit of
         Just edit ->
@@ -931,7 +931,7 @@ checkbox, plus an Edit button for an admin) when this section has no in-progress
 `<select>`s + Save/Cancel) while being edited -- mirrors `permissionsSection`'s own edit/non-edit
 split, just collapsible.
 -}
-featureSettingsSection : FeatureSettingsSet -> Maybe AccountsPanel.Account -> Maybe FeatureSettingsEdit -> Bool -> FeatureSettingsSummary -> Html Msg
+featureSettingsSection : FeatureSettingsSet -> Maybe AccountsPanel.RellmAccount -> Maybe FeatureSettingsEdit -> Bool -> FeatureSettingsSummary -> Html Msg
 featureSettingsSection set maybeAdminAccount maybeEdit collapsed current =
     let
         expanded : Bool
@@ -977,7 +977,7 @@ actually show is gated by `featureSettingsFieldsFor set` -- e.g. Media shows non
 Events shows a display mode. The Edit button is only shown to an admin (`maybeAdminAccount`), same
 as `permissionsSection`.
 -}
-featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.Account -> FeatureSettingsSummary -> Html Msg
+featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.RellmAccount -> FeatureSettingsSummary -> Html Msg
 featureSettingsDisplayView set maybeAdminAccount current =
     let
         fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool, showStartedOrLongEventsByDefault : Bool }

@@ -1,4 +1,4 @@
-module Components.Authors exposing (avatarUrl, badges, compactBadges, link, name)
+module Components.Authors exposing (avatar, avatarUrl, badges, compactBadges, link, name)
 
 {-| Everything about displaying a `Proto.Rellm.Author` -- the
 post/authorship-centric, cacheable-in-the-UI sibling of `User` embedded
@@ -121,7 +121,7 @@ link (fine as-is); `postCard`'s needs the "stretched link" dance in its own
 doc comment to keep this independently clickable without nesting an `<a>`
 inside `postCard`'s own enclosing one.
 -}
-link : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Author -> Html msg
+link : String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Author -> Html msg
 link basePath viewingServerHost hostServerHost maybeServer maybeAccount maybeAuthor =
     let
         authorName : String
@@ -178,11 +178,23 @@ href basePath viewingServerHost hostServerHost maybeAuthor =
 
 {-| An author's avatar URL -- `Nothing` if `maybeAuthor` is `Nothing`, `server`
 isn't resolved yet (e.g. still connecting), or the author just has no avatar
-set. `server` needs to be the actual resolved `Shared.AccountsPanel.Server` --
+set. `server` needs to be the actual resolved `Shared.AccountsPanel.RellmServer` --
 building a media URL needs its connection details, not just its hostname (see
 `Shared.AccountsPanel.mediaUrl`).
+
+`author.avatar.url` (see that field's own doc in `protos/media.proto`) is checked first and used
+as-is, with no `server`/`maybeAccount` needed at all -- this is how a Mastodon/Bluesky author's own
+avatar (set by `Shared.Federation.Mastodon`/`Bluesky`'s own `toAuthor`, which always uses `.url` since
+that avatar isn't and never will be Rellm-hosted media) actually shows up in `postCard`/`postDetail`/
+`replyCard` instead of falling back to the initial-letter placeholder every real `Server`-dependent
+path below would otherwise give a federated author, which has no real `Server` to resolve at all.
 -}
-avatarUrl : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Author -> Maybe String
+avatarUrl : Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Author -> Maybe String
 avatarUrl maybeServer maybeAccount maybeAuthor =
-    Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer maybeAuthor
-        |> Maybe.andThen identity
+    case maybeAuthor |> Maybe.andThen .avatar |> Maybe.andThen .url of
+        Just externalUrl ->
+            Just externalUrl
+
+        Nothing ->
+            Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer maybeAuthor
+                |> Maybe.andThen identity
