@@ -103,7 +103,7 @@ import Shared.Conversions exposing (timestampToPosix)
 import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
 import Time
-import UI.Classes exposing (escapeCSSClass, hostnameToCSSClass)
+import UI.Classes exposing (escapeCSSClass)
 import UI.Flip
 import UI.ServerTheme
 import Url
@@ -447,7 +447,7 @@ type Msg
     | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
     | MoveFeedItemLeftClicked String
     | MoveFeedItemRightClicked String
-    | GotPreMoveFeedItemPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | GotPreMoveFeedItemPositions String String (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
     | MoveSettled String
     | FeedItemMoveSettled String
@@ -2712,12 +2712,26 @@ sendUpdate req msg model =
             ( { newModel | moveAnimations = newMoveAnimations }, persist newModel )
 
         MoveFeedItemLeftClicked id ->
-            ( model, UI.Flip.beginReorder combinedFeedItemKey feedItemChipDomId GotPreMoveFeedItemPositions -1 id (combinedFeedItems model) )
+            ( model
+            , UI.Flip.beginReorder combinedFeedItemKey
+                feedItemChipDomId
+                (\movedId neighborId _ result -> GotPreMoveFeedItemPositions movedId neighborId result)
+                -1
+                id
+                (combinedFeedItems model)
+            )
 
         MoveFeedItemRightClicked id ->
-            ( model, UI.Flip.beginReorder combinedFeedItemKey feedItemChipDomId GotPreMoveFeedItemPositions 1 id (combinedFeedItems model) )
+            ( model
+            , UI.Flip.beginReorder combinedFeedItemKey
+                feedItemChipDomId
+                (\movedId neighborId _ result -> GotPreMoveFeedItemPositions movedId neighborId result)
+                1
+                id
+                (combinedFeedItems model)
+            )
 
-        GotPreMoveFeedItemPositions id neighborId _ (Err _) ->
+        GotPreMoveFeedItemPositions id neighborId (Err _) ->
             let
                 newModel : Model
                 newModel =
@@ -2725,7 +2739,7 @@ sendUpdate req msg model =
             in
             ( newModel, persistFeedItemOrder newModel )
 
-        GotPreMoveFeedItemPositions id neighborId _ (Ok ( chipEl, neighborEl )) ->
+        GotPreMoveFeedItemPositions id neighborId (Ok ( chipEl, neighborEl )) ->
             let
                 newModel : Model
                 newModel =
