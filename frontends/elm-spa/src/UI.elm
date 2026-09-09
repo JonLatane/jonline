@@ -1027,7 +1027,6 @@ accountsAndServersTab shared currentRoute =
         , unreachableServersWarning shared
         , recommendedServersStrip shared
         , mastodonServersStrip shared
-        , federatedFeedsSection shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1036,7 +1035,7 @@ accountsAndServersTab shared currentRoute =
 
 
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
-into other hosts with username/password" (see `addAccountForm`), "Show
+into other hosts with username/password" (see `rellmAddAccountServerForm`), "Show
 all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`), and
 "Show Posts linked to Custom Tabs" (see `Components.Pages.PostsPage.customNavPostIds`)
 toggles -- only shown (via `debugCount`) while an admin account is signed
@@ -1491,47 +1490,51 @@ recommendedServerChip shared federatedServer =
         ]
 
 
-{-| Mirrors `recommendedServersStrip`, against `AccountsPanel.connectableMastodonServers` instead --
-Mastodon instances `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
-aren't already connected (`AccountsPanel.mastodonAccounts`), plus a read-only row per account that
-already is. Unlike the recommended-servers strip, this one never collapses behind a "N
-instances..." toggle -- there's no expectation of there being many, the way there can be many
-federated Rellm servers.
+{-| A read-only row per already-connected Mastodon account (`AccountsPanel.mastodonAccounts`) --
+connecting a new one now happens in the Mastodon tab of `addAccountServerForm` (see
+`mastodonConnectSection`), not here. Unlike the recommended-servers strip, this one never collapses
+behind a "N instances..." toggle -- there's no expectation of there being many, the way there can be
+many federated Rellm servers.
 -}
 mastodonServersStrip : Shared.Model -> Html Shared.Msg
 mastodonServersStrip shared =
-    let
-        connectable : List MastodonServer
-        connectable =
-            AccountsPanel.connectableMastodonServers shared.accounts
-
-        connected : List AccountsPanel.MastodonAccount
-        connected =
-            shared.accounts.mastodonAccounts
-    in
-    if List.isEmpty connectable && List.isEmpty connected then
+    if List.isEmpty shared.accounts.mastodonAccounts then
         text ""
 
     else
         div [ class "recommended-servers-section" ]
             [ div [ class "panel-divider" ] []
             , div [ class "recommended-servers-strip" ]
-                (List.map connectedMastodonAccountChip connected
-                    ++ List.map (mastodonServerChip shared) connectable
-                )
+                (List.map connectedMastodonAccountChip shared.accounts.mastodonAccounts)
             ]
 
 
-{-| One not-yet-connected Mastodon instance -- mirrors `recommendedServerChip`'s look (logo-less
-top/bottom split, tinted by `hostnameToCSSClass`) but its bottom row is either an alert (no `appId`
-configured, per `MastodonServer.appId`'s own doc on that being admin-optional) or a real "Connect"
-button that opens the OAuth popup (`AccountsPanel.MastodonConnectClicked`) -- never automatically,
-only on this explicit click. Disabled (and shows "Connecting…") while
-`AccountsPanel.mastodonConnectPopupOpen` names this same instance, so a slow/stuck popup can't be
-double-triggered.
+{-| The Mastodon tab's "connect a real account" sub-section, in `addAccountServerForm` -- one button
+per Mastodon instance `browsingHost`'s own admin has listed (`FederationInfo.mastodonServers`) that
+isn't already connected (`AccountsPanel.mastodonAccounts`, see `AccountsPanel.connectableMastodonServers`).
+Nothing rendered at all if there's nothing connectable. Each button opens the OAuth popup
+(`AccountsPanel.MastodonConnectClicked`) -- never automatically, only on this explicit click --
+disabled (and shows "Connecting…") while `AccountsPanel.mastodonConnectPopupOpen` names this same
+instance, so a slow/stuck popup can't be double-triggered. A server with no `appId` configured (per
+`MastodonServer.appId`'s own doc on that being admin-optional) shows as unavailable instead of a
+working button.
 -}
-mastodonServerChip : Shared.Model -> MastodonServer -> Html Shared.Msg
-mastodonServerChip shared mastodonServer =
+mastodonConnectSection : Shared.Model -> Html Shared.Msg
+mastodonConnectSection shared =
+    let
+        connectable : List MastodonServer
+        connectable =
+            AccountsPanel.connectableMastodonServers shared.accounts
+    in
+    if List.isEmpty connectable then
+        text ""
+
+    else
+        div [ class "mastodon-connect-account-list" ] (List.map (mastodonConnectButton shared) connectable)
+
+
+mastodonConnectButton : Shared.Model -> MastodonServer -> Html Shared.Msg
+mastodonConnectButton shared mastodonServer =
     let
         domain : String
         domain =
@@ -1546,31 +1549,28 @@ mastodonServerChip shared mastodonServer =
             not (String.isEmpty mastodonServer.appId)
     in
     button
-        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( hostnameToCSSClass domain, True ) ]
+        [ type_ "button"
+        , classes [ "mastodon-connect-account-button", hostnameToCSSClass domain, "background-color-primary" ]
         , onClick (Shared.AccountsPanelMsg (AccountsPanel.MastodonConnectClicked domain))
         , disabled (not hasAppId || connecting)
         , title
             (if hasAppId then
-                "Connect " ++ domain
+                "Connect an account on " ++ domain
 
              else
                 domain ++ " hasn't been configured for Mastodon sign-in by this server's admin yet."
             )
         ]
-        [ div [ classes [ "server-chip-top", hostnameToCSSClass domain, "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ] ]
-        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass domain, "background-color-nav" ] ]
-            [ text
-                (if not hasAppId then
-                    "⚠️ Not configured"
+        [ text
+            (if not hasAppId then
+                "⚠️ " ++ domain ++ " not configured"
 
-                 else if connecting then
-                    "Connecting…"
+             else if connecting then
+                "Connecting to " ++ domain ++ "…"
 
-                 else
-                    "+ Connect"
-                )
-            ]
+             else
+                "Connect Account on " ++ domain
+            )
         ]
 
 
@@ -1585,73 +1585,6 @@ connectedMastodonAccountChip mastodonAccount =
             [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text ("@" ++ mastodonAccount.username) ] ] ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass mastodonAccount.instanceHost, "background-color-nav" ] ]
             [ text mastodonAccount.instanceHost ]
-        ]
-
-
-{-| The "+ Bluesky Account"/"+ Mastodon Server" add-UI -- their actual chips (once added) now render
-in `combinedFeedItemsStrip`, alongside Rellm servers (see `AccountsPanel.CombinedFeedItem`), not
-here; this section is just the row of two tab-like buttons -- styled exactly like the single
-"+ Connect Bluesky Account" button this replaces (`server-details-rename-button`, no active-tab
-highlighting) -- that each open their own add-form below the row, mutually exclusive (clicking one
-closes the other's form if it was open; clicking an already-open tab's own button closes it) and both
-closed by default. See `AccountsPanel.Model.mastodonServerFormOpen`'s own doc for how that mutual
-exclusivity is actually modeled. "Mastodon servers" here means "instances browsed anonymously," not
-`mastodonServersStrip`'s admin-registered OAuth kind, which this section leaves entirely untouched.
--}
-federatedFeedsSection : Shared.Model -> Html Shared.Msg
-federatedFeedsSection shared =
-    let
-        blueskyFormOpen : Bool
-        blueskyFormOpen =
-            shared.accounts.blueskyConnectForm /= Nothing
-    in
-    div [ class "recommended-servers-section" ]
-        [ div [ class "panel-divider" ] []
-        , div [ class "server-details-federation-add" ]
-            [ button
-                [ classList
-                    [ ( "server-details-rename-button", True )
-                    , ( hostnameToCSSClass shared.accounts.mainFrontendHost, blueskyFormOpen )
-                    , ( "background-color-accent", blueskyFormOpen )
-                    ]
-                , onClick
-                    (Shared.AccountsPanelMsg
-                        (if blueskyFormOpen then
-                            AccountsPanel.HideBlueskyConnectFormClicked
-
-                         else
-                            AccountsPanel.ShowBlueskyConnectFormClicked
-                        )
-                    )
-                ]
-                [ text "+ Bluesky Account" ]
-            , button
-                [ classList
-                    [ ( "server-details-rename-button", True )
-                    , ( hostnameToCSSClass shared.accounts.mainFrontendHost, shared.accounts.mastodonServerFormOpen )
-                    , ( "background-color-accent", shared.accounts.mastodonServerFormOpen )
-                    ]
-                , onClick
-                    (Shared.AccountsPanelMsg
-                        (if shared.accounts.mastodonServerFormOpen then
-                            AccountsPanel.HideMastodonServerFormClicked
-
-                         else
-                            AccountsPanel.ShowMastodonServerFormClicked
-                        )
-                    )
-                ]
-                [ text "+ Mastodon Server" ]
-            ]
-        , case ( shared.accounts.blueskyConnectForm, shared.accounts.mastodonServerFormOpen ) of
-            ( Just form, _ ) ->
-                blueskyConnectFormView form
-
-            ( Nothing, True ) ->
-                mastodonServerFormView shared
-
-            ( Nothing, False ) ->
-                text ""
         ]
 
 
@@ -1832,10 +1765,10 @@ mastodonServerFeedChip shared count index instance =
         ]
 
 
-{-| The "add a Mastodon instance to browse" `<input>` + submit/cancel buttons, shown once
-`AccountsPanel.ShowMastodonServerFormClicked` opens this tab -- mirrors `blueskyConnectFormView`'s own
-`<form>`-with-`onSubmit` shape (so Enter submits it), just with the one plain host input
-`browseMastodonInstanceInput` needs instead of a whole record.
+{-| The Mastodon tab's "browse an instance" `<input>` + submit button -- mirrors
+`blueskyConnectFormView`'s own `<form>`-with-`onSubmit` shape (so Enter submits it), just with the
+one plain host input `browseMastodonInstanceInput` needs instead of a whole record. No "Cancel"
+button of its own -- `addAccountServerFormTabBar`'s shared "←" collapses the whole tabbed form.
 -}
 mastodonServerFormView : Shared.Model -> Html Shared.Msg
 mastodonServerFormView shared =
@@ -1854,17 +1787,14 @@ mastodonServerFormView shared =
         , button
             [ disabled (String.isEmpty (String.trim shared.accounts.browseMastodonInstanceInput)) ]
             [ text "+ Browse Instance" ]
-        , button
-            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideMastodonServerFormClicked) ]
-            [ text "Cancel" ]
         ]
 
 
-{-| The handle/App Password inputs plus Connect/Cancel buttons, shown once
-`AccountsPanel.ShowBlueskyConnectFormClicked` expands the form -- a real `<form>` (not a `button`
-`onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form uses
-(see its own doc), so Enter submits it and password managers recognize it as a login form worth
-offering to fill.
+{-| The Bluesky tab's handle/App Password inputs plus Connect button -- a real `<form>` (not a
+`button` `onClick`), same `onSubmit`-not-button-click reasoning `Pages.Auth.To.Key_`'s own login form
+uses (see its own doc), so Enter submits it and password managers recognize it as a login form worth
+offering to fill. No "Cancel" button of its own -- `addAccountServerFormTabBar`'s shared "←"
+collapses the whole tabbed form.
 -}
 blueskyConnectFormView : AccountsPanel.BlueskyConnectForm -> Html Shared.Msg
 blueskyConnectFormView form =
@@ -1908,9 +1838,6 @@ blueskyConnectFormView form =
                     "Connect"
                 )
             ]
-        , button
-            [ type_ "button", onClick (Shared.AccountsPanelMsg AccountsPanel.HideBlueskyConnectFormClicked), disabled submitting ]
-            [ text "Cancel" ]
         , case form.status of
             AccountsPanel.Errored err ->
                 div [ class "auth-error" ] [ text err ]
@@ -2339,7 +2266,7 @@ Enter, type a password" flow.
 formView : Shared.Model -> Route -> Html Shared.Msg
 formView shared currentRoute =
     if AccountsPanel.shouldShowAddAccountForm shared.accounts then
-        addAccountForm shared currentRoute
+        addAccountServerForm shared currentRoute
 
     else
         div [ class "account-form" ]
@@ -2349,6 +2276,85 @@ formView shared currentRoute =
                 ]
                 [ text "Add Account/Server..." ]
             ]
+
+
+{-| The expanded "Add Account/Server" area, once `AccountsPanel.shouldShowAddAccountForm` -- one
+merged form with three tabs (Rellm/Mastodon/Bluesky, see `AccountsPanel.AccountOrServerFormType`)
+replacing what used to be three separate forms with their own independent show/hide state: the Rellm
+`addAccountForm` (now `rellmAddAccountServerForm`), the "+ Bluesky Account"/"+ Mastodon Server"
+buttons and their forms (`federatedFeedsSection`, removed), and `mastodonServersStrip`'s own
+"Connect" buttons for admin-registered instances (now `mastodonConnectSection`). Each tab keeps its
+own separate set of inputs (`AccountsPanel.Model.accountForm`/`addServerForm`,
+`browseMastodonInstanceInput`, `blueskyConnectForm`) -- only which one is currently *showing* is
+now shared.
+-}
+addAccountServerForm : Shared.Model -> Route -> Html Shared.Msg
+addAccountServerForm shared currentRoute =
+    let
+        activeType : AccountsPanel.AccountOrServerFormType
+        activeType =
+            AccountsPanel.activeAddAccountServerFormType shared.accounts
+    in
+    div [ class "account-form" ]
+        [ addAccountServerFormTabBar shared activeType
+        , case activeType of
+            AccountsPanel.RellmServerFormType ->
+                rellmAddAccountServerForm shared currentRoute
+
+            AccountsPanel.MastodonServerFormType ->
+                div [ class "account-form" ]
+                    [ mastodonServerFormView shared
+                    , mastodonConnectSection shared
+                    ]
+
+            AccountsPanel.BlueskyAccountFormType ->
+                blueskyConnectFormView shared.accounts.blueskyConnectForm
+        ]
+
+
+{-| The Rellm/Mastodon/Bluesky tab row for `addAccountServerForm`, plus the shared "←" button that
+collapses the whole area back behind its "Add Account/Server..." button (see
+`hideAddAccountFormButton`) -- reuses the outer Accounts Panel's own `.accounts-panel-tab`/
+`.selected` styling (see `accountsPanelTab`) for visual consistency, one level deeper.
+-}
+addAccountServerFormTabBar : Shared.Model -> AccountsPanel.AccountOrServerFormType -> Html Shared.Msg
+addAccountServerFormTabBar shared activeType =
+    div [ class "add-account-server-tab-bar" ]
+        [ hideAddAccountFormButton shared (addAccountServerFormBusy shared activeType)
+        , div [ class "accounts-panel-tabs" ]
+            [ addAccountServerFormTabButton activeType AccountsPanel.RellmServerFormType "Rellm"
+            , addAccountServerFormTabButton activeType AccountsPanel.MastodonServerFormType "Mastodon"
+            , addAccountServerFormTabButton activeType AccountsPanel.BlueskyAccountFormType "Bluesky"
+            ]
+        ]
+
+
+addAccountServerFormTabButton : AccountsPanel.AccountOrServerFormType -> AccountsPanel.AccountOrServerFormType -> String -> Html Shared.Msg
+addAccountServerFormTabButton activeType tabType label =
+    button
+        [ type_ "button"
+        , classList [ ( "accounts-panel-tab", True ), ( "selected", activeType == tabType ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.AddAccountServerFormTypeSelected tabType))
+        ]
+        [ text label ]
+
+
+{-| Whether the currently-active tab has a submission in flight -- used only to disable the shared
+"←" collapse button while that's true, same as it was already disabled mid-submit before this was a
+tabbed form.
+-}
+addAccountServerFormBusy : Shared.Model -> AccountsPanel.AccountOrServerFormType -> Bool
+addAccountServerFormBusy shared activeType =
+    case activeType of
+        AccountsPanel.RellmServerFormType ->
+            (shared.accounts.accountForm.status == AccountsPanel.Submitting)
+                || (shared.accounts.addServerForm.status == AccountsPanel.Submitting)
+
+        AccountsPanel.MastodonServerFormType ->
+            shared.accounts.mastodonConnectPopupOpen /= Nothing
+
+        AccountsPanel.BlueskyAccountFormType ->
+            shared.accounts.blueskyConnectForm.status == AccountsPanel.Submitting
 
 
 {-| The server whose theme the form's own controls (Login/Create Account,
@@ -2397,8 +2403,8 @@ hideAddAccountFormButton shared accountFieldsDisabled =
             [ text "←" ]
 
 
-addAccountForm : Shared.Model -> Route -> Html Shared.Msg
-addAccountForm shared currentRoute =
+rellmAddAccountServerForm : Shared.Model -> Route -> Html Shared.Msg
+rellmAddAccountServerForm shared currentRoute =
     let
         accountsPanelModel : AccountsPanel.Model
         accountsPanelModel =
@@ -2654,8 +2660,7 @@ addAccountForm shared currentRoute =
             div [ class "account-form-buttons" ]
                 (case newAccountType of
                     Nothing ->
-                        [ hideAddAccountFormButton shared accountFieldsDisabled
-                        , button
+                        [ button
                             [ type_ "button"
                             , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
                             , disabled accountFieldsDisabled
@@ -2733,7 +2738,7 @@ addAccountForm shared currentRoute =
         ]
 
 
-{-| A small circular "×" button overlaid on a field (see `addAccountForm`'s
+{-| A small circular "×" button overlaid on a field (see `rellmAddAccountServerForm`'s
 server/username/password fields) that clears it in one click and refocuses
 it (via `AccountsPanel.ClearFieldClicked`) -- shown only once there's
 something typed in to clear.
@@ -2764,7 +2769,7 @@ key (once generated -- near-instant after app load) to
 
 Only shown once the Server field names a host other than our own
 (`AccountsPanel.isMainServer`) -- username/password auth (see
-`addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
+`rellmAddAccountServerForm`'s `showUsernamePasswordFields`) is the only way into our own
 server, and this SSO hand-off is (ordinarily) the only way into anywhere
 else. `DebugTab.allowUsernamePasswordForOtherHosts` can additionally enable
 username/password for other hosts too, but never suppresses this button for

@@ -267,7 +267,7 @@ port systemPrefersDarkChanged : (Bool -> msg) -> Sub msg
 {-| Opens an OAuth login popup for `Components.SyncDestinations` (via
 `Components.Pages.UserProfilePage`'s "Sign in to Facebook Page"/"Sign in to Instagram"/"Connect
 Threads"/"Connect X (Twitter)" buttons) or `Shared.AccountsPanel` (via its "Connect" button on a
-Mastodon instance chip -- see `UI.mastodonServerChip`), for the given `provider` (`"facebook"`,
+Mastodon instance chip -- see `UI.mastodonConnectButton`), for the given `provider` (`"facebook"`,
 `"threads"`, `"x_twitter"`, or `"mastodon"`) and that provider's own OAuth Client/App ID -- Threads
 rides on the very same Meta App as Facebook/Instagram (a product added to it, not a
 separately-registered app), so `appId` is the same value for all three, but X requires its own

@@ -3,6 +3,7 @@ module Shared.AccountsPanel exposing
     , RellmAccount
     , AccountAuthTokens
     , AccountForm
+    , AccountOrServerFormType(..)
     , AddServerForm
     , Branding
     , BlueskyAccount
@@ -25,6 +26,7 @@ module Shared.AccountsPanel exposing
     , accountAvatarUrl
     , accountId
     , accountRowDomId
+    , activeAddAccountServerFormType
     , brandingFor
     , brandingOf
     , combinedFeedItemKey
@@ -138,11 +140,17 @@ type alias Model =
     -- reopening the strip doesn't re-fetch hosts it already has cached.
     , recommendedServerConnections : Dict String RellmServer
 
-    -- Whether the "Add Account/Server" form (Server/Username/Password/etc.)
-    -- is expanded, once there's at least one account already -- see
-    -- `shouldShowAddAccountForm`. Irrelevant (the form always shows) when
-    -- `accounts` is empty.
-    , addAccountFormExpanded : Bool
+    -- Which tab of the merged "Add Account/Server" form (see
+    -- `AccountOrServerFormType`) is showing, once there's at least one account
+    -- already -- `Nothing` collapses the whole area behind its "Add
+    -- Account/Server..." button (see `shouldShowAddAccountForm`), covering
+    -- what `addAccountFormExpanded`/`mastodonServerFormOpen`/
+    -- `blueskyConnectForm`'s own `Maybe`-as-open/closed each used to track
+    -- independently -- only one of the three tabs can be open at a time
+    -- anyway, so one shared `Maybe` replaces all three. Irrelevant (the form
+    -- always shows, defaulting to `RellmServerFormType` -- see
+    -- `activeAddAccountServerFormType`) when `accounts` is empty.
+    , addAccountServerFormType : Maybe AccountOrServerFormType
 
     -- Once the Username field names a known server, whether (and which of)
     -- "Log In"/"Create Account" has been picked -- see `ChooseLoginClicked`/
@@ -329,7 +337,7 @@ type alias Model =
     -- `DismissFederatedSignInNotice`, fired either by clicking it or a few seconds after it appears.
     , federatedSignInNotice : Maybe RellmAccount
 
-    -- Mastodon accounts connected via `UI.mastodonServerChip`'s "Connect" button (see
+    -- Mastodon accounts connected via `UI.mastodonConnectButton`'s "Connect" button (see
     -- `MastodonConnectClicked`) -- each one's `accessToken` came straight out of an OAuth popup Elm
     -- never touched directly (see `Ports.facebookLoginPopup`'s `"mastodon"` provider). Persisted
     -- alongside `browsedMastodonInstances` via `Ports.persistMastodonAccountsAndServers` -- see that
@@ -362,23 +370,17 @@ type alias Model =
     -- a browsed instance is instant, synchronous, and can't fail, unlike adding a real server).
     , browseMastodonInstanceInput : String
 
-    -- `True` while `UI.mastodonBrowseSection`'s "+ Mastodon Server" tab is the open one -- see
-    -- `ShowMastodonServerFormClicked`/`HideMastodonServerFormClicked`. Mirrors
-    -- `blueskyConnectForm`'s own `Maybe`-as-open/closed convention, just as a plain `Bool` since this
-    -- form has only the one `browseMastodonInstanceInput` field to carry rather than a whole record.
-    -- `ShowBlueskyConnectFormClicked`/`ShowMastodonServerFormClicked` each close the other one, so
-    -- the two behave like tabs -- only one open at a time -- despite being two independent fields.
-    , mastodonServerFormOpen : Bool
-
-    -- Bluesky accounts connected via `UI.blueskyConnectSection`'s form (see
+    -- Bluesky accounts connected via the Bluesky tab's form (see
     -- `BlueskyConnectClicked`/`GotBlueskyConnectResult`) -- persisted via
     -- `Ports.persistBlueskyAccounts`, same as `mastodonAccounts`/`browsedMastodonInstances` are via
     -- `Ports.persistMastodonAccountsAndServers` (see that port's own doc).
     , blueskyAccounts : List BlueskyAccount
 
-    -- `Just` while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded -- see
-    -- `BlueskyConnectForm`'s own doc.
-    , blueskyConnectForm : Maybe BlueskyConnectForm
+    -- The Bluesky tab's own handle/App Password fields -- always present (unlike the `Maybe` this
+    -- used to be, back when this form's own open/closed state was tracked independently of the
+    -- Rellm/Mastodon ones -- see `addAccountServerFormType`), but only rendered/reachable while
+    -- `addAccountServerFormType == Just BlueskyAccountFormType`. See `BlueskyConnectForm`'s own doc.
+    , blueskyConnectForm : BlueskyConnectForm
     }
 
 
@@ -464,8 +466,7 @@ type Msg
     | MastodonConnectClicked String
     | GotMastodonLoginResult Decode.Value
     | GotMastodonVerifyCredentialsResult String String (Result Http.Error String)
-    | ShowBlueskyConnectFormClicked
-    | HideBlueskyConnectFormClicked
+    | AddAccountServerFormTypeSelected AccountOrServerFormType
     | BlueskyHandleChanged String
     | BlueskyAppPasswordChanged String
     | BlueskyConnectClicked
@@ -474,8 +475,6 @@ type Msg
     | RemoveBlueskyAccountClicked String
     | FinishRemoveBlueskyAccount String
     | ToggleBlueskyAccountEnabled String
-    | ShowMastodonServerFormClicked
-    | HideMastodonServerFormClicked
     | BrowseMastodonInstanceInputChanged String
     | BrowseMastodonInstanceClicked
     | GotMastodonInstanceInfoResult String (Result Http.Error MastodonInstanceInfo)
@@ -538,7 +537,7 @@ type alias AccountAuthTokens =
     }
 
 
-{-| A Mastodon account connected via `UI.mastodonServerChip`'s "Connect" button (see
+{-| A Mastodon account connected via `UI.mastodonConnectButton`'s "Connect" button (see
 `MastodonConnectClicked`/`GotMastodonLoginResult`) -- `accessToken` came out of an OAuth popup Elm
 never directly handled (see `Ports.facebookLoginPopup`'s `"mastodon"` provider: app registration
 (the admin-registered `MastodonServer.appId` `MastodonConnectClicked` looks up via
@@ -597,16 +596,21 @@ type alias BrowsedMastodonInstance =
     }
 
 
-{-| Live only while `UI.blueskyConnectSection`'s "Connect Bluesky Account" form is expanded --
-`Nothing` the rest of the time (collapsed behind that button, mirroring `addAccountFormExpanded`'s
-own show/hide convention). Cleared back to `Nothing` on a successful `GotBlueskyConnectResult`, same
-as `newAccountType` clearing on a successful `GotAuthResult`.
+{-| The Bluesky tab's own handle/App Password fields and submit status -- see
+`Model.blueskyConnectForm`'s own doc for why this is no longer wrapped in a `Maybe`. Reset back to
+`emptyBlueskyConnectForm` on a successful `GotBlueskyConnectResult`, same as `newAccountType`
+clearing on a successful `GotAuthResult`.
 -}
 type alias BlueskyConnectForm =
     { handle : String
     , appPassword : String
     , status : FormStatus
     }
+
+
+emptyBlueskyConnectForm : BlueskyConnectForm
+emptyBlueskyConnectForm =
+    { handle = "", appPassword = "", status = Idle }
 
 
 {-| A server the app knows about -- either from a persisted server list entry
@@ -693,6 +697,18 @@ passwords offered) autofill.
 type NewAccountType
     = CreateNewAccount
     | LoginToAccount
+
+
+{-| Which of the three tabs `UI.addAccountServerForm` -- the one merged "Add Account/Server" area,
+replacing what used to be three separate forms/toggles (`addAccountFormExpanded`'s Rellm form, the
+"+ Bluesky Account" button/form, the "+ Mastodon Server" button/form, and `mastodonServersStrip`'s
+own "Connect" buttons for admin-registered instances) -- is currently showing. See
+`Model.addAccountServerFormType`'s own doc for how "which tab, or none at all" is actually modeled.
+-}
+type AccountOrServerFormType
+    = RellmServerFormType
+    | MastodonServerFormType
+    | BlueskyAccountFormType
 
 
 {-| Which of the Accounts Panel's tabs (see `UI.elm`'s `accountsPanel`/
@@ -1761,7 +1777,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , showAccountsPanel = False
       , recommendedServersExpanded = False
       , recommendedServerConnections = Dict.empty
-      , addAccountFormExpanded = False
+      , addAccountServerFormType = Nothing
       , newAccountType = Nothing
       , createAccountConfirmation = Nothing
       , acceptedCreateAccount = Nothing
@@ -1800,9 +1816,8 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , mastodonConnectPopupOpen = Nothing
       , browsedMastodonInstances = persistedMastodon.browsedInstances
       , browseMastodonInstanceInput = ""
-      , mastodonServerFormOpen = False
       , blueskyAccounts = persistedBlueskyAccounts
-      , blueskyConnectForm = Nothing
+      , blueskyConnectForm = emptyBlueskyConnectForm
       }
     , Cmd.batch (Ports.checkPushSubscription Encode.null :: mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1977,7 +1992,7 @@ sendUpdate req msg model =
             )
 
         HideAddAccountFormClicked ->
-            ( { model | addAccountFormExpanded = False }, Cmd.none )
+            ( { model | addAccountServerFormType = Nothing }, Cmd.none )
 
         LoginClicked ->
             let
@@ -3073,7 +3088,10 @@ sendUpdate req msg model =
             )
 
         ShowAddAccountFormClicked ->
-            ( { model | addAccountFormExpanded = True }, Cmd.none )
+            ( { model | addAccountServerFormType = Just RellmServerFormType }, Cmd.none )
+
+        AddAccountServerFormTypeSelected formType ->
+            ( { model | addAccountServerFormType = Just formType }, Cmd.none )
 
         ReauthenticateButtonClicked account ->
             -- Reopens the (possibly-collapsed) Account form pre-filled with this
@@ -3081,7 +3099,7 @@ sendUpdate req msg model =
             -- quickest path back to a working access token once its refresh
             -- token's been rejected (see `GotPermissionsRefresh`).
             ( { model
-                | addAccountFormExpanded = True
+                | addAccountServerFormType = Just RellmServerFormType
                 , newAccountType = Just LoginToAccount
                 , accountForm =
                     { server = account.server
@@ -3584,27 +3602,21 @@ sendUpdate req msg model =
         GotMastodonVerifyCredentialsResult _ _ (Err _) ->
             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
-        ShowBlueskyConnectFormClicked ->
-            ( { model | blueskyConnectForm = Just { handle = "", appPassword = "", status = Idle }, mastodonServerFormOpen = False }, Cmd.none )
-
-        HideBlueskyConnectFormClicked ->
-            ( { model | blueskyConnectForm = Nothing }, Cmd.none )
-
         BlueskyHandleChanged handle ->
-            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | handle = handle }) }, Cmd.none )
+            ( { model | blueskyConnectForm = (\form -> { form | handle = handle }) model.blueskyConnectForm }, Cmd.none )
 
         BlueskyAppPasswordChanged appPassword ->
-            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | appPassword = appPassword }) }, Cmd.none )
+            ( { model | blueskyConnectForm = (\form -> { form | appPassword = appPassword }) model.blueskyConnectForm }, Cmd.none )
 
         BlueskyConnectClicked ->
-            case model.blueskyConnectForm of
-                Just form ->
-                    ( { model | blueskyConnectForm = Just { form | status = Submitting } }
-                    , Task.attempt GotBlueskyConnectResult (createBlueskySessionTask form.handle form.appPassword)
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
+            let
+                form : BlueskyConnectForm
+                form =
+                    model.blueskyConnectForm
+            in
+            ( { model | blueskyConnectForm = { form | status = Submitting } }
+            , Task.attempt GotBlueskyConnectResult (createBlueskySessionTask form.handle form.appPassword)
+            )
 
         GotBlueskyConnectResult (Ok connectedAccount) ->
             let
@@ -3616,7 +3628,7 @@ sendUpdate req msg model =
                 newAccounts =
                     account :: model.blueskyAccounts
             in
-            ( { model | blueskyConnectForm = Nothing, blueskyAccounts = newAccounts }
+            ( { model | blueskyConnectForm = emptyBlueskyConnectForm, blueskyAccounts = newAccounts }
             , Cmd.batch
                 [ Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
                 , Task.attempt (GotBlueskyProfileResult account.handle) (fetchBlueskyProfileTask account.handle account.accessToken)
@@ -3624,7 +3636,7 @@ sendUpdate req msg model =
             )
 
         GotBlueskyConnectResult (Err err) ->
-            ( { model | blueskyConnectForm = model.blueskyConnectForm |> Maybe.map (\form -> { form | status = Errored (blueskyErrorMessage err) }) }
+            ( { model | blueskyConnectForm = (\form -> { form | status = Errored (blueskyErrorMessage err) }) model.blueskyConnectForm }
             , Cmd.none
             )
 
@@ -3690,12 +3702,6 @@ sendUpdate req msg model =
                         model.blueskyAccounts
             in
             ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
-
-        ShowMastodonServerFormClicked ->
-            ( { model | mastodonServerFormOpen = True, blueskyConnectForm = Nothing }, Cmd.none )
-
-        HideMastodonServerFormClicked ->
-            ( { model | mastodonServerFormOpen = False, browseMastodonInstanceInput = "" }, Cmd.none )
 
         BrowseMastodonInstanceInputChanged text ->
             ( { model | browseMastodonInstanceInput = text }, Cmd.none )
@@ -3906,9 +3912,9 @@ allMastodonServers model =
 
 
 {-| Mirrors `recommendedFederatedServers` exactly (same `mainFrontendHost`-config sourcing), against
-`federationInfo.mastodonServers` instead of `.servers` -- the Mastodon instances `UI.mastodonServerChip`
+`federationInfo.mastodonServers` instead of `.servers` -- the Mastodon instances `UI.mastodonConnectButton`
 shows for connecting, minus any already in `model.mastodonAccounts`. Unlike `FederatedServer`s, a
-`MastodonServer` still shows here (with `UI.mastodonServerChip`'s alert-icon treatment) even with a
+`MastodonServer` still shows here (with `UI.mastodonConnectButton`'s alert-icon treatment) even with a
 blank `appId` -- there's no admin-configuration UI for the user themselves to fall back to, so
 hiding it entirely would just look like the instance was never offered at all.
 -}
@@ -3946,24 +3952,33 @@ isMainServer model frontendHost =
     trimmed == model.browsingHost || trimmed == model.mainFrontendHost
 
 
-{-| Whether the Add Account/Server form (Server/Username/Password/etc.)
-should be shown outright, rather than collapsed behind an "Add Account/Server"
-button -- always true while there are no accounts yet (there'd be nothing for
-the button to hide behind), otherwise only once the user's expanded it (see
-`ShowAddAccountFormClicked`).
+{-| Whether the merged Add Account/Server form (see `AccountOrServerFormType`) should be shown
+outright, rather than collapsed behind an "Add Account/Server" button -- always true while there are
+no accounts yet (there'd be nothing for the button to hide behind), otherwise only once the user's
+expanded it (see `ShowAddAccountFormClicked`).
 -}
 shouldShowAddAccountForm : Model -> Bool
 shouldShowAddAccountForm model =
-    List.isEmpty model.accounts || model.addAccountFormExpanded
+    List.isEmpty model.accounts || model.addAccountServerFormType /= Nothing
+
+
+{-| `model.addAccountServerFormType`, falling back to `RellmServerFormType` when it's `Nothing` but
+the form is showing anyway (the unconditional case above -- there'd be no tab selected yet). Mirrors
+`UI.activeTab`'s own "fall back to a sane default" pattern for the outer Accounts Panel tabs.
+-}
+activeAddAccountServerFormType : Model -> AccountOrServerFormType
+activeAddAccountServerFormType model =
+    Maybe.withDefault RellmServerFormType model.addAccountServerFormType
 
 
 {-| Whether the user has unsaved progress in the Add Account/Server form that
 would be surprising to lose by auto-collapsing it back behind the button --
-either they've typed something into Username/Password, or the typed-in Server
+the Rellm tab has typed something into Username/Password, or its typed-in Server
 names a host we're not connected to yet (so "Add Server" is the button
-actually showing, rather than Login/Create Account). Shared by
-`ToggleAccountsPanel` and `CloseAccountsPanel`, the panel's two ways of
-closing -- see `collapseAddAccountFormIfIdle`.
+actually showing, rather than Login/Create Account); the Mastodon tab has a
+typed-in instance to browse; the Bluesky tab has a typed handle or App
+Password. Shared by `ToggleAccountsPanel` and `CloseAccountsPanel`, the panel's
+two ways of closing -- see `collapseAddAccountFormIfIdle`.
 -}
 hasInProgressAddAccountInput : Model -> Bool
 hasInProgressAddAccountInput model =
@@ -3976,6 +3991,9 @@ hasInProgressAddAccountInput model =
         || (String.trim form.password /= "")
         || (model.newAccountType /= Nothing)
         || not (isKnownServer model form.server)
+        || (String.trim model.browseMastodonInstanceInput /= "")
+        || (String.trim model.blueskyConnectForm.handle /= "")
+        || (String.trim model.blueskyConnectForm.appPassword /= "")
 
 
 {-| Collapses the Add Account/Server form back behind its button when the
@@ -3988,7 +4006,7 @@ collapseAddAccountFormIfIdle model =
         model
 
     else
-        { model | addAccountFormExpanded = False }
+        { model | addAccountServerFormType = Nothing }
 
 
 {-| Looks up a known server by its `frontendHost` -- e.g. for a route param

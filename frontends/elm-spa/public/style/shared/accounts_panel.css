@@ -1128,6 +1128,24 @@
   width: 32px;
 }
 
+/* The Rellm/Mastodon/Bluesky tab row for `addAccountServerForm` (UI.elm's
+   `addAccountServerFormTabBar`) -- the "←" collapse button sits to the tabs'
+   left, both vertically centered in the row. Explicit width+height (rather
+   than `.hide-add-account-form-button`'s own `aspect-ratio`+`width: 32px`)
+   shrinks it down to match `.accounts-panel-tab`'s own rendered height,
+   instead of the taller 32px square it is everywhere else it's used
+   (`.account-form-buttons`/`.sign-in-from-row`). */
+.add-account-server-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.add-account-server-tab-bar .hide-add-account-form-button {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
 .account-form-buttons .hide-add-account-form-button {
   flex: 0 0 auto;
 }
