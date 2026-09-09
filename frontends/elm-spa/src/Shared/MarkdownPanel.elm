@@ -41,7 +41,7 @@ type alias Model =
     { target : Maybe TargetType
 
     -- The `frontendHost` of the server `target`'s Post lives on -- needed to
-    -- resolve the `AccountsPanel.Server`/signed-in `Account` to submit as,
+    -- resolve the `AccountsPanel.RellmServer`/signed-in `Account` to submit as,
     -- and to verify (see `resolve`) that server's still enabled and that
     -- account still has the relevant permission, right before submitting.
     -- For `SendNewMessage`, this doubles as "who I'm sending as" -- see
@@ -155,9 +155,9 @@ type TargetType
     | NewReply Post
     | NewPostContent String
     | UserBio User
-    | ServerDescription AccountsPanel.Server
-    | ServerPrivacyPolicy AccountsPanel.Server
-    | ServerMediaPolicy AccountsPanel.Server
+    | ServerDescription AccountsPanel.RellmServer
+    | ServerPrivacyPolicy AccountsPanel.RellmServer
+    | ServerMediaPolicy AccountsPanel.RellmServer
     | SendNewMessage (List Author)
 
 
@@ -179,8 +179,8 @@ type ViewMode
 
 
 type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
+    { server : AccountsPanel.RellmServer
+    , account : AccountsPanel.RellmAccount
     }
 
 
@@ -725,7 +725,7 @@ sendMessagePostingAsRow accountsPanelModel model =
                 ]
 
 
-accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
+accountAvatar : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
 accountAvatar servers account =
     case AccountsPanel.accountAvatarUrl servers account of
         Just url ->
@@ -1143,7 +1143,7 @@ on this server just refreshes again.
 saveServerInfoField :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> AccountsPanel.Server
+    -> AccountsPanel.RellmServer
     -> (ServerInfo -> ServerInfo)
     -> Task Grpc.Error (Maybe AccountsPanel.Msg)
 saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =

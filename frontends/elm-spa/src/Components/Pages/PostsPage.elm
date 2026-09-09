@@ -207,7 +207,7 @@ type alias ServerFeed =
 
 
 {-| One source `postsByServer` can hold a feed for -- a real Rellm server (federating in the usual
-way, `AccountsPanel.Server`), or a Mastodon instance/Bluesky account translated client-side (see
+way, `AccountsPanel.RellmServer`), or a Mastodon instance/Bluesky account translated client-side (see
 `Shared.Federation.Mastodon`/`Bluesky`). Unifies what used to be two entirely separate
 fetch-and-store paths (`postsByServer`/`GotServerPosts`/`fetchNewServers`/`refetchServers` vs.
 `federatedPosts`/`GotFederatedPosts`/`fetchFederatedPosts`) into one, since both are ultimately
@@ -216,7 +216,7 @@ they just reach different APIs, with different capabilities, to do it. See `feed
 `feedSourceAccountId`/`fetchFeedSource` for where the three cases actually diverge.
 -}
 type FeedSource
-    = RellmServer AccountsPanel.Server
+    = RellmServer AccountsPanel.RellmServer
     | MastodonInstance String
     | BlueskyFeed AccountsPanel.BlueskyAccount
 
@@ -332,7 +332,7 @@ heading (see `view`) -- `Pages.Home_` passes `Nothing`,
 already-resolved profile `User` paired with the host it was resolved from
 (`Components.Users.Resolver`'s own `targetHost`, resolved before ever calling
 this, so this module never needs to fetch the `User` itself -- it only needs
-the host alongside it to look up that server's `AccountsPanel.Server`/signed-in
+the host alongside it to look up that server's `AccountsPanel.RellmServer`/signed-in
 `Account` for `authorHeadingView`'s avatar).
 
 `navKey`/`path`, from the calling page's own `Request`, are what let
@@ -762,7 +762,7 @@ and (especially) `TEXT_SEARCH` would fan out to every other enabled server
 too, e.g. showing `jon@oakcitysocial.com`'s posts on `jon@jonline.io`'s
 own posts page.
 -}
-relevantServers : Shared.Model -> Model -> List AccountsPanel.Server
+relevantServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
@@ -1530,7 +1530,7 @@ onEscape msg =
 filter by (even before that `User` -- already resolved by the caller, see
 `init` -- has actually rendered), upgraded to "Posts | <name>" via
 `Components.Users.ProfileHeading.nameHeader` (with that author's avatar, via
-its resolved-host `AccountsPanel.Server`/signed-in `Account`, if that host is
+its resolved-host `AccountsPanel.RellmServer`/signed-in `Account`, if that host is
 still a known server -- falling back to `ProfileHeading.usernameHeading`,
 avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
 (`author == Nothing`), which supplies its own "Recent Posts"/"Recent Replies"
@@ -1660,11 +1660,11 @@ postCardView shared showSyncDestinations availableSyncDestinations pushStatuses 
             StarredPanel.toggleStarMsg shared.accounts host displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers host
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts host
 

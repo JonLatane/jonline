@@ -28,7 +28,7 @@ unadorned by any edit affordance, so this itself stays `Html msg`-polymorphic.
 Also used directly by `Components.Pages.PostsPage`/`Components.Pages.EventsPage`
 as a no-avatar fallback for their "Posts | <name>"/"Events | <name>"
 headings when the author's server isn't currently known/enabled (so there's no
-`AccountsPanel.Server` to resolve an avatar against).
+`AccountsPanel.RellmServer` to resolve an avatar against).
 -}
 usernameHeading : User -> Html msg
 usernameHeading user =
@@ -43,7 +43,7 @@ module). Used by `Components.Pages.PostsPage`/`Components.Pages.EventsPage` for
 their "Posts | <name>"/"Events | <name>" heading on a user's own
 posts/events page.
 -}
-nameHeader : AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg
+nameHeader : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Html msg
 nameHeader server maybeAccount user =
     div [ class "profile-header" ]
         [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)

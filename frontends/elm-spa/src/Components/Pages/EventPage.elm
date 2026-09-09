@@ -255,7 +255,7 @@ type Msg
       -- below.
     | DeleteInstanceClicked EventInstance Event
     | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | GotConnectResult (Result Grpc.Error AccountsPanel.RellmServer)
     | EnableClicked
       -- Switches which of the Event's `EventInstance`s the date-picker strip
       -- shows (see `InstanceHistoryDisplay`) -- fired by `historyButtons`.
@@ -1360,7 +1360,7 @@ both exist -- what `MediaEditClicked`'s own save (via `Shared.MyMediaPanel`'s
 `SaveMediaClicked`) needs to actually submit its `Posts.updatePost` task.
 Mirrors `Components.Pages.PostPage.serverAndAccount`.
 -}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
         (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
@@ -1803,11 +1803,11 @@ titleFor model =
 eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
 eventDetailView shared model event instance =
     let
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
     in
@@ -1977,7 +1977,7 @@ out among the three -- see its own doc for why it needs no analogous
 editable fields, so it renders its title as plain text directly instead of
 going through this.
 -}
-titleView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+titleView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 titleView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
@@ -1996,7 +1996,7 @@ title itself isn't the field currently being edited (see `titleView`) --
 `editable` (see `eventDetailView`) hides the button entirely for an
 ICS-synced `Event`.
 -}
-titleDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+titleDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 titleDisplayView editable maybeAccount post =
     span [ class "event-post-title-display" ]
         [ text (Posts.postTitleText post)
@@ -2013,7 +2013,7 @@ mirrors `titleView` exactly, just for the link:
 its own "Edit Link" button sits right after the link (or, if `post` has none
 set, right where the link would otherwise sit -- see `linkDisplayView`).
 -}
-linkView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+linkView : Bool -> Maybe PostFieldEdit -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 linkView editable maybeEdit maybeAccount post =
     case maybeEdit of
         Just edit ->
@@ -2033,7 +2033,7 @@ whenever the link itself isn't the field currently being edited (see
 a link set, so there's still something to click to add one. `editable` (see
 `eventDetailView`) hides the button entirely for an ICS-synced `Event`.
 -}
-linkDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+linkDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 linkDisplayView editable maybeAccount post =
     span [ class "event-post-link-display" ]
         [ case Posts.postLinkText post of
@@ -2065,7 +2065,7 @@ this is always just the display half. The button renders regardless of
 whether `post` actually has content set, so there's still something to click
 to add some.
 -}
-contentDisplayView : Bool -> Maybe AccountsPanel.Account -> Post -> Html Msg
+contentDisplayView : Bool -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 contentDisplayView editable maybeAccount post =
     div [ class "event-post-content-display" ]
         [ case post.content of
@@ -2154,7 +2154,7 @@ postFieldEditActionsView edit post =
 that field -- thin wrapper around `editButtonView` for `titleDisplayView`/
 `linkDisplayView`'s own `PostFieldEditClicked` buttons.
 -}
-postFieldEditButtonView : PostField -> String -> Maybe AccountsPanel.Account -> Post -> Html Msg
+postFieldEditButtonView : PostField -> String -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 postFieldEditButtonView field label maybeAccount post =
     editButtonView label (PostFieldEditClicked field post) maybeAccount post
 
@@ -2171,7 +2171,7 @@ edit). Reuses `Components.Posts`' `.post-edit-button` class (posts.css)
 rather than an `event-*` one of its own, so it looks identical to
 `postDetail`'s own "Edit Content" button.
 -}
-editButtonView : String -> Msg -> Maybe AccountsPanel.Account -> Post -> Html Msg
+editButtonView : String -> Msg -> Maybe AccountsPanel.RellmAccount -> Post -> Html Msg
 editButtonView label onClickMsg maybeAccount post =
     case maybeAccount of
         Just account ->
@@ -2199,7 +2199,7 @@ next to a field -- reuses that row's `.post-edit-button` class rather than
 styling via the `.post-actions` parent postDetail wraps it in, and would look
 inconsistent here).
 -}
-deleteButtonView : Maybe AccountsPanel.Account -> Event -> Post -> Html Msg
+deleteButtonView : Maybe AccountsPanel.RellmAccount -> Event -> Post -> Html Msg
 deleteButtonView maybeAccount event post =
     case maybeAccount of
         Just account ->
@@ -2223,7 +2223,7 @@ Opens the same shared "are you sure?" dialog as `deleteButtonView`, via
 `DeleteInstanceClicked`/`Shared.ConfirmEventInstanceDelete`, for just the
 currently-viewed `instance`.
 -}
-deleteInstanceButtonView : Maybe AccountsPanel.Account -> Event -> Post -> EventInstance -> Html Msg
+deleteInstanceButtonView : Maybe AccountsPanel.RellmAccount -> Event -> Post -> EventInstance -> Html Msg
 deleteInstanceButtonView maybeAccount event post instance =
     case maybeAccount of
         Just account ->
@@ -2249,7 +2249,7 @@ narrowed to whatever `maybeAccount` can actually publish at
 (`Posts.allowedVisibilities`), mirroring
 `Components.Pages.PostPage.visibilityView` exactly.
 -}
-visibilityView : Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView : Maybe AccountsPanel.RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
 visibilityView maybeAccount maybeEdit post =
     case ( maybeEdit, maybeAccount ) of
         ( Just edit, Just account ) ->
@@ -2318,7 +2318,7 @@ request, to read distinctly from `postFieldEditButtonView`'s "Edit X"). Reuses
 (posts.css) rather than `event-*` ones of its own, so it looks identical to
 `postDetail`'s own moderation controls.
 -}
-moderationView : Maybe AccountsPanel.Account -> Maybe ModerationEdit -> Event -> Post -> Html Msg
+moderationView : Maybe AccountsPanel.RellmAccount -> Maybe ModerationEdit -> Event -> Post -> Html Msg
 moderationView maybeAccount maybeEdit event post =
     case maybeAccount of
         Nothing ->
@@ -2413,7 +2413,7 @@ not the instance's own possibly-different-owner override `Post`) *and*
 `instanceEditable`; the inline `instanceTimeEditFormView` once
 editing.
 -}
-instanceTimeView : Shared.Model -> Maybe AccountsPanel.Account -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
+instanceTimeView : Shared.Model -> Maybe AccountsPanel.RellmAccount -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
 instanceTimeView shared maybeAccount maybeEdit eventPost instance =
     case maybeEdit of
         Just edit ->
@@ -2496,7 +2496,7 @@ Location" (no separate location line to show) rather than a plain
 always has *something* to show), renders nothing at all when there's neither
 a location to show nor (a synced instance) a button to add one.
 -}
-instanceLocationView : Maybe AccountsPanel.Account -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
+instanceLocationView : Maybe AccountsPanel.RellmAccount -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
 instanceLocationView maybeAccount maybeEdit eventPost instance =
     case maybeEdit of
         Just edit ->
@@ -2579,7 +2579,7 @@ always matches "who can edit this date"'s own time/location buttons right
 above it) *and* `instanceEditable` (see its own doc for why "Add More" is
 gated the same way Edit Time/Edit Location are).
 -}
-addMoreView : Maybe AccountsPanel.Account -> Model -> Post -> EventInstance -> Html Msg
+addMoreView : Maybe AccountsPanel.RellmAccount -> Model -> Post -> EventInstance -> Html Msg
 addMoreView maybeAccount model eventPost instance =
     case maybeAccount of
         Nothing ->

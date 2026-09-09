@@ -54,7 +54,7 @@ type Msg
     | GotFederationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | FederatedServerHostInputChanged String
     | FederatedServerAddClicked
-    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.Server)
+    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.RellmServer)
     | FederatedServerRemoveClicked String
     | FederatedServerRemoved String
     | FederatedServerConfiguredByDefaultToggled String
@@ -228,7 +228,7 @@ subscriptions model =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Bool -> Maybe AccountsPanel.Server -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Bool -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost isSecure maybeServer msg model =
     case msg of
         FederationEditClicked ->
@@ -1144,9 +1144,9 @@ mapPendingHost host fn edit =
 
 
 {-| The DOM `id` a federated-server chip is rendered with while `federationEdit` is active -- the
-`UI.Flip.Horizontal` counterpart of `AccountsPanel.serverChipDomId`, for
+`UI.Flip.Horizontal` counterpart of `AccountsPanel.feedItemChipDomId`, for
 `MoveFederatedServerLeftClicked`/`MoveFederatedServerRightClicked` to measure. Deliberately its own
-id scheme (not `AccountsPanel.serverChipDomId`) even though a federated host can coincide with an
+id scheme (not `AccountsPanel.feedItemChipDomId`) even though a federated host can coincide with an
 already-added server's own `frontendHost` -- that server's own chip (in the Accounts Panel, via
 `UI.serversStrip`) can be on-screen at the very same time this tab is, and DOM ids must be unique.
 -}
@@ -1198,23 +1198,23 @@ mapPendingMastodonEdit domain fn edit =
 
 {-| The DOM `id` a Mastodon-server chip is rendered with while `mastodonServersEdit` is active --
 mirrors `federatedServerChipDomId` exactly, just its own id scheme (never collides, but kept
-separate on principle the same way that one is from `AccountsPanel.serverChipDomId`).
+separate on principle the same way that one is from `AccountsPanel.feedItemChipDomId`).
 -}
 mastodonServerChipDomId : String -> String
 mastodonServerChipDomId domain =
     "mastodon-server-chip-" ++ domain
 
 
-{-| The `AccountsPanel.Server` to show a federated host's name/logo off of -- the real,
+{-| The `AccountsPanel.RellmServer` to show a federated host's name/logo off of -- the real,
 already-known one if `host` happens to also be a known `Server` (e.g. also added to Accounts &
 Servers), otherwise a synthetic unconnected record whose `AccountsPanel.brandingOf` falls back to
 the bare host string (no logo, no separate name) -- same "synthesize an unconnected `Server`"
 fallback `UI.recommendedServerChip` uses for a host it hasn't background-connected to yet.
 -}
-federatedServerFor : Shared.Model -> String -> AccountsPanel.Server
+federatedServerFor : Shared.Model -> String -> AccountsPanel.RellmServer
 federatedServerFor shared host =
     AccountsPanel.serverForHost shared.accounts.servers host
-        |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
+        |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing, sortOrder = 0 }
 
 
 
@@ -1225,7 +1225,7 @@ federatedServerFor shared host =
 `federationEditorView`); anyone else just sees the read-only chip strip
 (`federationDisplayView`), same split as every other editor on this page.
 -}
-view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
 view shared server maybeAdminAccount model =
     div [ class "server-details-tab-content server-details-federation" ]
         [ h3 [ class "section-title" ] [ text "Federated Servers" ]
@@ -1260,7 +1260,7 @@ for why the secret needs its own bit of edit-mode state per chip, unlike `Federa
 plain boolean toggles. Unlike `FederatedServer` chips, there's no `AccountsPanel.serverNameAndLogo`
 branding to show -- a Mastodon instance is never also a known Rellm `Server`.
 -}
-mastodonServersSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+mastodonServersSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
 mastodonServersSection server model maybeAdminAccount =
     div [ class "server-details-facebook-auth" ]
         [ h3 [ class "section-title" ] [ text "Mastodon Servers" ]
@@ -1516,7 +1516,7 @@ mastodonAppSecretField domain mastodonServerEdit =
             ]
 
 
-facebookAuthConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+facebookAuthConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
 facebookAuthConfigSection server model maybeAdminAccount =
     let
         currentAppId : String
@@ -1539,7 +1539,7 @@ facebookAuthConfigSection server model maybeAdminAccount =
         )
 
 
-facebookAppIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 facebookAppIdRow currentAppId maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1584,7 +1584,7 @@ is shown regardless of whether a secret is actually configured. Clicking Edit al
 blank `<input>`; saving it blank is a no-op on the backend, same as leaving a "change password"
 field untouched.
 -}
-facebookAppSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+facebookAppSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 facebookAppSecretRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1622,7 +1622,7 @@ instead -- one admin-registered X Developer App (Client ID + Client Secret), sha
 own connected `XTwitterAccount` (see `protos/sync.proto`'s doc on that message, and
 `logic::x_twitter_sync` on the backend).
 -}
-xTwitterAuthConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterAuthConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
 xTwitterAuthConfigSection server model maybeAdminAccount =
     let
         currentClientId : String
@@ -1645,7 +1645,7 @@ xTwitterAuthConfigSection server model maybeAdminAccount =
         )
 
 
-xTwitterClientIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterClientIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 xTwitterClientIdRow currentClientId maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1687,7 +1687,7 @@ xTwitterClientIdRow currentClientId maybeEdit maybeAdminAccount =
 {-| Unlike `xTwitterClientIdRow`, there's no "current value" to show when not editing -- mirrors
 `facebookAppSecretRow`'s own doc exactly.
 -}
-xTwitterClientSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+xTwitterClientSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 xTwitterClientSecretRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1725,7 +1725,7 @@ calling `pushManager.subscribe`, see `Shared.AccountsPanel`'s "Enable notificati
 everyone, same as the Facebook section's App ID; the Private VAPID key (needed only to sign
 outgoing pushes, see `backend/src/web_push`) is admin-only, same as the App Secret.
 -}
-webPushConfigSection : AccountsPanel.Server -> Model -> Maybe AccountsPanel.Account -> Html Msg
+webPushConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
 webPushConfigSection server model maybeAdminAccount =
     let
         currentPublicKey : String
@@ -1747,7 +1747,7 @@ webPushConfigSection server model maybeAdminAccount =
         )
 
 
-webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 webPushPublicKeyRow currentPublicKey maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1792,7 +1792,7 @@ shown regardless of whether a key is actually configured. Clicking Edit always s
 `<input>`; saving it blank is a no-op on the backend, same as leaving a "change password" field
 untouched.
 -}
-webPushPrivateKeyRow : Maybe TextFieldEdit -> Maybe AccountsPanel.Account -> Html Msg
+webPushPrivateKeyRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
 webPushPrivateKeyRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->

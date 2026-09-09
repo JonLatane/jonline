@@ -100,7 +100,7 @@ type alias Model =
 
 
 type Msg
-    = ToggleStar AccountsPanel.Server Post
+    = ToggleStar AccountsPanel.RellmServer Post
     | GotStarResult String Bool (Result Grpc.Error Post)
     | ToggleStarredPanel
     | CloseStarredPanel
@@ -1106,11 +1106,11 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
                     onStarClicked =
                         toggleStarMsg accountsPanelModel host post
 
-                    maybeServer : Maybe AccountsPanel.Server
+                    maybeServer : Maybe AccountsPanel.RellmServer
                     maybeServer =
                         AccountsPanel.serverForHost accountsPanelModel.servers host
 
-                    maybeAccount : Maybe AccountsPanel.Account
+                    maybeAccount : Maybe AccountsPanel.RellmAccount
                     maybeAccount =
                         AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
@@ -1152,7 +1152,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
                 -- use of `ServerDependentView.availableServer`) -- only the
                 -- latter has anything to offer a button for, so re-derive the
                 -- actual `Server` (if disabled) from `key`'s host.
-                maybeDisabledServer : Maybe AccountsPanel.Server
+                maybeDisabledServer : Maybe AccountsPanel.RellmServer
                 maybeDisabledServer =
                     parseStarKey key
                         |> Maybe.andThen (\( _, host ) -> AccountsPanel.serverForHost accountsPanelModel.servers host)
@@ -1210,11 +1210,11 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
                 onStarClicked =
                     toggleStarMsg accountsPanelModel host post
 
-                maybeServer : Maybe AccountsPanel.Server
+                maybeServer : Maybe AccountsPanel.RellmServer
                 maybeServer =
                     AccountsPanel.serverForHost accountsPanelModel.servers host
 
-                maybeAccount : Maybe AccountsPanel.Account
+                maybeAccount : Maybe AccountsPanel.RellmAccount
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 

@@ -71,7 +71,7 @@ itself dispatches -- see `Pages.Messages.update`) sees it as brand new and
 fetches for the first time, successfully.
 
 -}
-eligibleServers : AccountsPanel.Model -> List { server : AccountsPanel.Server, account : AccountsPanel.Account, listingType : MessageListingType }
+eligibleServers : AccountsPanel.Model -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
 eligibleServers accountsPanelModel =
     AccountsPanel.enabledAccounts accountsPanelModel
         |> List.filterMap

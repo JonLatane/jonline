@@ -40,13 +40,13 @@ type ConnectStatus
 
 view :
     { hostname : String
-    , servers : List AccountsPanel.Server
-    , accounts : List AccountsPanel.Account
+    , servers : List AccountsPanel.RellmServer
+    , accounts : List AccountsPanel.RellmAccount
     , connectStatus : ConnectStatus
     , onConnectClicked : msg
     , onEnableClicked : msg
     }
-    -> (AccountsPanel.Server -> Maybe AccountsPanel.Account -> Html msg)
+    -> (AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Html msg)
     -> Html msg
 view config render =
     case AccountsPanel.serverForHost config.servers config.hostname of
@@ -93,7 +93,7 @@ exposed for callers (e.g. `Shared.StarredPanel`'s fetching) that need to
 gate something other than rendering on it, without duplicating the `.enabled`
 check themselves.
 -}
-availableServer : List AccountsPanel.Server -> String -> Maybe AccountsPanel.Server
+availableServer : List AccountsPanel.RellmServer -> String -> Maybe AccountsPanel.RellmServer
 availableServer servers hostname =
     AccountsPanel.serverForHost servers hostname
         |> Maybe.andThen

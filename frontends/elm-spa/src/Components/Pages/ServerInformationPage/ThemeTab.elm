@@ -120,7 +120,7 @@ subscriptions model =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.Server -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         LogoEditClicked ->
@@ -373,7 +373,7 @@ setColorEditFor field edit model =
 -- VIEW
 
 
-view : Shared.Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Model -> Html Msg
+view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
 view shared server maybeAdminAccount model =
     let
         info : Proto.Rellm.ServerInfo
@@ -430,7 +430,7 @@ webUserInterfaceText ui =
 has no in-progress `ColorEdit`, or an `<input type="color">` (native, no picker library -- see
 `UI.ServerTheme.argbFromHex`'s own doc) bound to `edit.pending` plus Save/Cancel while being edited.
 -}
-colorEditorRow : ServerColorField -> String -> Maybe AccountsPanel.Account -> Maybe ColorEdit -> Maybe Int -> Html Msg
+colorEditorRow : ServerColorField -> String -> Maybe AccountsPanel.RellmAccount -> Maybe ColorEdit -> Maybe Int -> Html Msg
 colorEditorRow field label_ maybeAdminAccount maybeEdit argb =
     case maybeEdit of
         Just edit ->
@@ -630,7 +630,7 @@ The image itself previews `edit.choice` (see `logoPreviewUrl`) rather than `curr
 once editing's started, mirroring `Components.Pages.UserProfilePage.avatarPreviewUrl`'s own
 "preview the pending choice, not the saved value" behavior.
 -}
-logoEditorView : Maybe AccountsPanel.Account -> Maybe LogoEdit -> AccountsPanel.Server -> Maybe String -> Html Msg
+logoEditorView : Maybe AccountsPanel.RellmAccount -> Maybe LogoEdit -> AccountsPanel.RellmServer -> Maybe String -> Html Msg
 logoEditorView maybeAdminAccount maybeEdit server currentSquareMediaId =
     div [ class "server-details-logo" ]
         [ h3 [] [ text "Server Image" ]
@@ -682,7 +682,7 @@ logoEditorView maybeAdminAccount maybeEdit server currentSquareMediaId =
 analogous "username" -- `Nothing` just shows the "No server image set." text, same as the
 non-editing case).
 -}
-logoPreviewUrl : AccountsPanel.Server -> LogoChoice -> Maybe String -> Maybe String
+logoPreviewUrl : AccountsPanel.RellmServer -> LogoChoice -> Maybe String -> Maybe String
 logoPreviewUrl server choice currentSquareMediaId =
     case choice of
         LogoUnchanged ->

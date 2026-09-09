@@ -119,8 +119,8 @@ type Msg
 
 
 type alias Resolved =
-    { server : AccountsPanel.Server
-    , account : AccountsPanel.Account
+    { server : AccountsPanel.RellmServer
+    , account : AccountsPanel.RellmAccount
     }
 
 
@@ -299,7 +299,7 @@ chooser, `selectedModel`, and what `GenerateClicked` can actually submit all sta
 availableModelsFor : AccountsPanel.Model -> String -> List MediaReference -> List AvailableAIModel
 availableModelsFor accountsPanelModel host media =
     let
-        account : Maybe AccountsPanel.Account
+        account : Maybe AccountsPanel.RellmAccount
         account =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
@@ -398,7 +398,7 @@ availableAIModelLabel viewerUsername available =
 view : SharedTime.Model -> AccountsPanel.Model -> Model -> Html Msg
 view time accountsPanelModel model =
     let
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
 
@@ -492,11 +492,11 @@ targetIndicatorView time accountsPanelModel model =
 targetCardView : SharedTime.Model -> AccountsPanel.Model -> String -> String -> Target -> Html Msg
 targetCardView time accountsPanelModel basePath host target =
     let
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost accountsPanelModel.servers host
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
     in
@@ -563,7 +563,7 @@ mediaSectionView accountsPanelModel model =
 
                 else
                     let
-                        maybeAccount : Maybe AccountsPanel.Account
+                        maybeAccount : Maybe AccountsPanel.RellmAccount
                         maybeAccount =
                             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.targetHost
                     in

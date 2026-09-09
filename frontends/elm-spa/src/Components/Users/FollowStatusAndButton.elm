@@ -83,7 +83,7 @@ and re-fetch `user` fresh, since a `Follow` mutation changes fields
 on both `user` and the viewer's own `User` that this module has no way to
 patch up itself.
 -}
-update : Shared.Model -> AccountsPanel.Server -> AccountsPanel.Account -> User -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> User -> Msg -> Model -> ( Model, Effect Msg )
 update shared server account user msg model =
     let
         maybeAccountServer : AccountsPanel.MaybeAccountServer
@@ -168,7 +168,7 @@ accountsPanelEffect maybeAccountsPanelMsg =
 {-| `Nothing` for an anonymous viewer, or when `user` is the viewer's own
 profile -- there's no follow relationship to show/act on in either case.
 -}
-view : Model -> Maybe AccountsPanel.Account -> User -> Html Msg
+view : Model -> Maybe AccountsPanel.RellmAccount -> User -> Html Msg
 view model maybeAccount user =
     case maybeAccount of
         Just account ->
@@ -338,7 +338,7 @@ followButtonText requiresApproval =
 {-| `account`'s own `Follow` of `user` -- the relationship the viewer
 themself controls the existence (but not the moderation) of.
 -}
-currentUserFollowOf : AccountsPanel.Account -> User -> Follow
+currentUserFollowOf : AccountsPanel.RellmAccount -> User -> Follow
 currentUserFollowOf account user =
     { defaultFollow | userId = account.userId, targetUserId = user.id }
 
@@ -346,6 +346,6 @@ currentUserFollowOf account user =
 {-| `user`'s `Follow` of `account` -- the relationship the viewer controls
 the moderation (but not the existence) of.
 -}
-targetCurrentUserFollowOf : AccountsPanel.Account -> User -> Follow
+targetCurrentUserFollowOf : AccountsPanel.RellmAccount -> User -> Follow
 targetCurrentUserFollowOf account user =
     { defaultFollow | userId = user.id, targetUserId = account.userId }

@@ -122,7 +122,7 @@ type Msg
     | MediaGeneratorPanelMsg MediaGeneratorPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
-    | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | MyMediaPanelOpenForAccount AccountsPanel.RellmAccount
     | CreateNewPanelMsg CreateNewPanel.Msg
     | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
@@ -252,8 +252,8 @@ carry.
 
 -}
 type DeleteConfirmation
-    = ConfirmServerDelete AccountsPanel.Server
-    | ConfirmAccountDelete AccountsPanel.Account
+    = ConfirmServerDelete AccountsPanel.RellmServer
+    | ConfirmAccountDelete AccountsPanel.RellmAccount
     | ConfirmMediaDelete Media
     | ConfirmMarkdownEditingDataLost
       -- The trailing `String` on each of these four is the acting

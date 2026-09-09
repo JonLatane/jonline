@@ -37,7 +37,7 @@ module Components.Users exposing
 
 {-| Shared building blocks for displaying `Proto.Rellm.User`s -- the fetch
 helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.UsernameOrCustomTab_`, by
-username) need against a specific `Shared.AccountsPanel.Server`, the
+username) need against a specific `Shared.AccountsPanel.RellmServer`, the
 `/user/:id[@host]`/`/:username[@host]` route id parsing/linking (mirroring
 `Components.Posts`' `postHref`/`parsePostRouteId` for `/post/:id[@host]`), and
 plain-English labels for a `User`'s `Visibility`/`Moderation`/`Permission`
@@ -473,7 +473,7 @@ if given -- avatars can be visibility-restricted, so an anonymous request (or
 one from an account that isn't allowed to see it) may still 403 despite this
 returning `Just` a URL. Mirrors `Shared.AccountsPanel.accountAvatarUrl`.
 -}
-avatarUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Maybe String
+avatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Maybe String
 avatarUrl server maybeAccount user =
     mediaReferenceUrl server maybeAccount user.avatar
 
@@ -481,7 +481,7 @@ avatarUrl server maybeAccount user =
 {-| Like `avatarUrl`, but for an `Author` (the smaller, post-embedded version
 of a `User` -- see `Components.Posts.postAuthorHref`) instead of a full `User`.
 -}
-authorAvatarUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Author -> Maybe String
+authorAvatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Author -> Maybe String
 authorAvatarUrl server maybeAccount author =
     mediaReferenceUrl server maybeAccount author.avatar
 
@@ -492,7 +492,7 @@ authorAvatarUrl server maybeAccount author =
 `avatarPreviewUrl`) to preview a newly-picked media item that isn't
 `user.avatar` yet.
 -}
-mediaReferenceUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Proto.Rellm.MediaReference -> Maybe String
+mediaReferenceUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Proto.Rellm.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia
         |> Maybe.andThen
@@ -528,7 +528,7 @@ needing this function's callers to reach for that module's own "stretched
 link" treatment.
 
 -}
-userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Html msg -> User -> Html msg
+userCard : String -> String -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Html msg -> User -> Html msg
 userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
     a
         [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })

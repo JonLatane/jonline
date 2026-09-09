@@ -9,7 +9,7 @@ the username to sign in as. Either way, asks for their password (a fresh
 Login RPC, not reusing any already-stored tokens, since only a freshly issued
 token pair is transferred), then encrypts the resulting `AccountAuthTokens`
 (just this server's hostname plus that fresh token pair -- everything else an
-`Account` needs is hydrated on the other end, via `GetCurrentUser`) to
+`RellmAccount` needs is hydrated on the other end, via `GetCurrentUser`) to
 `requestingHost`'s public key and redirects back to
 `https://requestingHost/elm/auth/from/...`. The receiving side is
 `Pages.Auth.From.EncryptedAccountAuthTokens_`.
@@ -37,7 +37,7 @@ import Proto.Rellm exposing (ExpirableToken, RefreshTokenResponse)
 import Proto.Rellm.Rellm as Rellm
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel exposing (Account, AccountAuthTokens, FormStatus(..), Token)
+import Shared.AccountsPanel as AccountsPanel exposing (RellmAccount, AccountAuthTokens, FormStatus(..), Token)
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.FederatedAuth as FederatedAuth
 import Task exposing (Task)
@@ -100,7 +100,7 @@ type Msg
     | AlsoSignInHereToggled
     | SignInClicked
     | GotLoginResult (Result Grpc.Error ( Maybe AccountAuthTokens, FederatedAuth.PublicKey ))
-    | GotLocalSignInResult (Result Grpc.Error (Maybe Account))
+    | GotLocalSignInResult (Result Grpc.Error (Maybe RellmAccount))
     | GotEncryptResult Encode.Value
     | SharedMsg Shared.Msg
 
@@ -280,7 +280,7 @@ update shared msg model =
             ( model, Effect.fromShared subMsg )
 
 
-loginTask : AccountsPanel.Server -> String -> String -> Task Grpc.Error RefreshTokenResponse
+loginTask : AccountsPanel.RellmServer -> String -> String -> Task Grpc.Error RefreshTokenResponse
 loginTask server username password =
     case AccountsPanel.connectionOf server of
         -- Both call sites only ever pass a `server` that just passed `ifConnected`
@@ -336,11 +336,11 @@ signInView shared model =
                 browsingHost =
                     shared.accounts.browsingHost
 
-                signedInAccount : Maybe Account
+                signedInAccount : Maybe RellmAccount
                 signedInAccount =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts browsingHost
 
-                accountsOnHost : List Account
+                accountsOnHost : List RellmAccount
                 accountsOnHost =
                     List.filter (\a -> a.server == browsingHost) shared.accounts.accounts
 
@@ -348,7 +348,7 @@ signInView shared model =
                 username =
                     effectiveUsername shared model
 
-                accountForUsername : Maybe Account
+                accountForUsername : Maybe RellmAccount
                 accountForUsername =
                     accountsOnHost |> List.filter (\a -> a.username == username) |> List.head
 
@@ -402,7 +402,7 @@ signInView shared model =
                 ]
 
 
-currentAccountBadge : Shared.Model -> Account -> Html Msg
+currentAccountBadge : Shared.Model -> RellmAccount -> Html Msg
 currentAccountBadge shared account =
     let
         avatarUrl : Maybe String
@@ -435,7 +435,7 @@ account already known for that host (signed out, or needing a password), so
 picking a previously-used username doesn't require retyping it. The
 single-candidate auto-fill happens once, in `init`.
 -}
-usernameField : Shared.Model -> Model -> List Account -> Bool -> Html Msg
+usernameField : Shared.Model -> Model -> List RellmAccount -> Bool -> Html Msg
 usernameField shared model accountsOnHost submitting =
     div [ class "auth-to-username-section" ]
         (input
@@ -462,7 +462,7 @@ usernameField shared model accountsOnHost submitting =
         )
 
 
-usernameButton : Shared.Model -> Bool -> Account -> Html Msg
+usernameButton : Shared.Model -> Bool -> RellmAccount -> Html Msg
 usernameButton shared submitting account =
     button
         [ type_ "button"
@@ -478,11 +478,11 @@ usernameButton shared submitting account =
 {-| Below the password field -- lets a fresh Login also be written into
 `Shared.AccountsPanel` for `browsingHost` (see `GotLoginResult`), rather than
 only ever being used for the `requestingHost` transfer. Its label reflects
-whether `accountForUsername` (the current username's existing Account here,
+whether `accountForUsername` (the current username's existing RellmAccount here,
 if any) already exists, since checking it either creates a brand new
 sign-in or just refreshes/re-enables that existing one.
 -}
-alsoSignInCheckbox : Bool -> Maybe Account -> Bool -> Html Msg
+alsoSignInCheckbox : Bool -> Maybe RellmAccount -> Bool -> Html Msg
 alsoSignInCheckbox isChecked accountForUsername submitting =
     label [ class "auth-to-also-sign-in" ]
         [ input
@@ -519,11 +519,11 @@ effectiveUsername shared model =
             model.username
 
 
-{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
+{-| `Just server` only while actually connected (see `AccountsPanel.RellmServer.connected`)
 -- `loginTask` needs a live connection, so a known-but-disconnected server
 (`serverForHost` matches those too) counts the same as not being signed in.
 -}
-ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
+ifConnected : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmServer
 ifConnected server =
     if server.connected == Nothing then
         Nothing
@@ -533,7 +533,7 @@ ifConnected server =
 
 
 {-| The transfer payload's own construction from a fresh `Login` response -- just `server` plus the
-fresh token pair (see `AccountAuthTokens`'s own doc), unlike `accountFromLogin`'s full `Account`
+fresh token pair (see `AccountAuthTokens`'s own doc), unlike `accountFromLogin`'s full `RellmAccount`
 below (used only for this same page's own, separate "sign back in here" local login). `Nothing` if
 the response is missing token data (an `update` branch above turns that into the same `Errored`
 state `GotAuthResult` would).
@@ -554,12 +554,12 @@ accountAuthTokensFromLogin server resp =
 
 {-| Mirrors `Shared.AccountsPanel.sendUpdate`'s `GotAuthResult` account
 construction -- used for this page's own "sign back in here" local login
-(`GotLocalSignInResult`), which needs a full `Account`, unlike the transfer
+(`GotLocalSignInResult`), which needs a full `RellmAccount`, unlike the transfer
 payload itself (see `accountAuthTokensFromLogin`). `Nothing` if the response
 is missing user/token data (an `update` branch above turns that into the same
 `Errored` state `GotAuthResult` would).
 -}
-accountFromLogin : String -> RefreshTokenResponse -> Maybe Account
+accountFromLogin : String -> RefreshTokenResponse -> Maybe RellmAccount
 accountFromLogin server resp =
     case ( resp.user, resp.refreshToken, resp.accessToken ) of
         ( Just user, Just refreshToken, Just accessToken ) ->

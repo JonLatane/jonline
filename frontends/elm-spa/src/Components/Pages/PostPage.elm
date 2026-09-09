@@ -128,7 +128,7 @@ type Msg
     | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | GotConnectResult (Result Grpc.Error AccountsPanel.RellmServer)
     | EnableClicked
     | EditClicked Post
     | ReplyClicked Post
@@ -957,11 +957,11 @@ postDetailView shared model post =
             StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
-        maybeServer : Maybe AccountsPanel.Server
+        maybeServer : Maybe AccountsPanel.RellmServer
         maybeServer =
             AccountsPanel.serverForHost shared.accounts.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.Account
+        maybeAccount : Maybe AccountsPanel.RellmAccount
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
 
@@ -1027,7 +1027,7 @@ author (mirrors `Posts.editButton`'s own `isAuthor` gate, matching
 mirroring that same file's `PUBLISHPOSTS*`/`PUBLISHEVENTS*` permission check),
 plus a `setsPublishedAtPermanently` warning below the controls when relevant.
 -}
-visibilityView : Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView : Maybe AccountsPanel.RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
 visibilityView maybeAccount maybeEdit post =
     case ( maybeEdit, maybeAccount ) of
         ( Just edit, Just account ) ->
@@ -1111,7 +1111,7 @@ Admin or a `MODERATEPOSTS` holder (unlike `visibilityView`, not gated on
 authorship), and its own "Edit" button reads "Moderate" instead, per this
 feature's own request.
 -}
-moderationView : Maybe AccountsPanel.Account -> Maybe ModerationEdit -> Post -> Html Msg
+moderationView : Maybe AccountsPanel.RellmAccount -> Maybe ModerationEdit -> Post -> Html Msg
 moderationView maybeAccount maybeEdit post =
     case maybeAccount of
         Nothing ->
@@ -1264,7 +1264,7 @@ currentAccountId shared model =
 both exist -- what `VisibilitySaveClicked` needs to actually submit its
 `Posts.updatePost` task. Mirrors `Components.UserProfilePage.serverAndAccount`.
 -}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
         (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)

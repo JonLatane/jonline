@@ -704,8 +704,8 @@ eventCard :
     -> String
     -> String
     -> String
-    -> Maybe AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    -> Maybe AccountsPanel.RellmServer
+    -> Maybe AccountsPanel.RellmAccount
     -> (String -> msg)
     -> MediaRenderer.MediaSize
     -> Bool

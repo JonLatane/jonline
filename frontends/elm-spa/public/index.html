@@ -271,13 +271,37 @@
       localStorage.setItem("rellmUserPreferences", JSON.stringify(preferences));
     });
 
-    // No `BroadcastChannel` here either -- same reasoning as `persistUserPreferences`, above.
+    // Same cross-tab sync as `accountsAndServersChannel`, above -- an enable/disable toggle or a
+    // combined-feed-item reorder (see `Shared.AccountsPanel.CombinedFeedItem`) now shows up live in
+    // every open tab, not just on that tab's next reload.
+    var blueskyAccountsChannel = window.BroadcastChannel ? new BroadcastChannel("rellmBlueskyAccounts") : null;
+    if (blueskyAccountsChannel) {
+      blueskyAccountsChannel.onmessage = function (e) {
+        app.ports.blueskyAccountsUpdated.send(e.data);
+      };
+    }
+
     app.ports.persistBlueskyAccounts.subscribe(function (blueskyAccounts) {
       localStorage.setItem("rellmBlueskyAccounts", JSON.stringify(blueskyAccounts));
+      if (blueskyAccountsChannel) {
+        blueskyAccountsChannel.postMessage(blueskyAccounts);
+      }
     });
+
+    var mastodonAccountsAndServersChannel = window.BroadcastChannel
+      ? new BroadcastChannel("rellmMastodonAccountsAndServers")
+      : null;
+    if (mastodonAccountsAndServersChannel) {
+      mastodonAccountsAndServersChannel.onmessage = function (e) {
+        app.ports.mastodonAccountsAndServersUpdated.send(e.data);
+      };
+    }
 
     app.ports.persistMastodonAccountsAndServers.subscribe(function (mastodonAccountsAndServers) {
       localStorage.setItem("rellmMastodonAccountsAndServers", JSON.stringify(mastodonAccountsAndServers));
+      if (mastodonAccountsAndServersChannel) {
+        mastodonAccountsAndServersChannel.postMessage(mastodonAccountsAndServers);
+      }
     });
 
     // Same cross-tab sync as `accountsAndServersChannel`, above.

@@ -117,10 +117,10 @@ type Msg
     | PostsMsg PostsPage.Msg
     | EventsMsg EventsPage.Msg
     | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | GotConnectResult (Result Grpc.Error AccountsPanel.RellmServer)
     | EnableClicked
     | SharedMsg Shared.Msg
-    | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
+    | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.RellmServer)
     | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
     | RealNameEditClicked
     | RealNameInputChanged String
@@ -333,7 +333,7 @@ whichever of the viewer's own other-server accounts (see `federableAccounts`)
 the "Link Account" `<select>` currently has chosen.
 -}
 type alias FederatedProfilesEdit =
-    { addSelection : Maybe AccountsPanel.Account
+    { addSelection : Maybe AccountsPanel.RellmAccount
     , status : SubmitStatus
     }
 
@@ -2807,7 +2807,7 @@ updateInner shared msg model =
 both exist -- what `RealNameSaveClicked`/`PermissionsSaveClicked` need to
 actually submit their `Users.updateUser` task.
 -}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
         (AccountsPanel.serverForHost shared.accounts.servers model.resolver.targetHost)
@@ -2864,7 +2864,7 @@ call, not any user id in the request (see
 `backend/src/rpcs/federation/federate_profile.rs`) -- an admin editing this
 list would only ever federate _their own_ profile, not `user`'s.
 -}
-isOwnProfile : Maybe AccountsPanel.Account -> User -> Bool
+isOwnProfile : Maybe AccountsPanel.RellmAccount -> User -> Bool
 isOwnProfile maybeAccount user =
     case maybeAccount of
         Just account ->
@@ -2874,14 +2874,14 @@ isOwnProfile maybeAccount user =
             False
 
 
-{-| The signed-in `AccountsPanel.Account`s (across every connected server,
+{-| The signed-in `AccountsPanel.RellmAccount`s (across every connected server,
 see `Shared.AccountsPanel.Model.accounts`) that `user` could still federate
 with: not `user`'s own account on `server` (that'd be federating with itself),
 and not already listed in `user.federatedProfiles` -- mirrors the Tamagui
 app's `federableAccounts` computation in
 `frontends/tamagui/packages/app/features/user/federated_profiles.tsx`.
 -}
-federableAccounts : Shared.Model -> AccountsPanel.Server -> User -> List AccountsPanel.Account
+federableAccounts : Shared.Model -> AccountsPanel.RellmServer -> User -> List AccountsPanel.RellmAccount
 federableAccounts shared server user =
     shared.accounts.accounts
         |> List.filter
@@ -2895,7 +2895,7 @@ federableAccounts shared server user =
 what the update branches (which don't have a `User`/`Server` in hand directly)
 need.
 -}
-federableAccountsFor : Shared.Model -> Model -> List AccountsPanel.Account
+federableAccountsFor : Shared.Model -> Model -> List AccountsPanel.RellmAccount
 federableAccountsFor shared model =
     case ( model.resolver.status, serverAndAccount shared model ) of
         ( Resolver.Loaded user, Just ( server, _ ) ) ->
@@ -2910,7 +2910,7 @@ profiles list changes: keeps `current` if it's still federable, otherwise
 falls back to the first still-federable account (`Nothing` if there aren't
 any) -- mirrors `resolveAddSelection`.
 -}
-resolveFederatedAddSelection : Maybe AccountsPanel.Account -> List AccountsPanel.Account -> Maybe AccountsPanel.Account
+resolveFederatedAddSelection : Maybe AccountsPanel.RellmAccount -> List AccountsPanel.RellmAccount -> Maybe AccountsPanel.RellmAccount
 resolveFederatedAddSelection current available =
     case current of
         Just account ->
@@ -2925,20 +2925,20 @@ resolveFederatedAddSelection current available =
 
 
 {-| The `<select>` option value (and its reverse-lookup key, see
-`FederatedProfileAddSelectionChanged`) for one federable `AccountsPanel.Account`
+`FederatedProfileAddSelectionChanged`) for one federable `AccountsPanel.RellmAccount`
 -- same `userId@host` shape as `federatedKey`, just over the other record type.
 -}
-accountKey : AccountsPanel.Account -> String
+accountKey : AccountsPanel.RellmAccount -> String
 accountKey account =
     account.userId ++ "@" ++ account.server
 
 
 {-| The "Link Account" `<select>`'s display label for one federable
-`AccountsPanel.Account` -- unlike `accountKey`, leads with the human-readable
+`AccountsPanel.RellmAccount` -- unlike `accountKey`, leads with the human-readable
 `username`, with the `userId` parenthesized for disambiguation (two accounts
 on the same server could theoretically share nothing else at a glance).
 -}
-accountLabel : AccountsPanel.Account -> String
+accountLabel : AccountsPanel.RellmAccount -> String
 accountLabel account =
     account.username ++ "@" ++ account.server ++ " (" ++ account.userId ++ ")"
 
@@ -3177,7 +3177,7 @@ section (each platform's own button within it applies its own, more specific gat
 `hasSyncToFacebookPermission` and friends, plus `facebookAppConfigured` for Facebook/Instagram
 specifically).
 -}
-canUseSyncDestinations : Maybe AccountsPanel.Account -> Bool
+canUseSyncDestinations : Maybe AccountsPanel.RellmAccount -> Bool
 canUseSyncDestinations maybeAccount =
     hasSyncToFacebookPermission maybeAccount
         || hasSyncToInstagramPermission maybeAccount
@@ -3194,7 +3194,7 @@ content type, so either permission alone is enough to use that platform. Shared 
 `hasSyncToBlueskyPermission`/`hasSyncToXTwitterPermission`/`hasSyncToThreadsPermission` below, one
 per platform.
 -}
-hasSyncPermissionPair : Permission -> Permission -> Maybe AccountsPanel.Account -> Bool
+hasSyncPermissionPair : Permission -> Permission -> Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncPermissionPair eventsPermission postsPermission maybeAccount =
     maybeAccount
         |> Maybe.map
@@ -3206,32 +3206,32 @@ hasSyncPermissionPair eventsPermission postsPermission maybeAccount =
         |> Maybe.withDefault False
 
 
-hasSyncToFacebookPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToFacebookPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToFacebookPermission =
     hasSyncPermissionPair SYNCEVENTSTOFACEBOOK SYNCPOSTSTOFACEBOOK
 
 
-hasSyncToInstagramPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToInstagramPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToInstagramPermission =
     hasSyncPermissionPair SYNCEVENTSTOINSTAGRAM SYNCPOSTSTOINSTAGRAM
 
 
-hasSyncToMastodonPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToMastodonPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToMastodonPermission =
     hasSyncPermissionPair SYNCEVENTSTOMASTODON SYNCPOSTSTOMASTODON
 
 
-hasSyncToBlueskyPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToBlueskyPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToBlueskyPermission =
     hasSyncPermissionPair SYNCEVENTSTOBLUESKY SYNCPOSTSTOBLUESKY
 
 
-hasSyncToXTwitterPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToXTwitterPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToXTwitterPermission =
     hasSyncPermissionPair SYNCEVENTSTOXTWITTER SYNCPOSTSTOXTWITTER
 
 
-hasSyncToThreadsPermission : Maybe AccountsPanel.Account -> Bool
+hasSyncToThreadsPermission : Maybe AccountsPanel.RellmAccount -> Bool
 hasSyncToThreadsPermission =
     hasSyncPermissionPair SYNCEVENTSTOTHREADS SYNCPOSTSTOTHREADS
 
@@ -3488,7 +3488,7 @@ view shared model =
         )
 
 
-profileDetail : Shared.Model -> Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html Msg
+profileDetail : Shared.Model -> Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Html Msg
 profileDetail shared model server maybeAccount user =
     let
         canEdit : Bool
@@ -3602,7 +3602,7 @@ or an `ADMIN` -- matches `backend/src/rpcs/users/update_user.rs`'s own
 `self_update || admin` check (see `Shared.MarkdownPanel.resolve`'s `UserBio`
 case, which re-verifies this server-side gate right before a bio save).
 -}
-canEditProfile : Maybe AccountsPanel.Account -> User -> Bool
+canEditProfile : Maybe AccountsPanel.RellmAccount -> User -> Bool
 canEditProfile maybeAccount user =
     case maybeAccount of
         Just account ->
@@ -3616,7 +3616,7 @@ canEditProfile maybeAccount user =
 `ADMIN` -- gates the permissions editor (`permissionsSection`), which only
 `update_user.rs`'s own `admin` branch is ever allowed to change.
 -}
-isAdminAccount : Maybe AccountsPanel.Account -> Bool
+isAdminAccount : Maybe AccountsPanel.RellmAccount -> Bool
 isAdminAccount maybeAccount =
     case maybeAccount of
         Just account ->
@@ -3633,7 +3633,7 @@ moderate `user` -- an `ADMIN`, or a `MODERATEUSERS` holder, matching
 "Moderate" button. Unlike `canEditProfile`, `user` themself doesn't get a
 pass here unless they also hold one of these permissions.
 -}
-canModerateUser : Maybe AccountsPanel.Account -> Bool
+canModerateUser : Maybe AccountsPanel.RellmAccount -> Bool
 canModerateUser maybeAccount =
     case maybeAccount of
         Just account ->
@@ -3655,7 +3655,7 @@ resetting `choice`/`status`, see its own doc) so the user can pick again
 without hunting for a smaller "change" link. A non-`canEdit` viewer just gets
 the plain avatar, same as before this existed.
 -}
-avatarView : Bool -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe AvatarEdit -> User -> Html Msg
+avatarView : Bool -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe AvatarEdit -> User -> Html Msg
 avatarView canEdit server maybeAccount maybeEdit user =
     if not canEdit then
         UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
@@ -3705,7 +3705,7 @@ just that id -- nothing else about it is known/needed for a preview `<img>`),
 or `Nothing` (falling back to `UI.imageOrInitial`'s initial-letter
 placeholder) once the "✕" button's been hit (`AvatarRemoved`).
 -}
-avatarPreviewUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe AvatarEdit -> User -> Maybe String
+avatarPreviewUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe AvatarEdit -> User -> Maybe String
 avatarPreviewUrl server maybeAccount maybeEdit user =
     case maybeEdit |> Maybe.map .choice of
         Nothing ->
@@ -3771,7 +3771,7 @@ editing, with its options narrowed to whatever `maybeAccount` is actually
 allowed to pick (`Users.allowedVisibilities`, mirroring
 `backend/src/rpcs/users/update_user.rs`'s own `PUBLISHUSERSGLOBALLY` check).
 -}
-visibilityView : Bool -> Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> User -> Html Msg
+visibilityView : Bool -> Maybe AccountsPanel.RellmAccount -> Maybe VisibilityEdit -> User -> Html Msg
 visibilityView canEdit maybeAccount maybeEdit user =
     case maybeEdit of
         Just edit ->
@@ -4124,7 +4124,7 @@ owner federate any of their other signed-in accounts (see
 `federableAccounts`) that isn't listed yet. Shown (with just the Edit button)
 even with no federated profiles yet, so the owner can add the first one.
 -}
-federatedProfilesSection : Shared.Model -> Model -> AccountsPanel.Server -> Bool -> User -> Html Msg
+federatedProfilesSection : Shared.Model -> Model -> AccountsPanel.RellmServer -> Bool -> User -> Html Msg
 federatedProfilesSection shared model server canEdit user =
     if List.isEmpty user.federatedProfiles && not canEdit then
         text ""
@@ -4146,7 +4146,7 @@ button that fires `FederatedProfileRemoveClicked` -- mirrors
 rather than inside a single badge, since the link itself needs to stay
 clickable.
 -}
-federatedProfileEntry : Shared.Model -> Model -> AccountsPanel.Server -> User -> Maybe FederatedProfilesEdit -> FederatedAccount -> Html Msg
+federatedProfileEntry : Shared.Model -> Model -> AccountsPanel.RellmServer -> User -> Maybe FederatedProfilesEdit -> FederatedAccount -> Html Msg
 federatedProfileEntry shared model server user maybeEdit account =
     div [ class "profile-federated-entry" ]
         (federatedProfileLink shared model server user account
@@ -4172,7 +4172,7 @@ Account" `<select>`+button/Done/error (while editing) -- `[]` entirely
 when `not canEdit`, same "no controls for a viewer who can't act" shape as
 `permissionsSection`'s admin gate.
 -}
-federatedProfilesEditControls : Shared.Model -> Model -> AccountsPanel.Server -> Bool -> User -> List (Html Msg)
+federatedProfilesEditControls : Shared.Model -> Model -> AccountsPanel.RellmServer -> Bool -> User -> List (Html Msg)
 federatedProfilesEditControls shared model server canEdit user =
     if not canEdit then
         []
@@ -4181,7 +4181,7 @@ federatedProfilesEditControls shared model server canEdit user =
         case model.federatedProfilesEdit of
             Just edit ->
                 let
-                    available : List AccountsPanel.Account
+                    available : List AccountsPanel.RellmAccount
                     available =
                         federableAccounts shared server user
                 in
@@ -4226,10 +4226,10 @@ show that user's avatar, their username on that server, their real name (if
 set), a `crossCheckBadge`, and -- via `federatedServer`'s CSS class, see
 `UI.EmittedStylesheet` -- that server's own colors.
 -}
-federatedProfileLink : Shared.Model -> Model -> AccountsPanel.Server -> User -> FederatedAccount -> Html Msg
+federatedProfileLink : Shared.Model -> Model -> AccountsPanel.RellmServer -> User -> FederatedAccount -> Html Msg
 federatedProfileLink shared model server user account =
     let
-        maybeFederatedServer : Maybe AccountsPanel.Server
+        maybeFederatedServer : Maybe AccountsPanel.RellmServer
         maybeFederatedServer =
             AccountsPanel.serverForHost shared.accounts.servers account.host
 
@@ -4281,7 +4281,7 @@ back -- one of its own `federatedProfiles` names `server.frontendHost`/
 just this one linking out. ⚠️ otherwise (e.g. still pending on the other
 side, or never confirmed).
 -}
-crossCheckBadge : AccountsPanel.Server -> User -> User -> Html Msg
+crossCheckBadge : AccountsPanel.RellmServer -> User -> User -> Html Msg
 crossCheckBadge server user federatedUser =
     let
         reciprocated : Bool
@@ -5037,7 +5037,7 @@ way sources have: a linked destination is always the _caller's own_
 (`create_sync_destination.rs` always creates for `current_user`), so there's nothing for
 anyone else to usefully see here.
 -}
-syncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.Account -> User -> Html Msg
+syncDestinationsSection : Shared.Model -> Model -> Maybe AccountsPanel.RellmAccount -> User -> Html Msg
 syncDestinationsSection shared model maybeAccount user =
     if not (isOwnProfile maybeAccount user && canUseSyncDestinations maybeAccount) then
         text ""
@@ -5167,7 +5167,7 @@ ever in progress at a time (starting one doesn't clear the others' state, but th
 lets one be started, since the picker itself is hidden once any is in progress) -- see
 `SyncDestinationsState`'s own doc.
 -}
-platformConnectView : Shared.Model -> String -> Maybe AccountsPanel.Account -> SyncDestinationsState -> Html Msg
+platformConnectView : Shared.Model -> String -> Maybe AccountsPanel.RellmAccount -> SyncDestinationsState -> Html Msg
 platformConnectView shared host maybeAccount ed =
     if ed.login /= FacebookLoginNotStarted then
         facebookLoginView ed.login
@@ -5194,7 +5194,7 @@ platform's own `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair, mirroring
 server having a Facebook App configured, see `facebookAppConfigured` -- Threads rides on that same
 Meta App; X (Twitter) requires its own separate app, see `xTwitterAppConfigured`).
 -}
-platformPickerView : Shared.Model -> String -> Maybe AccountsPanel.Account -> Html Msg
+platformPickerView : Shared.Model -> String -> Maybe AccountsPanel.RellmAccount -> Html Msg
 platformPickerView shared host maybeAccount =
     let
         facebookAppReady : Bool

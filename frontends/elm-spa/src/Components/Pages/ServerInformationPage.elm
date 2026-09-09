@@ -93,8 +93,8 @@ type alias Model =
 
 type Msg
     = TabSelected Tab
-    | GotOwnServerResult (Result Grpc.Error AccountsPanel.Server)
-    | AddServerClicked AccountsPanel.Server
+    | GotOwnServerResult (Result Grpc.Error AccountsPanel.RellmServer)
+    | AddServerClicked AccountsPanel.RellmServer
     | GotAdmins (Result Grpc.Error GetUsersResponse)
     | GotVersion (Result Grpc.Error GetServiceVersionResponse)
     | AboutTabMsg AboutTab.Msg
@@ -173,7 +173,7 @@ whenever the server's already known.
 type OwnServerStatus
     = OwnServerNotNeeded
     | LoadingOwnServer
-    | OwnServerLoaded AccountsPanel.Server
+    | OwnServerLoaded AccountsPanel.RellmServer
     | OwnServerFailed String
 
 
@@ -335,7 +335,7 @@ connected (see `AccountsPanel.knownConnectedServer`) -- a known-but-disconnected
 the same as not known at all, so this page falls back to its own probe (just like a never-added
 host) rather than trying to show configuration/admins/version for a server it can't currently reach.
 -}
-knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
+knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.RellmServer
 knownConnectedServer shared targetHost =
     AccountsPanel.knownConnectedServer shared.accounts.servers targetHost
 
@@ -344,7 +344,7 @@ knownConnectedServer shared targetHost =
 connected to (from `Shared.AccountsPanel`, if this server's been added to Accounts & Servers
 already), falling back to this page's own probe (`ownServerStatus`) otherwise.
 -}
-effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.Server
+effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.RellmServer
 effectiveServer shared model =
     case knownConnectedServer shared model.targetHost of
         Just server ->
@@ -414,7 +414,7 @@ pushTabUrl model =
         |> Effect.fromCmd
 
 
-fetchAdmins : AccountsPanel.Server -> Effect Msg
+fetchAdmins : AccountsPanel.RellmServer -> Effect Msg
 fetchAdmins server =
     Grpc.new Rellm.getUsers defaultGetUsersRequest
         |> Grpc.setHost (AccountsPanel.serverUrl server)
@@ -423,7 +423,7 @@ fetchAdmins server =
         |> Effect.fromCmd
 
 
-fetchVersion : AccountsPanel.Server -> Effect Msg
+fetchVersion : AccountsPanel.RellmServer -> Effect Msg
 fetchVersion server =
     Grpc.new Rellm.getServiceVersion {}
         |> Grpc.setHost (AccountsPanel.serverUrl server)
@@ -474,7 +474,7 @@ view shared model =
                     text ""
 
 
-addServerButton : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
+addServerButton : Shared.Model -> Model -> AccountsPanel.RellmServer -> Html Msg
 addServerButton shared model server =
     if isKnownServer shared model then
         text ""
@@ -516,10 +516,10 @@ tabButton model ( tab, label_ ) =
         [ text label_ ]
 
 
-tabContent : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
+tabContent : Shared.Model -> Model -> AccountsPanel.RellmServer -> Html Msg
 tabContent shared model server =
     let
-        maybeAdminAccount : Maybe AccountsPanel.Account
+        maybeAdminAccount : Maybe AccountsPanel.RellmAccount
         maybeAdminAccount =
             Common.adminAccountFor shared model.targetHost
     in

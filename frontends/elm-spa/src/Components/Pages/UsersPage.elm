@@ -326,7 +326,7 @@ check, since a profile page's own relationship listings should keep working
 off of whichever server that profile was actually resolved from, regardless
 of whether the viewer happens to have it "enabled" for aggregation elsewhere.
 -}
-candidateServers : Shared.Model -> Model -> List AccountsPanel.Server
+candidateServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
 candidateServers shared model =
     case model.target of
         Nothing ->
@@ -344,7 +344,7 @@ needs a fresh fetch) and `update`'s own `FollowStatusAndButtonMsg` branch
 (kicked off unconditionally for just one server, once a `FollowStatusAndButton`
 action against one of its listed users succeeds).
 -}
-fetchServerEffect : Shared.Model -> Model -> AccountsPanel.Server -> Effect Msg
+fetchServerEffect : Shared.Model -> Model -> AccountsPanel.RellmServer -> Effect Msg
 fetchServerEffect shared model server =
     Users.fetchUserListing
         shared.accounts
@@ -370,19 +370,19 @@ module's own doc comment for why (a server already `Loaded` under the same
 acting account keeps its last-known users on screen while re-fetching, rather
 than flickering every card out and back in via `syncAnimations`).
 -}
-refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
+refetchServers : Shared.Model -> Model -> List AccountsPanel.RellmServer -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
     let
-        servers : List AccountsPanel.Server
+        servers : List AccountsPanel.RellmServer
         servers =
             candidateServers shared model
 
-        currentAccountId : AccountsPanel.Server -> Maybe String
+        currentAccountId : AccountsPanel.RellmServer -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
-        fetchEffect : AccountsPanel.Server -> Effect Msg
+        fetchEffect : AccountsPanel.RellmServer -> Effect Msg
         fetchEffect server =
             fetchServerEffect shared model server
 
@@ -390,7 +390,7 @@ refetchServers shared model serversToFetch =
         prunedUsersByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
 
-        markServer : AccountsPanel.Server -> Dict String ServerFeed -> Dict String ServerFeed
+        markServer : AccountsPanel.RellmServer -> Dict String ServerFeed -> Dict String ServerFeed
         markServer server dict =
             let
                 accountId : Maybe String
@@ -430,16 +430,16 @@ rather than unconditionally every enabled server.
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        servers : List AccountsPanel.Server
+        servers : List AccountsPanel.RellmServer
         servers =
             candidateServers shared model
 
-        currentAccountId : AccountsPanel.Server -> Maybe String
+        currentAccountId : AccountsPanel.RellmServer -> Maybe String
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
-        serversToFetch : List AccountsPanel.Server
+        serversToFetch : List AccountsPanel.RellmServer
         serversToFetch =
             servers
                 |> List.filter
@@ -737,7 +737,7 @@ userCardView shared model ( host, user ) =
                 followStatusAndButtonModel =
                     Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init
 
-                maybeAccount : Maybe AccountsPanel.Account
+                maybeAccount : Maybe AccountsPanel.RellmAccount
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer shared.accounts.accounts host
             in
@@ -763,13 +763,13 @@ followStatusAndButtonKey host user =
     user.id ++ "@" ++ host
 
 
-{-| The `AccountsPanel.Server`/signed-in `AccountsPanel.Account`/`User` a
+{-| The `AccountsPanel.RellmServer`/signed-in `AccountsPanel.RellmAccount`/`User` a
 `FollowStatusAndButtonMsg key` refers to -- looked up fresh out of
 `model.usersByServer` each time (rather than carried in the `Msg` itself),
 since the `User` a `Follow` action needs is whatever's currently loaded, not
 a stale snapshot from whenever the button was rendered.
 -}
-findUserForKey : Shared.Model -> Model -> String -> Maybe ( AccountsPanel.Server, AccountsPanel.Account, User )
+findUserForKey : Shared.Model -> Model -> String -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount, User )
 findUserForKey shared model key =
     model.usersByServer
         |> Dict.toList

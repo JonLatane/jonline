@@ -1,5 +1,6 @@
 port module Ports exposing
     ( accountsAndServersUpdated
+    , blueskyAccountsUpdated
     , broadcastPushSubscriptionChange
     , calendarEventClicked
     , checkPushSubscription
@@ -15,6 +16,7 @@ port module Ports exposing
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
     , hideSplash
+    , mastodonAccountsAndServersUpdated
     , measureElements
     , persistAccountsAndServers
     , persistBlueskyAccounts
@@ -61,21 +63,37 @@ port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 {-| Persists `Shared.AccountsPanel.Model.blueskyAccounts` to its own localStorage key -- decode with
 `Shared.AccountsPanel.blueskyAccountsDecoder` at `init`. Kept independent of `persistAccountsAndServers`
 for the same reason `persistStarredPosts` is: these aren't real Rellm `Server`/`Account`s, just a
-translated feed source (see `Shared.Federation.Bluesky`). No cross-tab `BroadcastChannel`, unlike
-`persistAccountsAndServers`/`persistStarredPosts` -- mirrors `persistUserPreferences`'s own doc on why:
-connecting a Bluesky account in one tab doesn't need to show up live in another already-open one, only
-on that other tab's next reload.
+translated feed source (see `Shared.Federation.Bluesky`). Also broadcasts it (see `public/index.html`'s
+`BroadcastChannel`) to any other tab open on the same origin, which applies it via
+`blueskyAccountsUpdated` -- see `Shared.AccountsPanel.subscriptions` -- so an enable/disable toggle or a
+reorder (see `CombinedFeedItem`) shows up live in every open tab, mirroring
+`persistAccountsAndServers`/`accountsAndServersUpdated`.
 -}
 port persistBlueskyAccounts : Encode.Value -> Cmd msg
+
+
+{-| Fires in _other_ tabs (never the tab that called `persistBlueskyAccounts` itself) whenever one
+tab's Bluesky accounts change, carrying the same value `persistBlueskyAccounts` was given -- decode
+with `Shared.AccountsPanel.blueskyAccountsDecoder`.
+-}
+port blueskyAccountsUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists `Shared.AccountsPanel.Model.mastodonAccounts` (OAuth-connected accounts) and
 `browsedMastodonInstances` (anonymously-browsed instances) together, to their own localStorage key --
 decode with `Shared.AccountsPanel.mastodonAccountsAndServersDecoder` at `init`. See
-`persistBlueskyAccounts`'s own doc for why this is separate from `persistAccountsAndServers` and has
-no cross-tab `BroadcastChannel`.
+`persistBlueskyAccounts`'s own doc for why this is separate from `persistAccountsAndServers`, and for
+why it also broadcasts to other tabs (via `mastodonAccountsAndServersUpdated`).
 -}
 port persistMastodonAccountsAndServers : Encode.Value -> Cmd msg
+
+
+{-| Fires in _other_ tabs (never the tab that called `persistMastodonAccountsAndServers` itself)
+whenever one tab's Mastodon accounts/browsed instances change, carrying the same value
+`persistMastodonAccountsAndServers` was given -- decode with
+`Shared.AccountsPanel.mastodonAccountsAndServersDecoder`.
+-}
+port mastodonAccountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the set of starred Posts (as a list of `postId@frontendHost`
