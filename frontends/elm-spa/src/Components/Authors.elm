@@ -173,8 +173,27 @@ href basePath viewingServerHost hostServerHost maybeAuthor =
                 Users.profileHref basePath
                     viewingServerHost
                     hostServerHost
-                    { userId = author.userId, username = Maybe.withDefault "" author.username }
+                    { userId = author.userId, username = routeUsername hostServerHost (Maybe.withDefault "" author.username) }
             )
+
+
+{-| The bare username `Users.profileHref` needs to round-trip back through `Users.parseFederatedUserId`
+-- `Shared.Federation.Mastodon.toAuthor`'s own `Author.username` is `"username@instanceHost"` (a
+compound *display* string, shown as-is next to a Mastodon post -- see `name` below), not the bare
+route-safe username `withHostSuffix`/`parseUserRouteId` expect (a single `@`, already spent on the
+`@hostServerHost` suffix `profileHref` itself appends): passing the compound string through
+unchanged would produce a route with two `@`s, which `parseUserRouteId`'s own `String.split "@"`
+can't split back apart, so it'd resolve to nothing. Bluesky's `Author.username` (a bare handle, no
+embedded host) needs no such stripping, and any real Rellm `Author` is already unaffected here since
+`hostServerHost` for one never starts with `"mastodon:"`.
+-}
+routeUsername : String -> String -> String
+routeUsername hostServerHost username =
+    if String.startsWith "mastodon:" hostServerHost then
+        String.split "@" username |> List.head |> Maybe.withDefault username
+
+    else
+        username
 
 
 {-| An author's avatar URL -- `Nothing` if `maybeAuthor` is `Nothing`, `server`

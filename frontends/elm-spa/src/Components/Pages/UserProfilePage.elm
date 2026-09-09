@@ -903,7 +903,7 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) federatedModel.navKey federatedModel.path federatedModel.query True (Just user.syncDestinations)
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) federatedModel.navKey federatedModel.path federatedModel.query True (Just user.syncDestinations) Nothing
                                     in
                                     ( { federatedModel
                                         | posts =

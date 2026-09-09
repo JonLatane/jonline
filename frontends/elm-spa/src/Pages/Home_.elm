@@ -156,7 +156,7 @@ initFeed shared req =
             homeConfigFor shared
 
         ( postsModel, postsEffect ) =
-            PostsPage.init shared Nothing req.key req.url.path req.query True Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query True Nothing Nothing
 
         ( eventsModel, eventsEffect ) =
             EventsPage.init shared
@@ -196,7 +196,7 @@ initForTarget shared req home =
                 |> Just
 
         CustomNav.TargetTab POSTSTAB ->
-            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing Nothing
                 |> Tuple.mapFirst HomePosts
                 |> Tuple.mapSecond (Effect.map HomePostsMsg)
                 |> Just

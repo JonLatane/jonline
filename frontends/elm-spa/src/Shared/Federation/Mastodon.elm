@@ -1,8 +1,13 @@
 module Shared.Federation.Mastodon exposing
-    ( Status
+    ( Account
+    , Status
     , decoder
+    , fetchAccountStatuses
+    , fetchFollowers
+    , fetchFollowing
     , fetchPosts
     , fetchStatus
+    , lookupAccount
     , toPost
     )
 
@@ -14,6 +19,13 @@ for how a Mastodon instance's feed is fetched/stored/animated alongside a real R
 `fetchStatus` is the single-post equivalent, called from `Components.Pages.PostPage.init` when a
 route's post id parses as `Components.Posts.MastodonPostId` -- viewing one post directly, rather than
 browsing a timeline, needs no Rellm server involved at all.
+
+`Account`/`lookupAccount`/`fetchAccountStatuses`/`fetchFollowers`/`fetchFollowing` back
+`Components.Pages.MastodonUserProfilePage`/`MastodonUsersPage` -- unlike everything else here, these
+resolve a specific *account*, not a timeline, so a viewed profile's own posts/followers/following can
+be shown rather than just a whole instance's local timeline. All still unauthenticated: Mastodon's
+public API serves an unlocked account's own profile/statuses/followers/following with no token at
+all, same as `fetchPosts`/`fetchStatus` already rely on for the local timeline/single-status case.
 -}
 
 import Http
@@ -26,6 +38,7 @@ import Shared.Conversions exposing (posixToTimestamp)
 import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
 import Task exposing (Task)
 import Time
+import Url
 
 
 {-| Just the fields of Mastodon's `Status` entity (one element of
@@ -136,3 +149,107 @@ toAuthor instanceHost status =
         , realName = status.authorDisplayName
         , avatar = status.authorAvatarUrl |> Maybe.map (\url -> { defaultMediaReference | url = Just url })
     }
+
+
+{-| Just the fields of Mastodon's `Account` entity that `MastodonUserProfilePage`/`MastodonUsersPage`
+need -- see <https://docs.joinmastodon.org/entities/Account/>. `id` is this instance's own internal
+account id (opaque, instance-specific -- never shown, only threaded back into
+`fetchAccountStatuses`/`fetchFollowers`/`fetchFollowing`), distinct from `username` (the handle a
+person actually types/sees, and what `MastodonUserProfilePage`'s own route is keyed by -- see
+`Components.Users.parseFederatedUserId`).
+-}
+type alias Account =
+    { id : String
+    , username : String
+    , displayName : Maybe String
+    , note : Maybe String
+    , avatarUrl : Maybe String
+    , followersCount : Int
+    , followingCount : Int
+    , statusesCount : Int
+    }
+
+
+accountDecoder : Decoder Account
+accountDecoder =
+    Decode.map8 Account
+        (Decode.field "id" Decode.string)
+        (Decode.field "username" Decode.string)
+        (Decode.field "display_name" Decode.string |> Decode.map nonEmpty)
+        (Decode.field "note" Decode.string |> Decode.map nonEmpty)
+        (Decode.field "avatar" Decode.string |> Decode.map nonEmpty)
+        (Decode.field "followers_count" Decode.int)
+        (Decode.field "following_count" Decode.int)
+        (Decode.field "statuses_count" Decode.int)
+
+
+{-| `GET /api/v1/accounts/lookup?acct=username` -- resolves a bare Mastodon username (as it appears
+in a route, or as typed into a search box) to its full `Account` on `instanceHost`, unauthenticated.
+The one call every one of `MastodonUserProfilePage`'s other fetches (`fetchAccountStatuses`/
+`fetchFollowers`/`fetchFollowing`) depends on first, since those all key off `Account.id`, not the
+username itself.
+-}
+lookupAccount : String -> String -> Task Http.Error Account
+lookupAccount instanceHost username =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/lookup?acct=" ++ Url.percentEncode username
+        , body = Http.emptyBody
+        , resolver = jsonResolver accountDecoder (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /api/v1/accounts/:id/statuses` -- `accountId`'s own authored posts (`exclude_replies`/
+`exclude_reblogs`, so a profile's post list reads like Mastodon's own "Posts" tab rather than "Posts
+and replies," and skips bare boosts, which carry no `content` of their own for `toPost` to show --
+`Status.reblog` nests the original post's own content separately, which this doesn't bother
+following), already translated via `toPost`. Unlike `fetchPosts`' local timeline, this is one
+specific account's posts regardless of which instance the *viewer* is on -- exactly what
+`MastodonUserProfilePage`'s embedded `Components.Pages.PostsPage` needs (see that module's own
+`MastodonAccountFeed` `FeedSource`).
+-}
+fetchAccountStatuses : String -> String -> Task Http.Error (List Post)
+fetchAccountStatuses instanceHost accountId =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/" ++ accountId ++ "/statuses?exclude_replies=true&exclude_reblogs=true&limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map (toPost instanceHost))
+
+
+{-| `GET /api/v1/accounts/:id/followers` -- up to 40 of `accountId`'s followers, unauthenticated (an
+unlocked account's follower list is public Mastodon API data, same as its profile/statuses). No
+pagination beyond that first page -- see `Components.Pages.MastodonUsersPage`'s own doc on why that's
+an accepted first-pass limitation, mirroring `Components.Pages.UsersPage`'s own lack of pagination
+for Rellm's real `GetUsers` RPC.
+-}
+fetchFollowers : String -> String -> Task Http.Error (List Account)
+fetchFollowers instanceHost accountId =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/" ++ accountId ++ "/followers?limit=40"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list accountDecoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /api/v1/accounts/:id/following` -- `fetchFollowers`'s own doc, just the other direction.
+-}
+fetchFollowing : String -> String -> Task Http.Error (List Account)
+fetchFollowing instanceHost accountId =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/accounts/" ++ accountId ++ "/following?limit=40"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list accountDecoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }

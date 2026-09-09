@@ -27,7 +27,9 @@ tries those literal static routes first, so this file's `init` never even runs f
 -}
 
 import Browser.Navigation
+import Components.Pages.BlueskyUserProfilePage as BlueskyUserProfilePage
 import Components.Pages.EventsPage as EventsPage
+import Components.Pages.MastodonUserProfilePage as MastodonUserProfilePage
 import Components.Pages.PostOrEventPage as PostOrEventPage
 import Components.Pages.PostPage as PostPage
 import Components.Pages.PostsPage as PostsPage
@@ -86,6 +88,8 @@ that replaces this page before `view` would otherwise matter.
 type Model
     = Reserved String
     | Profile UserProfilePage.Model
+    | MastodonProfile MastodonUserProfilePage.Model
+    | BlueskyProfile BlueskyUserProfilePage.Model
     | EmbeddedEvents EventsPage.Model
     | EmbeddedPosts PostsPage.Model
     | EmbeddedPeople UsersPage.Model
@@ -105,6 +109,8 @@ identical reasoning for forwarding one incoming `Shared.Msg` to more than one po
 -}
 type Msg
     = ProfileMsg UserProfilePage.Msg
+    | MastodonProfileMsg MastodonUserProfilePage.Msg
+    | BlueskyProfileMsg BlueskyUserProfilePage.Msg
     | EventsMsg EventsPage.Msg
     | PostsMsg PostsPage.Msg
     | PeopleMsg UsersPage.Msg
@@ -171,7 +177,7 @@ initEmbedded shared req tab =
                 |> Tuple.mapSecond (Effect.map EventsMsg)
 
         CustomNav.TargetTab POSTSTAB ->
-            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing Nothing
                 |> Tuple.mapFirst EmbeddedPosts
                 |> Tuple.mapSecond (Effect.map PostsMsg)
 
@@ -221,15 +227,27 @@ initProfile shared req =
         ( username, targetHost ) =
             Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
-    if Users.isReservedUsername username then
-        ( Reserved username
-        , Effect.none
-        )
+    case Users.parseFederatedUserId username targetHost of
+        Just (Users.MastodonUserId mastodonUser) ->
+            MastodonUserProfilePage.init mastodonUser.instanceHost mastodonUser.username req.key req.url.path req.query
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
 
-    else
-        UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
-            |> Tuple.mapFirst Profile
-            |> Tuple.mapSecond (Effect.map ProfileMsg)
+        Just (Users.BlueskyUserId { handle }) ->
+            BlueskyUserProfilePage.init shared handle req.key req.url.path req.query
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
+
+        Nothing ->
+            if Users.isReservedUsername username then
+                ( Reserved username
+                , Effect.none
+                )
+
+            else
+                UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+                    |> Tuple.mapFirst Profile
+                    |> Tuple.mapSecond (Effect.map ProfileMsg)
 
 
 subscriptions : Model -> Sub Msg
@@ -237,6 +255,12 @@ subscriptions model =
     case model of
         Profile subModel ->
             Sub.map ProfileMsg (UserProfilePage.subscriptions subModel)
+
+        MastodonProfile subModel ->
+            Sub.map MastodonProfileMsg (MastodonUserProfilePage.subscriptions subModel)
+
+        BlueskyProfile subModel ->
+            Sub.map BlueskyProfileMsg (BlueskyUserProfilePage.subscriptions subModel)
 
         EmbeddedEvents subModel ->
             Sub.map EventsMsg (EventsPage.subscriptions subModel)
@@ -273,6 +297,16 @@ update shared req msg model =
             UserProfilePage.update shared subMsg subModel
                 |> Tuple.mapFirst Profile
                 |> Tuple.mapSecond (Effect.map ProfileMsg)
+
+        ( MastodonProfileMsg subMsg, MastodonProfile subModel ) ->
+            MastodonUserProfilePage.update shared subMsg subModel
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
+
+        ( BlueskyProfileMsg subMsg, BlueskyProfile subModel ) ->
+            BlueskyUserProfilePage.update shared subMsg subModel
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
 
         ( EventsMsg subMsg, EmbeddedEvents subModel ) ->
             EventsPage.update shared subMsg subModel
@@ -337,6 +371,21 @@ update shared req msg model =
                         |> Tuple.mapFirst Profile
                         |> Tuple.mapSecond (Effect.map ProfileMsg)
 
+        -- `MastodonProfile`/`BlueskyProfile` don't need the same `customTabFor` re-check `Profile`
+        -- does: `Users.parseFederatedUserId` is a pure function of the route's own params (unlike
+        -- `customTabFor`, which depends on server config that might not have loaded yet at `init`),
+        -- so its result can never change over this page's lifetime -- just forward straight into
+        -- the resolved page's own `fromShared`.
+        ( SharedMsg subMsg, MastodonProfile subModel ) ->
+            MastodonUserProfilePage.update shared (MastodonUserProfilePage.fromShared subMsg) subModel
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
+
+        ( SharedMsg subMsg, BlueskyProfile subModel ) ->
+            BlueskyUserProfilePage.update shared (BlueskyUserProfilePage.fromShared subMsg) subModel
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
+
         ( SharedMsg subMsg, EmbeddedEvents subModel ) ->
             EventsPage.update shared (EventsPage.fromShared subMsg) subModel
                 |> Tuple.mapFirst EmbeddedEvents
@@ -387,6 +436,12 @@ view shared req model =
                 Profile subModel ->
                     Html.map ProfileMsg (UserProfilePage.view shared subModel)
 
+                MastodonProfile subModel ->
+                    Html.map MastodonProfileMsg (MastodonUserProfilePage.view shared subModel)
+
+                BlueskyProfile subModel ->
+                    Html.map BlueskyProfileMsg (BlueskyUserProfilePage.view shared subModel)
+
                 EmbeddedEvents subModel ->
                     Html.map EventsMsg (EventsPage.view shared True subModel)
 
@@ -433,6 +488,12 @@ titleFor shared req model =
             case model of
                 Profile subModel ->
                     [ UserProfilePage.titleFor subModel ]
+
+                MastodonProfile subModel ->
+                    [ MastodonUserProfilePage.title subModel ]
+
+                BlueskyProfile subModel ->
+                    [ BlueskyUserProfilePage.title subModel ]
 
                 EmbeddedEvents _ ->
                     []

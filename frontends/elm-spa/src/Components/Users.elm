@@ -1,5 +1,6 @@
 module Components.Users exposing
-    ( allModerations
+    ( FederatedUserId(..)
+    , allModerations
     , allPermissions
     , allowedVisibilities
     , authorAvatarUrl
@@ -13,6 +14,8 @@ module Components.Users exposing
     , fetchUserById
     , fetchUserByUsername
     , fetchUserListing
+    , followersHref
+    , followingHref
     , isReservedUsername
     , mediaReferenceUrl
     , moderationFromText
@@ -20,6 +23,7 @@ module Components.Users exposing
     , moderationPending
     , moderationRejected
     , moderationText
+    , parseFederatedUserId
     , parseUserRouteId
     , permissionFromText
     , permissionText
@@ -29,6 +33,7 @@ module Components.Users exposing
     , updateFollow
     , updateUser
     , userCard
+    , userCardAvatar
     , userIdHref
     , usernameHref
     , visibilityFromText
@@ -404,6 +409,24 @@ usernameHref basePath viewingServerHost userServerHost username =
     basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab_ { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
 
 
+{-| The `/:username[@host]/followers` href for a user -- same username-routability caveat as
+`usernameHref` itself (only meaningful for a real, non-reserved username), used directly by
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage` (a federated profile always has a
+real, routable username -- there's no id-based fallback route for one, unlike a Rellm `User`).
+-}
+followersHref : String -> String -> String -> String -> String
+followersHref basePath viewingServerHost userServerHost username =
+    basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab___Followers { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
+
+
+{-| The `/:username[@host]/following` href for a user -- `followersHref`'s own doc, just the other
+direction.
+-}
+followingHref : String -> String -> String -> String -> String
+followingHref basePath viewingServerHost userServerHost username =
+    basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab___Following { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
+
+
 {-| The best available profile link for a user: their `/:username[@host]`
 route if they have one that's actually routable (non-empty, not reserved --
 see `isReservedUsername`), falling back to the always-routable
@@ -439,6 +462,33 @@ parseUserRouteId mainFrontendHost rawId =
 
         _ ->
             ( rawId, mainFrontendHost )
+
+
+{-| Recognizes a Mastodon/Bluesky profile from `parseUserRouteId`'s own `( username, host )` pair --
+`host` is what actually carries the `"mastodon:"`/`"bluesky:"` tag (see
+`Components.Pages.PostsPage.feedSourceKey`'s own construction, which every federated author link's
+`href` is ultimately built from -- see `Components.Authors.href`), mirroring
+`Components.Posts.parseFederatedPostId` exactly, one level up (a profile instead of a post).
+`Nothing` for a real Rellm user's own `host` (or anything else unrecognized).
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage` are this module's own
+counterparts to `Components.Pages.MastodonPostPage`/`BlueskyPostPage` -- see
+`Pages.UsernameOrCustomTab_.initProfile`/`Pages.User.UserId_.init`, the two callers.
+-}
+type FederatedUserId
+    = MastodonUserId { instanceHost : String, username : String }
+    | BlueskyUserId { handle : String }
+
+
+parseFederatedUserId : String -> String -> Maybe FederatedUserId
+parseFederatedUserId username host =
+    if String.startsWith "mastodon:" host then
+        Just (MastodonUserId { instanceHost = String.dropLeft 9 host, username = username })
+
+    else if String.startsWith "bluesky:" host then
+        Just (BlueskyUserId { handle = username })
+
+    else
+        Nothing
 
 
 

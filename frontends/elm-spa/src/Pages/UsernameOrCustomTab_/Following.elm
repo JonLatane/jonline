@@ -9,8 +9,16 @@ then handing the resolved `User` to `Components.Pages.UsersPage` (with
 Same reserved-username short-circuit as `Pages.UsernameOrCustomTab_`/`Pages.UsernameOrCustomTab_.Posts`
 -- see their module docs for why.
 
+`host` starting with `"mastodon:"`/`"bluesky:"` (see `Components.Users.parseFederatedUserId`) skips
+the `Resolver`/`UsersPage` path entirely -- neither is Rellm-shaped -- going straight to
+`Components.Pages.MastodonUsersPage`/`BlueskyUsersPage` instead (each does its own account/profile
+lookup internally, so there's nothing to resolve first here). See `Pages.UsernameOrCustomTab_.Followers`
+for the identical structure, one direction over.
+
 -}
 
+import Components.Pages.BlueskyUsersPage as BlueskyUsersPage
+import Components.Pages.MastodonUsersPage as MastodonUsersPage
 import Components.Pages.UsersPage as UsersPage
 import Components.Users as Users
 import Components.Users.Resolver as Resolver
@@ -40,11 +48,15 @@ type Model
     = Reserved String
     | Resolving Resolver.Model
     | Listing UsersPage.Model
+    | MastodonListing MastodonUsersPage.Model
+    | BlueskyListing BlueskyUsersPage.Model
 
 
 type Msg
     = ResolverMsg Resolver.Msg
     | ListingMsg UsersPage.Msg
+    | MastodonListingMsg MastodonUsersPage.Msg
+    | BlueskyListingMsg BlueskyUsersPage.Msg
 
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
@@ -53,13 +65,25 @@ init shared req =
         ( username, targetHost ) =
             Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
-    if Users.isReservedUsername username then
-        ( Reserved username, Effect.none )
+    case Users.parseFederatedUserId username targetHost of
+        Just (Users.MastodonUserId mastodonUser) ->
+            MastodonUsersPage.init mastodonUser.instanceHost mastodonUser.username MastodonUsersPage.Following
+                |> Tuple.mapFirst MastodonListing
+                |> Tuple.mapSecond (Effect.map MastodonListingMsg)
 
-    else
-        Resolver.init shared targetHost (Resolver.ByUsername username)
-            |> Tuple.mapFirst Resolving
-            |> Tuple.mapSecond (Effect.map ResolverMsg)
+        Just (Users.BlueskyUserId { handle }) ->
+            BlueskyUsersPage.init shared handle BlueskyUsersPage.Following
+                |> Tuple.mapFirst BlueskyListing
+                |> Tuple.mapSecond (Effect.map BlueskyListingMsg)
+
+        Nothing ->
+            if Users.isReservedUsername username then
+                ( Reserved username, Effect.none )
+
+            else
+                Resolver.init shared targetHost (Resolver.ByUsername username)
+                    |> Tuple.mapFirst Resolving
+                    |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
 subscriptions : Model -> Sub Msg
@@ -70,6 +94,12 @@ subscriptions model =
 
         Listing listingModel ->
             Sub.map ListingMsg (UsersPage.subscriptions listingModel)
+
+        MastodonListing _ ->
+            Sub.none
+
+        BlueskyListing _ ->
+            Sub.none
 
         Reserved _ ->
             Sub.none
@@ -99,6 +129,16 @@ update shared req msg model =
                 |> Tuple.mapFirst Listing
                 |> Tuple.mapSecond (Effect.map ListingMsg)
 
+        ( MastodonListingMsg subMsg, MastodonListing listingModel ) ->
+            MastodonUsersPage.update subMsg listingModel
+                |> Tuple.mapFirst MastodonListing
+                |> Tuple.mapSecond (Effect.map MastodonListingMsg)
+
+        ( BlueskyListingMsg subMsg, BlueskyListing listingModel ) ->
+            BlueskyUsersPage.update subMsg listingModel
+                |> Tuple.mapFirst BlueskyListing
+                |> Tuple.mapSecond (Effect.map BlueskyListingMsg)
+
         ( ResolverMsg subMsg, Listing listingModel ) ->
             -- The resolver has already resolved (see above) -- any further
             -- `SharedMsg` it's forwarded (via `fromShared`) still needs to
@@ -112,6 +152,14 @@ update shared req msg model =
 
                 _ ->
                     ( model, Effect.none )
+
+        -- `MastodonUsersPage`/`BlueskyUsersPage` have nothing of their own to react to a
+        -- `Shared.Msg` with -- see `Pages.UsernameOrCustomTab_.Followers`'s identical catch-all doc.
+        ( ResolverMsg (Resolver.SharedMsg sharedMsg), MastodonListing _ ) ->
+            ( model, Effect.fromShared sharedMsg )
+
+        ( ResolverMsg (Resolver.SharedMsg sharedMsg), BlueskyListing _ ) ->
+            ( model, Effect.fromShared sharedMsg )
 
         _ ->
             ( model, Effect.none )
@@ -133,6 +181,12 @@ view shared req model =
 
                 Listing listingModel ->
                     Html.map ListingMsg (UsersPage.view shared listingModel)
+
+                MastodonListing listingModel ->
+                    Html.map MastodonListingMsg (MastodonUsersPage.view shared listingModel)
+
+                BlueskyListing listingModel ->
+                    Html.map BlueskyListingMsg (BlueskyUsersPage.view shared listingModel)
             ]
     }
 

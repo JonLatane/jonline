@@ -1,6 +1,11 @@
 module Shared.Federation.Bluesky exposing
-    ( FeedPost
+    ( ActorProfile
+    , FeedPost
     , decoder
+    , fetchActorProfile
+    , fetchAuthorFeed
+    , fetchFollowers
+    , fetchFollows
     , fetchPost
     , fetchPosts
     , searchPosts
@@ -18,6 +23,14 @@ the same auth (there's no anonymous access to anything on Bluesky, unlike Mastod
 `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case (`fetchPosts`/`searchPosts`) and
 `Components.Pages.PostPage.init` (`fetchPost`, when a route's post id parses as
 `Components.Posts.BlueskyPostId`) for how each gets wired into a real page.
+
+`ActorProfile`/`fetchActorProfile`/`fetchAuthorFeed`/`fetchFollowers`/`fetchFollows` back
+`Components.Pages.BlueskyUserProfilePage`/`BlueskyUsersPage` -- resolving one specific actor's own
+profile/authored-posts/followers/follows, rather than the connected account's own home timeline.
+Every one of these still needs a connected account's `accessToken` to authenticate with (there's no
+anonymous AT Proto access at all, same as everything else in this module), but works against *any*
+handle, not just that account's own -- same "any connected token works" reasoning `fetchPost`'s own
+doc already covers for reading someone else's public post.
 -}
 
 import Http
@@ -201,3 +214,104 @@ toAuthor feedPost =
         , realName = feedPost.authorDisplayName
         , avatar = feedPost.authorAvatarUrl |> Maybe.map (\url -> { defaultMediaReference | url = Just url })
     }
+
+
+{-| Just the fields of AT Proto's `app.bsky.actor.defs#profileView`/`#profileViewDetailed` that
+`BlueskyUserProfilePage`/`BlueskyUsersPage` need -- see
+<https://docs.bsky.app/docs/api/app-bsky-actor-get-profile>. `followersCount`/`followsCount`/
+`postsCount` are only present on the "detailed" shape `getProfile` itself returns (a bare
+`profileView`, e.g. from `getFollowers`/`getFollows`, omits them) -- defaulted to `0` rather than
+failing the decode, since `BlueskyUsersPage`'s own follower/following rows don't display counts at
+all (only `BlueskyUserProfilePage`'s single `getProfile` call ever needs them to be real).
+-}
+type alias ActorProfile =
+    { handle : String
+    , displayName : Maybe String
+    , avatarUrl : Maybe String
+    , description : Maybe String
+    , followersCount : Int
+    , followsCount : Int
+    , postsCount : Int
+    }
+
+
+actorProfileDecoder : Decoder ActorProfile
+actorProfileDecoder =
+    Decode.map7 ActorProfile
+        (Decode.field "handle" Decode.string)
+        (Decode.maybe (Decode.field "displayName" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
+        (Decode.maybe (Decode.field "avatar" Decode.string))
+        (Decode.maybe (Decode.field "description" Decode.string) |> Decode.map (Maybe.andThen nonEmpty))
+        (Decode.oneOf [ Decode.field "followersCount" Decode.int, Decode.succeed 0 ])
+        (Decode.oneOf [ Decode.field "followsCount" Decode.int, Decode.succeed 0 ])
+        (Decode.oneOf [ Decode.field "postsCount" Decode.int, Decode.succeed 0 ])
+
+
+{-| `GET /xrpc/app.bsky.actor.getProfile` for `handle` -- a fuller profile than
+`Shared.AccountsPanel.BlueskyAccounts.fetchProfileTask`'s own (bio, follower/following/post counts,
+not just avatar/display name), for `BlueskyUserProfilePage`'s own header. Kept here rather than
+extending that module's narrower `BlueskyProfile` -- this is "view anyone's public profile," that one
+is specifically "the account that was just connected via `createSessionTask`," a different concern
+even though both happen to hit the same endpoint.
+-}
+fetchActorProfile : String -> String -> Task Http.Error ActorProfile
+fetchActorProfile accessToken handle =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" ++ Url.percentEncode handle
+        , body = Http.emptyBody
+        , resolver = jsonResolver actorProfileDecoder (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /xrpc/app.bsky.feed.getAuthorFeed` for `handle` -- that specific actor's own authored posts
+(replies/reposts included, same as Mastodon's `fetchAccountStatuses` -- AT Proto has no
+`exclude_replies`-style filter on this endpoint), already translated via `toPost`. Unlike
+`fetchPosts`' home timeline (the connected account's own follows), this is any one actor's own feed
+regardless of who's authenticating the request -- exactly what `BlueskyUserProfilePage`'s embedded
+`Components.Pages.PostsPage` needs (see that module's own `BlueskyAuthorFeed` `FeedSource`).
+-}
+fetchAuthorFeed : String -> String -> Task Http.Error (List Post)
+fetchAuthorFeed accessToken handle =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" ++ Url.percentEncode handle ++ "&limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map toPost)
+
+
+{-| `GET /xrpc/app.bsky.graph.getFollowers` -- up to 40 of `handle`'s followers. No pagination beyond
+that first page -- see `Components.Pages.BlueskyUsersPage`'s own doc on why that's an accepted
+first-pass limitation, mirroring `Shared.Federation.Mastodon.fetchFollowers`'s identical choice.
+-}
+fetchFollowers : String -> String -> Task Http.Error (List ActorProfile)
+fetchFollowers accessToken handle =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.graph.getFollowers?actor=" ++ Url.percentEncode handle ++ "&limit=40"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "followers" (Decode.list actorProfileDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /xrpc/app.bsky.graph.getFollows` -- `fetchFollowers`'s own doc, just the other direction
+(AT Proto's own "follows" naming for what Mastodon/Rellm call "following").
+-}
+fetchFollows : String -> String -> Task Http.Error (List ActorProfile)
+fetchFollows accessToken handle =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=" ++ Url.percentEncode handle ++ "&limit=40"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "follows" (Decode.list actorProfileDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }

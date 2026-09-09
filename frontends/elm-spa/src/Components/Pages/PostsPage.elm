@@ -1,5 +1,6 @@
 module Components.Pages.PostsPage exposing
-    ( Model
+    ( FeedSource(..)
+    , Model
     , Msg
     , fromShared
     , init
@@ -72,6 +73,13 @@ type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
     , author : Maybe ( String, User )
+
+    -- Set only by `Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage`'s own embedded
+    -- copy, to a `MastodonAccountFeed`/`BlueskyAuthorFeed` naming the one profile being viewed --
+    -- see `relevantFeedSources`'s own doc on why this can't just reuse `author` (which is typed to a
+    -- real Rellm `Proto.Rellm.User`, and whose own author-scoping is deliberately Rellm-only, see
+    -- `relevantServers`). `Nothing` for every other caller.
+    , profileFeedSource : Maybe FeedSource
 
     -- `True` for embedded copies of this model (`Pages.Home_`,
     -- `Components.Pages.UserProfilePage`, passed via `init`'s own
@@ -222,11 +230,20 @@ type FeedSource
     = RellmServer RellmServer
     | MastodonInstance String
     | BlueskyFeed BlueskyAccount
+    | MastodonAccountFeed { instanceHost : String, accountId : String, username : String }
+    | BlueskyAuthorFeed { handle : String }
 
 
 {-| `postsByServer`'s key for a given `FeedSource` -- a real server's own `frontendHost`, or a
 synthetic `"mastodon:"`/`"bluesky:"`-prefixed key that can never collide with one, mirroring
 `Shared.Federation.Mastodon`/`Bluesky`'s own `Post.id` namespacing for the same reason.
+`MastodonAccountFeed`/`BlueskyAuthorFeed` deliberately reuse the exact same `"mastodon:" ++
+instanceHost`/`"bluesky:" ++ handle` shapes `MastodonInstance`/`BlueskyFeed` already use (rather than
+some third, profile-specific prefix): the key doubles as every card's own `postServerHost` (see
+`postCardView`), and clicking through to one of these posts individually needs to build an href
+`Components.Users.parseFederatedUserId`/`Components.Posts.parseFederatedPostId` can actually parse
+back -- both only ever look at the `"mastodon:"`/`"bluesky:"` prefix itself, so reusing it here is
+what makes that round-trip work, not an accident.
 -}
 feedSourceKey : FeedSource -> String
 feedSourceKey source =
@@ -239,6 +256,12 @@ feedSourceKey source =
 
         BlueskyFeed account ->
             "bluesky:" ++ account.handle
+
+        MastodonAccountFeed ref ->
+            "mastodon:" ++ ref.instanceHost
+
+        BlueskyAuthorFeed ref ->
+            "bluesky:" ++ ref.handle
 
 
 {-| The acting credential a `FeedSource`'s feed is fetched with, if any -- a real server's enabled
@@ -262,6 +285,12 @@ feedSourceAccountId shared source =
             Nothing
 
         BlueskyFeed _ ->
+            Nothing
+
+        MastodonAccountFeed _ ->
+            Nothing
+
+        BlueskyAuthorFeed _ ->
             Nothing
 
 
@@ -386,9 +415,14 @@ reproduces the same search/cutoff.
 `availableSyncDestinations` seeds `Model.availableSyncDestinations` directly -- `Nothing` for
 every caller except `Components.Pages.UserProfilePage`, which passes `Just user.syncDestinations`.
 Mirrors `Components.Pages.EventsPage.init`'s own trailing param exactly.
+
+`profileFeedSource` seeds `Model.profileFeedSource` directly -- `Nothing` for every caller except
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage`, which pass `Just` a
+`MastodonAccountFeed`/`BlueskyAuthorFeed` naming the one profile being viewed. See that field's own
+doc for why this couldn't just reuse `author` instead.
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List SyncDestination) -> Maybe FeedSource -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage availableSyncDestinations profileFeedSource =
     let
         ( tab, publishedBefore ) =
             case Dict.get "published_before" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -403,6 +437,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 { postsByServer = Dict.empty
                 , postAnimations = Dict.empty
                 , author = author
+                , profileFeedSource = profileFeedSource
                 , embeddedPage = embeddedPage
                 , navKey = navKey
                 , path = path
@@ -879,17 +914,29 @@ search/`PostsBeforeDate` aren't a factor either way, on Home or the standalone p
 is never re-triggered by `applySearchChange`/`TabChanged` (see `refetchFeeds`'s own doc), so an
 already-fetched federated post simply keeps showing, unfiltered by whatever search text is active --
 an accepted first-pass limitation on the standalone page already, not a new one introduced here.
+
+`model.profileFeedSource`, when set, overrides everything above outright -- `Components.Pages.MastodonUserProfilePage`/
+`BlueskyUserProfilePage` embed this module purely to show one specific federated profile's own posts
+(a `MastodonAccountFeed`/`BlueskyAuthorFeed`, see `Model.profileFeedSource`'s own doc), which has no
+Rellm server of its own to resolve via `relevantServers` at all -- unlike `model.author`'s Rellm-only
+author-scoping, there's exactly one source to ever fetch here, not "every relevant server plus zero
+federated ones."
 -}
 relevantFeedSources : Shared.Model -> Model -> List FeedSource
 relevantFeedSources shared model =
-    List.map RellmServer (relevantServers shared model)
-        ++ (if model.author /= Nothing then
-                []
+    case model.profileFeedSource of
+        Just source ->
+            [ source ]
 
-            else
-                List.map MastodonInstance (mastodonHostsToFetch shared)
-                    ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
-           )
+        Nothing ->
+            List.map RellmServer (relevantServers shared model)
+                ++ (if model.author /= Nothing then
+                        []
+
+                    else
+                        List.map MastodonInstance (mastodonHostsToFetch shared)
+                            ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+                   )
 
 
 {-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
@@ -967,6 +1014,27 @@ fetchFeedSource shared model source =
             BlueskyAccounts.performWithBlueskyAccount account request
                 |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
+
+        MastodonAccountFeed ref ->
+            Mastodon.fetchAccountStatuses ref.instanceHost ref.accountId
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Effect.fromCmd
+
+        BlueskyAuthorFeed ref ->
+            case shared.accounts.blueskyAccounts of
+                viewerAccount :: _ ->
+                    BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.fetchAuthorFeed accessToken ref.handle)
+                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotFeedPosts (feedSourceKey source))
+                        |> Effect.fromCmd
+
+                [] ->
+                    -- No connected Bluesky account to authenticate this request with at all (AT
+                    -- Proto has no anonymous access -- see `Shared.Federation.Bluesky`'s own doc) --
+                    -- `Components.Pages.BlueskyUserProfilePage.init` already refuses to even mount
+                    -- this `FeedSource` in that case (see its own doc), so this is unreachable in
+                    -- practice; `Effect.none` rather than a synthetic failure since there's no
+                    -- `BlueskyAccount` on hand for `fromBlueskyResult` to attribute one to.
+                    Effect.none
 
 
 {-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for a `RellmServer`,
