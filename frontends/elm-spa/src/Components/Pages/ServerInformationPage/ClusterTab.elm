@@ -171,8 +171,8 @@ activated =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
-update shared targetHost maybeServer msg model =
+update : Shared.Model -> String -> Msg -> Model -> ( Model, Effect Msg )
+update shared targetHost msg model =
     case msg of
         ClusterEditClicked ->
             let
@@ -610,31 +610,33 @@ conductorHostView clusterResources externalCdnConfig =
         conductorHost : String
         conductorHost =
             clusterResources |> Maybe.map .conductorHost |> Maybe.withDefault ""
-
-        isThisInstance : Bool
-        isThisInstance =
-            (clusterResources |> Maybe.andThen .conductorState) /= Nothing
-                || (case externalCdnConfig of
-                        Just cdn ->
-                            conductorHost == cdn.frontendHost || conductorHost == cdn.backendHost
-
-                        Nothing ->
-                            False
-                   )
     in
     if conductorHost == "" then
         span [ class "server-details-feature-settings-value" ] [ text "—" ]
 
-    else if isThisInstance then
-        span [ class "server-details-feature-settings-value" ] [ text conductorHost ]
-
     else
-        a
-            [ class "server-details-feature-settings-value"
-            , href ("https://" ++ conductorHost ++ "/about?tab=cluster")
-            , target "_blank"
-            ]
-            [ text conductorHost ]
+        let
+            isThisInstance : Bool
+            isThisInstance =
+                (clusterResources |> Maybe.andThen .conductorState) /= Nothing
+                    || (case externalCdnConfig of
+                            Just cdn ->
+                                conductorHost == cdn.frontendHost || conductorHost == cdn.backendHost
+
+                            Nothing ->
+                                False
+                       )
+        in
+        if isThisInstance then
+            span [ class "server-details-feature-settings-value" ] [ text conductorHost ]
+
+        else
+            a
+                [ class "server-details-feature-settings-value"
+                , href ("https://" ++ conductorHost ++ "/about?tab=cluster")
+                , target "_blank"
+                ]
+                [ text conductorHost ]
 
 
 heldLocksView : SharedTime.Model -> Bool -> Maybe FreeingLock -> List ClusterResourceLock -> Html Msg

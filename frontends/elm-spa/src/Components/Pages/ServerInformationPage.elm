@@ -360,7 +360,7 @@ updateInner shared msg model =
                 |> Tuple.mapSecond (Effect.map CdnTabMsg)
 
         ClusterTabMsg subMsg ->
-            ClusterTab.update shared model.targetHost (effectiveServer shared model) subMsg model.clusterTab
+            ClusterTab.update shared model.targetHost subMsg model.clusterTab
                 |> Tuple.mapFirst (\subModel -> { model | clusterTab = subModel })
                 |> Tuple.mapSecond (Effect.map ClusterTabMsg)
 
@@ -421,7 +421,7 @@ since `effectiveServer` is already resolved by the time any tab is clickable at 
 activateClusterTab : Shared.Model -> Model -> ( ClusterTab.Model, Effect Msg )
 activateClusterTab shared model =
     if model.activeTab == TabCluster then
-        ClusterTab.update shared model.targetHost (effectiveServer shared model) ClusterTab.activated model.clusterTab
+        ClusterTab.update shared model.targetHost ClusterTab.activated model.clusterTab
             |> Tuple.mapSecond (Effect.map ClusterTabMsg)
 
     else
