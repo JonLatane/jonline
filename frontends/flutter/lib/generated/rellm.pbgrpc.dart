@@ -320,6 +320,14 @@ class RellmClient extends $grpc.Client {
       '/rellm.Rellm/ConfigureServer',
       ($2.ServerConfiguration value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $2.ServerConfiguration.fromBuffer(value));
+  static final _$lockClusterResources = $grpc.ClientMethod<$2.LockClusterResourcesRequest, $2.LockClusterResourcesResponse>(
+      '/rellm.Rellm/LockClusterResources',
+      ($2.LockClusterResourcesRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $2.LockClusterResourcesResponse.fromBuffer(value));
+  static final _$freeClusterResources = $grpc.ClientMethod<$2.FreeClusterResourcesRequest, $0.Empty>(
+      '/rellm.Rellm/FreeClusterResources',
+      ($2.FreeClusterResourcesRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$resetData = $grpc.ClientMethod<$0.Empty, $0.Empty>(
       '/rellm.Rellm/ResetData',
       ($0.Empty value) => value.writeToBuffer(),
@@ -621,6 +629,14 @@ class RellmClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer($2.ServerConfiguration request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$configureServer, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$2.LockClusterResourcesResponse> lockClusterResources($2.LockClusterResourcesRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$lockClusterResources, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> freeClusterResources($2.FreeClusterResourcesRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$freeClusterResources, request, options: options);
   }
 
   $grpc.ResponseFuture<$0.Empty> resetData($0.Empty request, {$grpc.CallOptions? options}) {
@@ -1141,6 +1157,20 @@ abstract class RellmServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $2.ServerConfiguration.fromBuffer(value),
         ($2.ServerConfiguration value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$2.LockClusterResourcesRequest, $2.LockClusterResourcesResponse>(
+        'LockClusterResources',
+        lockClusterResources_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $2.LockClusterResourcesRequest.fromBuffer(value),
+        ($2.LockClusterResourcesResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$2.FreeClusterResourcesRequest, $0.Empty>(
+        'FreeClusterResources',
+        freeClusterResources_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $2.FreeClusterResourcesRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.Empty, $0.Empty>(
         'ResetData',
         resetData_Pre,
@@ -1445,6 +1475,14 @@ abstract class RellmServiceBase extends $grpc.Service {
     return configureServer(call, await request);
   }
 
+  $async.Future<$2.LockClusterResourcesResponse> lockClusterResources_Pre($grpc.ServiceCall call, $async.Future<$2.LockClusterResourcesRequest> request) async {
+    return lockClusterResources(call, await request);
+  }
+
+  $async.Future<$0.Empty> freeClusterResources_Pre($grpc.ServiceCall call, $async.Future<$2.FreeClusterResourcesRequest> request) async {
+    return freeClusterResources(call, await request);
+  }
+
   $async.Future<$0.Empty> resetData_Pre($grpc.ServiceCall call, $async.Future<$0.Empty> request) async {
     return resetData(call, await request);
   }
@@ -1525,6 +1563,8 @@ abstract class RellmServiceBase extends $grpc.Service {
   $async.Future<$1.FederatedAccount> federateProfile($grpc.ServiceCall call, $1.FederatedAccount request);
   $async.Future<$0.Empty> defederateProfile($grpc.ServiceCall call, $1.FederatedAccount request);
   $async.Future<$2.ServerConfiguration> configureServer($grpc.ServiceCall call, $2.ServerConfiguration request);
+  $async.Future<$2.LockClusterResourcesResponse> lockClusterResources($grpc.ServiceCall call, $2.LockClusterResourcesRequest request);
+  $async.Future<$0.Empty> freeClusterResources($grpc.ServiceCall call, $2.FreeClusterResourcesRequest request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);
   $async.Stream<$8.Post> streamReplies($grpc.ServiceCall call, $8.Post request);
 }

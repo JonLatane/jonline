@@ -82,6 +82,7 @@ diesel::table! {
         sync_source_id -> Nullable<Int8>,
         sync_source_uid -> Nullable<Varchar>,
         sync_source_recurrence_anchor -> Nullable<Timestamp>,
+        timezone -> Nullable<Varchar>,
     }
 }
 
@@ -329,6 +330,7 @@ diesel::table! {
         federation_info -> Jsonb,
         web_push_config -> Nullable<Jsonb>,
         custom_tabs -> Nullable<Jsonb>,
+        cluster_resources -> Nullable<Jsonb>,
     }
 }
 

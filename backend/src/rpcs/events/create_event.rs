@@ -194,6 +194,7 @@ pub fn create_event(
                     sync_source_id: None,
                     sync_source_uid: None,
                     sync_source_recurrence_anchor: None,
+                    timezone: instance.timezone.clone(),
                 })
                 .returning(models::EVENT_INSTANCE_COLUMNS)
                 .get_result::<models::EventInstance>(conn)?;

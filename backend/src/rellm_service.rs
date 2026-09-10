@@ -112,6 +112,55 @@ macro_rules! unauthenticated_rpc {
     }};
 }
 
+/// For `LockClusterResources`/`FreeClusterResources` -- cluster-internal, server-to-server calls
+/// with no per-user auth at all. Authorization is instead the `cluster-shared-secret` gRPC
+/// metadata header, checked against the conductor's own stored
+/// `ClusterResources.cluster_shared_secret` inside `$rpc` itself (see
+/// `lock_cluster_resources::validate_conductor`).
+macro_rules! cluster_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let shared_secret = $request
+            .metadata()
+            .get("cluster-shared-secret")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+        let inner = $request.into_inner();
+        log::info!("Cluster RPC called: {} (request/secret hidden)", stringify!($rpc));
+        let result = $rpc(inner, &shared_secret, &mut conn);
+        result.map(Response::new)
+    }};
+}
+
+/// For `FreeClusterResources` only -- like `cluster_rpc!`, but also resolves the normal
+/// per-user auth (an `Authorization` header, same as `unauthenticated_rpc!`) alongside the
+/// `cluster-shared-secret` one, since `rpcs::free_cluster_resources` accepts either (see that
+/// function's own doc): an authenticated admin with `EDIT_CLUSTER_SETTINGS` calling from the
+/// `ClusterTab` UI, or a cluster-internal caller presenting the shared secret. A bad/expired
+/// bearer token still fails outright here (via `?`), same as every other RPC that reads one --
+/// only its *absence* falls through to the shared-secret path.
+macro_rules! cluster_rpc_or_authenticated {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn)?;
+        let shared_secret = $request
+            .metadata()
+            .get("cluster-shared-secret")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+        let inner = $request.into_inner();
+        log::info!(
+            "Cluster RPC called: {} (request/secret hidden, authenticated: {})",
+            stringify!($rpc),
+            user.is_some()
+        );
+        let result = $rpc(inner, &user.as_ref(), &shared_secret, &mut conn);
+        result.map(Response::new)
+    }};
+}
+
 macro_rules! unauthenticated_unlogged_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
@@ -147,6 +196,20 @@ impl Rellm for RellmService {
 
     async fn reset_data(&self, request: Request<()>) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::reset_data, request)
+    }
+
+    async fn lock_cluster_resources(
+        &self,
+        request: Request<LockClusterResourcesRequest>,
+    ) -> Result<Response<LockClusterResourcesResponse>, Status> {
+        cluster_rpc!(self, rpcs::lock_cluster_resources, request)
+    }
+
+    async fn free_cluster_resources(
+        &self,
+        request: Request<FreeClusterResourcesRequest>,
+    ) -> Result<Response<()>, Status> {
+        cluster_rpc_or_authenticated!(self, rpcs::free_cluster_resources, request)
     }
 
     async fn create_account(

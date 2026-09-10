@@ -3,6 +3,7 @@ module Shared.AccountsPanel.BlueskyAccounts exposing
     , BlueskyProfile
     , createSessionTask
     , decoder
+    , disableOtherBlueskyAccounts
     , encodeList
     , errorMessage
     , fetchProfileTask
@@ -85,6 +86,28 @@ encodeAccount account =
         , ( "sortOrder", Encode.int account.sortOrder )
         , ( "needsReauth", Encode.bool account.needsReauth )
         ]
+
+
+{-| Disables every other Bluesky account besides `keepEnabledHandle` -- only one Bluesky account
+may be enabled (contributing to the combined feed/`UI.accountsMenuServerSummary`'s own count) at a
+time, mirroring `Shared.AccountsPanel.RellmAccounts.disableOtherRellmAccountsOnServer`'s identical
+"one signed-in identity" reasoning, just account-wide rather than per-server (there's no separate
+Bluesky "server" to scope by -- every connected account shares the one `bsky.social` PDS). Called
+whenever an account becomes enabled, whether by toggling it on (`ToggleBlueskyAccountEnabled`) or by
+a fresh connect (`GotBlueskyConnectResult`, whose `BlueskyAccounts.createSessionTask` result always
+starts `enabled = True`).
+-}
+disableOtherBlueskyAccounts : String -> List BlueskyAccount -> List BlueskyAccount
+disableOtherBlueskyAccounts keepEnabledHandle accounts =
+    List.map
+        (\a ->
+            if a.handle /= keepEnabledHandle then
+                { a | enabled = False }
+
+            else
+                a
+        )
+        accounts
 
 
 decoder : Decoder (List BlueskyAccount)

@@ -77,7 +77,19 @@ pub fn update_user(
                     request.default_follow_moderation.to_string_moderation();
             }
             if admin {
-                existing_user.permissions = request.permissions.to_json_permissions();
+                // `EDIT_CLUSTER_SETTINGS` is deliberately never settable via `UpdateUser` -- see
+                // that permission's own doc -- so it's always carried forward from whatever the
+                // user already had, regardless of what this request asked for (grant or revoke).
+                let has_cluster_settings = existing_user
+                    .permissions
+                    .to_proto_permissions()
+                    .contains(&Permission::EditClusterSettings);
+                let mut permissions = request.permissions.to_proto_permissions();
+                permissions.retain(|p| *p != Permission::EditClusterSettings);
+                if has_cluster_settings {
+                    permissions.push(Permission::EditClusterSettings);
+                }
+                existing_user.permissions = permissions.to_json_permissions();
             }
             if admin || moderator {
                 existing_user.moderation = request.moderation.to_string_moderation();

@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -47,6 +47,7 @@ panel's state directly.
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
+import Dict
 import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
@@ -65,6 +66,7 @@ import Shared.MyMediaPanel as MyMediaPanel
 import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
+import TimeZone
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 
@@ -90,6 +92,10 @@ type alias Model =
     -- `EventMode`-only, both required -- see module doc.
     , startsAt : Maybe Time.Posix
     , endsAt : Maybe Time.Posix
+
+    -- `EventMode`-only -- `Nothing` means "the browser's own timezone" (see `resolvedTimezone`),
+    -- mirroring `visibility`/`postingAs`'s own "unset means default" convention.
+    , timezone : Maybe String
     , status : SubmitStatus
 
     -- Every Post/Event this panel has successfully created this session
@@ -116,6 +122,7 @@ type Msg
     | LinkChanged String
     | StartsAtChanged String
     | EndsAtChanged String
+    | TimezoneChanged String
     | PostingAsSelected String
     | VisibilityChanged String
     | EditContentClicked
@@ -170,6 +177,7 @@ init =
     , content = ""
     , startsAt = Nothing
     , endsAt = Nothing
+    , timezone = Nothing
     , status = Idle
     , createdItems = []
     }
@@ -190,17 +198,23 @@ noForward =
 every other panel here) but also a possible `MarkdownPanel.Msg`/
 `MyMediaPanel.Msg` for `Shared.update` to dispatch on this panel's behalf.
 
-Takes the viewer's own `Time.Zone` (`Shared.Model.time.browserTimeZone.zone`)
-purely to parse `StartsAtChanged`/`EndsAtChanged`'s raw `<input
-type="datetime-local">` strings (always local wall-clock time, no timezone of
-their own) back into absolute `Time.Posix` -- see
-`Shared.Time.posixFromDateTimeLocalInput`. Also takes the viewer's current
-`now` (`Shared.Model.time.now`), used only by `ToggleOpen` to default a blank
-`startsAt`/`endsAt` when opening into `EventMode` -- see below.
+Takes the viewer's own `Shared.Model.time.browserTimeZone` purely to parse
+`StartsAtChanged`/`EndsAtChanged`'s raw `<input type="datetime-local">`
+strings (always local wall-clock time, no timezone of their own) back into
+absolute `Time.Posix` (via its `.zone` -- see
+`Shared.Time.posixFromDateTimeLocalInput`) and to default `timezone`'s
+selector to its `.name` (see `resolvedTimezone`). Also takes the viewer's
+current `now` (`Shared.Model.time.now`), used only by `ToggleOpen` to default
+a blank `startsAt`/`endsAt` when opening into `EventMode` -- see below.
 
 -}
-update : Time.Zone -> Time.Posix -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
-update zone now accountsPanelModel msg model =
+update : SharedTime.BrowserTimeZone -> Time.Posix -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
+update browserTimeZone now accountsPanelModel msg model =
+    let
+        zone : Time.Zone
+        zone =
+            browserTimeZone.zone
+    in
     case msg of
         ToggleOpen ->
             let
@@ -295,6 +309,9 @@ update zone now accountsPanelModel msg model =
             in
             ( { model | endsAt = clampedEndsAt }, Cmd.none, noForward )
 
+        TimezoneChanged tz ->
+            ( { model | timezone = Just tz }, Cmd.none, noForward )
+
         PostingAsSelected accountId ->
             ( { model | postingAs = Just accountId }, Cmd.none, noForward )
 
@@ -326,7 +343,7 @@ update zone now accountsPanelModel msg model =
             case resolve accountsPanelModel model of
                 Ok resolved ->
                     ( { model | status = Submitting }
-                    , saveTask accountsPanelModel resolved model |> Task.attempt GotSaveResult
+                    , saveTask browserTimeZone accountsPanelModel resolved model |> Task.attempt GotSaveResult
                     , noForward
                     )
 
@@ -547,6 +564,17 @@ resolvedVisibility mode account model =
             defaultVisibilityFor mode account
 
 
+{-| `model.timezone`, resolved against `browserTimeZone`'s own IANA `.name` --
+falls back to the browser's own timezone whenever `timezone` is unset,
+mirroring `resolvedAccount`/`resolvedVisibility`'s own "unset means default"
+fallback. What `timezoneField` shows as selected and what `saveTask` submits
+as `EventInstance.timezone`.
+-}
+resolvedTimezone : SharedTime.BrowserTimeZone -> Model -> String
+resolvedTimezone browserTimeZone model =
+    model.timezone |> Maybe.withDefault browserTimeZone.name
+
+
 nonEmptyTrimmed : String -> Maybe String
 nonEmptyTrimmed value =
     let
@@ -571,8 +599,8 @@ itself, `id`/`createdAt`/etc. included) as a `CreatedItem` with
 `Model.createdItems` -- needed so both branches of this `case` agree on a
 single result type for `performWithAccountServer`'s own callback.
 -}
-saveTask : AccountsPanel.Model -> Resolved -> Model -> Task Grpc.Error ( Maybe AccountsPanel.Msg, CreatedItem )
-saveTask accountsPanelModel resolved model =
+saveTask : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Resolved -> Model -> Task Grpc.Error ( Maybe AccountsPanel.Msg, CreatedItem )
+saveTask browserTimeZone accountsPanelModel resolved model =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         ( Just resolved.account.userId, resolved.server.frontendHost )
@@ -605,6 +633,7 @@ saveTask accountsPanelModel resolved model =
                                 [ { defaultEventInstance
                                     | startsAt = Maybe.map posixToTimestamp model.startsAt
                                     , endsAt = Maybe.map posixToTimestamp model.endsAt
+                                    , timezone = Just (resolvedTimezone browserTimeZone model)
                                   }
                                 ]
                         }
@@ -624,8 +653,8 @@ saveTask accountsPanelModel resolved model =
 `hostnameToCSSClass` (see module doc) so its Save button/mode chrome matches
 the server the draft will actually be posted to.
 -}
-view : Time.Zone -> AccountsPanel.Model -> Model -> Html Msg
-view zone accountsPanelModel model =
+view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
+view browserTimeZone accountsPanelModel model =
     let
         host : String
         host =
@@ -674,7 +703,7 @@ view zone accountsPanelModel model =
                         []
 
                     EventMode ->
-                        [ startsAtField zone model, endsAtField zone model ]
+                        [ startsAtField browserTimeZone.zone model, endsAtField browserTimeZone.zone model, timezoneField browserTimeZone model ]
                 , [ linkField model
                   , mediaField accountsPanelModel model host
                   , contentField model
@@ -760,7 +789,14 @@ titleField model =
             , class "create-new-panel-title-input"
             , value model.title
             , onInput TitleChanged
-            , placeholder "What's this about?"
+            , placeholder
+                (case model.mode of
+                    EventMode ->
+                        "What's the name of your event?"
+
+                    _ ->
+                        "What's this about?"
+                )
             ]
             []
         ]
@@ -779,6 +815,40 @@ startsAtField zone model =
 endsAtField : Time.Zone -> Model -> Html Msg
 endsAtField zone model =
     dateField zone "Ends" model.endsAt EndsAtChanged
+
+
+{-| `EventMode`-only -- a `<select>` of every IANA zone `TimeZone.zones` knows
+about (the same dataset `Shared.getBrowserZone` itself is backed by), always
+defaulted to the browser's own timezone (`resolvedTimezone`) until the user
+picks a different one.
+-}
+timezoneField : SharedTime.BrowserTimeZone -> Model -> Html Msg
+timezoneField browserTimeZone model =
+    let
+        selectedTimezone : String
+        selectedTimezone =
+            resolvedTimezone browserTimeZone model
+    in
+    div [ class "create-new-panel-field" ]
+        [ label [ class "create-new-panel-label" ] [ text "Timezone" ]
+        , select [ class "create-new-panel-timezone-select", onInput TimezoneChanged ]
+            (List.map
+                (\name ->
+                    option [ value name, selected (name == selectedTimezone) ] [ text name ]
+                )
+                allTimezoneNames
+            )
+        ]
+
+
+{-| Every IANA zone name `justinmimbs/timezone-data` bundles (the same
+dataset `Shared.getBrowserZone` itself resolves against), sorted for a
+sensible `<select>` order -- what `timezoneField` (here) and
+`Components.Pages.EventPage.instanceTimezoneField` both offer.
+-}
+allTimezoneNames : List String
+allTimezoneNames =
+    TimeZone.zones |> Dict.keys |> List.sort
 
 
 dateField : Time.Zone -> String -> Maybe Time.Posix -> (String -> Msg) -> Html Msg

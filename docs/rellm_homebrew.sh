@@ -61,7 +61,7 @@ RELLM_COMMANDS=(
   local_db_create local_db_drop local_db_reset local_db_connect
   local_minio_start local_minio_create local_minio_delete
   delete_expired_tokens delete_unowned_media sync_sources update_user_counts convert_media_sizes generate_preview_images
-  set_permission delete_preview_images disable_cdn_grpc
+  set_permission delete_preview_images disable_cdn_grpc free_all_cluster_resources
   to_db_id to_proto_id grpcurl
   deploy
   completion
@@ -145,8 +145,13 @@ Commands:
     set_permission           Grant/revoke a global permission for a user by username
                              e.g.: rellm set_permission <my_admin_username> admin on
     delete_preview_images    Delete generated preview images, e.g. to force regeneration
-    disable_cdn_grpc         Disable the experimental gRPC CDN settings, as an "escape hatch" in case you 
+    disable_cdn_grpc         Disable the experimental gRPC CDN settings, as an "escape hatch" in case you
                              mess up your CDN configuration in the web UI and lose gRPC access.
+    free_all_cluster_resources
+                             Force-clear every held ClusterResource lock (e.g. browser) on this
+                             server's cluster, if it's the conductor. Use if a generate_preview_images
+                             job died holding one -- see the Cluster tab on the Server Configuration
+                             page for the acquired_at time before assuming a lock is actually stuck.
 
   Utilities:
 
@@ -299,6 +304,10 @@ delete_preview_images() {
 
 disable_cdn_grpc() {
   _rellm_exec_bin disable_cdn_grpc "$@"
+}
+
+free_all_cluster_resources() {
+  _rellm_exec_bin free_all_cluster_resources "$@"
 }
 
 # Utilities

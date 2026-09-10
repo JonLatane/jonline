@@ -236,6 +236,7 @@ const EventInstance$json = {
     {'1': 'attendances', '3': 10, '4': 1, '5': 11, '6': '.rellm.EventAttendances', '9': 3, '10': 'attendances', '17': true},
     {'1': 'current_user_attendance', '3': 11, '4': 1, '5': 11, '6': '.rellm.EventAttendance', '9': 4, '10': 'currentUserAttendance', '17': true},
     {'1': 'sync_destinations', '3': 12, '4': 3, '5': 11, '6': '.rellm.SyncDestinationStatus', '10': 'syncDestinations'},
+    {'1': 'timezone', '3': 13, '4': 1, '5': 9, '9': 5, '10': 'timezone', '17': true},
   ],
   '8': [
     {'1': '_location'},
@@ -243,6 +244,7 @@ const EventInstance$json = {
     {'1': '_sync_missing_since'},
     {'1': '_attendances'},
     {'1': '_current_user_attendance'},
+    {'1': '_timezone'},
   ],
 };
 
@@ -259,9 +261,10 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'cmVsbG0uRXZlbnRBdHRlbmRhbmNlc0gDUgthdHRlbmRhbmNlc4gBARJTChdjdXJyZW50X3VzZX'
     'JfYXR0ZW5kYW5jZRgLIAEoCzIWLnJlbGxtLkV2ZW50QXR0ZW5kYW5jZUgEUhVjdXJyZW50VXNl'
     'ckF0dGVuZGFuY2WIAQESSQoRc3luY19kZXN0aW5hdGlvbnMYDCADKAsyHC5yZWxsbS5TeW5jRG'
-    'VzdGluYXRpb25TdGF0dXNSEHN5bmNEZXN0aW5hdGlvbnNCCwoJX2xvY2F0aW9uQhoKGF9zeW5j'
-    'X3NvdXJjZV9pbnN0YW5jZV9pZEIVChNfc3luY19taXNzaW5nX3NpbmNlQg4KDF9hdHRlbmRhbm'
-    'Nlc0IaChhfY3VycmVudF91c2VyX2F0dGVuZGFuY2U=');
+    'VzdGluYXRpb25TdGF0dXNSEHN5bmNEZXN0aW5hdGlvbnMSHwoIdGltZXpvbmUYDSABKAlIBVII'
+    'dGltZXpvbmWIAQFCCwoJX2xvY2F0aW9uQhoKGF9zeW5jX3NvdXJjZV9pbnN0YW5jZV9pZEIVCh'
+    'Nfc3luY19taXNzaW5nX3NpbmNlQg4KDF9hdHRlbmRhbmNlc0IaChhfY3VycmVudF91c2VyX2F0'
+    'dGVuZGFuY2VCCwoJX3RpbWV6b25l');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

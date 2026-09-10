@@ -3190,9 +3190,12 @@ sendUpdate req msg model =
                 account =
                     { connectedAccount | sortOrder = nextFrontAccountSortOrder model }
 
+                -- `account.enabled` is always `True` fresh out of `createSessionTask` -- disables
+                -- every previously-connected Bluesky account so this new one becomes the sole
+                -- enabled one. See `BlueskyAccounts.disableOtherBlueskyAccounts`'s own doc.
                 newAccounts : List BlueskyAccount
                 newAccounts =
-                    account :: model.blueskyAccounts
+                    BlueskyAccounts.disableOtherBlueskyAccounts account.handle (account :: model.blueskyAccounts)
             in
             ( { model | blueskyConnectForm = emptyBlueskyConnectForm, blueskyAccounts = newAccounts }
             , Cmd.batch
@@ -3255,8 +3258,8 @@ sendUpdate req msg model =
 
         ToggleBlueskyAccountEnabled handle ->
             let
-                newAccounts : List BlueskyAccount
-                newAccounts =
+                toggledAccounts : List BlueskyAccount
+                toggledAccounts =
                     List.map
                         (\a ->
                             if a.handle == handle then
@@ -3266,6 +3269,20 @@ sendUpdate req msg model =
                                 a
                         )
                         model.blueskyAccounts
+
+                justEnabled : Bool
+                justEnabled =
+                    toggledAccounts |> List.any (\a -> a.handle == handle && a.enabled)
+
+                -- Only one Bluesky account may be enabled at a time -- enabling this one disables
+                -- every other. See `BlueskyAccounts.disableOtherBlueskyAccounts`'s own doc.
+                newAccounts : List BlueskyAccount
+                newAccounts =
+                    if justEnabled then
+                        BlueskyAccounts.disableOtherBlueskyAccounts handle toggledAccounts
+
+                    else
+                        toggledAccounts
             in
             ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
 

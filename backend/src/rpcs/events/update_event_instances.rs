@@ -52,13 +52,17 @@ pub(super) fn update_event_instances_impl(
             ));
         }
 
+        let timezone = request_instance.timezone.clone();
+
         if starts_at != updated_instance.starts_at
             || ends_at != updated_instance.ends_at
             || location != updated_instance.location
+            || timezone != updated_instance.timezone
         {
             updated_instance.starts_at = starts_at;
             updated_instance.ends_at = ends_at;
             updated_instance.location = location;
+            updated_instance.timezone = timezone;
             updated_instance.updated_at = SystemTime::now().into();
         }
 

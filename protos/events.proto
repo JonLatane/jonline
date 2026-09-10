@@ -197,6 +197,10 @@ message EventInstance {
   optional EventAttendance current_user_attendance = 11;
   // SyncDestinations this instance has been synced (cross-posted) to, and their status.
   repeated SyncDestinationStatus sync_destinations = 12;
+
+  // A time zone for the event instance. Used when serializing it for,
+  // e.g., Facebook or Instagram posts, or generating media.
+  optional string timezone = 13;
 }
 
 // To be used for ticketing, RSVPs, etc.

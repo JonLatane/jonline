@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package rellm;
 
+import "google/protobuf/timestamp.proto";
 import "visibility_moderation.proto";
 import "permissions.proto";
 import "federation.proto";
@@ -64,6 +65,14 @@ message ServerConfiguration {
   // See ExternalCDNConfig for more details on securing this setup.
   optional ExternalCDNConfig external_cdn_config = 90;
 
+  // Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+  // logged-in admin (unlike most fields here, this describes infrastructure topology rather than
+  // anything end users need, so it's stripped entirely from
+  // [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
+  // callers); editing it via [`ConfigureServer`](#grpc-api-ConfigureServer) additionally requires
+  // the [`EDIT_CLUSTER_SETTINGS`](#rellm-Permission) permission.
+  optional ClusterResources cluster_resources = 91;
+
 
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;
@@ -74,6 +83,160 @@ message ServerConfiguration {
 
   // Web Push (VAPID) configuration for the server.
   optional WebPushConfig web_push_config = 110;
+}
+
+// Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
+// server instances that are otherwise fully isolated from each other (separate databases, separate
+// [`FederationInfo`](#rellm-FederationInfo), etc.) but happen to run on shared underlying
+// infrastructure (e.g. several Kubernetes namespaces sharing one small node pool). Currently used
+// for exactly one thing: making sure only one instance has a headless Chrome/Brave browser open at
+// any given moment (for generating link preview images), since launching several at once can
+// exhaust a shared node's CPU/memory. One participating instance is designated the "conductor" (see
+// `conductor_host`) and brokers locks via
+// [`LockClusterResources`](#grpc-api-LockClusterResources)/
+// [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
+// including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+// that is.
+//
+// See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
+message ClusterResources {
+  // Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+  // `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
+  // conductor knows who's asking, and echoed back as `ClusterResourceLock.lock_holder_namespace_id`
+  // while this instance holds a lock. By convention (not enforced -- see `cluster_shared_secret`'s
+  // own doc), the conductor sets its own `namespace_id` equal to its own `conductor_host`; clients
+  // (e.g. the Elm `ClusterTab`) use that convention purely for display, to tell "this instance is
+  // the conductor" from "some other instance is."
+  string namespace_id = 1;
+
+  // DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+  // that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
+  // [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
+  // (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+  // points this at the same host.
+  //
+  // Note: callers should resolve this the same way any other cross-server Rellm call does --
+  // via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
+  // first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+  // case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
+  string conductor_host = 2;
+
+  // Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
+  // member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
+  // request field -- there's no per-user auth involved in these calls at all, just this secret).
+  // The receiving server checks it against its own stored `cluster_shared_secret` -- that's the
+  // *entire* authorization check: knowing the secret is what makes a caller entitled to treat that
+  // server as the conductor, regardless of what that server's own `namespace_id`/`conductor_host`
+  // happen to say (see `namespace_id`'s own doc on that being a display-only convention). Write-only, like
+  // [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
+  // [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+  // sends the real value back to *any* client (not even an admin), and an empty incoming value on
+  // `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
+  // transmitted over a non-TLS connection.
+  string cluster_shared_secret = 3;
+
+  // The conductor's live view of who currently holds each `ClusterResource`'s lock. Only ever
+  // populated on whichever instance actually receives (and grants) `LockClusterResources` calls --
+  // in a correctly configured cluster, that's the one instance every participant points
+  // `conductor_host` at (see that field's own doc), but nothing server-side enforces that; every
+  // other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by
+  // `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+  // [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
+  // versioned the way other `ConfigureServer` changes are.
+  optional ClusterConductorState conductor_state = 4;
+}
+
+// The conductor's live view of currently-held locks -- one `ClusterResourceLock` per distinct
+// holder (a given namespace can appear at most once here -- `LockClusterResources` never grants a
+// `ClusterResource` it's already granted that same `namespace_id`, and folds any additional
+// resources into that namespace's existing entry rather than creating a second one -- see that
+// RPC's own doc). With a `limits` entry above `1` (see `ClusterResourceLimit`'s own doc), more than
+// one distinct namespace can hold the *same* `ClusterResource` at once, so there can be more
+// entries here than there are `ClusterResource` values.
+// See `ClusterResources.conductor_state`.
+message ClusterConductorState {
+  // Locks currently held by the conductor.
+  // Mutations are only made by `FreeClusterResource` and `LockClusterResource`, not `ConfigureServer`.
+  // Changes to locks do *not* produce a new ServerConfiguration version.
+  repeated ClusterResourceLock locks = 1;
+
+  // How many distinct namespaces may concurrently hold each `ClusterResource`'s lock -- e.g. only
+  // one headless browser at a time, but a handful of `ffmpeg`/ImageMagick conversions in parallel
+  // across the cluster, since those are far lighter-weight. Any `ClusterResource` not present here
+  // -- including on a cluster that's never had `ConfigureServer` touch `limits` at all -- defaults
+  // to `1` (see `ClusterTab.elm`'s matching client-side default, shown/edited there as "Browser
+  // Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by
+  // `ConfigureServer` (gated on `EDIT_CLUSTER_SETTINGS`, like the rest of `cluster_resources`) and
+  // create a new ServerConfiguration version, unlike `locks` above.
+  repeated ClusterResourceLimit limits = 2;
+}
+
+// One namespace's currently-held lock on one or more `ClusterResource`s, and when it acquired
+// them -- shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
+// long ago, its holder's job surely long dead) from one just in normal, brief use, and reach for
+// `free_all_cluster_resources` (a `bin/` admin tool -- see its own doc) accordingly.
+message ClusterResourceLock {
+  // The `namespace_id` (see `ClusterResources.namespace_id`) holding this lock.
+  string lock_holder_namespace_id = 1;
+  // Which resources this lock covers.
+  repeated ClusterResource resources = 2;
+  // When `LockClusterResources` granted this lock.
+  google.protobuf.Timestamp acquired_at = 20;
+}
+
+// One `ClusterResource`'s configured concurrency limit -- a single `resource`/`limit` pairing per
+// message (both fields are singleton lists in practice; see `ClusterConductorState.limits`'s own
+// doc for why a `ClusterResource` missing from every `ClusterResourceLimit` here defaults to `1`
+// rather than `0`).
+message ClusterResourceLimit {
+  repeated ClusterResource resource = 1;
+  // The number of distinct namespaces that may concurrently hold a lock on `resource`.
+  repeated uint32 limit = 2;
+}
+
+// See [`LockClusterResources`](#grpc-api-LockClusterResources).
+message LockClusterResourcesRequest {
+  // This instance's own `ClusterResources.namespace_id`.
+  string namespace_id = 1;
+  // Which resources to lock -- see the `ClusterResource` enum for what exists.
+  repeated ClusterResource resources = 2;
+}
+
+// See [`LockClusterResources`](#grpc-api-LockClusterResources).
+message LockClusterResourcesResponse {
+  // Whether every requested resource was successfully locked for `namespace_id`. `false` means
+  // none were locked (never a partial grant) -- at least one of them is already held, by
+  // namespaces other than this one, by as many distinct holders as its configured
+  // `ClusterResourceLimit` allows (see that message's own doc); see `holder`. There's no
+  // server-side wait/queueing: a caller that gets `false` should back off and call
+  // `LockClusterResources` again later.
+  bool granted = 1;
+  // Set only when `granted` is `false`: one of the namespaces already holding a requested (and
+  // therefore denied) resource.
+  optional string holder = 2;
+}
+
+// Releases resources this `namespace_id` previously locked via
+// [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
+// resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+// cleanup even if the matching lock attempt itself failed or was never confirmed.
+message FreeClusterResourcesRequest {
+  // This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+  // is recorded as the current holder for a resource to actually be released.
+  string namespace_id = 1;
+  // Which resources to release.
+  repeated ClusterResource resources = 2;
+}
+
+// A resource `ClusterResources.conductor_host` can hand out an exclusive, cluster-wide lock on
+// via [`LockClusterResources`](#grpc-api-LockClusterResources)/
+// [`FreeClusterResources`](#grpc-api-FreeClusterResources).
+enum ClusterResource {
+  // The ability to launch a headless Chrome/Brave browser -- see `ClusterResources`'s own doc for
+  // why more than one running at once across a cluster's instances can be a problem.
+  CLUSTER_RESOURCE_BROWSER = 0;
+  CLUSTER_RESOURCE_FFMPEG = 1;
+  CLUSTER_RESOURCE_IMAGEMAGICK = 2;
 }
 
 // Useful for setting your Rellm instance up to run underneath a CDN.
@@ -91,10 +254,12 @@ message ExternalCDNConfig {
   // HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in 
   // `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
   bool secure_media = 3;
+
   // Whitespace- and/or comma- separated list of IPv4 addresses/ranges 
   // to whom media data may be served. Only applicable if `secure_media` is `true`.
   // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
   optional string media_ipv4_allowlist = 4;
+
   // Whitespace- and/or comma- separated list of IPv6 addresses/ranges 
   // to whom media data may be served. Only applicable if `secure_media` is `true`.
   // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.

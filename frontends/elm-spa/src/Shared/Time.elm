@@ -62,25 +62,33 @@ type alias Model =
 Bundled together since every call site that needs one of these tends to need
 the others too -- see `Model.browserTimeZone`.
 
-`zone` is resolved via `Shared.getBrowserZone` once `Shared.init`'s `Cmd`
-runs -- `Time.utc` until then (never visibly wrong for long: the `Task`
-resolves on the same frame the app first renders). Unlike plain `Time.here`,
-`getBrowserZone` is DST-aware (backed by `justinmimbs/timezone-data`), so a
-timestamp far from "now" -- e.g. a recurring `EventInstance` on the other
-side of a DST transition -- still converts with the offset that actually
-applied on _its_ date, not today's. `abbreviation`/`uses24Hour` both come from a
-different source: unlike `zone`, `elm/time` has no way to derive either (a
-`Time.Zone` is just a raw offset table, with no notion of a locale's
-formatting conventions), so both are read once at startup from the browser's
-own `Intl` API as plain flags (see `index.html`) rather than a port
-round-trip -- they only matter at the instant a timestamp renders, same as
-`zone`, and aren't worth keeping live across a session. `abbreviation` is
-`""` (never shown), `uses24Hour` is `False`, if their respective `Intl`
-lookups fail for any reason.
+`zone`/`name` are both resolved via `Shared.getBrowserZone` once
+`Shared.init`'s `Cmd` runs -- `Time.utc`/`""` until then (never visibly wrong
+for long: the `Task` resolves on the same frame the app first renders).
+Unlike plain `Time.here`, `getBrowserZone` is DST-aware (backed by
+`justinmimbs/timezone-data`), so a timestamp far from "now" -- e.g. a
+recurring `EventInstance` on the other side of a DST transition -- still
+converts with the offset that actually applied on _its_ date, not today's.
+`name` is the actual IANA zone name (e.g. "America/New\_York") `zone` itself
+was looked up by -- kept alongside it so a timezone *selector*
+(`Shared.CreateNewPanel`/`Components.Pages.EventPage`'s `EventInstance.timezone`
+field) has a sensible default to preselect, since `Time.Zone` alone is just a
+raw offset table with no name of its own. `""` if `elm/time`'s
+`Time.getZoneName` couldn't read one (falls back to plain `Time.here`, which
+has no name at all). `abbreviation`/`uses24Hour` both come from a different
+source: unlike `zone`/`name`, `elm/time` has no way to derive either (again,
+just a raw offset table, with no notion of a locale's formatting
+conventions), so both are read once at startup from the browser's own `Intl`
+API as plain flags (see `index.html`) rather than a port round-trip -- they
+only matter at the instant a timestamp renders, same as `zone`, and aren't
+worth keeping live across a session. `abbreviation` is `""` (never shown),
+`uses24Hour` is `False`, if their respective `Intl` lookups fail for any
+reason.
 
 -}
 type alias BrowserTimeZone =
     { zone : Time.Zone
+    , name : String
     , abbreviation : String
     , uses24Hour : Bool
     }

@@ -85,7 +85,15 @@ pub fn sync_event_instance(
         .and_then(|v| v.as_str())
         .filter(|a| !a.trim().is_empty())
         .map(str::to_string);
-    let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
+    // Prefer the instance's own DB-set `timezone` (set by hand via `CreateNewPanel`/`EventPage`'s
+    // timezone selector, or from an ICS Sync Source's own `DTSTART` `TZID`) over geocoding the
+    // location through Nominatim -- that's a best-effort fallback for instances with no explicit
+    // timezone at all (see `logic::resolve_timezone`'s own doc).
+    let timezone = instance
+        .timezone
+        .as_deref()
+        .and_then(|tz| tz.parse::<chrono_tz::Tz>().ok())
+        .or_else(|| location.as_deref().and_then(crate::logic::resolve_timezone));
 
     // Only buildable when this server has `external_cdn_config.frontend_host`/`backend_host`
     // configured -- this RPC has no HTTP `Host` header to fall back on the way web-facing routes

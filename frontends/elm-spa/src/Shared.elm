@@ -193,7 +193,7 @@ type Msg
     | NavLinksScrolled { scrollLeft : Float, scrollWidth : Float, clientWidth : Float }
     | NavigateExternal String
     | WindowResized Int Int
-    | GotTimeZone Time.Zone
+    | GotTimeZone String Time.Zone
     | GotNow Time.Posix
     | NoOp
 
@@ -451,7 +451,7 @@ init basePath req flags =
             -- below, resolves; `now` as soon as `Task.perform GotNow Time.now`
             -- does -- see `SharedTime.Model`'s own doc.
             , time =
-                { browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
+                { browserTimeZone = { zone = Time.utc, name = "", abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
                 , now = Time.millisToPosix 0
                 }
             }
@@ -470,7 +470,16 @@ init basePath req flags =
         -- place until then.
         , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accounts).primaryColor
         , getInitialWindowSizeCmd
-        , Task.attempt (\result -> GotTimeZone (Result.withDefault Time.utc result)) getBrowserZone
+        , Task.attempt
+            (\result ->
+                case result of
+                    Ok ( name, zone ) ->
+                        GotTimeZone name zone
+
+                    Err _ ->
+                        GotTimeZone "" Time.utc
+            )
+            getBrowserZone
         , Task.perform GotNow Time.now
         ]
     )
@@ -600,7 +609,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now subModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone model.time.now subModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
@@ -717,7 +726,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
@@ -895,7 +904,7 @@ sharedUpdate req msg model =
                         Just content ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone model.time.now model.accounts (CreateNewPanel.ContentSaved content) panels.createNewPanel
                             in
                             ( m, cmd )
 
@@ -1044,7 +1053,7 @@ sharedUpdate req msg model =
                         Just media ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
+                                    CreateNewPanel.update model.time.browserTimeZone model.time.now model.accounts (CreateNewPanel.MediaSaved media) panels.createNewPanel
                             in
                             ( m, cmd )
 
@@ -1102,7 +1111,7 @@ sharedUpdate req msg model =
                     model.panels
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
-                    CreateNewPanel.update model.time.browserTimeZone.zone model.time.now model.accounts subMsg panels.createNewPanel
+                    CreateNewPanel.update model.time.browserTimeZone model.time.now model.accounts subMsg panels.createNewPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1301,7 +1310,7 @@ sharedUpdate req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update model.time.browserTimeZone.zone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
+                                CreateNewPanel.update model.time.browserTimeZone model.time.now closedAccountsPanelModel CreateNewPanel.CloseClicked panels.createNewPanel
                         in
                         ( m, cmd )
 
@@ -1762,7 +1771,7 @@ sharedUpdate req msg model =
         WindowResized width height ->
             ( { model | windowSize = { width = width, height = height } }, Cmd.none )
 
-        GotTimeZone zone ->
+        GotTimeZone name zone ->
             let
                 time : SharedTime.Model
                 time =
@@ -1772,7 +1781,7 @@ sharedUpdate req msg model =
                 browserTimeZone =
                     time.browserTimeZone
             in
-            ( { model | time = { time | browserTimeZone = { browserTimeZone | zone = zone } } }, Cmd.none )
+            ( { model | time = { time | browserTimeZone = { browserTimeZone | zone = zone, name = name } } }, Cmd.none )
 
         GotNow now ->
             let
@@ -1950,11 +1959,10 @@ than drifting an hour. Falls back to plain `Time.here` if the zone name
 can't be read or isn't in `timezone-data` (e.g. an unusual environment
 `Intl` doesn't cover) -- never fails outright.
 -}
-getBrowserZone : Task.Task x Time.Zone
+getBrowserZone : Task.Task x ( String, Time.Zone )
 getBrowserZone =
     TimeZone.getZone
-        |> Task.map Tuple.second
-        |> Task.onError (\_ -> Time.here)
+        |> Task.onError (\_ -> Time.here |> Task.map (\zone -> ( "", zone )))
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`

@@ -49,6 +49,7 @@ is active, even though only `AboutTab`'s `view` ever displays them.
 import Browser.Navigation
 import Components.Pages.ServerInformationPage.AboutTab as AboutTab
 import Components.Pages.ServerInformationPage.CdnTab as CdnTab
+import Components.Pages.ServerInformationPage.ClusterTab as ClusterTab
 import Components.Pages.ServerInformationPage.Common as Common
 import Components.Pages.ServerInformationPage.FederationTab as FederationTab
 import Components.Pages.ServerInformationPage.SettingsTab as SettingsTab
@@ -90,6 +91,7 @@ type alias Model =
     , settingsTab : SettingsTab.Model
     , federationTab : FederationTab.Model
     , cdnTab : CdnTab.Model
+    , clusterTab : ClusterTab.Model
     }
 
 
@@ -104,6 +106,7 @@ type Msg
     | SettingsTabMsg SettingsTab.Msg
     | FederationTabMsg FederationTab.Msg
     | CdnTabMsg CdnTab.Msg
+    | ClusterTabMsg ClusterTab.Msg
     | SharedMsg Shared.Msg
 
 
@@ -117,6 +120,7 @@ type Tab
     | TabSettings
     | TabFederation
     | TabCdn
+    | TabCluster
 
 
 {-| `Tab`'s URL-facing form for the `tab` query param (see `pushTabUrl`) -- lowercase, mirroring
@@ -141,6 +145,9 @@ tabParam tab =
         TabCdn ->
             "cdn"
 
+        TabCluster ->
+            "cluster"
+
 
 {-| Case-insensitive inverse of `tabParam`, mirroring
 `Components.Pages.PostsPage.postContextFromParam`. Any unrecognized value (e.g. a hand-edited link)
@@ -163,6 +170,9 @@ tabFromParam param =
 
         "cdn" ->
             Just TabCdn
+
+        "cluster" ->
+            Just TabCluster
 
         _ ->
             Nothing
@@ -208,16 +218,31 @@ init shared pageIsSecure targetHost navKey path query =
             , settingsTab = SettingsTab.init
             , federationTab = FederationTab.init
             , cdnTab = CdnTab.init
+            , clusterTab = ClusterTab.init
             }
 
         ( fetchedModel, fetchEffect ) =
             case knownConnectedServer shared targetHost of
                 Just server ->
-                    ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
-                    , Effect.batch [ fetchAdmins server, fetchVersion server ]
+                    let
+                        newModel : Model
+                        newModel =
+                            { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
+
+                        ( clusterTabModel, clusterTabEffect ) =
+                            activateClusterTab shared newModel
+                    in
+                    ( { newModel | clusterTab = clusterTabModel }
+                    , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
                     )
 
                 Nothing ->
+                    -- Not connected yet -- `activateClusterTab` has to wait for
+                    -- `GotOwnServerResult`'s own success branch, same reasoning as
+                    -- `fetchAdmins`/`fetchVersion` not firing here either. Firing it right here
+                    -- instead (a deep link straight to `?tab=cluster` looks exactly like this
+                    -- branch on first load) raced ahead of the connection actually completing and
+                    -- failed with a `Grpc.NetworkError` every time -- see `ClusterTab`'s own doc.
                     ( model0
                     , RellmServers.connectToRellmServer pageIsSecure targetHost
                         |> Task.attempt GotOwnServerResult
@@ -270,12 +295,23 @@ updateInner shared msg model =
                 newModel : Model
                 newModel =
                     { model | activeTab = tab }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
             in
-            ( newModel, pushTabUrl newModel )
+            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ pushTabUrl newModel, clusterTabEffect ] )
 
         GotOwnServerResult (Ok server) ->
-            ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
-            , Effect.batch [ fetchAdmins server, fetchVersion server ]
+            let
+                newModel : Model
+                newModel =
+                    { model | ownServerStatus = OwnServerLoaded server, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
+            in
+            ( { newModel | clusterTab = clusterTabModel }
+            , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
             )
 
         GotOwnServerResult (Err err) ->
@@ -323,13 +359,24 @@ updateInner shared msg model =
                 |> Tuple.mapFirst (\subModel -> { model | cdnTab = subModel })
                 |> Tuple.mapSecond (Effect.map CdnTabMsg)
 
+        ClusterTabMsg subMsg ->
+            ClusterTab.update shared model.targetHost subMsg model.clusterTab
+                |> Tuple.mapFirst (\subModel -> { model | clusterTab = subModel })
+                |> Tuple.mapSecond (Effect.map ClusterTabMsg)
+
         SharedMsg subMsg ->
-            ( { model
-                | aboutTab = AboutTab.applySharedMsg subMsg model.aboutTab
-                , themeTab = ThemeTab.applySharedMsg subMsg model.themeTab
-              }
-            , Effect.fromShared subMsg
-            )
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | aboutTab = AboutTab.applySharedMsg subMsg model.aboutTab
+                        , themeTab = ThemeTab.applySharedMsg subMsg model.themeTab
+                    }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
+            in
+            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ Effect.fromShared subMsg, clusterTabEffect ] )
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known _and_ actually
@@ -359,6 +406,26 @@ effectiveServer shared model =
 
                 _ ->
                     Nothing
+
+
+{-| Fires `ClusterTab.activated`'s authenticated fetch whenever `model.activeTab` is already
+`TabCluster` -- called everywhere this page's own connectivity state settles (`init`'s
+already-known-connected branch, `GotOwnServerResult`'s own-probe success, and `TabSelected`), never
+unconditionally at `init` itself. `ClusterTab.activated`'s own fetch resolves `model.targetHost`
+against `Shared.AccountsPanel`'s live connection state (see `ClusterTab`'s own doc); firing it
+before that connection has actually finished being established races ahead of it and fails with a
+`Grpc.NetworkError` -- exactly what happened when this used to fire unconditionally in `init`,
+breaking a fresh page load landing straight on `?tab=cluster` (though never a same-session click,
+since `effectiveServer` is already resolved by the time any tab is clickable at all).
+-}
+activateClusterTab : Shared.Model -> Model -> ( ClusterTab.Model, Effect Msg )
+activateClusterTab shared model =
+    if model.activeTab == TabCluster then
+        ClusterTab.update shared model.targetHost ClusterTab.activated model.clusterTab
+            |> Tuple.mapSecond (Effect.map ClusterTabMsg)
+
+    else
+        ( model.clusterTab, Effect.none )
 
 
 isKnownServer : Shared.Model -> Model -> Bool
@@ -457,7 +524,7 @@ view shared model =
         Just server ->
             div [ class "server-details" ]
                 [ addServerButton shared model server
-                , tabBar model
+                , tabBar shared model
                 , tabContent shared model server
                 ]
 
@@ -488,16 +555,27 @@ addServerButton shared model server =
             ]
 
 
-tabBar : Model -> Html Msg
-tabBar model =
+{-| `TabCluster` only appears for a logged-in admin -- `cluster_resources` is stripped from
+`GetServerConfiguration` entirely for anyone else (see `ClusterTab`'s own doc), so there'd be
+nothing to show a non-admin there.
+-}
+tabBar : Shared.Model -> Model -> Html Msg
+tabBar shared model =
     div [ class "server-details-tab-bar" ]
         (List.map (tabButton model)
-            [ ( TabAbout, "About" )
-            , ( TabTheme, "Theme" )
-            , ( TabSettings, "Settings" )
-            , ( TabFederation, "Federation" )
-            , ( TabCdn, "CDN" )
-            ]
+            ([ ( TabAbout, "About" )
+             , ( TabTheme, "Theme" )
+             , ( TabSettings, "Settings" )
+             , ( TabFederation, "Federation" )
+             , ( TabCdn, "CDN" )
+             ]
+                ++ (if Common.adminAccountFor shared model.targetHost /= Nothing then
+                        [ ( TabCluster, "Cluster" ) ]
+
+                    else
+                        []
+                   )
+            )
         )
 
 
@@ -540,3 +618,6 @@ tabContent shared model server =
 
         TabCdn ->
             Html.map CdnTabMsg (CdnTab.view server maybeAdminAccount model.cdnTab)
+
+        TabCluster ->
+            Html.map ClusterTabMsg (ClusterTab.view shared server maybeAdminAccount model.clusterTab)

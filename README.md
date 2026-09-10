@@ -154,7 +154,7 @@ xdg-open http://localhost/
 # To give them admin permissions:
 rellm set_permission my_admin_username admin on
 
-# (DigitalOcean only for now) Create Postgres with 1GB storage, MinIO with 5GB storage, and a web-facing Rellm server (with a load balancer) in your DOKS (DigitalOcean Kubernetes) cluster with `make` and `kubectl`.
+# COST: $12.60/mo on DigitalOcean. (DigitalOcean only for now) Create Postgres with 1GB storage, MinIO with 5GB storage, and a web-facing Rellm server (with a load balancer) in your DOKS (DigitalOcean Kubernetes) cluster with `make` and `kubectl`.
 rellm deploy create_backend_data create_external_backend NAMESPACE=my-rellm-instance-namespace
 
 # To tear that cluster deployment down again (kubectl deletes the whole namespace, and everything in it, at once):
@@ -212,7 +212,7 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [Deploying DockerHub images to Kubernetes from Homebrew/Linux (`rellm deploy`)](#deploying-dockerhub-images-to-kubernetes-from-homebrewlinux-rellm-deploy)
       - [Live (DigitalOcean Kubernetes/DOKS) deployments](#live-digitalocean-kubernetesdoks-deployments)
   - [What is Rellm?](#what-is-rellm)
-    - [Why Rellm vs. Mastodon/OpenSocial?](#why-rellm-vs-mastodonopensocial)
+    - [Why Rellm vs. Mastodon/Bluesky?](#why-rellm-vs-mastodonbluesky)
       - [Rellm as a protocol vs. ActivityPub](#rellm-as-a-protocol-vs-activitypub)
       - [Rellm as a protocol vs. Bluesky/AT Protocol](#rellm-as-a-protocol-vs-blueskyat-protocol)
     - [Why *not* Rellm?](#why-not-rellm)
@@ -235,6 +235,9 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
         - [Bluesky](#bluesky)
         - [X (Twitter)](#x-twitter)
         - [Threads](#threads)
+  - [Cloud/Cluster-Friendly Features](#cloudcluster-friendly-features)
+    - [Integrated Deployment System](#integrated-deployment-system)
+    - [Cluster-Agnostic Shared Resource Management](#cluster-agnostic-shared-resource-management)
   - [Single-Instance Features](#single-instance-features)
     - [Rellm Identifiers: Usernames, Group Names, and IDs](#rellm-identifiers-usernames-group-names-and-ids)
     - [People, Followers and Friends](#people-followers-and-friends)
@@ -292,13 +295,19 @@ A core goal is to make Rellm dogshit easy (🐕💩EZ) for anyone else to deploy
 
 In a perfect Rellm universe, every local business with a sip 'n' sketch, open mic, trivia night, run/bike club, etc.; every arts council, parks & rec department, library, etc. could run a Rellm instance on their own hardware or from any number of providers (because it's very cheap to host lots of Rellm instances on a cloud, by design) for a cost of $20-50/year from a provider, or for free on their own servers. Members of these communities could sign up only with the ones they want, and view events/posts where they want, when they want. Those community members don't need to share emails or phone numbers to do anything on these communities. Moderation is done by people working at the businesses/organizations. No one can become a billionaire running it, but also, users can participate in all these communities online without their data becoming the property of some billionaire.
 
-### Why Rellm vs. Mastodon/OpenSocial?
+### Why Rellm vs. Mastodon/Bluesky?
 
-- [Rellm's Docker images are currently 120MB](https://hub.docker.com/r/jonlatane/rellm/tags), [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags). Its BE is *fast* compared to any Rails BE. And being written in Rust, memory safety is built-in, and entire classes of backend errors that arise from using dynamic/GC'ed languages simply don't compile and thus go away (once you've written it so it *will* compile, as a developer).
-- Rellm supports Events. Others don't.
+Rellm as a protocol is essentially a superset of most of what people use ActivityPub and ATProto for, with a lot of other things that they *should* have had. It notably does *not* have hashtags, which I at the moment consider a good thing. It does, however, support full-text search (backed by the Postgres standard feature).
+
+Rellm, as a Rust BE, is *blazing fast* compared to any Rails BE. And being written in Rust, memory safety is built-in, and entire classes of backend errors that arise from using dynamic/GC'ed languages simply don't compile and thus go away (once you've written it so it *will* compile, as a developer). It speaks comfortably with external data sources like iCal, networks like Facebook, Instagram, X (Twitter), *just as well* as it interoperates with Mastodon/Bluesky instances. And Rellm is designed to be easy to deploy to any arbitrary Kubernetes provider, or in virtually any "home cluster" situation you might concoct for yourself.
+
+Rellm's Elm FE is similarly blazing fast, and Elm as a language allows intuitive, reliable web UIs in a way that nothing else out there really does (maybe Gleam). It similarly offers Mastodon/Bluesky interoperability at a level that, well, would be *painful or impossible* to implement without the safety of Elm, no matter how many humans or AI agents you throw at the problem.
+
+- Rellm supports Events as a first-class type. Others don't.
+- Rellm servers offer admins a huge amount of configurability that can effectively make it a site and CRM for your business's run/bike/trivia clubs, your band/chorus/dance groups's site, and more, with custom color schemes, custom tab layouts, pseudonyms for posts and events (like "twaddles" or "shows"), and much more.
 - Rellm's UI and APIs are designed to let users browse federated User Profiles, Groups, Posts and Events with ease in a way not supported in other "fediverse" apps.
-- Rellm servers serve up multiple UIs as well as the protocol docs.
-- [Rellm Protocol Docs](https://jonline.io/docs/protocol) are arguably *as* comprehensive and *more* concrete than [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/). More comparison is below.
+- Rellm servers serve up multiple UIs as well as their own protocol docs, making it easy to grab an arbitrary agent and point it at Rellm.
+- [Rellm Protocol Docs](https://jonline.io/docs/protocol) are arguably *far clearer* and *easier to use*, be you human or AI, than [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/). More comparison is below.
 - Rellm's server images are structured so you only need one LoadBalancer (the things you typically pay for) per deploy/website, and really only one web-facing container (though it defaults to 2) per deploy.
   - Within the containers themselves, everything is handled by a single Rust BE binary. No scripting runtime. So containers are small, even with useful Linux tools like `psql` and `grpcurl` built in. They start *really fast*, and Kubernetes failovers work very smoothly.
 - Rellm deploy scripts are designed to be so easy to deploy to Kubernetess you can be braindead and get it up and running for your website. Further, it's all just `Makefile`s and `kubectl` commands (though maybe that's a con for the reader 😁).
@@ -335,9 +344,8 @@ Rellm's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky co
 
 ### Why *not* Rellm?
 
-- It's not done.
-- It's just my own (Jon) thing I'm doing in my spare time.
-- There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
+- It's definitely not as big as the others yet.
+- 
 
 ## Federation & Synchronization Features
 
@@ -424,6 +432,45 @@ See also: [Sync Sources](#sync-sources)
 ##### Threads
 
 `configuration.threads_account` (a [`ThreadsAccount`](https://jonline.io/docs/protocol#rellm-ThreadsAccount)) is a connected Threads account. The Threads API is a product added to a server's *existing* Facebook App rather than a separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a Page" step -- it directly authorizes the user's own Threads account. Unlike Instagram, Threads supports text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+
+## Cloud/Cluster-Friendly Features
+
+### Integrated Deployment System
+
+Both Rellm's Homebrew and Linux packages ship with the same `make` and `kubectl`-based deployment system that Rellm's CI uses. So deploying is as easy as:
+
+```bash
+# macOS: 1-line install
+brew install jonlatane/rellm/rellm
+
+# Linux: Tarball install
+# Get the package with curl/jq, and extract it. This is actually also what updater script does.
+curl -s https://api.github.com/repos/jonlatane/rellm/releases/latest \
+  | jq -r '.assets[] | select(.name | test("-linux\\.tar\\.bz2$")) | .browser_download_url' \
+  | xargs curl -L -o rellm.tar.bz2
+mkdir rellm && tar xjf rellm.tar.bz2 -C rellm && rm rellm.tar.bz2
+cd rellm
+./bin/rellm version
+
+# Deploy your BE
+# COST: $12.60/mo on DigitalOcean. $0.60 for data and $12 for a load balancer. 
+rellm deploy create_backend_data create_external_backend NAMESPACE=my-rellm-instance-namespace
+
+# Get the IP for your backend. It may read <none> until DigitalOcean/DOKS/K8s finishes LoadBalancer setup for your instance.
+rellm deploy get_backend_external_ip NAMESPACE=my-rellm-instance-namespace
+```
+
+From here, you can simply point your DNS for whatever domain at the LoadBalancer that should appear in your DigitalOcean dashboard.
+
+Rellm also supports running *many* sites in a single Kubernetes (or other) cluster (which can be a single node/machine, quite cheap), with a Traefik ingress. for an effective cost of machine cost ($24/mo for 2vCPU/4GB/80GB on DigitalOcean) + $12/mo for a Traefik LoadBalancer + $0.60/mo per site. Because everything is basically one of two images, (4-5 when deploying new versions), this scales to many sites easily, even on minimal hardware. This can, of course, introduce performance constraints that may require resource management.
+
+### Cluster-Agnostic Shared Resource Management
+
+Rellms's shared resource management works even if you're not using Kubernetes, and instead using Docker VMs. That's because, rather than relying on Kubernetes leases, it's built into the protocol itself, based on two simply RPCs: `LockClusterResource` and `FreeClusterResource`.
+
+Among other things, Rellm leverages this locking behavior to enable Chrome screenshot generation for 4+ different sites, on a 2vCPU/4GB box, using a `BROWSER` resource.
+
+Rellm's bespoke resource management allows it to actually address the reesources in Rellm that may affect overall cluster performance at scale.
 
 ## Single-Instance Features 
 

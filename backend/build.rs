@@ -29,6 +29,13 @@ fn main() {
         // field (`Vec<MastodonServer>`), not an `optional` one -- serde already tolerates a
         // missing `Option` field for free, but a missing `Vec` field is a hard error without this.
         .field_attribute("FederationInfo.mastodon_servers", "#[serde(default)]")
+        // Same idea, for `ClusterConductorState.limits` (added alongside `ClusterResourceLimit`,
+        // after `cluster_resources.conductor_state` had already accumulated real stored data, e.g.
+        // `locks`) -- lets that pre-existing JSON deserialize instead of erroring on the newly
+        // missing key, defaulting to an empty list (`ClusterTab.elm`'s `effectiveLimit`, and
+        // `lock_cluster_resources.rs`'s own `effective_limit`, already treat an empty/missing
+        // `limits` list as every `ClusterResource` defaulting to `1`).
+        .field_attribute("ClusterConductorState.limits", "#[serde(default)]")
         // This is specifically for rust-analyzer in VSCode
         // .client_attribute(".", "#![allow(non_snake_case)]")
         .extern_path(".google.protobuf.Any", "::prost_wkt_types::Any")

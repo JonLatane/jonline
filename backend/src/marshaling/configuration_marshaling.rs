@@ -31,6 +31,13 @@ impl ToDbServerConfiguration for ServerConfiguration {
                 .custom_tabs
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
+            // Always overwritten by `configure_server`'s own `cluster_resources` gating (permission
+            // check + `conductor_state` preservation) -- see that function's own comment. Mapped
+            // naively here only for consistency with every other `NewServerConfiguration` field.
+            cluster_resources: self
+                .cluster_resources
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
             private_user_strategy: self.private_user_strategy.to_string_private_user_strategy(),
             authentication_features: self
                 .authentication_features
@@ -93,6 +100,19 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
         // .map(|c| serde_json::from_value(c).unwrap_or_else(|_| None));
         let custom_tabs: Option<CustomNavigationTabSet> =
             self.custom_tabs.to_owned().and_then(deserialize_custom_tabs);
+        // `cluster_shared_secret` is write-only -- never send the real value to a client (not even
+        // an admin), same reasoning (and same `configure_server` merge-on-blank counterpart) as
+        // `FacebookAuthConfig.app_secret` above. Whether `cluster_resources` is visible *at all* to
+        // this caller is decided by `get_server_configuration` (it needs the requesting user, which
+        // this trait doesn't have) -- this only ever blanks the secret.
+        let cluster_resources: Option<ClusterResources> = self
+            .cluster_resources
+            .to_owned()
+            .and_then(|c| serde_json::from_value(c).ok())
+            .map(|c: ClusterResources| ClusterResources {
+                cluster_shared_secret: String::new(),
+                ..c
+            });
 
         ServerConfiguration {
             server_info: Some(server_info),
@@ -116,6 +136,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
                 .authentication_features
                 .to_i32_authentication_features(),
             external_cdn_config: external_cdn_config,
+            cluster_resources: cluster_resources,
             web_push_config: web_push_config, // ..Default::default()
         }
     }

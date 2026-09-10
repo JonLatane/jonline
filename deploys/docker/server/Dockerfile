@@ -35,6 +35,7 @@ COPY backend/background_jobs.sh /opt/background_jobs.sh
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 COPY backend/target/release/set_permission__server_release /opt/set_permission
+COPY backend/target/release/free_all_cluster_resources__server_release /opt/free_all_cluster_resources
 COPY backend/target/release/to_db_id__server_release /opt/to_db_id
 COPY backend/target/release/to_proto_id__server_release /opt/to_proto_id
 

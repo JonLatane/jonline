@@ -106,6 +106,12 @@ struct Occurrence {
     location: Option<String>,
     title: Option<String>,
     content: Option<String>,
+    /// The IANA timezone (`TZID`) `starts_at` was expressed in in the source feed, if any -- e.g.
+    /// `DTSTART;TZID=America/New_York:...` -- so `EventInstance.timezone` can be populated
+    /// straight from the feed rather than only ever coming from `logic::resolve_timezone`'s
+    /// Nominatim guess or a hand-picked selector value. `None` for a floating or UTC `DTSTART`
+    /// (no `TZID` to read).
+    timezone: Option<String>,
     /// Whether this occurrence came from its own `RECURRENCE-ID` VEVENT (as opposed to being a
     /// plain expansion of the master's `RRULE`) -- only overrides get their own instance `Post`
     /// text; plain expansions leave their instance `Post` empty, same as normal (non-synced)
@@ -364,6 +370,7 @@ fn reconcile_instances(
                 if existing_instance.starts_at != starts_at_db
                     || existing_instance.ends_at != ends_at_db
                     || existing_instance.location != loc_json
+                    || existing_instance.timezone != occ.timezone
                     || existing_instance.sync_missing_since.is_some()
                 {
                     diesel::update(
@@ -374,6 +381,7 @@ fn reconcile_instances(
                         event_instances::starts_at.eq(starts_at_db),
                         event_instances::ends_at.eq(ends_at_db),
                         event_instances::location.eq(&loc_json),
+                        event_instances::timezone.eq(&occ.timezone),
                         event_instances::sync_missing_since.eq(None::<SystemTime>),
                     ))
                     .execute(conn)?;
@@ -423,6 +431,7 @@ fn reconcile_instances(
                         sync_source_id: Some(source_id),
                         sync_source_uid: Some(group.uid.clone()),
                         sync_source_recurrence_anchor: Some(anchor_db),
+                        timezone: occ.timezone.clone(),
                     })
                     .execute(conn)?;
             }
@@ -485,6 +494,17 @@ fn get_date_property(event: &icalendar::Event, key: &str) -> Option<DateTime<Utc
     let property = event.properties().get(key)?;
     let dpt = DatePerhapsTime::from_property(property)?;
     date_perhaps_time_to_utc(&dpt)
+}
+
+/// The IANA `TZID` `event`'s `key` property (e.g. `DTSTART`) was expressed in, if it carries one
+/// (i.e. `key`'s value is `CalendarDateTime::WithTimezone` -- a `DATE`, a floating/`Z`-suffixed
+/// `DATE-TIME`, or a missing property all have none).
+fn get_tzid_property(event: &icalendar::Event, key: &str) -> Option<String> {
+    let property = event.properties().get(key)?;
+    match DatePerhapsTime::from_property(property)? {
+        DatePerhapsTime::DateTime(CalendarDateTime::WithTimezone { tzid, .. }) => Some(tzid),
+        _ => None,
+    }
 }
 
 /// `EXDATE` may list multiple comma-separated date-times in one property (RFC 5545 §3.8.5.1).
@@ -601,6 +621,11 @@ fn build_occurrence(
         content: override_event
             .and_then(|e| e.property_value("DESCRIPTION"))
             .map(str::to_string),
+        // Falls back to the master's own `DTSTART` `TZID` when the override doesn't set its own
+        // (e.g. one that only moved the time or edited the text) -- a plain expansion (no
+        // override at all) always reads the master's.
+        timezone: get_tzid_property(source_event, "DTSTART")
+            .or_else(|| get_tzid_property(master, "DTSTART")),
         is_override: override_event.is_some(),
     }
 }

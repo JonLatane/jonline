@@ -79,6 +79,27 @@ pub fn validate_permission(
     validate_any_permission(user, vec![permission, Admin])
 }
 
+/// Like `validate_permission`, but does *not* let `ADMIN` substitute for the specific permission
+/// -- for permissions deliberately designed to be admin-insufficient (see e.g.
+/// `Permission::EditClusterSettings`'s own doc), where "is this user an admin" and "can they do
+/// this specific thing" are meant to stay two different questions. `validate_permission` itself
+/// (`vec![permission, Admin]`) would silently let any admin through here, defeating the point.
+pub fn validate_exact_permission(
+    user: &Option<&models::User>,
+    permission: Permission,
+) -> Result<(), Status> {
+    let proto_permissions = user
+        .map(|u| u.permissions.to_proto_permissions())
+        .unwrap_or(vec![]);
+    if !proto_permissions.contains(&permission) {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            format!("permission_{}_required", permission.as_str_name()),
+        ));
+    }
+    Ok(())
+}
+
 pub fn validate_any_permission(
     user: &Option<&models::User>,
     permissions: Vec<Permission>,

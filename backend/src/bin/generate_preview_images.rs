@@ -14,11 +14,12 @@ use tokio::task::spawn_blocking;
 use tokio::time::timeout;
 
 use rellm::db_connection::PgPooledConnection;
+use rellm::logic::{acquire_cluster_lock, release_cluster_lock};
 use rellm::models;
 use rellm::models::{get_user, Post, POST_COLUMNS};
-use rellm::protos::Visibility;
+use rellm::protos::{ClusterResource, ClusterResources, Visibility};
 use rellm::schema::{media, posts};
-use rellm::{db_connection, init_bin_logging, minio_connection};
+use rellm::{db_connection, init_bin_logging, minio_connection, rpcs};
 use rellm::{init_crypto, marshaling::*};
 use s3::Bucket;
 use uuid::Uuid;
@@ -51,11 +52,33 @@ async fn main() {
         .await
         .expect("Failed to connect to MinIO");
 
+    // If this server is part of a cluster (see `ClusterResources`'s own doc in
+    // server_configuration.proto), only one instance may have a browser open at a time --
+    // acquire that lock from the conductor before launching Chrome/Brave below. Servers not
+    // configured with `cluster_resources` skip this entirely (single-instance mode, unchanged
+    // from before this existed).
+    let cluster_resources: Option<ClusterResources> = rpcs::get_server_configuration_model(&mut conn)
+        .expect("Failed to load server configuration")
+        .cluster_resources
+        .and_then(|v| serde_json::from_value(v).ok());
+
+    if let Some(resources) = &cluster_resources {
+        log::info!("Cluster resources configured; acquiring browser lock from conductor...");
+        if !acquire_cluster_lock(resources, &[ClusterResource::Browser]).await {
+            log::warn!("Could not acquire cluster browser lock in time; skipping this run.");
+            return;
+        }
+    }
+
     log::info!("Starting browser...");
     let browser = Arc::new(start_browser().expect("Failed to start browser"));
 
     for post in posts_to_update {
         update_post(&post, &browser, &mut conn, &bucket).await;
+    }
+
+    if let Some(resources) = &cluster_resources {
+        release_cluster_lock(resources, &[ClusterResource::Browser]).await;
     }
 
     log::info!("Done generating preview images.");

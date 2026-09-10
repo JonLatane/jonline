@@ -767,17 +767,25 @@ accountsMenuButtonContent shared enabledAccounts =
 
 {-| A small-font subtitle under the accounts-menu toggle button's "Login" text/
 avatars, summarizing how many servers are currently enabled: nothing for the
-common single-server case where that server is `mainFrontendHost`, that
-server's branding name when it's the lone enabled server but not
-`mainFrontendHost` (so it's clear which server is actually being browsed),
-"N servers" for any other count, or "No servers ⚠️" when every server's been
-disabled. If any account's server is currently unreachable (see
-`AccountsPanel.unreachableAccountHosts`, surfaced below as "Couldn't reach:
+common single-server case where that server is `mainFrontendHost` (and there's no
+federated source contributing either), that server's branding name when it's the
+lone enabled server but not `mainFrontendHost` (so it's clear which server is
+actually being browsed), "N servers" for any other count, or "No servers ⚠️" when
+nothing at all is contributing. If any account's server is currently unreachable
+(see `AccountsPanel.unreachableAccountHosts`, surfaced below as "Couldn't reach:
 ..."), the count is always shown -- even "1 server" -- with its own ⚠️, so
 that warning isn't silently hidden behind the usual single-server blank
 state. Recomputed on every render (so it updates live as servers are
 toggled/reconnected) directly off `AccountsPanel.enabledServers` and
 `AccountsPanel.unreachableAccountHosts`.
+
+`N` counts every enabled Rellm server, every Mastodon instance actually contributing to the
+combined feed (OAuth-connected accounts, which have no enable/disable toggle of their own, plus
+browsed instances that are `.enabled` -- mirrors `Components.Pages.PostsPage.mastodonHostsToFetch`'s
+own dedup), and every enabled Bluesky account. A trailing " *" appears only if more than one Bluesky
+account is enabled at once -- see `AccountsPanel.ToggleBlueskyAccountEnabled`'s own doc on why that's
+now prevented at the source (only ever a leftover-state indicator for an account enabled before that
+restriction existed, not something a fresh toggle can produce).
 -}
 accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
 accountsMenuServerSummary accountsPanelModel =
@@ -786,9 +794,21 @@ accountsMenuServerSummary accountsPanelModel =
         servers =
             AccountsPanel.enabledServers accountsPanelModel
 
+        mastodonHosts : List String
+        mastodonHosts =
+            (List.map .instanceHost accountsPanelModel.mastodonAccounts
+                ++ (accountsPanelModel.browsedMastodonInstances |> List.filter .enabled |> List.map .host)
+            )
+                |> Set.fromList
+                |> Set.toList
+
+        enabledBlueskyAccounts : List BlueskyAccount
+        enabledBlueskyAccounts =
+            accountsPanelModel.blueskyAccounts |> List.filter .enabled
+
         count : Int
         count =
-            List.length servers
+            List.length servers + List.length mastodonHosts + List.length enabledBlueskyAccounts
 
         hasUnreachableServers : Bool
         hasUnreachableServers =
@@ -804,6 +824,12 @@ accountsMenuServerSummary accountsPanelModel =
                     else
                         "s"
                    )
+                ++ (if List.length enabledBlueskyAccounts > 1 then
+                        " *"
+
+                    else
+                        ""
+                   )
                 ++ (if hasUnreachableServers then
                         " ⚠️"
 
@@ -811,11 +837,11 @@ accountsMenuServerSummary accountsPanelModel =
                         ""
                    )
     in
-    case servers of
-        [] ->
+    case ( servers, mastodonHosts, enabledBlueskyAccounts ) of
+        ( [], [], [] ) ->
             div [ class "accounts-menu-server-summary" ] [ text "No servers ⚠️" ]
 
-        [ singleServer ] ->
+        ( [ singleServer ], [], [] ) ->
             if hasUnreachableServers || (singleServer.frontendHost /= accountsPanelModel.mainFrontendHost) then
                 div [ class "accounts-menu-server-summary" ] [ text serversText ]
 
@@ -3484,7 +3510,7 @@ it (see `create_new_panel.css`'s own z-index comment).
 -}
 createNewPanel : Shared.Model -> Html Shared.Msg
 createNewPanel shared =
-    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time.browserTimeZone.zone shared.accounts shared.panels.createNewPanel)
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time.browserTimeZone shared.accounts shared.panels.createNewPanel)
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
