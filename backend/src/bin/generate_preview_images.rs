@@ -3,12 +3,15 @@ extern crate diesel;
 extern crate rellm;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use diesel::*;
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
+use tokio::task::spawn_blocking;
+use tokio::time::timeout;
 
 use rellm::db_connection::PgPooledConnection;
 use rellm::models;
@@ -25,15 +28,9 @@ async fn main() {
     init_crypto();
     init_bin_logging();
     log::info!("Generating preview images...");
-    log::info!("Connecting to DB and MinIO...");
+    log::info!("Connecting to DB...");
     let pool = db_connection::establish_pool();
     let mut conn = pool.get().expect("Failed to get DB connection");
-    let bucket = minio_connection::get_and_test_bucket()
-        .await
-        .expect("Failed to connect to MinIO");
-
-    log::info!("Starting browser...");
-    let browser = start_browser().expect("Failed to start browser");
 
     let posts_to_update = posts::table
         .filter(posts::link.is_not_null())
@@ -44,6 +41,19 @@ async fn main() {
         .unwrap();
     log::info!("Got {} posts to update.", posts_to_update.len());
 
+    if posts_to_update.is_empty() {
+        log::info!("No posts to update, exiting.");
+        return;
+    }
+
+    log::info!("Connecting to MinIO...");
+    let bucket = minio_connection::get_and_test_bucket()
+        .await
+        .expect("Failed to connect to MinIO");
+
+    log::info!("Starting browser...");
+    let browser = Arc::new(start_browser().expect("Failed to start browser"));
+
     for post in posts_to_update {
         update_post(&post, &browser, &mut conn, &bucket).await;
     }
@@ -51,9 +61,11 @@ async fn main() {
     log::info!("Done generating preview images.");
 }
 
+const PREVIEW_TIMEOUT: Duration = Duration::from_secs(45);
+
 async fn update_post(
     post: &Post,
-    browser: &Browser,
+    browser: &Arc<Browser>,
     conn: &mut PgPooledConnection,
     bucket: &Bucket,
 ) {
@@ -66,7 +78,7 @@ async fn update_post(
     match post.link.to_link() {
         None => log::warn!("Invalid link: {:?}", post.link),
         Some(url) => {
-            match generate_preview(&url, &browser) {
+            match generate_preview_with_timeout(url.clone(), Arc::clone(browser)).await {
                 Ok(screenshot) => {
                     log::info!(
                         "Generated screenshot for link {}, post {}! {} bytes",
@@ -122,6 +134,29 @@ async fn update_post(
                 }
             };
         }
+    }
+}
+
+// Runs generate_preview (which blocks on Chrome IPC and a fixed render-wait sleep) on a
+// blocking-pool thread with a hard wall-clock cap, so one slow/unresponsive link can't
+// wedge the whole job. A timed-out call is left running on its thread rather than killed;
+// it's harmless since the Job's container is torn down (killing the browser process with
+// it) once main() returns.
+async fn generate_preview_with_timeout(
+    url: String,
+    browser: Arc<Browser>,
+) -> Result<Vec<u8>, anyhow::Error> {
+    match timeout(
+        PREVIEW_TIMEOUT,
+        spawn_blocking(move || generate_preview(&url, &browser)),
+    )
+    .await
+    {
+        Ok(join_result) => join_result.unwrap_or_else(|e| Err(anyhow::anyhow!(e))),
+        Err(_) => Err(anyhow::anyhow!(
+            "Timed out generating preview after {:?}",
+            PREVIEW_TIMEOUT
+        )),
     }
 }
 
